@@ -391,7 +391,7 @@ namespace CDPIUI.AddOns.GoodCheck
 
                     StrategyResultAdded?.Invoke(Tuple.Create(currentInt, allInt));
 
-                    if (allInt != 0 && currentInt / allInt * 100 >= 65)
+                    if (allInt != 0 && currentInt * 100 / allInt >= 65)
                     {
                         CorrectCount++;
                         CorrectCountChanged?.Invoke(CorrectCount);
