@@ -56,17 +56,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                 IsAuthorized = false;
                 try
                 {
-                    var ps = new PipeSecurity();
-
-                    var currentUserSid = WindowsIdentity.GetCurrent().User;
-                    if (currentUserSid == null)
-                    {
-                        continue;
-                    }
-                    ps.AddAccessRule(new PipeAccessRule(currentUserSid, PipeAccessRights.FullControl, AccessControlType.Allow));
-
-                    var everyone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-                    ps.AddAccessRule(new PipeAccessRule(everyone, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+                    var ps = PipeAccessPolicy.CreatePipeSecurity();
 
                     PipeStream = NamedPipeServerStreamAcl.Create(
                         SharedConstants.PipeName,
@@ -89,10 +79,15 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
                 try
                 {
-                    Console.WriteLine("WAIT");
                     await ((NamedPipeServerStream)PipeStream).WaitForConnectionAsync(CancellationToken ?? default);
 
                     int threadId = Thread.CurrentThread.ManagedThreadId;
+                    if (!PipePeerVerifier.IsClientExpected((NamedPipeServerStream)PipeStream, PipeAccessPolicy.ExpectedClientPath))
+                    {
+                        Logger?.CreateWarningLog(nameof(PipeServer), "Rejected a pipe client that is not the application UI.");
+                        continue;
+                    }
+
                     Logger?.CreateDebugLog(nameof(PipeServer), $"Client connected on thread[{threadId}].");
                     await HandleConnectionAsync();
                 }
@@ -131,7 +126,6 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             {
                 if (messageModel.MessageType == ServiceMessageIds.RequestAuth)
                 {
-                    Debug.WriteLine(messageModel.MessageData["GUID"]);
                     if (messageModel.MessageData != null && messageModel.MessageData["GUID"] == Secret.AuthGuid)
                     {
                         IsAuthorized = true;
