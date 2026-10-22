@@ -164,6 +164,10 @@ namespace CDPIUI.Core.Store
 
                 if (!result) return OperationResultModel<ILinkModel>
                         .FailureResult(DownloadWorker.LastError);
+
+                downloadUrl = downloadLinkModel.link ?? downloadUrl;
+                if (!string.IsNullOrEmpty(downloadLinkModel.version))
+                    tag = downloadLinkModel.version;
             }
 
             if (restartFlag)
