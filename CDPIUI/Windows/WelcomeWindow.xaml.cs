@@ -214,7 +214,7 @@ namespace CDPIUI
                     .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id))
                     .ToList();
                 if (itemsToInstall.Count == 0)
-                    return;
+                    continue;
 
                 List<ItemLicenseModel> licenses = itemsToInstall
                     .SelectMany(item => item.license ?? [])
