@@ -67,32 +67,38 @@ namespace CDPIUI.Shared.ComponentsTask
             return null;
         }
 
+        private async Task<(TaskModel<T> Task, bool Created)> GetOrAddTask(string id, bool? isSetupComplete = null)
+        {
+            await _taskOperationLock.WaitAsync();
+            try
+            {
+                var existTask = Tasks.FirstOrDefault(t => t.Id == id);
+                if (existTask != null)
+                    return (existTask, false);
+
+                T processManager = new() { Id = id };
+                processManager.ProcessStateChanged += HandleProcessStateUpdate;
+                processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
+
+                var task = new TaskModel<T> { Id = id, ProcessManager = processManager, IsSetupComplete = isSetupComplete };
+                Tasks.Add(task);
+                return (task, true);
+            }
+            finally
+            {
+                _taskOperationLock.Release();
+            }
+        }
+
         /// <summary>
         /// Add new task to task list
         /// </summary>
         /// <param name="id">Task Id</param>
         public async void AddNewTask(string id)
         {
-            var t = await GetTaskFromId(id);
-            if (t != null) return;
-
-            await _taskOperationLock.WaitAsync();
-
-            var processManager = new T() { Id = id };
-            processManager.ProcessStateChanged += HandleProcessStateUpdate;
-            processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
-
-            try
-            {
-                Tasks.Add(new() { Id = id, ProcessManager = processManager });
-            }
-            catch { }
-            finally
-            {
-                _taskOperationLock.Release();
-            }
-
-            TaskListUpdated?.Invoke();
+            var (_, created) = await GetOrAddTask(id);
+            if (created)
+                TaskListUpdated?.Invoke();
         }
 
         /// <summary>
@@ -101,31 +107,13 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="id">Task Id</param>
         public async Task CreateAndRunNewTask(string id)
         {
-            var t = await GetTaskFromId(id);
-            if (t != null)
-            {
-                await StopTask(id);
-                await t.ProcessManager.StartProcess();
-            }
-            else
-            {
-                T processManager = new() { Id = id };
-                processManager.ProcessStateChanged += HandleProcessStateUpdate;
-                processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
-                await processManager.StartProcess();
-
-                await _taskOperationLock.WaitAsync();
-                try
-                {
-                    Tasks.Add(new() { Id = id, ProcessManager = processManager });
-                }
-                catch { }
-                finally
-                {
-                    _taskOperationLock.Release();
-                }
+            var (task, created) = await GetOrAddTask(id);
+            if (created)
                 TaskListUpdated?.Invoke();
-            }
+            else
+                await task.ProcessManager.StopProcess();
+
+            await task.ProcessManager.StartProcess();
         }
         /// <summary>
         /// Add new task to task list, run associated <see cref="IProcessService"/> with custom executable
@@ -135,32 +123,13 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="args">Command-line flags</param>
         public virtual async Task CreateAndRunNewTask(string id, string executable, string args)
         {
-            var t = await GetTaskFromId(id);
-            if (t != null)
-            {
-                await StopTask(id);
-                await t.ProcessManager.StartProcess(executable, args);
-            }
-            else
-            {
-                await _taskOperationLock.WaitAsync();
-
-                T processManager = new() { Id = id };
-                processManager.ProcessStateChanged += HandleProcessStateUpdate;
-                processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
-                await processManager.StartProcess(executable, args);
-
-                try
-                {
-                    Tasks.Add(new() { Id = id, ProcessManager = processManager });
-                }
-                catch { }
-                finally
-                {
-                    _taskOperationLock.Release();
-                }
+            var (task, created) = await GetOrAddTask(id);
+            if (created)
                 TaskListUpdated?.Invoke();
-            }
+            else
+                await task.ProcessManager.StopProcess();
+
+            await task.ProcessManager.StartProcess(executable, args);
         }
 
         /// <summary>
@@ -170,32 +139,13 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="args">Command-line flags</param>
         public async Task CreateAndRunNewTask(string id, string args)
         {
-            var t = await GetTaskFromId(id);
-            if (t != null)
-            {
-                await StopTask(id);
-                await t.ProcessManager.StartProcess(args, null);
-            }
-            else
-            {
-                await _taskOperationLock.WaitAsync();
-
-                T processManager = new() { Id = id };
-                processManager.ProcessStateChanged += HandleProcessStateUpdate;
-                processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
-                await processManager.StartProcess(args, null);
-
-                try
-                {
-                    Tasks.Add(new() { Id = id, ProcessManager = processManager });
-                }
-                catch { }
-                finally
-                {
-                    _taskOperationLock.Release();
-                }
+            var (task, created) = await GetOrAddTask(id);
+            if (created)
                 TaskListUpdated?.Invoke();
-            }
+            else
+                await task.ProcessManager.StopProcess();
+
+            await task.ProcessManager.StartProcess(args, null);
         }
 
         /// <summary>
@@ -205,31 +155,11 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="isSetupComplete">Is task with <see cref="string"/> Id ready to run</param>
         public async void SetTaskStatus(string id, bool isSetupComplete)
         {
-            var targetTask = await GetTaskFromId(id);
-            if (targetTask != null)
-            {
-                targetTask.IsSetupComplete = isSetupComplete;
-            }
-            else
-            {
-                await _taskOperationLock.WaitAsync();
-
-                T processManager = new() { Id = id };
-                processManager.ProcessStateChanged += HandleProcessStateUpdate;
-                processManager.ShowErrorMessageWindow += HandleShowErrorMessageWindow;
-
-                try
-                {
-                    Tasks.Add(new() { Id = id, ProcessManager = processManager, IsSetupComplete = isSetupComplete });
-                }
-                catch { }
-                finally
-                {
-                    _taskOperationLock.Release();
-                }
-
+            var (targetTask, created) = await GetOrAddTask(id, isSetupComplete);
+            if (created)
                 TaskListUpdated?.Invoke();
-            }
+            else
+                targetTask.IsSetupComplete = isSetupComplete;
 
             TaskSetupStateUpdated?.Invoke(Tuple.Create(id, isSetupComplete));
         }
@@ -240,13 +170,11 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="status">Target status</param>
         public async void ApplyStatusToAllTasks(bool status)
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
                 task.IsSetupComplete = status;
                 TaskSetupStateUpdated?.Invoke(Tuple.Create(task.Id, status));
             }
-
-            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -309,15 +237,26 @@ namespace CDPIUI.Shared.ComponentsTask
         /// </summary>
         public async Task StopAllTasks()
         {
-            await _taskOperationLock.WaitAsync();
-            try
+            foreach (var task in await GetTasksSnapshot())
             {
-                foreach (var task in Tasks)
+                try
                 {
                     await task.ProcessManager.StopProcess();
                 }
+                catch { }
             }
-            catch { }
+        }
+
+        /// <summary>
+        /// Get a copy of the tasks list that is safe to enumerate while tasks are added or removed
+        /// </summary>
+        public async Task<List<TaskModel<T>>> GetTasksSnapshot()
+        {
+            await _taskOperationLock.WaitAsync();
+            try
+            {
+                return [.. Tasks];
+            }
             finally
             {
                 _taskOperationLock.Release();
