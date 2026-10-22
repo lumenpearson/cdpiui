@@ -244,7 +244,7 @@ namespace CDPIUI.Controls.Store.Settings
                         }
                     }
                 }
-                else if (relpath.StartsWith("TempFiles/"))
+                else if (relpath.StartsWith("TempFiles"))
                 {
                     CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Temp);
                 }
