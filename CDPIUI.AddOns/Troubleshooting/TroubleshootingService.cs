@@ -234,7 +234,7 @@ namespace CDPIUI.AddOns.Troubleshooting
                 { RunBasicDialogStates.CheckVPNs, isRunningVPN },
                 { RunBasicDialogStates.CheckDNS, isUsedDNS },
                 { RunBasicDialogStates.CheckWinDivert, isWinDivertRunning },
-                { RunBasicDialogStates.CheckAnotherComponents, isAnotherServiceComponentRunned },
+                { RunBasicDialogStates.CheckAnotherComponents, isAnotherComponentRunned },
                 { RunBasicDialogStates.CheckAnotherComponentsServices, isAnotherServiceComponentRunned },
             };
 
