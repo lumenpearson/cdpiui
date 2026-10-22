@@ -41,6 +41,49 @@ namespace CDPIUI.TrayIcon.Helper
             return result;
         }
 
+        public sealed record ProxySnapshot(int? ProxyEnable, string? ProxyServer, string? ProxyOverride);
+
+        public static ProxySnapshot ReadProxySnapshot()
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(InternetSettingsKeyPath, writable: false);
+            return new ProxySnapshot(
+                key?.GetValue("ProxyEnable") as int?,
+                key?.GetValue("ProxyServer") as string,
+                key?.GetValue("ProxyOverride") as string);
+        }
+
+        public static void RestoreProxySnapshot(ProxySnapshot snapshot)
+        {
+            using (var key = Registry.CurrentUser.CreateSubKey(InternetSettingsKeyPath))
+            {
+                if (key == null)
+                    throw new InvalidOperationException("ERR_REGISTRY_WRITE");
+
+                SetOrDelete(key, "ProxyServer", snapshot.ProxyServer);
+                SetOrDelete(key, "ProxyOverride", snapshot.ProxyOverride);
+                key.SetValue("ProxyEnable", snapshot.ProxyEnable ?? 0, RegistryValueKind.DWord);
+            }
+
+            NotifySettingsChanged();
+        }
+
+        private static void SetOrDelete(RegistryKey key, string name, string? value)
+        {
+            if (value == null)
+                key.DeleteValue(name, throwOnMissingValue: false);
+            else
+                key.SetValue(name, value, RegistryValueKind.String);
+        }
+
+        private static void NotifySettingsChanged()
+        {
+            if (!InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
+
+            if (!InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
+        }
+
         public static void SaveProxySettings(string proxyServer, string proxyOverride, int proxyEnable)
         {
             if (proxyEnable != 0 && proxyEnable != 1)
@@ -60,15 +103,7 @@ namespace CDPIUI.TrayIcon.Helper
                 key.SetValue("ProxyEnable", proxyEnable, RegistryValueKind.DWord);
             }
 
-            if (!InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
-            }
-
-            if (!InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
-            }
+            NotifySettingsChanged();
         }
     }
 }

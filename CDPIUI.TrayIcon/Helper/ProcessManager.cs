@@ -265,6 +265,10 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
+        // The system proxy is global, so the user's previous settings are kept once for all components.
+        private static readonly object SystemProxyLock = new();
+        private static RegeditHelper.ProxySnapshot? _systemProxyBackup;
+
         private void StartSystemProxy(string ip, string port)
         {
             string proxyServer = string.Empty;
@@ -286,7 +290,11 @@ namespace CDPIUI.TrayIcon.Helper
             }
             try
             {
-                RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
+                lock (SystemProxyLock)
+                {
+                    _systemProxyBackup ??= RegeditHelper.ReadProxySnapshot();
+                    RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
+                }
             }
             catch (Exception ex)
             {
@@ -299,7 +307,14 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
-                RegeditHelper.SaveProxySettings(string.Empty, string.Empty, 0);
+                lock (SystemProxyLock)
+                {
+                    if (_systemProxyBackup != null)
+                        RegeditHelper.RestoreProxySnapshot(_systemProxyBackup);
+                    else
+                        RegeditHelper.SaveProxySettings(string.Empty, string.Empty, 0);
+                    _systemProxyBackup = null;
+                }
             }
             catch (Exception ex)
             {
