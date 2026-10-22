@@ -27,4 +27,8 @@
     <EmbeddedResource Include="BlockCheck2\Catalog\strategy-catalog.v1.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CDPIUI.Tests" />
+  </ItemGroup>
+
 </Project>

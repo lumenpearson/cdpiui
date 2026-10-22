@@ -874,11 +874,17 @@ public sealed partial class ConfigImportService
         return count % 2 == 1;
     }
 
-    private static bool TryParseSet(string line, out string name, out string value)
+    internal static bool TryParseSet(string line, out string name, out string value)
     {
         Match match = SetRegex().Match(line);
         name = match.Success ? match.Groups["name"].Value.Trim() : string.Empty;
-        value = match.Success ? match.Groups["value"].Value.Trim().TrimEnd('"') : string.Empty;
+        value = match.Success ? match.Groups["value"].Value.Trim() : string.Empty;
+        if (match.Success && match.Groups["quoted"].Success)
+        {
+            int closingQuote = value.LastIndexOf('"');
+            if (closingQuote >= 0)
+                value = value[..closingQuote].TrimEnd();
+        }
         return match.Success && name.Length > 0;
     }
 
