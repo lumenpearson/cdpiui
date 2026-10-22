@@ -55,4 +55,8 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CDPIUI.Tests" />
+  </ItemGroup>
+
 </Project>
