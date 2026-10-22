@@ -2,8 +2,10 @@ using CDPIUI.Shared.Exceptions.Settings;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Xml.Linq;
 using System.Xml;
 
@@ -98,6 +100,9 @@ namespace CDPIUI.Shared.Basic
             return document;
         }
 
+        private const int SaveAttempts = 5;
+        private const int SaveRetryDelayMs = 50;
+
         private void SaveSettings(bool keepBackup = true)
         {
             if (_persistenceUnavailable) return;
@@ -106,14 +111,31 @@ namespace CDPIUI.Shared.Basic
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(SettingsFilePath))!);
                 _xDocument!.Save(temporaryPath);
-                if (File.Exists(SettingsFilePath))
-                    File.Replace(temporaryPath, SettingsFilePath, keepBackup ? SettingsFilePath + ".bak" : null);
-                else
-                    File.Move(temporaryPath, SettingsFilePath);
+
+                for (int attempt = 1; ; attempt++)
+                {
+                    try
+                    {
+                        if (File.Exists(SettingsFilePath))
+                            File.Replace(temporaryPath, SettingsFilePath, keepBackup ? SettingsFilePath + ".bak" : null);
+                        else
+                            File.Move(temporaryPath, SettingsFilePath);
+                        break;
+                    }
+                    catch (IOException) when (attempt < SaveAttempts)
+                    {
+                        // The other process (GUI or tray) may be reading the file at this moment.
+                        Thread.Sleep(SaveRetryDelayMs * attempt);
+                    }
+                }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 _persistenceUnavailable = true;
+                Debug.WriteLine(ex);
+            }
+            catch (IOException ex)
+            {
                 Debug.WriteLine(ex);
             }
             finally
@@ -231,7 +253,7 @@ namespace CDPIUI.Shared.Basic
             if (settingElement == null)
             {
                 if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
-                var defaultValue = GetDefaultValue<T>();
+                var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
                 SetValue(groupPath, key, defaultValue);
                 Debug.WriteLine($"Setting '{key}' in group path '{string.Join("/", groupPath)}' not found.");
                 return defaultValue;
@@ -310,10 +332,10 @@ namespace CDPIUI.Shared.Basic
                 type = "int";
                 valueString = value.ToString();
             }
-            else if (value is double)
+            else if (value is double d)
             {
                 type = "double";
-                valueString = value.ToString();
+                valueString = FormatDouble(d);
             }
             else if (value is bool)
             {
@@ -325,10 +347,10 @@ namespace CDPIUI.Shared.Basic
                 type = "string";
                 valueString = value as string;
             }
-            else if (value is DateTime)
+            else if (value is DateTime dateTime)
             {
                 type = nameof(DateTime);
-                valueString = value.ToString();
+                valueString = FormatDateTime(dateTime);
             }
             else if (typeof(T) == typeof(List<string>))
             {
@@ -339,38 +361,41 @@ namespace CDPIUI.Shared.Basic
             }
             else
             {
-                type = nameof(T);
-                valueString = value.ToString();
+                type = typeof(T).Name;
+                valueString = value?.ToString() ?? string.Empty;
             }
 
-            var groupElement = _xDocument.Root
-                .Elements("Group")
-                .FirstOrDefault(g => g.Attribute("Name")?.Value == group);
-
-            if (groupElement == null)
+            lock (_reloadLock)
             {
-                groupElement = new XElement("Group", new XAttribute("Name", group));
-                _xDocument.Root.Add(groupElement);
-            }
+                var groupElement = _xDocument.Root
+                    .Elements("Group")
+                    .FirstOrDefault(g => g.Attribute("Name")?.Value == group);
 
-            var settingElement = groupElement
-                .Elements("Setting")
-                .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
+                if (groupElement == null)
+                {
+                    groupElement = new XElement("Group", new XAttribute("Name", group));
+                    _xDocument.Root.Add(groupElement);
+                }
 
-            if (settingElement != null)
-            {
-                settingElement.SetAttributeValue("Value", valueString);
-                settingElement.SetAttributeValue("Type", type);
-            }
-            else
-            {
-                groupElement.Add(new XElement("Setting",
-                    new XAttribute("Key", key),
-                    new XAttribute("Type", type),
-                    new XAttribute("Value", valueString)));
-            }
+                var settingElement = groupElement
+                    .Elements("Setting")
+                    .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
 
-            SaveSettings();
+                if (settingElement != null)
+                {
+                    settingElement.SetAttributeValue("Value", valueString);
+                    settingElement.SetAttributeValue("Type", type);
+                }
+                else
+                {
+                    groupElement.Add(new XElement("Setting",
+                        new XAttribute("Key", key),
+                        new XAttribute("Type", type),
+                        new XAttribute("Value", valueString)));
+                }
+
+                SaveSettings();
+            }
             PropertyChanged?.Invoke(group);
         }
 
@@ -394,7 +419,7 @@ namespace CDPIUI.Shared.Basic
                     break;
                 case double d:
                     type = "double";
-                    valueString = d.ToString();
+                    valueString = FormatDouble(d);
                     break;
                 case bool b:
                     type = "bool";
@@ -408,63 +433,86 @@ namespace CDPIUI.Shared.Basic
                     type = nameof(List<string>);
                     valueString = string.Join(";", lst);
                     break;
+                case DateTime dateTime:
+                    type = nameof(DateTime);
+                    valueString = FormatDateTime(dateTime);
+                    break;
                 default:
-                    type = nameof(T);
-                    valueString = value.ToString();
+                    type = typeof(T).Name;
+                    valueString = value?.ToString() ?? string.Empty;
                     break;
             }
 
-            XElement current = _xDocument.Root;
-            foreach (var grp in groupPath)
+            lock (_reloadLock)
             {
-                var next = current
-                    .Elements("Group")
-                    .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-
-                if (next == null)
+                XElement current = _xDocument.Root;
+                foreach (var grp in groupPath)
                 {
-                    next = new XElement("Group", new XAttribute("Name", grp));
-                    current.Add(next);
+                    var next = current
+                        .Elements("Group")
+                        .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
+
+                    if (next == null)
+                    {
+                        next = new XElement("Group", new XAttribute("Name", grp));
+                        current.Add(next);
+                    }
+
+                    current = next;
                 }
 
-                current = next;
-            }
+                var setting = current
+                    .Elements("Setting")
+                    .FirstOrDefault(s => (string)s.Attribute("Key") == key);
 
-            var setting = current
-                .Elements("Setting")
-                .FirstOrDefault(s => (string)s.Attribute("Key") == key);
+                if (setting != null)
+                {
+                    setting.SetAttributeValue("Type", type);
+                    setting.SetAttributeValue("Value", valueString);
+                }
+                else
+                {
+                    current.Add(new XElement("Setting",
+                        new XAttribute("Key", key),
+                        new XAttribute("Type", type),
+                        new XAttribute("Value", valueString)));
+                }
 
-            if (setting != null)
-            {
-                setting.SetAttributeValue("Type", type);
-                setting.SetAttributeValue("Value", valueString);
+                SaveSettings();
             }
-            else
-            {
-                current.Add(new XElement("Setting",
-                    new XAttribute("Key", key),
-                    new XAttribute("Type", type),
-                    new XAttribute("Value", valueString)));
-            }
-
-            SaveSettings();
             EnumPropertyChanged?.Invoke(groupPath);
         }
 
         private static T? GetValueFromString<T>(string? value, string? type)
         {
             if (typeof(T) == typeof(int) && type == "int" && int.TryParse(value, out var iv)) return (T)(object)iv;
-            if (typeof(T) == typeof(double) && type == "double" && double.TryParse(value, out var dv)) return (T)(object)dv;
+            if (typeof(T) == typeof(double) && type == "double" && TryParseDouble(value, out var dv)) return (T)(object)dv;
             if (typeof(T) == typeof(bool) && type == "bool" && bool.TryParse(value, out var bv)) return (T)(object)bv;
             if (typeof(T) == typeof(string) && type == "string") return (T)(object)value;
 
             if (typeof(T) == typeof(List<string>) && type == nameof(List<string>)) return string.IsNullOrEmpty(value) ? (T)(object)new List<string>() : (T)(object)value.Split(';').ToList();
 
-            if (typeof(T) == typeof(DateTime) && type == nameof(DateTime))
-                return (T)(object)DateTime.Parse((string)value);
+            if (typeof(T) == typeof(DateTime) && type == nameof(DateTime) && TryParseDateTime(value, out var dtv))
+                return (T)(object)dtv;
 
             throw new Exception();
         }
+
+        public static string FormatDouble(double value) =>
+            value.ToString("R", CultureInfo.InvariantCulture);
+
+        public static string FormatDateTime(DateTime value) =>
+            value.ToString("o", CultureInfo.InvariantCulture);
+
+        // Values written by older versions used the current culture, so it is tried after the invariant form.
+        public static bool TryParseDouble(string? value, out double result) =>
+            double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)
+            || double.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out result);
+
+        public static bool TryParseDateTime(string? value, out DateTime result) =>
+            DateTime.TryParseExact(value, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result)
+            || DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out result)
+            || DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
 
         protected virtual T? GetDefaultValueForKey<T>(string group, string key)
         {
