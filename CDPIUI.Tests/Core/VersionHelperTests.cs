@@ -19,4 +19,16 @@ public class VersionHelperTests
     {
         Assert.Equal(0, VersionHelper.CompareVersionStrings("1.2.3", "1.2.3"));
     }
+
+    [Theory]
+    [InlineData("1.0.4.0", "1.0.0", "NaN", true)]
+    [InlineData("1.0.4.0", "1.0.0", null, true)]
+    [InlineData("1.0.4.0", "1.0.0", "1.0.3", false)]
+    [InlineData("1.0.4.0", "2.0", "NaN", false)]
+    [InlineData("1.0.4.0", null, "NaN", false)]
+    [InlineData("1.0.4.0", "1.0.0", "garbage", false)]
+    public void IsVersionInRangeHandlesMissingBounds(string version, string? min, string? max, bool expected)
+    {
+        Assert.Equal(expected, VersionHelper.IsVersionInRange(version, min, max));
+    }
 }
