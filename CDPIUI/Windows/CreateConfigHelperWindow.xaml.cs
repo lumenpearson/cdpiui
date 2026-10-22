@@ -447,7 +447,7 @@ namespace CDPIUI
                     MicaAltMenuItem.IsChecked = true;
                     break;
                 case "MicaSmoke":
-                    MicaBackgroundMenuItem.IsChecked = true;
+                    MicaSmokeMenuItem.IsChecked = true;
                     break;
                 default:
                     DefaultBackgroundMenuItem.IsChecked = true;
