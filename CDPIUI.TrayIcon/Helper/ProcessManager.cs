@@ -87,6 +87,7 @@ namespace CDPIUI.TrayIcon.Helper
             _ip = ip;
             _port = port;
             proxyType = _proxyType;
+            useProxy = !string.IsNullOrEmpty(proxyType);
             Debug.WriteLine($"Proxy setup for {proxyType}, {ip}, {port}");
             if (!string.IsNullOrEmpty(proxyType))
             {
@@ -113,11 +114,11 @@ namespace CDPIUI.TrayIcon.Helper
         
         public async Task StartProcess()
         {
-            if (useProxy)
-                StartProxy(proxyType, _ip, _port);
-
             if (Executable != null && Args != null && !IsProcessInfoChanged)
             {
+                if (useProxy)
+                    StartProxy(proxyType, _ip, _port);
+
                 await StartProcess(Executable, Args);
             }
             else
