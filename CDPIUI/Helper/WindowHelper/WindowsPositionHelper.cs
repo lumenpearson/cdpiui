@@ -151,6 +151,10 @@ namespace CDPIUI.Helper.WindowHelper
             SetWindowLongPtr(windowHandle, GWLP_HWNDPARENT, ownerHandle);
         }
 
+        private const int MinRestoredWindowSize = 200;
+        // Windows reports this position for minimized windows.
+        private const int MinimizedWindowCoordinate = -30000;
+
         public static void SetCustomWindowSizeAndPositionFromSettings(Window window)
         {
             WindowResizeOptions resizeOptions = GetWindowResizeOptionsFromWindow(window);
@@ -162,6 +166,17 @@ namespace CDPIUI.Helper.WindowHelper
             int y = SettingsManager.Instance.GetValue<int>(["WINDOWS", window.GetType().Name], "y");
 
             bool isMaximized = SettingsManager.Instance.GetValue<bool>(["WINDOWS", window.GetType().Name], "isMaximized");
+
+            if (width < MinRestoredWindowSize || height < MinRestoredWindowSize)
+            {
+                width = 0;
+                height = 0;
+            }
+            if (x <= MinimizedWindowCoordinate || y <= MinimizedWindowCoordinate)
+            {
+                x = 0;
+                y = 0;
+            }
 
             RECT desiredRect = new RECT { left = x, top = y, right = x + width, bottom = y + height };
             RECT workArea;
@@ -213,6 +228,8 @@ namespace CDPIUI.Helper.WindowHelper
             AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
 
             var presenter = appWindow.Presenter as OverlappedPresenter;
+            if (presenter == null || presenter.State == OverlappedPresenterState.Minimized)
+                return;
 
             int width = appWindow.Size.Width;
             int height = appWindow.Size.Height;
