@@ -66,13 +66,16 @@ public sealed partial class SetupProxyForSystem : TemplatePage
     {
         Dictionary<string, string> currentSettings = WindowsNativeProxySettingsService.ReadProxySettings();
 
-        IPValue.Text = (currentSettings["ProxyServer"].Split("]:").Length >= 2 ? 
-            currentSettings["ProxyServer"].Split("]:")[0] : 
-            currentSettings["ProxyServer"].Split(":")[0])
-            .Replace("[", "").Replace("]", "").Replace("socks=", "");
-        PortValue.Text = currentSettings["ProxyServer"].Split("]:").Length >= 2 ?
-            currentSettings["ProxyServer"].Split("]:")[1] :
-            currentSettings["ProxyServer"].Split(":")[1];
+        if (WindowsNativeProxySettingsService.TryParseProxyServer(currentSettings["ProxyServer"], out string host, out string port))
+        {
+            IPValue.Text = host;
+            PortValue.Text = port;
+        }
+        else
+        {
+            IPValue.Text = "127.0.0.1";
+            PortValue.Text = "1080";
+        }
 
         BypassLocalCheckBox.IsChecked = currentSettings["ProxyOverride"].Contains("<local>");
 

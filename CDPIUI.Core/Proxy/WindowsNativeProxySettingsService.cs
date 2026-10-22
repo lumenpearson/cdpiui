@@ -45,6 +45,38 @@ namespace CDPIUI.Core.Proxy
             return result;
         }
 
+        public static bool TryParseProxyServer(string? proxyServer, out string host, out string port)
+        {
+            host = string.Empty;
+            port = string.Empty;
+            if (string.IsNullOrWhiteSpace(proxyServer))
+                return false;
+
+            string entry = proxyServer.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault() ?? string.Empty;
+            int schemeSeparator = entry.IndexOf('=');
+            if (schemeSeparator >= 0)
+                entry = entry[(schemeSeparator + 1)..];
+
+            int portSeparator = entry.LastIndexOf(':');
+            if (entry.StartsWith('['))
+            {
+                int closingBracket = entry.IndexOf(']');
+                if (closingBracket < 0 || portSeparator < closingBracket)
+                    return false;
+                host = entry[1..closingBracket];
+            }
+            else
+            {
+                if (portSeparator <= 0 || entry.IndexOf(':') != portSeparator)
+                    return false;
+                host = entry[..portSeparator];
+            }
+
+            port = entry[(portSeparator + 1)..];
+            return host.Length > 0 && port.Length > 0;
+        }
+
         public static bool IsProxyEnabled()
         {
             try
