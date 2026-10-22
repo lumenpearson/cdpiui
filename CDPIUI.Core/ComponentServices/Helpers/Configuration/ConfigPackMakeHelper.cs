@@ -252,7 +252,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
                                 Path.Combine(item.Item2, locFile.Value));
 
                             if (oldLocalizationDict == null || newLocalizationDict == null) continue;
-                            oldLocalizationDict.AddRange(newLocalizationDict);
+                            foreach (var (key, value) in newLocalizationDict)
+                                oldLocalizationDict.TryAdd(key, value);
 
                             string jsonString = JSONConvertor.SerializeObject(oldLocalizationDict);
                             File.WriteAllText(targetDir, jsonString);
