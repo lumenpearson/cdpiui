@@ -117,12 +117,35 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     
 
+    private bool closeConfirmed;
+    private bool isExitDialogOpened;
+
     private async void ConfigMakerWindow_Closed(object sender, WindowEventArgs args)
     {
-        if (!await IsExitAvailable()) 
+        if (!closeConfirmed && HasUnsavedChanges())
         {
+            // Handled must be set before the first await, otherwise the window is already closing.
             args.Handled = true;
-            return; 
+            if (isExitDialogOpened)
+                return;
+
+            isExitDialogOpened = true;
+            bool confirmed;
+            try
+            {
+                confirmed = await ShowAskExitDialog();
+            }
+            finally
+            {
+                isExitDialogOpened = false;
+            }
+
+            if (!confirmed)
+                return;
+
+            closeConfirmed = true;
+            Close();
+            return;
         }
 
         Closed -= ConfigMakerWindow_Closed;
@@ -241,11 +264,14 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         }
     }
 
+    private bool HasUnsavedChanges() =>
+        !string.IsNullOrEmpty(ConfigMaker.CommandText) ||
+        ConfigMaker.HasVariables ||
+        ConfigMaker.HasPresetFiles;
+
     private async Task<bool> IsExitAvailable()
     {
-        if (!string.IsNullOrEmpty(ConfigMaker.CommandText) ||
-            ConfigMaker.HasVariables ||
-            ConfigMaker.HasPresetFiles)
+        if (HasUnsavedChanges())
         {
             
             var result = await ShowAskExitDialog();
