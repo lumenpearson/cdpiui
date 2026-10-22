@@ -88,8 +88,10 @@ namespace CDPIUI.Core.Store.Network
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode.HasValue)
                 {
+                    string errorCode = $"ERR_DOWNLOAD_{PrettyErrorCode.UNEXPECTED_STATUS_CODE}_{(int)ex.StatusCode.Value}";
                     StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
-                    ErrorHappens?.Invoke(Tuple.Create(OperationId, $"ERR_DOWNLOAD_{PrettyErrorCode.UNEXPECTED_STATUS_CODE}_{(int)ex.StatusCode.Value}", "Server Error"));
+                    ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, "Server Error"));
+                    LastError = ErrorModel.OnlyErrorCode(errorCode);
                     return false;
                 }
 
