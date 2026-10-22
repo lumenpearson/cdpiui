@@ -30,7 +30,7 @@ namespace CDPIUI.Core.System
                 int totalFiles = entries.Count;
                 int extractedFiles = 0;
 
-                if (zipFolderToUnpack == "/")
+                if (zipFolderToUnpack == null || zipFolderToUnpack == "/")
                     zipFolderToUnpack = string.Empty;
                 else if (zipFolderToUnpack.EndsWith("/"))
                     zipFolderToUnpack = zipFolderToUnpack.TrimEnd('/');
@@ -85,7 +85,7 @@ namespace CDPIUI.Core.System
                     if (filesToSkip.Any(skip => relativePath.Contains(skip)))
                         continue;
 
-                    var destinationPath = Path.Combine(extractTo, relativePath);
+                    var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);
                     var destinationDir = Path.GetDirectoryName(destinationPath);
                     if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
                         Directory.CreateDirectory(destinationDir);
