@@ -146,8 +146,9 @@ namespace CDPIUI.Controls
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 openFileDialog.FilterIndex = 0;
 
-                openFileDialog.Filter = Path.GetExtension(FilePath) == ".txt" ? "TXT files (*.txt)|*.txt" :
-                    Path.GetExtension(FilePath) == ".txt" ? "BIN files (*.bin)|*.bin" : "All files (*.*)|*.*";
+                string extension = Path.GetExtension(FilePath);
+                openFileDialog.Filter = string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase) ? "TXT files (*.txt)|*.txt" :
+                    string.Equals(extension, ".bin", StringComparison.OrdinalIgnoreCase) ? "BIN files (*.bin)|*.bin" : "All files (*.*)|*.*";
                 openFileDialog.RestoreDirectory = false;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)

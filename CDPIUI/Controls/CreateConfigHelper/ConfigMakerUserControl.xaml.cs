@@ -2934,7 +2934,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 DefaultExt = ".cdpiconfig",
                 Filter = (!HasVariables ? localizer.GetLocalizedString("ConfigMakerTextFileFilter") + "|" : "") + localizer.GetLocalizedString("ConfigMakerCCFileFilter"),
             };
-            dialog.FilterIndex = dialog.Filter.Count();
+            dialog.FilterIndex = dialog.Filter.Split('|').Length / 2;
             if (dialog.ShowDialog() != true)
             {
                 return;

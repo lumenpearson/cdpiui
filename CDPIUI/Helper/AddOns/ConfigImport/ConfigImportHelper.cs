@@ -58,7 +58,7 @@ namespace CDPIUI.Helper.AddOns.ConfigImport
                     $"{localizer.GetLocalizedString("AllSupported")}|*.txt;*.bat;*.cmd;*.json" + ";*" + ConfigShareService.Extension;
                 openFileDialog.RestoreDirectory = true;
 
-                openFileDialog.FilterIndex = openFileDialog.Filter.Count();
+                openFileDialog.FilterIndex = openFileDialog.Filter.Split('|').Length / 2;
 
                 if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
