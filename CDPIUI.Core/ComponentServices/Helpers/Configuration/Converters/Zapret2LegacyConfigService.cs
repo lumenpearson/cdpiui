@@ -19,6 +19,7 @@ public static class Zapret2LegacyConfigService
     public const bool DefaultHashValidationValue = true;
 
     private const string CacheFormatVersion = "1";
+    private static readonly Lazy<string> ConverterVersion = new(() => global::CDPIUI.Core.ApplicationInfo.Version);
     private static readonly object SyncRoot = new();
 
     public static string CacheRoot =>
@@ -295,6 +296,7 @@ public static class Zapret2LegacyConfigService
     {
         using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         AppendString(hash, CacheFormatVersion);
+        AppendString(hash, ConverterVersion.Value);
         AppendString(hash, config.packId ?? string.Empty);
         AppendString(hash, config.file_name ?? string.Empty);
         AppendString(hash, expandedLegacyStartupString);
