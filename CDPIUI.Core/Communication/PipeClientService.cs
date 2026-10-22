@@ -53,7 +53,7 @@ namespace CDPIUI.Core.Communication
         {
             PipeStream = new NamedPipeClientStream(".", SharedConstants.PipeName,
                             PipeDirection.InOut, PipeOptions.Asynchronous,
-                            TokenImpersonationLevel.Impersonation);
+                            TokenImpersonationLevel.Identification);
         }
 
         public async void Start()
@@ -104,6 +104,14 @@ namespace CDPIUI.Core.Communication
                 Logger?.CreateErrorLog(nameof(PipeClientService), "Connection timeout");
 
 
+                Process.GetCurrentProcess().Kill();
+                return;
+            }
+
+            if (!PipePeerVerifier.IsServerExpected((NamedPipeClientStream)PipeStream, Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe")))
+            {
+                Logger?.CreateErrorLog(nameof(PipeClientService), "Pipe server is not the application tray process. Connection closed.");
+                Dispose();
                 Process.GetCurrentProcess().Kill();
                 return;
             }
