@@ -297,7 +297,10 @@ namespace CDPIUI.Controls.Navigation
             nameof(IsEnabled),
             typeof(bool),
             typeof(AnimatedSelectorBarItem),
-            new PropertyMetadata(true, EnabledChanged));
+            new PropertyMetadata(true, OnIsEnabledChanged));
+
+        private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+            EnabledChanged?.Invoke(d, e);
 
         public string Header
         {

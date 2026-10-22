@@ -36,6 +36,6 @@ public sealed partial class NoContentToDisplayUserControl : UserControl
 
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.Register(
-            nameof(Text), typeof(string), typeof(SitelistButton), new PropertyMetadata(localizer.GetLocalizedString("NoContentToDisplay"))
+            nameof(Text), typeof(string), typeof(NoContentToDisplayUserControl), new PropertyMetadata(localizer.GetLocalizedString("NoContentToDisplay"))
         );
 }
