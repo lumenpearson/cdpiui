@@ -211,12 +211,24 @@ namespace Update
 
                     foreach (var entry in relevantEntries)
                     {
+                        var relativePath = entry.FullName.Replace('\\', '/').Substring(UiRootPrefix.Length);
+                        if (!string.IsNullOrEmpty(relativePath) && !TryGetDestination(relativePath, out _))
+                        {
+                            Log($"Archive entry '{entry.FullName}' points outside of the target folder. Update aborted.");
+                            ProgressChanged?.Invoke(1.0);
+                            return false;
+                        }
+                    }
+
+                    foreach (var entry in relevantEntries)
+                    {
                         var entryName = entry.FullName.Replace('\\', '/');
                         var relativePath = entryName.Substring(UiRootPrefix.Length);
                         if (string.IsNullOrEmpty(relativePath))
                             continue; 
 
-                        string destPath = Path.Combine(_targetFolder, relativePath);
+                        string destPath;
+                        TryGetDestination(relativePath, out destPath);
                         string destDir = Path.GetDirectoryName(destPath);
 
                         var fileName = Path.GetFileName(relativePath);
@@ -381,6 +393,24 @@ namespace Update
                 ErrorOccurred?.Invoke(FinishStatus, ex.Message);
                 return false;
             }
+        }
+
+        private bool TryGetDestination(string relativePath, out string destination)
+        {
+            destination = null;
+            if (Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
+                return false;
+
+            string fullRoot = Path.GetFullPath(_targetFolder);
+            if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                fullRoot += Path.DirectorySeparatorChar;
+
+            string fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
+            if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            destination = fullPath;
+            return true;
         }
 
         private void Log(string text)
