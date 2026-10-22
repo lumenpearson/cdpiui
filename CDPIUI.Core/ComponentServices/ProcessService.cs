@@ -84,7 +84,7 @@ namespace CDPIUI.Core.ComponentServices
                 string args = SetupProxy(componentHelper.GetStartupParams(), Id);
 
                 var component = HardcodedItemIds.ComponentIds.GetKeyByValue(Id);
-                if (component == Components.NoDPI) args = args.Replace("--quiet", "") + "--quiet";
+                if (component == Components.NoDPI) args = AppendQuietFlag(args);
 
                 Logger.Instance.CreateDebugLog(nameof(ProcessService), $"Args is {args}");
 
@@ -120,7 +120,7 @@ namespace CDPIUI.Core.ComponentServices
                 args = SetupProxy(args, Id);
 
                 var component = HardcodedItemIds.ComponentIds.GetKeyByValue(Id);
-                if (component == Components.NoDPI) args = args.Replace("--quiet", "") + "--quiet";
+                if (component == Components.NoDPI) args = AppendQuietFlag(args);
 
                 Logger.Instance.CreateDebugLog(nameof(ProcessService), $"Args is {args}");
 
@@ -325,6 +325,15 @@ namespace CDPIUI.Core.ComponentServices
             }
             OutputReset?.Invoke();
         }
+
+        public static string AppendQuietFlag(string args)
+        {
+            string withoutQuiet = QuietFlagRegex().Replace(args, string.Empty).Trim();
+            return withoutQuiet.Length == 0 ? "--quiet" : $"{withoutQuiet} --quiet";
+        }
+
+        [GeneratedRegex(@"(?<!\S)--quiet(?!\S)")]
+        private static partial Regex QuietFlagRegex();
 
         [GeneratedRegex(@"(?:[a-zA-Z]):\\.*?/", RegexOptions.Singleline)]
         private static partial Regex DirectoryReplaceRegex();
