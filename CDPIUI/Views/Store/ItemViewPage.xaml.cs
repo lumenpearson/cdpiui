@@ -239,17 +239,7 @@ namespace CDPIUI.Views.Store
 
         private bool IsItemSupported()
         {
-            Version curVer = new Version(ApplicationInfo.Version);
-            Version minV = new Version(item.target_minversion);
-
-            if (curVer < minV) return false;
-
-            if (item.target_maxversion != "NaN")
-            {
-                Version maxV = new Version(item.target_maxversion);
-                if (curVer > maxV) return false;
-            }
-            return true;
+            return VersionHelper.IsVersionInRange(ApplicationInfo.Version, item.target_minversion, item.target_maxversion);
         }
 
         private void ShowErrorDialog()

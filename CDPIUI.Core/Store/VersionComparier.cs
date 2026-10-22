@@ -52,6 +52,20 @@ namespace CDPIUI.Core.Store
             return 0;
         }
 
+        public static bool IsVersionInRange(string? version, string? minVersion, string? maxVersion)
+        {
+            if (!Version.TryParse(version, out Version? current) || !Version.TryParse(minVersion, out Version? min))
+                return false;
+
+            if (current < min)
+                return false;
+
+            if (string.IsNullOrEmpty(maxVersion) || maxVersion == "NaN")
+                return true;
+
+            return Version.TryParse(maxVersion, out Version? max) && current <= max;
+        }
+
         /// <summary>
         /// Is version string are correct
         /// </summary>
