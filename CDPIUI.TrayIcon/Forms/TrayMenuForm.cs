@@ -1,4 +1,5 @@
-﻿using CDPIUI.Shared.Pipe.Models;
+﻿using CDPIUI.Shared.ComponentsTask;
+using CDPIUI.Shared.Pipe.Models;
 using CDPIUI.TrayIcon.Controls;
 using CDPIUI.TrayIcon.Helper;
 using CDPIUI.TrayIcon.Helper.Basic;
@@ -85,7 +86,7 @@ namespace CDPIUI.TrayIcon.Forms
 
         private void DisconnectComponentPanelChildrensHandlers()
         {
-            foreach (Control control in ComponentPanel.Controls)
+            foreach (Control control in ComponentPanel.Controls.Cast<Control>().ToList())
             {
                 if (control is ComponentUserControl componentUserControl)
                 {
@@ -134,18 +135,29 @@ namespace CDPIUI.TrayIcon.Forms
 
         private void HandleTasksListUpdate()
         {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            List<TaskModel<ProcessManager>> tasks;
+            try
+            {
+                tasks = TasksHelper.Instance.Tasks.ToList().DistinctBy(task => task.Id).ToList();
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+
             this.Invoke(() =>
             {
+                ComponentPanel.SuspendLayout();
                 DisconnectComponentPanelChildrensHandlers();
                 ComponentPanel.Controls.Clear();
-            });
 
-            int targetWidth = ComponentPanel.Width;
-            int offset = 0;
+                int targetWidth = ComponentPanel.Width;
+                int offset = 0;
 
-            if (TasksHelper.Instance.Tasks.Count == 0)
-            {
-                this.Invoke(() =>
+                if (tasks.Count == 0)
                 {
                     var storeButton = new ModernButtonUserControl()
                     {
@@ -158,14 +170,10 @@ namespace CDPIUI.TrayIcon.Forms
                     storeButton.Clicked += HandleButtonClick;
                     ComponentPanel.Controls.Add(storeButton);
                     storeButton.Invalidate();
-                });
-
-            }
-            else
-            {
-                foreach (var task in TasksHelper.Instance.Tasks)
+                }
+                else
                 {
-                    this.Invoke(() =>
+                    foreach (var task in tasks)
                     {
                         var control = new ComponentUserControl()
                         {
@@ -180,18 +188,15 @@ namespace CDPIUI.TrayIcon.Forms
                             Top = offset
                         };
 
-
-
                         control.EventHappens += HandleEventHappens;
 
                         ComponentPanel.Controls.Add(control);
                         control.Invalidate();
                         offset += control.Height + control.Margin.Top + control.Margin.Bottom;
-                    });
+                    }
                 }
-            }
-            this.Invoke(() =>
-            {
+
+                ComponentPanel.ResumeLayout();
                 CheckWindowHeight();
                 ComponentPanel.Invalidate();
             });
@@ -199,6 +204,9 @@ namespace CDPIUI.TrayIcon.Forms
 
         private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
         {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
             this.Invoke(() =>
             {
                 Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
@@ -220,6 +228,9 @@ namespace CDPIUI.TrayIcon.Forms
 
         private async void HandleTaskSetupStateUpdate(Tuple<string, bool> taskStateUpdate)
         {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
             this.Invoke(() =>
             {
                 Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
