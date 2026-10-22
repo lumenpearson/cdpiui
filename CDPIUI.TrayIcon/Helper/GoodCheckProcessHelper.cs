@@ -50,7 +50,7 @@ namespace CDPIUI.TrayIcon.Helper
             _cancellationTokenSource = new();
             _cancellationToken = _cancellationTokenSource.Token;
             await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Runned, operationId);
-            TasksHelper.Instance.ApplyStatusToAllTasks(true);
+            TasksHelper.Instance.ApplyStatusToAllTasks(false);
 
 
             var startInfo = new ProcessStartInfo
@@ -72,6 +72,7 @@ namespace CDPIUI.TrayIcon.Helper
                 if (!Process.Start())
                 {
                     HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                    TasksHelper.Instance.ApplyStatusToAllTasks(true);
                     return false;
                 }
             }
@@ -79,13 +80,16 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_UNABLE_START_PROCESS details => {ex.Message}");
                 HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                TasksHelper.Instance.ApplyStatusToAllTasks(true);
                 return false;
             }
 
             if (!AssignProcessToJobObject(Job, Process.Handle))
             {
+                TryKillProcess(Process);
                 HandleProcessException("ERR_WIN32_EXCEPTION", operationId);
                 Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_WIN32_EXCEPTION details => {Marshal.GetLastWin32Error()}");
+                TasksHelper.Instance.ApplyStatusToAllTasks(true);
                 return false;
             }
 
