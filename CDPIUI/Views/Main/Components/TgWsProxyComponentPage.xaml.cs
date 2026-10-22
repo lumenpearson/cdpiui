@@ -433,7 +433,10 @@ namespace CDPIUI.Views.Main.Components
             string errorCode = await ConfigurationService.SaveConfigItem(fileName, SharedConstants.LocalUserItemsId, item);
 
             if (!string.IsNullOrEmpty(errorCode))
+            {
                 ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                return;
+            }
 
             SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configFile", fileName);
             SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configId", SharedConstants.LocalUserItemsId);

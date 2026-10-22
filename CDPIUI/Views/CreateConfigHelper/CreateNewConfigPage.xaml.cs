@@ -840,6 +840,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), errorCode),
                 localizer.GetLocalizedString("SomethingWentWrong")
                 );
+            return;
         }
 
         ComponentHelper componentHelper =
