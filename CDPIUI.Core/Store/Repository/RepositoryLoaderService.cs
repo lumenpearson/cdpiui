@@ -10,6 +10,7 @@ using CDPIUI.Shared.PrettyErrorConvertionService;
 using CDPIUI.Shared.Secrets;
 using System.Diagnostics;
 using System.IO.Compression;
+using CDPIUI.Core.System;
 
 namespace CDPIUI.Core.Store.Repository
 {
@@ -121,7 +122,7 @@ namespace CDPIUI.Core.Store.Repository
                             string[] subParts = parts.Skip(1).ToArray();
                             string relativePath = Path.Combine(subParts);
 
-                            string destinationPath = Path.Combine(targetFolder, relativePath);
+                            string destinationPath = ArchivePaths.GetDestinationOrThrow(targetFolder, relativePath);
 
                             string destDir = Path.GetDirectoryName(destinationPath);
                             if (!string.IsNullOrEmpty(destDir))
