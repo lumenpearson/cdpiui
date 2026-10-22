@@ -156,20 +156,23 @@ namespace CDPIUI.Shared.Basic
         /// <returns>Value if key exsits, otherwise default</returns>
         public T? GetValueOrDefault<T>(string group, string key, XElement? xElement = null, T? defaultValue = default)
         {
-            if (xElement == null) xElement = _xDocument.Root;
-            var settingElement = xElement
-                .Elements("Group")
-                .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
-                .Elements("Setting")
-                .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
-
-            if (settingElement == null)
+            lock (_reloadLock)
             {
-                SetValue(group, key, defaultValue);
-                Debug.WriteLine($"Setting '{key}' in group '{group}' not found.");
-                return defaultValue;
+                if (xElement == null) xElement = _xDocument.Root;
+                var settingElement = xElement
+                    .Elements("Group")
+                    .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
+                    .Elements("Setting")
+                    .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
+
+                if (settingElement == null)
+                {
+                    SetValue(group, key, defaultValue);
+                    Debug.WriteLine($"Setting '{key}' in group '{group}' not found.");
+                    return defaultValue;
+                }
+                else return GetValue<T>(group, key, xElement);
             }
-            else return GetValue<T>(group, key, xElement);
         }
         /// <summary>
         /// Get value or hardcoded defailt. Sets default value to settings file. 
@@ -185,33 +188,36 @@ namespace CDPIUI.Shared.Basic
         /// <exception cref="SettingNotFoundException"></exception>
         public T? GetValue<T>(string group, string key, XElement? xElement = null, bool raiseExceptionIfNotExits = false)
         {
-            xElement ??= _xDocument.Root;
-            var settingElement = xElement
-                .Elements("Group")
-                .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
-                .Elements("Setting")
-                .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
-
-            if (settingElement == null)
+            lock (_reloadLock)
             {
-                if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
+                xElement ??= _xDocument.Root;
+                var settingElement = xElement
+                    .Elements("Group")
+                    .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
+                    .Elements("Setting")
+                    .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
 
-                var defaultValue = GetDefaultValueForKey<T>(group, key);
+                if (settingElement == null)
+                {
+                    if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
 
-                SetValue(group, key, defaultValue);
-                Debug.WriteLine($"Setting '{key}' in group '{group}' not found.");
-                return defaultValue;
-            }
-            string value = settingElement.Attribute("Value")?.Value;
-            string type = settingElement.Attribute("Type")?.Value;
+                    var defaultValue = GetDefaultValueForKey<T>(group, key);
 
-            try
-            {
-                return GetValueFromString<T>(value, type);
-            }
-            catch
-            {
-                throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group '{group}'.");
+                    SetValue(group, key, defaultValue);
+                    Debug.WriteLine($"Setting '{key}' in group '{group}' not found.");
+                    return defaultValue;
+                }
+                string value = settingElement.Attribute("Value")?.Value;
+                string type = settingElement.Attribute("Type")?.Value;
+
+                try
+                {
+                    return GetValueFromString<T>(value, type);
+                }
+                catch
+                {
+                    throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group '{group}'.");
+                }
             }
         }
         /// <summary>
@@ -228,47 +234,50 @@ namespace CDPIUI.Shared.Basic
         /// <exception cref="SettingNotFoundException"></exception>
         public T? GetValue<T>(IEnumerable<string> groupPath, string key, XElement? xElement = null, bool raiseExceptionIfNotExits = false)
         {
-            if (xElement == null) xElement = _xDocument.Root;
-            XElement current = xElement;
-
-            foreach (var grp in groupPath)
+            lock (_reloadLock)
             {
-                current = current
-                    .Elements("Group")
-                    .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-                if (current == null)
+                if (xElement == null) xElement = _xDocument.Root;
+                XElement current = xElement;
+
+                foreach (var grp in groupPath)
+                {
+                    current = current
+                        .Elements("Group")
+                        .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
+                    if (current == null)
+                    {
+                        if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
+                        var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
+                        SetValue(groupPath, key, defaultValue);
+                        Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
+                        return defaultValue;
+                    }
+                }
+
+                var settingElement = current
+                    .Elements("Setting")
+                    .FirstOrDefault(s => (string)s.Attribute("Key") == key);
+
+                if (settingElement == null)
                 {
                     if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
                     var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
                     SetValue(groupPath, key, defaultValue);
-                    Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
+                    Debug.WriteLine($"Setting '{key}' in group path '{string.Join("/", groupPath)}' not found.");
                     return defaultValue;
                 }
-            }
 
-            var settingElement = current
-                .Elements("Setting")
-                .FirstOrDefault(s => (string)s.Attribute("Key") == key);
+                string value = (string)settingElement.Attribute("Value");
+                string type = (string)settingElement.Attribute("Type");
 
-            if (settingElement == null)
-            {
-                if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
-                var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
-                SetValue(groupPath, key, defaultValue);
-                Debug.WriteLine($"Setting '{key}' in group path '{string.Join("/", groupPath)}' not found.");
-                return defaultValue;
-            }
-
-            string value = (string)settingElement.Attribute("Value");
-            string type = (string)settingElement.Attribute("Type");
-
-            try
-            {
-                return GetValueFromString<T>(value, type);
-            }
-            catch
-            {
-                throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group path '{string.Join("/", groupPath)}'.");
+                try
+                {
+                    return GetValueFromString<T>(value, type);
+                }
+                catch
+                {
+                    throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group path '{string.Join("/", groupPath)}'.");
+                }
             }
         }
 
@@ -283,35 +292,38 @@ namespace CDPIUI.Shared.Basic
         /// <exception cref="SettingNotFoundException"></exception>
         public Dictionary<string, T?> GetKeyPair<T>(IEnumerable<string> groupPath, XElement? xElement = null, bool raiseExceptionIfNotExits = false)
         {
-            if (xElement == null) xElement = _xDocument.Root;
-            XElement current = xElement;
-
-            Dictionary<string, T?> dict = [];
-
-            foreach (var grp in groupPath)
+            lock (_reloadLock)
             {
-                current = current
-                    .Elements("Group")
-                    .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-                if (current == null)
-                {
-                    if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
-                    var defaultValue = GetDefaultValueForKey<T>(groupPath, "$$~");
-                    SetValue(groupPath, "$$~", defaultValue);
-                    Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
-                    return dict;
-                }
-            }
+                if (xElement == null) xElement = _xDocument.Root;
+                XElement current = xElement;
 
-            if (current != null)
-            {
-                foreach (var setting in current.Elements("Setting"))
+                Dictionary<string, T?> dict = [];
+
+                foreach (var grp in groupPath)
                 {
-                    var result = GetValueFromString<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
-                    dict.Add((string)setting.Attribute("Key"), result);
+                    current = current
+                        .Elements("Group")
+                        .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
+                    if (current == null)
+                    {
+                        if (raiseExceptionIfNotExits) throw new SettingNotFoundException("Value not exist");
+                        var defaultValue = GetDefaultValueForKey<T>(groupPath, "$$~");
+                        SetValue(groupPath, "$$~", defaultValue);
+                        Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
+                        return dict;
+                    }
                 }
+
+                if (current != null)
+                {
+                    foreach (var setting in current.Elements("Setting"))
+                    {
+                        var result = GetValueFromString<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
+                        dict.Add((string)setting.Attribute("Key"), result);
+                    }
+                }
+                return dict;
             }
-            return dict;
         }
 
 
