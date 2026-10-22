@@ -43,7 +43,7 @@ namespace CDPIUI.TrayIcon.Forms
         private static Guid GetGuid()
         {
             string savedGUID = SettingsManager.Instance.GetValue<string>("TRAY", "iconGUID");
-            if (savedGUID == "NaN")
+            if (savedGUID == "NaN" || !Guid.TryParse(savedGUID, out Guid parsedGuid))
             {
                 Guid guid = Guid.NewGuid();
                 SettingsManager.Instance.SetValue("TRAY", "iconGUID", guid.ToString());
@@ -51,15 +51,34 @@ namespace CDPIUI.TrayIcon.Forms
             }
             else
             {
-                return new(savedGUID);
+                return parsedGuid;
             }
         }
 
         private void Application_ApplicationExit(object? sender, EventArgs e)
         {
             Application.ApplicationExit -= Application_ApplicationExit;
+            StopComponentsBeforeExit();
             this.Close();
             this.Dispose();
+        }
+
+        private void OnSessionEnding(object? sender, SessionEndingEventArgs e)
+        {
+            StopComponentsBeforeExit();
+        }
+
+        private static void StopComponentsBeforeExit()
+        {
+            try
+            {
+                // Runs off the UI thread so continuations inside StopAllTasks cannot wait for the blocked message loop.
+                Task.Run(() => TasksHelper.Instance.StopAllTasks()).Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot stop components before exit: {ex.Message}");
+            }
         }
 
         private void ConnectHandlers()
@@ -67,6 +86,7 @@ namespace CDPIUI.TrayIcon.Forms
             TasksHelper.Instance.TaskStateUpdated += HandleTaskStateUpdate;
             TasksHelper.Instance.TaskListUpdated += HandleTasksListUpdate;
             SystemEvents.PowerModeChanged += OnPowerChange;
+            SystemEvents.SessionEnding += OnSessionEnding;
         }
 
         private void DisconnectHandlers()
@@ -74,6 +94,7 @@ namespace CDPIUI.TrayIcon.Forms
             TasksHelper.Instance.TaskStateUpdated -= HandleTaskStateUpdate;
             TasksHelper.Instance.TaskListUpdated -= HandleTasksListUpdate;
             SystemEvents.PowerModeChanged -= OnPowerChange;
+            SystemEvents.SessionEnding -= OnSessionEnding;
         }
 
         private async void OnPowerChange(object s, PowerModeChangedEventArgs e)
@@ -81,11 +102,18 @@ namespace CDPIUI.TrayIcon.Forms
             switch (e.Mode)
             {
                 case PowerModes.Resume:
-                    foreach (var task in TasksHelper.Instance.Tasks)
+                    foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
                     {
-                        if (task.ProcessManager.IsProcessRunning)
+                        if (!task.ProcessManager.IsProcessRunning)
+                            continue;
+
+                        try
                         {
                             await TasksHelper.Instance.RestartTask(task.Id);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot restart {task.Id} after resume: {ex.Message}");
                         }
                     }
                     break;
