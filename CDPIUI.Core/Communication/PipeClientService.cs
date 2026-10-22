@@ -71,6 +71,18 @@ namespace CDPIUI.Core.Communication
             }
             catch { }
 
+            if (!PipeStream.IsConnected && IsTrayProcessRunning())
+            {
+                try
+                {
+                    await ((NamedPipeClientStream)PipeStream).ConnectAsync(TrayStartupWaitMs);
+                }
+                catch (Exception ex) when (ex is TimeoutException or IOException)
+                {
+                    Logger?.CreateErrorLog(nameof(PipeClientService), $"Tray process is running but did not accept the connection: {ex.Message}");
+                }
+            }
+
             if (!PipeStream.IsConnected)
             {
                 try
@@ -117,6 +129,24 @@ namespace CDPIUI.Core.Communication
                 Dispose();
             }
             
+        }
+
+        private const int TrayStartupWaitMs = 15000;
+
+        private static bool IsTrayProcessRunning()
+        {
+            try
+            {
+                var processes = Process.GetProcessesByName("CDPIUI_TrayIcon");
+                bool running = processes.Length > 0;
+                foreach (var process in processes)
+                    process.Dispose();
+                return running;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         protected override async Task SendConnectionPacket()
