@@ -289,7 +289,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             catch (Exception ex)
             {
-                ShowErrorMessage(Tuple.Create(ErrorHelper.Convertor.GetPrettyErrorCode(nameof(ConPTYHelper), ex).ToEnum<PrettyErrorCode>(), nameof(RegeditHelper)));
+                ShowErrorMessage(Tuple.Create(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(RegeditHelper), ex), nameof(RegeditHelper)));
                 Logger.Instance.CreateErrorLog(nameof(ProcessManager), $"{ex.Message}");
             }
         }
@@ -302,7 +302,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             catch (Exception ex)
             {
-                ShowErrorMessage(Tuple.Create(ErrorHelper.Convertor.GetPrettyErrorCode(nameof(RegeditHelper), ex).ToEnum<PrettyErrorCode>(), nameof(RegeditHelper)));
+                ShowErrorMessage(Tuple.Create(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(RegeditHelper), ex), nameof(RegeditHelper)));
                 Logger.Instance.CreateErrorLog(nameof(ProcessManager), $"{ex.Message}");
             }
         }
