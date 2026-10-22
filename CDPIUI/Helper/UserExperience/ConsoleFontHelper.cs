@@ -69,8 +69,8 @@ namespace CDPIUI.Helper.UserExperience
                 if (Equals(onlyMonospace, value))
                     return;
 
-                SettingsManager.Instance.SetValue<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", onlyMonospace);
                 onlyMonospace = value;
+                SettingsManager.Instance.SetValue<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", onlyMonospace);
                 LoadFonts();
                 Notify(nameof(OnlyMonospace));
             }
