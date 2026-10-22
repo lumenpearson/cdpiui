@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDPIUI.Core", "CDPIUI.Core\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDPIUI.AddOns", "CDPIUI.AddOns\CDPIUI.AddOns.csproj", "{B7D509E3-DB69-4DAF-A06D-608932C34316}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDPIUI.Tests", "CDPIUI.Tests\CDPIUI.Tests.csproj", "{8E9C98F3-0483-4381-99FF-78E21C156F2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -271,6 +273,27 @@ Global
 		{B7D509E3-DB69-4DAF-A06D-608932C34316}.SingleFileRelease|x64.Build.0 = Release|Any CPU
 		{B7D509E3-DB69-4DAF-A06D-608932C34316}.SingleFileRelease|x86.ActiveCfg = Release|Any CPU
 		{B7D509E3-DB69-4DAF-A06D-608932C34316}.SingleFileRelease|x86.Build.0 = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|x64.Build.0 = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Debug|x86.Build.0 = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.MsiRelease|ARM64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.MsiRelease|x64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.MsiRelease|x86.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|ARM64.Build.0 = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|x64.ActiveCfg = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|x64.Build.0 = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|x86.ActiveCfg = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.Release|x86.Build.0 = Release|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.RemoteDebug|ARM64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.RemoteDebug|x64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.RemoteDebug|x86.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.SingleFileRelease|ARM64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.SingleFileRelease|x64.ActiveCfg = Debug|Any CPU
+		{8E9C98F3-0483-4381-99FF-78E21C156F2C}.SingleFileRelease|x86.ActiveCfg = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

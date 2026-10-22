@@ -17,6 +17,8 @@ Recommended Visual Studio version – 2022.
 
 Here is few steps after NuGet restore you must to do:
 - Create `Secret.cs` in `/CDPIUI.Shared/Secrets/`. Create static class Secret. [Ref](https://github.com/Storik4pro/cdpiui/blob/dev/CDPIUI.Shared/Secrets/SecretExample.cs)
+  For a local build without Store access run `pwsh .github/scripts/create_secret_stub.ps1`: it creates a `public static class Secret` with empty values (the file is ignored by git).
+- Run unit tests with `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj`.
 - Project using CommunityToolkit.Labs. Connect it from Azure, to restore experimental packages. [Ref](https://marketplace.visualstudio.com/items?itemName=ISWIX-LLC.IsWiX)
 
 > Project uses IsWix for MSI-installer building. [Ref](https://marketplace.visualstudio.com/items?itemName=ISWIX-LLC.IsWiX)
