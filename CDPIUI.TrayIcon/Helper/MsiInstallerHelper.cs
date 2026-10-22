@@ -165,7 +165,7 @@ namespace CDPIUI.TrayIcon.Helper
 
                 lock (_lock)
                 {
-                    if (Path.GetExtension(filePath) == ".msi")
+                    if (string.Equals(Path.GetExtension(filePath), ".msi", StringComparison.OrdinalIgnoreCase))
                         _currentProcess = RunHelper.Run("msiexec.exe", $"/i \"{filePath}\" /passive /norestart");
                     else
                         _currentProcess = RunHelper.Run(filePath, $"/install /passive /norestart");
@@ -181,7 +181,7 @@ namespace CDPIUI.TrayIcon.Helper
                 await _currentProcess.WaitForExitAsync().ConfigureAwait(false);
                 int exitCode = _currentProcess.ExitCode;
 
-                if (exitCode == 3010)
+                if (exitCode == 3010 || exitCode == 1641)
                 {
                     _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.CompleteRestartRequest);
                 }
