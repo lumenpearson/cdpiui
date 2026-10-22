@@ -56,4 +56,21 @@ public class XmlSettingsServiceTests : IDisposable
 
         Assert.Equal(value, new XMLSettingsService(SettingsPath).GetValue<DateTime>(["ADDONS", "ASGKOI001"], "lastRun"));
     }
+
+    [Fact]
+    public async Task ConcurrentReadsAndWritesDoNotThrow()
+    {
+        var settings = new XMLSettingsService(SettingsPath);
+
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(worker => Task.Run(() =>
+        {
+            for (int i = 0; i < 50; i++)
+            {
+                settings.SetValue("GROUP" + worker, "key" + i, i);
+                settings.GetValue<int>("GROUP" + ((worker + 1) % 8), "key" + i);
+            }
+        })));
+
+        Assert.Equal(49, new XMLSettingsService(SettingsPath).GetValue<int>("GROUP3", "key49"));
+    }
 }
