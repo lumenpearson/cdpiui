@@ -191,7 +191,6 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                             return;
 
                         await GoodCheckProcessHelper.Instance.StartAsync(executable, arguments, taskId);
-                        TasksHelper.Instance.ApplyStatusToAllTasks(false);
                         return;
                     }
 
