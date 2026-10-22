@@ -669,11 +669,11 @@ namespace CDPIUI.Core.Store
             }
         }
 
-        private static void AddDependencies(List<string[]> dependencies, string id)
+        private static void AddDependencies(List<string[]>? dependencies, string id)
         {
-            foreach (var dependency in dependencies)
+            foreach (var dependency in dependencies ?? [])
             {
-                if (!DatabaseHelper.Instance.IsItemInstalled(dependency[0]))
+                if (dependency.Length < 2 || !DatabaseHelper.Instance.IsItemInstalled(dependency[0]))
                     continue;
 
                 DatabaseStoreItem dependencyItem = DatabaseHelper.Instance.GetItemById(dependency[0]);
