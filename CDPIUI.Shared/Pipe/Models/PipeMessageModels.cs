@@ -24,7 +24,10 @@ namespace CDPIUI.Shared.Pipe.Models
 
             foreach (var name in MessageData.AllKeys)
             {
-                @params += $"{name}={MessageData[name]}&";
+                if (name == null)
+                    continue;
+
+                @params += $"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(MessageData[name] ?? string.Empty)}&";
             }
 
             return $"{SharedConstants.Schema}://{Target}/{MessageType}?{@params}";
