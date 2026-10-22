@@ -38,5 +38,11 @@ namespace CDPIUI.TrayIcon.Helper.Basic
         {
             return base.GetPrettyErrorCode(preffix, ex, Logger.Instance);
         }
+
+        public PrettyErrorCode GetLoggedErrorCode(string preffix, Exception ex)
+        {
+            GetPrettyErrorCode(preffix, ex);
+            return MapExceptionToCode(ex, out _);
+        }
     }
 }

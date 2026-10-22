@@ -340,7 +340,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             catch (Exception ex)
             {
-                ShowErrorMessage(ErrorHelper.Convertor.GetPrettyErrorCode(nameof(ConPTYHelper), ex).ToEnum<PrettyErrorCode>(), _object: "console");
+                ShowErrorMessage(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(ConPTYHelper), ex), _object: "console");
                 SendStopMessage("Unexpected error happens while trying to stop process");
 
                 processState = false;
@@ -492,7 +492,7 @@ namespace CDPIUI.TrayIcon.Helper
             catch (Exception ex)
             {
                 if (ex.Message != "External component has thrown an exception.")
-                    ShowErrorMessage(ErrorHelper.Convertor.GetPrettyErrorCode(nameof(ConPTYHelper), ex).ToEnum<PrettyErrorCode>(), _object: "console");
+                    ShowErrorMessage(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(ConPTYHelper), ex), _object: "console");
 
             }
             finally
