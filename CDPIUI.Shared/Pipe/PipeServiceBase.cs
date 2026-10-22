@@ -148,7 +148,12 @@ namespace CDPIUI.Shared.Pipe
         public virtual void Dispose()
         {
             Disconnected?.Invoke();
-            PipeStream?.WaitForPipeDrain();
+            try
+            {
+                if (PipeStream?.IsConnected == true)
+                    PipeStream.WaitForPipeDrain();
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException) { }
             PipeStream?.Dispose();
             StreamString = null;
 
