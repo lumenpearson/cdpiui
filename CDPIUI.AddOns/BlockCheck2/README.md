@@ -1,242 +1,254 @@
-# BlockCheck2 для Zapret2: техническое описание
+# BlockCheck2 for Zapret2
 
-## 1. Назначение и границы
+## 1. Purpose and scope
 
-BlockCheck2 — AddOn CDPIUI для подбора, объединения, проверки и последующего редактирования стратегий Zapret2. Его задача не ограничивается поиском отдельных успешных запусков. После сканирования AddOn строит совместимый многопрофильный пресет, проверяет его целиком и при необходимости пытается заменить конфликтующую стратегию.
+BlockCheck2 is an internal add-on of CDPI UI. It finds Zapret2 strategies, combines them into one preset, checks the preset and lets the user edit it. The add-on does more than find single strategies that operate. After the scan, it makes one multi-profile preset, checks the complete preset and tries to replace a strategy that causes a conflict.
 
-Основной сценарий рассчитан на HTTP и HTTPS-сайты. Модель данных и каталог поддерживают QUIC, однако выбор QUIC пока скрыт в штатном интерфейсе. Подбор для произвольного UDP-трафика приложений, в частности голосовых соединений Discord, не реализован: такой трафик нельзя достоверно проверить обычным HTTP-запросом `curl`.
+The main scenario is for HTTP and HTTPS sites. The data model and the catalog support QUIC, but the standard UI hides the QUIC option. The add-on does not find strategies for random UDP traffic of applications, for example Discord voice. A usual `curl` HTTP request cannot check such traffic.
 
-BlockCheck2 не является отдельным Store-пакетом. Алгоритм находится в проекте `CDPIUI.AddOns`, а UI и адаптеры инфраструктуры CDPIUI — в основном проекте `CDPIUI`.
+BlockCheck2 is not a separate Store package. The algorithm is in the `CDPIUI.AddOns` project. The UI and the CDPI UI adapters are in the `CDPIUI` project.
 
-## 2. Архитектура
+## 2. Architecture
 
-### 2.1. UI-независимое ядро
+### 2.1. Core without UI
 
-Каталог `CDPIUI.AddOns/BlockCheck2` разделён на следующие области:
+The folder `CDPIUI.AddOns/BlockCheck2` has these areas:
 
-| Область | Назначение |
+| Area | Contents |
 |---|---|
-| `Catalog` | Встроенный каталог стратегий, его загрузка, программное расширение и валидация |
-| `Models` | Цели, стратегии, результаты запросов, профили, параметры сканирования и валидации |
-| `Execution` | Baseline-проверка, запуск временных конфигураций Zapret2, запросы `curl`, тест отдельной стратегии и проверка готового пресета |
-| `Analysis` | Нормализация эквивалентных стратегий, Pareto-фильтрация, группировка целей и оптимизация покрытия |
-| `Synthesis` | Выбор профилей, circular-fallback, ручная сборка и генерация строки Zapret2 |
-| `Reporting` | Формирование, сериализация, импорт и восстановление сессии из отчёта |
-| `Presentation` | Режимы подбора, подготовка входных данных, списки сайтов и оценка времени |
+| `Catalog` | The built-in strategy catalog, its loader, the expander and the validator |
+| `Models` | Targets, strategies, probe results, profiles, scan options and validation options |
+| `Execution` | The baseline check, temporary Zapret2 runs, `curl` requests, the test of one strategy and the check of a ready preset |
+| `Analysis` | The normalization of equivalent strategies, the Pareto filter, the target groups and the coverage optimizers |
+| `Synthesis` | The profile selection, the circular fallback, the manual preset and the Zapret2 command line |
+| `Reporting` | The report builder, the serializer, the import and the session restore from a report |
+| `Presentation` | The run modes, the input preparation, the site lists and the time estimates |
 
-`BlockCheckAddOnService` является UI-независимой точкой входа. Он принимает каталог, цели, реализации `IBlockCheckStrategyRunner` и `IBlockCheckProbeRunner`, параметры запуска, объект прогресса и `CancellationToken`.
+`BlockCheckAddOnService` is the entry point. It does not use the UI. It accepts the catalog, the targets, an `IBlockCheckStrategyRunner`, an `IBlockCheckProbeRunner`, the run options, a progress object and a `CancellationToken`.
 
-### 2.2. Интеграционный слой CDPIUI
+### 2.2. CDPI UI integration
 
-Основные интеграционные классы:
+| Type | Location | Function |
+|---|---|---|
+| `BlockCheck2ViewModel` | `CDPIUI/ViewModels` | Wizard state, settings, session start, ETA, intermediate counters and report save |
+| `Views/BlockCheck2/MainPage` | `CDPIUI/Views/BlockCheck2` | Pages for preparation, parameter review, progress and completion |
+| `Views/BlockCheck2/ReportHistoryPage` | `CDPIUI/Views/BlockCheck2` | The list of recent selections |
+| `BlockCheck2ResultViewModel` | `CDPIUI/ViewModels` | Report view, evidence table and state of the manual builder |
+| `Views/BlockCheck2/ResultPage` | `CDPIUI/Views/BlockCheck2` | Selection result, manual preset and diagnostics |
+| `Views/BlockCheck2/PresetReviewPage` | `CDPIUI/Views/BlockCheck2` | Review, expert edit, test and save of the ready preset |
+| `BlockCheck2PresetEditorControl` | `CDPIUI/Controls/BlockCheck2` | Adapter between the BlockCheck2 draft and the common `ConfigMakerUserControl` |
+| `BlockCheck2PresetStorageService` | `CDPIUI/Helper/AddOns/BlockCheck2` | Saves the preset in the user configs and copies the dependencies |
+| `BlockCheckReportHistoryService` | `CDPIUI/Helper/AddOns/BlockCheck2` | Recent reports |
+| `BlockCheck2HistoryStoreItemService` | `CDPIUI/Helper/AddOns/BlockCheck2` | Registers the history as a Store item that the user can remove |
 
-| Класс | Назначение |
-|---|---|
-| `BlockCheck2ViewModel` | Состояние мастера, настройки, запуск сессии, ETA, промежуточная статистика и сохранение отчёта |
-| `Views/BlockCheck2/MainPage` | Страницы подготовки, проверки параметров, прогресса и завершения |
-| `BlockCheck2ResultViewModel` | Представление отчёта, evidence-таблица и состояние ручного конструктора |
-| `Views/BlockCheck2/ResultPage` | Результат подбора, ручная сборка и диагностика |
-| `Views/BlockCheck2/PresetReviewPage` | Просмотр, экспертное редактирование, тест и сохранение готового пресета |
-| `BlockCheck2PresetEditorControl` | Адаптер между черновиком BlockCheck2 и общим `ConfigMakerUserControl` |
-| `BlockCheck2PresetStorageService` | Сохранение пресета в конфигурации пользователя и копирование зависимостей |
-| `BlockCheckReportHistoryService` | Недавние отчёты |
-| `BlockCheck2HistoryStoreItemService` | Регистрация истории как удаляемого Store-элемента |
+## 3. Session sequence
 
-## 3. Общий жизненный цикл сессии
+1. The user selects one or more site lists, or makes a "custom site list".
+2. For each list, the user selects one of two modes: the list as one unit, or each site separately.
+3. The user selects the quick, medium or full mode.
+4. On the page with more parameters, the user selects the protocols, the IP versions, the timeouts, the number of requests to each target and the option to test all strategies.
+5. `BlockCheckSessionPreparationService` loads the built-in catalog, parses the input and makes one `BlockCheckTarget` for each combination of URL, protocol and IP version.
+6. The parameter review page shows a conservative maximum duration.
+7. `BlockCheckAddOnService` runs the preflight, the baseline, the strategy scan, the synthesis, the check of the ready preset and a possible repair.
+8. `BlockCheckReportBuilder` makes a report. It also does this for a best-effort result and for a canceled session with partial data.
+9. The view model saves the JSON report in the history automatically.
+10. A separate result window lets the user accept the automatic preset or make a preset from all the evidence.
 
-1. Пользователь выбирает один или несколько списков сайтов либо создаёт «Собственный список сайтов».
-2. Для каждого списка выбирается обработка как единого списка или каждого сайта отдельно.
-3. Пользователь выбирает быстрый, средний или полный режим.
-4. На странице дополнительных параметров выбираются протоколы, версии IP, таймауты, число запросов к каждой цели и режим принудительной проверки всех стратегий.
-5. `BlockCheckSessionPreparationService` загружает встроенный каталог, разбирает ввод и создаёт `BlockCheckTarget` для каждой комбинации URL, протокола и версии IP.
-6. На странице проверки параметров строится консервативная оценка максимального времени.
-7. `BlockCheckAddOnService` выполняет preflight, baseline, сканирование стратегий, синтез, проверку готовой конфигурации и возможный repair.
-8. `BlockCheckReportBuilder` создаёт отчёт даже для best-effort результата и штатно отменённой сессии с частичными данными.
-9. JSON-отчёт автоматически сохраняется в историю.
-10. Отдельное окно результата позволяет принять автоматически предложенный пресет либо собрать свой на основе всей полученной evidence-информации.
+## 4. Input data and targets
 
-## 4. Входные данные и цели
+### 4.1. Domains and URLs
 
-### 4.1. Домены и URL
+`BlockCheckTargetInputParser` accepts:
 
-`BlockCheckTargetInputParser` принимает:
+- a DNS name without a scheme;
+- an absolute `http://` or `https://` URL;
+- a path and a query string;
+- a non-standard port.
 
-- DNS-имя без схемы;
-- абсолютный `http://` или `https://` URL;
-- путь и query string;
-- нестандартный порт.
+The parser ignores empty lines and lines that start with `#`. It converts domains to lowercase IDN ASCII. Only DNS names are valid. IP literals and other schemes cannot be targets.
 
-Комментарии, начинающиеся с `#`, и пустые строки игнорируются. Домены нормализуются в нижний регистр и IDN ASCII. Поддерживаются только DNS-имена; IP-литералы и произвольные схемы не используются как цели.
+A line without a scheme expands into all selected protocols. An explicit scheme limits the line to the compatible protocols. Each target also expands into all selected IP versions. The parser then removes duplicates.
 
-Если схема не указана, строка расширяется во все выбранные протоколы. Явная схема ограничивает набор совместимыми протоколами. Каждая цель также расширяется во все выбранные версии IP. После разбора дубликаты удаляются.
+One parser call makes a maximum of 200 targets (`BlockCheckTargetInputOptions.MaximumTargets`). If the input makes more targets, the parser returns `TARGET_INPUT_LIMIT_EXCEEDED`. The limit applies separately to the direct input and to each list in the `WholeList` mode. In the `EachSite` mode, the parser reads each domain separately.
 
-Один вызов parser создаёт не более 200 целей (`BlockCheckTargetInputOptions.MaximumTargets`); при превышении возвращается `TARGET_INPUT_LIMIT_EXCEEDED`. Ограничение действует отдельно для прямого ввода и для каждого списка в режиме `WholeList`; в режиме `EachSite` каждый домен разбирается отдельно.
+An ID such as `target-005-tls12-ipv4` is internal. The UI shows the URL and the connection data separately, for example `https://example.org/path` and `TLS 1.2 · IPv4 · TCP:443`.
 
-Идентификатор вида `target-005-tls12-ipv4` является внутренним. В UI URL и сведения о соединении выводятся отдельно: например, `https://example.org/path` и `TLS 1.2 · IPv4 · TCP:443`.
+### 4.2. Site lists
 
-### 4.2. Списки сайтов
+These sources are available:
 
-Доступны:
+- lists that CDPI UI already knows;
+- local TXT files from the file dialog;
+- TXT files that the user drops on the page;
+- a custom list that the user types in `CustomSiteListContentDialog`.
 
-- списки, уже зарегистрированные в CDPIUI;
-- локальные TXT-файлы, выбранные через диалог;
-- TXT-файлы, перетащенные на страницу;
-- собственный редактируемый список, вводимый через отдельный `CustomSiteListContentDialog`.
+The loader removes a BOM and a leading `^` from each line. It ignores empty lines and `#` comments. The UI does not offer exclusion lists as usual input lists.
 
-Строка списка очищается от BOM и начального `^`. Пустые строки и комментарии `#` игнорируются. Списки исключений не предлагаются как обычные входные списки.
+Each list has one of two modes:
 
-Для каждого списка существует два режима:
+- `WholeList`: the file stays one atomic unit. The final profile refers to the file with `--hostlist`.
+- `EachSite`: the loader makes a separate temporary TXT file for each domain. Thus different sites of one list can get different strategies.
 
-- `WholeList` — файл остаётся атомарной областью. Итоговый профиль ссылается на него через `--hostlist`;
-- `EachSite` — для каждого домена создаётся отдельный временный TXT-файл. Это разрешает выбрать разные стратегии для разных сайтов исходного списка.
+The temporary files have names such as `site_0001_<hash>.txt`. They are in `BlockCheck2/GeneratedSiteLists` in the CDPI UI data folder. The general list selection menu does not show them. If preparation or the run ends without a report that the user can open, the view model deletes the temporary files. If a result exists, the files stay, because the report or an unsaved preset can refer to them.
 
-Временные файлы `site_0001_<hash>.txt` размещаются в `BlockCheck2/GeneratedSiteLists` внутри каталога данных CDPIUI. Они не показываются в общем меню выбора списков. Если подготовка или запуск закончились без отчёта, доступного для просмотра, временные файлы удаляются. При наличии результата они сохраняются, поскольку на них может ссылаться отчёт или ещё не сохранённый пресет.
-
-Собственный список хранится в:
+The custom list is in this folder:
 
 ```text
 Store/Items/LocalUserStorage/List/BlockCheck2/Custom
 ```
 
-### 4.3. Атомарность списка
+### 4.3. Atomic lists
 
-Один `--hostlist` охватывает весь файл. Поэтому алгоритм не может безопасно поместить один и тот же список в несколько конфликтующих профилей и надеяться, что каждый профиль обработает только «свои» домены.
+One `--hostlist` option covers the complete file. Thus the algorithm cannot put one list into several conflicting profiles and expect each profile to process only "its" domains.
 
-`BlockCheckTargetGroupBuilder` объединяет:
+`BlockCheckTargetGroupBuilder` puts these targets into one group:
 
-- проверки одного runtime-маршрута;
-- все цели одного списка с одинаковой формой соединения;
-- пересекающиеся списки транзитивно.
+- the checks of one runtime route;
+- all targets of one list with the same connection shape;
+- lists that share targets, transitively.
 
-Для такой группы строгая стратегия должна успешно работать для всех её целей. Та же группировка используется при сканировании, строгом и best-effort покрытии и при определении целей, которым нужен профиль (`BlockCheckSynthesisService`): сайт списка, прошедший baseline, остаётся в группе, и выбранная стратегия не должна его ломать. Если разные домены одного атомарного списка проходят только с разными стратегиями, создаётся предупреждение `NO_COMMON_SITE_LIST_STRATEGY`; если при этом не удалось построить ни одного профиля, issue с тем же кодом имеет уровень ошибки. Для раздельного подбора пользователь должен выбрать `EachSite`.
+A strict strategy must operate for all targets of the group. The scan, the strict optimizer, the best-effort optimizer and `BlockCheckSynthesisService` use the same groups. Thus a site of a list that passes the baseline stays in its group, and the selected strategy must not break it.
 
-## 5. Протоколы и runtime-маршрут
+If different domains of one atomic list pass only with different strategies, the synthesis adds the warning `NO_COMMON_SITE_LIST_STRATEGY`. If the synthesis then cannot make a profile, the issue with the same code is an error. To get different strategies for the sites, the user must select `EachSite`.
 
-Модель различает:
+## 5. Protocols and runtime route
 
-- `Http` — TCP, порт 80 по умолчанию;
-- `Tls12` — HTTPS с принудительным TLS 1.2 и HTTP/1.1;
-- `Tls13` — HTTPS с принудительным TLS 1.3 и HTTP/1.1;
-- `TlsAuto` — HTTPS без принудительного TLS или ALPN;
-- `Quic` — UDP и HTTP/3.
+The model has these protocols:
 
-Runtime-маршрут определяется кортежем:
+- `Http`: TCP, port 80 by default;
+- `Tls12`: HTTPS with forced TLS 1.2 and HTTP/1.1;
+- `Tls13`: HTTPS with forced TLS 1.3 and HTTP/1.1;
+- `TlsAuto`: HTTPS without a forced TLS version or ALPN;
+- `Quic`: UDP and HTTP/3.
+
+This tuple identifies a runtime route:
 
 ```text
 host + IP version + transport + port + L7 protocol
 ```
 
-TLS 1.2, TLS 1.3 и automatic TLS одного домена могут давать отдельные строки evidence, но обычный профиль Zapret2 не умеет выбирать действие по согласованной версии TLS после ClientHello. Поэтому совместимые TLS-проверки одной формы должны учитываться как единая область при выборе стратегии. Успех только на одной TLS-версии помечается как частичный.
+TLS 1.2, TLS 1.3 and automatic TLS of one domain can give separate evidence rows. A usual Zapret2 profile cannot select an action by the TLS version after the ClientHello. Thus the strategy selection treats compatible TLS checks of one shape as one unit. A success on only one TLS version is partial.
 
-Версия IP является частью профиля, и генератор всегда пишет `--filter-l3=ipv4` либо `--filter-l3=ipv6`. Если браузер может использовать обе версии, обе версии следует включить в подбор. Успех `curl -4` не доказывает доступность браузера, который выбрал IPv6.
+The IP version is a part of the profile. The writer always adds `--filter-l3=ipv4` or `--filter-l3=ipv6`. If a browser can use the two IP versions, include the two versions in the selection. A success of `curl -4` does not prove that a browser that uses IPv6 can open the site.
 
-## 6. Режимы подбора
+## 6. Run modes
 
-`BlockCheckRunPresetFactory` синхронно задаёт параметры сканирования, синтеза и проверки готового пресета.
+`BlockCheckRunPresetFactory` sets the scan, synthesis and preset check options together.
 
-| Параметр | Быстрый | Средний | Полный |
+| Parameter | Quick | Medium | Full |
 |---|---:|---:|---:|
-| Рекомендуемое число запросов к цели | 2 | 3 | 5 |
-| Максимальный tier каталога | Quick | Balanced | Exhaustive |
-| Порог успеха | 100% | 80% | 80% |
-| Успешных различных планов до ранней остановки | 2 | 2 | 4 |
-| Ранняя остановка маршрута | Да | Да | Нет |
-| Circular fallback на профиль | До 1 | До 1 | До 2 |
-| Максимум repair-итераций | 1 | 3 | 5 |
-| Предпочтение оптимизатора | Скорость | Баланс | Стабильность |
+| Recommended requests to each target | 2 | 3 | 5 |
+| Maximum catalog tier | Quick | Balanced | Exhaustive |
+| Success threshold | 100% | 80% | 80% |
+| Different successful plans before early stop | 2 | 2 | 4 |
+| Early stop of a route | Yes | Yes | No |
+| Circular fallbacks for each profile | Up to 1 | Up to 1 | Up to 2 |
+| Circular failure threshold (`fails`) | 2 | 3 | 3 |
+| Maximum repair iterations | 1 | 3 | 5 |
+| Optimizer preference | Speed | Balanced | Stability |
 
-Выбор режима устанавливает рекомендуемое число запросов. После этого пользователь может вручную задать целое значение от 1 до 20. Оно одинаково применяется к:
+The mode sets the recommended number of requests. The user can then set an integer value from 1 to 20. The value applies to:
 
-- baseline-проверкам;
-- каждой паре стратегия/цель;
-- минимальному числу evidence-попыток при синтезе;
-- проверке каждого кандидата готового пресета;
-- оценке максимального времени.
+- the baseline checks;
+- each strategy and target pair;
+- the minimum number of evidence attempts in the synthesis;
+- the check of each candidate of the ready preset;
+- the maximum duration estimate.
 
-Параметр «Не возвращать после нахождения лучшего» отключает раннюю остановку в быстром и среднем tier. Полный режим и без него проверяет весь применимый каталог. Флаг не расширяет выбранный tier: средний режим с этим параметром не начинает тестировать Exhaustive-стратегии.
+The option "Do not stop after the best result" disables the early stop in the quick and medium tiers. The full mode tests the complete applicable catalog without this option. The option does not extend the selected tier. For example, the medium mode with this option does not test the Exhaustive strategies.
 
-## 7. Настройки `BLOCKCHECK`
+## 7. `BLOCKCHECK` settings
 
-Настройки записываются через `SettingsManager` в `Settings.xml`, группа `BLOCKCHECK`.
+`SettingsManager` writes the settings to `Settings.xml`, group `BLOCKCHECK`.
 
-| Ключ | Тип | Значение по умолчанию | Назначение |
+| Key | Type | Default | Function |
 |---|---|---:|---|
-| `SelectedRunPreset` | `int` | `Balanced` | Выбранный режим |
-| `IncludeHttp` | `bool` | `false` | Проверять HTTP |
-| `IncludeTls12` | `bool` | `true` | Проверять TLS 1.2 |
-| `IncludeTls13` | `bool` | `false` | Проверять TLS 1.3 |
-| `IncludeTlsAuto` | `bool` | `true` | Проверять automatic HTTPS |
-| `IncludeQuic` | `bool` | `false` | Проверять QUIC; штатный переключатель пока скрыт |
-| `IncludeIpv4` | `bool` | `true` | Проверять IPv4 |
-| `IncludeIpv6` | `bool` | `false` | Проверять IPv6 |
-| `ConnectTimeoutSeconds` | `double` | `5` | Таймаут установления соединения, 1–60 с |
-| `RequestTimeoutSeconds` | `double` | `10` | Полный таймаут запроса, 2–180 с и не меньше connect timeout |
-| `StartupGraceSeconds` | `double` | `0.75` | Пауза после запуска Zapret2, 0.25–10 с |
-| `TestAllStrategies` | `bool` | `false` | Отключить раннюю остановку |
-| `RequestsPerDomain` | `int` | 2, 3 или 5 | Число запросов к каждой цели, 1–20 |
-| `historyStoreItemRegistrationCompleted` | `bool` | `false` | Завершена одноразовая Store-регистрация истории |
+| `SelectedRunPreset` | `int` | `Balanced` | Selected mode |
+| `IncludeHttp` | `bool` | `false` | Check HTTP |
+| `IncludeTls12` | `bool` | `true` | Check TLS 1.2 |
+| `IncludeTls13` | `bool` | `false` | Check TLS 1.3 |
+| `IncludeTlsAuto` | `bool` | `true` | Check automatic HTTPS |
+| `IncludeQuic` | `bool` | `false` | Check QUIC. The standard switch is hidden. |
+| `IncludeIpv4` | `bool` | `true` | Check IPv4 |
+| `IncludeIpv6` | `bool` | `false` | Check IPv6 |
+| `ConnectTimeoutSeconds` | `double` | `5` | Connection timeout, 1–60 s |
+| `RequestTimeoutSeconds` | `double` | `10` | Full request timeout, 2–180 s, not less than the connection timeout |
+| `StartupGraceSeconds` | `double` | `0.75` | Pause after the Zapret2 start, 0.25–10 s |
+| `TestAllStrategies` | `bool` | `false` | Disable the early stop |
+| `RequestsPerDomain` | `int` | 2, 3 or 5 | Requests to each target, 1–20 |
+| `historyStoreItemRegistrationCompleted` | `bool` | `false` | The one-time Store registration of the history is complete |
 
-Ошибочное или выходящее за диапазон сохранённое значение заменяется безопасным значением по умолчанию при загрузке ViewModel. Ошибка чтения или записи настроек не останавливает подбор и записывается в журнал CDPIUI.
+When the view model loads, it replaces an incorrect or out-of-range value with a safe default. A settings read or write error does not stop the selection. The view model writes the error to the CDPI UI log.
 
-## 8. Каталог стратегий
+## 8. Strategy catalog
 
-Seed-каталог хранится как embedded resource `strategy-catalog.v1.json`. `BuiltInStrategyCatalogExpander` дополняет его стандартными семействами и публикует итоговую версию `2026.08.11-standard`.
+The seed catalog is the embedded resource `strategy-catalog.v1.json`. `BuiltInStrategyCatalogExpander` adds the standard families and sets the catalog version `2026.08.11-standard`.
 
-Каталог содержит HTTP-, TLS- и QUIC-варианты семейств:
+The catalog has HTTP, TLS and QUIC variants of these families:
 
-- `multisplit` и `multidisorder` с разными позициями;
-- `fake` с `tcp_md5`, `badsum`, изменениями sequence/ack/timestamp и TCP flags;
-- `fakedsplit` и `fakeddisorder`;
+- `multisplit` and `multidisorder` with different positions;
+- `fake` with `tcp_md5`, `badsum`, sequence, ack and timestamp changes, and TCP flags;
+- `fakedsplit` and `fakeddisorder`;
 - `hostfakesplit`;
-- комбинированные fake + split/faked/hostfake;
-- QUIC fake и IP fragmentation.
+- combinations of fake with split, faked or hostfake;
+- QUIC fake and IP fragmentation.
 
-Каждая `StrategyDefinition` задаёт:
+Each `StrategyDefinition` sets:
 
-- стабильный `Id` и отображаемое имя;
-- семейство и scan tier;
-- применимые протоколы и версии IP;
-- базовую стоимость;
-- поддержку circular;
-- требования к pre-host и входящему трафику;
-- blobs;
-- упорядоченные Lua-действия, payload и диапазоны.
+- a stable `Id` and a display name;
+- the family and the scan tier;
+- the applicable protocols and IP versions;
+- the base cost;
+- circular support;
+- the pre-host and inbound traffic requirements;
+- the blobs;
+- the ordered Lua actions, the payloads and the ranges.
 
-`StrategyCatalogValidator` запрещает неизвестные или небезопасные Lua-функции, неизвестные payload-фильтры, дублирующиеся идентификаторы, некорректные диапазоны, зарезервированные аргументы `strategy` и `final`, небезопасные значения аргументов и источники blob с абсолютным путём или `..`. Регулярные выражения для идентификаторов, имён и значений аргументов и диапазонов заканчиваются на `\z`, а не на `$`, поэтому значение с завершающим переводом строки не проходит проверку. Порядок `--lua-desync` семантически значим и сохраняется.
+`StrategyCatalogValidator` rejects:
 
-`CandidateNormalizer` строит сигнатуру фактического плана без presentation metadata. Два элемента каталога с одинаковыми действиями считаются одним техническим планом при подсчёте успешных альтернатив и выборе fallback.
+- unknown Lua functions;
+- unknown payload filters;
+- duplicate IDs;
+- incorrect ranges;
+- the reserved arguments `strategy` and `final`;
+- argument values with unsafe characters;
+- blob sources with an absolute path or `..`.
 
-## 9. Подготовка окружения
+The regular expressions for IDs, argument names, argument values and ranges end with `\z`, not with `$`. Thus a value with a final line break does not pass. The order of `--lua-desync` actions has a meaning, and the writer keeps it.
 
-`CdpiuiZapret2StrategyRunner` запускает временные аргументы через штатный путь `ComponentTasksManager` → CDPIUI Tray/ConPTY.
+`CandidateNormalizer` makes a signature of the actual plan without the display data. If two catalog items have the same actions, the add-on counts them as one technical plan. This applies to the count of successful alternatives and to the fallback selection.
 
-Перед baseline он:
+## 9. Environment preparation
 
-1. проверяет установку компонента Zapret2 и наличие исполняемого файла;
-2. получает эксклюзивный semaphore для компонента;
-3. фиксирует запущенные Zapret2, Zapret Legacy, GoodbyeDPI, ByeDPI, SpoofDPI и NoDPI;
-4. останавливает конфликтующие компоненты.
+`CdpiuiZapret2StrategyRunner` starts temporary arguments through the usual path: `ComponentTasksManager`, then the CDPI UI tray and ConPTY.
 
-После сканирования или ошибки runner останавливает временный процесс и восстанавливает компоненты, работавшие до начала. Cleanup выполняется с `CancellationToken.None`, поэтому ручная отмена не должна прервать восстановление окружения.
+Before the baseline, the runner does these steps:
 
-После каждого запуска стратегии выдерживается `StartupGraceSeconds`. Если процесс завершился, в предупреждение включается хвост вывода процесса длиной до 800 символов. Ошибка старта одной стратегии записывается как `SCAN_STRATEGY_FAILED`; она не уничтожает результаты предыдущих стратегий и не прерывает весь маршрут. Если же подряд не запускаются 5 стратегий, сканирование останавливается с ошибкой `SCAN_STRATEGIES_DO_NOT_START`: обычно это означает, что не запускается сам winws2 или его драйвер.
+1. It makes sure that the Zapret2 component and its executable file are installed.
+2. It gets an exclusive semaphore for the component.
+3. It records which of these components operate: Zapret2, Zapret Legacy, GoodbyeDPI, ByeDPI, SpoofDPI and NoDPI.
+4. It stops the components that cause a conflict.
 
-## 10. Preflight и `curl`
+After the scan or an error, the runner stops the temporary process. It then starts again the components that operated before. The cleanup uses `CancellationToken.None`. Thus a manual cancel does not stop the restore of the environment.
 
-`CurlBlockCheckProbeRunner` сначала определяет:
+After each strategy start, the runner waits `StartupGraceSeconds`. If the process stops, the warning contains the last 800 characters of the process output. A start error of one strategy gives `SCAN_STRATEGY_FAILED`. This error does not delete the results of earlier strategies and does not stop the route. If 5 strategies in sequence do not start, the scan stops with the error `SCAN_STRATEGIES_DO_NOT_START`. Usually this means that winws2 or its driver cannot start.
 
-- доступность `curl.exe`;
-- поддержку `--tls-max`;
-- поддержку TLS 1.3;
-- поддержку HTTP/3.
+## 10. Preflight and `curl`
 
-Если выбранная проверка невозможна текущей сборкой curl, AddOn возвращает preflight error (`CURL_NOT_AVAILABLE`, `CURL_TLS_MAX_UNSUPPORTED`, `CURL_TLS13_UNSUPPORTED` или `CURL_HTTP3_UNSUPPORTED`) до изменения состояния компонентов.
+`CurlBlockCheckProbeRunner` first finds out:
 
-Для запроса используются `--connect-timeout`, `--max-time`, `--output NUL`, машинный `--write-out`, отдельный User-Agent и жёсткий `-4`/`-6`. HTTP, TLS 1.2 и TLS 1.3 принудительно используют `--http1.1`. TLS-запросы по умолчанию используют полноценный GET, а не HEAD; QUIC-запросы по умолчанию используют HEAD и `--http3-only`. `TlsAuto` не принуждает HTTP/1.1 или версию TLS и потому ближе к обычному HTTPS-клиенту, но всё равно не является браузером.
+- if `curl.exe` is available;
+- if curl supports `--tls-max`;
+- if curl supports TLS 1.3;
+- if curl supports HTTP/3.
 
-Попытка считается успешной, если `curl` завершился с кодом 0 и вернул ненулевой HTTP status. Для протокола `Http` ответ дополнительно не должен выглядеть как заглушка провайдера: status 400 или 451 либо redirect (3xx) на другой сайт считаются неуспехом. Для HTTP status 400 используется `http-400-possible-fake-leak`, для остальных таких ответов — `http-<status>`.
+If the curl build cannot do a selected check, the add-on returns a preflight error before it changes the state of the components. The errors are `CURL_NOT_AVAILABLE`, `CURL_TLS_MAX_UNSUPPORTED`, `CURL_TLS13_UNSUPPORTED` and `CURL_HTTP3_UNSUPPORTED`.
 
-Стабильные failure codes включают:
+Each request uses `--connect-timeout`, `--max-time`, `--output NUL`, a machine-readable `--write-out`, a separate User-Agent and a fixed `-4` or `-6`. HTTP, TLS 1.2 and TLS 1.3 requests use `--http1.1`. TLS requests use a full GET by default, not HEAD. QUIC requests use HEAD and `--http3-only` by default. `TlsAuto` does not force HTTP/1.1 or a TLS version. Thus it is nearer to a usual HTTPS client, but it is not a browser.
+
+An attempt is successful when `curl` exits with code 0 and returns an HTTP status that is not zero. For the `Http` protocol, the response also must not look like a provider stub. Status 400, status 451 and a redirect (3xx) to a different site are failures. Status 400 gives `http-400-possible-fake-leak`. The other stub responses give `http-<status>`.
+
+The stable failure codes include:
 
 - `curl-start-failed`;
 - `proxy-resolution-failed`;
@@ -249,301 +261,304 @@ Seed-каталог хранится как embedded resource `strategy-catalog.
 - `http-status-missing`;
 - `curl-exit-N`.
 
-В отчёт сохраняются число попыток, число успехов, success rate, median TTFB, p95 TTFB, HTTP statuses и failure codes.
+The report keeps the number of attempts, the number of successes, the success rate, the median TTFB, the p95 TTFB, the HTTP statuses and the failure codes.
 
 ## 11. Baseline
 
-До запуска Zapret2 каждый target проверяется с тем же числом запросов, протоколом, URL и версией IP.
+Before Zapret2 starts, the add-on checks each target. It uses the same number of requests, protocol, URL and IP version.
 
-Baseline используется для трёх задач:
+The baseline has three functions:
 
-1. не подбирать обход для маршрута, который уже проходит без Zapret2;
-2. сравнивать best-effort кандидата с исходным состоянием;
-3. отбрасывать цели, которые DNS-резолвер системы не разрешает.
+1. It prevents a bypass selection for a route that operates without Zapret2.
+2. It gives a reference for a best-effort candidate.
+3. It removes targets that the system DNS resolver cannot resolve.
 
-Если все попытки цели завершились `dns-resolution-failed`, цель добавляется в `IgnoredTargetIds`, исключается из синтеза и отчёта и сопровождается `DNS_TARGETS_IGNORED`. Если не разрешилась ни одна цель, возвращается `NO_RESOLVABLE_TARGETS`.
+If all attempts of a target end with `dns-resolution-failed`, the add-on adds the target to `IgnoredTargetIds`. The synthesis and the report do not use this target, and the issues get `DNS_TARGETS_IGNORED`. If no target resolves, the add-on returns `NO_RESOLVABLE_TARGETS`.
 
-Маршрут пропускается как baseline-доступный только тогда, когда все входящие в его атомарную группу проверки достигли порога режима. Сообщение `NO_BYPASS_REQUIRED` относится только к точным проверенным transport routes. Оно не утверждает, что браузер отрисовал страницу, что HTTPS после HTTP redirect доступен или что другая версия IP работает.
+The add-on skips a route as accessible only when all checks of its atomic group reach the threshold of the mode. The message `NO_BYPASS_REQUIRED` applies only to the exact transport routes that the add-on checked. It does not prove that a browser shows the page, that HTTPS after an HTTP redirect is available or that the other IP version operates.
 
-## 12. Сканирование стратегий
+## 12. Strategy scan
 
-Стратегии фильтруются по выбранному tier и применимости ко всей атомарной группе. Порядок прогрессивный: сначала низкие tier, затем более сложные; внутри tier семейства стратегий чередуются по одной стратегии, начиная с более дешёвых.
+The scan uses only strategies of the selected tier that apply to all targets of the atomic group. The order is progressive: low tiers come first. In a tier, the scan takes one strategy from each family in turn, and cheaper families come first.
 
-Один запуск Zapret2 обслуживает одну комбинацию «стратегия + атомарная группа». Пока процесс работает, последовательно проверяются все targets группы и все повторы. Это важно для TLS 1.2/TLS 1.3 и списков: стратегия признаётся успешной для группы только при достижении порога на каждой цели.
+One Zapret2 start serves one combination of a strategy and an atomic group. While the process operates, the scan checks all targets of the group with all repeats. This is important for TLS 1.2, TLS 1.3 and for lists: a strategy is successful for a group only if it reaches the threshold on each target.
 
-Промежуточный прогресс содержит:
+The progress data contains:
 
-- фазу;
-- завершённые и общие strategy jobs;
-- текущий URL;
-- отдельное описание соединения;
-- текущую стратегию;
-- номер попытки;
-- успешные и неуспешные запросы;
-- число успешных технически различных стратегий.
+- the phase;
+- the completed and the total strategy jobs;
+- the current URL;
+- a separate connection description;
+- the current strategy;
+- the attempt number;
+- the successful and the failed requests;
+- the number of successful, technically different strategies.
 
-Если включена ранняя остановка, маршрут прекращает перебор после нахождения требуемого числа различных успешных планов. При принудительном полном тесте перебираются все применимые стратегии выбранного tier.
+With the early stop, a route stops after the scan finds the required number of different successful plans. With the full test, the scan tries all applicable strategies of the selected tier.
 
-Ошибки отдельного запроса, генерации аргументов, старта или остановки процесса превращаются в evidence и issues. Уже собранные `ProbeResult` сохраняются.
+Errors of one request, of argument generation, of a process start or of a process stop become evidence and issues. The scan keeps the `ProbeResult` items that it has collected.
 
-## 13. Синтез автоматического пресета
+## 13. Automatic preset synthesis
 
 ### 13.1. Evidence
 
-`ProbeResultAnalyzer` агрегирует попытки по стратегии и цели в `CandidateEvaluation`. Кандидат проходит строгий порог только при достаточном числе попыток и требуемом success rate.
+`ProbeResultAnalyzer` collects the attempts of each strategy and target into a `CandidateEvaluation`. A candidate passes the strict threshold only with enough attempts and the required success rate.
 
-### 13.2. Pareto-фильтрация
+### 13.2. Pareto filter
 
-`ParetoReducer` удаляет кандидата, если другой кандидат:
+`ParetoReducer` removes a candidate if another candidate:
 
-- покрывает все цели, которые покрывает он (кандидат без строгого покрытия не удаляется);
-- имеет не меньшую минимальную стабильность;
-- не медленнее по худшему p95;
-- не дороже по базовой стоимости;
-- строго лучше хотя бы по одному критерию.
+- covers all targets that the first candidate covers (a candidate without strict coverage stays);
+- has a minimum stability that is not lower;
+- is not slower by the worst p95;
+- does not have a higher base cost;
+- is strictly better by at least one criterion.
 
-Эквивалентные планы детерминированно сводятся к одному ID.
+Equivalent plans become one ID in a deterministic way.
 
-### 13.3. Строгое покрытие
+### 13.3. Strict coverage
 
-`CoverageOptimizer` решает жадную задачу покрытия атомарных групп. Score равен пользе нового покрытия, делённой на effective cost. Effective cost сочетает:
+`CoverageOptimizer` solves a greedy coverage problem for the atomic groups. The score is the value of the new coverage divided by the effective cost. The effective cost uses:
 
-- базовую сложность стратегии;
-- p95 latency;
-- штраф нестабильности;
-- веса режима Speed/Balanced/Stability.
+- the base complexity of the strategy;
+- the p95 latency;
+- a penalty for instability;
+- the weights of the Speed, Balanced or Stability mode.
 
-При равенстве учитываются количество маршрутов, минимальный success rate, p95 и стабильный ID.
+If two scores are equal, the optimizer compares the number of routes, the minimum success rate, the p95 and the stable ID.
 
 ### 13.4. Best effort
 
-Если строгий порог не достигнут, `BestEffortCoverageOptimizer` может выбрать «лучшего из худших», но только когда стратегия наблюдаемо улучшает baseline. Приоритет:
+If no strategy reaches the strict threshold, `BestEffortCoverageOptimizer` can select the "best of the bad" strategy. It does this only if the strategy gives a better result than the baseline. The priority is:
 
-1. число targets, прошедших строгий порог;
-2. число targets хотя бы с одним успехом;
-3. суммарное число успешных запросов;
-4. общий success rate;
-5. p95;
-6. базовая стоимость и ID.
+1. the number of targets that pass the strict threshold;
+2. the number of targets with at least one success;
+3. the total number of successful requests;
+4. the general success rate;
+5. the p95;
+6. the base cost and the ID.
 
-Best-effort не маскируется под валидированный результат. Отчёт и профиль получают `IsBestEffort`, а issues — `BEST_EFFORT_CONFIG`. Если ни одна стратегия не улучшает baseline, пресет не генерируется и возвращается `NO_EFFECTIVE_STRATEGY`.
+A best-effort result does not look like a validated result. The report and the profile get `IsBestEffort`, and the issues get `BEST_EFFORT_CONFIG`. If no strategy improves the baseline, the add-on does not make a preset and returns `NO_EFFECTIVE_STRATEGY`.
 
-### 13.5. Профили и fallback
+### 13.5. Profiles and fallback
 
-`ProfilePlanner` объединяет назначения только при совпадении:
+`ProfilePlanner` merges assignments only if these items are the same:
 
-- нормализованного плана стратегии;
-- версии IP;
-- транспорта;
-- порта;
-- L7;
-- признака best-effort.
+- the normalized strategy plan;
+- the IP version;
+- the transport;
+- the port;
+- the L7 protocol;
+- the best-effort flag.
 
-Домены прямого ввода попадают в `--hostlist-domains`. Цели из файлов сохраняют исходные пути и попадают в `--hostlist`. Более специфичные доменные профили записываются раньше общих.
+Domains from the direct input go to `--hostlist-domains`. Targets from files keep their original paths and go to `--hostlist`. More specific domain profiles come before general profiles.
 
-`CircularFallbackPlanner` добавляет только стратегии, которые:
+`CircularFallbackPlanner` adds only strategies that:
 
-- успешны на всех целях профиля;
-- поддерживают circular;
-- не требуют pre-host;
-- имеют отличающуюся фактическую сигнатуру.
+- are successful on all targets of the profile;
+- support circular;
+- do not require pre-host;
+- have a different actual signature.
 
-Наличие нескольких отдельно успешных стратегий само по себе не означает, что их комбинация рабочая. Поэтому после синтеза обязательно проверяется вся строка пресета.
+The primary strategy of the profile must also support circular and must not require pre-host. Several strategies that operate separately do not always operate together. Thus the add-on always checks the complete preset command line after the synthesis.
 
-## 14. Генерация аргументов Zapret2
+## 14. Zapret2 arguments
 
-`Zapret2ConfigWriter` формирует одну строку запуска.
+`Zapret2ConfigWriter` makes one command line.
 
-Перед профилями выводятся общие WinDivert-фильтры:
+Before the profiles, the writer adds the common WinDivert filters and libraries:
 
-- `--wf-tcp-out` / `--wf-udp-out`;
-- входящие порты только при необходимости circular или inbound-стратегии;
-- общие blobs;
+- `--wf-tcp-out` and `--wf-udp-out`;
+- inbound ports only for a circular or inbound strategy;
+- the common blobs;
 - `--lua-init=@lua/zapret-lib.lua`;
 - `--lua-init=@lua/zapret-antidpi.lua`;
-- `--lua-init=@lua/zapret-auto.lua`, если используется circular.
+- `--lua-init=@lua/zapret-auto.lua` if a profile uses circular.
 
-Профили разделяются `--new` и получают явные:
+`--new` separates the profiles. Each profile gets explicit values for:
 
 - `--filter-l3`;
-- `--filter-tcp` либо `--filter-udp`;
+- `--filter-tcp` or `--filter-udp`;
 - `--filter-l7`;
-- `--hostlist` либо `--hostlist-domains`;
+- `--hostlist` or `--hostlist-domains`;
 - `--name`.
 
-Путь каждого `--hostlist` принудительно заключается в двойные кавычки, в том числе без пробелов. Кавычки внутри значения экранируются.
+The writer always puts the path of each `--hostlist` in double quotes, also when the path has no spaces. It escapes quotes in the value.
 
-Для каждого Lua-действия заново выводятся sticky-фильтры `--payload`, `--in-range` и `--out-range`. Это делает строку длиннее, но не позволяет действию случайно унаследовать состояние предыдущего действия или профиля.
+For each Lua action, the writer adds the sticky filters `--payload`, `--in-range` and `--out-range` again. The line is longer, but no action can get the state of an earlier action or profile by accident.
 
-Circular-профиль получает общий `circular` instance, пронумерованные действия `strategy=N` и `final` у последней резервной стратегии, если это разрешено параметрами writer.
+A circular profile gets one common `circular` instance, numbered actions `strategy=N` and `final` on the last fallback strategy, if the writer options permit it.
 
-## 15. Проверка и repair готового пресета
+## 15. Check and repair of the ready preset
 
-`BlockCheckPresetValidationService` запускает синтезированную строку целиком и повторно проверяет все активные targets.
+`BlockCheckPresetValidationService` starts the complete synthesized command line and checks all active targets again.
 
-Если кандидат не прошёл:
+If the candidate fails, the service does these steps:
 
-1. неуспешные targets сопоставляются с профилями и фактическими сигнатурами стратегий;
-2. соответствующие стратегия/маршрут исключаются из исходной evidence;
-3. синтез запускается повторно;
-4. новый кандидат снова проверяется целиком.
+1. It finds the profiles and the actual strategy signatures of the failed targets.
+2. It removes these strategy and route pairs from the original evidence.
+3. It runs the synthesis again.
+4. It checks the new candidate completely.
 
-Цикл ограничен режимом. Возможные терминальные issues: `PRESET_VALIDATION_FAILED`, `PRESET_REPAIR_LIMIT_REACHED`, `PRESET_REPAIR_STALLED`, `PRESET_REPAIR_NO_CANDIDATE`. Успешный repair добавляет `PRESET_REPAIRED`.
+The mode limits the number of repair iterations. The possible final issues are `PRESET_VALIDATION_FAILED`, `PRESET_REPAIR_LIMIT_REACHED`, `PRESET_REPAIR_STALLED` and `PRESET_REPAIR_NO_CANDIDATE`. A successful repair adds `PRESET_REPAIRED`.
 
-Infrastructure failure не считается доказательством неработоспособности стратегии и отмечается отдельно.
+An infrastructure failure does not prove that a strategy does not operate. The service records it separately.
 
-## 16. Отмена и обработка отказов
+## 16. Cancel and failure processing
 
-Ручная остановка переводит сессию в `Canceling` и отменяет текущий запрос. Scan service:
+A manual stop sets the session to `Canceling` and cancels the current request. The scan service then:
 
-- останавливает временный Zapret2;
-- сохраняет уже завершённые baseline и strategy probes;
-- добавляет `RUN_CANCELED`/`SCAN_CANCELED`;
-- пытается выполнить синтез по доступным данным;
-- создаёт частичный отчёт.
+- stops the temporary Zapret2 process;
+- keeps the completed baseline and strategy probes;
+- adds `RUN_CANCELED` or `SCAN_CANCELED`;
+- tries to run the synthesis with the available data;
+- makes a partial report.
 
-Если отмена произошла во время валидации, отчёт всё равно содержит результаты сканирования и первоначально синтезированный кандидат; попытки проверки готового пресета и кандидаты repair в него не попадают. `WasCanceled` не позволяет считать его полностью успешным.
+If the cancel occurs during the preset check, the report contains the scan results and the first synthesized candidate. The report does not contain the preset check attempts or the repair candidates. `WasCanceled` prevents a full success.
 
-Необработанное исключение вне штатных границ отображается как ошибка операции. Ошибка автоматического сохранения истории не уничтожает находящийся в памяти отчёт и показывается отдельно.
+An unhandled exception outside the usual limits shows as an operation error. An error of the automatic history save does not delete the report in memory. The UI shows this error separately.
 
-## 17. Оценка времени
+## 17. Time estimates
 
-### 17.1. До запуска
+### 17.1. Before the run
 
-`BlockCheckMaximumDurationEstimator` рассчитывает консервативный предел, предполагая 80% неудачных запросов. Неудачный запрос занимает полный `RequestTimeoutSeconds`.
+`BlockCheckMaximumDurationEstimator` calculates a conservative limit. It assumes that 80% of the requests fail. A failed request takes the full `RequestTimeoutSeconds`.
 
-В расчёт входят:
+The estimate includes:
 
-- все baseline requests;
-- применимые strategy jobs;
-- число повторов на target;
-- startup grace каждого процесса;
-- первая проверка пресета;
-- максимальное число repair-проверок.
+- all baseline requests;
+- the applicable strategy jobs;
+- the number of repeats for each target;
+- the startup grace of each process;
+- the first preset check;
+- the maximum number of repair checks.
 
-При ранней остановке предполагается, что успешна одна стратегия из пяти; поэтому оценка включает количество jobs, необходимое для ожидаемого достижения лимита успешных стратегий. При `TestAllStrategies` учитывается весь выбранный tier.
+With the early stop, the estimate assumes that one strategy of five is successful. Thus the estimate includes the number of jobs that it expects for the limit of successful strategies. With `TestAllStrategies`, the estimate includes the complete selected tier.
 
-### 17.2. Во время работы
+### 17.2. During the run
 
-ETA текущего этапа строится по exponential moving average с `alpha = 0.2`. Отдельно оценивается общий остаток. На baseline, когда ещё нет достаточного количества наблюдений, UI выводит «Расчёт оставшегося времени…», а не выдуманное число.
+The ETA of the current stage uses an exponential moving average with `alpha = 0.2`. The UI also estimates the total remaining time. During the baseline, the add-on does not have enough data. Thus the UI shows "Calculating the remaining time…" and not an invented number.
 
-Промежуточные счётчики успехов, ошибок, завершённых запросов и найденных стратегий обновляются по мере выполнения попыток.
+The counters of successes, errors, completed requests and found strategies change after each attempt.
 
-## 18. Отчёт
+## 18. Report
 
-Текущая JSON-схема — `2`. `BlockCheckReport` содержит:
+The JSON schema version is `2`. `BlockCheckReport` contains:
 
-- UTC-время и версию каталога;
-- режим, `Success`, `WasCanceled`, `IsBestEffort`;
-- нормализованные targets и runtime routes;
-- baseline, strategy и preset-validation probes;
-- итоговые профили и их scope;
-- primary/fallback ID;
-- validation candidates;
-- issues;
-- готовую строку `PresetArguments`.
+- the UTC time and the catalog version;
+- the mode, `Success`, `WasCanceled` and `IsBestEffort`;
+- the normalized targets and the runtime routes;
+- the baseline, strategy and preset-validation probes;
+- the final profiles and their scope;
+- the primary and fallback IDs;
+- the validation candidates;
+- the issues;
+- the ready line `PresetArguments`.
 
-Неопределённые median/p95 записываются как `null`, поэтому JSON не содержит `Infinity` или `NaN`.
+The report writes an undefined median or p95 as `null`. Thus the JSON does not contain `Infinity` or `NaN`.
 
-Поддерживаются:
+These formats are available:
 
-- JSON-экспорт для повторной работы в приложении;
-- текстовый диагностический отчёт;
-- TXT с аргументами пресета.
+- JSON export for later work in the application;
+- a text diagnostic report;
+- a TXT file with the preset arguments.
 
-TXT с аргументами разрешён для успешного или явно best-effort отчёта с непустой строкой.
+The TXT export with arguments requires a successful or explicitly best-effort report with a line that is not empty.
 
-## 19. Импорт отчёта
+## 19. Report import
 
-`BlockCheckReportImportService` читает файл как строгий UTF-8 и автоматически различает JSON (текст начинается с `{`) и текстовый отчёт. Пустой файл и файл больше 64 MiB отклоняются. Проверяются schema version (только `2`), коллекции, enum-значения, идентификаторы, ссылки на targets и пределы количества элементов:
+`BlockCheckReportImportService` reads the file as strict UTF-8. It finds the format automatically: text that starts with `{` is JSON, other text is a text report. The service rejects an empty file and a file larger than 64 MiB.
 
-| Элемент | Предел |
+The service checks the schema version (only `2`), the collections, the enum values, the IDs, the target references and the item counts:
+
+| Item | Limit |
 |---|---:|
 | `Targets` | 20 000 |
 | `Probes` | 200 000 |
 | `Profiles` | 20 000 |
-| `AttemptCount` одной probe-записи | 0–1 000 |
+| `AttemptCount` of one probe record | 0–1 000 |
 
-Кроме того, `PresetArguments` проверяются через `ConfigShareService.EnsureNoOutsideWrites`: пресет отчёта запускается Tray с правами администратора, поэтому отчёт с опциями, которые записывают файлы (`--debug=@…`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`), отклоняется. Синтезатор такие опции не генерирует.
+The service also checks `PresetArguments` with `ConfigShareService.EnsureNoOutsideWrites`. The tray runs the preset of a report with administrator rights. Thus the service rejects a report with options that write files: `--debug=@…`, `--wf-save`, `--hostlist-auto` and `--hostlist-auto-debug`. The synthesis never writes these options.
 
-При импорте:
+During the import, the service:
 
-- загружается текущий каталог;
-- восстанавливаются targets и probes;
-- профили связываются со стратегиями по ID; профиль с неизвестной primary-стратегией не восстанавливается;
-- probe-записи разворачиваются обратно в попытки по сохранённым счётчикам, поэтому отдельные времена ответа заменяются медианой;
-- создаётся `BlockCheckResultSession` для ручной работы;
-- отсутствующие файлы списков и неизвестные стратегии оформляются предупреждениями;
-- несовпадение версии каталога не запрещает просмотр, но неизвестную стратегию нельзя редактировать или тестировать.
+- loads the current catalog;
+- restores the targets and the probes;
+- connects the profiles to the strategies by ID. A profile with an unknown primary strategy is not restored;
+- makes the attempts again from the stored counters. Each successful attempt gets the median time;
+- makes a `BlockCheckResultSession` for manual work;
+- adds warnings for missing list files and unknown strategies.
 
-Текстовый отчёт содержит меньше структурных данных. Его parser восстанавливает возможный scope по существующим спискам сайтов и не назначает отсутствующий список всем targets, потому что это создало бы ложную точность.
+A different catalog version does not prevent the view. But the user cannot edit or test an unknown strategy.
 
-## 20. Недавние подборы и Store
+A text report contains less structured data. Its parser finds the possible scope from the site lists that exist. It does not assign a missing list to all targets, because that would give a false precision.
 
-История хранится в:
+## 20. Recent selections and the Store
+
+The history is in this folder:
 
 ```text
 Store/Items/BlockCheck2
 ```
 
-Старый тестовый каталог `Reports/BlockCheck2` не мигрируется и не читается.
+The add-on does not migrate or read the old test folder `Reports/BlockCheck2`.
 
-Имя файла включает UTC timestamp, режим, статус и короткий GUID. Сохраняется не более 50 JSON-отчётов; более старые удаляются после успешной записи нового.
+The file name contains the UTC time, the mode, the status and a short GUID. The history keeps a maximum of 50 JSON reports. After a successful write of a new report, the service deletes the older reports.
 
-Store-элемент:
+The Store item:
 
-| Поле | Значение |
+| Field | Value |
 |---|---|
 | `Id` | `BlockCheck2` |
-| `Name` / `ShortName` | Локализованная строка `RecentBlockCheck2Selections` |
+| `Name` / `ShortName` | The localized string `RecentBlockCheck2Selections` |
 | `Type` | `CDPIUIUpdateItem` |
 | `VersionControlType` | `local` |
 | `Developer` | `CDPIUI` |
 
-`DatabaseInitializationService.QuickRestore` вызывает `RegisterOnFirstLaunch`. После первой успешной регистрации выставляется `BLOCKCHECK/historyStoreItemRegistrationCompleted=true`; поэтому удаление элемента пользователем через настройки памяти Store не отменяется на каждом следующем старте.
+`DatabaseInitializationService.QuickRestore` calls `RegisterOnFirstLaunch`. After the first successful registration, the service sets `BLOCKCHECK/historyStoreItemRegistrationCompleted=true`. Thus the next start does not add the item again after the user removes it in the Store memory settings.
 
-Перед сохранением нового отчёта `EnsureRegistered` создаёт каталог и Store-запись при необходимости. То есть удалённая пользователем история остаётся удалённой до тех пор, пока BlockCheck2 снова не создаст новые данные.
+Before the service saves a new report, `EnsureRegistered` makes the folder and the Store record if necessary. Thus a history that the user removed stays removed until BlockCheck2 makes new data.
 
-Удаление Store-элемента использует штатный `StoreHelper.RemoveItem`: удаляется каталог с отчётами и запись базы Store.
+The removal of the Store item uses the usual `StoreHelper.RemoveItem`. It deletes the report folder and the Store database record.
 
-Страница недавних подборов позволяет:
+The page of recent selections lets the user:
 
-- открыть запись в окне результата;
-- открыть произвольный JSON/TXT-отчёт;
-- показать файл в Explorer;
-- удалить отдельный отчёт с подтверждением;
-- открыть каталог;
-- обновить список.
+- open a record in the result window;
+- open a JSON or TXT report from a file;
+- show the file in Explorer;
+- delete one report after a confirmation;
+- open the folder;
+- refresh the list.
 
-## 21. Интеграция в «Средства Автоподбора»
+## 21. Integration into the auto-selection tools
 
-BlockCheck2 встроен в `CDPIUI.CreateConfigUtilWindow` и доступен только для установленного Zapret2.
+BlockCheck2 is a part of `CDPIUI.CreateConfigUtilWindow`. It is available only when Zapret2 is installed.
 
-Мастер использует `AnimatedHorizontalContentViewer`. Заголовок и описание принадлежат `AnimatedHorizontalContentItem`, а не дублируются внутри страницы.
+The wizard uses `AnimatedHorizontalContentViewer`. The title and the description belong to `AnimatedHorizontalContentItem`. The page does not show them again.
 
-Страницы мастера:
+The wizard pages are:
 
-1. списки сайтов и пользовательский ввод;
-2. режим подбора;
-3. дополнительные параметры;
-4. проверка параметров и максимального времени;
-5. прогресс;
-6. завершение.
+1. site lists and user input;
+2. the selection mode;
+3. more parameters;
+4. the parameter review and the maximum duration;
+5. progress;
+6. completion.
 
-Возврат в главное меню поддерживается как из мастера, так и со страницы недавних подборов. При закрытии окна во время работы используется общий диалог остановки средств подбора.
+The user can go back to the main menu from the wizard and from the page of recent selections. If the user closes the window during a run, the common stop dialog of the selection tools opens.
 
-Публичные protocol routes:
+The public protocol routes are:
 
 ```text
 cdpiui://Tools/AutoConfig/Zapret2
 cdpiui://Tools/AutoConfig/Zapret2/Reports
 ```
 
-Маршруты входят в явный allowlist `CommandUriMapper` и открывают `CreateConfigUtilWindow` с нужным action.
+The routes are in the explicit allow list of `CommandUriMapper`. They open `CreateConfigUtilWindow` with the necessary action.
 
-## 22. Окно результата
+## 22. Result window
 
-`BlockCheck2ResultWindow` — отдельное окно с фоном Mica Alt с общей MenuBar, статусной строкой и центром компактных уведомлений. Структура строк окна:
+`BlockCheck2ResultWindow` is a separate window with the Mica Alt backdrop. It has a common MenuBar, a status bar and a center for compact notifications. The rows of the window are:
 
 ```text
 TitleBar
@@ -552,140 +567,140 @@ Content Frame
 Status bar
 ```
 
-Основные разделы `AnimatedSelectorBar`:
+`ResultPage` has these sections in an `AnimatedSelectorBar`:
 
-- «Результат подбора»;
-- «Сборка пресета»;
-- «Диагностические сведения».
+- "Selection result";
+- "Preset builder";
+- "Diagnostic data".
 
-### 22.1. Результат подбора
+### 22.1. Selection result
 
-Стратегии показываются по сайтам. `SemanticZoom` переключает полный список и обзор групп. Доступны поиск, фильтр по успешным/частичным/неуспешным результатам и сортировки по результату, сайту и времени ответа.
+The page shows the strategies by site. `SemanticZoom` switches between the full list and the group overview. The user can search, filter by successful, partial and failed results, and sort by result, site and response time.
 
-В строке отображаются фактическое имя стратегии, URL, отдельные сведения о соединении, число успехов, success rate, response time, HTTP status, failure code и признак выбора в пресет.
+A row shows the actual strategy name, the URL, the separate connection data, the number of successes, the success rate, the response time, the HTTP status, the failure code and a flag if the preset uses the strategy.
 
-Символ предупреждения означает, что стратегия прошла текущую строку, но не доказана для всей runtime-области, например для соседней TLS-версии. Его назначение поясняется ToolTip.
+A warning symbol means that the strategy passed the current row, but the add-on did not prove it for the complete runtime area, for example for the other TLS version. A ToolTip explains the symbol.
 
-Стратегию можно:
+The user can:
 
-- протестировать отдельно через временный профиль и `curl`;
-- запустить как временный компонент для ручной проверки пользователем;
-- добавить для текущего сайта;
-- добавить для связанного списка сайтов;
-- скопировать как действия либо как полную строку тестового профиля.
+- test the strategy separately with a temporary profile and `curl`;
+- start it as a temporary component for a manual check;
+- add it for the current site;
+- add it for the related site list;
+- copy it as actions or as the full command line of the test profile.
 
-### 22.2. Сборка пресета
+### 22.2. Preset builder
 
-Автоматически предложенные profiles заранее проецируются в список назначений. Пользователь может удалить, переупорядочить или дополнить их. Порядок назначений внутри одного scope определяет primary и circular fallbacks.
+The builder shows the automatic profiles as assignments. The user can remove, move or add assignments. The order of assignments in one scope sets the primary strategy and the circular fallbacks.
 
-Manual builder проверяет:
+The manual builder checks:
 
-- существование стратегии и цели;
-- применимость ко всей области;
-- поддержку circular;
-- отсутствие дубликатов фактического плана;
-- наличие evidence;
-- прохождение порога на всех целях scope;
-- пересечение scopes.
+- that the strategy and the target exist;
+- that the strategy applies to the complete scope;
+- circular support;
+- that no actual plan is a duplicate;
+- that evidence exists;
+- that all targets of the scope pass the threshold;
+- that the scopes do not overlap.
 
-Одинаковые предупреждения агрегируются по code/message/subjects и показываются один раз со счётчиком. Для `MANUAL_SCOPE_OVERLAP` доступно быстрое подтверждение предупреждения на уровне конструктора; это не скрывает другие категории ошибок и не изменяет назначение стратегии автоматически.
+The builder shows identical warnings once, with a counter. It groups them by code, message and subjects. For `MANUAL_SCOPE_OVERLAP`, the user can quickly accept the warning in the builder. This does not hide other error types and does not change the assignment.
 
-Предпросмотр строки использует `TextControlBox` через общий редактор и автоформатирование по флагам. Кнопка перехода к готовому пресету находится в области сборки и в меню действия, но ведёт на одну и ту же страницу review.
+The preview of the command line uses `TextControlBox` in the common editor, with automatic format by flags. The button that opens the ready preset is in the builder area and in the action menu. Both open the same review page.
 
-### 22.3. Диагностика
+### 22.3. Diagnostics
 
-Раздел содержит общие issues отчёта и полный список probes. Предупреждения ручного конструктора не смешиваются с диагностикой редактора строки.
+The section shows the issues of the report and the full list of probes. The warnings of the manual builder are separate from the diagnostics of the command line editor.
 
-## 23. Черновик и просмотр готового пресета
+## 23. Draft and ready preset review
 
-`BlockCheck2PresetDraft` хранит две формы:
+`BlockCheck2PresetDraft` keeps two forms:
 
-- структурированную строку, построенную автоматическим или ручным конструктором;
-- временную expert-строку.
+- the structured command line from the automatic or manual builder;
+- a temporary expert command line.
 
-Origin принимает `Automatic`, `Manual` или `ModifiedAutomatic`. Структурированные назначения остаются источником истины до включения expert editing.
+The `Origin` value is `Automatic`, `Manual` or `ModifiedAutomatic`. The structured assignments are the source of truth until the user enables expert editing.
 
-На `PresetReviewPage` строка по умолчанию read-only. Флаг «Разрешить редактирование» после подтверждения включает экспертный режим и панель команд ConfigMaker. Возврат к конструктору после изменения экспертной строки требует подтверждения и удаляет expert changes, потому что произвольный текст невозможно без потерь преобразовать обратно в назначения.
+On `PresetReviewPage`, the command line is read-only by default. The "Allow editing" flag enables the expert mode and the ConfigMaker command bar after a confirmation. A return to the builder after a change of the expert line requires a confirmation and deletes the expert changes. The reason: the add-on cannot convert free text back to assignments without data loss.
 
-Панели «Используемые файлы» и «Группы пресета» являются частью редактора:
+The "Used files" and "Preset groups" panels are a part of the editor:
 
-- файлы сгруппированы как TXT-списки, библиотеки и payloads;
-- группы показывают общие фильтры, профильные фильтры и последовательность действий;
-- для Zapret2 флаги получают контекстные объяснения фактических значений;
-- двойной щелчок по элементу группы переводит к точному occurrence в редакторе, включая дублирующиеся флаги;
-- панели динамически обновляются при изменении строки.
+- the files are in groups: TXT lists, libraries and payloads;
+- the groups show the common filters, the profile filters and the sequence of actions;
+- for Zapret2, the flags get explanations of their actual values;
+- a double-click on a group element moves the editor to the exact occurrence, also for duplicate flags;
+- the panels change when the command line changes.
 
-Для файла доступны «Открыть», «Показать в папке» и, если файл отсутствует, «Заменить». TXT открывается через настройку приложения; если приложение не выбрано, используется `EditSitelistAskApplicationContentDialog`.
+For a file, the commands "Open", "Show in folder" and, for a missing file, "Replace" are available. The editor opens a TXT file with the application from the settings. If no application is set, `EditSitelistAskApplicationContentDialog` opens.
 
-Замена отсутствующего файла оборачивает `ConfigImportAutoCorrector`:
+The replacement of a missing file uses `ConfigImportAutoCorrector`:
 
-- пользователь выбирает автокоррекцию либо файл вручную;
-- допустима рекомендация создать пустой файл;
-- заменяются все упоминания исходного пути в строке, а не первое;
-- дерево файлов и группы обновляются после замены.
+- the user selects the automatic correction or a file;
+- an empty file can be the recommendation;
+- the editor replaces all occurrences of the original path, not only the first one;
+- the file tree and the groups change after the replacement.
 
-`ConfigMakerUserControl` получает справку Zapret2 через `--help` в Tray/ConPTY, что позволяет работать и с компонентами, требующими UAC. Parser восстанавливает логические строки из управляющих последовательностей терминала, группы help, продолжения длинных описаний и флаги без описания. Неизвестный `--help` не считается фатальным, если процесс всё равно вывел перечень опций.
+`ConfigMakerUserControl` gets the Zapret2 help through the tray and ConPTY. Thus it can also use components that require UAC. The parser restores the logical lines from the terminal control sequences, the help groups, the continued long descriptions and the flags without a description. An unknown `--help` is not fatal if the process shows the list of options.
 
-Редактор предоставляет поиск, замену, масштаб, шрифт, фон, форматирование по флагам, warnings/errors без отвлекающей анимации и временный запуск конфигурации.
+The editor has search, replace, zoom, font, background, format by flags, warnings and errors without distracting animation, and a temporary run of the config.
 
-## 24. Сохранение пресета
+## 24. Preset save
 
 ### 24.1. TXT
 
-Текущую effective-строку можно сохранить как обычный TXT без изменения хранилища CDPIUI.
+The user can save the current effective line as a usual TXT file. This does not change the CDPI UI storage.
 
-### 24.2. В приложение
+### 24.2. In the application
 
-Перед сохранением пользователь вводит имя. `BlockCheck2PresetStorageService`:
+Before the save, the user types a name. `BlockCheck2PresetStorageService` does these steps:
 
-1. проверяет наличие непустого пресета и установленного Zapret2;
-2. извлекает `--hostlist`, `--hostlist-exclude`, `--lua-init` и файловые `--blob`;
-3. разрешает абсолютные, component-relative и `$GETCURRENTDIR()` пути;
-4. оставляет библиотеки/payloads внутри каталога Zapret2 component-relative;
-5. копирует внешние списки в `LocalUserStorage/List/BlockCheck2/<storageId>`;
-6. копирует внешние библиотеки и payloads в `LocalUserStorage/Bin/BlockCheck2/<storageId>`;
-7. переписывает все ссылки на `$GETCURRENTDIR()/List/...` или `$GETCURRENTDIR()/Bin/...`;
-8. создаёт JSON `ConfigItem` пользователя, связанный с Zapret2;
-9. обновляет список конфигураций компонента.
+1. It makes sure that the preset is not empty and that Zapret2 is installed.
+2. It finds `--hostlist`, `--hostlist-exclude`, `--lua-init` and file `--blob` values.
+3. It resolves absolute, component-relative and `$GETCURRENTDIR()` paths.
+4. It keeps libraries and payloads in the Zapret2 folder as component-relative paths.
+5. It copies external lists to `LocalUserStorage/List/BlockCheck2/<storageId>`.
+6. It copies external libraries and payloads to `LocalUserStorage/Bin/BlockCheck2/<storageId>`.
+7. It changes all references to `$GETCURRENTDIR()/List/...` or `$GETCURRENTDIR()/Bin/...`.
+8. It makes a user JSON `ConfigItem` for Zapret2.
+9. It refreshes the config list of the component.
 
-Русское и иное Unicode-имя пресета сохраняется как display name. Идентификатор каталога и имя JSON транслитерируются в ASCII, очищаются и дополняются Unix timestamp, например `Novyi_preset_1786437896.json`. Имена копируемых файлов также транслитерируются; коллизии получают суффикс `_2`, `_3` и т. д.
+The service keeps a Russian or other Unicode preset name as the display name. It transliterates the folder ID and the JSON name to ASCII, removes unsafe characters and adds a Unix time, for example `Novyi_preset_1786437896.json`. It also transliterates the names of the copied files. A name collision gets the suffix `_2`, `_3` and so on.
 
-При ошибке незавершённые каталоги зависимостей удаляются. Исходные файлы пользователя не изменяются.
+If an error occurs, the service deletes the incomplete dependency folders. It does not change the original user files.
 
-## 25. Локализация
+## 25. Localization
 
-Основные строки находятся в:
+The main strings are in these files:
 
 ```text
 CDPIUI/Strings/ru/Resources.resw
 CDPIUI/Strings/en-us/Resources.resw
 ```
 
-Русское «Пресеты» соответствует английскому «Configs». Новые UI-элементы должны получать значения через `l:Uids.Uid` или `ILocalizer`, а технические ID, issue codes, report keys и strategy IDs не локализуются.
+The Russian word "Пресеты" is "Configs" in English. New UI elements must get their text through `l:Uids.Uid` or `ILocalizer`. Do not translate technical IDs, issue codes, report keys or strategy IDs.
 
-## 26. Тесты
+## 26. Tests
 
-Отдельного регрессионного проекта для BlockCheck2 в решении нет, и `CDPIUI.Tests` пока не содержит тестов BlockCheck2. Ядро AddOn не зависит от WinUI и Tray, поэтому для тестов подходят fake-реализации `IBlockCheckStrategyRunner`, `IBlockCheckProbeRunner` и `ICommandExecutor`. `CDPIUI.AddOns` открывает internal-типы для `CDPIUI.Tests` через `InternalsVisibleTo`.
+The solution has no separate test project for BlockCheck2. `CDPIUI.Tests` has no BlockCheck2 tests at this time. The core does not use WinUI or the tray. Thus tests can use fake `IBlockCheckStrategyRunner`, `IBlockCheckProbeRunner` and `ICommandExecutor` implementations. `CDPIUI.AddOns` gives `CDPIUI.Tests` access to internal types through `InternalsVisibleTo`.
 
-## 27. Известные ограничения
+## 27. Known limits
 
-1. Успех curl доказывает только конкретный URL, протокол и версию IP. Он не моделирует ECH, размер ClientHello, браузерный HTTP/2/HTTP/3 fallback, загрузку subresources и JavaScript.
-2. Browser-сервис может оставаться неработоспособным, если основная страница проходит, а API, CDN, video/media hosts или альтернативная версия IP не входят в список.
-3. QUIC существует в модели и каталоге, но скрыт в стандартном UI до завершения пользовательского сценария и проверки доступности HTTP/3 curl.
-4. Discord voice и произвольный UDP пока не поддерживаются. Для них нужен другой probe: захват адресов/портов, управляемый запуск клиента и критерий реального media handshake.
-5. Автоматический circular fallback всё равно может зависеть от сетевого состояния; поэтому combined validation обязательна.
-6. Текстовый отчёт менее точен, чем JSON. Для последующего редактирования предпочтителен JSON.
-7. Imported report может ссылаться на отсутствующие локальные файлы или стратегии удалённой версии каталога; просмотр доступен, но пресет требует repair.
-8. Временные per-site списки сохраняются, пока на них ссылается доступный результат. После сохранения пресета зависимости копируются в постоянное пользовательское хранилище.
+1. A curl success proves only the exact URL, protocol and IP version. curl does not model ECH, the ClientHello size, the HTTP/2 or HTTP/3 fallback of a browser, subresources or JavaScript.
+2. A service can stay unavailable in a browser when the main page passes but the list does not include the API, CDN, video or media hosts, or the other IP version.
+3. QUIC is in the model and the catalog. The standard UI hides it until the user scenario is complete and the HTTP/3 support of curl is verified.
+4. Discord voice and random UDP are not supported. They need a different probe: address and port capture, a controlled client start and a criterion for a real media handshake.
+5. The automatic circular fallback can depend on the network state. Thus the combined check is mandatory.
+6. A text report is less precise than JSON. Use JSON for later editing.
+7. An imported report can refer to local files that are missing or to strategies of a removed catalog version. The user can view it, but the preset needs a repair.
+8. The temporary per-site lists stay while an available result refers to them. When the user saves the preset, the service copies the dependencies to the permanent user storage.
 
-## 28. Основные точки расширения
+## 28. Extension points
 
-Для добавления нового probe transport необходимо реализовать `IBlockCheckProbeRunner` и при необходимости `IBlockCheckProbePreflight`.
+To add a new probe transport, implement `IBlockCheckProbeRunner` and, if necessary, `IBlockCheckProbePreflight`.
 
-Для другого способа запуска компонента реализуется `IBlockCheckStrategyRunner`. Ядро AddOn не зависит от WinUI или Tray.
+To start the component in a different way, implement `IBlockCheckStrategyRunner`. The add-on core does not depend on WinUI or the tray.
 
-Новые стратегии добавляются в seed JSON либо генератор каталога. Для каждой стратегии необходимы корректные applicability, tier, cost, ordered actions и признаки circular/pre-host/inbound.
+Add new strategies to the seed JSON or to the catalog expander. Each strategy must have correct applicability, tier, cost, ordered actions and circular, pre-host and inbound flags.
 
-Новый формат отчёта требует увеличения `SchemaVersion`, отдельной миграции в `BlockCheckReportImportService` и регрессионных примеров. Молчаливое принятие неизвестной схемы запрещено.
+A new report format requires a higher `SchemaVersion`, a migration in `BlockCheckReportImportService` and test examples. The import must not accept an unknown schema silently.
 
-При изменении параметров режима требуется сохранять согласованность `Scan.AttemptsPerTarget`, `Synthesis.MinimumAttempts` и `Validation.AttemptsPerTarget`; иначе preflight возвращает `RUN_ATTEMPTS_MISMATCH` или `RUN_VALIDATION_ATTEMPTS_MISMATCH` до запуска процессов.
+If you change the mode parameters, keep `Scan.AttemptsPerTarget` and `Validation.AttemptsPerTarget` not less than `Synthesis.MinimumAttempts`. Otherwise, the preflight returns `RUN_ATTEMPTS_MISMATCH` or `RUN_VALIDATION_ATTEMPTS_MISMATCH` before any process starts.
