@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using CDPIUI.Shared.Basic;
 
 namespace CDPIUI.Tests.Shared;
@@ -72,5 +72,22 @@ public class XmlSettingsServiceTests : IDisposable
         })));
 
         Assert.Equal(49, new XMLSettingsService(SettingsPath).GetValue<int>("GROUP3", "key49"));
+    }
+
+    [Fact]
+    public void ProcessWithOlderCopyDoesNotOverwriteOtherChanges()
+    {
+        var ui = new XMLSettingsService(SettingsPath);
+        var tray = new XMLSettingsService(SettingsPath);
+
+        ui.SetValue("APPEARANCE", "Theme", "Dark");
+        tray.SetValue("TRAY", "iconGUID", "guid");
+        ui.SetValue(["CONFIGS", "CSZTBN012"], "configFile", "preset.json");
+
+        var reloaded = new XMLSettingsService(SettingsPath);
+        Assert.Equal("Dark", reloaded.GetValue<string>("APPEARANCE", "Theme"));
+        Assert.Equal("guid", reloaded.GetValue<string>("TRAY", "iconGUID"));
+        Assert.Equal("preset.json", reloaded.GetValue<string>(["CONFIGS", "CSZTBN012"], "configFile"));
+        Assert.False(File.Exists(SettingsPath + ".lock"));
     }
 }
