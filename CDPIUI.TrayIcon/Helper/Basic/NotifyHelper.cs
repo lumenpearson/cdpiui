@@ -129,12 +129,19 @@ namespace CDPIUI.TrayIcon.Helper.Basic
         {
             try
             {
-                var psi = new ProcessStartInfo
+                // The tray is elevated, and the handler of a file type comes from HKCU: opening the file
+                // through the shell here would run a program the user chose with administrator rights.
+                string fullPath = Path.GetFullPath(filePath);
+                string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+                if (RunHelper.RunAsDesktopUser(explorer, $"\"{fullPath}\""))
+                    return;
+
+                Process.Start(new ProcessStartInfo
                 {
-                    FileName = Path.GetFullPath(filePath),
-                    UseShellExecute = true
-                };
-                Process.Start(psi);
+                    FileName = Path.Combine(Environment.SystemDirectory, "notepad.exe"),
+                    Arguments = $"\"{fullPath}\"",
+                    UseShellExecute = false,
+                });
             }
             catch (Exception ex)
             {
