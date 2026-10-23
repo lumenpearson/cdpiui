@@ -57,7 +57,6 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
     public List<StrategyModel> Strategies { get; private set; } = new();
     public string ComponentId { get; private set; }
 
-    private object parameter = null;
     public ViewGoodCheckSiteListReportPage()
     {
         InitializeComponent();

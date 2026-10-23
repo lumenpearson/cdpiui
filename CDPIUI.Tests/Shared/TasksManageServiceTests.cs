@@ -14,18 +14,18 @@ public class TasksManageServiceTests
         public ErrorModel? LastError => null;
         public int StartCount { get; private set; }
 
-#pragma warning disable CS0067
-        public event Action<Tuple<string, bool>>? ProcessStateChanged;
-        public event Action<ErrorModel>? ErrorHappens;
-        public event Action<string>? OutputReceived;
-        public event Action<string>? ProcessNameChanged;
-        public event Action<string>? ShowErrorMessageWindow;
-#pragma warning restore CS0067
+        // The fake raises no events; empty accessors satisfy the interface.
+        public event Action<Tuple<string, bool>>? ProcessStateChanged { add { } remove { } }
+        public event Action<ErrorModel>? ErrorHappens { add { } remove { } }
+        public event Action<string>? OutputReceived { add { } remove { } }
+        public event Action<string>? ProcessNameChanged { add { } remove { } }
+        public event Action<string>? ShowErrorMessageWindow { add { } remove { } }
 
         public async Task StartProcess()
         {
             StartCount++;
-            await Task.Delay(5);
+            // Completes asynchronously, so concurrent callers interleave; no wall-clock wait.
+            await Task.Yield();
             IsProcessRunning = true;
         }
 

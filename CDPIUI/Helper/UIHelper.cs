@@ -202,7 +202,8 @@ namespace CDPIUI.Helper
             public string Description { get; set; } = "";
             public ObservableCollection<SettingsTileItem> Items { get; } = new ObservableCollection<SettingsTileItem>();
 
-            public event PropertyChangedEventHandler PropertyChanged;
+            // The properties do not report changes; the event exists for the interface only.
+            public event PropertyChangedEventHandler PropertyChanged { add { } remove { } }
         }
 
         public enum ActionIds
