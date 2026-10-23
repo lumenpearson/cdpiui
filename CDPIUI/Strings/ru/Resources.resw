@@ -133,6 +133,13 @@
   <data name="AddNewComponentFromTheStoreTextBlock.Text" xml:space="preserve">
     <value>Загрузите новые компоненты из Магазина</value>
   </data>
+  <data name="ProxyNetworkAddressTitle" xml:space="preserve">
+    <value>Прокси будет доступен из сети</value>
+  </data>
+  <data name="ProxyNetworkAddressWarning" xml:space="preserve">
+    <value>Компонент будет принимать подключения на адресе {0}. Другие устройства в вашей сети, а возможно и из интернета, смогут пользоваться прокси без пароля.
+Укажите 127.0.0.1, если прокси нужен только на этом компьютере.</value>
+  </data>
   <data name="AddOnFilesMissing" xml:space="preserve">
     <value>Файлы надстройки "{0}" повреждены: отсутствует "{1}". Продолжение невозможно.
 Переустановите "{0}" в Магазине</value>

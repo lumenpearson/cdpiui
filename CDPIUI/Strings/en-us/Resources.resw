@@ -133,6 +133,13 @@
   <data name="AddNewComponentFromTheStoreTextBlock.Text" xml:space="preserve">
     <value>Add new component from the Store</value>
   </data>
+  <data name="ProxyNetworkAddressTitle" xml:space="preserve">
+    <value>The proxy will be reachable from the network</value>
+  </data>
+  <data name="ProxyNetworkAddressWarning" xml:space="preserve">
+    <value>The proxy component will listen on {0}. Other devices in your network, and possibly the internet, will be able to use it without a password.
+Use 127.0.0.1 if the proxy is only needed on this computer.</value>
+  </data>
   <data name="AddOnFilesMissing" xml:space="preserve">
     <value>The files of add-on "{0}" are incomplete: "{1}" is missing. Continuation is impossible.
 Please, reinstall "{0}" in Store</value>
