@@ -18,7 +18,7 @@ namespace CDPIUI.TrayIcon.Helper
             GetDesktopUserDataDirectory(),
         ];
 
-        private static string? GetDesktopUserDataDirectory()
+        public static string? GetDesktopUserDataDirectory()
         {
             try
             {
