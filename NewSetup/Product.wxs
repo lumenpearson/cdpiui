@@ -41,12 +41,14 @@
         <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)" />
       </CreateFolder>
     </Component>
-    <CustomAction Id="LaunchApp" Directory="INSTALLLOCATION" ExeCommand="[SystemFolder]cmd.exe /C start CDPIUI.exe" Return="asyncNoWait" />
+    <!-- Started through Explorer, the GUI runs as the signed-in user and not with the rights of the
+         installer; it is not started by silent (/qn) or basic-UI installations. -->
+    <CustomAction Id="LaunchApp" Directory="INSTALLLOCATION" ExeCommand="[WindowsFolder]explorer.exe &quot;[INSTALLLOCATION]CDPIUI.exe&quot;" Return="asyncNoWait" />
     <!-- Closes the tray so it stops the components and restores the proxy settings, then ends the remaining
          application processes and removes the WinDivert driver and the autorun task created by the application. -->
     <CustomAction Id="UninstallCleanup" FileRef="TrayIconExe" ExeCommand="--uninstall-cleanup" Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
-      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
+      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE AND UILevel &gt;= 4" />
       <Custom Action="UninstallCleanup" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
   </Package>

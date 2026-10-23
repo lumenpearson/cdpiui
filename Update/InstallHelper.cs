@@ -114,7 +114,10 @@ namespace Update
                         }
                         else
                         {
+                            // The window stays open with the error; it was closed at once and
+                            // the user never saw why the application did not start.
                             InstallationStateChanged?.Invoke(InstallState.Error);
+                            return;
                         }
                         Application.Exit();
                     }
@@ -131,7 +134,10 @@ namespace Update
                         }
                         else
                         {
+                            // The window stays open with the error; it was closed at once and
+                            // the user never saw why the application did not start.
                             InstallationStateChanged?.Invoke(InstallState.Error);
+                            return;
                         }
 
                         Application.Exit();
