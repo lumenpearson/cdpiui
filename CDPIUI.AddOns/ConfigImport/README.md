@@ -203,11 +203,11 @@ The normalization of the executable name removes the folder, the quotes and the 
 
 ### BAT and CMD import
 
-1. The analyzer reads the file as UTF-8.
+1. The analyzer reads the file with the encoding detection of the Zapret analyzer (`BatchFileEncoding`): UTF-8, OEM 866 or ANSI 1251.
 2. It joins physical lines that end with an odd number of `^` into one logical line.
 3. It processes the assignments `set NAME=VALUE` and `set "NAME=VALUE"`, with an optional `@` before `set`.
 4. It uses a `set` after `rem ` or `::` as an alternative value of the variable.
-5. It skips comments and empty lines. A comment is a line that starts with `::`, `rem ` or `#`, or the line `rem`.
+5. It skips comments and empty lines. A comment is a line that starts with `::` or `#`, or a line that starts with `rem` or `@rem` followed by a space, a tab or the line end.
 6. It splits each line into tokens. A double quote starts or ends a quoted part.
 7. It looks for a token that is the executable of the selected component after the static expansion.
 8. The text after the executable becomes the argument line. A redirection, a pipe or `&` outside quotes cuts the rest of the line.
@@ -291,7 +291,7 @@ The analyzer does these steps:
 2. It loads `PredefinedVariables`, if the caller supplies them.
 3. It collects the usual and the commented `set` commands in sequence.
 4. It follows the known calls of external BAT and CMD files statically.
-5. It finds the `winws` or `winws2` launches.
+5. It finds the `winws` or `winws2` launches. The executable name must not continue a longer name: `mywinws.exe` is not a launch.
 6. It keeps a copy of the variables for each launch.
 7. It requires exactly one launch.
 8. It expands a referenced TXT config such as `@config.txt`.
@@ -942,7 +942,6 @@ Also note these limits:
 - The add-on cannot convert winws2 to winws1.
 - The test does not isolate the component process and does not repeat the full source BAT.
 - The temporary path replacement of the test knows fewer relative forms than the installer.
-- The general analyzer reads BAT files only as UTF-8 and does not read `@rem` as a comment. The Zapret analyzer does both.
 
 An unknown variable usually stays: it becomes an editable `commaVar` with the value `$EMPTY`. Thus the user can complete the config manually.
 
