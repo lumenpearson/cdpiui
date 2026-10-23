@@ -165,6 +165,10 @@ namespace CDPIUI.Core.Store.Application
                     Logger.Instance.CreateInfoLog(nameof(ApplicationUpdateService), $"Required patch {requiredVersion}");
                     if (currentVersion >= requiredVersion)
                         continue;
+                    // The main patch is always the last layer; a required patch that is not older
+                    // than it would be applied first and then partly overwritten.
+                    if (Version.TryParse(requirements.version, out Version? mainVersion) && requiredVersion >= mainVersion)
+                        continue;
 
                     string layer = Path.Combine(downloadDir, "CDPIUI");
                     await ValidateCatalog(layer);

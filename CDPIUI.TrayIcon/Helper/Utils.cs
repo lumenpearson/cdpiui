@@ -39,6 +39,7 @@ namespace CDPIUI.TrayIcon.Helper
                 using var key = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64)
                     .OpenSubKey(@"Software\Storik4\CDPI UI");
                 return key?.GetValue("InstallLocation") is string location &&
+                    !string.IsNullOrWhiteSpace(location) &&
                     string.Equals(Path.GetFullPath(location).TrimEnd(Path.DirectorySeparatorChar),
                         Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar),
                         StringComparison.OrdinalIgnoreCase);
