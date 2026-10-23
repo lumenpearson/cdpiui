@@ -151,7 +151,8 @@ namespace CDPIUI.Core.Store.Network
                     type = file.type,
                     archive_root_folder = file.archive_root_folder,
                     actions = file.actions,
-                    target_executable_file = null
+                    target_executable_file = null,
+                    sha256 = file.sha256
                 });
             }
 
