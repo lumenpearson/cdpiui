@@ -113,6 +113,20 @@ public sealed class BlockCheckReportImportService
             catalog,
             importIssues);
 
+        // The preset of a report runs in the tray with administrator rights: a report from
+        // someone else must not make the component write files (audit 14.4). The synthesizer
+        // never writes such options, so any of them means the report was edited.
+        try
+        {
+            CDPIUI.AddOns.ConfigShare.ConfigShareService.EnsureNoOutsideWrites(
+                sourceReport.PresetArguments,
+                Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        }
+        catch (CDPIUI.AddOns.ConfigShare.ConfigShareException exception)
+        {
+            throw new InvalidDataException(exception.Message, exception);
+        }
+
         BlockCheckReport report = CopyWithIssues(sourceReport, sourceReport.Issues
             .Concat(importIssues)
             .DistinctBy(issue => (issue.Severity, issue.Code, issue.Message, issue.SubjectId))
