@@ -15,7 +15,7 @@ namespace CDPIUI.Core.Store.Queue
         /// <param name="version">Item version (null if latest)</param>
         /// <param name="cleanDirectoryBeforeInstalling">Clean files after instaliing (if msi-like)</param>
         /// <param name="packFile">Pack file (null if online download</param>
-        void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null);
+        void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false);
 
         /// <summary>
         /// Cancel operation for item id

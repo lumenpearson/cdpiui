@@ -48,6 +48,13 @@ namespace CDPIUI.Core.Store
             }
         }
 
+        // Files an unsigned pack may not bring: programs, libraries, drivers, installers and scripts.
+        private static readonly List<string> UnsignedPackSkippedFiles =
+        [
+            "*.exe", "*.dll", "*.sys", "*.msi", "*.com", "*.scr", "*.cpl", "*.bat", "*.cmd",
+            "*.ps1", "*.vbs", "*.vbe", "*.js", "*.jse", "*.wsf", "*.hta", "*.lnk", "*.url",
+        ];
+
         private LocalItemsInstallerHelper() 
         {
             string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
@@ -60,7 +67,7 @@ namespace CDPIUI.Core.Store
             string tempDestination = Path.Combine(TempDirectory, tempFolderName);
 
             bool isCatalogCheckRequired = Path.GetExtension(itemPackFile) == ".cdpisignedpack" ? true : false;
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : [".exe"];
+            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
             try
             {
@@ -113,7 +120,7 @@ namespace CDPIUI.Core.Store
             string tempDestination = Path.Combine(TempDirectory, tempFolderName);
 
             bool isCatalogCheckRequired = Path.GetExtension(itemPackFile) == ".cdpisignedpack" ? true : false;
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : [".exe"];
+            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
             try
             {
@@ -129,7 +136,7 @@ namespace CDPIUI.Core.Store
                 LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
 
                 if (cancellationToken.IsCancellationRequested) return;
-                StoreHelper.Instance.AddItemToQueue(localItemInitModel.StoreId!, packFile: tempDestination);
+                StoreHelper.Instance.AddItemToQueue(localItemInitModel.StoreId!, packFile: tempDestination, isSignedPack: isCatalogCheckRequired);
                 return;
             }
             catch (Exception ex)
@@ -146,8 +153,8 @@ namespace CDPIUI.Core.Store
             string tempFolderName = FileSystemService.GetNewTempFileName("ap");
             string tempDestination = Path.Combine(TempDirectory, tempFolderName);
 
-            bool isCatalogCheckRequired = Path.GetExtension(path) == "cdpisignedpack" ? true : false;
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : [".exe"];
+            bool isCatalogCheckRequired = Path.GetExtension(path) == ".cdpisignedpack" ? true : false;
+            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
             try
             {
