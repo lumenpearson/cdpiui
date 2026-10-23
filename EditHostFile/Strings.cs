@@ -17,7 +17,6 @@ namespace EditHostFile
                 }
                 catch
                 {
-                    // Without culture data the texts stay in English.
                     return false;
                 }
             }

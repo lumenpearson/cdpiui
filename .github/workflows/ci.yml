@@ -90,23 +90,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: microsoft/setup-msbuild@v2
 
-      # The same commands as build_portable.ps1: framework-dependent single-file executables.
-      - name: Build and publish Update and EditHostFile
+      - name: Build Update and EditHostFile
         shell: pwsh
         run: |
-          foreach ($project in @('Update/Update.csproj', 'EditHostFile/EditHostFile.csproj')) {
-            dotnet build $project -c Release -p:Platform=x64
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
-            $out = "artifacts/tools/$name"
-            dotnet publish $project -c Release -p:Platform=x64 -r win-x64 --self-contained false -p:PublishSingleFile=true -o $out
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            $files = @(Get-ChildItem -LiteralPath $out -File | Where-Object { $_.Extension -ne '.pdb' })
-            if ($files.Count -ne 1 -or $files[0].Name -ne "$name.exe") {
-              throw "$name must publish only $name.exe, found: $($files.Name -join ', ')"
-            }
-          }
+          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /m
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild EditHostFile/EditHostFile.csproj /p:Configuration=Release /m

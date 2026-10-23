@@ -1,6 +1,9 @@
 ﻿using System;
-using System.Drawing;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace Update
 {
@@ -28,14 +31,8 @@ namespace Update
                 InstallHelper.Instance.Init(extractFileName, destinationPath, "CDPIUI_TrayIcon.exe");
                 
 
-                // The window layout has fixed sizes in pixels. As on .NET Framework without a
-                // dpiAware manifest entry, Windows scales the window.
-                Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                // .NET 8 uses Segoe UI 9 pt as the default font. The window layout is made for the
-                // .NET Framework default font, so keep it.
-                Application.SetDefaultFont(new Font("Microsoft Sans Serif", 8.25F));
                 Application.Run(new MainWindow());
             }
             else
