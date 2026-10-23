@@ -52,6 +52,7 @@ namespace CDPIUI.Helper.Items
                         if (config.target != null && config.target.Count == 2)
                         {
                             var databaseItem = DatabaseHelper.Instance.GetItemById(config.target[0]);
+                            if (databaseItem == null) continue;
 
                             string requiredVersion = config.target[1];
                             string installedVersion = databaseItem.CurrentVersion;

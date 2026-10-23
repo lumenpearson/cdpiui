@@ -25,8 +25,7 @@ namespace CDPIUI.Helper.Basic
         public static void RaiseCriticalException(string sender, string errorCode, string why)
         {
             Logger.Instance.CreateErrorLog(sender, $"{errorCode} => {why}");
-            CriticalErrorHandlerWindow window = new(where: sender, why: $"Because exception happens \n{why}", errorCode: errorCode);
-            window.Activate();
+            ShowWindow(sender, $"Because exception happens \n{why}", errorCode);
         }
 
         /// <summary>
@@ -40,8 +39,24 @@ namespace CDPIUI.Helper.Basic
             string readyToUseErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_INTERNAL", exception);
 
             Logger.Instance.CreateErrorLog(sender, $"{readyToUseErrorCode} => {exception}");
-            CriticalErrorHandlerWindow window = new(where: sender, why: $"Because exception happens \n{exception}", errorCode: readyToUseErrorCode);
-            window.Activate();
+            ShowWindow(sender, $"Because exception happens \n{exception}", readyToUseErrorCode);
+        }
+
+        // Core errors (a lost tray, for example) are raised on pool threads, where creating the
+        // window failed and the user never saw the error.
+        private static void ShowWindow(string sender, string why, string errorCode)
+        {
+            void Show()
+            {
+                CriticalErrorHandlerWindow window = new(where: sender, why: why, errorCode: errorCode);
+                window.Activate();
+            }
+
+            var dispatcher = (Microsoft.UI.Xaml.Application.Current as App)?.UiDispatcher;
+            if (dispatcher == null || dispatcher.HasThreadAccess)
+                Show();
+            else if (!dispatcher.TryEnqueue(Show))
+                Logger.Instance.CreateErrorLog(nameof(ErrorShowingHelper), $"Cannot show the critical error window for {errorCode}");
         }
     }
 }

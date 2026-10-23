@@ -124,7 +124,8 @@ namespace CDPIUI.Views.CreateConfigHelper
 
             foreach (ConfigItem item in items)
             {
-                if (item.MarkAsRemoved) continue;
+                // target[0] threw on the UI thread for a config without a target.
+                if (item.MarkAsRemoved || item.target == null || item.target.Count == 0) continue;
                 List<string> usedSiteLists = 
                     [.. (await ConfigHelper.GetSiteListItemsAsync(item.file_name, item.packId, ignoreNull:true)).Select(x => Path.GetFileName(x.FilePath))];
                 List<string> excludedSiteLists = 

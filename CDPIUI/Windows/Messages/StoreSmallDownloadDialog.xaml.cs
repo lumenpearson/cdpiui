@@ -333,17 +333,23 @@ namespace CDPIUI.Messages
                 ErrorGrid.Visibility = Visibility.Visible;
 
                 ErrorCodeTextBlock.Text = errorCode;
+                errorHappened = true;
 
                 CancelButton.Content = "OK";
             };
             StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
+            // The event fires for every item; "installed" was shown after an error or when
+            // another item finished.
             _itemActionsStoppedHandler = (id) =>
             {
+                if (id != StoreId || errorHappened) return;
                 ShowItemAfterInstallActions();
             };
             StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
         }
+
+        private bool errorHappened = false;
 
         private void ShowItemAfterInstallActions()
         {

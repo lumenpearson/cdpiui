@@ -30,6 +30,7 @@ public sealed partial class StoreAskForSubItemInstallUserControl : UserControl
     {
         InitializeComponent();
         SetStatus(false);
+        Unloaded += (_, _) => RemoveHandlers();
     }
 
     public string StoreId
@@ -169,8 +170,11 @@ public sealed partial class StoreAskForSubItemInstallUserControl : UserControl
 
         _itemActionsStoppedHandler = (id) =>
         {
+            if (id != StoreId)
+                return;
             RemoveHandlers();
-            SetStatus(true);
+            // A failed installation also stops the actions.
+            SetStatus(DatabaseHelper.Instance.IsItemInstalled(StoreId));
         };
         StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
 

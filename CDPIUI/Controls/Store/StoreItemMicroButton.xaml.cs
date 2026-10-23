@@ -26,7 +26,16 @@ namespace CDPIUI
         public StoreItemMicroButton()
         {
             InitializeComponent();
-
+            // StoreHelper outlives the control; without this the handlers kept the control alive.
+            Unloaded += (_, _) => RemoveHandlers();
+            Loaded += (_, _) =>
+            {
+                if (!string.IsNullOrEmpty(StoreId) && StoreHelper.Instance.GetOperationIdFromItemId(StoreId) != null)
+                {
+                    RemoveHandlers();
+                    ConnectHandlers();
+                }
+            };
         }
 
         public string StoreId
@@ -146,6 +155,8 @@ namespace CDPIUI
 
             _itemActionsStoppedHandler = (id) =>
             {
+                if (id != StoreId)
+                    return;
                 RemoveHandlers();
                 GetReady();
             };
@@ -184,6 +195,7 @@ namespace CDPIUI
                 if (DatabaseHelper.Instance.IsItemInstalled(StoreId) || StoreHelper.Instance.GetOperationIdFromItemId(StoreId) != null)
                     return;
 
+                RemoveHandlers();
                 ConnectHandlers();
                 StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
             }

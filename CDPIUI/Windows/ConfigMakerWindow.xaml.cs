@@ -233,6 +233,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     public async Task OpenConfigFile(ConfigItem configItem)
     {
+        if (configItem?.target == null || configItem.target.Count == 0) return;
         await ConfigMaker.SetComponentAsync(configItem.target[0]);
         await ConfigMaker.LoadConfigItem(configItem, applyAutoCorrectorSilently: true);
         ConfigMaker.FormatCommand();
@@ -248,7 +249,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
         if (dialog.SelectedConfigResult == SelectResult.Selected)
         {
-            if (await IsExitAvailable())
+            if (dialog.SelectedConfigItem?.target?.Count > 0 && await IsExitAvailable())
             {
                 ConfigMaker.ComponentId = dialog.SelectedConfigItem.target[0];
                 await OpenConfigFile(dialog.SelectedConfigItem);

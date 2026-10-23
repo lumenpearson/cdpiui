@@ -5,6 +5,7 @@ using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Universal;
 using CDPIUI.Core.ComponentServices;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
@@ -131,6 +132,9 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     private void ResultPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        // Leaving the page or closing the window kept the test preset running and the user's
+        // Zapret2 was never restored.
+        _ = StopTestOnLeaveAsync();
         if (!languageHandlerConnected)
         {
             return;
@@ -444,6 +448,38 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
         UpdateSelectedStrategy();
         UpdateAssignmentView();
+    }
+
+    private async Task StopTestOnLeaveAsync()
+    {
+        if (!isManualTestRunning)
+        {
+            return;
+        }
+
+        bool restore = restoreComponentAfterTest;
+        isManualTestRunning = false;
+        isStartingTest = false;
+        restoreComponentAfterTest = false;
+        ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
+
+        string componentId = HardcodedItemIds.ComponentIds[Components.Zapret2];
+        if (string.IsNullOrWhiteSpace(componentId))
+        {
+            return;
+        }
+        try
+        {
+            await ComponentTasksManager.Instance.StopTask(componentId);
+            if (restore)
+            {
+                await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(ResultPage), $"Cannot stop the manual test: {exception}");
+        }
     }
 
     public async Task StartTestAsync()

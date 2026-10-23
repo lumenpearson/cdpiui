@@ -61,6 +61,8 @@ namespace CDPIUI
         private readonly Microsoft.UI.Dispatching.DispatcherQueue uiDispatcher =
             Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
 
+        public Microsoft.UI.Dispatching.DispatcherQueue UiDispatcher => uiDispatcher;
+
         private sealed class DisabledOwner
         {
             public IntPtr Handle;
