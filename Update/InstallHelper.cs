@@ -120,6 +120,14 @@ namespace Update
                         }
                         Application.Exit();
                     }
+                    else if (FinishStatus == InstallError.NoOldVersion)
+                    {
+                        // The rollback failed and the error box is open: the application is not
+                        // started, and the window closes when the user confirms the error.
+                        Log("Update was not applied and the previous version was not restored.");
+                        Cleanup();
+                        InstallationStateChanged?.Invoke(InstallState.Error);
+                    }
                     else
                     {
                         Log("Update was not applied. The previous version is kept.");

@@ -229,7 +229,9 @@ namespace CDPIUI.TrayIcon.Helper
                     // ----ms-protocol: is the cdpiui:// link activation, which accepts public routes only,
                     // so window and notification messages passed that way were dropped. --direct: is the
                     // argument for messages from the tray.
-                    return RunHelper.RunAsDesktopUser(Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"), $"--direct:{message}");
+                    return RunHelper.RunAsDesktopUser(
+                        Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
+                        $"{(createNoWindow ? "--create-no-window " : string.Empty)}--direct:{message}");
                 }
             }
 
