@@ -3394,6 +3394,9 @@ Here is error code in case you need it: ERR_FLASHLIGHT_BUSY</value>
   <data name="UpdateFileInvalidExtension" xml:space="preserve">
     <value>The selected file is not a CDPI UI update package.</value>
   </data>
+  <data name="UpdateFileMsiInstallation" xml:space="preserve">
+    <value>This copy of CDPI UI is installed with Setup.msi. Update packages (.cdpipatch) are for the portable copy only. Use Setup.msi of the new version or the update check in the application.</value>
+  </data>
   <data name="UpdateFileCurrentVersionFormat" xml:space="preserve">
     <value>Current version: {0}</value>
   </data>
