@@ -226,19 +226,25 @@ namespace CDPIUI.Core.Store
             cancellationTokenSource = operationSource;
             cancellationToken = operationSource.Token;
 
+            bool installed = false;
             try
             {
                 qi.Status = "GETR";
                 qi.DownloadStage =qi.Status;
                 ItemDownloadStageChanged?.Invoke(Tuple.Create(qi.OperationId, qi.Status));
-                await InstallItem(qi);
+                installed = await InstallItem(qi);
                 qi.Status = operationSource.IsCancellationRequested ? "CANC" : "END";
                 qi.DownloadStage = qi.Status;
                 ItemDownloadStageChanged?.Invoke(Tuple.Create(qi.OperationId, qi.Status));
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                // The exception was swallowed and the item stayed in GETR/WORK with no error shown (audit 22.2).
+                Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Installation of {qi.ItemId} failed: {ex}");
+                qi.Status = "END";
+                qi.DownloadStage = qi.Status;
+                ItemInstallingErrorHappens?.Invoke(Tuple.Create(qi.OperationId, ErrorModel.OnlyErrorCode(HandleException(ex))));
+                ItemDownloadStageChanged?.Invoke(Tuple.Create(qi.OperationId, qi.Status));
             }
             finally
             {
@@ -248,7 +254,8 @@ namespace CDPIUI.Core.Store
             }
             ItemActionsStopped?.Invoke(qi.ItemId);
 
-            var _item = UpdatesAvailableList.FirstOrDefault(x => x.StoreId == qi.ItemId);
+            // Only an installed update leaves the list; a failed one is still available.
+            var _item = installed ? UpdatesAvailableList.FirstOrDefault(x => x.StoreId == qi.ItemId) : null;
             if (_item != null)
             {
                 UpdatesAvailableList.Remove(_item);
@@ -410,13 +417,13 @@ namespace CDPIUI.Core.Store
             }
         }
 
-        private async Task InstallItem(QueueItemModel qi)
+        private async Task<bool> InstallItem(QueueItemModel qi)
         {
             bool wasInstalled = DatabaseHelper.Instance.IsItemInstalled(qi.ItemId);
             var result = await InstallItemWorker(qi);
 
             if (cancellationToken?.IsCancellationRequested == true)
-                return;
+                return false;
 
             if (!result.Success)
             {
@@ -444,7 +451,9 @@ namespace CDPIUI.Core.Store
                 {
                     Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot clean up {qi.ItemId} after a failed installation: {ex.Message}");
                 }
+                return false;
             }
+            return true;
         }
 
         private async Task<OperationResultModel<EmptyResult>> InstallItemWorker(QueueItemModel qi)
