@@ -148,7 +148,7 @@ namespace CDPIUI.TrayIcon.Forms
                 return;
             }
 
-            this.Invoke(() =>
+            SafeInvoke(() =>
             {
                 ComponentPanel.SuspendLayout();
                 DisconnectComponentPanelChildrensHandlers();
@@ -202,12 +202,25 @@ namespace CDPIUI.TrayIcon.Forms
             });
         }
 
+        // Task events come from other threads; the form can be destroyed between the
+        // IsHandleCreated check and Invoke, and the exception ended the tray (audit 12.3).
+        private void SafeInvoke(Action action)
+        {
+            try
+            {
+                if (!IsDisposed && IsHandleCreated)
+                    Invoke(action);
+            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
+        }
+
         private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
         {
             if (IsDisposed || !IsHandleCreated)
                 return;
 
-            this.Invoke(() =>
+            SafeInvoke(() =>
             {
                 Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
                 if (controls.Length > 0)
@@ -231,7 +244,7 @@ namespace CDPIUI.TrayIcon.Forms
             if (IsDisposed || !IsHandleCreated)
                 return;
 
-            this.Invoke(() =>
+            SafeInvoke(() =>
             {
                 Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
                 if (controls.Length > 0)
