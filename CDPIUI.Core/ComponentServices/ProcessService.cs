@@ -305,6 +305,14 @@ namespace CDPIUI.Core.ComponentServices
                     ErrorHappens?.Invoke(LastError);
             }
         }
+        private const int MaxOutputLength = 2 * 1024 * 1024;
+
+        private static void TrimToLimit(StringBuilder buffer)
+        {
+            if (buffer.Length > MaxOutputLength)
+                buffer.Remove(0, buffer.Length - MaxOutputLength / 2);
+        }
+
         public void ChangeProcName(string name)
         {
             ProcessName = name;
@@ -317,6 +325,9 @@ namespace CDPIUI.Core.ComponentServices
             {
                 _outputDefaultBuffer.Append(output);
                 _outputBuffer.Append(prettyOutput);
+                // A component running with --debug for hours filled memory: only the end is kept (audit 22.2).
+                TrimToLimit(_outputDefaultBuffer);
+                TrimToLimit(_outputBuffer);
             }
 
             OutputReceived?.Invoke(prettyOutput);
