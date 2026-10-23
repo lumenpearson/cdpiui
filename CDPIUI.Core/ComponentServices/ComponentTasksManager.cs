@@ -84,15 +84,16 @@ namespace CDPIUI.Core.ComponentServices
             }
             else
             {
+                // The task can be missing here, so the requested id is reported.
                 await PipeHelper.SendSettingsPacket(
                             Shared.Pipe.Models.SettingsMessageIds.ComponentNotInstalled,
-                            new() { { "componentId", task.Id } });
+                            new() { { "componentId", id } });
             }
         }
 
         public async void SendTasksData()
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
                 await SendTaskData(task.Id);
             }

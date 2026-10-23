@@ -309,6 +309,13 @@ namespace CDPIUI.Views.Main.Components
             });
         }
 
+        // Waiting for the task list on the UI thread with .Result could deadlock.
+        private async Task RestartComponentIfRunning()
+        {
+            if (await ComponentTasksManager.Instance.IsTaskRunned(ComponentId))
+                await ComponentTasksManager.Instance.RestartTask(ComponentId);
+        }
+
         private void HandleSettingTileElementClick(ActionIds actionId, List<string> arguments, SettingTileContentDefinition contentDefinition)
         {
             switch (actionId)
@@ -353,7 +360,7 @@ namespace CDPIUI.Views.Main.Components
                     ShowAnim = false;
                     var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
                     Task.Run(() => InitSettingsTiles(item));
-                    if (ComponentTasksManager.Instance.IsTaskRunned(ComponentId).Result) _ = ComponentTasksManager.Instance.RestartTask(ComponentId);
+                    _ = RestartComponentIfRunning();
                     break;
                 case ActionIds.FullButtonElementClicked:
                     ButtonClick(contentDefinition);
