@@ -159,26 +159,6 @@ namespace CDPIUI.Core.Store
             }
         }
 
-        public async void ImportApplicationUpdatePatchFromFile(string path)
-        {
-
-            string tempFolderName = FileSystemService.GetNewTempFileName("ap");
-            string tempDestination = Path.Combine(TempDirectory, tempFolderName);
-
-            bool isCatalogCheckRequired = Path.GetExtension(path) == ".cdpisignedpack" ? true : false;
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
-
-            try
-            {
-                await ZipService.ExtractZip(path, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
-            }
-            catch (Exception ex)
-            {
-                string error = HandleError(ex);
-            }
-
-        }
-
         private string HandleError(Exception ex)
         {
             return ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_LOCAL_ITEM_INSTALLING", ex);

@@ -181,7 +181,7 @@
     <value>Адреса следует указывать через точку с запятой (";")</value>
   </data>
   <data name="Bin.Description" xml:space="preserve">
-    <value>Путь к .BIN файлу. Ожидается латиница без пробелов и запрещенных файловой системой символов.</value>
+    <value>Путь к .BIN файлу. Ожидается латиница без пробелов и запрещённых файловой системой символов.</value>
   </data>
   <data name="RequestsTextBlock.Text" xml:space="preserve">
     <value>Запросы</value>
