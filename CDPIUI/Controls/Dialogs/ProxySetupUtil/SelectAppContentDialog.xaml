@@ -70,7 +70,7 @@
                                     <ColumnDefinition Width="auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="ClassicAppTextBox" HorizontalAlignment="Stretch" TextChanged="ClassicAppTextBox_TextChanged" MaxWidth="219"/>
-                                <Button x:Name="FileChooseButton" l:Uids.Uid="FileChooseButton" Padding="6" Grid.Column="2" Height="32" Width="32" Click="FileChooseButton_Click">
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="FileChooseButton" l:Uids.Uid="FileChooseButton" Padding="6" Grid.Column="2" Height="32" Width="32" Click="FileChooseButton_Click">
                                     <FontIcon Glyph="&#xE8E5;" FontSize="16" />
                                 </Button>
                             </Grid>
@@ -89,7 +89,7 @@
                                     <ColumnDefinition Width="auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="UniversalAppTextBox" HorizontalAlignment="Stretch" TextChanged="UniversalAppTextBox_TextChanged" MaxWidth="219"/>
-                                <Button x:Name="FolderChooseButton" l:Uids.Uid="FolderChooseButton" Padding="6" Grid.Column="2" Height="32" Width="32" Click="FolderChooseButton_Click">
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="FolderChooseButton" l:Uids.Uid="FolderChooseButton" Padding="6" Grid.Column="2" Height="32" Width="32" Click="FolderChooseButton_Click">
                                     <FontIcon Glyph="&#xE8DA;" FontSize="16" />
                                 </Button>
                             </Grid>

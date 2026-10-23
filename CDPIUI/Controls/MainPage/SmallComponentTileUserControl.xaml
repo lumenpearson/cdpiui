@@ -143,7 +143,7 @@
                         </ToolTipService.ToolTip>
                         <FontIcon x:Name="PlayGlyph" Glyph="&#xE768;" FontSize="16"/>
                     </ToggleButton>
-                    <Button x:Name="ViewOutputButton" l:Uids.Uid="ViewOutputButton" Padding="6" Click="ViewOutputButton_Click">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ViewOutputButton" l:Uids.Uid="ViewOutputButton" Padding="6" Click="ViewOutputButton_Click">
                         <FontIcon Glyph="&#xE721;" FontSize="16"/>
                     </Button>
                     <Button x:Name="ShowMoreSettingsButton" Padding="6" Click="ShowMoreSettingsButton_Click">

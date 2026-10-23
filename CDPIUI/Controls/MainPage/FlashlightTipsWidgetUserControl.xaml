@@ -60,15 +60,15 @@
                         <ColumnDefinition Width="1"/>
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="PreviousTipButton" l:Uids.Uid="PreviousTipButton" Padding="7 7 6 6" CornerRadius="0" BorderThickness="0" Click="PreviousTipButton_Click">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="PreviousTipButton" l:Uids.Uid="PreviousTipButton" Padding="7 7 6 6" CornerRadius="0" BorderThickness="0" Click="PreviousTipButton_Click">
                         <FontIcon Glyph="&#xE76B;" FontSize="16"/>
                     </Button>
                     <Rectangle Fill="{ThemeResource DividerStrokeColorDefaultBrush}" Grid.Column="1"/>
-                    <Button x:Name="NextTipButton" l:Uids.Uid="NextTipButton" Padding="7 7 6 6" Grid.Column="2" CornerRadius="0" BorderThickness="0" Click="NextTipButton_Click">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="NextTipButton" l:Uids.Uid="NextTipButton" Padding="7 7 6 6" Grid.Column="2" CornerRadius="0" BorderThickness="0" Click="NextTipButton_Click">
                         <FontIcon Glyph="&#xE76C;" FontSize="16"/>
                     </Button>
                 </Grid>
-                <Button x:Name="HideFlashlightWidgetButton" l:Uids.Uid="HideFlashlightWidgetButton" Padding="7 7 6 6" BorderThickness="0" Click="HideFlashlightWidgetButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="HideFlashlightWidgetButton" l:Uids.Uid="HideFlashlightWidgetButton" Padding="7 7 6 6" BorderThickness="0" Click="HideFlashlightWidgetButton_Click">
                     <FontIcon Glyph="&#xE711;" FontSize="16"/>
                 </Button>
             </StackPanel>

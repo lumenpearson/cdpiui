@@ -94,7 +94,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
                         <Button l:Uids.Uid="SetupButton" x:Name="ActionButton" MinWidth="125" Click="ActionButton_Click"/>
-                        <Button l:Uids.Uid="ViewMoreActionsButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ViewMoreActionsButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent">
                             <FontIcon Glyph="&#xE712;" FontSize="16"/>
                             <Button.Flyout>
                                 <MenuFlyout>

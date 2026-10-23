@@ -666,7 +666,7 @@ Please, install lates version of "{0}" in Store</value>
   <data name="Stop" xml:space="preserve">
     <value>Stop</value>
   </data>
-  <data name="StopActionButton.ToolTipService.Tooltip" xml:space="preserve">
+  <data name="StopActionButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Stop downloading</value>
   </data>
   <data name="StopButton.Content" xml:space="preserve">
@@ -1657,7 +1657,7 @@ Some features may work not as planned — don't worry. Just say about it to deve
   <data name="ExclusiveGroupTextBlock.Text" xml:space="preserve">
     <value>Exclusive group</value>
   </data>
-  <data name="RemoveFileButton.ToolTipService.Tooltip" xml:space="preserve">
+  <data name="RemoveFileButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Remove File</value>
   </data>
   <data name="SelectFileText.Text" xml:space="preserve">
@@ -1976,7 +1976,7 @@ Here is error code in case you need it.
   <data name="SelectConfigKitToEditContentDialog.SecondaryButtonText" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="FrameGoBackButton.ToolTipService.ToolTIp" xml:space="preserve">
+  <data name="FrameGoBackButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Back</value>
   </data>
   <data name="CancelTextBlock.Text" xml:space="preserve">
@@ -6237,5 +6237,14 @@ By enabling this setting, you acknowledge that you have read this information.</
   </data>
   <data name="FileDialogXmlData" xml:space="preserve">
     <value>XML data files</value>
+  </data>
+  <data name="AddWidgetToHomePageMenuItem.Text" xml:space="preserve">
+    <value>Add widget to home page</value>
+  </data>
+  <data name="SettingTileMoreActionsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="ItemShareButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Share</value>
   </data>
 </root>

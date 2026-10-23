@@ -127,7 +127,7 @@
                                     <controls:SettingsCard l:Uids.Uid="BufferSettingsCard">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBox x:Name="BufferSizeTextBox"/>
-                                            <Button x:Name="ResetBufferButton" 
+                                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetBufferButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
@@ -141,7 +141,7 @@
                                     <controls:SettingsCard l:Uids.Uid="WebSocketSettingsCard">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBox x:Name="WebSocketSizeTextBox"/>
-                                            <Button x:Name="ResetWebSocketSizeButton" 
+                                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetWebSocketSizeButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
@@ -159,7 +159,7 @@
                                     <controls:SettingsCard l:Uids.Uid="LogSizeSettingsCard">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBox x:Name="LogSizeTextBox"/>
-                                            <Button x:Name="ResetLogSizeButton" 
+                                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetLogSizeButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
@@ -197,7 +197,7 @@
                                 <TextBlock l:Uids.Uid="PortTextBlock"/>
                                 <TextBox x:Name="PortValue" HorizontalAlignment="Stretch"/>
                             </StackPanel>
-                            <Button x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
                                     Grid.Column="3" Padding="6" 
                                     VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                     Height="32" Width="32"
@@ -208,7 +208,7 @@
                                 <TextBlock l:Uids.Uid="KeyTextBlock"/>
                                 <TextBox x:Name="KeyValue" HorizontalAlignment="Stretch"/>
                             </StackPanel>
-                            <Button x:Name="ResetKeyButton" l:Uids.Uid="ResetByDefaultButton"
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetKeyButton" l:Uids.Uid="ResetByDefaultButton"
                                     Grid.Row="1" Grid.Column="3" Padding="6" 
                                     VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                     Height="32" Width="32"

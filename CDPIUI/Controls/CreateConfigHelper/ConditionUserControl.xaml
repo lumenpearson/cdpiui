@@ -42,7 +42,7 @@
                 <TextBlock Text="{x:Bind Description, Mode=OneWay}" IsTextSelectionEnabled="True"/>
             </StackPanel>
             <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
-                <Button Padding="6" x:Name="CopyButton" l:Uids.Uid="CopyButton" Click="CopyButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Padding="6" x:Name="CopyButton" l:Uids.Uid="CopyButton" Click="CopyButton_Click">
                     <FontIcon Glyph="&#xE8C8;" FontSize="16" />
                 </Button>
                 <Button Padding="6" l:Uids.Uid="RemoveButton" Click="Button_Click">

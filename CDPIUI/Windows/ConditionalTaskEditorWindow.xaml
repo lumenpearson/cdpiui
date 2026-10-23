@@ -236,10 +236,10 @@
                         </Border>
 
                         <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                            <Button Padding="6" l:Uids.Uid="CL_MoveActionUpButton" Click="MoveActionUpButton_Click">
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Padding="6" l:Uids.Uid="CL_MoveActionUpButton" Click="MoveActionUpButton_Click">
                                 <FontIcon FontSize="16" Glyph="&#xE70E;" />
                             </Button>
-                            <Button Padding="6" l:Uids.Uid="CL_MoveActionDownButton" Click="MoveActionDownButton_Click">
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Padding="6" l:Uids.Uid="CL_MoveActionDownButton" Click="MoveActionDownButton_Click">
                                 <FontIcon FontSize="16" Glyph="&#xE70D;" />
                             </Button>
                         </StackPanel>
@@ -273,7 +273,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                     Padding="8, 7, 7, 7"
                     VerticalAlignment="Stretch"
                     l:Uids.Uid="CL_EditorHelpButton"
