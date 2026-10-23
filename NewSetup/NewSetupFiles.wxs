@@ -333,6 +333,12 @@
       <Component Directory="INSTALLLOCATION" Subdirectory="Help\EN\Utils">
         <File Source="$(var.SourceDir)\Help\EN\Utils\EditHostsFileUtility.md" KeyPath="yes" />
       </Component>
+      <Component Directory="INSTALLLOCATION" Subdirectory="Help\EN\CreateConfigHelper">
+        <File Source="$(var.SourceDir)\Help\EN\CreateConfigHelper\SaveConfigKitAs.md" KeyPath="yes" />
+      </Component>
+      <Component Directory="INSTALLLOCATION" Subdirectory="Help\EN\Utils">
+        <File Source="$(var.SourceDir)\Help\EN\Utils\TroubleshootingUtility.md" KeyPath="yes" />
+      </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="Help\EN">
         <File Source="$(var.SourceDir)\Help\EN\WelcomeToHelp.md" KeyPath="yes" />
       </Component>
@@ -428,6 +434,9 @@
       </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="Help\RU\Utils">
         <File Source="$(var.SourceDir)\Help\RU\Utils\EditHostsFileUtility.md" KeyPath="yes" />
+      </Component>
+      <Component Directory="INSTALLLOCATION" Subdirectory="Help\RU\Utils">
+        <File Source="$(var.SourceDir)\Help\RU\Utils\TroubleshootingUtility.md" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="Help\RU">
         <File Source="$(var.SourceDir)\Help\RU\WelcomeToHelp.md" KeyPath="yes" />
