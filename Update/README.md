@@ -29,7 +29,7 @@ gives the full check procedure.
 Notes on the arguments (`Update/Program.cs`):
 
 - `--directory-to-zip` is the path of the ZIP package, not of a directory.
-- The tool removes a trailing `"` from each value. A quoted path that ends with `\` causes this character.
+- The tool removes the `"` characters at the start and at the end of each value. A quoted path that ends with `\` gives a trailing `"`.
 - If one of the two arguments is missing, the tool shows an information message and stops.
 
 The project does not embed a manifest. Thus `Update.exe` gets the rights of the tray.
@@ -41,7 +41,7 @@ The project does not embed a manifest. Thus `Update.exe` gets the rights of the 
 1. **Stop the application.**
    - The tool sets the `Global\CDPIUI_TrayShutdown` event. The tray then exits as from its menu: it stops the components and restores the proxy settings.
    - The tool waits a maximum of 20 s for the tray.
-   - The tool kills all remaining `goodbyeDPI`, `CDPIUI` and `CDPIUI_TrayIcon` processes.
+   - The tool stops all remaining `goodbyeDPI`, `CDPIUI` and `CDPIUI_TrayIcon` processes (`Process.Kill`).
    - The tool waits a maximum of 10 s for each process name. If a process continues to run, the tool does not change files.
 2. **Stage the files.**
    - The tool deletes the old `<install>\.update-staging` and `<install>\.update-backup` folders.
@@ -54,27 +54,20 @@ The project does not embed a manifest. Thus `Update.exe` gets the rights of the 
 3. **Apply the files.**
    - The tool moves each staged file into the installation folder.
    - Before this, the tool moves the existing file to the same relative path in `<install>\.update-backup`.
-   - The tool also moves files to the backup folder if the previous manifest lists them and the update does not contain them. This removes these files.
+   - The tool does not remove installed files. A patch is differential: it contains only the files that changed. Thus a file that is not in the patch stays in the installation folder.
 4. **Roll back after a failure.**
    - If a move fails, the tool restores the applied files from the backup folder in reverse sequence.
    - If the restore is incomplete, the status becomes `NoOldVersion`.
    - In that case, an error message tells the user to install the application again. The tool keeps the backup folder for manual recovery.
 5. **Finish the update.**
-   - After a successful update, the tool writes the manifest.
-   - The tool deletes the staging and backup folders.
+   - The tool deletes the staging folder and the backup folder.
+   - The tool deletes the `<install>\.update-manifest` file, if it exists. Earlier versions of the tool wrote this file.
    - The tool starts the tray.
 
 ### Skipped files
 
-The tool does not stage `Update.exe` or `catalog.cat` if a file with the same name exists at the
-destination. The manifest procedure never removes these two files.
-
-### Manifest
-
-`<install>\.update-manifest` is a text file. Each line contains one relative path. The file lists
-the files that the last successful update wrote. The tool uses the manifest only to find the files
-to remove at the next update. If the manifest is missing, the tool removes no files. For example,
-an MSI installation has no manifest.
+- The tool never stages a `catalog.cat` file from a patch. The catalog of a patch lists only the files of that patch. Thus it does not agree with the installation folder after the next patch.
+- The tool does not stage `Update.exe` if `Update.exe` exists at the destination. A patch contains the new updater as `_Update.exe`.
 
 ## Tray restart
 
@@ -98,19 +91,24 @@ If the tray executable is missing or does not start, the tool shows an error mes
 The tool adds lines to `update.log` in the folder of `Update.exe`, which is the installation
 folder. Each line starts with `[yyyy-MM-dd HH:mm:ss]`. The tool ignores log write errors.
 
-The MSI uninstall cleanup deletes `update.log`, `.update-manifest`, `.update-staging` and
-`.update-backup` (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`).
+The MSI uninstall cleanup deletes `update.log`, `.update-manifest`, `.update-staging`,
+`.update-backup` and other runtime files (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`).
 
 ## Window
 
-The "Update Assistant" window (`Update/Form1.cs`, `Update/Form1.Designer.cs`) has a fixed size
+The `Update Assistant` window (`Update/Form1.cs`, `Update/Form1.Designer.cs`) has a fixed size
 and no control box. It contains these controls:
 
 | Control | Content |
 |---------|---------|
 | Progress bar | Goes from 0 % to 100 % during extraction. Then it goes from 0 % to 100 % again during the apply step. |
 | Status line | `Preparing...`, `Unpacking...`, `Copying files...`, `Finalizing...`, the current file, `Complete` or `Exception happens`. |
-| Button | Disabled until the procedure completes or fails. Then it closes the tool. |
+| Button (`Cancel`) | Disabled until the procedure completes or fails. Then it closes the tool. |
 
 The user cannot close the window while the update runs (`FinishStatus` is `None`). After the
 tray starts successfully, the tool closes automatically.
+
+The tool shows an error message box for these errors: the rollback is incomplete, the tray does
+not start, or an unexpected exception occurs. The installation thread sends the error to the UI
+thread. The window owns the message box. Thus the message box cannot open behind the window.
+When the user closes the message box, the tool stops.
