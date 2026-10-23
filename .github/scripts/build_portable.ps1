@@ -31,6 +31,17 @@ Invoke-Checked "Publish CDPIUI" {
         "/p:PublishDir=$publish\"
 }
 
+# The Windows App SDK copies its .mui files for about 90 languages regardless of
+# SatelliteResourceLanguages; the application and the MSI have English and Russian only.
+$keptLanguages = @("en-us", "ru-ru")
+Get-ChildItem -LiteralPath $publish -Directory |
+    Where-Object { $keptLanguages -notcontains $_.Name.ToLowerInvariant() } |
+    Where-Object {
+        $files = @(Get-ChildItem -LiteralPath $_.FullName -File -Recurse)
+        $files.Count -gt 0 -and @($files | Where-Object { $_.Extension -ne ".mui" }).Count -eq 0
+    } |
+    Remove-Item -Recurse -Force
+
 Invoke-Checked "Publish CDPIUI.TrayIcon" {
     dotnet publish (Join-Path $root "CDPIUI.TrayIcon/CDPIUI.TrayIcon.csproj") -c $Configuration -p:Platform=x64 `
         -r win-x64 --self-contained false -p:PublishSingleFile=true -o (Join-Path $tools "tray")
