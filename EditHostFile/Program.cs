@@ -2,22 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace EditHostFile
 {
     internal class Program
     {
+        private const int E_INVALIDARG = unchecked((int)0x80070057);
+
         private static void Log(string message)
         {
             Console.WriteLine($"[CDPI UI/EditHostFileHelper] {message}");
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             Log("Getting ready...");
             string pathpart = "hosts";
@@ -28,65 +28,185 @@ namespace EditHostFile
             }
             string hostfile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), pathpart);
 
-            if (args.Contains("/remove"))
+            try
             {
-                RemoveAddedLines(hostfile);
+                if (args.Contains("/remove"))
+                {
+                    RemoveAddedLines(hostfile);
+                }
+                else if (args.Contains("/add"))
+                {
+                    AddNewLines(hostfile);
+                }
+                else if (args.Contains("/recover"))
+                {
+                    RestoreBackup(hostfile);
+                }
+                else
+                {
+                    Log("Unknown command");
+                    return E_INVALIDARG;
+                }
             }
-            else if (args.Contains("/add"))
+            catch (Exception ex)
             {
-                AddNewLines(hostfile);
-            }
-            else if (args.Contains("/recover"))
-            {
-                RestoreBackup(hostfile);
+                Log($"Work failed: {ex}");
+                return ex.HResult != 0 ? ex.HResult : 1;
             }
             Log("Work finished. Goodbye~");
+            return 0;
         }
 
-        private static void CreateBackup(string path)
+        private sealed class HostsText
+        {
+            public string Text;
+            public Encoding Encoding;
+            public string NewLine;
+        }
+
+        private static HostsText Read(string path)
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            Encoding encoding;
+            int offset = 0;
+
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            {
+                encoding = new UTF8Encoding(true);
+                offset = 3;
+            }
+            else if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+            {
+                encoding = new UnicodeEncoding(false, true);
+                offset = 2;
+            }
+            else if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+            {
+                encoding = new UnicodeEncoding(true, true);
+                offset = 2;
+            }
+            else
+            {
+                // No BOM: keep UTF-8 if the content is valid UTF-8, otherwise it is in the ANSI code page.
+                encoding = new UTF8Encoding(false, true);
+                try
+                {
+                    encoding.GetString(bytes);
+                    encoding = new UTF8Encoding(false);
+                }
+                catch (DecoderFallbackException)
+                {
+                    encoding = Encoding.Default;
+                }
+            }
+
+            string text = encoding.GetString(bytes, offset, bytes.Length - offset);
+            string newLine = text.Contains("\r\n") ? "\r\n" : text.Contains("\n") ? "\n" : "\r\n";
+            return new HostsText { Text = text, Encoding = encoding, NewLine = newLine };
+        }
+
+        private static void Write(string path, HostsText content)
+        {
+            byte[] preamble = content.Encoding.GetPreamble();
+            byte[] body = content.Encoding.GetBytes(content.Text);
+
+            // Write next to the target and swap it in, so the hosts file is never left half written.
+            string temp = $"{path}.cdpiui.tmp";
+            using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(preamble, 0, preamble.Length);
+                stream.Write(body, 0, body.Length);
+                stream.Flush(true);
+            }
+
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Replace(temp, path, null);
+                }
+                else
+                {
+                    File.Move(temp, path);
+                }
+            }
+            finally
+            {
+                if (File.Exists(temp)) File.Delete(temp);
+            }
+        }
+
+        private static void CreateBackup(string path, HostsText content)
         {
             Log($"Creating backup for \"{path}\" in \"{path}.bak\"");
-            File.Copy(path, $"{path}.bak", true);
+            Write($"{path}.bak", content);
         }
 
         private static void RestoreBackup(string path)
         {
             Log($"Restoring backup for \"{path}\" in \"{path}.bak\"");
-            File.Copy($"{path}.bak", path, true);
-            File.Delete($"{path}.bak");
+            string backup = $"{path}.bak";
+            if (!File.Exists(backup)) throw new FileNotFoundException("Backup not found", backup);
+
+            Write(path, Read(backup));
+            File.Delete(backup);
+        }
+
+        private static string RemoveBlock(string text)
+        {
+            return Regex.Replace(text, @"(# \[CDOM-B\](?:.*?)# \[CDOM-E\](?:.*?))(?:\n|$)", "", RegexOptions.Singleline);
         }
 
         private static void RemoveAddedLines(string path)
         {
             Log($"Removing added lines in \"{path}\"");
-            string textContent = File.ReadAllText(path);
-            textContent = Regex.Replace(textContent, @"(# \[CDOM-B\](?:.*?)# \[CDOM-E\](?:.*?))(?:\n|$)", "", RegexOptions.Singleline);
+            HostsText content = Read(path);
+            string text = RemoveBlock(content.Text);
+            if (text == content.Text) return;
 
-            File.WriteAllText(path, textContent);
+            content.Text = text;
+            Write(path, content);
+        }
+
+        private static List<string> SplitLines(string text)
+        {
+            return text.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         }
 
         private static void AddNewLines(string path)
         {
             Log($"Adding new lines in \"{path}\"");
             Assembly assembly = Assembly.GetExecutingAssembly();
-            var stream = assembly.GetManifestResourceStream("EditHostFile.Data.hosts");
-            StreamReader reader = new StreamReader(stream);
-            string text = reader.ReadToEnd();
-
-            RemoveAddedLines(path);
-            CreateBackup(path);
-
-            string[] lines = File.ReadAllLines(path);
-            foreach (string line in text.Split('\n'))
+            string resource;
+            using (var stream = assembly.GetManifestResourceStream("EditHostFile.Data.hosts"))
+            using (var reader = new StreamReader(stream))
             {
-                if (!lines.Contains(line))
+                resource = reader.ReadToEnd();
+            }
+
+            HostsText content = Read(path);
+            string text = RemoveBlock(content.Text);
+            content.Text = text;
+            CreateBackup(path, content);
+
+            List<string> lines = SplitLines(text);
+            var builder = new StringBuilder(text);
+            if (text.Length > 0 && !text.EndsWith("\n"))
+            {
+                builder.Append(content.NewLine);
+            }
+            foreach (string line in SplitLines(resource))
+            {
+                if (line.Length == 0 || !lines.Contains(line))
                 {
-                    File.AppendAllLines(path, new String[] { line });
+                    builder.Append(line).Append(content.NewLine);
                 }
             }
 
-            Log($"Adding new lines in \"{path}\". Status: COMPLETE");
+            content.Text = builder.ToString();
+            Write(path, content);
 
+            Log($"Adding new lines in \"{path}\". Status: COMPLETE");
         }
     }
 }
