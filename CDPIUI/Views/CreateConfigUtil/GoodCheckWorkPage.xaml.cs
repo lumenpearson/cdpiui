@@ -52,6 +52,9 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private ILocalizer localizer = Localizer.Get();
 
+    // The service is a singleton, so only the page that is currently shown may stay subscribed.
+    private static GoodCheckWorkPage _connectedPage;
+
     public GoodCheckWorkPage()
     {
         InitializeComponent();
@@ -59,7 +62,6 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         _uiDispatcher = DispatcherQueue.GetForCurrentThread();
 
         TemplateWindow.ToggleLoadingState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Indeterminate);
-        GoodCheckProcessService.Instance.AllComplete += AllCompletedActions;
 
         SiteListProgressText.Text = GoodCheckProcessService.Instance.CurrentSiteList;
         GoodStrategyCount.Text = GoodCheckProcessService.Instance.CorrectCount.ToString();
@@ -67,6 +69,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
 
         ConnectHandlers();
+        Loaded += (_, _) => ConnectHandlers();
+        Unloaded += (_, _) => DisconnectHandlers();
     }
 
     private void AllCompletedActions(string filepath)
@@ -90,42 +94,69 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private void ConnectHandlers()
     {
-        GoodCheckProcessService.Instance.CurrentSiteListChanged += (name) =>
+        if (_connectedPage == this)
+            return;
+        _connectedPage?.DisconnectHandlers();
+        _connectedPage = this;
+
+        var service = GoodCheckProcessService.Instance;
+        service.AllComplete += AllCompletedActions;
+        service.CurrentSiteListChanged += OnCurrentSiteListChanged;
+        service.ProgressChanged += OnProgressChanged;
+        service.CorrectCountChanged += OnCorrectCountChanged;
+        service.IncorrectCountChanged += OnIncorrectCountChanged;
+    }
+
+    private void DisconnectHandlers()
+    {
+        var service = GoodCheckProcessService.Instance;
+        service.AllComplete -= AllCompletedActions;
+        service.CurrentSiteListChanged -= OnCurrentSiteListChanged;
+        service.ProgressChanged -= OnProgressChanged;
+        service.CorrectCountChanged -= OnCorrectCountChanged;
+        service.IncorrectCountChanged -= OnIncorrectCountChanged;
+
+        if (_connectedPage == this)
+            _connectedPage = null;
+    }
+
+    private void OnCurrentSiteListChanged(string name)
+    {
+        CurrentSiteListText(name);
+
+        _lastProgressTime = DateTime.MinValue;
+        _lastProgressCount = 0;
+        _speedElementsPerSec = 0.0;
+        _initialEstimatedSecondsPerOperation = 0.0;
+    }
+
+    private void OnProgressChanged(Tuple<string, string, string> tuple)
+    {
+        int.TryParse(tuple.Item1, out int current);
+        int.TryParse(tuple.Item2, out int all);
+        string strategy = tuple.Item3;
+
+        if (all == 0)
         {
-            CurrentSiteListText(name);
+            SetSiteListProgressText($"ERR%");
+            return;
+        }
 
-            _lastProgressTime = DateTime.MinValue;
-            _lastProgressCount = 0;
-            _speedElementsPerSec = 0.0;
-            _initialEstimatedSecondsPerOperation = 0.0;
+        double percent = (double)current / (double)all * 100.0;
+        CalcSpeed(current, all);
 
-        };
-        GoodCheckProcessService.Instance.ProgressChanged += (tuple) =>
-        {
-            int.TryParse(tuple.Item1, out int current);
-            int.TryParse(tuple.Item2, out int all);
-            string strategy = tuple.Item3;
+        TemplateWindow.ToggleLoadingState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal, current, all);
+        SetSiteListProgressText($"{percent:F0}% [{current}/{all}]");
+    }
 
-            if (all == 0)
-            {
-                SetSiteListProgressText($"ERR%");
-                return;
-            }
+    private void OnCorrectCountChanged(int count)
+    {
+        SetCorrectCountText(count.ToString());
+    }
 
-            double percent = (double)current / (double)all * 100.0;
-            CalcSpeed(current, all);
-
-            TemplateWindow.ToggleLoadingState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal, current, all);
-            SetSiteListProgressText($"{percent:F0}% [{current}/{all}]");
-        };
-        GoodCheckProcessService.Instance.CorrectCountChanged += (count) =>
-        {
-            SetCorrectCountText(count.ToString());
-        };
-        GoodCheckProcessService.Instance.IncorrectCountChanged += (count) =>
-        {
-            SetIncorrectCountText(count.ToString());
-        };
+    private void OnIncorrectCountChanged(int count)
+    {
+        SetIncorrectCountText(count.ToString());
     }
 
     
