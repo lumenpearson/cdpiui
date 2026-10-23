@@ -29,7 +29,7 @@ namespace CDPIUI.Helper
                 CardSubtitle = LScriptLangHelper.ExecuteScript(
                     kit.small_description,
                     StoreLocalizationHelper.GetStoreLikeLocale()),
-                CardImageSource = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(kit.icon))),
+                CardImageSource = CreateIcon(kit.icon),
                 CardBackgroundBrush = ReadyKitBrushFactory.Create(
                     kitItems.Select(item => item.background),
                     kit.background),
@@ -37,6 +37,18 @@ namespace CDPIUI.Helper
                     .Select(ViewStoreItemModel.ConvertFromRepoItemModel)
                     .ToList()
             };
+        }
+
+        // A kit without an icon threw UriFormatException for new Uri("").
+        private static BitmapImage CreateIcon(string icon)
+        {
+            if (string.IsNullOrWhiteSpace(icon))
+            {
+                return null;
+            }
+            return Uri.TryCreate(LScriptLangHelper.ExecuteScript(icon), UriKind.Absolute, out Uri uri)
+                ? new BitmapImage(uri)
+                : null;
         }
     }
 }

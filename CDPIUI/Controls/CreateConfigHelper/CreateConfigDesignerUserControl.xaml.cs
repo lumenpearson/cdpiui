@@ -187,10 +187,8 @@ namespace CDPIUI
 
         private void NotifyModeChanged()
         {
-            if (ModeChangedParameter == null)
-            {
-                ModeChangedParameter = Tuple.Create(Guid, Modes);
-            }
+            // A parameter cached from the first edit sent the old modes on every later edit.
+            ModeChangedParameter = Tuple.Create(Guid, Modes);
             if (ModeChangedCommand != null && ModeChangedCommand.CanExecute(ModeChangedParameter))
             {
                 ModeChangedCommand.Execute(ModeChangedParameter);

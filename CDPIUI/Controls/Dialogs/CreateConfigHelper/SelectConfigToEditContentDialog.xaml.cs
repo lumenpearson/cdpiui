@@ -106,7 +106,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                             DisplayName = item.name,
                             Directory = item.file_name,
                             PackId = item.packId,
-                            PackName = DatabaseHelper.Instance.GetItemById(item.packId).ShortName,
+                            PackName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
                         });
                 }
             }
