@@ -183,8 +183,8 @@ namespace CDPIUI.Views.SetupProxy
                     SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress"), SettingsManager.Instance.GetValue<string>("PROXY", "port"));
 
                 ProxiFyreSettings? settings = TryLoadSettings(settingsFile);
-                ProxiFyreProxyGroup? proxyGroup = settings?.proxies?.FirstOrDefault(x => x.socks5ProxyEndpoint == readyToCompareIpAddr)
-                    ?? settings?.proxies?.FirstOrDefault();
+                ProxiFyreProxyGroup? proxyGroup = settings?.proxies?.FirstOrDefault(x => x?.socks5ProxyEndpoint == readyToCompareIpAddr)
+                    ?? settings?.proxies?.FirstOrDefault(x => x != null);
 
                 foreach (string app in proxyGroup?.appNames ?? [])
                 {
@@ -195,11 +195,13 @@ namespace CDPIUI.Views.SetupProxy
                     });
                 }
 
-                if (proxyGroup.supportedProtocols.Contains("UDP") && proxyGroup.supportedProtocols.Contains("TCP"))
+                // An empty proxies list or null fields in app-config.json threw a NullReferenceException.
+                var protocols = proxyGroup?.supportedProtocols;
+                if (protocols == null || (protocols.Contains("UDP") && protocols.Contains("TCP")))
                 {
                     ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.Both);
                 }
-                else if (proxyGroup.supportedProtocols.Contains("UDP"))
+                else if (protocols.Contains("UDP"))
                 {
                     ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.UDP);
                 }
@@ -208,7 +210,7 @@ namespace CDPIUI.Views.SetupProxy
                     ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.TCP);
                 }
 
-                foreach (string app in settings.excludes)
+                foreach (string app in settings?.excludes ?? [])
                 {
                     BlackList.Add(new()
                     {
@@ -272,6 +274,7 @@ namespace CDPIUI.Views.SetupProxy
             bool flag = false;
             if (settings.proxies != null)
             {
+                settings.proxies.RemoveAll(group => group == null);
                 foreach (var proxyGroup in settings.proxies)
                 {
                     if (proxyGroup.socks5ProxyEndpoint == readyToCompareIpAddr)

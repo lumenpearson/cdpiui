@@ -350,6 +350,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         this.KeyDown -= CreateNewConfigPage_KeyDown;
         this.ProcessKeyboardAccelerators -= CreateNewConfigPage_ProcessKeyboardAccelerators;
         this.ActualThemeChanged -= CreateNewConfigPage_ActualThemeChanged;
+        StopTestRun();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -393,7 +394,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 string filePath = collection.Get("filePath");
 
                 PageTitleTextBlock.Text = localizer.GetLocalizedString("ImportConfigFromFile");
-                if (ConfigItem.target != null)
+                if (ConfigItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
@@ -409,7 +410,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             else if (operationType == "CFGEDIT")
             {
                 PageTitleTextBlock.Text = localizer.GetLocalizedString("EditConfig");
-                if (ConfigItem.target != null)
+                if (ConfigItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
@@ -452,7 +453,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             else if (operationType == "CFGRETURNEDITED")
             {
                 PageTitleTextBlock.Text = localizer.GetLocalizedString("EditConfig");
-                if (ConfigItem.target != null)
+                if (ConfigItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
@@ -540,11 +541,13 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
                 if (t == null)
                 {
-                    var spVar = variable.Split("=");
+                    // Only the first '=' separates the name; values may contain '=' themselves.
+                    int separator = variable.IndexOf('=');
+                    if (separator < 0) continue;
                     Variables.Add(new()
                     {
-                        Name = spVar[0].Replace("%", ""),
-                        Value = spVar[1]
+                        Name = variable[..separator].Replace("%", ""),
+                        Value = variable[(separator + 1)..]
                     });
                 }
             }
@@ -667,7 +670,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         ConditionPreviewTextBlock.Text = localizer.GetLocalizedString("NothingToPreview");
     }
 
-    private Tuple<Dictionary<string, bool>, List<string>> CreateVariables(int secondsSinceEpoch)
+    private Tuple<Dictionary<string, bool>, List<string>> CreateVariables(int secondsSinceEpoch, bool saveLocalization)
     {
         Dictionary<string, bool> jparams = new();
         List<string> vars = new();
@@ -696,11 +699,15 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             {
                 jparams.Add($"{condition.Name}_var_{secondsSinceEpoch}", false);
                 vars.Add($"%{condition.Name}%=$LOCALCONDITION({condition.Name}_var_{secondsSinceEpoch}==true ? {condition.OnValue} $SEPARATOR {condition.OffValue})");
-                localizationDict.Add($"{condition.Name}_var_{secondsSinceEpoch}", condition.Description);
+                localizationDict[$"{condition.Name}_var_{secondsSinceEpoch}"] = condition.Description;
             }
 
-            string jsonString = System.Text.Json.JsonSerializer.Serialize(localizationDict);
-            File.WriteAllText(locFile, jsonString);
+            // A test run must not leave Name_var_0 entries in the locale file.
+            if (saveLocalization)
+            {
+                string jsonString = System.Text.Json.JsonSerializer.Serialize(localizationDict);
+                File.WriteAllText(locFile, jsonString);
+            }
 
             return new(jparams, vars);
         }
@@ -714,10 +721,10 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             return new(null, null);
         }
     }
-    private ConfigItem CreateConfig(int secondsSinceEpoch)
+    private ConfigItem CreateConfig(int secondsSinceEpoch, bool saveLocalization = true)
     {
         string componentId = (ComponentChooseComboBox.SelectedItem as ComponentModel).Id;
-        var (jparams, vars) = CreateVariables(secondsSinceEpoch);
+        var (jparams, vars) = CreateVariables(secondsSinceEpoch, saveLocalization);
 
         if (jparams == null || vars == null) return null;
 
@@ -740,7 +747,13 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void Instance_onProcessStateChanged(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != curRunId) return;
+        // The state comes from the pipe thread.
+        DispatcherQueue?.TryEnqueue(() => ApplyProcessState(tuple));
+    }
+
+    private void ApplyProcessState(Tuple<string, bool> tuple)
+    {
+        if (string.IsNullOrEmpty(curRunId) || tuple.Item1 != curRunId) return;
         if (tuple.Item2)
         {
             TestButtonGlyph.Glyph = "\uE71A";
@@ -763,23 +776,43 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             ComponentTasksManager.Instance.TaskStateUpdated += Instance_onProcessStateChanged;
 
             
-            ComponentModel model = ComponentChooseComboBox.SelectedItem as ComponentModel;
+            if (ComponentChooseComboBox.SelectedItem is not ComponentModel model)
+            {
+                ResetTestState();
+                return;
+            }
             curRunId = model.Id;
             await ComponentTasksManager.Instance.StopTask(curRunId);
             ConvertDesignerLikeSettingsToString();
-            var config = CreateConfig(0);
-            if (config != null) 
+            var config = CreateConfig(0, saveLocalization: false);
+            if (config != null)
                 _ = ComponentTasksManager.Instance.CreateAndRunNewTask(curRunId, ConfigurationService.GetStartupParametersByConfigItem(config));
+            else
+                ResetTestState();
         }
         else
         {
             await ComponentTasksManager.Instance.StopTask(curRunId);
-            TestButtonGlyph.Glyph = "\uE768";
-            TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-            isRunned = false;
-            ComponentTasksManager.Instance.TaskStateUpdated -= Instance_onProcessStateChanged;
-            curRunId = string.Empty;
+            ResetTestState();
         }
+    }
+
+    private void ResetTestState()
+    {
+        TestButtonGlyph.Glyph = "\uE768";
+        TestButtonText.Text = localizer.GetLocalizedString("TestThis");
+        isRunned = false;
+        ComponentTasksManager.Instance.TaskStateUpdated -= Instance_onProcessStateChanged;
+        curRunId = string.Empty;
+    }
+
+    // The test component kept running after the user left the page.
+    private void StopTestRun()
+    {
+        if (!isRunned || string.IsNullOrEmpty(curRunId)) return;
+        string runId = curRunId;
+        ResetTestState();
+        _ = ComponentTasksManager.Instance.StopTask(runId);
     }
 
     private async void ShowDialog()

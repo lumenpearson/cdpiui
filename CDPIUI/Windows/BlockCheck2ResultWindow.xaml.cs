@@ -73,19 +73,6 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         ReportUri = filePath;
     }
 
-    private async Task LoadReport(string filePath)
-    {
-        try
-        {
-            BlockCheckReportImportResult imported = await importService.LoadAsync(filePath);
-            ShowSession(imported.Session);
-        }
-        catch (Exception exception)
-        {
-            NotificationCenter.Show(InfoBarSeverity.Error, Text("BlockCheck2ReportOpenFailedTitle"), exception.Message);
-        }
-    }
-
     public void ShowSession(BlockCheckResultSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -130,10 +117,24 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async void Load()
     {
-        await Task.Run(() => LoadReport(ReportUri));
-        LoadingGrid.Visibility = Visibility.Collapsed;
-        ContentFrame.Visibility = Visibility.Visible;
+        string filePath = ReportUri;
         ReportOpenRequested = false;
+        try
+        {
+            // Only the import runs on the pool; the error is shown back on the UI thread,
+            // NotificationCenter.Show from the pool thread threw a COMException.
+            BlockCheckReportImportResult imported = await Task.Run(() => importService.LoadAsync(filePath));
+            ShowSession(imported.Session);
+        }
+        catch (Exception exception)
+        {
+            NotificationCenter.Show(InfoBarSeverity.Error, Text("BlockCheck2ReportOpenFailedTitle"), exception.Message);
+        }
+        finally
+        {
+            LoadingGrid.Visibility = Visibility.Collapsed;
+            ContentFrame.Visibility = Visibility.Visible;
+        }
     }
 
     private async System.Threading.Tasks.Task ShowModeChoiceAsync()
