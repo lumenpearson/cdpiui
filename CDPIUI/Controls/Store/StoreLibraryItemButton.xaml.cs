@@ -167,12 +167,13 @@ namespace CDPIUI.Controls.Store
             }
         }
 
-        private void ReinstallButton_Click(object sender, RoutedEventArgs e)
+        private async void ReinstallButton_Click(object sender, RoutedEventArgs e)
         {
-            StoreHelper.Instance.RemoveItem(StoreId);
             DeleteButton.IsEnabled = false;
             ReinstallButton.IsEnabled = false;
             ProgressBar.Visibility = Visibility.Visible;
+            // The old files must be gone before the new ones are written.
+            await StoreHelper.Instance.RemoveItemAsync(StoreId);
             StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
         }
 
