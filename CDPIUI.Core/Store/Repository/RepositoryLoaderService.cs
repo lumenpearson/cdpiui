@@ -94,46 +94,16 @@ namespace CDPIUI.Core.Store.Repository
                 if ((forseSync && t.TotalDays >= 1) || !Path.Exists(targetFolder))
                 {
 
-                    string zipUrl = GetStoreUrl(usedVersionControl);
-
-                    Debug.WriteLine(zipUrl);
-                    // A fixed name in the shared temp folder could be prepared by another process.
-                    string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
-                    using var requestWorker = new RequestWorker();
-                    await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
-                        token: usedVersionControl == SupportedVersionControls.GitHub ? GitHubApiToken : GitLabApiToken,
-                        useStoreUserAgent: true,
-                        completionOption: HttpCompletionOption.ResponseContentRead);
-
-                    if (Directory.Exists(targetFolder))
-                        Directory.Delete(targetFolder, recursive: true);
-                    Directory.CreateDirectory(targetFolder);
-
-                    using (var archive = ZipFile.OpenRead(tempZipPath))
+                    try
                     {
-                        foreach (var entry in archive.Entries)
-                        {
-                            if (string.IsNullOrEmpty(entry.Name) && entry.FullName.EndsWith("/"))
-                                continue;
-
-                            var parts = entry.FullName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length <= 1)
-                                continue;
-
-                            string[] subParts = parts.Skip(1).ToArray();
-                            string relativePath = Path.Combine(subParts);
-
-                            string destinationPath = ArchivePaths.GetDestinationOrThrow(targetFolder, relativePath);
-
-                            string destDir = Path.GetDirectoryName(destinationPath);
-                            if (!string.IsNullOrEmpty(destDir))
-                                Directory.CreateDirectory(destDir);
-
-                            entry.ExtractToFile(destinationPath, overwrite: true);
-                        }
+                        await DownloadAndExtractStore(usedVersionControl, targetFolder);
                     }
-
-                    File.Delete(tempZipPath);
+                    catch (Exception ex) when (usedVersionControl == SupportedVersionControls.GitHub)
+                    {
+                        // GitHub is blocked for some users: the GitLab mirror has the same content (issue #26).
+                        Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"GitHub is not available, using GitLab: {ex.Message}");
+                        await DownloadAndExtractStore(SupportedVersionControls.GitLab, targetFolder);
+                    }
                     SettingsManager.Instance.SetValue("STORE", "lastSyncTime", DateTime.UtcNow);
                 }
 
@@ -153,6 +123,69 @@ namespace CDPIUI.Core.Store.Repository
                 Logger.Instance.CreateErrorLog(nameof(RepositoryLoaderService), $"Error loading store database: {ex.Message}");
             }
             return false;
+        }
+
+        /// <summary>
+        /// Downloads the Store repository and replaces the cache only after the archive was
+        /// extracted completely, so a failed download or a damaged archive keeps the old cache.
+        /// </summary>
+        private async Task DownloadAndExtractStore(SupportedVersionControls versionControl, string targetFolder)
+        {
+            string zipUrl = GetStoreUrl(versionControl);
+            Debug.WriteLine(zipUrl);
+
+            // A fixed name in the shared temp folder could be prepared by another process.
+            string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
+            string newFolder = $"{targetFolder.TrimEnd(Path.DirectorySeparatorChar)}.new-{Guid.NewGuid():N}";
+            try
+            {
+                using (var requestWorker = new RequestWorker())
+                {
+                    await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
+                        token: versionControl == SupportedVersionControls.GitHub ? GitHubApiToken : GitLabApiToken,
+                        useStoreUserAgent: true,
+                        completionOption: HttpCompletionOption.ResponseContentRead);
+                }
+
+                Directory.CreateDirectory(newFolder);
+                using (var archive = ZipFile.OpenRead(tempZipPath))
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (string.IsNullOrEmpty(entry.Name) && entry.FullName.EndsWith("/"))
+                            continue;
+
+                        var parts = entry.FullName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length <= 1)
+                            continue;
+
+                        string[] subParts = parts.Skip(1).ToArray();
+                        string relativePath = Path.Combine(subParts);
+
+                        string destinationPath = ArchivePaths.GetDestinationOrThrow(newFolder, relativePath);
+
+                        string? destDir = Path.GetDirectoryName(destinationPath);
+                        if (!string.IsNullOrEmpty(destDir))
+                            Directory.CreateDirectory(destDir);
+
+                        entry.ExtractToFile(destinationPath, overwrite: true);
+                    }
+                }
+
+                if (Directory.Exists(targetFolder))
+                    Directory.Delete(targetFolder, recursive: true);
+                Directory.Move(newFolder, targetFolder);
+            }
+            finally
+            {
+                try { File.Delete(tempZipPath); } catch (IOException) { }
+                try
+                {
+                    if (Directory.Exists(newFolder))
+                        Directory.Delete(newFolder, recursive: true);
+                }
+                catch (IOException) { }
+            }
         }
 
         public RepoItemModel? GetItemInfoFromStoreId(string? storeId)
