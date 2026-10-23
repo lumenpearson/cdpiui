@@ -11,13 +11,13 @@
 
         public QueueItemModel? CurrentDownloadingItem { get; set; }
 
-        public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null) // PUBLIC
+        public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false) // PUBLIC
         {
             RemoveItemFromDownloadFailureList(itemId);
             if (GetOperationIdFromItemId(itemId) != null) return;
 
             var opId = Guid.NewGuid().ToString();
-            var qi = new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile);
+            var qi = new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile, isSignedPack: isSignedPack);
 
             lock (_queueLock)
             {
