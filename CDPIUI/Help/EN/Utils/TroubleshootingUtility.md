@@ -2,7 +2,7 @@
 
 The [Troubleshooting] utility finds frequent problems on your PC and tries to correct them.
 
-To open the utility, use the [Utilities] page of the main window.
+To open the utility, use the [Utils] page of the main window.
 
 ### Select a problem
 
@@ -13,6 +13,7 @@ The first page shows a list of problems. Select the problem that you have:
 | [None of the configs work for me] | Starts the basic system check. |
 | [Component constantly crashes with an error] | Opens the help article about component exceptions. |
 | [I cannot open or download items from Store] | Starts the Store check. |
+| [Application cannot download/check for updates] | Starts the Store check. The application downloads updates from the Store repositories. |
 | [My problem is not on the list] | Opens the page for a problem report. |
 
 ### Basic system check

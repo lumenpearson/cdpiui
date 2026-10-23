@@ -1,6 +1,6 @@
 # Change the HOSTS file on your PC
 
-From version 0.5.0.0, the application has a utility that replaces the HOSTS file on your PC.
+From version 0.5.0.0, the application has a utility that changes the HOSTS file on your PC.
 
 The console window can flicker when the utility operates.
 
@@ -15,30 +15,32 @@ For more information about the HOSTS file and its recovery in Windows, see the [
 
 ### How do I add addresses to the file?
 
-*Note:* If the [Add addresses to the hosts file] menu item is not available, restore the file first. Then try again.
+*Note:* If the [Add domains to hosts file] item is not available, the addresses are already in the file.
 
-1. Open the [Hosts file utility] on the [Utilities] page of the main window.
-2. Select [Add addresses to the hosts file].
+1. Open the [Hosts file utility] on the [Utils] page of the main window.
+2. Select [Add domains to hosts file].
 3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot edit the file without these rights.
-4. Make sure that the status at the top of the utility window is "✅ The hosts file has been modified."
+4. Make sure that the status at the top of the utility window is "Hosts file edited".
 
 ### How do I remove addresses from the file?
 
-*Note:* If the [Remove addresses from the hosts file] menu item is not available, the hosts file has no changes.
+*Note:* If the [Remove custom domains from hosts file] item is not available, the hosts file has no changes.
 
-1. Open the [Hosts file utility] on the [Utilities] page of the main window.
-2. Select [Remove addresses from the hosts file].
+1. Open the [Hosts file utility] on the [Utils] page of the main window.
+2. Select [Remove custom domains from hosts file].
 3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot edit the file without these rights.
-4. Make sure that the status at the top of the utility window is "❎ The hosts file is not modified."
+4. Make sure that the status at the top of the utility window is "Hosts file not edited".
 
 ### How do I restore the file?
 
-*Note:* If the [Restore original hosts file from backup] menu item is not available, the hosts file has no changes.
+The restore removes the added addresses from the hosts file and deletes the `hosts.bak` backup. The changes that other applications made after the backup stay in the file.
 
-1. Open the [Hosts file utility] on the [Utilities] page of the main window.
-2. Select [Restore original hosts file from backup].
+*Note:* If the [Recover original hosts file from backup] item is not available, there is no backup. The utility makes the backup when it adds the addresses.
+
+1. Open the [Hosts file utility] on the [Utils] page of the main window.
+2. Select [Recover original hosts file from backup].
 3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot restore the file without these rights.
-4. Make sure that the status at the top of the utility window is "❎ The hosts file is not modified."
+4. Make sure that the status at the top of the utility window is "Hosts file not edited".
 5. Make sure that the restore button is not available.
 
 ## Possible errors
@@ -56,7 +58,7 @@ For manual troubleshooting, run `EditHostFile.exe` in a terminal with administra
 | ------------------- | ----------- |
 | /add | Add addresses to the hosts file |
 | /remove | Remove addresses from the hosts file |
-| /recover | Restore addresses from the hosts.bak file |
+| /recover | Remove the added addresses from the hosts file and delete the hosts.bak file |
 
 ## For developers
 

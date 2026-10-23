@@ -6,11 +6,11 @@ If a card has the **Warnings** or **Failed** status, select the status. The deta
 
 **The JSON file is not supported**
 
-The utility accepts CDPIUI JSON presets in a supported format. The utility cannot import a JSON document only because it has the `.json` extension. For example, it cannot import a Zapret2 scan report or settings from a different application. Find an exported preset. Or use a BAT, CMD or TXT file with launch arguments.
+The utility accepts CDPI UI JSON presets in a supported format. The utility cannot import a JSON document only because it has the `.json` extension. For example, it cannot import a Zapret2 scan report or settings from a different application. Find an exported preset. Or use a BAT, CMD or TXT file with launch arguments.
 
 **The wizard cannot find or select the component**
 
-First, install the necessary component from the CDPIUI Store. The wizard can use a component only if its folder and executable file are on this computer.
+First, install the necessary component from the CDPI UI Store. The wizard can use a component only if its folder and executable file are on this computer.
 
 **The preset is not applicable to the selected component**
 

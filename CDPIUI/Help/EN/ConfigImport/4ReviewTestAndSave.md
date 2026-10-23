@@ -26,7 +26,7 @@ To see the details and the problem code, select the status. A warning does not a
 
 Before the test, the application stops a running instance of this component. After the test, the application does not restore the previous preset. If necessary, start it again in the usual component settings.
 
-CAUTION: The test starts the real executable file of the installed component. The test is not a sandbox.
+CAUTION: Do not use the test as a sandbox. The test starts the real executable file of the installed component.
 
 ### Save the preset
 

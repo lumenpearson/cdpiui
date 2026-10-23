@@ -8,7 +8,7 @@ Look at the error code at the bottom of the Store [Home] page. This code contain
 
 ### Possible fixes
 
-- **Clear the Store cache.** Open the [Settings/Memory Usage/Store Cache] page and clear the cache. If [Memory Usage] does not show this section, skip this step.
+- **Clear the Store cache.** Open the [Settings/Memory usage/Store cache] page of the Store and clear the cache. If [Memory usage] does not show this section, skip this step.
 - **Change the version control.** For more information, see [Preferred version control](cdpiui://Help/Store/PreferedVersionControl/).
 - **Make sure that the application has write access to its directory.** Use the [Properties/Security] tab of the folder in Windows Explorer.
 - **Restart your PC.**

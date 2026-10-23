@@ -24,7 +24,7 @@ When the result is satisfactory, do these steps:
 
 1. Select [Save as new config].
 2. Enter a name.
-3. Save the preset to CDPIUI.
+3. Save the preset to CDPI UI.
 
 For more information, see [Test and save the preset](cdpiui://Help/Zapret2PresetSelection/5SavePreset/).
 
@@ -32,7 +32,7 @@ For more information, see [Test and save the preset](cdpiui://Help/Zapret2Preset
 
 [Allow editing] lets you change the preset text directly. Complete the structured manual assembly before you use this mode.
 
-The application does not move direct text changes back into the list of scopes and strategies. If you go back to the builder after an edit, CDPIUI shows a warning. It removes the expert changes and makes the text again from the builder rows.
+The application does not move direct text changes back into the list of scopes and strategies. If you go back to the builder after an edit, CDPI UI shows a warning. It removes the expert changes and makes the text again from the builder rows.
 
 If the tested manual preset does not solve the problem, see [If the result is not applicable](cdpiui://Help/Zapret2PresetSelection/6TroubleshootingPresetSelection/).
 

@@ -19,9 +19,10 @@ If the component operates, it restarts automatically after you change the preset
 ### Set the autostart of the component
 
 1. Open the [Settings] page in the main window.
-2. Set the [Open application when PC starts] switch to ON.
-3. Open the settings of the installed component.
-4. Set [Start automatically] to ON.
+2. Select [Autorun].
+3. Set the [Open application with PC startup] switch to On.
+4. Open the settings of the installed component.
+5. Select the [Start automatically] check box.
 
 The setup of the application is complete.
 
@@ -29,4 +30,4 @@ The setup of the application is complete.
 
 - **Check for updates.** Open the [Downloads] page in the Store. Update the items that have updates.
 - **Select a different preset.** Try the presets in the list again. One of them can operate.
-- **Use the GoodCheck selection.** Open the [Utilities] page. Select [Automatic preset creation utility]. The "GoodCheck" add-on must be installed.
+- **Use the GoodCheck selection.** Open the [Utils] page. Select [Autoselection utilities]. The "GoodCheck" add-on must be installed.

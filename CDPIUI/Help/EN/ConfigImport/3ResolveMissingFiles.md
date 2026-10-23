@@ -6,8 +6,8 @@ Some presets use separate site lists, BIN files or LUA libraries. If the wizard 
 
 | Action | Result |
 | ------ | ------ |
-| **Apply AutoCorrect** | The wizard uses a file that CDPIUI found in a different applicable folder. Examine the recommended path before you apply it. |
-| **Choose manually** | You select an existing file. Use a resource from the same preset package with the expected extension. |
+| **Apply autocorrect** | The wizard uses a file that CDPI UI found in a different applicable folder. Examine the recommended path before you apply it. |
+| **Choose file** | You select an existing file. Use a resource from the same preset package with the expected extension. |
 | **Create empty** | The wizard saves an empty file in place of the missing resource. |
 
 Use an empty file only when the resource is optional. For example, some user lists or log files can be empty at the start.
@@ -18,6 +18,6 @@ For files with `user` or `debug` in the name, the wizard can recommend an empty 
 
 If each unresolved file has an AutoCorrect recommendation, **Continue** applies these recommendations automatically. If a file has no recommendation, select an action for it first.
 
-When you save the preset, CDPIUI copies the necessary resources into its own storage. The original files stay in their location. CDPIUI does not delete them.
+When you save the preset, CDPI UI copies the necessary resources into its own storage. The original files stay in their location. CDPI UI does not delete them.
 
 Next: [Review, test and save](cdpiui://Help/ConfigImport/4ReviewTestAndSave/).

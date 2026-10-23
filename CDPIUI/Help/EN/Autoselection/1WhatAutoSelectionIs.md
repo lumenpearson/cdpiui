@@ -14,7 +14,7 @@ If you use **Zapret2**, start with the [preset selection for Zapret2](cdpiui://H
 
 Use [Select the best preset](cdpiui://Help/Autoselection/BestConfigSelection/) if you have some presets. This tool finds the preset that operates best with the necessary sites.
 
-**For advanced users.** Use GoodCheck when the ready-made presets for [Zapret Legacy], [ByeDPI] or [GoodbyeDPI] do not help. You must test and adjust the result yourself. To open this tool, use [Auto-selection tools] on the [Utilities] page.
+**For advanced users.** Use GoodCheck when the ready-made presets for [Zapret Legacy], [ByeDPI] or [GoodbyeDPI] do not help. You must test and adjust the result yourself. To open this tool, use [Autoselection utilities] on the [Utils] page.
 
 ### How do I start a Zapret2 scan?
 

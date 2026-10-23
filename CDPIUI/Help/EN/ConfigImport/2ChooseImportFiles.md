@@ -11,7 +11,7 @@ If you select more than one file, the wizard examines them one at a time. It sho
 
 - Select `.bat` or `.cmd` when the preset is a ready-to-run script.
 - Select `.txt` when the file contains launch arguments of a component.
-- Select `.json` only for an exported CDPIUI preset or a compatible preset in the old format.
+- Select `.json` only for an exported CDPI UI preset or a compatible preset in the old format.
 
 The main file can have `lists`, `bin`, `fake` or `lua` folders near it. Do not change the package structure until the import is complete. Then the wizard can find the resources.
 
