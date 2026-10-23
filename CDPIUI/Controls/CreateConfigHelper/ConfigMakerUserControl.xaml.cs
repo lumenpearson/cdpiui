@@ -1531,7 +1531,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
         catch (Exception exception)
         {
-            ShowEditorMessage(exception.Message, InfoBarSeverity.Error);
+            ReportHandlerError(exception);
         }
         finally
         {
@@ -2400,7 +2400,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
             DesignerSettingItemModels.Clear();
             DesignerExclusiveSettingItemModels.Clear();
             Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
-            ShowEditorMessage(exception.Message, InfoBarSeverity.Warning);
+            ShowEditorMessage(
+                string.Format(localizer.GetLocalizedString("ConfigMakerDesignerLoadFailedMessage"), exception.Message),
+                InfoBarSeverity.Warning);
         }
         finally
         {
@@ -3605,7 +3607,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
     private void ReportHandlerError(Exception exception)
     {
         Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
-        ShowEditorMessage(exception.Message, InfoBarSeverity.Error);
+        ShowEditorMessage(
+            string.Format(localizer.GetLocalizedString("ConfigMakerActionFailedMessage"), exception.Message),
+            InfoBarSeverity.Error);
     }
 
     private void CommandEditor_ZoomChanged(TextControlBox sender, int zoomFactor)

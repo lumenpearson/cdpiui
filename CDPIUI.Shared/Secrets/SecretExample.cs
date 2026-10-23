@@ -35,8 +35,9 @@ namespace CDPIUI.Shared.Secrets
 
     /// <summary>
     /// Example of Secret.cs file.
-    /// To build this application create Secret.cs file and copy example (with interface)
-    /// to that file. Also, rename class in that file as "Secret.cs"
+    /// To build this application, create Secret.cs with a public static class Secret in this
+    /// namespace and copy only the members of this example into it (the interface is already
+    /// defined here). .github/scripts/create_secret_stub.ps1 creates such a file.
     /// </summary>
     internal class SecretExample : ISecret
     {

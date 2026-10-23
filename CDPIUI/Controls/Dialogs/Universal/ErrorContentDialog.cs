@@ -106,6 +106,7 @@ namespace CDPIUI.Controls.Dialogs.Universal
             var copyButton = new CopyButton()
             {
                 Content = stackPanel1,
+                CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage", "Copied to clipboard."),
             };
             
             copyButton.Click += (sender, e) =>

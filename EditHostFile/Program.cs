@@ -19,7 +19,15 @@ namespace EditHostFile
 
         static int Main(string[] args)
         {
-            Log("Getting ready...");
+            try
+            {
+                Console.Title = Strings.WindowTitle;
+            }
+            catch (IOException)
+            {
+                // There is no console window, for example when the output is redirected.
+            }
+            Log(Strings.GettingReady);
             string pathpart = "hosts";
             if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
@@ -44,16 +52,16 @@ namespace EditHostFile
                 }
                 else
                 {
-                    Log("Unknown command");
+                    Log(Strings.UnknownCommand);
                     return E_INVALIDARG;
                 }
             }
             catch (Exception ex)
             {
-                Log($"Work failed: {ex}");
+                Log(string.Format(Strings.WorkFailed, ex));
                 return ex.HResult != 0 ? ex.HResult : 1;
             }
-            Log("Work finished. Goodbye~");
+            Log(Strings.WorkFinished);
             return 0;
         }
 
@@ -142,7 +150,7 @@ namespace EditHostFile
 
         private static void CreateBackup(string path, HostsText content)
         {
-            Log($"Creating backup for \"{path}\" in \"{path}.bak\"");
+            Log(string.Format(Strings.CreatingBackup, path, $"{path}.bak"));
             Write($"{path}.bak", content);
         }
 
@@ -151,7 +159,7 @@ namespace EditHostFile
             // The backup is the file as it was before /add without the added block. Copying it back
             // would also drop every change made to the hosts file since then (VPN clients, Docker,
             // manual edits), so only the added block is removed and the backup is discarded.
-            Log($"Restoring \"{path}\" to its state without added lines");
+            Log(string.Format(Strings.RestoringFile, path));
             RemoveAddedLines(path);
 
             string backup = $"{path}.bak";
@@ -165,7 +173,7 @@ namespace EditHostFile
 
         private static void RemoveAddedLines(string path)
         {
-            Log($"Removing added lines in \"{path}\"");
+            Log(string.Format(Strings.RemovingLines, path));
             HostsText content = Read(path);
             string text = RemoveBlock(content.Text);
             if (text == content.Text) return;
@@ -181,7 +189,7 @@ namespace EditHostFile
 
         private static void AddNewLines(string path)
         {
-            Log($"Adding new lines in \"{path}\"");
+            Log(string.Format(Strings.AddingLines, path));
             Assembly assembly = Assembly.GetExecutingAssembly();
             string resource;
             using (var stream = assembly.GetManifestResourceStream("EditHostFile.Data.hosts"))
@@ -213,7 +221,7 @@ namespace EditHostFile
             content.Text = builder.ToString();
             Write(path, content);
 
-            Log($"Adding new lines in \"{path}\". Status: COMPLETE");
+            Log(string.Format(Strings.AddingLinesComplete, path));
         }
     }
 }

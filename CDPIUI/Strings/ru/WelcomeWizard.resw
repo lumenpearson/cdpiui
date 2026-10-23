@@ -288,4 +288,19 @@ Cannot `GET:/{0}`</value>
     <value>Магазин помогает устанавливать и скачивать обновления для элементов (Zapret, TG WS Proxy и др.) с серверов GitHub. Встроенный прокси может помочь, если сервера GitHub не доступны для вас.
 Если вы не испытываете проблем с подключением, пропустите этот шаг.</value>
   </data>
+  <data name="MigrationError_MIGRATION_CANCELED" xml:space="preserve">
+    <value>Перенос отменён.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_NOT_FOUND" xml:space="preserve">
+    <value>Архив для переноса не найден.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_INVALID" xml:space="preserve">
+    <value>Архив для переноса повреждён или имеет неподдерживаемый формат.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_ACCESS_DENIED" xml:space="preserve">
+    <value>Нет доступа к архиву для переноса.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_PREPARATION_FAILED" xml:space="preserve">
+    <value>Не удалось подготовить данные для переноса.</value>
+  </data>
 </root>

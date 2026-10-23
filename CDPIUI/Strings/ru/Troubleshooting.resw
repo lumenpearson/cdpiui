@@ -160,7 +160,7 @@
     <value>Службы SmartByte</value>
   </data>
   <data name="CheckTimestamps" xml:space="preserve">
-    <value>TCP timestamps</value>
+    <value>Параметр TCP timestamps</value>
   </data>
   <data name="CheckVPNs" xml:space="preserve">
     <value>Службы VPN-провайдеров</value>

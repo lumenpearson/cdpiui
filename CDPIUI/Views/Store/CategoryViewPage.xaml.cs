@@ -81,7 +81,7 @@ namespace CDPIUI.Views.Store
                 LoadingProgressGrid.Visibility = Visibility.Collapsed;
                 StoreScrollViewer.Visibility = Visibility.Collapsed;
                 ErrorGrid.Visibility = Visibility.Visible;
-                ErrorTextBlock.Text = $"Cannot GET category/{CategoryId}";
+                ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
             }
         }
 
@@ -92,7 +92,7 @@ namespace CDPIUI.Views.Store
             if (category == null)
             {
                 ErrorGrid.Visibility = Visibility.Visible;
-                ErrorTextBlock.Text = $"Cannot GET category/{CategoryId}";
+                ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
                 return false;
             }
 

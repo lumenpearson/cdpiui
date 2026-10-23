@@ -38,7 +38,7 @@
                 <TextBlock Text="{x:Bind OffValue, Mode=OneWay}" IsTextSelectionEnabled="True"/>
             </StackPanel>
             <StackPanel x:Name="VariableDescriptionStackPanel" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}" Visibility="Collapsed">
-                <TextBlock Text="Description" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                <TextBlock l:Uids.Uid="DescriptionTextBlock" Style="{ThemeResource CaptionTextBlockStyle}"/>
                 <TextBlock Text="{x:Bind Description, Mode=OneWay}" IsTextSelectionEnabled="True"/>
             </StackPanel>
             <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
