@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Store.Database;
@@ -244,7 +245,7 @@ public sealed partial class ViewConfigOutput : UserControl
             ? localizer.GetLocalizedString("NoComponent")
             : string.Format(
                 localizer.GetLocalizedString("NowViewOutputFromComponent"),
-                item.ShortName ?? item.Name ?? item.Id);
+                item.ShortName.NullIfEmpty() ?? item.Name.NullIfEmpty() ?? item.Id);
     }
 
     private void UpdateRunningState(bool isRunning, bool showMessage)

@@ -229,7 +229,8 @@ namespace CDPIUI.Views.Main.Components
                             break;
                         case "--dc-ip":
                             var matchResult = FindSupportedString().Match(item.Value);
-                            if (matchResult.Groups.Count >= 3)
+                            // Groups.Count is the same with or without a match.
+                            if (matchResult.Success)
                             {
                                 TelegramDataCenterModels.Add(new()
                                 {

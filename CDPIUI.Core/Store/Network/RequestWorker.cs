@@ -180,8 +180,9 @@ namespace CDPIUI.Core.Store.Network
                 !string.IsNullOrEmpty(proxyUri.Fragment))
                 throw new InvalidOperationException("Secret.ProxyURL must be an absolute HTTPS fetch endpoint or server URL.");
 
-            string encodedUrl = Convert.ToBase64String(Encoding.UTF8.GetBytes(url))
-                .TrimEnd('=');
+            // Escaped: a form-style query parser reads an unescaped "+" of Base64 as a space.
+            string encodedUrl = Uri.EscapeDataString(Convert.ToBase64String(Encoding.UTF8.GetBytes(url))
+                .TrimEnd('='));
             var builder = new UriBuilder(proxyUri);
             if (builder.Path == "/")
                 builder.Path = "/v1/fetch";

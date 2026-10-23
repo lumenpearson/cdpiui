@@ -368,6 +368,13 @@ namespace CDPIUI.Core.Store.Repository
                         RepoItemModel? repoCategoryItemInit = TryLoad<RepoItemModel>(categoryItemInitPath);
                         if (repoCategoryItemInit == null)
                             continue;
+                        // The pages look items up by id and show their name; one item without
+                        // them stopped the whole page from building.
+                        if (string.IsNullOrWhiteSpace(repoCategoryItemInit.store_id) || string.IsNullOrWhiteSpace(repoCategoryItemInit.name))
+                        {
+                            Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Skip the item without store_id or name: {categoryItemInitPath}");
+                            continue;
+                        }
 
                         repoCategoryItemInit.category_id = repoCategoryInit.store_id;
 

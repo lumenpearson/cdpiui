@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
@@ -111,7 +112,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
                         DisplayName = item.name,
                         FileName = item.file_name,
                         PackId = item.packId,
-                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
                         IsLegacyConfig = item.IsLegacy,
                     });
             }

@@ -44,8 +44,11 @@ namespace CDPIUI.Core.Store.Repository.Localization
             }
         }
 
-        public string GetLocalizedStoreItemName(string name, string langCode)
+        public string GetLocalizedStoreItemName(string? name, string langCode)
         {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
+
             string localizedString = $"slocale:{name}";
 
             string localRepoFolder = Directories.StoreRepoCacheDirectory;

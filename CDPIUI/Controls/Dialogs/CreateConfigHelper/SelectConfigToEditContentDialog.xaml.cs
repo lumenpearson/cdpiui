@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
@@ -106,7 +107,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                             DisplayName = item.name,
                             Directory = item.file_name,
                             PackId = item.packId,
-                            PackName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                            PackName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
                         });
                 }
             }

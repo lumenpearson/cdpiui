@@ -8,6 +8,6 @@
         /// <param name="name">Locale key</param>
         /// <param name="langCode">Language code</param>
         /// <returns>Localized string. If error happens return "slocale:<paramref name="name"/>"</returns>
-        string GetLocalizedStoreItemName(string name, string langCode);
+        string GetLocalizedStoreItemName(string? name, string langCode);
     }
 }

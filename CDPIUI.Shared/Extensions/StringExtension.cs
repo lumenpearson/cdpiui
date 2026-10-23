@@ -7,6 +7,12 @@ namespace CDPIUI.Shared.Extensions
 {
     public static class StringExtension
     {
+        /// <summary>
+        /// Null for an empty string, so "??" also replaces the empty values the item database
+        /// stores for a missing name or version.
+        /// </summary>
+        public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;
+
         public static string? SerializeTuples(this List<Tuple<string, string>> list) 
         {
             string result = list == null ? null : string.Join(';', list.Select(t => $"{t.Item1}:{t.Item2}"));

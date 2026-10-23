@@ -89,8 +89,11 @@ namespace CDPIUI.Controls.ComponentSettings
             Actions.Clear();
             Debug.WriteLine(StoreId);
 
-            var cmpActions = ActionModels.ContainsKey(HardcodedItemIds.ComponentIds.FirstOrDefault(x => x.Value == StoreId).Key) 
-                ? ActionModels[HardcodedItemIds.ComponentIds.FirstOrDefault(x => x.Value == StoreId).Key] 
+            // A component that is not in the list has no creation actions; FirstOrDefault gave
+            // default(Components), so it got the actions of Zapret.
+            var cmpActions = HardcodedItemIds.ComponentIds.TryGetKeyByValue(StoreId, out var component) &&
+                ActionModels.TryGetValue(component, out var actions)
+                ? actions
                 : [];
 
             if (cmpActions.Contains(AvailableConfigCreationActios.CreateFromTemplate))

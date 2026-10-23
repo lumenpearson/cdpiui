@@ -745,7 +745,9 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             componentId,
             jparams,
             vars,
-            Variables.ToDictionary(v => v.Name, v => v.Value),
+            // A preset can define the same variable twice (as X= and as a comma variable);
+            // the last value wins instead of an exception on save.
+            Variables.GroupBy(v => v.Name).ToDictionary(g => g.Key, g => g.Last().Value),
             Variables.Where(v => v.AvailableValues != null).Select(v => v.AvailableValues).ToList(),
             CreateConfigPageHelper.GetNormalText(StartupStringTextBox.Text, ListDirectory, BinDirectory)
             );

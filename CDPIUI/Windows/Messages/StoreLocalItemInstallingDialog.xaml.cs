@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
@@ -131,7 +132,7 @@ namespace CDPIUI.Messages
                         StoreId = model.StoreId;
                         bool isInstalled = DatabaseHelper.Instance.IsItemInstalled(StoreId);
 
-                        Name = model.ShortName ?? StoreHelper.Instance.GetLocalizedStoreItemName(model.Name, StoreLocalizationHelper.GetStoreLikeLocale());
+                        Name = model.ShortName.NullIfEmpty() ?? StoreHelper.Instance.GetLocalizedStoreItemName(model.Name, StoreLocalizationHelper.GetStoreLikeLocale());
 
                         ItemNameTextBlock.Text = string.Format(isInstalled ? localizer.GetLocalizedString("StoreSmallUpdateItemName") : localizer.GetLocalizedString("StoreSmallInstallItemName"), Name);
                         ItemImage.Source = new BitmapImage(UIHelper.GetUriFromString(model.ReadyToUseIcon ?? LScriptLangHelper.ExecuteScript(model.Icon)));
@@ -147,7 +148,7 @@ namespace CDPIUI.Messages
 
                         if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
                         {
-                            string curV = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion ?? "0.0.0.0";
+                            string curV = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion.NullIfEmpty() ?? "0.0.0.0";
                             string iV = model.Version;
 
                             if (!string.IsNullOrEmpty(curV) && !string.IsNullOrEmpty(iV))

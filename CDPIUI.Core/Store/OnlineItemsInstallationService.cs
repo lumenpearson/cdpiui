@@ -57,7 +57,7 @@ namespace CDPIUI.Core.Store
             string[] _sActions = actions.Split(';');
             foreach (var _sAction in _sActions)
             {
-                if (_sAction.StartsWith("DOWNLOAD="))
+                if (_sAction.StartsWith("DOWNLOAD=", StringComparison.Ordinal))
                 {
                     var _p = _sAction.Substring(9).Split("$SEPARATOR");
                     if (_p.Length < 2) continue;
@@ -73,7 +73,7 @@ namespace CDPIUI.Core.Store
 
                     if (DownloadWorker == null)
                     {
-                        throw new NullReferenceException(nameof(DownloadWorker));
+                        throw new InvalidOperationException("The download worker is not created.");
                     }
 
                     string extension = Path.GetExtension(FileSystemService.GetFileNameFromUrl(url));
@@ -81,7 +81,7 @@ namespace CDPIUI.Core.Store
                         await DownloadWorker.DownloadAndExtractAsync(
                             url, 
                             destDir, 
-                            extractArchive: url.EndsWith(".zip"), 
+                            extractArchive: string.Equals(extension, ".zip", StringComparison.OrdinalIgnoreCase), 
                             null, 
                             null, 
                             string.Empty, 

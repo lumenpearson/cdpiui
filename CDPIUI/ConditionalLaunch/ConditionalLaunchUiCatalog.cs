@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Shared.ConditionalLaunch;
@@ -301,7 +302,7 @@ namespace CDPIUI.ConditionalLaunch
         {
             try
             {
-                return DatabaseHelper.Instance.GetItemById(id)?.ShortName ?? id;
+                return DatabaseHelper.Instance.GetItemById(id)?.ShortName.NullIfEmpty() ?? id;
             }
             catch
             {

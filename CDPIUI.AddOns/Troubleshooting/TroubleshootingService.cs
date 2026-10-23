@@ -494,12 +494,10 @@ namespace CDPIUI.AddOns.Troubleshooting
         {
             Process[] processes =
                 Process.GetProcessesByName(procName);
-
-            if (processes.Length > 0)
-            {
-                return true;
-            }
-            return false;
+            // Each Process holds a handle until it is disposed.
+            foreach (var process in processes)
+                process.Dispose();
+            return processes.Length > 0;
         }
 
         private static async Task<bool> GetDnsAddress()

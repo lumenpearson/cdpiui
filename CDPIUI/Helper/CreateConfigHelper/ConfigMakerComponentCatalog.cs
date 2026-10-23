@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.Store.Database;
 using System;
@@ -39,7 +40,7 @@ public static class ConfigMakerComponentCatalog
         return new ConfigMakerComponentInfo
         {
             Id = helper.Id,
-            DisplayName = item.ShortName ?? item.Name ?? helper.Id,
+            DisplayName = item.ShortName.NullIfEmpty() ?? item.Name.NullIfEmpty() ?? helper.Id,
             ExecutableName = Path.GetFileName(executablePath),
         };
     }
