@@ -184,7 +184,7 @@ $<NAME>(<command>, <argument 1>, <argument 2>);$<NAME>(<command>, ...)
 ```
 
 - `;` separates the actions. An empty action (for example after the last `;`) is skipped.
-- The text inside the first pair of parentheses holds the command and the arguments.
+- The text inside the outer parentheses of the action holds the command and the arguments.
 - `, ` (a comma and one space) separates the command and the arguments. A comma without a space does not separate them.
 - The name between `$` and `(` is not checked. Only the command name is important.
 - An unknown command gives a warning in the log. The next action then runs.
@@ -224,7 +224,7 @@ $RUN(install_msi, redist/$ALL, false);$RUN(finish_component_setup, byedpi)
 The command does not download the file. It returns a `DOWNLOAD=` entry.
 `OnlineItemsInstallationService.LaunchBeforeInstallActions` reads the result of the two action lists:
 
-- The URL must be an absolute HTTPS URL. Otherwise the installation fails.
+- The URL must be an absolute HTTPS URL. Otherwise the download fails.
 - The file goes into the item folder with the name `edannotationfile` and the extension of the URL file.
 - A URL that ends with `.zip` is extracted into the item folder.
 

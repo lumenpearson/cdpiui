@@ -31,7 +31,7 @@ The tests do not need the tray, the GUI, administrator rights or a network conne
 | `Core` | `BatchFileEncodingTests` | Encoding of batch files (Cyrillic, UTF-8 BOM) |
 | `Core` | `ConfigCommandLineTests` | Tokenization of preset command lines |
 | `Core` | `ConfigFileReferencesTests` | File references in preset arguments (blob offsets, LUA files) |
-| `Core` | `LScriptCoreTests` | LScript conditions |
+| `Core` | `LScriptCoreTests` | LScript conditions, nested arguments and the parse of condition strings |
 | `Core` | `ProcessServiceTests` | Quiet flag in process arguments |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Proxy address, port and format parse |
 | `Core` | `ReplaceVariablesTests` | Variable replacement |

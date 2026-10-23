@@ -209,7 +209,7 @@ It uses `CatalogVerifier` from `CDPIUI.Shared` and `Secret.TrustedCertificates`.
 | `StoreHelper` | Install, update, remove and update checks. Events for progress and errors. |
 | `Queue/QueueManagerService` | A FIFO queue. It installs one item at a time. It also keeps the list of failed items. |
 | `Repository/RepositoryLoaderService` | Downloads the Store repository (GitHub or GitLab) and reads categories, items and ready kits. |
-| `Database/DatabaseHelper` | The SQLite table `Items` in `storedata.db`. One row for each installed item (`DatabaseStoreItem`). |
+| `Database/DatabaseHelper` | The SQLite table `Items` in `storedata.db`. One row for each installed item (`DatabaseStoreItem`). All queries, also `RestorePaths`, read the table under one lock. At start, the GUI calls `RestorePaths`. If the GUI cannot restore an item, it registers the user item or the application item again. For other items, `UnregisterMissingItem` deletes the row when the item folder is missing (`CDPIUI/Helper/Database/DatabaseInitializationService.cs`). |
 | `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Release API requests, HTTPS downloads, archive extraction and MSI start. |
 | `MSI/MsiInstallerService`, `MsiInstallerQueueManager` | Send an MSI to the tray for installation and wait for the result (maximum 30 minutes). |
 | `Application/ApplicationUpdateService` | Prepares an application patch (`patch.cdpipatch`) and its required patches. It reads the version of each required patch from its own `requirements.json` and skips versions that are not newer. It puts the layers in version sequence, the oldest first. See [.github/README.md](../.github/README.md#gui-side). |
@@ -234,6 +234,8 @@ If GitHub fails, the library tries the GitLab mirror.
 5. An online item is downloaded through HTTPS to `TempFiles\Downloads`. The library then extracts or copies it into the item folder.
 6. A local pack is moved into place (see "Staging and rollback").
 7. `AddItemToDatabase` runs `before_install_actions`, writes the database row, and runs `after_install_actions`.
+   The two action lists get the item folder as `CurrentDirectory`. The library downloads the `DOWNLOAD=` requests of the two lists (see [LScript/README.md](LScript/README.md)).
+   For a local pack, the library keeps a `$DYNAMICIMAGE(...)` icon as a full path in the item folder (`GetIconPath`).
 8. If the component ran before the update, the library starts it again.
 9. `ItemActionsStopped` makes `ComponentTasksManager` load the component list again.
 
