@@ -139,10 +139,11 @@ namespace CDPIUI.Core.Store.Network
                 if (filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString())
                 {
                     StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
-                    string installerExeName = GetFileNameFromUri(url);
-                    installerExeName = string.IsNullOrEmpty(installerExeName) ? "installer" : installerExeName;
-
-                    string msiPath = Path.Combine(destinationPath, installerExeName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
+                    // The installer is the file copied above, whose name can come from
+                    // target_executable_file and not from the URL.
+                    if (_extractedFiles.Count == 0)
+                        throw new IOException("The installer was not copied.");
+                    string msiPath = _extractedFiles[^1];
                     msiGUID = Guid.NewGuid().ToString();
                     MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
                     msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;

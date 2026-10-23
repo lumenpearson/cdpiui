@@ -66,7 +66,7 @@ namespace CDPIUI.Core.Store
             string tempFolderName = FileSystemService.GetNewTempFileName("ap");
             string tempDestination = Path.Combine(TempDirectory, tempFolderName);
 
-            bool isCatalogCheckRequired = Path.GetExtension(itemPackFile) == ".cdpisignedpack" ? true : false;
+            bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
             List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
             try
@@ -125,7 +125,7 @@ namespace CDPIUI.Core.Store
             string tempFolderName = FileSystemService.GetNewTempFileName("ap");
             string tempDestination = Path.Combine(TempDirectory, tempFolderName);
 
-            bool isCatalogCheckRequired = Path.GetExtension(itemPackFile) == ".cdpisignedpack" ? true : false;
+            bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
             List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
             try
