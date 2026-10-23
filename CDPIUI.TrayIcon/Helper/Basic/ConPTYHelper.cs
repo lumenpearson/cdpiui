@@ -39,26 +39,43 @@ namespace CDPIUI.TrayIcon.Helper
 
         private StopActionCallers StopActionCaller = StopActionCallers.Unknown;
 
-        static readonly Dictionary<string, PrettyErrorCode> errorMappings = new()
+        // Checked in this order and the first match of a line wins: with the dictionary every
+        // matching key overwrote the previous one, so "Error opening filter" became UNKNOWN
+        // through the generic "error" key (audit 12.8).
+        static readonly (string Text, PrettyErrorCode Code)[] errorMappings =
         {
-            { "Error opening filter", PrettyErrorCode.FILTER_OPEN_ERROR },
-            { "unknown option",  PrettyErrorCode.PARAMETER_ERROR },
-            { "hostlists load failed",  PrettyErrorCode.HOSTLIST_LOAD_ERROR },
-            { "must specify port filter",  PrettyErrorCode.PORT_FILTER_ERROR },
-            { "must specify port or/and partial raw filter",  PrettyErrorCode.PORT_FILTER_WRONG_VALUE_ERROR },
-            { "ERROR:",  PrettyErrorCode.UNKNOWN },
-            { "Component not installed correctly",  PrettyErrorCode.COMPONENT_INSTALL_ERROR },
-            { "error",  PrettyErrorCode.UNKNOWN },
-            { "invalid value",  PrettyErrorCode.INVALID_VALUE_ERROR },
-            { "nvalid value",  PrettyErrorCode.INVALID_VALUE_ERROR },
-            { "option requires an argument", PrettyErrorCode.INVALID_VALUE_ERROR },
-            { "--debug=0|1|syslog|@<filename>",  PrettyErrorCode.PARAMETER_ERROR },
-            { "already running",  PrettyErrorCode.ALREADY_RUNNING_WARN },
-            { "could not read",  PrettyErrorCode.FILE_READ_ERROR },
-            { "flag provided but not defined:",  PrettyErrorCode.PARAMETER_ERROR },
-            { "cannot create",  PrettyErrorCode.ACCESS_DENIED },
-            { "cannot access",  PrettyErrorCode.ACCESS_DENIED }
+            ("Error opening filter", PrettyErrorCode.FILTER_OPEN_ERROR),
+            ("unknown option", PrettyErrorCode.PARAMETER_ERROR),
+            ("hostlists load failed", PrettyErrorCode.HOSTLIST_LOAD_ERROR),
+            ("must specify port filter", PrettyErrorCode.PORT_FILTER_ERROR),
+            ("must specify port or/and partial raw filter", PrettyErrorCode.PORT_FILTER_WRONG_VALUE_ERROR),
+            ("ERROR:", PrettyErrorCode.UNKNOWN),
+            ("Component not installed correctly", PrettyErrorCode.COMPONENT_INSTALL_ERROR),
+            ("error", PrettyErrorCode.UNKNOWN),
+            ("invalid value", PrettyErrorCode.INVALID_VALUE_ERROR),
+            ("nvalid value", PrettyErrorCode.INVALID_VALUE_ERROR),
+            ("option requires an argument", PrettyErrorCode.INVALID_VALUE_ERROR),
+            ("--debug=0|1|syslog|@<filename>", PrettyErrorCode.PARAMETER_ERROR),
+            ("already running", PrettyErrorCode.ALREADY_RUNNING_WARN),
+            ("could not read", PrettyErrorCode.FILE_READ_ERROR),
+            ("flag provided but not defined:", PrettyErrorCode.PARAMETER_ERROR),
+            ("cannot create", PrettyErrorCode.ACCESS_DENIED),
+            ("cannot access", PrettyErrorCode.ACCESS_DENIED)
         };
+
+        private static PrettyErrorCode? FindError(string output)
+        {
+            PrettyErrorCode? generic = null;
+            foreach (var (text, code) in errorMappings)
+            {
+                if (!output.Contains(text, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (code != PrettyErrorCode.UNKNOWN)
+                    return code;
+                generic ??= code;
+            }
+            return generic;
+        }
 
         public bool processState { get; private set; } = false;
         private bool CurrentState = false;
@@ -175,11 +192,11 @@ namespace CDPIUI.TrayIcon.Helper
                     : workingDirectory;
                 bool started = CreateProcess(
                     null,
-                    $"\"{exePath}\" {args}",
+                    new StringBuilder($"\"{exePath}\" {args}"),
                     IntPtr.Zero,
                     IntPtr.Zero,
                     false,
-                    EXTENDED_STARTUPINFO_PRESENT,
+                    EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
                     IntPtr.Zero,
                     resolvedWorkingDirectory,
                     ref startupInfo,
@@ -190,6 +207,7 @@ namespace CDPIUI.TrayIcon.Helper
                         $"Cannot start process, error: {Marshal.GetLastWin32Error()}");
                 }
 
+                ChildProcessJob.Assign(processInfo.hProcess);
                 CloseHandle(processInfo.hThread);
                 processInfo.hThread = IntPtr.Zero;
 
@@ -358,6 +376,8 @@ namespace CDPIUI.TrayIcon.Helper
             IntPtr hInputWrite = IntPtr.Zero;
             IntPtr hOutputRead = IntPtr.Zero;
             IntPtr hOutputWrite = IntPtr.Zero;
+            IntPtr lpAttrList = IntPtr.Zero;
+            var pi = new PROCESS_INFORMATION();
 
             PrettyErrorCode lastError = PrettyErrorCode.SUCCESS;
 
@@ -399,26 +419,30 @@ namespace CDPIUI.TrayIcon.Helper
                     }
                 };
 
-                IntPtr lpAttrList = IntPtr.Zero;
                 var lpSize = IntPtr.Zero;
 
                 InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref lpSize);
                 lpAttrList = Marshal.AllocHGlobal(lpSize);
-                InitializeProcThreadAttributeList(lpAttrList, 1, 0, ref lpSize);
+                if (!InitializeProcThreadAttributeList(lpAttrList, 1, 0, ref lpSize))
+                {
+                    Marshal.FreeHGlobal(lpAttrList);
+                    lpAttrList = IntPtr.Zero;
+                    throw new Exception($"Cannot initialize process attributes, error: {Marshal.GetLastWin32Error()}");
+                }
 
                 UpdateProcThreadAttribute(lpAttrList, 0, (IntPtr)PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, _pseudoConsoleHandle, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero);
 
                 si.lpAttributeList = lpAttrList;
 
-                var pi = new PROCESS_INFORMATION();
-
+                // CreateProcessW: CreateProcessA turned characters outside the ANSI code page of
+                // the system into '?' in paths and arguments (audit 12.6).
                 var success = CreateProcess(
                     null,
-                    $"\"{exePath}\" {args}",
+                    new StringBuilder($"\"{exePath}\" {args}"),
                     IntPtr.Zero,
                     IntPtr.Zero,
                     false,
-                    EXTENDED_STARTUPINFO_PRESENT,
+                    EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
                     IntPtr.Zero,
                     workingDirectory,
                     ref si,
@@ -431,6 +455,7 @@ namespace CDPIUI.TrayIcon.Helper
                 }
 
                 _processInfo = pi;
+                ChildProcessJob.Assign(pi.hProcess);
 
                 CloseHandle(pi.hThread);
 
@@ -442,22 +467,25 @@ namespace CDPIUI.TrayIcon.Helper
                 using (var reader = new FileStream(safeOutputReadHandle, FileAccess.Read))
                 {
                     byte[] buffer = new byte[4096];
+                    char[] chars = new char[Encoding.UTF8.GetMaxCharCount(buffer.Length)];
+                    // Keeps a multi-byte character that is split between two reads.
+                    Decoder decoder = Encoding.UTF8.GetDecoder();
                     int bytesRead;
 
 
                     while (!token.IsCancellationRequested)
                     {
                         bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length, cancellationToken: token);
+                        // The pipe was closed: reading again returns 0 at once and spun the loop.
+                        if (bytesRead == 0)
+                            break;
 
-                        string _output = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        string _output = new string(chars, 0, decoder.GetChars(buffer, 0, bytesRead, chars, 0));
 
-                        foreach (var errorMapping in errorMappings)
-                        {
-                            if (_output.Contains(errorMapping.Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                lastError = errorMapping.Value;
-                            }
-                        }
+                        // A specific error stays; a later generic match does not overwrite it.
+                        PrettyErrorCode? found = FindError(_output);
+                        if (found != null && (lastError == PrettyErrorCode.SUCCESS || found != PrettyErrorCode.UNKNOWN))
+                            lastError = found.Value;
 
                         if (!string.IsNullOrEmpty(Preffix) && !string.IsNullOrEmpty(_output))
                         {
@@ -480,11 +508,6 @@ namespace CDPIUI.TrayIcon.Helper
                     }
                 }
 
-                TerminateProcess(pi.hProcess, 0);
-
-                WaitForSingleObject(pi.hProcess, INFINITE);
-
-                CloseHandle(pi.hProcess);
             }
             catch (OperationCanceledException ex)
             {
@@ -500,6 +523,21 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
+                // The process handle was left open on the cancel and error paths.
+                if (pi.hProcess != IntPtr.Zero)
+                {
+                    if (WaitForSingleObject(pi.hProcess, 0) == WAIT_TIMEOUT)
+                    {
+                        TerminateProcess(pi.hProcess, 0);
+                        WaitForSingleObject(pi.hProcess, ProcessExitWaitMs);
+                    }
+                    CloseHandle(pi.hProcess);
+                }
+                if (lpAttrList != IntPtr.Zero)
+                {
+                    DeleteProcThreadAttributeList(lpAttrList);
+                    Marshal.FreeHGlobal(lpAttrList);
+                }
                 if (_pseudoConsoleHandle != IntPtr.Zero)
                 {
                     ClosePseudoConsole(_pseudoConsoleHandle);
@@ -509,6 +547,16 @@ namespace CDPIUI.TrayIcon.Helper
                 {
                     CloseHandle(_hInputWrite);
                     _hInputWrite = IntPtr.Zero;
+                }
+                // Pipes of a failed CreatePseudoConsole.
+                if (hInputRead != IntPtr.Zero)
+                    CloseHandle(hInputRead);
+                if (hOutputWrite != IntPtr.Zero)
+                    CloseHandle(hOutputWrite);
+                if (_hOutputRead != IntPtr.Zero)
+                {
+                    CloseHandle(_hOutputRead);
+                    _hOutputRead = IntPtr.Zero;
                 }
 
                 SendStopMessage("Process will be stopped");
@@ -559,14 +607,12 @@ namespace CDPIUI.TrayIcon.Helper
             
             try
             {
+                // The handle belongs to RunProcessWithConPTY, which closes it; here the process is
+                // only ended, and without an endless wait that could block the calling UI thread.
                 if (_processInfo.hProcess != IntPtr.Zero)
                 {
                     TerminateProcess(_processInfo.hProcess, 0);
-
-                    WaitForSingleObject(_processInfo.hProcess, INFINITE);
-
-                    CloseHandle(_processInfo.hProcess);
-
+                    WaitForSingleObject(_processInfo.hProcess, ProcessExitWaitMs);
                     _processInfo = default;
                 }
 
@@ -619,6 +665,8 @@ namespace CDPIUI.TrayIcon.Helper
         private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
         private const ushort SW_HIDE = 0;
         private const uint INFINITE = 0xFFFFFFFF;
+        private const uint ProcessExitWaitMs = 5000;
+        private const uint CREATE_UNICODE_ENVIRONMENT = 0x00000400;
 
         private const uint WAIT_OBJECT_0 = 0x000000000;
         private const uint WAIT_TIMEOUT = 0x00000102;
@@ -643,10 +691,10 @@ namespace CDPIUI.TrayIcon.Helper
             IntPtr hProcess,
             out System.UInt32 lpExitCode);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateProcessW")]
         static extern bool CreateProcess(
             string? lpApplicationName,
-            string lpCommandLine,
+            StringBuilder lpCommandLine,
             IntPtr lpProcessAttributes,
             IntPtr lpThreadAttributes,
             bool bInheritHandles,
