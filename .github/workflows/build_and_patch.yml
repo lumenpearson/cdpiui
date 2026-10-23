@@ -35,6 +35,20 @@ jobs:
 
       - uses: microsoft/setup-msbuild@v2
 
+      # Without this step build_portable.ps1 writes the stub, whose empty TrustedCertificates
+      # list makes the release reject every signed catalog, also its own patches.
+      - name: Create Secret.cs
+        shell: pwsh
+        env:
+          STORE_GITHUB_TOKEN: ${{ secrets.STORE_GITHUB_TOKEN }}
+          STORE_GITLAB_TOKEN: ${{ secrets.STORE_GITLAB_TOKEN }}
+          STORE_PROXY_URL: ${{ secrets.STORE_PROXY_URL }}
+          STORE_PROXY_KEY: ${{ secrets.STORE_PROXY_KEY }}
+          TRUSTED_CERTIFICATES: ${{ secrets.TRUSTED_CERTIFICATES }}
+          CATALOG_CERTIFICATE: ${{ secrets.CATALOG_CERTIFICATE_PFX_BASE64 }}
+          CATALOG_CERTIFICATE_PASSWORD: ${{ secrets.CATALOG_CERTIFICATE_PASSWORD }}
+        run: ./.github/scripts/create_release_secret.ps1 -Force
+
       - name: Build portable layout
         shell: pwsh
         run: ./.github/scripts/build_portable.ps1
@@ -105,7 +119,8 @@ jobs:
             New-FileCatalog -Path $portable -CatalogFilePath $catalog -CatalogVersion 2.0 | Out-Null
             if ($certPath) {
               $cert = Get-PfxCertificate -FilePath $certPath -Password (ConvertTo-SecureString $env:CATALOG_CERTIFICATE_PASSWORD -AsPlainText -Force)
-              Set-AuthenticodeSignature -FilePath $catalog -Certificate $cert -HashAlgorithm SHA256 | Out-Null
+              $signature = Set-AuthenticodeSignature -FilePath $catalog -Certificate $cert -HashAlgorithm SHA256
+              if ($null -eq $signature.SignerCertificate) { throw "Cannot sign the portable catalog: $($signature.StatusMessage)" }
             }
             Move-Item $catalog (Join-Path $portable "catalog.cat")
             Compress-Archive -Path "$portable/*" -DestinationPath out/_portable.zip
