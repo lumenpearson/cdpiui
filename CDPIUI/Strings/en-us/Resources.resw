@@ -6211,4 +6211,31 @@ By enabling this setting, you acknowledge that you have read this information.</
   <data name="CriticalErrorWindowTitle" xml:space="preserve">
     <value>Critical error</value>
   </data>
+  <data name="FileDialogChooseConfigTitle" xml:space="preserve">
+    <value>Choose a preset file</value>
+  </data>
+  <data name="FileDialogChooseGoodCheckReportTitle" xml:space="preserve">
+    <value>Choose a GoodCheck report file</value>
+  </data>
+  <data name="FileDialogChooseTextFileTitle" xml:space="preserve">
+    <value>Choose a text file</value>
+  </data>
+  <data name="FileDialogChooseFileTitle" xml:space="preserve">
+    <value>Choose a file</value>
+  </data>
+  <data name="FileDialogJsonConfigs" xml:space="preserve">
+    <value>JSON presets</value>
+  </data>
+  <data name="FileDialogBatConfigs" xml:space="preserve">
+    <value>BAT presets</value>
+  </data>
+  <data name="FileDialogCmdConfigs" xml:space="preserve">
+    <value>CMD presets</value>
+  </data>
+  <data name="FileDialogAllConfigs" xml:space="preserve">
+    <value>All supported presets</value>
+  </data>
+  <data name="FileDialogXmlData" xml:space="preserve">
+    <value>XML data files</value>
+  </data>
 </root>

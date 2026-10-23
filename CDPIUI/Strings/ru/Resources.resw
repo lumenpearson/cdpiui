@@ -6214,4 +6214,31 @@ https://discord.com/app</value>
   <data name="CriticalErrorWindowTitle" xml:space="preserve">
     <value>Критическая ошибка</value>
   </data>
+  <data name="FileDialogChooseConfigTitle" xml:space="preserve">
+    <value>Выберите файл пресета</value>
+  </data>
+  <data name="FileDialogChooseGoodCheckReportTitle" xml:space="preserve">
+    <value>Выберите файл отчёта GoodCheck</value>
+  </data>
+  <data name="FileDialogChooseTextFileTitle" xml:space="preserve">
+    <value>Выберите текстовый файл</value>
+  </data>
+  <data name="FileDialogChooseFileTitle" xml:space="preserve">
+    <value>Выберите файл</value>
+  </data>
+  <data name="FileDialogJsonConfigs" xml:space="preserve">
+    <value>Пресеты JSON</value>
+  </data>
+  <data name="FileDialogBatConfigs" xml:space="preserve">
+    <value>Пресеты BAT</value>
+  </data>
+  <data name="FileDialogCmdConfigs" xml:space="preserve">
+    <value>Пресеты CMD</value>
+  </data>
+  <data name="FileDialogAllConfigs" xml:space="preserve">
+    <value>Все поддерживаемые пресеты</value>
+  </data>
+  <data name="FileDialogXmlData" xml:space="preserve">
+    <value>Файлы данных XML</value>
+  </data>
 </root>

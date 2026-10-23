@@ -520,7 +520,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             {
                 openFileDialog.Title = localizer.GetLocalizedString("ChooseSiteList");
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                openFileDialog.Filter = "TXT files (*.txt)|*.txt";
+                openFileDialog.Filter = $"{localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)

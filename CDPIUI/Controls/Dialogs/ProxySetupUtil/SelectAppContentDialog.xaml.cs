@@ -180,7 +180,7 @@ public sealed partial class SelectAppContentDialog : ContentDialog
         {
             openFileDialog.Title = localizer.GetLocalizedString("ChooseExeFile");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            openFileDialog.Filter = "EXE files (*.exe)|*.exe";
+            openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
