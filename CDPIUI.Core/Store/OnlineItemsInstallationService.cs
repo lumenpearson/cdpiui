@@ -64,6 +64,13 @@ namespace CDPIUI.Core.Store
                     string url = _p[0];
                     string filename = _p[1];
 
+                    // Both come from item metadata: download only over HTTPS and only into the item folder.
+                    if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
+                        throw new InvalidDataException($"Only HTTPS downloads are allowed: {url}");
+                    if (string.IsNullOrWhiteSpace(filename) || filename != Path.GetFileName(filename) ||
+                        filename == "." || filename == ".." || filename.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                        throw new InvalidDataException($"Invalid download file name: {filename}");
+
                     if (DownloadWorker == null)
                     {
                         throw new NullReferenceException(nameof(DownloadWorker));

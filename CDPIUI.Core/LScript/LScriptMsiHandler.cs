@@ -11,9 +11,15 @@ namespace CDPIUI.Core.LScript
         public static async void InstallMsi(
             string[] scriptArgs, Dictionary<string, string>? extraArgs, CancellationToken cancellationToken)
         {
-            string path = Path.Combine(
-                extraArgs?.GetValueOrDefault("CurrentDirectory", string.Empty) ?? string.Empty, 
-                scriptArgs[0]);
+            string itemDirectory = extraArgs?.GetValueOrDefault("CurrentDirectory", string.Empty) ?? string.Empty;
+            string path = Path.Combine(itemDirectory, scriptArgs[0]);
+
+            // A script may only install packages that its own item brought.
+            string checkedPath = path.EndsWith("$ALL") ? path.Substring(0, path.Length - "$ALL".Length) : path;
+            if (string.IsNullOrEmpty(itemDirectory) || !IsInsideDirectory(checkedPath, itemDirectory))
+            {
+                throw new MsiInstallException("The package is outside the item directory");
+            }
             if (bool.TryParse(scriptArgs[1], out bool removeAfterAction))
             {
                 Debug.WriteLine(path);
@@ -40,6 +46,13 @@ namespace CDPIUI.Core.LScript
             {
                 throw new MsiInstallException("Argument is null");
             }
+        }
+
+        private static bool IsInsideDirectory(string path, string directory)
+        {
+            string root = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
         }
 
         private static async Task<Tuple<bool, bool>> InstallAllMsiFromPath(string directory, bool removeAfterAction, CancellationToken cancellationToken)

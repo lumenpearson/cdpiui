@@ -185,8 +185,8 @@ namespace CDPIUI.Core.Store
         #endregion
 
         #region Queue
-        public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null) =>
-            QueueManagerService.AddItemToQueue(itemId, version, cleanDirectoryBeforeInstalling, packFile);
+        public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false) =>
+            QueueManagerService.AddItemToQueue(itemId, version, cleanDirectoryBeforeInstalling, packFile, isSignedPack);
 
         public bool RemoveItemFromQueue(string itemId) => 
             QueueManagerService.RemoveItemFromQueue(itemId);
@@ -530,15 +530,17 @@ namespace CDPIUI.Core.Store
                     type = localItemInitModel.Type ?? "configlist",
                     name = localItemInitModel.Name ?? localItemInitModel.ShortName ?? qi.ItemId,
                     short_name = localItemInitModel.ShortName ?? qi.ItemId,
-                    target_executable_file = localItemInitModel.ExecutableFile,
+                    // An unsigned pack is only a set of presets and lists: it cannot name the executable
+                    // the tray starts elevated, and it cannot run install actions.
+                    target_executable_file = qi.IsSignedPack ? localItemInitModel.ExecutableFile : null,
                     filetype = "localPack",
                     version_control = "local",
                     icon = localItemInitModel.Icon,
                     developer = localItemInitModel.Developer,
                     background = localItemInitModel.Color,
                     dependencies = localItemInitModel.Requirements,
-                    before_install_actions = localItemInitModel.BeforeInstallActions,
-                    after_install_actions = localItemInitModel.AfterInstallActions,
+                    before_install_actions = qi.IsSignedPack ? localItemInitModel.BeforeInstallActions : null,
+                    after_install_actions = qi.IsSignedPack ? localItemInitModel.AfterInstallActions : null,
                 };
                 tag = localItemInitModel.Version;
                 downloadUrl = null;
