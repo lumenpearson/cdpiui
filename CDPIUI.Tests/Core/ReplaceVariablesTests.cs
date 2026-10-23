@@ -34,3 +34,22 @@ public class ReplaceVariablesTests
         Assert.True(result.Length <= ConfigurationService.MaxExpandedLength);
     }
 }
+
+public class ReplaceFilesPathTests
+{
+    private static string Replace(string startup, Dictionary<string, string> files)
+    {
+        var item = new CDPIUI.Core.ComponentServices.Helpers.Configuration.ConfigItem { startup_string = startup };
+        return ConfigurationService.ReplaceFilesPath(item, files).startup_string;
+    }
+
+    [Fact]
+    public void OnlyWholePathsAreReplaced()
+    {
+        var files = new Dictionary<string, string> { ["lists\\list.txt"] = "C:\\Data\\My lists\\list.txt" };
+
+        Assert.Equal(
+            "--hostlist=\"C:\\Data\\My lists\\list.txt\" --hostlist=lists\\mylist.txt --x=\"\" --name='a'",
+            Replace("--hostlist=\"%~dp0lists/list.txt\" --hostlist=lists\\mylist.txt --x=\"\" --name='a'", files));
+    }
+}

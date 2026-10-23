@@ -121,7 +121,8 @@ namespace CDPIUI.Core.LScript
             string scriptString,
             string? scriptArgs = null,
             string? callItemId = null,
-            Dictionary<string, bool>? jparams = null
+            Dictionary<string, bool>? jparams = null,
+            bool quotePaths = false
             )
         {
             if (string.IsNullOrEmpty(scriptString))
@@ -140,6 +141,7 @@ namespace CDPIUI.Core.LScript
                 }
 
 
+                string source = result;
                 result = Regex.Replace(result, Pattern, (Match m) =>
                 {
                     string command = m.Groups[1].Value.ToUpperInvariant();
@@ -171,7 +173,7 @@ namespace CDPIUI.Core.LScript
                                 break;
 
                             case "GETCURRENTDIR":
-                                replacement = localItemsFolder;
+                                replacement = quotePaths ? QuoteIfNeeded(localItemsFolder, source, m.Index) : localItemsFolder;
                                 break;
 
                             case "LOCALCONDITION":
@@ -179,7 +181,9 @@ namespace CDPIUI.Core.LScript
                                 break;
 
                             case "GETSRDIR":
-                                replacement = Directories.StoreRepoCacheDirectory;
+                                replacement = quotePaths
+                                    ? QuoteIfNeeded(Directories.StoreRepoCacheDirectory, source, m.Index)
+                                    : Directories.StoreRepoCacheDirectory;
                                 break;
                         }
                     }
@@ -204,6 +208,37 @@ namespace CDPIUI.Core.LScript
 
 
 
+        /// <summary>
+        /// A folder with a space (a user profile such as "C:\Users\Ivan Petrov") split the argument
+        /// it was put into (issue #2). It is quoted unless it already stands inside quotes; a quote in
+        /// the middle of an argument is valid for the command-line parser of the components.
+        /// </summary>
+        private static string QuoteIfNeeded(string path, string text, int position)
+        {
+            if (!path.Any(char.IsWhiteSpace))
+                return path;
+            int quotesBefore = text.AsSpan(0, position).Count('"');
+            return quotesBefore % 2 == 0 ? $"\"{path}\"" : path;
+        }
+
+        /// <summary>
+        /// The ':' of "condition ? a : b", skipping the colon of a drive letter such as "C:\".
+        /// </summary>
+        private static int FindTernaryColon(string condition, int questionMark)
+        {
+            for (int i = questionMark + 1; i < condition.Length; i++)
+            {
+                if (condition[i] != ':')
+                    continue;
+                bool isDriveColon = i > 0 && char.IsLetter(condition[i - 1]) &&
+                    (i == 1 || !char.IsLetterOrDigit(condition[i - 2])) &&
+                    i + 1 < condition.Length && (condition[i + 1] == '\\' || condition[i + 1] == '/');
+                if (!isDriveColon)
+                    return i;
+            }
+            return -1;
+        }
+
         public static string LocalCondition(string condition, Dictionary<string, bool>? jparams)
         {
             if (string.IsNullOrWhiteSpace(condition))
@@ -217,7 +252,7 @@ namespace CDPIUI.Core.LScript
                 condition = condition.Replace("$SEPARATOR", "$");
             }
             else
-                cPos = condition.IndexOf(':');
+                cPos = FindTernaryColon(condition, qPos);
             if (qPos < 0 || cPos < 0 || cPos < qPos)
             {
                 Logger.Instance.CreateWarningLog(nameof(LScriptCore), $"0x0 Not correct condition");

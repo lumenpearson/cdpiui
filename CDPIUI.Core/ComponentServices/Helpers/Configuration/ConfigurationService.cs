@@ -453,7 +453,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
 
-            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId);
+            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId, quotePaths: true);
 
             if (!item.IsLegacy)
             {
@@ -509,7 +509,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
 
-            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId);
+            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId, quotePaths: true);
             return startupString;
         }
 
@@ -1079,25 +1079,31 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         public static ConfigItem ReplaceFilesPath(ConfigItem configItem, Dictionary<string, string> files)
         {
+            // Replaces whole paths only, with either separator and with the quotes around them:
+            // a substring replacement also changed "mylist.txt" when "list.txt" was replaced, every
+            // apostrophe in the line became a quote, and "" (an empty value) became " (audit 11.5).
             static string ReplaceInString(string input, Dictionary<string, string> files)
             {
                 if (string.IsNullOrEmpty(input) || files == null || files.Count == 0)
                     return input;
 
-                input = input.Replace("%~dp0", "").Replace("\'", "\"");
+                input = input.Replace("%~dp0", "");
 
                 foreach (var kvp in files)
                 {
-                    string oldPath = kvp.Key;
-                    string newPath = kvp.Value;
+                    string oldPath = kvp.Key?.Trim().Trim('"', '\'') ?? string.Empty;
+                    if (oldPath.Length == 0)
+                        continue;
+                    string newPath = $"\"{kvp.Value.Trim().Trim('"')}\"";
 
-                    if (input.Contains(oldPath))
-                    {
-                        input = input.Replace(oldPath, $"\"{newPath}\"");
-                        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"{input}");
-                    }
+                    string pathPattern = string.Join("[\\\\/]",
+                        oldPath.Split('\\', '/').Select(Regex.Escape));
+                    input = Regex.Replace(
+                        input,
+                        $@"(?<![\w.\\/:-])(?<q>[""']?){pathPattern}\k<q>(?![\w.\\/-])",
+                        _ => newPath,
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                 }
-                input = input.Replace("\"\"", "\"");
 
                 return input;
             }
