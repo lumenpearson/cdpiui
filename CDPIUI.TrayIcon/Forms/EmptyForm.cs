@@ -102,6 +102,9 @@ namespace CDPIUI.TrayIcon.Forms
             switch (e.Mode)
             {
                 case PowerModes.Resume:
+                    // Network adapters come back some seconds after resume; components started
+                    // before that bind to no interface and the connection stays broken (issue #7).
+                    await WaitForNetworkAsync(TimeSpan.FromSeconds(30));
                     foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
                     {
                         if (!task.ProcessManager.IsProcessRunning)
@@ -119,6 +122,21 @@ namespace CDPIUI.TrayIcon.Forms
                     break;
                 case PowerModes.Suspend:
                     break;
+            }
+        }
+
+        private static async Task WaitForNetworkAsync(TimeSpan timeout)
+        {
+            var deadline = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    if (System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+                        return;
+                }
+                catch (System.Net.NetworkInformation.NetworkInformationException) { return; }
+                await Task.Delay(1000);
             }
         }
 
