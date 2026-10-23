@@ -418,6 +418,10 @@ namespace CDPIUI.TrayIcon.Forms
                     case NIN_SELECT:
 
                         break;
+                    case NIN_KEYSELECT:
+                        // Enter or Space on the icon focused with the keyboard.
+                        MaximizeApp();
+                        break;
                     case WM_CONTEXTMENU:
                         var rect = GetRectIcon();
                         ShowContextMenuAt(new Point(rect.left, rect.top), rect.top - rect.bottom, rect.right - rect.left);
@@ -458,7 +462,8 @@ namespace CDPIUI.TrayIcon.Forms
         public const Int32 NIN_BALLOONSHOW = 0x402;
         public const Int32 NIN_BALLOONTIMEOUT = 0x404;
         public const Int32 NIN_BALLOONUSERCLICK = 0x405;
-        public const Int32 NIN_KEYSELECT = 0x403;
+        // NIN_SELECT | NINF_KEY; it was 0x403, so the icon did not react to Enter or Space.
+        public const Int32 NIN_KEYSELECT = 0x401;
         public const Int32 NIN_SELECT = 0x400;
         public const Int32 NIN_POPUPOPEN = 0x406;
         public const Int32 NIN_POPUPCLOSE = 0x407;

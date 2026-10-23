@@ -316,7 +316,6 @@ namespace CDPIUI.TrayIcon.Forms
             Location = new Point(-2000, -2000);
             Size = new Size(1, 1);
 
-            GC.Collect();
             Hided?.Invoke();
         }
         public void ShowWindow(Point location, int vertOffset, int horOffset)
