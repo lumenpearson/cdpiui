@@ -144,12 +144,14 @@ namespace EditHostFile
 
         private static void RestoreBackup(string path)
         {
-            Log($"Restoring backup for \"{path}\" in \"{path}.bak\"");
-            string backup = $"{path}.bak";
-            if (!File.Exists(backup)) throw new FileNotFoundException("Backup not found", backup);
+            // The backup is the file as it was before /add without the added block. Copying it back
+            // would also drop every change made to the hosts file since then (VPN clients, Docker,
+            // manual edits), so only the added block is removed and the backup is discarded.
+            Log($"Restoring \"{path}\" to its state without added lines");
+            RemoveAddedLines(path);
 
-            Write(path, Read(backup));
-            File.Delete(backup);
+            string backup = $"{path}.bak";
+            if (File.Exists(backup)) File.Delete(backup);
         }
 
         private static string RemoveBlock(string text)
@@ -197,7 +199,8 @@ namespace EditHostFile
             }
             foreach (string line in SplitLines(resource))
             {
-                if (line.Length == 0 || !lines.Contains(line))
+                // Blank lines and comments keep the block readable and are always added.
+                if (line.Length == 0 || line.StartsWith("#") || !lines.Contains(line))
                 {
                     builder.Append(line).Append(content.NewLine);
                 }
