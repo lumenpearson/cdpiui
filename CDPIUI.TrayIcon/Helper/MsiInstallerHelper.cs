@@ -176,7 +176,7 @@ namespace CDPIUI.TrayIcon.Helper
                 lock (_lock)
                 {
                     if (string.Equals(Path.GetExtension(stagedPath), ".msi", StringComparison.OrdinalIgnoreCase))
-                        _currentProcess = RunHelper.Run("msiexec.exe", $"/i \"{stagedPath}\" /passive /norestart");
+                        _currentProcess = RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedPath}\" /passive /norestart");
                     else
                         _currentProcess = RunHelper.Run(stagedPath, $"/install /passive /norestart");
                 }

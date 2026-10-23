@@ -88,7 +88,7 @@ namespace CDPIUI.TrayIcon.Helper
             if (Path.GetExtension(stagedFile).ToLower() == ".msi")
             {
                 // Published Setup.msi files are not Authenticode-signed, so there is no signature to check yet.
-                RunHelper.Run("msiexec.exe", $"/i \"{stagedFile}\" /qn+");
+                RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedFile}\" /qn+");
                 _ = PipeHelper.SendApplicationPacket(ApplicationMessageIds.CloseApplicationUI);
                 NotifyHelper.Instance.Dispose();
                 Application.Exit();

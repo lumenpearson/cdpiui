@@ -180,7 +180,7 @@ namespace CDPIUI.TrayIcon.Helper
             string error = "NaN";
             try
             {
-                await ExecuteCommand("sc", "stop WinDivert");
+                await ExecuteCommand(Path.Combine(Environment.SystemDirectory, "sc.exe"), "stop WinDivert");
             }
             catch (Exception ex)
             {
@@ -188,7 +188,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             try
             {
-                await ExecuteCommand("sc", "delete WinDivert");
+                await ExecuteCommand(Path.Combine(Environment.SystemDirectory, "sc.exe"), "delete WinDivert");
             }
             catch (Exception ex)
             {
@@ -221,9 +221,12 @@ namespace CDPIUI.TrayIcon.Helper
                 process.StartInfo.CreateNoWindow = true;
 
                 process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
+                // Both streams are read at once, so a full error pipe cannot block the process.
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
                 await process.WaitForExitAsync();
+                string output = await outputTask;
+                string error = await errorTask;
 
                 if (process.ExitCode != 0)
                 {
