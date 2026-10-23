@@ -147,7 +147,8 @@ namespace CDPIUI.AddOns.GoodCheck
             bool ignoreEmpty = true,
             StringComparer? comparer = null)
         {
-            encoding ??= Encoding.UTF8;
+            // Without BOM: GoodCheck took it for a part of the first domain.
+            encoding ??= new UTF8Encoding(false);
             comparer ??= StringComparer.Ordinal;
 
             var seen = new HashSet<string>(comparer);
@@ -189,6 +190,8 @@ namespace CDPIUI.AddOns.GoodCheck
 
             string siteListFolder = Path.Combine(GetAddOnDirectory(), CheckLists);
 
+            RemoveOldMergedSiteLists(siteListFolder);
+
             if (_mode == GoodCheckProcessMode.AllAsOne)
             {
                 TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
@@ -216,13 +219,21 @@ namespace CDPIUI.AddOns.GoodCheck
             }
             else
             {
+                var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < siteListsToCheck.Count; i++)
                 {
                     var model = siteListsToCheck[i];
                     string path = model.SiteListPath;
-                    File.Copy(model.SiteListPath, Path.Combine(siteListFolder, Path.GetFileName(model.SiteListPath)), true);
+                    // Lists with the same file name from different packs overwrote each other.
+                    string name = Path.GetFileName(model.SiteListPath);
+                    if (!usedNames.Add(name))
+                    {
+                        name = $"{i}_{name}";
+                        usedNames.Add(name);
+                    }
+                    File.Copy(model.SiteListPath, Path.Combine(siteListFolder, name), true);
 
-                    model.SiteListPath = Path.GetFileName(model.SiteListPath);
+                    model.SiteListPath = name;
                     model.StrategyListPath = Path.GetFileName(model.StrategyListPath);
 
                     CancellationTokenSource cancellationTokenSource = new();
@@ -241,6 +252,26 @@ namespace CDPIUI.AddOns.GoodCheck
 
             OperationsListChanged?.Invoke();
 
+        }
+
+        // The merged lists of earlier runs ({epoch}_sitelist.txt) were never removed.
+        private static void RemoveOldMergedSiteLists(string siteListFolder)
+        {
+            try
+            {
+                if (!Directory.Exists(siteListFolder))
+                    return;
+                foreach (string file in Directory.EnumerateFiles(siteListFolder, "*_sitelist.txt"))
+                {
+                    string prefix = Path.GetFileName(file).Split('_')[0];
+                    if (prefix.All(char.IsDigit) && File.GetLastWriteTimeUtc(file) < DateTime.UtcNow.AddDays(-1))
+                        File.Delete(file);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessService), $"Cannot remove old site lists: {ex.Message}");
+            }
         }
 
         public void Start()
