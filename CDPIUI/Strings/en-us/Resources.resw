@@ -6645,4 +6645,190 @@ By enabling this setting, you acknowledge that you have read this information.</
   <data name="BlockCheck2Issue_REPORT_TEXT_SCOPE_INFERRED" xml:space="preserve">
     <value>This legacy text report does not store exact target-to-list mappings. They will be recovered from the referenced list files where available; save a JSON report for lossless import.</value>
   </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_NAME_INVALID" xml:space="preserve">
+    <value>Lua action #{0} contains an invalid argument name.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_RESERVED" xml:space="preserve">
+    <value>Argument '{0}' is reserved for generated orchestration.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_VALUE_UNSAFE" xml:space="preserve">
+    <value>Lua action #{0} contains characters that are unsafe for generated command lines.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_PAYLOAD_INVALID" xml:space="preserve">
+    <value>Lua action #{0} contains an unknown payload filter.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_RANGE_INVALID" xml:space="preserve">
+    <value>Lua action #{0} contains an invalid in/out range.</value>
+  </data>
+  <data name="BlockCheck2Issue_BASELINE_TARGET_UNKNOWN" xml:space="preserve">
+    <value>Baseline result refers to an unknown target.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_CONFLICT" xml:space="preserve">
+    <value>Blob '{0}' has conflicting sources.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_NAME_DUPLICATE" xml:space="preserve">
+    <value>Blob name is duplicated in one strategy.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_NAME_INVALID" xml:space="preserve">
+    <value>Blob name is invalid.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_SOURCE_UNSAFE" xml:space="preserve">
+    <value>Blob source must be inline hex or a relative path without traversal.</value>
+  </data>
+  <data name="BlockCheck2Issue_CATALOG_EMPTY" xml:space="preserve">
+    <value>Catalog must contain at least one strategy.</value>
+  </data>
+  <data name="BlockCheck2Issue_CATALOG_VERSION_MISSING" xml:space="preserve">
+    <value>Catalog version is required.</value>
+  </data>
+  <data name="BlockCheck2Issue_CIRCULAR_STRATEGY_EMPTY" xml:space="preserve">
+    <value>A circular strategy contains no Lua actions.</value>
+  </data>
+  <data name="BlockCheck2Issue_LUA_FUNCTION_NOT_ALLOWED" xml:space="preserve">
+    <value>Lua function '{0}' is not allowed in the built-in catalog.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Manual strategy test attempt count must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_FAILED" xml:space="preserve">
+    <value>The strategy test could not be completed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PREHOST_CIRCULAR_DISABLED" xml:space="preserve">
+    <value>Pre-host strategies cannot be used as circular fallbacks and will be treated as static.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_ITERATIONS_INVALID" xml:space="preserve">
+    <value>Maximum preset repair iterations cannot be negative.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_SYNTHESIS_INVALID" xml:space="preserve">
+    <value>Preset validation requires a successful initial synthesis result.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Preset validation attempts per target must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_RATE_INVALID" xml:space="preserve">
+    <value>Preset validation success rate must be greater than zero and at most one.</value>
+  </data>
+  <data name="BlockCheck2Issue_PROBE_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Probe result references a strategy that is not present in the catalog.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_ATTEMPTS_MISMATCH" xml:space="preserve">
+    <value>Scan attempts per target must be at least the synthesis minimum attempt count.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_REPAIR_ITERATIONS_INVALID" xml:space="preserve">
+    <value>Maximum preset repair iterations cannot be negative.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SUCCESS_RATE_MISMATCH" xml:space="preserve">
+    <value>Scan success rate must be at least the synthesis minimum success rate.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SYNTHESIS_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Synthesis minimum attempt count must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SYNTHESIS_RATE_INVALID" xml:space="preserve">
+    <value>Synthesis success rate must be greater than zero and at most one.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_ATTEMPTS_MISMATCH" xml:space="preserve">
+    <value>Preset validation attempts must be at least the synthesis minimum attempt count.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_RATE_INVALID" xml:space="preserve">
+    <value>Preset validation success rate must be greater than zero and at most one.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_RATE_MISMATCH" xml:space="preserve">
+    <value>Preset validation success rate must be at least the synthesis success rate.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Attempts per target must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Requested strategy is absent from the catalog.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_SUCCESS_COUNT_INVALID" xml:space="preserve">
+    <value>Successful strategies per route must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_SUCCESS_RATE_INVALID" xml:space="preserve">
+    <value>Successful strategy rate must be greater than zero and at most one.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_TIER_INVALID" xml:space="preserve">
+    <value>Maximum scan tier is invalid.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_DIRECTORY_MISSING" xml:space="preserve">
+    <value>A storage directory is required when every site is processed separately.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ACTIONS_EMPTY" xml:space="preserve">
+    <value>Strategy must contain at least one Lua action.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_COST_INVALID" xml:space="preserve">
+    <value>Strategy base cost must be positive.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ID_DUPLICATE" xml:space="preserve">
+    <value>Strategy id must be unique.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ID_INVALID" xml:space="preserve">
+    <value>Strategy id must contain only letters, digits, dot, underscore or dash.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_IP_VERSIONS_EMPTY" xml:space="preserve">
+    <value>Strategy must support at least one IP version.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_IP_VERSION_INVALID" xml:space="preserve">
+    <value>Strategy contains an unknown IP version.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_PROTOCOLS_EMPTY" xml:space="preserve">
+    <value>Strategy must support at least one protocol.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_PROTOCOL_INVALID" xml:space="preserve">
+    <value>Strategy contains an unknown protocol.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_SCAN_TIER_INVALID" xml:space="preserve">
+    <value>Strategy contains an unknown scan tier.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_HOST_INVALID" xml:space="preserve">
+    <value>Target host is not a valid DNS name.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_ID_DUPLICATE" xml:space="preserve">
+    <value>Target id must be unique.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_ID_INVALID" xml:space="preserve">
+    <value>Target id must contain only letters, digits, dot, underscore or dash.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_LIMIT_INVALID" xml:space="preserve">
+    <value>Maximum target count must be at least one.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_IP_VERSION_INVALID" xml:space="preserve">
+    <value>Target IP version is unknown.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PATH_INVALID" xml:space="preserve">
+    <value>Target path must start with '/'.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PORT_INVALID" xml:space="preserve">
+    <value>Target port is outside 1..65535.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PROTOCOL_INVALID" xml:space="preserve">
+    <value>Target protocol is unknown.</value>
+  </data>
+  <data name="BlockCheck2Issue_UNSUPPORTED_CATALOG_SCHEMA" xml:space="preserve">
+    <value>Catalog schema {0} is not supported; expected {1}.</value>
+  </data>
+  <data name="OkButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CommunityContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SimilarItemInstallingContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="MarkdownTextViewContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ViewApplyArgsContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ConfigShareMessageContentDialog.CloseButtonText" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CriticalErrorExitButton.Content" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ComponentFailureOkButton.Content" xml:space="preserve">
+    <value>OK</value>
+  </data>
 </root>

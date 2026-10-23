@@ -46,6 +46,15 @@ internal static class BlockCheck2IssueText
         { "PRESET_VALIDATION_PROBE_FAILED", CodedMessageLocalizer.AfterColon },
         { "PRESET_VALIDATION_START_FAILED", CodedMessageLocalizer.AfterColon },
         { "PRESET_VALIDATION_STOP_FAILED", CodedMessageLocalizer.AfterColon },
+        { "MANUAL_TEST_FAILED", CodedMessageLocalizer.AfterColon },
+        { "ACTION_ARGUMENT_NAME_INVALID", @"#(\d+)" },
+        { "ACTION_ARGUMENT_VALUE_UNSAFE", @"#(\d+)" },
+        { "ACTION_PAYLOAD_INVALID", @"#(\d+)" },
+        { "ACTION_RANGE_INVALID", @"#(\d+)" },
+        { "ACTION_ARGUMENT_RESERVED", CodedMessageLocalizer.SingleQuoted },
+        { "BLOB_CONFLICT", CodedMessageLocalizer.SingleQuoted },
+        { "LUA_FUNCTION_NOT_ALLOWED", CodedMessageLocalizer.SingleQuoted },
+        { "UNSUPPORTED_CATALOG_SCHEMA", @"^Catalog schema (.+?) is not supported; expected (.+)\.$" },
     };
 
     internal static string GetMessage(BlockCheckIssue issue)
