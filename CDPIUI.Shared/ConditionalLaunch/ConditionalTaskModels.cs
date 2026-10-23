@@ -181,21 +181,29 @@ namespace CDPIUI.Shared.ConditionalLaunch
             return Path.Combine(dataDirectory, DirectoryName);
         }
 
-        public static IReadOnlyList<ConditionalTask> LoadDirectory(string directoryPath)
+        /// <param name="onError">Receives the path and the error of every file that is skipped</param>
+        public static IReadOnlyList<ConditionalTask> LoadDirectory(string directoryPath, Action<string, Exception>? onError = null)
         {
             Directory.CreateDirectory(directoryPath);
 
             var tasks = new List<ConditionalTask>();
-            foreach (var filePath in Directory.EnumerateFiles(directoryPath, $"*{FileExtension}"))
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Sorted, so the same copy of a duplicated task wins on every load.
+            foreach (var filePath in Directory.EnumerateFiles(directoryPath, $"*{FileExtension}")
+                         .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
-                    tasks.Add(Load(filePath));
+                    ConditionalTask task = Load(filePath);
+                    // A copied task file would otherwise run the same task twice.
+                    if (!ids.Add(task.Id))
+                        throw new InvalidDataException($"Another task file already has the identifier {task.Id}.");
+                    tasks.Add(task);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Invalid task files are ignored by the runtime. The editor
-                    // reports import/load errors to the user separately.
+                    // Invalid task files are skipped. The editor reports import errors to the user separately.
+                    onError?.Invoke(filePath, ex);
                 }
             }
 
@@ -234,11 +242,33 @@ namespace CDPIUI.Shared.ConditionalLaunch
             if (!filePath.StartsWith(targetDirectory, StringComparison.OrdinalIgnoreCase))
                 filePath = Path.Combine(directoryPath, $"{task.Id}{FileExtension}");
 
-            using (var stream = File.Create(filePath))
-                Serializer.Serialize(stream, task);
+            WriteTask(task, filePath);
 
             task.FilePath = filePath;
             return filePath;
+        }
+
+        // Writes next to the target and swaps the file in, so a crash never leaves a truncated task.
+        private static void WriteTask(ConditionalTask task, string filePath)
+        {
+            string tempPath = filePath + ".tmp";
+            try
+            {
+                using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    Serializer.Serialize(stream, task);
+                    stream.Flush(true);
+                }
+
+                if (File.Exists(filePath))
+                    File.Replace(tempPath, filePath, null);
+                else
+                    File.Move(tempPath, filePath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
         }
 
         public static void Export(ConditionalTask task, string filePath)
@@ -248,8 +278,7 @@ namespace CDPIUI.Shared.ConditionalLaunch
             if (!string.Equals(Path.GetExtension(filePath), FileExtension, StringComparison.OrdinalIgnoreCase))
                 filePath += FileExtension;
 
-            using var stream = File.Create(filePath);
-            Serializer.Serialize(stream, task);
+            WriteTask(task, Path.GetFullPath(filePath));
         }
 
         public static void Validate(ConditionalTask task)
