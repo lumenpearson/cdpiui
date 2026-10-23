@@ -83,6 +83,7 @@ Thus the hosts file is never half written.
 | Other | The `HResult` of the exception that stopped the tool. If the `HResult` is `0`, the code is `1`. |
 
 The tool writes progress and errors to standard output with the prefix `[CDPI UI/EditHostFileHelper]`.
+The messages are in English. If the Windows UI language is Russian, they are in Russian (`EditHostFile/Strings.cs`).
 
 ## Callers
 

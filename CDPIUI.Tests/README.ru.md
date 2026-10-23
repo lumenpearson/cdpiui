@@ -26,24 +26,28 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 
 | Папка | Тестовый класс | Предмет |
 | ------ | ---------- | ------- |
+| `AddOns` | `ConfigImportGoldenTests` | Импорт пакетных файлов Flowseal и сравнение с ожидаемыми файлами в `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Разбор команд `set` в импортируемых скриптах |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Отклонение параметров, которые записывают за пределы пакета `.cdpiconfig` |
 | `AddOns` | `ZapretConfigImportServiceTests` | Синтаксис пакетных файлов: хвост команды оболочки, каретки, модификаторы файлов |
-| `Core` | `ArchivePathsTests` | Безопасные пути архива внутри целевого корня |
 | `Core` | `BatchFileEncodingTests` | Кодировка пакетных файлов (кириллица, UTF-8 BOM) |
 | `Core` | `ConfigCommandLineTests` | Разбиение командных строк пресетов на токены |
 | `Core` | `ConfigFileReferencesTests` | Ссылки на файлы в аргументах пресетов (смещения blob, файлы LUA) |
+| `Core` | `IniDocumentTests` | Чтение и изменение INI-файлов через `IniDocument` |
 | `Core` | `LScriptCoreTests` | Условия LScript, вложенные аргументы и разбор строк условий |
 | `Core` | `ProcessServiceTests` | Флаг тихого режима в аргументах процесса |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Разбор адреса, порта и формата прокси |
-| `Core` | `ReplaceVariablesTests` | Замена переменных |
+| `Core` | `ReplaceVariablesTests`, `ReplaceFilesPathTests` | Замена переменных и замена путей к файлам в пресетах |
 | `Core` | `VersionHelperTests` | Сравнение версий |
-| `Core` | `Zapret1ToZapret2ConverterTests` | Преобразование аргументов Zapret Legacy в Zapret2 |
+| `Core` | `Zapret1ToZapret2ConverterTests` | Преобразование аргументов Zapret Legacy в Zapret2 (с ожидаемыми файлами в `TestData\Zapret1ToZapret2`) |
 | `Core` | `ZipServiceTests` | Слияние списков доменов при распаковке ZIP |
+| `Shared` | `ArchiveLimitsTests` | Ограничения архивов: число записей, степень сжатия, ограниченная распаковка, ссылки в целевом корне |
+| `Shared` | `ArchivePathsTests` | Безопасные пути архива внутри целевого корня |
 | `Shared` | `ApplicationPathMatcherTests` | Сопоставление путей файлов приложений |
 | `Shared` | `CatalogVerifierTests` | Проверка подписи каталогов обновлений |
 | `Shared` | `ConditionalTaskFileServiceTests` | Сохранение и загрузка файлов `.cdpitask` |
 | `Shared` | `ErrorConvertorTests` | Преобразование кодов ошибок |
+| `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
 | `Shared` | `GuiActivationArgumentsTests` | Кодирование и декодирование `--gui-args:` и кавычки в командной строке |
 | `Shared` | `OutputCleanupHelperTests` | Удаление escape-последовательностей из вывода консоли |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |
@@ -57,8 +61,10 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 `TestData` содержит файлы для тестов. Проект копирует все файлы из `TestData` в выходной каталог (`<None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" />`).
 
 - `release-catalog.cat`: каталог, подписанный сертификатом релиза. Его использует `CatalogVerifierTests`.
+- `ConfigImport\<case>\`: пакетные файлы Flowseal и ожидаемые результаты импорта (`*.zapret.expected.txt`, `*.import.expected.txt`). Их использует `ConfigImportGoldenTests`.
+- `Zapret1ToZapret2\`: аргументы Zapret Legacy и ожидаемые аргументы Zapret2. Их использует `Zapret1ToZapret2ConverterTests`.
 
-Чтобы прочитать тестовый файл, используйте `Path.Combine(AppContext.BaseDirectory, "TestData", "<file>")`.
+Чтобы прочитать тестовый файл, используйте `Path.Combine(AppContext.BaseDirectory, "TestData", "<file>")`. Чтобы прочитать файл ожидаемых результатов, используйте `GoldenFile.Load(...)`. В формате этого файла строка `[name]` начинает секцию. Строки после неё — значения секции. Класс пропускает пустые строки и строки, которые начинаются с `#`.
 
 ## Добавление теста
 

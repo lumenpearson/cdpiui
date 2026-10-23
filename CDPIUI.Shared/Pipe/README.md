@@ -140,7 +140,7 @@ Component processes. `componentId` is the component id, for example `CSZTBN012`.
 | `GetProcessIdFullOutput` | GUI → tray | `componentId` | The tray sends `ProcessIdFullOutput` for the task of `componentId`. If `componentId` is empty, the tray sends it for all tasks. |
 | `GetAllProcessStates` | GUI → tray | none | The tray sends the state and the process name of all tasks. |
 | `ProcessIdStartupArgsChanged` | GUI → tray | `componentId` | The next start asks the GUI for a new startup string. |
-| `CaptureHelpOutput` | GUI → tray | `componentId`, `requestId`, `exePath` (`PipePayloadCodec`) | Runs `<exe> --help` for 10 seconds. |
+| `CaptureHelpOutput` | GUI → tray | `componentId`, `requestId`, `exePath` (`PipePayloadCodec`) | Runs `<exe> --help` with a timeout of 10 seconds. |
 | `GetProcessIdState` | GUI → tray | `componentId` | The tray sends the state and the process name of the task of `componentId`. If `componentId` is empty, the tray sends them for all tasks. |
 | `GetStartupString` | tray → GUI | `componentId` | The GUI starts the task. |
 | `GetAllStartupStrings` | tray → GUI | `componentId` (empty) | The GUI starts all autorun components. |
@@ -252,8 +252,8 @@ The tray waits 45 seconds for `ActionCompleted`.
 `PipeHelper.TrySendMessage` in the tray starts the GUI as the desktop user when the send fails.
 The message goes in the argument `--direct:<message>` for all targets.
 
-- For background messages to the `Service`, `CONPTY`, `Settings`, `Application`, `ConditionalLaunch`, `CompatibilityCheck` and `Update` targets, the tray also adds `--create-no-window`.
-- For the other targets, for example `Presentation`, the tray does not add `--create-no-window`.
+- For background messages (`CONPTY`, `ConditionalLaunch`, `CompatibilityCheck` and `Update`), the tray also adds `--create-no-window`.
+- For `ShowWindow` (`Presentation`), the tray does not add `--create-no-window`, because the message opens a window.
 
 The GUI handles `--direct:` with `CoreCommandsHandler`, then with `CommandsHandler.HandleCommand`.
 The tray does not use `----ms-protocol:`. The GUI handles `----ms-protocol:` with `CommandUriMapper`, which accepts only public routes. Thus a pipe message in `----ms-protocol:`, for example `ShowWindow`, has no effect.

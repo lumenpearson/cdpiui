@@ -12,7 +12,7 @@ CI runs on pushes to `main`, `dev` and `fix/**`, and on pull requests. It has re
 
 | Job | Steps |
 |-----|-------|
-| `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores each project with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
+| `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores these four projects, `CDPIUI` and `CDPIUI.Tests` with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
 | `gui` | Runs `build_portable.ps1` and `check_setup_files.ps1`. Builds the MSI. Uploads `NewSetup/bin/**/*.msi` as the `setup-msi` artifact for 7 days. |
 | `tools` | Builds `Update/Update.csproj` (with packages.config restore) and `EditHostFile/EditHostFile.csproj` in Release with `msbuild`. |
 
@@ -40,7 +40,7 @@ A user starts this workflow manually (`workflow_dispatch`).
 | `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | The Store tokens in `Secret.cs` (`GitHubToken`, `GitLabToken`). The application makes them public, so they must not have write access (see `create_release_secret.ps1`). |
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). The key is in each copy of the application. Thus the proxy must not trust the key more than an anonymous client: limit the rate and the allowed targets on the proxy. |
 | `TRUSTED_CERTIFICATES` | The SHA-1 thumbprints for `Secret.TrustedCertificates`, separated by spaces, commas or semicolons. |
-| `CATALOG_CERTIFICATE_PFX_BASE64` | The PFX file of the catalog signature certificate, in Base64. The patch step writes it to `RUNNER_TEMP\catalog.pfx` and deletes it after the step. |
+| `CATALOG_CERTIFICATE_PFX_BASE64` | The PFX file of the catalog signature certificate, in Base64. The patch step writes it to `RUNNER_TEMP\catalog.pfx` and deletes it at the end of the step. |
 | `CATALOG_CERTIFICATE_PASSWORD` | The password of the PFX file. |
 
 All secrets are optional for the workflow. The "Create Secret.cs" step gives them to
