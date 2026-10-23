@@ -130,7 +130,7 @@ namespace CDPIUI.Controls.Store.Settings
 
         public static readonly DependencyProperty SizeTextProperty =
             DependencyProperty.Register(
-                nameof(SizeText), typeof(double), typeof(MemoryStoreItemUserControl), new PropertyMetadata(0)
+                nameof(SizeText), typeof(double), typeof(MemoryStoreItemUserControl), new PropertyMetadata(0d)
             );
 
         private void CheckAvailiableActions()
@@ -165,7 +165,7 @@ namespace CDPIUI.Controls.Store.Settings
         {
             try
             {
-                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId).Directory);
+                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
             catch
             {

@@ -122,6 +122,9 @@ namespace CDPIUI.Controls.CreateConfigHelper
             GraphicDesignerTextValueChangedCommand = new RelayCommand(p => NotifyValueChanged((Tuple<string, string>)p));
             GraphicDesignerBoolValueToggledCommand = new RelayCommand(p => NotifyToggled((Tuple<string, bool>)p));
 
+            // Each control gets its own collection: a default in PropertyMetadata is one instance
+            // shared by every control, and each of them subscribed to it.
+            SetValue(AvailableVariantsProperty, new ObservableCollection<GraphicDesignerSettingItemModel>());
             AvailableVariants.CollectionChanged += AvailableVariants_CollectionChanged;
         }
 
@@ -192,7 +195,9 @@ namespace CDPIUI.Controls.CreateConfigHelper
                 {
                     item.PropertyChanged -= Item_PropertyChanged;
                 }
-                SetValue(AvailableVariantsProperty, value);
+                AvailableVariants.CollectionChanged -= AvailableVariants_CollectionChanged;
+                SetValue(AvailableVariantsProperty, value ?? new ObservableCollection<GraphicDesignerSettingItemModel>());
+                AvailableVariants.CollectionChanged += AvailableVariants_CollectionChanged;
                 UpdateSelectorBar();
                 CheckSelectedItem();
                 HandleCollectionChanged();
@@ -201,7 +206,7 @@ namespace CDPIUI.Controls.CreateConfigHelper
 
         public static readonly DependencyProperty AvailableVariantsProperty =
             DependencyProperty.Register(
-                nameof(AvailableVariants), typeof(ObservableCollection<GraphicDesignerSettingItemModel>), typeof(ComponentSettingsExclusiveGroupUserControl), new PropertyMetadata(new ObservableCollection<GraphicDesignerSettingItemModel>() )
+                nameof(AvailableVariants), typeof(ObservableCollection<GraphicDesignerSettingItemModel>), typeof(ComponentSettingsExclusiveGroupUserControl), new PropertyMetadata(null)
             );
 
         private void UpdateSelectorBar()

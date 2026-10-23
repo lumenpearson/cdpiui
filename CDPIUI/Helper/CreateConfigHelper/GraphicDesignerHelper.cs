@@ -281,8 +281,10 @@ namespace CDPIUI.Helper.CreateConfigHelper
                 string value = string.Empty;
                 if (token.Contains('='))
                 {
-                    value = token.Split('=')[1];
-                    token = token.Split('=')[0];
+                    // The value may contain '=' itself (base64, fake payload hex and so on).
+                    int separator = token.IndexOf('=');
+                    value = token[(separator + 1)..];
+                    token = token[..separator];
                 }
                 else if (tokens.Count-1 >= i + 1 && !tokens[i + 1].StartsWith('-') && !tokens[i + 1].StartsWith('/'))
                 {

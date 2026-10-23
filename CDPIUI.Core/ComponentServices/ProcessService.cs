@@ -123,7 +123,7 @@ namespace CDPIUI.Core.ComponentServices
                 ComponentHelper componentHelper =
                     ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(Id);
 
-                ProcessName = DatabaseHelper.Instance.GetItemById(Id).Executable?.FirstCharToUpper() ?? Id;
+                ProcessName = DatabaseHelper.Instance.GetItemById(Id)?.Executable?.FirstCharToUpper() ?? Id;
 
                 var exePath = componentHelper.GetExecutablePath();
                 var workingDirectory = componentHelper.GetDirectory();

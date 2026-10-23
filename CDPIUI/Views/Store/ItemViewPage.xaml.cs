@@ -630,7 +630,7 @@ namespace CDPIUI.Views.Store
         {
             try
             {
-                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(item.store_id).Directory);
+                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(item.store_id)?.Directory ?? string.Empty);
             }
             catch
             {

@@ -73,7 +73,12 @@ namespace CDPIUI.Helper.CreateConfigHelper
                 model.ListDirectory = ListDirectoryReplaceRegex().Match(input).Groups[1].Value;
                 model.BinDirectory = BinDirectoryReplaceRegex().Match(input).Groups[1].Value;
 
-                model.ResultText = input.Replace(model.ListDirectory, "list://").Replace(model.BinDirectory, "bin://");
+                // Replace("") throws: when one of the directories was not found, the other
+                // shortcut was not applied either.
+                string text = input;
+                if (!string.IsNullOrEmpty(model.ListDirectory)) text = text.Replace(model.ListDirectory, "list://");
+                if (!string.IsNullOrEmpty(model.BinDirectory)) text = text.Replace(model.BinDirectory, "bin://");
+                model.ResultText = text;
             }
             catch
             {
@@ -84,7 +89,9 @@ namespace CDPIUI.Helper.CreateConfigHelper
         }
         public static string GetNormalText(string input, string listDirectory, string binDirectory)
         {
-            string text = input.Replace("list://", listDirectory).Replace("bin://", binDirectory);
+            string text = input
+                .Replace("list://", listDirectory ?? string.Empty)
+                .Replace("bin://", binDirectory ?? string.Empty);
             return text.Replace("\n", " ");
         }
 

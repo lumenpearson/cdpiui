@@ -141,7 +141,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     {
         Flag = FlagIconButton.Checked;
 
-        if (FlagToggledCommandParameter == null) FlagToggledCommandParameter = Tuple.Create(Args, FlagIconButton.Checked);
+        // A cached parameter kept the first state, so the flag could not be removed.
+        FlagToggledCommandParameter = Tuple.Create(Args, FlagIconButton.Checked);
 
 
         if (FlagToggledCommand != null && FlagToggledCommand.CanExecute(FlagToggledCommandParameter))
