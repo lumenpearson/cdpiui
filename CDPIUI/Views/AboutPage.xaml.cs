@@ -167,8 +167,12 @@ public sealed partial class AboutPage : TemplatePage
         }
         private void ApplicationUpdateHelper_CheckForUpdatesCompleted()
         {
-            _ = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() =>
+            // Raised on the thread of the check, which may have no dispatcher queue.
+            _ = DispatcherQueue?.TryEnqueue(() =>
             {
+                // After a failed check the error handler has already set the state.
+                if (ApplicationUpdate.Instance.ErrorHappened)
+                    return;
                 SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
                 SetBadgeStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? BadgeStatus.NewVersionAvailable : BadgeStatus.NewestInstalled);
                 SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
