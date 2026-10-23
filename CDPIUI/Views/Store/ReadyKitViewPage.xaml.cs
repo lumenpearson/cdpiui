@@ -619,7 +619,7 @@ namespace CDPIUI.Views.Store
                     XamlRoot = XamlRoot,
                     Title = _loadErrorTitle,
                     Content = $"{_loadErrorMessage} {_loadErrorCode}",
-                    PrimaryButtonText = "OK"
+                    PrimaryButtonText = localizer.GetLocalizedString("OkButtonText")
                 };
                 await dialog.ShowQueuedAsync();
 
