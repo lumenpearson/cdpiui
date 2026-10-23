@@ -376,11 +376,20 @@ namespace CDPIUI
                     appActivationArguments.Data is ILaunchActivatedEventArgs fileActivatedEventArgs)
                 {
                     result = await TryHandleMigrationActivationAsync(fileActivatedEventArgs.Arguments);
+                    string[] args = SplitCommandLine(fileActivatedEventArgs.Arguments);
                     if (!result)
                     {
-                        string[] args = GetFilesFromStringRegex().Split(fileActivatedEventArgs.Arguments);
-                        result = await ProcessFiles(args);
+                        // The same --direct: commands as in a first start (audit 9.4).
+                        string directArgs = args.FirstOrDefault(x => x.StartsWith("--direct:"));
+                        if (directArgs != null)
+                        {
+                            string value = directArgs["--direct:".Length..];
+                            result = await CoreCommandsHandler.HandleCommandAsync(PipeModelConvertor.ConvertBack(value))
+                                || CommandsHandler.HandleCommand(value);
+                        }
                     }
+                    if (!result)
+                        result = await ProcessFiles(args);
                 }
             }
             catch (Exception ex)
@@ -1064,7 +1073,35 @@ namespace CDPIUI
         private const uint SWP_SHOWWINDOW = 0x0040;
         private const int GWLP_HWNDPARENT = -8;
 
-        [GeneratedRegex(@"""(.*?)\""")]
-        private static partial Regex GetFilesFromStringRegex();
+        /// <summary>
+        /// Splits a command line the way the runtime splits the arguments of Main. File paths
+        /// with spaces and quoted arguments mixed with plain ones were split wrongly by a regex.
+        /// </summary>
+        private static string[] SplitCommandLine(string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine))
+                return [];
+
+            IntPtr argv = CommandLineToArgvW(commandLine, out int argc);
+            if (argv == IntPtr.Zero)
+                return [];
+            try
+            {
+                var result = new string[argc];
+                for (int i = 0; i < argc; i++)
+                    result[i] = Marshal.PtrToStringUni(Marshal.ReadIntPtr(argv, i * IntPtr.Size)) ?? string.Empty;
+                return result;
+            }
+            finally
+            {
+                LocalFree(argv);
+            }
+        }
+
+        [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LocalFree(IntPtr hMem);
     }
 }
