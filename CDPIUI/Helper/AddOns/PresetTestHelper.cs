@@ -416,7 +416,9 @@ namespace CDPIUI.Helper.AddOns
                     }
 
                     Line(log, new TestLogSegment("  > " + S("PT_Starting"), TestLogColor.Cyan));
-                    await processManager.StartProcess(args);
+                    // The task of this component owns processManager, so the task manager starts the
+                    // same process with the preset's arguments.
+                    await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId, args);
                     await SafeDelay(StartWaitMs, ct);
 
                     if (!processManager.IsProcessRunning || processManager.IsErrorHappens)

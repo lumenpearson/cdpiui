@@ -921,7 +921,7 @@ namespace CDPIUI
                     Logger.Instance.CreateWarningLog(nameof(App), $"Cannot read the content of a window: {ex.Message}");
                 }
             }
-            throw new Exception($"Unable to get root frame");
+            throw new InvalidOperationException("No open window has content to use as the root frame.");
         }
 
         private ElementTheme GetThemeFromString(string theme)
