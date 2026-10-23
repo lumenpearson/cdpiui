@@ -2,7 +2,7 @@
 
 # Third-party notices
 
-CDPI UI is licensed under the Apache License 2.0 (see `LICENSE`). The installer and the portable
+CDPI UI is licensed under the Apache License 2.0 (see `LICENSE.txt`). The installer and the portable
 build also contain the libraries below, each under its own license. The license texts are
 included in the NuGet packages and at the linked project pages.
 
@@ -32,8 +32,9 @@ others) are not part of this distribution and keep their own licenses.
 | Unidecode.NET | MIT | https://github.com/thecoderok/Unidecode.NET |
 | WinUI3Localizer | MIT | https://github.com/AndrewKeepCoding/WinUI3Localizer |
 | WinUIEx | MIT | https://github.com/dotMorten/WinUIEx |
+| WiX Toolset UI extension (`WixToolset.UI.wixext`, the dialogs of `Setup.msi`) | MS-RL | https://github.com/wixtoolset/wix |
 | XBindLeakFix | MIT | https://www.nuget.org/packages/XBindLeakFix |
 
-Libraries that only come in as dependencies of the packages above (for example `RomanNumerals`)
+Libraries that only come in as dependencies of the packages above (for example `Roman-Numerals`)
 are listed with their versions in `CDPIUI.deps.json` of a build; their licenses are included in
 their NuGet packages.

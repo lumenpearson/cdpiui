@@ -2,7 +2,7 @@
 
 # Уведомления о сторонних компонентах
 
-CDPI UI распространяется по лицензии Apache License 2.0 (см. `LICENSE`). Установщик и портативная
+CDPI UI распространяется по лицензии Apache License 2.0 (см. `LICENSE.txt`). Установщик и портативная
 сборка также содержат перечисленные ниже библиотеки, каждая — под своей лицензией. Тексты лицензий
 включены в пакеты NuGet и доступны на страницах проектов по ссылкам.
 
@@ -32,8 +32,9 @@ CDPI UI распространяется по лицензии Apache License 2.
 | Unidecode.NET | MIT | https://github.com/thecoderok/Unidecode.NET |
 | WinUI3Localizer | MIT | https://github.com/AndrewKeepCoding/WinUI3Localizer |
 | WinUIEx | MIT | https://github.com/dotMorten/WinUIEx |
+| Расширение WiX Toolset UI (`WixToolset.UI.wixext`, диалоги `Setup.msi`) | MS-RL | https://github.com/wixtoolset/wix |
 | XBindLeakFix | MIT | https://www.nuget.org/packages/XBindLeakFix |
 
-Библиотеки, которые попадают в сборку только как зависимости перечисленных выше пакетов (например, `RomanNumerals`),
+Библиотеки, которые попадают в сборку только как зависимости перечисленных выше пакетов (например, `Roman-Numerals`),
 перечислены с версиями в файле `CDPIUI.deps.json` сборки; их лицензии включены в
 их пакеты NuGet.

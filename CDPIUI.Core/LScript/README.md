@@ -226,12 +226,12 @@ $RUN(install_msi, redist/$ALL, false);$RUN(finish_component_setup, byedpi)
 The command does not download the file. It returns a `DOWNLOAD=` entry.
 `OnlineItemsInstallationService.LaunchBeforeInstallActions` reads the result of the two action lists:
 
-- The URL must be an absolute HTTPS URL. Otherwise the download fails.
+- The URL must be an absolute HTTPS URL. Otherwise the library throws an exception and the item installation fails. This also applies to `after_install_actions`.
 - The file goes into the item folder with the name `edannotationfile` and the extension of the URL file.
 - A URL that ends with `.zip` is extracted into the item folder.
 
 If a download from `before_install_actions` fails, the item installation fails.
-If a download from `after_install_actions` fails, the library writes a warning to the log. The item stays installed.
+If a download from `after_install_actions` fails for a different cause, the library writes a warning to the log. The item stays installed.
 
 ## GUI extension
 

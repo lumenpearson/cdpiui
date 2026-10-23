@@ -26,7 +26,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 
 | File | Content |
 |---|---|
-| `SharedConstants.cs` | Store repository names, store item ids, update URLs, `DatabaseFileName`, `PipeName`, the URI schema `cdpiui`, `IsPreview` |
+| `SharedConstants.cs` | Store repository names, Store item ids, update URLs, `DatabaseFileName`, `PipeName`, the URI scheme `cdpiui` (`Schema`), `IsPreview` |
 | `Utils.cs` (`SharedUtils`) | `GenerateNewId`, `IsOsSupportedNewGlyph`, `GetRandomHexNumber` |
 
 `GetRandomHexNumber` uses `RandomNumberGenerator`. Use it for secret values, not `System.Random`.

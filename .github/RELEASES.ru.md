@@ -12,7 +12,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 | Задание | Шаги |
 |-----|-------|
-| `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. Восстанавливает пакеты каждого проекта с `NuGetAuditMode=all` и завершается с ошибкой, если у прямого или транзитивного пакета есть известная уязвимость средней или более высокой серьёзности (предупреждения NU1902–NU1904 становятся ошибками). |
+| `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. Восстанавливает пакеты этих четырёх проектов, `CDPIUI` и `CDPIUI.Tests` с `NuGetAuditMode=all` и завершается с ошибкой, если у прямого или транзитивного пакета есть известная уязвимость средней или более высокой серьёзности (предупреждения NU1902–NU1904 становятся ошибками). |
 | `gui` | Запускает `build_portable.ps1` и `check_setup_files.ps1`. Собирает MSI. Загружает `NewSetup/bin/**/*.msi` как артефакт `setup-msi` на 7 дней. |
 | `tools` | Собирает `Update/Update.csproj` (с восстановлением packages.config) и `EditHostFile/EditHostFile.csproj` в конфигурации Release с помощью `msbuild`. |
 
@@ -40,14 +40,14 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 | `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | Токены Магазина в `Secret.cs` (`GitHubToken`, `GitLabToken`). Приложение делает их публичными, поэтому у них не должно быть доступа на запись (см. `create_release_secret.ps1`). |
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | Обратный прокси Магазина в `Secret.cs` (`ProxyURL`, `ProxyKey`). Ключ есть в каждой копии приложения. Поэтому прокси не должен доверять ключу больше, чем анонимному клиенту: ограничьте на прокси частоту запросов и разрешённые адреса. |
 | `TRUSTED_CERTIFICATES` | SHA-1 отпечатки для `Secret.TrustedCertificates`, разделённые пробелами, запятыми или точками с запятой. |
-| `CATALOG_CERTIFICATE_PFX_BASE64` | PFX-файл сертификата подписи каталога в Base64. Шаг создания патча записывает его в `RUNNER_TEMP\catalog.pfx` и удаляет после завершения шага. |
+| `CATALOG_CERTIFICATE_PFX_BASE64` | PFX-файл сертификата подписи каталога в Base64. Шаг создания патча записывает его в `RUNNER_TEMP\catalog.pfx` и удаляет его в конце шага. |
 | `CATALOG_CERTIFICATE_PASSWORD` | Пароль PFX-файла. |
 
-Все секреты для workflow необязательны. Шаг "Create Secret.cs" передаёт их в
+Все секреты для workflow необязательны. Шаг «Create Secret.cs» передаёт их в
 `create_release_secret.ps1` как переменные окружения. PFX передаётся в `CATALOG_CERTIFICATE`.
 
 ПРЕДУПРЕЖДЕНИЕ: Задайте `CATALOG_CERTIFICATE_PFX_BASE64` и `CATALOG_CERTIFICATE_PASSWORD` до того, как
-создавать релиз. Без сертификата у каталогов нет подписи, и приложение отклоняет
+создадите релиз. Без сертификата у каталогов нет подписи, и приложение отклоняет
 патч.
 
 ПРЕДУПРЕЖДЕНИЕ: Убедитесь, что `TrustedCertificates` не пуст в релизной сборке. Задайте
@@ -56,7 +56,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 ### Шаги
 
-1. Записать `CDPIUI.Shared/Secrets/Secret.cs` с помощью `create_release_secret.ps1 -Force` (шаг "Create Secret.cs").
+1. Записать `CDPIUI.Shared/Secrets/Secret.cs` с помощью `create_release_secret.ps1 -Force` (шаг «Create Secret.cs»).
 2. Собрать портативную раскладку (`build_portable.ps1`). Скрипт сохраняет файл `Secret.cs` из шага 1.
 3. Проверить список файлов установщика (`check_setup_files.ps1`).
 4. Собрать MSI.

@@ -26,16 +26,16 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 `Program.cs` (`Programm.Main`) does these steps:
 
 1. If the arguments contain `--uninstall-cleanup`, it runs `UninstallHelper.Cleanup` and exits.
-2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
+2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
 3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
 5. It writes a new pipe key to `.session\pipe.key` (`PipeSessionKeyWriter`, see [Pipe](../CDPIUI.Shared/Pipe/README.md)). Then it starts the pipe server.
-6. If a toast notification started the process, it shows only the icon and handles the toast.
+6. If a toast notification started the process, it creates `TrayApplicationContext`, handles the toast and does not do steps 7–11.
 7. If the arguments request it, it starts the GUI as the desktop user (see the table below).
 8. It renames `_Update.exe` to `Update.exe`, if `_Update.exe` exists.
 9. It shows the notifications for update failure and for `--autorun`.
-10. After 30 minutes, it asks the GUI to check for updates (`NOTIFICATIONS/appUpdates`).
-11. After 60 minutes, it asks the GUI to start the compatibility check (`NOTIFICATIONS/compatibilityCheck`).
+10. After 30 minutes, it asks the GUI to check for updates, if `NOTIFICATIONS/appUpdates` is `true`.
+11. After 60 minutes, it asks the GUI to start the compatibility check, if `NOTIFICATIONS/compatibilityCheck` is `true`.
 12. It creates `TrayApplicationContext`: the icon, the uninstall listener, the Conditional Launch engine and the notification handler.
 
 If the pipe server cannot create the pipe and another tray process runs, the tray stops its own process.
@@ -63,7 +63,7 @@ The autorun task starts the tray with `--autorun`.
 | `Controls/` | Custom WinForms controls of the tray menu |
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
-| `Helper/Basic/` | Pipe server, pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
+| `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
 | `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
@@ -74,7 +74,7 @@ The autorun task starts the tray with `--autorun`.
 - `GetProcessIdFullOutput` and `GetProcessIdState` apply to the task of the `componentId` in the message. If `componentId` is empty, they apply to all tasks. `GetAllProcessStates` applies to all tasks. `TasksHelper.SendTasksOutput` and `TasksHelper.SendTasksState` read a snapshot of the task list.
 - `ProcessManager` keeps the executable and the arguments of the last start. A restart uses them again, unless the GUI sent `ProcessIdStartupArgsChanged`. In that case, the tray sends `GetStartupString` to the GUI.
 - `ConPTYHelper` starts the process in a pseudo console with `CreateProcessW` and sends the output to the GUI.
-- `ConPTYHelper` changes known output lines to a `PrettyErrorCode`. The first match of a line is used.
+- `ConPTYHelper` changes known output text to a `PrettyErrorCode`. A specific code has priority over `UNKNOWN`. A later `UNKNOWN` match does not replace a specific code.
 - `ChildProcessJob` puts each component into one job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`. Windows stops the components when the tray process ends, also after a crash.
 - GoodCheck runs in its own kill-on-close job (`GoodCheckProcessHelper`). The tray stops all components before it starts GoodCheck. The tray stops GoodCheck when the GUI disconnects.
 - `StopService` stops the components that use WinDivert (`CSGIVS036`, `CSZTBN012`, `CSZTBN062`). Then it runs `sc stop WinDivert` and `sc delete WinDivert`.
@@ -125,7 +125,7 @@ The GUI can send a different directory in `ReloadTasks`. The tray accepts it onl
 - A `FileSystemWatcher` reloads the tasks when a file changes. After a watcher error, the engine creates a new watcher.
 - Hot key triggers use `RegisterHotKey` on the `EmptyForm` window.
 - Process triggers poll the process list each second.
-- When more than one task matches, the task with the highest priority runs.
+- When more than one task matches, only the tasks with the highest priority run.
 - Actions that need the GUI (`ApplyPreset`, `StartComponent`, `ToggleComponent`, `StartAutorunComponents`, `CheckStoreUpdates`, `CheckApplicationUpdates`) go to the GUI as `ExecuteAction`. The tray waits 45 seconds for the result.
 - The tray does the other actions itself, or it opens a GUI window.
 
@@ -175,15 +175,15 @@ The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck 
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
 2. An option that writes a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) must point into the application directories (`FileWritingOptions`). The tray also reads the argument files (`@<file>`) of the command line, to a maximum of 4 levels.
-3. `ExecutableTrust.AcquireAsync` opens the program and each `.exe`, `.dll` and `.sys` file in its folder for reading. While these handles are open, no process can change, rename or delete these files.
-4. In an MSI installation, a program outside the installation folder must have one of these:
+3. In an MSI installation, for a program outside the installation folder, `ExecutableTrust.AcquireAsync` opens the program and each `.exe`, `.dll` and `.sys` file in its folder for reading. While these handles are open, no process can change, rename or delete these files.
+4. This program must have one of these:
    - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the names and the contents of the locked files.
    - A Store item catalog (`<item>\catalog.cat`) that has the signature of a pinned certificate and agrees with the code files. Data files (lists and other files) are not compared, because the user can change them.
    - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level.
 5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.json`. Only administrators can change this folder.
 6. The tray releases the handles after the process starts.
 
-A portable copy does not do step 4, because the user can change the tray itself.
+A portable copy does not do steps 3 and 4, because the user can change the tray itself.
 
 CAUTION: Do not start a program with administrator rights without `ExecutableTrust.AcquireAsync`.
 
@@ -199,7 +199,7 @@ The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM. `U
 6. It runs `EditHostFile.exe /remove`.
 7. It deletes `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log` and `.update-manifest` in the installation directory.
 
-The cleanup does not change settings or logs, because the SYSTEM profile is not the user profile.
+The cleanup does not read the settings and does not write logs, because the SYSTEM profile is not the user profile.
 
 ## Settings and logs
 
@@ -210,7 +210,7 @@ The cleanup does not change settings or logs, because the SYSTEM profile is not 
 - If no file exists, the tray selects the path of a new file:
   - For an MSI installation, the tray uses `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` of the desktop user. The GUI of an MSI installation uses the same file.
   - In all other conditions, the tray uses item 1.
-- The tray finds an MSI installation with the registry value `HKLM\Software\Storik4\CDPI UI\InstallLocation` (`Utils.GetSettingsFile`). The value must be equal to the tray directory. The GUI uses the same check (`CDPIUI.Core/State.cs`).
+- The tray finds an MSI installation with the registry value `HKLM\Software\Storik4\CDPI UI\InstallLocation` (`Utils.IsInstalledByMsi`). The value must be equal to the tray directory. The GUI uses the same check (`CDPIUI.Core/State.cs`).
 - The GUI sends `Settings/ReloadSettings` after it changes a setting that the tray reads.
 - The tray writes logs to `<tray directory>\Logs\`. `DEBUG` builds write all levels. Release builds use `DEBUG/logLevel` (default `WARN`).
 

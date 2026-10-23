@@ -87,6 +87,7 @@ Dependencies that `UsedFiles` does not report must be attached to the preset as 
 |---|---|
 | `ConfigSelector` (`CDPIUI/Controls/ComponentSettings`) | Opens the export dialog through `ConfigShareUI.ShowExportAsync` |
 | `ConfigShareExportContentDialog`, `ConfigShareMessageContentDialog` (`CDPIUI/Controls/Dialogs/ConfigShare/*.xaml`) | Export and message layouts. The code-behind files process the actions and the state changes. |
+| `ConfigMakerUserControl` (`CDPIUI/Controls/CreateConfigHelper`) | Exports the edited preset with `ConfigShareService.ExportAsync` when the user saves it as a `.cdpiconfig` file |
 | `ConfigShareImportDialog` (`CDPIUI/Windows/Messages`) | Opens when the user opens a `.cdpiconfig` file |
 | The ConfigImport wizard | Shows its usual review, test and save steps for `.cdpiconfig` files |
 | `WindowsPresetShare` (`CDPIUI/Helper/AddOns/ConfigShare`) | Windows sharing through [per-window desktop interop](https://learn.microsoft.com/windows/apps/develop/ui/display-ui-objects) |

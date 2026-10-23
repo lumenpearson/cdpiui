@@ -588,7 +588,7 @@ echo content >> path\file.txt
 
 ## Тест конфигурации
 
-`MainPage` выполняет пробный запуск в следующие шаги:
+`MainPage` выполняет пробный запуск в такой последовательности:
 
 1. Останавливает предыдущий активный тест.
 2. Применяет решения для отсутствующих файлов.
@@ -638,7 +638,7 @@ empty.bin
 
 ### Корень сохранения
 
-Установщик сохраняет конфигурацию в локальный служебный набор:
+Установщик сохраняет конфигурацию в локальный служебный комплект:
 
 ```text
 Store\Items\LocalUserStorage\
@@ -679,7 +679,7 @@ saved path: List\Converted\<importId>\ipset-exclude.txt
 
 Если внешний ресурс находится вне папки исходной конфигурации, установщик использует только имя файла. Это не позволяет записать файл вне целевой папки: установщик повторно проверяет конечное место назначения.
 
-Если два сохраняемых относительных пути совпадают, установщик добавляет к имени второго файла первые восемь шестнадцатеричных символов SHA-256 ожидаемого абсолютного пути.
+Два сохраняемых относительных пути могут совпасть. В этом случае установщик добавляет к имени второго файла суффикс: первые восемь шестнадцатеричных символов SHA-256 его ожидаемого абсолютного пути.
 
 ### Источники ресурсов
 
@@ -1003,10 +1003,11 @@ winws2.exe --hostlist=%LISTS% --lua-desync=fake
 
 В `CDPIUI.Tests/AddOns` есть тесты для этого дополнения:
 
-- `ConfigImportServiceTests.cs` проверяет `ConfigImportService.TryParseSet`;
-- `ZapretConfigImportServiceTests.cs` проверяет `TrimShellTail` и `ExpandFileModifiers`.
+- `ConfigImportServiceTests.cs` проверяет `ConfigImportService.TryParseSet` и предупреждение `REFERENCED_FILE_OUTSIDE_SOURCE`;
+- `ZapretConfigImportServiceTests.cs` проверяет `TrimShellTail`, `ExpandFileModifiers` и предупреждение `REFERENCED_FILE_OUTSIDE_SOURCE`;
+- `ConfigImportGoldenTests.cs` импортирует файлы BAT Flowseal из `TestData/ConfigImport` обоими анализаторами. Тест сравнивает результаты с ожидаемыми файлами рядом с файлами BAT.
 
-`CDPIUI.Tests/Core/BatchFileEncodingTests.cs` проверяет определение кодировки.
+`CDPIUI.Tests/Core/BatchFileEncodingTests.cs` проверяет определение кодировки. `CDPIUI.Tests/Core/Zapret1ToZapret2ConverterTests.cs` проверяет преобразование, которое использует `Retarget`.
 
 Минимальный набор ручных проверок для изменения включает:
 

@@ -4,7 +4,7 @@
 
 `EditHostFile.exe` — консольная утилита на .NET Framework 4.7.2. Она добавляет блок CDPI UI в файл hosts Windows
 (`%WINDIR%\system32\drivers\etc\hosts`) или удаляет его оттуда. Её манифест требует
-права администратора (`EditHostFile/app.manifest`). Вся логика находится в `EditHostFile/Program.cs`.
+прав администратора (`EditHostFile/app.manifest`). Вся логика находится в `EditHostFile/Program.cs`.
 
 ## Аргументы
 
@@ -83,6 +83,7 @@
 | Другой | `HResult` исключения, которое остановило утилиту. Если `HResult` равен `0`, код равен `1`. |
 
 Утилита пишет ход работы и ошибки в стандартный вывод с префиксом `[CDPI UI/EditHostFileHelper]`.
+Сообщения — на английском языке. Если язык интерфейса Windows — русский, они на русском языке (`EditHostFile/Strings.cs`).
 
 ## Вызывающие компоненты
 

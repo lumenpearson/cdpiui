@@ -26,7 +26,7 @@
 
 | Файл | Содержимое |
 |---|---|
-| `SharedConstants.cs` | Имена репозиториев Магазина, id элементов Магазина, URL обновлений, `DatabaseFileName`, `PipeName`, URI-схема `cdpiui`, `IsPreview` |
+| `SharedConstants.cs` | Имена репозиториев Магазина, id элементов Магазина, URL обновлений, `DatabaseFileName`, `PipeName`, URI-схема `cdpiui` (`Schema`), `IsPreview` |
 | `Utils.cs` (`SharedUtils`) | `GenerateNewId`, `IsOsSupportedNewGlyph`, `GetRandomHexNumber` |
 
 `GetRandomHexNumber` использует `RandomNumberGenerator`. Используйте его для секретных значений, а не `System.Random`.
