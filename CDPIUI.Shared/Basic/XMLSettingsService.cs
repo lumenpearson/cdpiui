@@ -94,7 +94,12 @@ namespace CDPIUI.Shared.Basic
 
         private static XDocument LoadDocument(string path)
         {
-            var document = XDocument.Load(path);
+            // Settings are read by the elevated tray from a file the user can change: no DTD processing,
+            // so internal entities cannot blow up the memory of the elevated process.
+            var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+            XDocument document;
+            using (var reader = XmlReader.Create(path, readerSettings))
+                document = XDocument.Load(reader);
             if (document.Root?.Name != "Settings")
                 throw new XmlException("The settings document must have a Settings root element.");
             return document;
