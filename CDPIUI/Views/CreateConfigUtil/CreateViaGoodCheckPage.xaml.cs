@@ -279,15 +279,18 @@ namespace CDPIUI.Views.CreateConfigUtil
 
         private void LoadGoodCheckSettings()
         {
-            string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
-            string targetFolder = Path.Combine(
-                Directories.StoreItemsDirectory, 
-                AddOnId,
-                "config.ini");
+            string targetFolder = Path.Combine(GoodCheckProcessService.GetAddOnDirectory(), "config.ini");
 
-            if (!File.Exists(targetFolder))
+            if (!GoodCheckProcessService.IsAddOnInstalled())
             {
                 ShowErrorDialod();
+                return;
+            }
+            if (!File.Exists(targetFolder))
+            {
+                // Installed, but the files are incomplete: reinstalling fixes it, unlike installing.
+                ShowErrorDialod(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
+                    HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), targetFolder));
                 return;
             }
 
@@ -327,11 +330,7 @@ namespace CDPIUI.Views.CreateConfigUtil
 
         private void SaveGoodCheckSettings()
         {
-            string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
-            string targetFolder = Path.Combine(
-                Directories.StoreItemsDirectory,
-                AddOnId,
-                "config.ini");
+            string targetFolder = Path.Combine(GoodCheckProcessService.GetAddOnDirectory(), "config.ini");
 
             if (IniSettingsHelper is null)
                 IniSettingsHelper = new(targetFolder, System.Text.Encoding.UTF8);

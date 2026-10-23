@@ -133,6 +133,10 @@
   <data name="AddNewComponentFromTheStoreTextBlock.Text" xml:space="preserve">
     <value>Загрузите новые компоненты из Магазина</value>
   </data>
+  <data name="AddOnFilesMissing" xml:space="preserve">
+    <value>Файлы надстройки "{0}" повреждены: отсутствует "{1}". Продолжение невозможно.
+Переустановите "{0}" в Магазине</value>
+  </data>
   <data name="AddOnNotInstalled" xml:space="preserve">
     <value>Надстройка "{0}" с уникальным идентификатором "{1}" не установлена. Продолжение невозможно.
 Перейдите в Магазин, чтобы установить последнюю версию "{0}"</value>
