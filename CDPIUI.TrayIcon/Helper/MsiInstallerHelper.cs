@@ -184,8 +184,8 @@ namespace CDPIUI.TrayIcon.Helper
                 if (_currentProcess == null)
                 {
                     _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
-                    Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), $"UNKNOWN");
-                    throw new NullReferenceException();
+                    Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), "The installer process did not start.");
+                    throw new InvalidOperationException("The installer process did not start.");
                 }
 
                 await _currentProcess.WaitForExitAsync().ConfigureAwait(false);
