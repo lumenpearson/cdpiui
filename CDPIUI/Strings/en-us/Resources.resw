@@ -6172,4 +6172,7 @@ By enabling this setting, you acknowledge that you have read this information.</
   <data name="ConfigImportArguments" xml:space="preserve">
     <value>Arguments</value>
   </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
 </root>
