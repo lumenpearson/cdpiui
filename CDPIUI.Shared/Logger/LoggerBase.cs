@@ -31,6 +31,9 @@ namespace CDPIUI.Shared.Logger
         public readonly LogSelevirity? LogLevel = logLevel;
         private static readonly object _logLock = new object();
 
+        // A log grows without limit otherwise; the previous file is kept as *.old.log.
+        private const long MaxLogFileSize = 5 * 1024 * 1024;
+
         private void LogWrite(string fileName, string logMessage)
         {
             if (string.IsNullOrEmpty(ActualPath)) return;
@@ -40,12 +43,20 @@ namespace CDPIUI.Shared.Logger
                 string logFilePath = Path.Combine(logFileDir, $"{fileName}{LoggerResources.LogsFileExtention}");
 
                 if (!Directory.Exists(logFileDir)) Directory.CreateDirectory(logFileDir);
-                if (!File.Exists(logFilePath))
+
+                var info = new FileInfo(logFilePath);
+                if (info.Exists && info.Length > MaxLogFileSize)
                 {
-                    File.WriteAllText(logFilePath, LoggerResources.LoggerReadyMessage + $" {LogLevel} " + Environment.NewLine);
+                    File.Copy(logFilePath, Path.ChangeExtension(logFilePath, ".old" + LoggerResources.LogsFileExtention), true);
+                    File.WriteAllText(logFilePath, string.Empty);
+                    info.Refresh();
                 }
 
-                using StreamWriter w = File.AppendText(logFilePath);
+                // Shared write access: the UI and the tray may log to the same file at the same time.
+                using var stream = new FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                using var w = new StreamWriter(stream);
+                if (!info.Exists || info.Length == 0)
+                    w.WriteLine(LoggerResources.LoggerReadyMessage + $" {LogLevel} ");
                 WriteMessageToTextWriter(logMessage, w);
             }
             catch { }
