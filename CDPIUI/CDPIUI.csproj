@@ -40,7 +40,6 @@
     <None Remove="Controls\ComponentSettings\ComponentHelpfulLinksUserControl.xaml" />
     <None Remove="Controls\ComponentSettings\ConfigNeededUserControl.xaml" />
     <None Remove="Controls\ComponentSettings\TgWsDataCenterUserControl.xaml" />
-    <None Remove="Controls\ConditionUserControl.xaml" />
     <None Remove="Controls\CreateConfigHelper\ComponentSettingsExclusiveGroupUserControl.xaml" />
     <None Remove="Controls\CreateConfigHelper\ComponentSettingUserControl.xaml" />
     <None Remove="Controls\CreateConfigHelper\ConfigUserControl.xaml" />
@@ -53,7 +52,6 @@
     <None Remove="Controls\Dialogs\ComponentSettings\ConnectTelegramProxyContentDialog.xaml" />
     <None Remove="Controls\Dialogs\ComponentSettings\CreateNewConfigForComponentContentDialog.xaml" />
     <None Remove="Controls\Dialogs\ComponentSettings\EditSitelistAskApplicationContentDialog.xaml" />
-    <None Remove="Controls\Dialogs\ComponentSettings\SiteListItemUserControl.xaml" />
     <None Remove="Controls\Dialogs\ComponentSettings\TgWsDataCenterEditContentDialog.xaml" />
     <None Remove="Controls\Dialogs\CreateConfigHelper\ChooseGroupModeContentDialog.xaml" />
     <None Remove="Controls\Dialogs\CreateConfigHelper\CreateCompleteDialog.xaml" />
@@ -62,9 +60,7 @@
     <None Remove="Controls\Dialogs\CreateConfigHelper\SaveConfigKitAsContentDialog.xaml" />
     <None Remove="Controls\Dialogs\CreateConfigHelper\SelectConfigToEditContentDialog.xaml" />
     <None Remove="Controls\Dialogs\CreateConfigHelper\SelectUsedFilesForConfigContentDialog.xaml" />
-    <None Remove="Controls\Dialogs\EditConfigVarValueDialog.xaml" />
     <None Remove="Controls\Dialogs\EditConfig\EditConfigWindowWelcomeContentDialog.xaml" />
-    <None Remove="Controls\Dialogs\FontSettingsContentDialog.xaml" />
     <None Remove="Controls\Dialogs\MainPage\CommunityContentDialog.xaml" />
     <None Remove="Controls\Dialogs\Q\QContentDialog.xaml" />
     <None Remove="Controls\Dialogs\Store\AcceptLicenseContentDialog.xaml" />
@@ -79,17 +75,9 @@
     <None Remove="Controls\Store\Settings\MemoryDiskUsageViewUserControl.xaml" />
     <None Remove="Controls\Dialogs\Store\SubItemInstallAskContentDialog.xaml" />
     <None Remove="Controls\Dialogs\Universal\MarkdownTextViewContentDialog.xaml" />
-    <None Remove="Controls\Dialogs\ViewApplyArgsContentDialog.xaml" />
-    <None Remove="Controls\FileConfigInspectUserControl.xaml" />
     <None Remove="Controls\MainPage\ComponentTileUserControl.xaml" />
     <None Remove="Controls\MainPage\QuickSettingWidget.xaml" />
     <None Remove="Controls\ProxySetup\ApplicationUserControl.xaml" />
-    <None Remove="Controls\SettingTile.xaml" />
-    <None Remove="Controls\SettingTileControlElement.xaml" />
-    <None Remove="Controls\StoreCategoryButton.xaml" />
-    <None Remove="Controls\StoreItemLargeButton.xaml" />
-    <None Remove="Controls\StoreItemLinkButton.xaml" />
-    <None Remove="Controls\StoreItemSmallButton.xaml" />
     <None Remove="Controls\Store\Settings\MemoryStoreItemUserControl.xaml" />
     <None Remove="Controls\Store\StoreAskForSubItemInstallUserControl.xaml" />
     <None Remove="Controls\Store\StoreDownloadItemButton.xaml" />
@@ -110,15 +98,9 @@
     <None Remove="Controls\Universal\SingleStringTextContentViewerUserControl.xaml" />
     <None Remove="Controls\Universal\URIButton.xaml" />
     <None Remove="Controls\Universal\UtilityButtonControls.xaml" />
-    <None Remove="Controls\VariableUserControl.xaml" />
     <None Remove="Controls\WindowControls\TitleBarUserControl.xaml" />
     <None Remove="ELUA\EN\ELUA.md" />
     <None Remove="ELUA\RU\ELUA.md" />
-    <None Remove="MainPage.xaml" />
-    <None Remove="PersonalizePage.xaml" />
-    <None Remove="SystemPage.xaml" />
-    <None Remove="UpdatePage.xaml" />
-    <None Remove="UtilsPage.xaml" />
     <None Remove="Views\AboutPage.xaml" />
     <None Remove="Views\Main\Components\DefaultComponentSettingsPage.xaml" />
     <None Remove="Views\Main\Components\TgWsProxyComponentPage.xaml" />
@@ -169,7 +151,6 @@
     <None Remove="Windows\Messages\StoreSmallDownloadDialog.xaml" />
     <None Remove="Windows\ModernMainWindow.xaml" />
     <None Remove="Windows\OfflineHelpWindow.xaml" />
-    <None Remove="Windows\PrepareWindow.xaml" />
     <None Remove="Windows\ProxySetupUtilWindow.xaml" />
     <None Remove="Windows\ConfigImportUtilWindow.xaml" />
     <None Remove="Windows\TroubleshootingWindow.xaml" />
@@ -290,31 +271,6 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="UpdatePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="UtilsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="SystemPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="PersonalizePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="MainPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Controls\GoodCheck\" />
     <Folder Include="Help\EN\Store\" />
     <Folder Include="Views\Main\" />
@@ -348,28 +304,13 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\Dialogs\FontSettingsContentDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Controls\ConditionUserControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Update="Controls\Dialogs\CreateConfigHelper\CreateCompleteDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Controls\Dialogs\CreateConfigHelper\ImportConfigFromFileDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Controls\VariableUserControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Controls\Dialogs\EditConfigVarValueDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Update="Controls\Dialogs\CreateConfigHelper\SelectUsedFilesForConfigContentDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Controls\FileConfigInspectUserControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Controls\Dialogs\CreateConfigHelper\SelectConfigToEditContentDialog.xaml">
@@ -414,9 +355,6 @@
     <Page Update="Views\ConfigImportUtil\MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Windows\PrepareWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Update="Views\CreateConfigHelper\GoodCheckConfigVisualEditorPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -437,52 +375,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\Dialogs\ViewApplyArgsContentDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\SettingTileControlElement.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\SettingTile.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Views\ZapretSettingsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\StoreItemLinkButton.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="Views\Store\ItemViewPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\StoreCategoryButton.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="Views\Store\HomePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\StoreItemSmallButton.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\StoreItemLargeButton.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -607,9 +505,6 @@
     <Page Update="Controls\Universal\CopyButton.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Controls\Dialogs\ComponentSettings\SiteListItemUserControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Update="Controls\Dialogs\Q\QContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -679,9 +574,6 @@
     <Page Update="Controls\ComponentSettings\ComponentHelpfulLinksUserControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <None Update="Template\Hosts\hosts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Template\Settings\Settings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
