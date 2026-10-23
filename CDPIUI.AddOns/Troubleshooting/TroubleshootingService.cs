@@ -186,7 +186,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             bool isNetshExistInPATH = ExistsOnPath("netsh.exe");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckTimestamps);
-            bool isTimestampsChecked = CheckTimestamps();
+            bool isTimestampsChecked = await CheckTimestamps();
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAdGuard);
             bool isAdGuardRunning = IsProcessRunning("adguardvpnsvc") || IsProcessRunning("adguardvpn") || IsProcessRunning("adguardsvc");
@@ -209,7 +209,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             bool isRunningVPN = IsServiceExist("vpn");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckDNS);
-            bool isUsedDNS = GetDnsAdress();
+            bool isUsedDNS = await GetDnsAdress();
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckWinDivert);
             bool isWinDivertRunning = IsServiceRunning("windivert");
@@ -272,7 +272,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             switch (state)
             {
                 case RunBasicDialogStates.CheckTimestamps:
-                    fixResultModel.IsFixed = EnableTimestamps();
+                    fixResultModel.IsFixed = await EnableTimestamps();
                     fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
                     break;
                 case RunBasicDialogStates.CheckWinDivert:
@@ -386,17 +386,48 @@ namespace CDPIUI.AddOns.Troubleshooting
             return null;
         }
 
-        private bool EnableTimestamps()
+        private static readonly string PowerShellPath =
+            Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+
+        /// <summary>
+        /// Runs a system tool without a console window and without blocking the calling thread
+        /// </summary>
+        private static async Task<(int ExitCode, string Output)> RunToolAsync(string fileName, params string[] arguments)
+        {
+            var startInfo = new ProcessStartInfo(fileName)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            foreach (string argument in arguments)
+                startInfo.ArgumentList.Add(argument);
+
+            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Cannot start {fileName}");
+            Task<string> output = process.StandardOutput.ReadToEndAsync();
+            Task<string> errors = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(); } catch { }
+                throw new System.TimeoutException($"{fileName} did not finish in time");
+            }
+            await errors;
+            return (process.ExitCode, await output);
+        }
+
+        private async Task<bool> EnableTimestamps()
         {
             try
             {
-                Process p = new Process();
-                ProcessStartInfo psi = new ProcessStartInfo("netsh", "interface tcp set global timestamps=enabled");
-                p.StartInfo = psi;
-                p.Start();
-                p.WaitForExit();
-                // Debug.WriteLine(p.StandardOutput);
-                return p.ExitCode == 0;
+                var result = await RunToolAsync(Path.Combine(Environment.SystemDirectory, "netsh.exe"),
+                    "interface", "tcp", "set", "global", "timestamps=enabled");
+                return result.ExitCode == 0;
             }
             catch (Exception ex)
             {
@@ -405,17 +436,16 @@ namespace CDPIUI.AddOns.Troubleshooting
             }
         }
 
-        private bool CheckTimestamps()
+        private async Task<bool> CheckTimestamps()
         {
             try
             {
-                Process p = new Process();
-                ProcessStartInfo psi = new ProcessStartInfo("netsh", "interface tcp show global | findstr /i \"timestamps\" | findstr /i \"enabled\"");
-                p.StartInfo = psi;
-                p.Start();
-                p.WaitForExit();
-                // Debug.WriteLine(p.StandardOutput);
-                return p.ExitCode == 0;
+                // netsh prints localized text and cannot pipe into findstr without a shell;
+                // Get-NetTCPSetting returns the state as Enabled or Disabled in any language.
+                var result = await RunToolAsync(PowerShellPath, "-NoProfile", "-NonInteractive", "-Command",
+                    "(Get-NetTCPSetting -SettingName Internet).Timestamps");
+                return result.ExitCode == 0 &&
+                    string.Equals(result.Output.Trim(), "Enabled", StringComparison.OrdinalIgnoreCase);
             }
             catch (Exception ex)
             {
@@ -436,18 +466,14 @@ namespace CDPIUI.AddOns.Troubleshooting
             return false;
         }
 
-        private static bool GetDnsAdress()
+        private static async Task<bool> GetDnsAdress()
         {
             try
             {
-                Process p = new Process();
-                ProcessStartInfo psi = new ProcessStartInfo("powershell", "Get-ChildItem -Recurse -Path 'HKLM:System\\CurrentControlSet\\Services\\Dnscache\\InterfaceSpecificParameters\\' | Get-ItemProperty | Where-Object { $_.DohFlags -gt 0 } | Measure-Object | Select-Object -ExpandProperty Count");
-                p.StartInfo = psi;
-                p.StartInfo.RedirectStandardOutput = true;
-                p.Start();
-                p.WaitForExit();
+                var result = await RunToolAsync(PowerShellPath, "-NoProfile", "-NonInteractive", "-Command",
+                    "Get-ChildItem -Recurse -Path 'HKLM:System\\CurrentControlSet\\Services\\Dnscache\\InterfaceSpecificParameters\\' | Get-ItemProperty | Where-Object { $_.DohFlags -gt 0 } | Measure-Object | Select-Object -ExpandProperty Count");
 
-                return int.TryParse(p.StandardOutput.ReadToEnd(), out int result) && result != 0;
+                return int.TryParse(result.Output.Trim(), out int count) && count != 0;
             }
             catch (Exception ex)
             {
