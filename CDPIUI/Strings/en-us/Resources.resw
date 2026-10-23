@@ -133,6 +133,10 @@
   <data name="AddNewComponentFromTheStoreTextBlock.Text" xml:space="preserve">
     <value>Add new component from the Store</value>
   </data>
+  <data name="AddOnFilesMissing" xml:space="preserve">
+    <value>The files of add-on "{0}" are incomplete: "{1}" is missing. Continuation is impossible.
+Please, reinstall "{0}" in Store</value>
+  </data>
   <data name="AddOnNotInstalled" xml:space="preserve">
     <value>AddOn "{0}" with Id "{1}" not installed. Continuation is impossible.
 Please, install lates version of "{0}" in Store</value>

@@ -313,10 +313,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private void ViewLogHyperlink_Click(Microsoft.UI.Xaml.Documents.Hyperlink sender, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs args)
     {
-        string dirName = Path.Combine(
-            Directories.StoreItemsDirectory,
-            AddOnId,
-            "Logs");
+        string dirName = Path.Combine(GoodCheckProcessService.GetAddOnDirectory(), "Logs");
 
         ShellHelper.OpenFileInDefaultApp($"{dirName}");
     }

@@ -103,6 +103,22 @@ namespace CDPIUI.AddOns.GoodCheck
 
         }
 
+        /// <summary>
+        /// The folder GoodCheck is installed in, as recorded in the Store database.
+        /// </summary>
+        public static string GetAddOnDirectory()
+        {
+            if (DatabaseHelper.Instance.IsItemInstalled(AddonId))
+            {
+                string? directory = DatabaseHelper.Instance.GetItemById(AddonId)?.Directory;
+                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                    return directory;
+            }
+            return Path.Combine(Directories.StoreItemsDirectory, AddonId);
+        }
+
+        public static bool IsAddOnInstalled() => DatabaseHelper.Instance.IsItemInstalled(AddonId);
+
         private bool IsGoodCheckInstalled()
         {
             bool isInstalled = DatabaseHelper.Instance.IsItemInstalled(AddonId);
@@ -112,8 +128,7 @@ namespace CDPIUI.AddOns.GoodCheck
 
             DatabaseStoreItem item = DatabaseHelper.Instance.GetItemById(AddonId);
 
-            string localAppData = Core.Data.Directories.DataDirectory;
-            DirName = Path.Combine(Directories.StoreItemsDirectory, AddonId);
+            DirName = GetAddOnDirectory();
 
             ExeFileName = Path.Combine(
                 DirName,
@@ -170,8 +185,7 @@ namespace CDPIUI.AddOns.GoodCheck
             ComponentId = componentId;
             _mode = checkMode;
 
-            string localAppData = Core.Data.Directories.DataDirectory;
-            string siteListFolder = Path.Combine(Directories.StoreItemsDirectory, AddonId, CheckLists);
+            string siteListFolder = Path.Combine(GetAddOnDirectory(), CheckLists);
 
             if (_mode == GoodCheckProcessMode.AllAsOne)
             {
@@ -545,8 +559,7 @@ namespace CDPIUI.AddOns.GoodCheck
             int secondsSinceEpoch = (int)t.TotalSeconds;
 
             string filePath = Path.Combine(
-                Directories.StoreItemsDirectory,
-                AddonId,
+                GetAddOnDirectory(),
                 "Reports",
                 $"GoodCheckReport_{secondsSinceEpoch}.xml");
             if (!Path.Exists(Path.GetDirectoryName(filePath)))
