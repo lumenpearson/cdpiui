@@ -4,8 +4,6 @@ using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
 
 namespace CDPIUI.TrayIcon.Helper
 {
@@ -16,13 +14,10 @@ namespace CDPIUI.TrayIcon.Helper
     /// </summary>
     public static class ExecutableTrust
     {
-        // Files that Windows loads as code from the folder of the program.
-        private static readonly string[] CodeExtensions = [".exe", ".dll", ".sys"];
-
         private static readonly SemaphoreSlim StoreLock = new(1, 1);
 
         // Under the installation directory, which only administrators can change in an MSI installation.
-        private static string ApprovalFile => Path.Combine(Utils.GetDataDirectory(), ".trust", "approved.json");
+        private static string ApprovalFile => Path.Combine(Utils.GetDataDirectory(), ".trust", "approved.txt");
 
         /// <summary>
         /// Locks the program and the code files next to it, then checks them. Returns null when the
@@ -42,7 +37,7 @@ namespace CDPIUI.TrayIcon.Helper
             ExecutableLease lease;
             try
             {
-                lease = ExecutableLease.Open(fullPath, CodeExtensions);
+                lease = ExecutableLease.Open(fullPath);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -90,7 +85,7 @@ namespace CDPIUI.TrayIcon.Helper
         /// </summary>
         private static async Task<bool> IsSignedStoreItemAsync(string fullPath)
         {
-            string? itemDirectory = GetStoreItemDirectory(fullPath);
+            string? itemDirectory = ExecutableApprovals.GetStoreItemDirectory(fullPath);
             if (itemDirectory == null)
                 return false;
 
@@ -99,7 +94,7 @@ namespace CDPIUI.TrayIcon.Helper
                 return false;
 
             var dataFiles = Directory.EnumerateFiles(itemDirectory, "*", SearchOption.AllDirectories)
-                .Where(file => !CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                .Where(file => !ExecutableLease.CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
                 .Select(Path.GetFileName)
                 .OfType<string>()
                 .Distinct(StringComparer.OrdinalIgnoreCase);
@@ -108,22 +103,6 @@ namespace CDPIUI.TrayIcon.Helper
             if (result != CatalogVerification.Success)
                 Logger.Instance.CreateInfoLog(nameof(ExecutableTrust), $"Catalog check of {itemDirectory}: {result}");
             return result == CatalogVerification.Success;
-        }
-
-        // <data>\Store\Items\<item id>\...
-        private static string? GetStoreItemDirectory(string fullPath)
-        {
-            string? current = Path.GetDirectoryName(fullPath);
-            while (current != null)
-            {
-                string? parent = Path.GetDirectoryName(current);
-                if (parent != null &&
-                    string.Equals(Path.GetFileName(parent), "Items", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(Path.GetFileName(Path.GetDirectoryName(parent)), "Store", StringComparison.OrdinalIgnoreCase))
-                    return current;
-                current = parent;
-            }
-            return null;
         }
 
         /// <summary>
@@ -174,107 +153,25 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
-                if (File.Exists(ApprovalFile))
-                    return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(ApprovalFile))
-                        is Dictionary<string, string> stored
-                        ? new Dictionary<string, string>(stored, StringComparer.OrdinalIgnoreCase)
-                        : new(StringComparer.OrdinalIgnoreCase);
+                return ExecutableApprovals.Load(ApprovalFile);
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot read the approved programs: {exception.Message}");
+                return new(StringComparer.OrdinalIgnoreCase);
             }
-            return new(StringComparer.OrdinalIgnoreCase);
         }
 
         private static void SaveApprovals(Dictionary<string, string> approved)
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(ApprovalFile)!);
-                // Programs that no longer exist are dropped, so the file does not grow without limit.
-                var existing = approved.Where(pair => File.Exists(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
-                string temporary = ApprovalFile + ".tmp";
-                File.WriteAllText(temporary, JsonSerializer.Serialize(existing));
-                File.Move(temporary, ApprovalFile, overwrite: true);
+                ExecutableApprovals.Save(ApprovalFile, approved);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot save the approved programs: {exception.Message}");
             }
-        }
-    }
-
-    /// <summary>
-    /// Read handles on a program and the code files in its folder. While they are open, nobody can
-    /// change, rename or delete these files, and nobody can rename the folders above them.
-    /// </summary>
-    public sealed class ExecutableLease : IDisposable
-    {
-        public static readonly ExecutableLease None = new([]);
-
-        private readonly List<(string Path, FileStream Stream)> _files;
-
-        private ExecutableLease(List<(string Path, FileStream Stream)> files) => _files = files;
-
-        public static ExecutableLease Open(string executable, IEnumerable<string> codeExtensions)
-        {
-            string directory = Path.GetDirectoryName(executable)!;
-            var paths = Directory.EnumerateFiles(directory)
-                .Where(file => codeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-                .Append(executable)
-                .Select(Path.GetFullPath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(file => file, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var files = new List<(string, FileStream)>();
-            try
-            {
-                foreach (string path in paths)
-                    files.Add((path, new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)));
-            }
-            catch
-            {
-                foreach (var (_, stream) in files)
-                    stream.Dispose();
-                throw;
-            }
-            return new ExecutableLease(files);
-        }
-
-        public string GetHash(string path)
-        {
-            foreach (var (filePath, stream) in _files)
-            {
-                if (string.Equals(filePath, path, StringComparison.OrdinalIgnoreCase))
-                    return Hash(stream);
-            }
-            return string.Empty;
-        }
-
-        /// <summary>
-        /// One hash over the names and contents of all locked files.
-        /// </summary>
-        public string ComputeFingerprint()
-        {
-            var builder = new StringBuilder();
-            foreach (var (path, stream) in _files)
-                builder.Append(Path.GetFileName(path).ToLowerInvariant()).Append(':').Append(Hash(stream)).Append('\n');
-            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
-        }
-
-        private static string Hash(FileStream stream)
-        {
-            stream.Position = 0;
-            return Convert.ToHexString(SHA256.HashData(stream));
-        }
-
-        public void Dispose()
-        {
-            foreach (var (_, stream) in _files)
-                stream.Dispose();
-            _files.Clear();
         }
     }
 }
