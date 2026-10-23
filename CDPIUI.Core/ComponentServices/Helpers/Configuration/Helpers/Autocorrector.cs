@@ -44,47 +44,14 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
                     return Path.Combine(Path.GetDirectoryName(configPath)!, filePath);
                 }
 
-                var items = DatabaseHelper.Instance.GetItemsByType("configlist");
-                foreach (var item in items)
+                // One item whose folder is gone must not end the search for all others (audit 11.8).
+                foreach (string type in new[] { "configlist", "component", "addon" })
                 {
-                    string itemPath = item.Directory;
-                    var files = Directory.EnumerateFiles(
-                        itemPath!, 
-                        $"*{Path.GetExtension(filePath)}", 
-                        SearchOption.AllDirectories);
-                    foreach (var file in files)
+                    foreach (var item in DatabaseHelper.Instance.GetItemsByType(type))
                     {
-                        if (Path.GetFileName(filePath) == Path.GetFileName(file))
-                            return file;
-                    }
-                }
-                var components = DatabaseHelper.Instance.GetItemsByType("component");
-                foreach (var item in components)
-                {
-                    string itemPath = item.Directory;
-                    var files = Directory.EnumerateFiles(
-                        itemPath!, 
-                        $"*{Path.GetExtension(filePath)}", 
-                        SearchOption.AllDirectories);
-                    foreach (var file in files)
-                    {
-                        if (Path.GetFileName(filePath) == Path.GetFileName(file))
-                            return file;
-                    }
-                }
-                var addOns = DatabaseHelper.Instance.GetItemsByType("addon");
-                foreach (var item in addOns)
-                {
-                    string itemPath = item.Directory;
-                    var files = Directory.EnumerateFiles(
-                        itemPath!, 
-                        $"*{Path.GetExtension(filePath)}", 
-                        SearchOption.AllDirectories);
-                    foreach (var file in files)
-                    {
-
-                        if (Path.GetFileName(filePath) == Path.GetFileName(file))
-                            return file;
+                        string? found = FindInItem(item.Directory, filePath);
+                        if (found != null)
+                            return found;
                     }
                 }
             }
@@ -93,6 +60,22 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
                 // pass
             }
             return string.Empty;
+        }
+
+        private static string? FindInItem(string? itemPath, string filePath)
+        {
+            if (string.IsNullOrEmpty(itemPath) || !Directory.Exists(itemPath))
+                return null;
+            try
+            {
+                string fileName = Path.GetFileName(filePath);
+                return Directory.EnumerateFiles(itemPath, $"*{Path.GetExtension(filePath)}", SearchOption.AllDirectories)
+                    .FirstOrDefault(file => string.Equals(Path.GetFileName(file), fileName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return null;
+            }
         }
     }
 }
