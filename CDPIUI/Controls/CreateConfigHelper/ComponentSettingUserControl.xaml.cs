@@ -342,10 +342,10 @@ public sealed partial class ComponentSettingUserControl : UserControl
         string filePath;
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = "Choose text file";
+            openFileDialog.Title = WinUI3Localizer.Localizer.Get().GetLocalizedString("FileDialogChooseTextFileTitle");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-            openFileDialog.Filter = "TXT files (*.txt)|*.txt";
+            openFileDialog.Filter = $"{WinUI3Localizer.Localizer.Get().GetLocalizedString("TextFiles")} (*.txt)|*.txt";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)

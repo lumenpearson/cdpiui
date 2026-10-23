@@ -142,7 +142,7 @@ namespace CDPIUI.Controls
         {
             using (OpenFileDialog openFileDialog = new())
             {
-                openFileDialog.Title = "Choose file";
+                openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseFileTitle");
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 openFileDialog.FilterIndex = 0;
 
