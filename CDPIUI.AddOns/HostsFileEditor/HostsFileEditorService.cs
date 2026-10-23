@@ -11,7 +11,7 @@ namespace CDPIUI.AddOns.HostsFileEditor
             remove,
             recover,
         }
-        private static Process RunEditorWithFlag(Flags flag)
+        private static Process? RunEditorWithFlag(Flags flag)
         {
             string startupString = $"/{flag}";
             string path = Path.Combine(Core.Data.Directories.CurrentDirectory,
@@ -28,27 +28,19 @@ namespace CDPIUI.AddOns.HostsFileEditor
             return process;
         }
 
-        public static async Task<int> AddDomains()
+        public static Task<int> AddDomains() => RunAndWait(Flags.add);
+
+        public static Task<int> RemoveDomains() => RunAndWait(Flags.remove);
+
+        public static Task<int> RestoreDomains() => RunAndWait(Flags.recover);
+
+        // Process.Start can return null; the callers then failed with NullReferenceException.
+        private static async Task<int> RunAndWait(Flags flag)
         {
-            Process process = RunEditorWithFlag(Flags.add);
+            using Process? process = RunEditorWithFlag(flag);
+            if (process == null)
+                return -1;
             await process.WaitForExitAsync();
-
-            return process.ExitCode;
-        }
-
-        public static async Task<int> RemoveDomains()
-        {
-            Process process = RunEditorWithFlag(Flags.remove);
-            await process.WaitForExitAsync();
-
-            return process.ExitCode;
-        }
-
-        public static async Task<int> RestoreDomains()
-        {
-            Process process = RunEditorWithFlag(Flags.recover);
-            await process.WaitForExitAsync();
-
             return process.ExitCode;
         }
     }

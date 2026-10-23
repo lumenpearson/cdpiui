@@ -122,7 +122,8 @@ namespace CDPIUI.AddOns.GoodCheck
 
                     string line = raw.Trim();
 
-                    if (string.IsNullOrEmpty(line))
+                    // Comment lines are common in site lists and do not make a list invalid.
+                    if (string.IsNullOrEmpty(line) || line.StartsWith('#'))
                     {
                         continue;
                     }

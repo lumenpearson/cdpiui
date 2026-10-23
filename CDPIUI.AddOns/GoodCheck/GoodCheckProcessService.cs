@@ -352,9 +352,13 @@ namespace CDPIUI.AddOns.GoodCheck
                 return false;
             }
             string resolver = SettingsManager.Instance.GetValue<bool>(["ADDONS", AddonId], "useCurl") ? "curl" : "native";
+            // A number from a text box: anything else would add arguments of its own.
+            string passes = SettingsManager.Instance.GetValue<string>(["ADDONS", AddonId], "passesValue") ?? string.Empty;
+            if (!int.TryParse(passes.Trim(), out int passCount) || passCount < 1)
+                passCount = 1;
             string args =
                 $"-q " +
-                $"-p {SettingsManager.Instance.GetValue<string>(["ADDONS", AddonId], "passesValue")} " +
+                $"-p {passCount} " +
                 $"-f {ComponentName} " +
                 $"-m {resolver} " +
                 $"-c \"{siteList.SiteListPath}\" " +
