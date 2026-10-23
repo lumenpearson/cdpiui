@@ -39,6 +39,10 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/build_portable.ps1
 
+      - name: Check installer file list
+        shell: pwsh
+        run: ./.github/scripts/check_setup_files.ps1
+
       - name: Build Setup.msi
         run: dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
 
