@@ -11,11 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Semver" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Semver" />
     <!-- Microsoft.Data.Sqlite brings 2.1.11, which has a known SQLite vulnerability (GHSA-2m69-gcr7-jv3q). -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
   </ItemGroup>
 
   <ItemGroup>

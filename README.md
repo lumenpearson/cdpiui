@@ -86,6 +86,7 @@
 | Задача | Команда |
 |---|---|
 | Модульные тесты | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Модульные тесты с покрытием кода | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings coverage.runsettings` |
 | Сборка портативной версии | `pwsh .github/scripts/build_portable.ps1` |
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |

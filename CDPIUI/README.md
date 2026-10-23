@@ -419,6 +419,6 @@ Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `C
 | `Views` | Pages, by window |
 | `Windows` | Windows (`CDPIUI` namespace), `Windows/Default/TemplateWindow.cs`, `Windows/Messages` (dialog windows), `Windows/Service` (`PrepareWindow`, `CriticalErrorHandlerWindow`) |
 
-The root contains `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest`, `nuget.config` and `RemoveLanguageFolders.targets`.
+The root contains `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest` and `RemoveLanguageFolders.targets`. The NuGet feeds are in `nuget.config` in the repository root.
 
 The `CDPIUI.Tests` project does not test this project. See `CDPIUI.Tests/README.md`.

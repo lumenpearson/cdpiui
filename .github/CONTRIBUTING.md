@@ -44,7 +44,9 @@ Do these steps:
    - Git ignores this file. Do not add it to the repository.
 2. Restore the NuGet packages.
    - The GUI uses CommunityToolkit Labs packages.
-   - `CDPIUI/nuget.config` adds the [Labs feed](https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json) and nuget.org. A usual restore finds all packages.
+   - `nuget.config` in the repository root adds the [Labs feed](https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json) and nuget.org. A usual restore finds all packages.
+   - Each package comes from one feed only (`packageSourceMapping` in `nuget.config`). When you add a Labs package, check on which feed it is published and add a pattern if it is not on the Labs feed.
+   - Package versions are in `Directory.Packages.props`. A project lists a package without a version. To add or update a package, change its version there.
 3. Build `CDPI.sln` for the `x64` platform. The application does not support other platforms.
 4. Start `CDPIUI.TrayIcon` as administrator.
 5. Start the GUI (`CDPIUI`) as a usual user.

@@ -22,17 +22,36 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 
 Тестам не нужны трей, GUI, права администратора или сетевое подключение. Тесты, которые записывают файлы, используют каталоги в `Path.GetTempPath()`.
 
+## Покрытие кода
+
+Покрытие собирает `coverlet.collector`. Файл `coverage.runsettings` в корне репозитория записывает отчёты Cobertura и OpenCover и не учитывает тесты и сгенерированный код. В OpenCover есть и цикломатическая сложность каждого метода. По ней можно найти сложный код без тестов.
+
+```
+dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings coverage.runsettings
+```
+
+ПРИМЕЧАНИЕ: `CDPIUI.Core`, `CDPIUI.Shared` и `CDPIUI.AddOns` в Release собираются без отладочных символов (`DebugType` равен `none`). Без `-p:DebugType=portable` в отчёте есть только `Update` и `EditHostFile`.
+
+Отчёты находятся в `TestResults/<id>/`. Для удобного отчёта используйте программу для отчётов, например ReportGenerator.
+
 ## Покрытые области
 
 | Папка | Тестовый класс | Предмет |
 | ------ | ---------- | ------- |
+| `AddOns` | `BlockCheckReportTests` | Текстовые отчёты BlockCheck2: запись и обратное чтение, неверные отчёты при импорте, область списков сайтов |
+| `AddOns` | `BlockCheckTargetInputParserTests` | Список целей BlockCheck2: схемы, порты, протоколы, IDN, повторы, ограничения |
 | `AddOns` | `ConfigImportGoldenTests` | Импорт пакетных файлов Flowseal и сравнение с ожидаемыми файлами в `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Разбор команд `set` в импортируемых скриптах |
+| `AddOns` | `ConfigShareSafeDestinationTests` | Пути внутри пакета `.cdpiconfig`: выход за папку, имена устройств, ссылки |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Отклонение параметров, которые записывают за пределы пакета `.cdpiconfig` |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: аргументы, коды выхода, страницы блокировки, отмена |
+| `AddOns` | `StrategyCatalogValidatorTests` | Правила каталога стратегий BlockCheck2 и встроенный каталог |
 | `AddOns` | `ZapretConfigImportServiceTests` | Синтаксис пакетных файлов: хвост команды оболочки, каретки, модификаторы файлов |
 | `Core` | `BatchFileEncodingTests` | Кодировка пакетных файлов (кириллица, UTF-8 BOM) |
 | `Core` | `ConfigCommandLineTests` | Разбиение командных строк пресетов на токены |
 | `Core` | `ConfigFileReferencesTests` | Ссылки на файлы в аргументах пресетов (смещения blob, файлы LUA) |
+| `Core` | `ConfigItemContentTests` | Переменные пресетов: подстановка, циклы, ссылки на файлы, форма для хранения |
+| `Core` | `DownloadHashTests` | Проверка SHA-256 загрузок Магазина |
 | `Core` | `IniDocumentTests` | Чтение и изменение INI-файлов через `IniDocument` |
 | `Core` | `LScriptCoreTests` | Условия LScript, вложенные аргументы и разбор строк условий |
 | `Core` | `ProcessServiceTests` | Флаг тихого режима в аргументах процесса |
@@ -41,14 +60,15 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 | `Core` | `VersionHelperTests` | Сравнение версий |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Преобразование аргументов Zapret Legacy в Zapret2 (с ожидаемыми файлами в `TestData\Zapret1ToZapret2`) |
 | `Core` | `ZipServiceTests` | Слияние списков доменов при распаковке ZIP |
+| `Shared` | `ApplicationPathMatcherTests` | Сопоставление путей файлов приложений |
 | `Shared` | `ArchiveLimitsTests` | Ограничения архивов: число записей, степень сжатия, ограниченная распаковка, ссылки в целевом корне |
 | `Shared` | `ArchivePathsTests` | Безопасные пути архива внутри целевого корня |
-| `Shared` | `ApplicationPathMatcherTests` | Сопоставление путей файлов приложений |
 | `Shared` | `CatalogVerifierTests` | Проверка подписи каталогов обновлений |
 | `Shared` | `ConditionalTaskFileServiceTests` | Сохранение и загрузка файлов `.cdpitask` |
 | `Shared` | `ErrorConvertorTests` | Преобразование кодов ошибок |
-| `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
 | `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина, файл ключа pipe |
+| `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
+| `Shared` | `GoodbyeDpiMigrationActivationTests` | Аргументы активации миграции GoodbyeDPI: обратимость и неверные значения |
 | `Shared` | `GuiActivationArgumentsTests` | Кодирование и декодирование `--gui-args:` и кавычки в командной строке |
 | `Shared` | `OutputCleanupHelperTests` | Удаление escape-последовательностей из вывода консоли |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |

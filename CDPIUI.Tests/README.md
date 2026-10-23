@@ -22,17 +22,36 @@ Run the command from the repository root. The referenced projects use Windows pa
 
 The tests do not need the tray, the GUI, administrator rights or a network connection. The tests that write files use directories in `Path.GetTempPath()`.
 
+## Coverage
+
+`coverlet.collector` collects the coverage. The file `coverage.runsettings` in the repository root writes Cobertura and OpenCover reports and leaves out the tests and generated code. OpenCover also has the cyclomatic complexity of each method. Use it to find complex code without tests.
+
+```
+dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings coverage.runsettings
+```
+
+NOTE: `CDPIUI.Core`, `CDPIUI.Shared` and `CDPIUI.AddOns` build without debug symbols in Release (`DebugType` is `none`). Without `-p:DebugType=portable`, the report has only `Update` and `EditHostFile`.
+
+The reports are in `TestResults/<id>/`. To get a readable report, use a report tool such as ReportGenerator.
+
 ## Covered areas
 
 | Folder | Test class | Subject |
 | ------ | ---------- | ------- |
+| `AddOns` | `BlockCheckReportTests` | BlockCheck2 text reports: write and read back, invalid reports on import, site-list scope |
+| `AddOns` | `BlockCheckTargetInputParserTests` | BlockCheck2 target list: schemes, ports, protocols, IDN, duplicates, limits |
 | `AddOns` | `ConfigImportGoldenTests` | Import of Flowseal batch files compared with the expected files in `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Parse of `set` commands in imported scripts |
+| `AddOns` | `ConfigShareSafeDestinationTests` | Paths inside a `.cdpiconfig` package: traversal, device names, links |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Rejection of options that write outside a `.cdpiconfig` package |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: arguments, exit codes, block pages, cancellation |
+| `AddOns` | `StrategyCatalogValidatorTests` | Rules of the BlockCheck2 strategy catalogue and the built-in catalogue |
 | `AddOns` | `ZapretConfigImportServiceTests` | Batch file syntax: shell tail, carets, file modifiers |
 | `Core` | `BatchFileEncodingTests` | Encoding of batch files (Cyrillic, UTF-8 BOM) |
 | `Core` | `ConfigCommandLineTests` | Tokenization of preset command lines |
 | `Core` | `ConfigFileReferencesTests` | File references in preset arguments (blob offsets, LUA files) |
+| `Core` | `ConfigItemContentTests` | Variables of presets: expansion, cycles, file references, stored form |
+| `Core` | `DownloadHashTests` | SHA-256 check of Store downloads |
 | `Core` | `IniDocumentTests` | Read and change of INI files with `IniDocument` |
 | `Core` | `LScriptCoreTests` | LScript conditions, nested arguments and the parse of condition strings |
 | `Core` | `ProcessServiceTests` | Quiet flag in process arguments |
@@ -41,14 +60,15 @@ The tests do not need the tray, the GUI, administrator rights or a network conne
 | `Core` | `VersionHelperTests` | Version comparison |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Conversion of Zapret Legacy arguments to Zapret2 (with the expected files in `TestData\Zapret1ToZapret2`) |
 | `Core` | `ZipServiceTests` | Merge of domain lists during ZIP extraction |
+| `Shared` | `ApplicationPathMatcherTests` | Match of application file paths |
 | `Shared` | `ArchiveLimitsTests` | Archive limits: entry count, compression ratio, bounded extraction, links in the target root |
 | `Shared` | `ArchivePathsTests` | Safe archive paths inside the target root |
-| `Shared` | `ApplicationPathMatcherTests` | Match of application file paths |
 | `Shared` | `CatalogVerifierTests` | Signature check of update catalogs |
 | `Shared` | `ConditionalTaskFileServiceTests` | Save and load of `.cdpitask` files |
 | `Shared` | `ErrorConvertorTests` | Error code conversion |
-| `Shared` | `FileWritingOptionsTests` | Options in component arguments that write files outside the permitted folders |
 | `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder, the pipe key file |
+| `Shared` | `FileWritingOptionsTests` | Options in component arguments that write files outside the permitted folders |
+| `Shared` | `GoodbyeDpiMigrationActivationTests` | Activation arguments of the GoodbyeDPI migration: round trip and invalid values |
 | `Shared` | `GuiActivationArgumentsTests` | `--gui-args:` encode, decode and command-line quotes |
 | `Shared` | `OutputCleanupHelperTests` | Removal of escape sequences from console output |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Pipe message round trip |
