@@ -86,7 +86,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers
 
         public string? GetDirectory()
         {
-            if (File.Exists(Directory))
+            // A folder: File.Exists is always false for it.
+            if (global::System.IO.Directory.Exists(Directory))
                 return Directory;
 
             return TryGetNewDirectory();
