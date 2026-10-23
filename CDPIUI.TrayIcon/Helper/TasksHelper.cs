@@ -1,4 +1,5 @@
 ﻿using CDPIUI.Shared.ComponentsTask;
+using CDPIUI.TrayIcon.Helper.Basic;
 
 namespace CDPIUI.TrayIcon.Helper
 {
@@ -54,7 +55,9 @@ namespace CDPIUI.TrayIcon.Helper
         {
             var existTask = await GetTaskFromId(id);
 
-            // The snapshot: the loop awaits, and tasks may be added meanwhile.
+            // The snapshot: the loop awaits, and tasks may be added meanwhile. The other tasks stop
+            // directly, not in their queues: this runs in the queue of id, and two setups that wait
+            // for each other's queue would never finish.
             foreach (var task in await GetTasksSnapshot())
             {
                 if (existTask != task && (bool)(task.ProcessManager?.IsProxyEnabled() ?? false))
@@ -84,16 +87,32 @@ namespace CDPIUI.TrayIcon.Helper
         // service could be deleted under a running winws2.
         List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
 
+        // Each stop joins its component's queue before the first await, so it runs after the
+        // commands for that component that came first and does not cut into a start or restart.
         public async Task StopService()
         {
-            foreach (var task in await GetTasksSnapshot())
-            {
-                if (serviceUsedComponentsIds.Contains(task.Id))
-                {
-                    await task.ProcessManager.StopProcess();
-                }
-            }
+            await Task.WhenAll(serviceUsedComponentsIds.Select(id =>
+                ComponentCommandQueue.Run(id, () => StopTask(id))));
             await ProcessManager.StopService();
+        }
+
+        // Stops every task in its component's queue, for user and conditional task commands.
+        // The exit and GoodCheck stop with StopAllTasks: they must not wait behind queued commands.
+        public async Task StopAllTasksInOrder()
+        {
+            await Task.WhenAll((await GetTasksSnapshot()).Select(task =>
+                ComponentCommandQueue.Run(task.Id, async () =>
+                {
+                    try
+                    {
+                        await task.ProcessManager.StopProcess();
+                    }
+                    catch (Exception ex)
+                    {
+                        // One failed task must not keep the other tasks running.
+                        Logger.Instance.CreateErrorLog(nameof(TasksHelper), $"Cannot stop the task {task.Id}: {ex}");
+                    }
+                })));
         }
         
     }
