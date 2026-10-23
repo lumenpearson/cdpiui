@@ -19,6 +19,54 @@ namespace CDPIUI.Core.System
             bool isCatalogCheckRequired = false
         )
         {
+            if (!isCatalogCheckRequired)
+            {
+                await ExtractEntries(zipFilePath, zipFolderToUnpack, extractTo, filesToSkip, mergeTextFiles: true);
+                return;
+            }
+
+            // A signed archive is checked in a folder of its own and moved into place only when its
+            // catalog is valid, so files of a rejected archive never reach the destination.
+            string verifyDirectory = extractTo.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
+                ".verify-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                await ExtractEntries(zipFilePath, zipFolderToUnpack, verifyDirectory, filesToSkip, mergeTextFiles: false);
+                await VerifyCatalog(verifyDirectory);
+                MoveContents(verifyDirectory, extractTo);
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(verifyDirectory))
+                        Directory.Delete(verifyDirectory, recursive: true);
+                }
+                catch { }
+            }
+        }
+
+        private static void MoveContents(string sourceDirectory, string destinationDirectory)
+        {
+            Directory.CreateDirectory(destinationDirectory);
+            foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+            {
+                string destination = Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                File.Move(file, destination, overwrite: true);
+            }
+            foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+                Directory.CreateDirectory(Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+        }
+
+        private static async Task ExtractEntries(
+            string zipFilePath,
+            string? zipFolderToUnpack,
+            string extractTo,
+            IEnumerable<string>? filesToSkip,
+            bool mergeTextFiles
+        )
+        {
             filesToSkip = filesToSkip ?? Enumerable.Empty<string>();
 
             if (!Directory.Exists(extractTo))
@@ -93,7 +141,7 @@ namespace CDPIUI.Core.System
                     if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
                         Directory.CreateDirectory(destinationDir);
 
-                    if (!isCatalogCheckRequired)
+                    if (mergeTextFiles)
                     {
                         if (relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
                             && File.Exists(destinationPath))
@@ -139,24 +187,23 @@ namespace CDPIUI.Core.System
                     extractedFiles++;
                 }
             }
+        }
 
-            if (isCatalogCheckRequired)
+        private static async Task VerifyCatalog(string directory)
+        {
+            CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(directory, "catalog.cat"), directory);
+            switch (catalogCheckResult)
             {
-                CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(extractTo, "catalog.cat"), extractTo);
-                switch (catalogCheckResult)
-                {
-                    case CatalogCheckResult.Success:
-                        return;
-                    case CatalogCheckResult.FailureNoSignature:
-                        throw new CatalogNoSignature("Catalog file isn't signed");
-                    case CatalogCheckResult.FailureNotTrustedSignature:
-                        throw new CatalogNoSignature("Signature not trusted");
-                    case CatalogCheckResult.FailureNotValid:
-                        throw new CatalogInvalid();
-                    case CatalogCheckResult.FailureUnknown:
-                        throw new CatalogInvalid("Unknown");
-
-                }
+                case CatalogCheckResult.Success:
+                    return;
+                case CatalogCheckResult.FailureNoSignature:
+                    throw new CatalogNoSignature("Catalog file isn't signed");
+                case CatalogCheckResult.FailureNotTrustedSignature:
+                    throw new CatalogNoSignature("Signature not trusted");
+                case CatalogCheckResult.FailureNotValid:
+                    throw new CatalogInvalid();
+                default:
+                    throw new CatalogInvalid("Unknown");
             }
         }
     }
