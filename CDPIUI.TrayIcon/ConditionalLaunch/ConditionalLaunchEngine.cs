@@ -116,9 +116,21 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             lock (_sync)
             {
                 UnregisterHotKeys();
-                foreach (var state in _processStates.Values)
-                    state.CancelPending();
-                _processStates.Clear();
+
+                // Any write to the folder reloads all tasks: only the states of tasks that were
+                // removed or changed are reset, so a pending delayed action of another task stays.
+                var oldSignatures = _loadedTasks.ToDictionary(task => task.Id, GetSignature, StringComparer.OrdinalIgnoreCase);
+                var unchangedIds = loadedTasks
+                    .Where(task => oldSignatures.TryGetValue(task.Id, out var signature) && signature == GetSignature(task))
+                    .Select(task => task.Id)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var key in _processStates.Keys.ToList())
+                {
+                    if (unchangedIds.Contains(key.Split('|')[0]))
+                        continue;
+                    _processStates[key].CancelPending();
+                    _processStates.Remove(key);
+                }
 
                 _loadedTasks = loadedTasks.ToList();
                 _tasks = _loadedTasks.Where(task => task.IsEnabled).ToList();
@@ -193,6 +205,11 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
 
         private void RegisterHotKeys()
         {
+            // Hot keys need the message window of Start; registered before it, they had no
+            // window to send WM_HOTKEY to.
+            if (_windowHandle == IntPtr.Zero)
+                return;
+
             var groups = _tasks
                 .SelectMany(task => task.Triggers
                     .Where(trigger => trigger.Type == ConditionalTriggerType.HotKey)
@@ -422,10 +439,11 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             }
         }
 
-        private void ConfigureTasksDirectory(string directory)
+        private void ConfigureTasksDirectory(string directory, bool recreateWatcher = false)
         {
             directory = Path.GetFullPath(directory);
-            if (string.Equals(_tasksDirectory, directory, StringComparison.OrdinalIgnoreCase) &&
+            if (!recreateWatcher &&
+                string.Equals(_tasksDirectory, directory, StringComparison.OrdinalIgnoreCase) &&
                 _watcher != null)
             {
                 return;
@@ -438,6 +456,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 _watcher.Created -= TaskFilesChanged;
                 _watcher.Deleted -= TaskFilesChanged;
                 _watcher.Renamed -= TaskFilesChanged;
+                _watcher.Error -= TaskWatcherError;
                 _watcher.Dispose();
             }
 
@@ -459,7 +478,27 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             _watcher.Created += TaskFilesChanged;
             _watcher.Deleted += TaskFilesChanged;
             _watcher.Renamed += TaskFilesChanged;
+            _watcher.Error += TaskWatcherError;
         }
+
+        // After a buffer overflow the watcher stops raising events for good: it is created
+        // again and the tasks are reloaded, so later changes are not missed (audit 12.11).
+        private void TaskWatcherError(object sender, ErrorEventArgs e)
+        {
+            Logger.Instance.CreateWarningLog(nameof(ConditionalLaunchEngine), $"Task folder watcher failed: {e.GetException()?.Message}");
+            lock (_sync)
+            {
+                if (!string.IsNullOrWhiteSpace(_tasksDirectory))
+                {
+                    try { ConfigureTasksDirectory(_tasksDirectory, recreateWatcher: true); }
+                    catch (Exception ex) { Logger.Instance.CreateErrorLog(nameof(ConditionalLaunchEngine), $"Cannot watch the task folder: {ex.Message}"); }
+                }
+            }
+            TaskFilesChanged(sender, new FileSystemEventArgs(WatcherChangeTypes.Changed, _tasksDirectory ?? string.Empty, null));
+        }
+
+        private static string GetSignature(ConditionalTask task) =>
+            System.Text.Json.JsonSerializer.Serialize(task);
 
         private void TaskFilesChanged(object sender, FileSystemEventArgs e)
         {
@@ -499,9 +538,13 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             return key != Keys.None;
         }
 
+        // By value: "Control, Alt" and "Alt, Control" are the same hot key and were registered
+        // twice, the second time failing (audit 12.11).
         private static string GetHotKeyIdentity(ConditionalTrigger trigger)
         {
-            return $"{trigger.GetParameter("modifiers")}|{trigger.GetParameter("key")}";
+            return TryGetHotKey(trigger, out var modifiers, out var virtualKey)
+                ? $"{modifiers}|{virtualKey}"
+                : $"{trigger.GetParameter("modifiers")}|{trigger.GetParameter("key")}";
         }
 
         private static bool IsProcessTrigger(ConditionalTriggerType type)
