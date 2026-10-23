@@ -23,7 +23,7 @@ namespace CDPIUI.Shared
         }
 
         // Used for secrets such as the TgWsProxy --secret: a shared System.Random is predictable
-        // and not thread safe (audit 22.3).
+        // and not thread safe.
         public static string GetRandomHexNumber(int digits)
         {
             byte[] buffer = new byte[(digits + 1) / 2];

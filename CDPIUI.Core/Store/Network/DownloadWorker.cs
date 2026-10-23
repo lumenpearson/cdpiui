@@ -174,7 +174,7 @@ namespace CDPIUI.Core.Store.Network
                 try { if (File.Exists(tempDestination)) File.Delete(tempDestination); } catch { }
 
                 // An installer copied from this download is removed again when it failed to install
-                // (audit 10.9); other files may have replaced the files of the installed version and
+                // only; other files may have replaced the files of the installed version and
                 // stay. Archives of signed packs are checked in a separate folder by ZipService and
                 // never reach the destination unchecked.
                 bool isInstaller = filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString();

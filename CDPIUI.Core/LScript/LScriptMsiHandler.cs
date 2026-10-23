@@ -54,7 +54,7 @@ namespace CDPIUI.Core.LScript
         private static async Task<Tuple<bool, bool>> InstallAllMsiFromPath(string directory, bool removeAfterAction, CancellationToken cancellationToken)
         {
             bool requestRestart = false;
-            // Only installers: a readme or a .cab next to them failed the whole pack (audit 11.11).
+            // Only installers: a readme or a .cab next to them failed the whole pack.
             foreach (string filepath in Directory.EnumerateFiles(directory, "*.msi"))
             {
                 var result = await InstallMsi(filepath, removeAfterAction, cancellationToken);

@@ -86,7 +86,7 @@ namespace CDPIUI.Core.ComponentServices
                 var workingDirectory = componentHelper.GetDirectory();
                 string startupParams = componentHelper.GetStartupParams();
                 // GoodbyeDPI started with its defaults and winws exited at once when no preset was
-                // selected or the preset gave an empty line (audit 11.10).
+                // selected or the preset gave an empty line.
                 if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
                     throw new FileNotFoundException($"The executable of {Id} was not found.", exePath);
                 if (string.IsNullOrWhiteSpace(startupParams))
@@ -331,7 +331,7 @@ namespace CDPIUI.Core.ComponentServices
                 prettyOutput = OutputCleanupHelper.ReplaceSymbols(chunk);
                 _outputDefaultBuffer.Append(output);
                 _outputBuffer.Append(prettyOutput);
-                // A component running with --debug for hours filled memory: only the end is kept (audit 22.2).
+                // A component running with --debug for hours filled memory: only the end is kept.
                 TrimToLimit(_outputDefaultBuffer);
                 TrimToLimit(_outputBuffer);
             }

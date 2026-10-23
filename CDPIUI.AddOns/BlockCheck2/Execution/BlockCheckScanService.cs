@@ -228,7 +228,7 @@ public sealed class BlockCheckScanService
         int completed = 0;
         bool wasCanceled = false;
         // When winws2 or its driver cannot start, every strategy fails the same way; the scan
-        // went on through all of them and the synthesis ran with nothing (audit 14.9).
+        // went on through all of them and the synthesis ran with nothing.
         const int MaxConsecutiveStartFailures = 5;
         int consecutiveStartFailures = 0;
         bool abortedOnStartFailures = false;

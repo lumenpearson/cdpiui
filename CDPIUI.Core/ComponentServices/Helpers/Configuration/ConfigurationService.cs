@@ -373,7 +373,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             Dictionary<string, bool> jparams)
         {
             // Same rules as ConfigItem.ExpandVariables in the UI: names ignore case, and a name
-            // declared twice takes the last value instead of failing the start (audit 11.4).
+            // declared twice takes the last value instead of failing the start.
             Dictionary<string, string> result = new(StringComparer.OrdinalIgnoreCase);
             string regexString = @"%(.*?)%=(.*?)$";
 
@@ -1095,7 +1095,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         {
             // Replaces whole paths only, with either separator and with the quotes around them:
             // a substring replacement also changed "mylist.txt" when "list.txt" was replaced, every
-            // apostrophe in the line became a quote, and "" (an empty value) became " (audit 11.5).
+            // apostrophe in the line became a quote, and "" (an empty value) became ".
             static string ReplaceInString(string input, Dictionary<string, string> files)
             {
                 if (string.IsNullOrEmpty(input) || files == null || files.Count == 0)

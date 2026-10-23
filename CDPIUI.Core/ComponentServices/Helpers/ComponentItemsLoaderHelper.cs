@@ -6,7 +6,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers
     {
 
         // Replaced as a whole, never changed in place: Init runs on the startup path and after every
-        // Store change while other threads look components up (audit 11.9).
+        // Store change while other threads look components up.
         private volatile List<ComponentHelper> Components = [];
 
         public Action? InitRequested;

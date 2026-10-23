@@ -130,7 +130,7 @@ public sealed class ConfigShareService
     }
 
     // Options with which the component writes a file. The tray starts components with
-    // administrator rights, so a shared preset could write anywhere with them (audit 14.4).
+    // administrator rights, so a shared preset could write anywhere with them.
     private static readonly HashSet<string> FileWritingOptions = new(StringComparer.OrdinalIgnoreCase)
     {
         "--debug", "--wf-save", "--hostlist-auto", "--hostlist-auto-debug"
@@ -201,7 +201,7 @@ public sealed class ConfigShareService
                 if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
                     throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Symbolic links are not supported.");
                 // Site lists compress well, but not a thousand times: a small file that unpacks to
-                // the size limit only fills memory and disk (audit 14.12).
+                // the size limit only fills memory and disk.
                 if (entry.Length > 1024 * 1024 && entry.Length > entry.CompressedLength * MaxCompressionRatio)
                     throw new ConfigShareException("SHARE_ARCHIVE_INVALID", $"The entry {entry.FullName} is compressed too strongly.");
             }

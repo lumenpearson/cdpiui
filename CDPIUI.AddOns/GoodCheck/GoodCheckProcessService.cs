@@ -545,7 +545,7 @@ namespace CDPIUI.AddOns.GoodCheck
                         fs?.Dispose();
 
                         // A log of this run is read from its start: reading from the end lost
-                        // everything written before the file was found (audit 14.3).
+                        // everything written before the file was found.
                         currentLogFile = newest;
                         fs = new FileStream(currentLogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                         reader = new StreamReader(fs);
@@ -639,7 +639,7 @@ namespace CDPIUI.AddOns.GoodCheck
         public void OperationWithIdDied(int id)
         {
             // Ended by itself: the log monitor decides whether it was a success. Marking it as one
-            // here turned an early failure into a success with an empty report (audit 14.3).
+            // here turned an early failure into a success with an empty report.
             GoodCheckOperationModel model = GetOperationById(id);
             model.ProcessExited = true;
             model.CancellationTokenSource?.Cancel();

@@ -21,7 +21,7 @@ namespace CDPIUI.TrayIcon.Helper
 
         /// <summary>
         /// The Internet settings of the user at the desktop. The tray may run elevated under
-        /// another administrator account, whose HKCU is not the hive the browser reads (audit 12.1).
+        /// another administrator account, whose HKCU is not the hive the browser reads.
         /// </summary>
         private static RegistryKey? OpenInternetSettings(bool writable)
         {
@@ -89,7 +89,7 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         // The snapshot is also kept on disk while CDPI UI owns the system proxy, so the proxy of
-        // the user comes back after a crash, a kill or a shutdown of the tray (audit 12.1).
+        // the user comes back after a crash, a kill or a shutdown of the tray.
         private static string BackupFilePath =>
             Path.Combine(Utils.GetDataDirectory(), "proxy-backup.json");
 

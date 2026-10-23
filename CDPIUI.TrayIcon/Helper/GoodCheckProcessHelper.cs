@@ -58,7 +58,7 @@ namespace CDPIUI.TrayIcon.Helper
             await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Running, operationId);
             TasksHelper.Instance.ApplyStatusToAllTasks(false);
             // The component buttons are blocked while GoodCheck runs; they stayed blocked when
-            // the job could not be created, and the job handle was never closed (audit 12.15).
+            // the job could not be created, and the job handle was never closed.
             try
             {
                 var startInfo = new ProcessStartInfo

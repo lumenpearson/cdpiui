@@ -25,7 +25,7 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
                 throw new ConfigShareException("SHARE_FILE_MISSING", file.Path, exception);
             }
             // winws creates the --hostlist-auto list while it runs, so before the first run there is
-            // no file and the preset could not be shared (audit 22.2). It is shared as an empty list;
+            // no file and the preset could not be shared. It is shared as an empty list;
             // the user's kit is not changed.
             if (!File.Exists(source) && IsRuntimeCreated(file.OptionName))
                 emptyResources.Add(source);

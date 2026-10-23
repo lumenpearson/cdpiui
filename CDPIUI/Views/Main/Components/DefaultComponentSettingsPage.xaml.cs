@@ -77,7 +77,7 @@ namespace CDPIUI.Views.Main.Components
         }
 
         // Several builds can run at once (Task.Run from different events); only the latest
-        // one may fill the list, otherwise the tiles appeared twice (audit 9.5).
+        // one may fill the list, otherwise the tiles appeared twice.
         private int _tilesGeneration;
 
         private void AddTileIfCurrent(int generation, UIElement tile)

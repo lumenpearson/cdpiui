@@ -65,7 +65,7 @@ namespace CDPIUI.Core.Features
                         $"Backup file \"{backupFile}\" not found. Hardlink remove cannot be complete.");
                 }
                 File.Delete(linkTo);
-                // Without an original file the link is only removed (audit 10.12).
+                // Without an original file the link is only removed.
                 if (hadOriginal)
                     File.Move(backupFile, linkTo);
 

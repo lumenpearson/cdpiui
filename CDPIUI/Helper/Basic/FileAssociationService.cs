@@ -27,7 +27,7 @@ namespace CDPIUI.Helper.Basic
 
         /// <summary>
         /// Registers the associations once per executable path: after the application was moved
-        /// or reinstalled elsewhere, the old registration points to a missing file (audit 9.8).
+        /// or reinstalled elsewhere, the old registration points to a missing file.
         /// </summary>
         internal static void EnsureRegistered()
         {

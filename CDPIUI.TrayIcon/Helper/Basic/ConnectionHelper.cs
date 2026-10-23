@@ -100,7 +100,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
                     Logger?.CreateDebugLog(nameof(PipeServer), $"Client connected on thread[{threadId}].");
                     // The pipe takes one client at a time: a client that never authorizes would
-                    // keep the real GUI out (audit 12.10).
+                    // keep the real GUI out.
                     var connectedStream = (NamedPipeServerStream)PipeStream;
                     _ = Task.Run(async () =>
                     {
@@ -145,7 +145,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
         private static readonly TimeSpan AuthorizationTimeout = TimeSpan.FromSeconds(15);
 
         // Before authorization only service messages (connection, authorization result) go out:
-        // component output and paths are for the authorized GUI only (audit 12.10).
+        // component output and paths are for the authorized GUI only.
         protected override bool CanSend(string message)
         {
             if (IsAuthorized)

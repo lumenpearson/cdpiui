@@ -381,7 +381,7 @@ namespace CDPIUI
                     string[] args = SplitCommandLine(fileActivatedEventArgs.Arguments);
                     if (!result)
                     {
-                        // The same --direct: commands as in a first start (audit 9.4).
+                        // The same --direct: commands as in a first start.
                         string directArgs = args.FirstOrDefault(x => x.StartsWith("--direct:"));
                         if (directArgs != null)
                         {
