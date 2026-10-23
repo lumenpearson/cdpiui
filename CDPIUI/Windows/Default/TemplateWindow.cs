@@ -408,8 +408,15 @@ namespace CDPIUI.Default
 
         private void ApplyDarkThemeToSystemMenu()
         {
-            SetPreferredAppMode(2);
-            FlushMenuThemes();
+            // Undocumented uxtheme exports: #135 is SetPreferredAppMode since Windows 10 1903 and
+            // AllowDarkModeForApp(BOOL) on 1809, where 2 also means "allow". Older systems lack them.
+            try
+            {
+                SetPreferredAppMode(2);
+                FlushMenuThemes();
+            }
+            catch (EntryPointNotFoundException) { }
+            catch (DllNotFoundException) { }
         }
 
         [DllImport("uxtheme.dll", EntryPoint = "#135", SetLastError = true, CharSet = CharSet.Unicode)]
