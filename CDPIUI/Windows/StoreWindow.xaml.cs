@@ -102,12 +102,6 @@ public sealed partial class StoreWindow : TemplateWindow
         ((App)Application.Current).OpenWindows.Remove(this);
     }
 
-    ~StoreWindow()
-    {
-        StoreHelper.Instance.ItemInstallingErrorHappens -= Instance_ItemInstallingErrorHappens;
-        StoreHelper.Instance.QueueUpdated -= StoreHelper_QueueUpdated;
-        ((App)Application.Current).OpenWindows.Remove(this);
-    }
 
     private void NavigationViewControl_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {

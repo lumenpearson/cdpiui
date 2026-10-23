@@ -140,13 +140,13 @@ namespace CDPIUI.Controls.Store.Settings
 
             long appDirSize;
 
-            if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.VolumeLabel == DiskLetter)
+            if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.Name == DiskLetter)
             {
                 appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
                 usedDriveInfo = appDirDriveInfo;
                 usedDir = appDir;
             }
-            else if (appDirDriveInfo.VolumeLabel == dataDirDriveInfo.VolumeLabel && appDirDriveInfo.VolumeLabel == DiskLetter)
+            else if (appDirDriveInfo.Name == dataDirDriveInfo.Name && appDirDriveInfo.Name == DiskLetter)
             {
                 appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance) + await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
                 usedDriveInfo = appDirDriveInfo;
@@ -155,13 +155,13 @@ namespace CDPIUI.Controls.Store.Settings
                 CreateTileForMemoryUsageCategory(oldSize, appDirSize, MemoryUsageCategories.PreviousVersions);
                 CreateTileForMemoryUsageCategory(await FileSystemService.GetDirectorySize(appDir, Logger.Instance) - oldSize, appDirSize, MemoryUsageCategories.Application);
             }
-            else if (appDirDriveInfo.VolumeLabel == DiskLetter)
+            else if (appDirDriveInfo.Name == DiskLetter)
             {
                 appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
                 usedDriveInfo = appDirDriveInfo;
                 usedDir = appDir;
             }
-            else if (dataDirDriveInfo.VolumeLabel == DiskLetter)
+            else if (dataDirDriveInfo.Name == DiskLetter)
             {
                 appDirSize = await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
                 usedDriveInfo = dataDirDriveInfo;

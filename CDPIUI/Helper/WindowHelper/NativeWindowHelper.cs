@@ -55,7 +55,7 @@ namespace CDPIUI.Helper.WindowHelper
                     return nint.Zero;
                 }
 
-                if (msg == WM_SYSCOMMAND && wParam.ToInt32() == SC_MAXIMIZE)
+                if (msg == WM_SYSCOMMAND && (wParam.ToInt64() & 0xFFF0) == SC_MAXIMIZE)
                 {
                     Debug.WriteLine("Maximize via system command suppressed.");
                     return nint.Zero;

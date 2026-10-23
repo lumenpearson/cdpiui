@@ -143,14 +143,6 @@ namespace CDPIUI
             
         }
 
-        ~CreateConfigUtilWindow()
-        {
-            if (!GoodCheckProcessService.Instance.IsRunned())
-            {
-                Instance = null;
-            }
-            Debug.WriteLine("CreateConfigUtilWindow finalized");
-        }
 
         private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
         {

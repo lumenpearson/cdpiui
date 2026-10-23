@@ -43,7 +43,7 @@ namespace CDPIUI.Controls.Dialogs.Store
 
             if (url.StartsWith("$OPENINBROWSER"))
             {
-                _ = Windows.System.Launcher.LaunchUriAsync(new Uri(LScriptLangHelper.GetArgumentsFromScript(url)));
+                global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(LScriptLangHelper.GetArgumentsFromScript(url));
             }
             else
             {

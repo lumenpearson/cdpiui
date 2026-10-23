@@ -18,9 +18,25 @@ namespace CDPIUI.Helper
         public const string NTCParty = "https://ntc.party";
         public const string BBD = "https://t.me/byebyedpi_group";
 
+        /// <summary>
+        /// Opens a web link. Links come from store manifests and license data, so file:, ms-*
+        /// and other schemes that start local programs are refused.
+        /// </summary>
         public static async void LaunchUrl(string uri)
         {
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(uri));
+            if (!TryGetWebUri(uri, out Uri webUri))
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), $"Refused to open \"{uri}\"");
+                return;
+            }
+            _ = await Windows.System.Launcher.LaunchUriAsync(webUri);
+        }
+
+        public static bool TryGetWebUri(string uri, out Uri webUri)
+        {
+            return Uri.TryCreate(uri?.Trim(), UriKind.Absolute, out webUri) &&
+                (webUri.Scheme == Uri.UriSchemeHttps || webUri.Scheme == Uri.UriSchemeHttp ||
+                 webUri.Scheme == Uri.UriSchemeMailto || webUri.Scheme == "tg");
         }
         public static async void LaunchReportUrl()
         {

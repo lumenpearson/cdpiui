@@ -118,7 +118,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
             {
                 string convDir;
                 
-                if (Path.GetExtension(file).Equals(".txt", StringComparison.CurrentCultureIgnoreCase))
+                if (Path.GetExtension(file).Equals(".txt", StringComparison.OrdinalIgnoreCase))
                 {
                     convDir = Path.Combine(
                         ConfigurationService.GetItemFolderFromPackId(SharedConstants.LocalUserItemsId),

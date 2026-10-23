@@ -96,6 +96,7 @@ namespace CDPIUI.Views.SetupProxy
                 }
 
                 if (string.IsNullOrEmpty(proxyServer)) throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
+                if (!ProxyHelper.IsValidPort(PortValue.Text)) throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
 
                 if ((bool)UseConfigSettings.IsChecked)
                 {

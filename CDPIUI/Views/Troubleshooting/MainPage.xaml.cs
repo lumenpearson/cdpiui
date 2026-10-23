@@ -87,8 +87,10 @@ public sealed partial class MainPage : TemplatePage
             , new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
     }
 
+    // Updates are downloaded from the same repositories as the store, so the same check
+    // applies; the card did nothing before.
     private void ApplicationCannotDownloadUpdateCard_Click(object sender, RoutedEventArgs e)
     {
-
+        StoreCannotLoadCard_Click(sender, e);
     }
 }

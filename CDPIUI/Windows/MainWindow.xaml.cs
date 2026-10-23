@@ -181,10 +181,6 @@ namespace CDPIUI
             AuditNavigationItems();
         }
 
-        ~MainWindow()
-        {
-            ((App)Application.Current).OpenWindows.Remove(this);
-        }
 
         private void InitializeWindow()
         {

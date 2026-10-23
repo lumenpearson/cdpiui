@@ -82,10 +82,6 @@ namespace CDPIUI
             Process.GetCurrentProcess().Kill();
         }
 
-        ~CriticalErrorHandlerWindow()
-        {
-            Process.GetCurrentProcess().Kill();
-        }
 
         private void ExitButton_Click(object sender, RoutedEventArgs e)
         {
