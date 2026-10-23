@@ -278,7 +278,7 @@
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
-                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Fakes"/>
+                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/FakesHeader"/>
 
                             <controls:SettingsCard Header="FAKE SNI">
                                 <controls:SettingsCard.Content>

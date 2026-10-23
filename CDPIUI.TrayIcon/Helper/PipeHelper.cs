@@ -209,30 +209,16 @@ namespace CDPIUI.TrayIcon.Helper
         {
             if (!await PipeServer.Instance.SendMessageAsync(message.ToString()))
             {
-                if (message.Target == PipeMessageTargetIds.Service || 
-                    message.Target == PipeMessageTargetIds.CONPTY || 
-                    message.Target == PipeMessageTargetIds.Settings ||
-                    message.Target == PipeMessageTargetIds.Application ||
-                    message.Target == PipeMessageTargetIds.ConditionalLaunch ||
-                    message.Target == PipeMessageTargetIds.CompatibilityCheck ||
-                    message.Target == PipeMessageTargetIds.Update)
-                {
-                    var backgroundArgument = createNoWindow
-                        ? "--create-no-window "
-                        : string.Empty;
-                    return RunHelper.RunAsDesktopUser(
-                        Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
-                        $"{backgroundArgument}--direct:{message}");
-                }
-                else
-                {
-                    // ----ms-protocol: is the cdpiui:// link activation, which accepts public routes only,
-                    // so window and notification messages passed that way were dropped. --direct: is the
-                    // argument for messages from the tray.
-                    return RunHelper.RunAsDesktopUser(
-                        Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
-                        $"{(createNoWindow ? "--create-no-window " : string.Empty)}--direct:{message}");
-                }
+                // Without a connected GUI the message starts the GUI with --direct:. ----ms-protocol:
+                // is the cdpiui:// link activation, which accepts public routes only, so window and
+                // notification messages passed that way were dropped. The sender decides about
+                // --create-no-window; the target of the message does not change the command line.
+                var backgroundArgument = createNoWindow
+                    ? "--create-no-window "
+                    : string.Empty;
+                return RunHelper.RunAsDesktopUser(
+                    Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
+                    $"{backgroundArgument}--direct:{message}");
             }
 
             return true;

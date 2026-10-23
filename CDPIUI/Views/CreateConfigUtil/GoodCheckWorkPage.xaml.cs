@@ -58,6 +58,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
     public GoodCheckWorkPage()
     {
         InitializeComponent();
+        TimeText.Text = localizer.GetLocalizedString("Pending");
+        AllTimeText.Text = localizer.GetLocalizedString("Pending");
 
         _uiDispatcher = DispatcherQueue.GetForCurrentThread();
 

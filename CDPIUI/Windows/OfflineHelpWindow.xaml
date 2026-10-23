@@ -59,7 +59,7 @@
                             IsTitleBarAutoPaddingEnabled="False"> 
                 
                 <NavigationView.FooterMenuItems>
-                    <NavigationViewItem Content="About" Tag="AboutHelp">
+                    <NavigationViewItem l:Uids.Uid="AboutHelpNavigationViewItem" Tag="AboutHelp">
                         <NavigationViewItem.Icon>
                             <FontIcon Glyph="&#xE946;" />
                         </NavigationViewItem.Icon>

@@ -1,5 +1,6 @@
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ public sealed partial class CustomSiteListContentDialog : ContentDialog
             });
         string[] errors = parsed.Issues
             .Where(issue => issue.Severity == BlockCheckIssueSeverity.Error)
-            .Select(issue => issue.Message)
+            .Select(issue => BlockCheck2IssueText.GetMessage(issue))
             .Distinct(StringComparer.CurrentCulture)
             .Take(3)
             .ToArray();

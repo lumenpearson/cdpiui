@@ -189,4 +189,7 @@
   <data name="DohResolversHeader.Text" xml:space="preserve">
     <value>DoH resolvers</value>
   </data>
+  <data name="FakesHeader.Text" xml:space="preserve">
+    <value>Fakes</value>
+  </data>
 </root>
