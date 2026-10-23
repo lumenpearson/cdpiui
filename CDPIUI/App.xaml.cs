@@ -118,10 +118,11 @@ namespace CDPIUI
             // Exceptions from async void event handlers end up here. Keep the application
             // running and show the error instead of closing every window without a trace.
             e.Handled = true;
-            ShowUnhandledError(e.Exception);
+            // ShowUnhandledError catches and logs its own errors.
+            _ = ShowUnhandledError(e.Exception);
         }
 
-        private async void ShowUnhandledError(Exception exception)
+        private async Task ShowUnhandledError(Exception exception)
         {
             if (Interlocked.Exchange(ref isUnhandledErrorShown, 1) != 0)
                 return;
@@ -356,7 +357,8 @@ namespace CDPIUI
             PipeClientService.Instance.Start();
         }
 
-        public async void PreferRequestedActions(AppActivationArguments appActivationArguments)
+        // Catches and logs its own errors, so a caller can start it without waiting for it.
+        public async Task PreferRequestedActions(AppActivationArguments appActivationArguments)
         {
             bool result = false;
             try
@@ -402,9 +404,18 @@ namespace CDPIUI
                 result = Program.IsMigrationActivationPending;
             }
 
-            if (!result && !Program.IsMigrationActivationPending)
-                await OpenStartupWindowAsync();
-            else ExitIfIdle();
+            try
+            {
+                if (!result && !Program.IsMigrationActivationPending)
+                    await OpenStartupWindowAsync();
+                else ExitIfIdle();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(
+                    nameof(App),
+                    $"Cannot finish redirected activation: {ex}");
+            }
         }
 
         internal async Task<Window> OpenStartupWindowAsync(bool activate = true)
@@ -618,54 +629,24 @@ namespace CDPIUI
             WindowsPositionHelper.SetCustomWindowSizeAndPositionFromSettings(newWindow);
             RegisterWindow(newWindow, isUnsafe: true);
             if (activate) ActivateWindow(newWindow);
-            await Task.CompletedTask;
 
             return newWindow;
         }
 
-        public async Task<TWindow> UnsafeCreateNewWindow<TWindow>(bool activate = true, string id = "") where TWindow : TemplateWindow, new()
-        {
-            await _localizerReady;
+        public async Task<TWindow> UnsafeCreateNewWindow<TWindow>(bool activate = true, string id = "") where TWindow : TemplateWindow, new() =>
+            (TWindow)await UnsafeCreateNewWindow(typeof(TWindow), activate, id);
 
-            var findWindows = OpenWindows.OfType<TWindow>().ToList();
-            int findWindowCount = findWindows.Count;
-
-            var activeFindWindow = OpenWindows.OfType<TWindow>().FirstOrDefault(w => w.DispatcherQueue != null);
-
-            foreach (TemplateWindow _win in findWindows)
-            {
-                if (!string.IsNullOrEmpty(_win.Id) && string.Equals(
-                    _win.Id,
-                    id,
-                    StringComparison.OrdinalIgnoreCase))
-                {     
-                    if (activate) ActivateWindow(_win);
-                    return (TWindow)_win;
-                }
-            }
-
-            var newViewWindow = new TWindow();
-            newViewWindow.Id = id;
-            WindowsPositionHelper.SetCustomWindowSizeAndPositionFromSettings(newViewWindow);
-            RegisterWindow(newViewWindow, isUnsafe:true);
-            if (activate) ActivateWindow(newViewWindow);
-            await Task.CompletedTask;
-
-            return newViewWindow;
-        }
         public async Task<Window> SafeCreateNewWindow(Type windowType, bool activate = true)
         {
             await _localizerReady;
 
             var findWindows = OpenWindows.Where(w => windowType.IsInstanceOfType(w)).ToList();
-            int findWindowCount = findWindows.Count;
-
             var activeFindWindow = findWindows.FirstOrDefault(w => w.DispatcherQueue != null);
 
-            if (activeFindWindow != null && findWindowCount == 1)
+            // One live window is reused; several or a dead one are closed and replaced by a new window.
+            if (activeFindWindow != null && findWindows.Count == 1)
             {
                 if (activate) ActivateWindow(activeFindWindow);
-                await Task.CompletedTask;
                 return activeFindWindow;
             }
             else
@@ -682,45 +663,13 @@ namespace CDPIUI
                 RegisterWindow(newWindow);
 
                 if (activate) ActivateWindow(newWindow);
-                await Task.CompletedTask;
 
                 return newWindow;
             }
         }
 
-        public async Task<TWindow> SafeCreateNewWindow<TWindow>(bool activate = true) where TWindow : Window, new()
-        {
-            await _localizerReady;
-
-            var findWindows = OpenWindows.OfType<TWindow>().ToList();
-            int findWindowCount = findWindows.Count;
-
-            var activeFindWindow = OpenWindows.OfType<TWindow>().FirstOrDefault(w => w.DispatcherQueue != null);
-
-            if (activeFindWindow != null && findWindowCount == 1)
-            {
-                if (activate) ActivateWindow(activeFindWindow);
-                await Task.CompletedTask;
-                return activeFindWindow;
-            }
-            else
-            {
-                foreach (var viewWindow in OpenWindows.OfType<TWindow>().ToList())
-                {
-                    viewWindow.Close();
-                    OpenWindows.Remove(viewWindow);
-                }
-
-                var newViewWindow = new TWindow();
-                WindowsPositionHelper.SetCustomWindowSizeAndPositionFromSettings(newViewWindow);
-                RegisterWindow(newViewWindow);
-
-                if (activate) ActivateWindow(newViewWindow);
-                await Task.CompletedTask;
-
-                return newViewWindow;
-            }
-        }
+        public async Task<TWindow> SafeCreateNewWindow<TWindow>(bool activate = true) where TWindow : Window, new() =>
+            (TWindow)await SafeCreateNewWindow(typeof(TWindow), activate);
 
         private void RegisterWindow(Window window, bool isUnsafe = false)
         {

@@ -1008,60 +1008,71 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void ReplacePresetFileItem_Click(object sender, RoutedEventArgs e)
     {
-        ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
-        if (file == null)
+        try
         {
-            return;
-        }
-
-        string missingPath = TryResolvePresetFilePath(file.Path);
-        if (string.IsNullOrWhiteSpace(missingPath))
-        {
-            ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerPresetFileInvalidPathMessage"),
-                InfoBarSeverity.Error);
-            return;
-        }
-        if (File.Exists(missingPath))
-        {
-            RebuildPresetStructure();
-            return;
-        }
-
-        ContentDialog dialog = new()
-        {
-            XamlRoot = XamlRoot,
-            Title = localizer.GetLocalizedString("ConfigMakerPresetFileReplaceDialogTitle"),
-            Content = CreateReplacementDialogContent(missingPath),
-            PrimaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileApplyAutoCorrectionButton"),
-            SecondaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileChooseManuallyButton"),
-            CloseButtonText = localizer.GetLocalizedString("Cancel"),
-            DefaultButton = ContentDialogButton.Primary,
-        };
-        ContentDialogResult result = await dialog.ShowQueuedAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            ConfigImportAutoCorrector autoCorrector = new();
-            bool suggestEmptyFile = autoCorrector.ShouldSuggestEmptyFile(missingPath);
-            if (suggestEmptyFile)
+            ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
+            if (file == null)
             {
-                TryCreateEmptyPresetFile(missingPath);
+                return;
             }
-            else
-            {
-                ConfigImportResult autoCorrectResult = CreateAutoCorrectResult(missingPath);
-                string suggestion = await Task.Run(() => autoCorrector.FindReplacement(
-                    autoCorrectResult,
-                    missingPath));
-                if (!string.IsNullOrWhiteSpace(suggestion))
-                {
-                    ApplyPresetFileReplacement(file, suggestion);
-                    return;
-                }
 
+            string missingPath = TryResolvePresetFilePath(file.Path);
+            if (string.IsNullOrWhiteSpace(missingPath))
+            {
                 ShowEditorMessage(
-                    localizer.GetLocalizedString("ConfigMakerPresetFileNoSuggestionMessage"),
-                    InfoBarSeverity.Warning);
+                    localizer.GetLocalizedString("ConfigMakerPresetFileInvalidPathMessage"),
+                    InfoBarSeverity.Error);
+                return;
+            }
+            if (File.Exists(missingPath))
+            {
+                RebuildPresetStructure();
+                return;
+            }
+
+            ContentDialog dialog = new()
+            {
+                XamlRoot = XamlRoot,
+                Title = localizer.GetLocalizedString("ConfigMakerPresetFileReplaceDialogTitle"),
+                Content = CreateReplacementDialogContent(missingPath),
+                PrimaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileApplyAutoCorrectionButton"),
+                SecondaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileChooseManuallyButton"),
+                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            ContentDialogResult result = await dialog.ShowQueuedAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ConfigImportAutoCorrector autoCorrector = new();
+                bool suggestEmptyFile = autoCorrector.ShouldSuggestEmptyFile(missingPath);
+                if (suggestEmptyFile)
+                {
+                    TryCreateEmptyPresetFile(missingPath);
+                }
+                else
+                {
+                    ConfigImportResult autoCorrectResult = CreateAutoCorrectResult(missingPath);
+                    string suggestion = await Task.Run(() => autoCorrector.FindReplacement(
+                        autoCorrectResult,
+                        missingPath));
+                    if (!string.IsNullOrWhiteSpace(suggestion))
+                    {
+                        ApplyPresetFileReplacement(file, suggestion);
+                        return;
+                    }
+
+                    ShowEditorMessage(
+                        localizer.GetLocalizedString("ConfigMakerPresetFileNoSuggestionMessage"),
+                        InfoBarSeverity.Warning);
+                    string selectedPath = ChoosePresetFileReplacement(missingPath);
+                    if (!string.IsNullOrWhiteSpace(selectedPath))
+                    {
+                        ApplyPresetFileReplacement(file, selectedPath);
+                    }
+                }
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
                 string selectedPath = ChoosePresetFileReplacement(missingPath);
                 if (!string.IsNullOrWhiteSpace(selectedPath))
                 {
@@ -1069,13 +1080,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 }
             }
         }
-        else if (result == ContentDialogResult.Secondary)
+        catch (Exception exception)
         {
-            string selectedPath = ChoosePresetFileReplacement(missingPath);
-            if (!string.IsNullOrWhiteSpace(selectedPath))
-            {
-                ApplyPresetFileReplacement(file, selectedPath);
-            }
+            ReportHandlerError(exception);
         }
     }
 
@@ -1353,59 +1360,66 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void OpenPresetFileItem_Click(object sender, RoutedEventArgs e)
     {
-        ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
-        if (file == null)
+        try
         {
-            return;
-        }
-
-        string path = ResolvePresetFilePath(file.Path);
-        if (!File.Exists(path))
-        {
-            ShowEditorMessage(
-                string.Format(localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
-                InfoBarSeverity.Warning);
-            return;
-        }
-
-        if (file.Kind == ConfigMakerPresetFileKind.SiteList ||
-            string.Equals(Path.GetExtension(path), ".txt", StringComparison.OrdinalIgnoreCase))
-        {
-            int openMode = SettingsManager.Instance.GetValue<int>(
-                "FILEOPENACTIONS",
-                "mode");
-            string selectedApplication = SettingsManager.Instance.GetValue<string>(
-                "FILEOPENACTIONS",
-                "applicationPath");
-            bool choiceWasSaved = SettingsManager.Instance.GetValue<bool>(
-                    "FILEOPENACTIONS",
-                    "isDialogShown") &&
-                (openMode == (int)TextFileOpenModes.FollowSystem ||
-                 (openMode == (int)TextFileOpenModes.UserChoose && File.Exists(selectedApplication)));
-            bool askAgain = !SettingsManager.Instance.GetValueOrDefault<bool>(
-                "FILEOPENACTIONS",
-                "doNotRemindAgain",
-                defaultValue: true);
-            if (!choiceWasSaved || askAgain)
+            ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
+            if (file == null)
             {
-                EditSitelistAskApplicationContentDialog dialog = new()
-                {
-                    XamlRoot = XamlRoot,
-                    FilePath = path,
-                };
-                await dialog.ShowQueuedAsync();
-                if (dialog.IsSuccess)
-                {
-                    SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
-                }
                 return;
             }
 
-            ShellHelper.OpenFile(path);
-            return;
-        }
+            string path = ResolvePresetFilePath(file.Path);
+            if (!File.Exists(path))
+            {
+                ShowEditorMessage(
+                    string.Format(localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
+                    InfoBarSeverity.Warning);
+                return;
+            }
 
-        ShellHelper.OpenFileInDefaultApp(path);
+            if (file.Kind == ConfigMakerPresetFileKind.SiteList ||
+                string.Equals(Path.GetExtension(path), ".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                int openMode = SettingsManager.Instance.GetValue<int>(
+                    "FILEOPENACTIONS",
+                    "mode");
+                string selectedApplication = SettingsManager.Instance.GetValue<string>(
+                    "FILEOPENACTIONS",
+                    "applicationPath");
+                bool choiceWasSaved = SettingsManager.Instance.GetValue<bool>(
+                        "FILEOPENACTIONS",
+                        "isDialogShown") &&
+                    (openMode == (int)TextFileOpenModes.FollowSystem ||
+                     (openMode == (int)TextFileOpenModes.UserChoose && File.Exists(selectedApplication)));
+                bool askAgain = !SettingsManager.Instance.GetValueOrDefault<bool>(
+                    "FILEOPENACTIONS",
+                    "doNotRemindAgain",
+                    defaultValue: true);
+                if (!choiceWasSaved || askAgain)
+                {
+                    EditSitelistAskApplicationContentDialog dialog = new()
+                    {
+                        XamlRoot = XamlRoot,
+                        FilePath = path,
+                    };
+                    await dialog.ShowQueuedAsync();
+                    if (dialog.IsSuccess)
+                    {
+                        SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
+                    }
+                    return;
+                }
+
+                ShellHelper.OpenFile(path);
+                return;
+            }
+
+            ShellHelper.OpenFileInDefaultApp(path);
+        }
+        catch (Exception exception)
+        {
+            ReportHandlerError(exception);
+        }
     }
 
     private void ShowPresetFileInFolderItem_Click(object sender, RoutedEventArgs e)
@@ -1527,35 +1541,42 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void RemovePresetFileItem_Click(object sender, RoutedEventArgs e)
     {
-        ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
-        ConfigMakerPresetResource resource = file == null ? null : FindAttachedResource(file.Path);
-        if (resource == null)
+        try
         {
-            return;
-        }
-        bool isReferenced = CommandText.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase) ||
-            presetDocument.Variables
-                .SelectMany(GetPresetVariableCandidateValues)
-                .Any(value => value.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase));
-        if (isReferenced)
-        {
-            ContentDialog confirmation = new()
-            {
-                XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Remove"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
+            ConfigMakerPresetFileInfo file = GetPresetFileFromMenuSender(sender);
+            ConfigMakerPresetResource resource = file == null ? null : FindAttachedResource(file.Path);
+            if (resource == null)
             {
                 return;
             }
+            bool isReferenced = CommandText.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase) ||
+                presetDocument.Variables
+                    .SelectMany(GetPresetVariableCandidateValues)
+                    .Any(value => value.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase));
+            if (isReferenced)
+            {
+                ContentDialog confirmation = new()
+                {
+                    XamlRoot = XamlRoot,
+                    Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
+                    Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
+                    PrimaryButtonText = localizer.GetLocalizedString("Remove"),
+                    CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                    DefaultButton = ContentDialogButton.Close,
+                };
+                if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
+                {
+                    return;
+                }
+            }
+            presetDocument.Resources.Remove(resource);
+            RebuildPresetStructure();
+            ScheduleDiagnostics();
         }
-        presetDocument.Resources.Remove(resource);
-        RebuildPresetStructure();
-        ScheduleDiagnostics();
+        catch (Exception exception)
+        {
+            ReportHandlerError(exception);
+        }
     }
 
     private void PresetFilesTreeView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
@@ -2132,28 +2153,42 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void CreateVariableButton_Click(object sender, RoutedEventArgs e)
     {
-        ConfigMakerVariableContentDialog dialog = new(presetDocument)
+        try
         {
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary &&
-            dialog.ResultVariable != null)
+            ConfigMakerVariableContentDialog dialog = new(presetDocument)
+            {
+                XamlRoot = XamlRoot,
+            };
+            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary &&
+                dialog.ResultVariable != null)
+            {
+                presetDocument.Variables.Add(dialog.ResultVariable);
+                AttachExistingPresetFiles();
+                ToolsSelector.SelectIndex(1);
+                RebuildPresetStructure();
+                ScheduleDiagnostics();
+            }
+        }
+        catch (Exception exception)
         {
-            presetDocument.Variables.Add(dialog.ResultVariable);
-            AttachExistingPresetFiles();
-            ToolsSelector.SelectIndex(1);
-            RebuildPresetStructure();
-            ScheduleDiagnostics();
+            ReportHandlerError(exception);
         }
     }
 
     private async void EditVariableButton_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not ConfigMakerVariableDefinition variable)
+        try
         {
-            return;
+            if ((sender as FrameworkElement)?.Tag is not ConfigMakerVariableDefinition variable)
+            {
+                return;
+            }
+            await EditVariableAsync(variable);
         }
-        await EditVariableAsync(variable);
+        catch (Exception exception)
+        {
+            ReportHandlerError(exception);
+        }
     }
 
     private async Task EditVariableAsync(ConfigMakerVariableDefinition variable)
@@ -2187,30 +2222,37 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void RemoveVariableButton_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not ConfigMakerVariableDefinition variable)
+        try
         {
-            return;
-        }
-        bool referenced = CommandText.Contains(variable.Reference, StringComparison.OrdinalIgnoreCase);
-        if (referenced)
-        {
-            ContentDialog confirmation = new()
-            {
-                XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Remove"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
+            if ((sender as FrameworkElement)?.Tag is not ConfigMakerVariableDefinition variable)
             {
                 return;
             }
+            bool referenced = CommandText.Contains(variable.Reference, StringComparison.OrdinalIgnoreCase);
+            if (referenced)
+            {
+                ContentDialog confirmation = new()
+                {
+                    XamlRoot = XamlRoot,
+                    Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogTitle"),
+                    Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogMessage"),
+                    PrimaryButtonText = localizer.GetLocalizedString("Remove"),
+                    CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                    DefaultButton = ContentDialogButton.Close,
+                };
+                if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
+                {
+                    return;
+                }
+            }
+            presetDocument.Variables.Remove(variable);
+            RebuildPresetStructure();
+            ScheduleDiagnostics();
         }
-        presetDocument.Variables.Remove(variable);
-        RebuildPresetStructure();
-        ScheduleDiagnostics();
+        catch (Exception exception)
+        {
+            ReportHandlerError(exception);
+        }
     }
 
     private void PresetVariablesListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
@@ -2524,19 +2566,26 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async void ConfigMakerUserControl_Loaded(object sender, RoutedEventArgs e)
     {
-        UpdateLayoutBounds();
-        LoadEditorBackground();
-        UpdateZoomStatus();
-        RebuildDiagnostics();
-        if (!string.IsNullOrWhiteSpace(ComponentId))
+        try
         {
-            await SetComponentAsync(ComponentId);
+            UpdateLayoutBounds();
+            LoadEditorBackground();
+            UpdateZoomStatus();
+            RebuildDiagnostics();
+            if (!string.IsNullOrWhiteSpace(ComponentId))
+            {
+                await SetComponentAsync(ComponentId);
+            }
+            else
+            {
+                ShowEditorMessage(
+                    localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
+                    InfoBarSeverity.Informational);
+            }
         }
-        else
+        catch (Exception exception)
         {
-            ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
-                InfoBarSeverity.Informational);
+            ReportHandlerError(exception);
         }
     }
 
@@ -3550,6 +3599,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
         EditorInfoBar.Message = message;
         EditorInfoBar.Severity = severity;
         EditorInfoBar.IsOpen = true;
+    }
+
+    // An exception must not leave an async void event handler: it would reach the global handler.
+    private void ReportHandlerError(Exception exception)
+    {
+        Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
+        ShowEditorMessage(exception.Message, InfoBarSeverity.Error);
     }
 
     private void CommandEditor_ZoomChanged(TextControlBox sender, int zoomFactor)
