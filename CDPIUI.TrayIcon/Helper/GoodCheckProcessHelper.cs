@@ -57,57 +57,70 @@ namespace CDPIUI.TrayIcon.Helper
             _cancellationToken = _cancellationTokenSource.Token;
             await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Runned, operationId);
             TasksHelper.Instance.ApplyStatusToAllTasks(false);
-
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = executable,
-                Arguments = args,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(executable),
-            };
-
-            Job = CreateKillOnCloseJob();
-            
-
-            Process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-
+            // The component buttons are blocked while GoodCheck runs; they stayed blocked when
+            // the job could not be created, and the job handle was never closed (audit 12.15).
             try
             {
-                if (!Process.Start())
+                var startInfo = new ProcessStartInfo
                 {
+                    FileName = executable,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(executable),
+                };
+
+                Job = CreateKillOnCloseJob();
+
+                Process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+                try
+                {
+                    if (!Process.Start())
+                    {
+                        HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_UNABLE_START_PROCESS details => {ex.Message}");
                     HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
-                    TasksHelper.Instance.ApplyStatusToAllTasks(true);
                     return false;
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_UNABLE_START_PROCESS details => {ex.Message}");
-                HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
-                TasksHelper.Instance.ApplyStatusToAllTasks(true);
-                return false;
-            }
 
-            if (!AssignProcessToJobObject(Job, Process.Handle))
-            {
+                if (!AssignProcessToJobObject(Job, Process.Handle))
+                {
+                    TryKillProcess(Process);
+                    HandleProcessException("ERR_WIN32_EXCEPTION", operationId);
+                    Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_WIN32_EXCEPTION details => {Marshal.GetLastWin32Error()}");
+                    return false;
+                }
+
+                var completedTask = await Task.WhenAny(Task.Run(() =>
+                {
+                    Process.WaitForExit();
+                }, _cancellationToken)).ConfigureAwait(false);
+
                 TryKillProcess(Process);
+                await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Died, operationId);
+                return true;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_WIN32_EXCEPTION details => {ex.Message}");
                 HandleProcessException("ERR_WIN32_EXCEPTION", operationId);
-                Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_WIN32_EXCEPTION details => {Marshal.GetLastWin32Error()}");
-                TasksHelper.Instance.ApplyStatusToAllTasks(true);
                 return false;
             }
-
-            var completedTask = await Task.WhenAny(Task.Run(() =>
+            finally
             {
-                Process.WaitForExit();
-            }, _cancellationToken)).ConfigureAwait(false);
-
-            TryKillProcess(Process);
-            await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Died, operationId);
-            TasksHelper.Instance.ApplyStatusToAllTasks(true);
-            return true;
+                if (Job != IntPtr.Zero)
+                {
+                    CloseHandle(Job);
+                    Job = IntPtr.Zero;
+                }
+                TasksHelper.Instance.ApplyStatusToAllTasks(true);
+            }
         }
 
         public void Stop()
