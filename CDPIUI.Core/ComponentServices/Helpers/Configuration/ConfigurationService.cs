@@ -836,7 +836,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         private static Tuple<ConfigItem, bool> ConvertConfigFromBAT(string filepath)
         {
             // TODO: recursevily call other .BAT files via GOTO check
-            string[] lines = File.ReadAllLines(filepath, Encoding.UTF8);
+            string[] lines = CDPIUI.Core.System.BatchFileEncoding.ReadAllLines(filepath);
             Dictionary<string, string> vars = [];
             List<AvailableVarValues> availableVarValues = [];
 
@@ -852,7 +852,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 if (string.IsNullOrEmpty(line))
                     continue;
 
-                if (line.StartsWith("set"))
+                if (line.StartsWith("set", StringComparison.OrdinalIgnoreCase))
                 {
                     string[] setLine = line[3..].Split("=");
                     if (setLine.Length >= 2)
@@ -900,7 +900,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     comment = line[2..^2].Trim();
                     continue;
                 }
-                if (line.StartsWith("rem") && line.Contains("set"))
+                if (line.StartsWith("rem", StringComparison.OrdinalIgnoreCase) && line.Contains("set", StringComparison.OrdinalIgnoreCase))
                 {
                     string _l = line[3..];
                     var rx = new Regex(@"\s+set\b", RegexOptions.None);
@@ -947,7 +947,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     }
                     continue;
                 }
-                if (line.StartsWith("start"))
+                if (line.StartsWith("start", StringComparison.OrdinalIgnoreCase))
                 {
                     if (line.Contains("winws.exe"))
                     {
