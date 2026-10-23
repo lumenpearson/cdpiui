@@ -21,12 +21,18 @@ public static class ConfigCommandLine
         StringBuilder current = new();
         char quote = '\0';
         int backslashes = 0;
-        foreach (char character in commandLine ?? string.Empty)
+        string text = commandLine ?? string.Empty;
+        for (int index = 0; index < text.Length; index++)
         {
+            char character = text[index];
+            // A quoted folder path ends with a backslash ("C:\dir\"): before whitespace or the
+            // end of the line that quote closes the argument instead of being escaped.
+            bool closesAfterBackslash = quote == '"' &&
+                (index + 1 == text.Length || char.IsWhiteSpace(text[index + 1]));
             // Only double quotes group on the Windows command line; an apostrophe inside a value
             // (a Lua argument, a file name) must not join the following arguments.
             if (character == '"' &&
-                (quote == '\0' || quote == character) && backslashes % 2 == 0)
+                (quote == '\0' || quote == character) && (backslashes % 2 == 0 || closesAfterBackslash))
             {
                 quote = quote == character ? '\0' : character;
             }

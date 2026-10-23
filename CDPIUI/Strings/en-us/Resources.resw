@@ -6270,4 +6270,7 @@ By enabling this setting, you acknowledge that you have read this information.</
   <data name="RestartLater" xml:space="preserve">
     <value>Later</value>
   </data>
+  <data name="GoodCheckNoStrategyLists" xml:space="preserve">
+    <value>GoodCheck has no strategy lists for this component. Install a strategy pack that supports it or reinstall the add-on.</value>
+  </data>
 </root>
