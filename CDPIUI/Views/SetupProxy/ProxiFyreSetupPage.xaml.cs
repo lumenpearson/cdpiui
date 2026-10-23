@@ -151,6 +151,8 @@ namespace CDPIUI.Views.SetupProxy
 
         private string GetProxyIpString(string ip, string port)
         {
+            if (!ProxyHelper.IsValidPort(port))
+                return string.Empty;
             if (IPAddress.TryParse(ip, out var address))
             {
                 return address.AddressFamily switch

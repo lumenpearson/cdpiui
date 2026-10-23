@@ -49,7 +49,8 @@ namespace CDPIUI.Controls.Dialogs.ConditionalLaunch
         private void LoadTrigger(ConditionalTrigger trigger)
         {
             _loading = true;
-            TriggerTypeComboBox.SelectedItem = _triggerTypes.First(item => item.Value == trigger.Type);
+            // A rule from a newer version may have a type this one does not know.
+            TriggerTypeComboBox.SelectedItem = _triggerTypes.FirstOrDefault(item => item.Value == trigger.Type) ?? _triggerTypes.FirstOrDefault();
             if (Enum.TryParse<ConditionalHotKeyModifiers>(
                 trigger.GetParameter("modifiers"), true, out var modifiers))
             {

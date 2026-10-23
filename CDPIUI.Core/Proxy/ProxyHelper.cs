@@ -81,6 +81,15 @@ namespace CDPIUI.Core.Proxy
                 && global::System.Net.IPAddress.IsLoopback(address);
         }
 
+        /// <summary>
+        /// Whether <paramref name="port"/> is a TCP port number. Any text was accepted and
+        /// written into the system proxy settings and app-config.json.
+        /// </summary>
+        public static bool IsValidPort(string? port) =>
+            int.TryParse((port ?? string.Empty).Trim(), global::System.Globalization.NumberStyles.None,
+                global::System.Globalization.CultureInfo.InvariantCulture, out int value) &&
+            value is >= 1 and <= 65535;
+
         public static List<string> ProxyLikeComponents = [
             HardcodedItemIds.ComponentIds[Components.ByeDPI],
             HardcodedItemIds.ComponentIds[Components.NoDPI],

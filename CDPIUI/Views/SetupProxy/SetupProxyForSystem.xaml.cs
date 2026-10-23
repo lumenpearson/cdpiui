@@ -102,6 +102,7 @@ public sealed partial class SetupProxyForSystem : TemplatePage
             }
 
             if (string.IsNullOrEmpty(proxyServer)) throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
+            if (!ProxyHelper.IsValidPort(PortValue.Text)) throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
 
             string proxyOverride = WhiteListTextBox.Text.Replace(" ", "");
             if (BypassLocalCheckBox.IsChecked == true)
