@@ -124,7 +124,7 @@ cdpiui/
 - Put new code in the folder for its function.
 - Use correct English names.
 - Some names go to the disk or through the pipe. Examples: settings keys, Store JSON fields, preset JSON fields and enum values in files. If you change the C# name, you must keep the stored value. Use `[JsonProperty]`, `[JsonPropertyName]` or a map. If you change a settings key, read the old key too.
-- The pipe sends message types as numbers. You can change the name of an enum member. Do not change the order of the members.
+- The pipe sends message types by name (`cdpiui://<Target>/<MessageType>`). If you change the name of a pipe enum member, you change the protocol. The GUI and the tray must then come from the same build. The other side cannot read a message with an unknown name.
 - Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core and AddOns.
 
 WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, package signatures). Do not open files or links through the shell from the tray.

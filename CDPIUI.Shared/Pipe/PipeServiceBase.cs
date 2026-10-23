@@ -145,7 +145,7 @@ namespace CDPIUI.Shared.Pipe
             }
             catch (Exception ex)
             {
-                Logger?.CreateWarningLog(nameof(PipeServiceBase), $"Message \"{message}\" cannot be sended during exception {ex.Message}");
+                Logger?.CreateWarningLog(nameof(PipeServiceBase), $"Message \"{RedactSecrets(message)}\" cannot be sent: {ex.Message}");
                 return false; 
             }
             finally

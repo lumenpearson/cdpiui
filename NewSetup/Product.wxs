@@ -32,7 +32,13 @@
     <Feature Id="NewSetup" Title="CDPI UI" Description="Installs all the files needed for CDPI UI" Level="1" AllowAdvertise="no" ConfigurableDirectory="INSTALLLOCATION">
       <ComponentGroupRef Id="NewSetupFiles" />
       <ComponentRef Id="InstallLocationPermissions" />
+      <ComponentRef Id="InstallLocationRegistration" />
     </Feature>
+    <!-- The same Release build is packed as the MSI and as the portable ZIP. The application compares
+         this value with its own folder to know that it was installed by the MSI (CDPIUI.Core/State.cs). -->
+    <Component Id="InstallLocationRegistration" Directory="INSTALLLOCATION" Guid="{5F0C6C2E-7B3A-4E55-9C61-2E8B0A4D7C19}">
+      <RegistryValue Root="HKLM" Key="Software\Storik4\CDPI UI" Name="InstallLocation" Type="string" Value="[INSTALLLOCATION]" KeyPath="yes" />
+    </Component>
     <!-- The elevated tray runs files from this directory. A custom location such as C:\CDPI UI would inherit
          write access for all users from its parent, so it gets the same rights as Program Files:
          full control for SYSTEM and Administrators, read and execute for Users. -->

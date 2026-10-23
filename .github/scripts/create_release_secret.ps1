@@ -66,7 +66,7 @@ namespace CDPIUI.Shared.Secrets
         public static string GitLabToken = $(ConvertTo-CSharpString (Get-Env 'STORE_GITLAB_TOKEN'));
         public const string ProxyURL = $(ConvertTo-CSharpString (Get-Env 'STORE_PROXY_URL'));
         public const string ProxyKey = $(ConvertTo-CSharpString (Get-Env 'STORE_PROXY_KEY'));
-        public static string AuthGuid = "";
+        public static string AuthGuid = "$([Guid]::NewGuid())";
         public static readonly List<string> TrustedCertificates = [$list];
     }
 }
