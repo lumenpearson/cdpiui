@@ -43,18 +43,18 @@ namespace CDPIUI.AddOns.GoodCheck
     }
     public class GoodCheckProcessService
     {
-        public Action<string> AllComplete;
-        public Action<string> ErrorHappens;
-        public Action<GoodCheckSiteListModel> ProcessCompleted;
-        public Action<string> CurrentSiteListChanged;
-        public Action<Tuple<string, string, string>> ProgressChanged;
-        public Action<Tuple<int, int>> StrategyResultAdded;
-        public Action<int> CorrectCountChanged;
-        public Action<int> IncorrectCountChanged;
+        public event Action<string>? AllComplete;
+        public event Action<string>? ErrorHappens;
+        public event Action<GoodCheckSiteListModel>? ProcessCompleted;
+        public event Action<string>? CurrentSiteListChanged;
+        public event Action<Tuple<string, string, string>>? ProgressChanged;
+        public event Action<Tuple<int, int>>? StrategyResultAdded;
+        public event Action<int>? CorrectCountChanged;
+        public event Action<int>? IncorrectCountChanged;
 
-        public Action<Tuple<int, string>> OperationOutputAdded;
-        public Action<Tuple<int, GoodCheckOperationType>> OperationTypeChanged;
-        public Action OperationsListChanged;
+        public event Action<Tuple<int, string>>? OperationOutputAdded;
+        public event Action<Tuple<int, GoodCheckOperationType>>? OperationTypeChanged;
+        public event Action? OperationsListChanged;
 
         public int CorrectCount { get; private set; }
         public int IncorrectCount { get; private set; }
