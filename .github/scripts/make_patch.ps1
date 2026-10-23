@@ -1,112 +1,105 @@
+<#
+.SYNOPSIS
+Creates a .cdpipatch from a portable build, in the format ApplicationUpdateService expects:
+
+    requirements.json        {"patch_urls": [...], "version": "x.y.z.w"}
+    CDPIUI/catalog.cat       catalog of every other file in CDPIUI/
+    CDPIUI/...               files that differ from the previous portable build
+
+Update.exe cannot replace itself, so a new updater is shipped as _Update.exe and the tray
+renames it on its next start.
+
+The application accepts only catalogs signed by a pinned certificate. Pass that certificate
+with -CertificatePath, otherwise the patch is built with an unsigned catalog and is rejected.
+#>
 param(
-    [Parameter(Mandatory=$true)] [string] $CurrentZip,
-    [string] $PrevZip = "",
+    [Parameter(Mandatory = $true)] [string] $CurrentDir,
+    [string] $PreviousZip = "",
+    [Parameter(Mandatory = $true)] [string] $Version,
+    [string[]] $PatchUrls = @(),
     [string] $OutPatch = "patch.cdpipatch",
-    [string] $Version = "",
-    [string] $DownloadUrl = ""
+    [string] $CertificatePath = "",
+    [string] $CertificatePassword = "",
+    [string] $TimestampServer = ""
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$work = Join-Path $env:TEMP ("cdpipatch_" + [Guid]::NewGuid().ToString())
-$curDir = Join-Path $work "current"
+if (-not (Test-Path -LiteralPath $CurrentDir -PathType Container)) { throw "CurrentDir not found: $CurrentDir" }
+if ($Version -notmatch '^\d+(\.\d+){1,3}$') { throw "Version must look like 1.2.3.4: $Version" }
+
+$CurrentDir = (Resolve-Path -LiteralPath $CurrentDir).Path
+$work = Join-Path ([IO.Path]::GetTempPath()) ("cdpipatch_" + [Guid]::NewGuid().ToString("N"))
 $prevDir = Join-Path $work "prev"
 $payload = Join-Path $work "payload"
+$layer = Join-Path $payload "CDPIUI"
+New-Item -ItemType Directory -Path $prevDir, $layer -Force | Out-Null
 
-New-Item -ItemType Directory -Path $curDir,$prevDir,$payload -Force | Out-Null
-
-Write-Output "Extracting current zip: $CurrentZip"
-if (-not (Test-Path $CurrentZip)) { throw "CurrentZip not found: $CurrentZip" }
-Expand-Archive -Path $CurrentZip -DestinationPath $curDir -Force
-
-if (-not [string]::IsNullOrWhiteSpace($PrevZip) -and (Test-Path $PrevZip)) {
-    Write-Output "Extracting previous zip: $PrevZip"
-    Expand-Archive -Path $PrevZip -DestinationPath $prevDir -Force
-} else {
-    Write-Output "No previous zip provided or not found — payload will include all files."
-}
-
-# helper to get relative path with forward slashes
-function Get-RelPath([string]$base, [string]$full) {
-    $rel = $full.Substring($base.Length).TrimStart('\','/')
-    return $rel -replace '\\','/'
-}
-
-$changedFiles = @()
-
-Get-ChildItem -Path $curDir -Recurse -File | ForEach-Object {
-    $cur = $_.FullName
-    $rel = Get-RelPath $curDir $cur
-    $prevPath = Join-Path $prevDir $rel
-    $copy = $true
-    if (Test-Path $prevPath) {
-        $h1 = (Get-FileHash -Path $cur -Algorithm SHA256).Hash
-        $h2 = (Get-FileHash -Path $prevPath -Algorithm SHA256).Hash
-        if ($h1 -eq $h2) { $copy = $false }
-    }
-    if ($copy) {
-        $dest = Join-Path $payload $rel
-        $destDir = Split-Path $dest
-        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
-        Copy-Item -Path $cur -Destination $dest -Force
-        $changedFiles += $rel
-    }
-}
-
-Write-Output ("Changed files count: {0}" -f $changedFiles.Count)
-if ($changedFiles.Count -eq 0) {
-    Write-Output "No changed files detected. Creating an empty patch (requirements only)."
-}
-
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    # try to read VERSION file from current dir root
-    $vfile = Join-Path $curDir "VERSION"
-    if (Test-Path $vfile) {
-        $Version = (Get-Content $vfile -Raw).Trim()
+try {
+    if (-not [string]::IsNullOrWhiteSpace($PreviousZip)) {
+        if (-not (Test-Path -LiteralPath $PreviousZip)) { throw "PreviousZip not found: $PreviousZip" }
+        Write-Output "Comparing with $PreviousZip"
+        Expand-Archive -LiteralPath $PreviousZip -DestinationPath $prevDir -Force
     } else {
-        # fallback to timestamp
-        $Version = (Get-Date).ToString("yyyyMMddHHmm")
+        Write-Output "No previous build: the patch contains every file."
     }
+
+    $changed = New-Object System.Collections.Generic.List[string]
+    foreach ($file in Get-ChildItem -LiteralPath $CurrentDir -Recurse -File) {
+        $rel = $file.FullName.Substring($CurrentDir.Length).TrimStart('\', '/')
+        if ($rel -ieq "catalog.cat") { continue }
+        $target = if ($rel -ieq "Update.exe") { "_Update.exe" } else { $rel }
+
+        $prevPath = Join-Path $prevDir $target
+        if ((Test-Path -LiteralPath $prevPath) -and
+            (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $prevPath -Algorithm SHA256).Hash) {
+            continue
+        }
+
+        $dest = Join-Path $layer $target
+        New-Item -ItemType Directory -Path (Split-Path $dest) -Force | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $dest
+        $changed.Add($target)
+    }
+
+    if ($changed.Count -eq 0) { throw "Nothing changed since the previous build." }
+    Write-Output ("Changed files: {0}" -f $changed.Count)
+    $changed | ForEach-Object { Write-Output " - $_" }
+
+    # The catalog is created outside the layer so that it does not list itself.
+    $catalog = Join-Path $work "catalog.cat"
+    New-FileCatalog -Path $layer -CatalogFilePath $catalog -CatalogVersion 2.0 | Out-Null
+
+    if (-not [string]::IsNullOrWhiteSpace($CertificatePath)) {
+        $password = ConvertTo-SecureString $CertificatePassword -AsPlainText -Force
+        $cert = Get-PfxCertificate -FilePath $CertificatePath -Password $password
+        $signArgs = @{ FilePath = $catalog; Certificate = $cert; HashAlgorithm = "SHA256" }
+        if (-not [string]::IsNullOrWhiteSpace($TimestampServer)) { $signArgs.TimestampServer = $TimestampServer }
+        $signature = Set-AuthenticodeSignature @signArgs
+        if ($null -eq $signature.SignerCertificate) { throw "Cannot sign the catalog: $($signature.StatusMessage)" }
+        Write-Output "Catalog signed by $($signature.SignerCertificate.Subject) ($($signature.SignerCertificate.Thumbprint))"
+    } else {
+        Write-Warning "No certificate given: the catalog is unsigned and the application will refuse this patch."
+    }
+    Move-Item -LiteralPath $catalog -Destination (Join-Path $layer "catalog.cat")
+
+    $check = Test-FileCatalog -CatalogFilePath (Join-Path $layer "catalog.cat") -Path $layer -FilesToSkip catalog.cat
+    if ($check -ne "Valid") { throw "The new catalog does not match the patch files: $check" }
+
+    $requirements = [ordered]@{
+        patch_urls = @($PatchUrls | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        version    = $Version
+    }
+    $json = ConvertTo-Json -InputObject $requirements -Depth 3
+    [IO.File]::WriteAllText((Join-Path $payload "requirements.json"), $json, (New-Object System.Text.UTF8Encoding($false)))
+
+    $outPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutPatch)
+    if (Test-Path -LiteralPath $outPath) { Remove-Item -LiteralPath $outPath -Force }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::CreateFromDirectory($payload, $outPath)
+    Write-Output "Patch created: $OutPatch"
 }
-
-if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
-    # by default leave blank or put placeholder
-    $DownloadUrl = ""
+finally {
+    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
 }
-
-$reqPath = Join-Path $payload "requirements.json"
-$lines = @()
-$lines += "{"
-if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
-    # if no url provided, still write version with empty url
-    $lines += "    { version = `"$Version`", url=`""`" }"
-} else {
-    $lines += "    { version = `"$Version`", url=`"$DownloadUrl`" }"
-}
-$lines += "}"
-$lines -join "`r`n" | Out-File -FilePath $reqPath -Encoding utf8
-
-Write-Output "Wrote requirements in custom format to: $reqPath"
-
-$tmpZip = Join-Path $work "patch_payload.zip"
-if (Test-Path $tmpZip) { Remove-Item $tmpZip -Force }
-
-if ((Get-ChildItem -Path $payload -Recurse -File | Measure-Object).Count -eq 0) {
-    New-Item -ItemType File -Path (Join-Path $payload "._no_changes.txt") -Force | Out-Null
-}
-
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory($payload, $tmpZip)
-
-Copy-Item -Path $tmpZip -Destination $OutPatch -Force
-Write-Output "Patch created: $OutPatch"
-
-if ($changedFiles.Count -gt 0) {
-    Write-Output "Files included in patch:"
-    $changedFiles | ForEach-Object { Write-Output " - $_" }
-} else {
-    Write-Output "Patch contains only requirements / marker file (no changed binaries)."
-}
-
-# Remove-Item -Recurse -Force $work
