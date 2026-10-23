@@ -66,6 +66,10 @@ namespace EditHostFile
 
         private static HostsText Read(string path)
         {
+            // Some systems have no hosts file at all; it is then treated as empty, and /add creates it.
+            if (!File.Exists(path))
+                return new HostsText { Text = string.Empty, Encoding = new UTF8Encoding(false), NewLine = "\r\n" };
+
             byte[] bytes = File.ReadAllBytes(path);
             Encoding encoding;
             int offset = 0;
