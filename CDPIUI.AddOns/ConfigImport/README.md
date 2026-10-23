@@ -1,94 +1,99 @@
-# Config Import AddOn
+# Config Import add-on
 
-## Назначение документа
+## About this document
 
-Этот документ описывает фактическую реализацию механизма импорта Config-файлов в CDPIUI: от статического анализа исходного файла до тестового запуска и сохранения готового `ConfigItem` в `LocalUserStorage`.
+This document describes the import of config files in CDPI UI. The import starts with a static analysis of the source file. It ends with a test run and a saved `ConfigItem` in `LocalUserStorage`.
 
-Основная логика находится в пространстве имен `CDPIUI.AddOns.ConfigImport`. Пользовательский мастер расположен в основном проекте CDPIUI и выступает клиентом AddOn.
+The main logic is in the namespace `CDPIUI.AddOns.ConfigImport`. The import wizard is in the `CDPIUI` project. The wizard is a client of the add-on.
 
-Документ предназначен для разработчиков и авторов будущей пользовательской справки. Он описывает текущее поведение, включая ограничения и случаи, в которых результат зависит от выбора компонента или ручного решения пользователя.
+This document is for developers and for the authors of the user help. It describes the current behavior, the limits and the cases where the result depends on the selected component or on a decision of the user.
 
-## Цели механизма
+## Functions
 
-AddOn решает следующие задачи:
+The add-on does these tasks:
 
-1. Импортирует `.bat`, `.cmd`, `.txt` и `.json` без выполнения исходного скрипта.
-2. Определяет подходящий установленный компонент по его `executable` и содержимому файла.
-3. Преобразует командную строку и переменные исходного файла в модель `ConfigItem` CDPIUI.
-4. Использует специализированный статический анализатор для `winws` и `winws2`.
-5. Сохраняет редактируемые значения BAT-переменных в `variables`, `commaVars`, `availableCommaVarsValues` и `jparams`.
-6. Обнаруживает внешние BIN/TXT/LUA-ресурсы, сгенерированные файлы и отсутствующие зависимости.
-7. Предлагает замену отсутствующего файла, либо позволяет явно создать пустой файл.
-8. Поддерживает тестовый запуск выбранного компонента с импортированными аргументами.
-9. Копирует зависимости в изолированные каталоги `List/Converted`, `Bin/Converted` и `Lua/Converted`.
-10. Выполняет встроенное преобразование готовой строки `winws1 -> winws2` при ретаргетинге Config на Zapret 2.
+1. It imports `.bat`, `.cmd`, `.txt` and `.json` files. It does not run the source script.
+2. It finds the applicable installed component from its `executable` and from the file contents.
+3. It converts the command line and the variables of the source file into a CDPI UI `ConfigItem`.
+4. It uses a special static analyzer for `winws` and `winws2`.
+5. It keeps editable BAT variable values in `variables`, `commaVars`, `availableCommaVarsValues` and `jparams`.
+6. It finds external BIN, TXT and LUA resources, generated files and missing dependencies.
+7. It suggests a replacement for a missing file. The user can also select an empty file.
+8. It lets the user test the selected component with the imported arguments.
+9. It copies the dependencies to separate folders: `List/Converted`, `Bin/Converted` and `Lua/Converted`.
+10. It converts a ready `winws1` command line to `winws2` when the user moves the config to Zapret 2.
+11. It sends `.cdpiconfig` packages to the ConfigShare add-on. Refer to [ConfigShare/README.md](../ConfigShare/README.md).
 
-## Принцип безопасности
+## Safety principle
 
-Импорт является статическим. `ConfigImportService` и `ZapretConfigImportService` читают исходный текст, распознают известные конструкции и строят модель результата. Они не запускают `cmd.exe`, PowerShell, исходный BAT/CMD-файл или найденные в нем команды.
+The import is static. `ConfigImportService` and `ZapretConfigImportService` read the source text, find known constructs and make a result model. They do not start `cmd.exe`, PowerShell, the source BAT or CMD file or the commands in it.
 
-Это означает, что во время анализа не выполняются:
+Thus the analysis does not:
 
-- команды `if`, `for`, `goto`, `copy`, `del`, `reg`, `netsh` и другие команды оболочки;
-- загружаемые BAT-файлы как реальные процессы;
-- произвольные программы, указанные в исходном скрипте;
-- сетевые запросы;
-- модификации исходного каталога.
+- run `if`, `for`, `goto`, `copy`, `del`, `reg`, `netsh` or other shell commands;
+- start called BAT files as processes;
+- start programs from the source script;
+- send network requests;
+- change the source folder.
 
-Кнопка **Тестировать** является отдельной операцией. Она запускает выбранный установленный компонент через `ComponentTasksManager` с вычисленными аргументами. Это не песочница: безопасность статического импорта не распространяется на тестовый запуск исполняемого файла компонента.
+The **Test** button is a separate operation. It starts the selected installed component through `ComponentTasksManager` with the calculated arguments.
 
-## Поддерживаемые входные форматы
+WARNING: The test run is not a sandbox. The safety of the static import does not apply to the test run of the component executable.
 
-| Формат | Общий компонент | `winws` / Zapret Legacy | `winws2` / Zapret 2 |
+## Supported input formats
+
+| Format | General component | `winws` / Zapret Legacy | `winws2` / Zapret 2 |
 |---|---:|---:|---:|
-| `.bat` | Да | Да, специализированный анализ | Да, специализированный анализ |
-| `.cmd` | Да | Да, специализированный анализ | Да, специализированный анализ |
-| `.txt` | Да | Да | Да |
-| `.json` | Да | Через общий импорт JSON | Через общий импорт JSON |
+| `.bat` | Yes | Yes, special analyzer | Yes, special analyzer |
+| `.cmd` | Yes | Yes, special analyzer | Yes, special analyzer |
+| `.txt` | Yes | Yes, special analyzer | Yes, special analyzer |
+| `.json` | Yes | General JSON import | General JSON import |
+| `.cdpiconfig` | ConfigShare | ConfigShare | ConfigShare |
 
-Для Zapret специализированный анализатор используется только для BAT/CMD/TXT. JSON загружается общим механизмом `ConfigItem`/`OldConfigItem`.
+For Zapret, the special analyzer reads only BAT, CMD and TXT. The general `ConfigItem` and `OldConfigItem` loader reads JSON. `ConfigShareService` reads `.cdpiconfig` packages.
 
-## Состав реализации
+## Implementation
 
-### AddOn
+### Add-on
 
-| Файл | Ответственность |
+| File | Function |
 |---|---|
-| `ConfigImportModels.cs` | Общие контракты результата, target, диагностик, отсутствующих и генерируемых файлов |
-| `ConfigImportService.cs` | Фасад импорта, поиск target, общий парсер, вызов Zapret-парсера, ретаргетинг |
-| `ZapretConfigImportModels.cs` | Специализированные модели Zapret и параметры анализатора |
-| `ZapretConfigImportService.cs` | Статический анализ BAT/CMD/TXT для `winws` и `winws2` |
-| `ConfigImportAutoCorrector.cs` | Поиск безопасной замены отсутствующего ресурса |
-| `ConfigImportTestPlaceholder.cs` | Подготовка временных файлов и подмена путей перед тестом |
-| `ConfigImportInstaller.cs` | Копирование ресурсов, переписывание путей и сохранение Config |
+| `ConfigImportModels.cs` | Common contracts: result, target, issues, missing and generated files |
+| `ConfigImportService.cs` | Import facade, target detection, general parser, call of the Zapret parser, retarget |
+| `ZapretConfigImportModels.cs` | Zapret models and analyzer options |
+| `ZapretConfigImportService.cs` | Static analysis of BAT, CMD and TXT for `winws` and `winws2` |
+| `ConfigImportAutoCorrector.cs` | Search for a safe replacement of a missing resource |
+| `ConfigImportTestPlaceholder.cs` | Temporary files and path replacement before a test |
+| `ConfigImportInstaller.cs` | Copies the resources, changes the paths and saves the config |
 
-### Интеграция в CDPIUI
+### CDPI UI integration
 
-| Файл | Ответственность |
+| File | Function |
 |---|---|
-| `CDPIUI/Views/ConfigImportUtil/MainPage.xaml` | Разметка мастера импорта |
-| `CDPIUI/Views/ConfigImportUtil/MainPage.xaml.cs` | Оркестрация анализа, исправления, тестирования и сохранения |
-| `CDPIUI/ViewModels/ConfigImportPresetViewModel.cs` | Состояние одного импортируемого Config |
-| `CDPIUI/ViewModels/ConfigImportMissingFileViewModel.cs` | Состояние решения для одного отсутствующего файла |
-| `CDPIUI/Windows/ConfigImportUtilWindow.*` | Отдельное окно утилиты |
-| `CDPIUI/Views/UtilsPage.*` | Точка входа со страницы утилит |
-| `CDPIUI/Commands/CommandUriMapper.cs` | Маршруты `cdpiui://Tools/ImportConfig` и `cdpiui://Tools/ImportConfig/{componentId}` |
+| `CDPIUI/Views/ConfigImportUtil/MainPage.xaml` | Layout of the import wizard |
+| `CDPIUI/Views/ConfigImportUtil/MainPage.xaml.cs` | Controls the analysis, the corrections, the test and the save |
+| `CDPIUI/ViewModels/ConfigImportPresetViewModel.cs` | State of one imported config |
+| `CDPIUI/ViewModels/ConfigImportMissingFileViewModel.cs` | State of the decision for one missing file |
+| `CDPIUI/Helper/AddOns/ConfigImport/ConfigImportHelper.cs` | The file selection dialog |
+| `CDPIUI/Windows/ConfigImportUtilWindow.*` | Separate window of the tool |
+| `CDPIUI/Views/UtilsPage.*` | Entry point on the tools page |
+| `CDPIUI/Commands/CommandUriMapper.cs` | Routes `cdpiui://Tools/ImportConfig` and `cdpiui://Tools/ImportConfig/{componentId}` |
 
-## Общий конвейер
+## General sequence
 
 ```text
-Выбор одного или нескольких файлов
+The user selects one or more files
         |
         v
-Загрузка списка установленных компонентов из Store DB
+Load the installed components from the Store DB
         |
         v
-Поиск target по componentId / executable / сигнатурам TXT
+Find the target by componentId / executable / TXT signatures
         |
         v
-Статический импорт
+Static import
    |                 |
-   | generic         | winws / winws2
+   | general         | winws / winws2
    v                 v
 ConfigImportService  ZapretConfigImportService
         |                 |
@@ -97,148 +102,153 @@ ConfigImportService  ZapretConfigImportService
           ConfigImportResult
                  |
                  v
-Обнаружение отсутствующих файлов и запрос решения
+Find missing files and ask for a decision
                  |
                  v
-Выбор пользователем компонента и имени
+The user selects the component and the name
           |                    |
           v                    v
-       Тест                  Сохранение
+        Test                 Save
           |                    |
-  временные файлы      List/Bin/Lua/Converted
+  temporary files      List/Bin/Lua/Converted
           |                    |
- запуск компонента       Config JSON в
-                           LocalUserStorage
+ start the component    config JSON in
+                          LocalUserStorage
 ```
 
-## Модель target
+## Target model
 
-`ConfigImportTarget` содержит:
+`ConfigImportTarget` contains:
 
-- `ComponentId` — уникальный ID компонента в Store DB;
-- `DisplayName` — отображаемое имя;
-- `Executable` — имя исполняемого файла из БД, с `.exe` или без него;
-- `Version` — текущая версия компонента;
-- `Directory` — каталог установленного компонента.
+- `ComponentId`: the unique component ID in the Store DB;
+- `DisplayName`: the display name;
+- `Executable`: the executable name from the DB, with or without `.exe`;
+- `Version`: the current component version;
+- `Directory`: the folder of the installed component.
 
-В UI в список target попадают только Store-элементы типа `component`, для которых:
+The wizard shows only Store items of the type `component` that meet these conditions:
 
-1. заданы `Id`, `Directory` и `Executable`;
-2. каталог существует;
-3. в каталоге существует указанный executable, при необходимости с добавленным расширением `.exe`.
+1. `Id`, `Directory` and `Executable` are set.
+2. The folder exists.
+3. The executable exists in the folder. If necessary, the wizard adds the extension `.exe`.
 
-Следовательно, неустановленный компонент не участвует в автоматическом определении и не доступен для тестирования или сохранения через текущий мастер.
+Thus a component that is not installed does not take part in the automatic detection. The wizard cannot test or save a config for it.
 
-## Автоматическое определение компонента
+## Automatic component detection
 
-Метод `FindMatchingTargets` работает следующим образом.
+`FindMatchingTargets` operates as follows.
+
+### `.cdpiconfig`
+
+The method reads the package with `ConfigShareService.Read`. It selects the target with the component ID from `target[0]` of the packaged config. If the package is not valid, the method returns no target. The import then reports the detailed archive error.
 
 ### JSON
 
-Из JSON десериализуется `ConfigItem`, после чего первый элемент `target` сопоставляется с `ComponentId` установленных компонентов.
+The method loads a `ConfigItem` from the JSON. It compares the first `target` element with the `ComponentId` values of the installed components.
 
-### BAT, CMD и TXT
+### BAT, CMD and TXT
 
-Текст проверяется на ссылку на executable каждого установленного компонента. Поддерживается имя с `.exe` и без него, в том числе форма `%~dp0<executable>`.
+The method looks for a reference to the executable of each installed component. The name can have `.exe` or not. The form `%~dp0<executable>` is also valid.
 
-Сопоставление выполняется по границам имени. Например, `winws` не должен ошибочно совпасть с произвольной частью более длинного идентификатора.
+The match uses name boundaries. For example, `winws` does not match a part of a longer identifier.
 
-### Дополнительные сигнатуры TXT
+### More TXT signatures
 
-Если явного executable в TXT нет, применяются сигнатуры:
+If a TXT file has no explicit executable, the method uses these signatures:
 
-- `# BuiltinVersion: ...` или параметр `--lua-desync` означают `winws2`;
-- параметр `--dpi-desync` означает `winws`.
+- `# BuiltinVersion: ...` or the option `--lua-desync` means `winws2`;
+- the option `--dpi-desync` means `winws`.
 
-### Приоритет target в мастере
+### Target priority in the wizard
 
-Мастер выбирает первый доступный вариант в следующем порядке:
+The wizard selects the target for the analysis in this sequence:
 
-1. первый target, найденный анализатором;
-2. component ID, переданный маршрутом `cdpiui://Tools/ImportConfig/{componentId}`;
-3. первый установленный компонент из списка;
-4. пустой target, если подходящих компонентов нет.
+1. the first target that the analyzer found;
+2. the component ID from the route `cdpiui://Tools/ImportConfig/{componentId}`;
+3. the first installed component in the list;
+4. an empty target, if no component is applicable.
 
-Переданный маршрутом компонент имеет приоритет для первоначального выбора в UI, даже если анализатор определил другой target. Факт успешного автоматического определения хранится отдельно и используется для предупреждения о несовместимом выборе.
+For the initial selection in the UI, the component from the route has priority, also when the analyzer found a different target. The wizard records the automatic detection separately. It uses this record for the warning about an incompatible selection.
 
-## Контракт результата анализа
+## Analysis result
 
-`ConfigImportResult` содержит:
+`ConfigImportResult` contains:
 
-- `Config` — сформированный `ConfigItem` либо `null`, если анализ завершился ошибкой;
-- `Target` — target, для которого выполнялся анализ;
-- `SourcePath` — основной импортируемый файл;
-- `Issues` — предупреждения и ошибки;
-- `SourceFiles` — основной и подключенные файлы конфигурации/скрипты;
-- `ReferencedFiles` — существующие ресурсы, которые следует перенести;
-- `MissingReferencedFiles` — отсутствующие ресурсы;
-- `MissingFileResolutions` — явные решения пользователя;
-- `GeneratedFiles` — файлы, которые исходный BAT должен был бы создать до запуска.
+- `SharedPackage`: the extracted `.cdpiconfig` package, or `null`;
+- `Config`: the `ConfigItem`, or `null` if the analysis failed;
+- `Target`: the target of the analysis;
+- `SourcePath`: the main imported file;
+- `Issues`: the warnings and the errors;
+- `SourceFiles`: the main file and the included config files and scripts;
+- `ReferencedFiles`: the resources that exist and that the installer copies;
+- `MissingReferencedFiles`: the missing resources;
+- `MissingFileResolutions`: the explicit decisions of the user;
+- `GeneratedFiles`: the files that the source BAT makes before the launch.
 
-Результат считается успешным только при выполнении двух условий:
+The result is successful only if these two conditions are true:
 
 ```text
 Config != null
-и
-Issues не содержит элементов Severity == Error
+and
+Issues contains no item with Severity == Error
 ```
 
-Предупреждения не блокируют тестирование и сохранение. Ошибки блокируют обе операции.
+Warnings do not block the test and the save. Errors block the two operations.
 
-## Общий импорт компонентов
+## General component import
 
-Общий анализатор используется для любого executable, кроме нормализованных имен `winws` и `winws2`.
+The general analyzer applies to all executables except the normalized names `winws` and `winws2`.
 
-Нормализация executable удаляет каталог, кавычки и окончание `.exe`. Сравнение регистронезависимое.
+The normalization of the executable name removes the folder, the quotes and the end `.exe`. The comparison ignores the case.
 
-### Импорт BAT/CMD
+### BAT and CMD import
 
-1. Файл читается как UTF-8.
-2. Физические строки, оканчивающиеся нечетным числом `^`, объединяются в одну логическую строку.
-3. Обрабатываются присваивания `set NAME=VALUE` и `set "NAME=VALUE"`.
-4. Закомментированные `set` после `rem` или `::` рассматриваются как альтернативные значения переменной.
-5. Комментарии и пустые строки пропускаются.
-6. Каждая строка токенизируется с учетом двойных кавычек.
-7. Ищется токен, который после статического раскрытия соответствует executable выбранного компонента.
-8. Хвост после executable становится строкой аргументов. Перенаправления, pipe и `&` вне кавычек отбрасывают остаток строки.
-9. Для каждого запуска сохраняется snapshot переменных на момент запуска.
-10. Допускается ровно один подходящий запуск. Ноль или несколько запусков считаются неоднозначностью и завершают импорт ошибкой.
+1. The analyzer reads the file as UTF-8.
+2. It joins physical lines that end with an odd number of `^` into one logical line.
+3. It processes the assignments `set NAME=VALUE` and `set "NAME=VALUE"`, with an optional `@` before `set`.
+4. It uses a `set` after `rem ` or `::` as an alternative value of the variable.
+5. It skips comments and empty lines. A comment is a line that starts with `::`, `rem ` or `#`, or the line `rem`.
+6. It splits each line into tokens. A double quote starts or ends a quoted part.
+7. It looks for a token that is the executable of the selected component after the static expansion.
+8. The text after the executable becomes the argument line. A redirection, a pipe or `&` outside quotes cuts the rest of the line.
+9. For each launch, the analyzer keeps a copy of the variables at the time of the launch.
+10. Exactly one applicable launch must exist. Zero or more launches are ambiguous, and the import fails.
 
-Если аргументы запуска состоят ровно из одного токена, указывающего на существующий `.txt`, этот файл импортируется как содержимое Config. Допускается префикс `@` или `$`. Путь раскрывается относительно BAT/CMD-файла.
+If the launch arguments are one token that points to an existing `.txt` file, the analyzer imports this file as the config contents. The token can have the prefix `@` or `$`. The analyzer resolves the path relative to the BAT or CMD file.
 
-После выделения аргументов анализатор вычисляет транзитивно используемые переменные: если startup string использует `%A%`, а значение `A` использует `%B%`, в результат попадут обе переменные.
+After it finds the arguments, the analyzer collects the used variables transitively. For example, if the startup string uses `%A%` and the value of `A` uses `%B%`, the result contains the two variables.
 
-### Импорт общего TXT
+### General TXT import
 
-1. Файл читается тем же механизмом логических строк.
-2. Пустые строки и комментарии пропускаются.
-3. Если строка содержит запуск выбранного executable, executable удаляется, а в результат попадает только хвост аргументов.
-4. Остальные строки объединяются через пробел.
-5. Имя берется из комментария `# Config:`, `# Preset:` или `# ActivePreset:`. При отсутствии метаданных используется имя файла без расширения.
+1. The analyzer reads the file with the same logical line reader.
+2. It skips empty lines and comments.
+3. If a line contains a launch of the selected executable, the analyzer removes the executable and keeps only the arguments.
+4. It joins the other lines with a space.
+5. It takes the name from a comment `# Config:`, `# Preset:` or `# ActivePreset:` (`=` is also valid). Without such a comment, it uses the file name without the extension.
 
-Пустой итоговый набор аргументов считается ошибкой.
+An empty argument set is an error.
 
-### Импорт JSON
+### JSON import
 
-Сначала выполняется попытка загрузить текущий `ConfigItem`. Если JSON не содержит непустой `startup_string`, выполняется попытка загрузить старый `OldConfigItem`:
+The analyzer first tries to load a current `ConfigItem`. If the JSON has no `startup_string`, the analyzer tries to load an old `OldConfigItem`:
 
-- `custom_parameters` переносится в `startup_string`;
-- создается `meta = "pUC:v1.0"`;
-- имя берется из имени файла;
-- `jparams` и `variables` создаются пустыми.
+- `custom_parameters` goes to `startup_string`;
+- `meta` becomes `pUC:v1.0`;
+- the name comes from the file name;
+- `jparams` and `variables` are empty.
 
-После загрузки `target` всегда заменяется на выбранный component ID и его версию.
+After the load, the analyzer always sets `target` to the selected component ID and its version.
 
-### Переменные общего импортера
+### Variables of the general importer
 
-Все распознанные используемые BAT-переменные сохраняются как `commaVars`. Основное значение проходит преобразование:
+All used BAT variables go to `commaVars`. The main value gets these changes:
 
 ```text
 %~dp0  ->  $GETCURRENTDIR()/
 \      ->  /
 ```
 
-Если у переменной есть закомментированные альтернативы, создается элемент `availableCommaVarsValues`:
+If a variable has commented alternatives, the analyzer makes an `availableCommaVarsValues` item:
 
 ```json
 {
@@ -251,104 +261,107 @@ Issues не содержит элементов Severity == Error
 }
 ```
 
-Неизвестная `%VARIABLE%`, которая осталась в startup string или значениях, добавляется в `commaVars` со значением `$EMPTY`. Исключения: встроенные переменные `CD`, `ERRORLEVEL`, `DATE` и `TIME`.
+An unknown `%VARIABLE%` in the startup string or in the values goes to `commaVars` with the value `$EMPTY`. The built-in variables `CD`, `ERRORLEVEL`, `DATE` and `TIME` are exceptions.
 
-Общий анализатор не строит условные `jparams`: `jparams` и обычный список `variables` у такого Config пусты.
+The general analyzer does not make conditional `jparams`. The `jparams` and `variables` of such a config are empty.
 
-## Специализированный импорт Zapret
+## Zapret import
 
-`ZapretConfigImportService` предназначен для статического импорта `winws` и `winws2`. Внутри него поколения называются `Winws1` и `Winws2`.
+`ZapretConfigImportService` does the static import for `winws` and `winws2`. In the code, the generations are `Winws1` and `Winws2`.
 
-Специализированный импорт намеренно не преобразует синтаксис winws1 в winws2. Он создает Config того же поколения, которое обнаружено в исходном BAT/CMD/TXT. Конвертация `winws1 -> winws2` выполняется позже, только методом `ConfigImportService.Retarget`.
+The Zapret import does not convert winws1 syntax to winws2. It makes a config of the generation that it finds in the source BAT, CMD or TXT. Only `ConfigImportService.Retarget` converts `winws1 -> winws2`, at a later step.
 
-### Кодировка Zapret-файлов
+### Encoding of Zapret files
 
-Для BAT/CMD/TXT используется следующий порядок определения кодировки:
+The analyzer reads BAT, CMD and TXT files through `CDPIUI.Core.System.BatchFileEncoding`. It finds the encoding in this sequence:
 
-1. UTF-8 с BOM;
-2. UTF-16 LE с BOM;
-3. UTF-16 BE с BOM;
-4. строгая проверка UTF-8 без BOM;
-5. Windows-1251, если байты не являются корректным UTF-8.
+1. UTF-8 with BOM;
+2. UTF-16 LE with BOM;
+3. UTF-16 BE with BOM;
+4. strict UTF-8 without BOM;
+5. a Cyrillic code page if the bytes are not valid UTF-8. If more bytes are in the range `0x80`–`0xAF` than in the range `0xC0`–`0xFF`, the code page is OEM 866 (the `cmd` code page). Otherwise, it is ANSI 1251.
 
-Это позволяет импортировать распространенные русскоязычные BAT-наборы без предварительной перекодировки.
+Thus the analyzer can import Russian BAT sets without a manual conversion.
 
-### Анализ BAT/CMD Zapret
+### Zapret BAT and CMD analysis
 
-Алгоритм верхнего уровня:
+The analyzer does these steps:
 
-1. Чтение логических строк с поддержкой продолжения через `^`.
-2. Загрузка `PredefinedVariables`, если они переданы вызывающей стороной.
-3. Последовательный сбор обычных и закомментированных `set`.
-4. Статический обход распознанных вызовов внешних BAT/CMD.
-5. Поиск запусков `winws` или `winws2`.
-6. Snapshot переменных для каждого запуска.
-7. Требование ровно одного запуска.
-8. Раскрытие ссылочного TXT-конфига вида `@config.txt`.
-9. Проверка соответствия executable и поколения параметров.
-10. Выбор только реально используемых переменных.
-11. Создание переключателей для условных значений и `ACTIVE_*.bin`.
-12. Поиск существующих, отсутствующих и генерируемых ресурсов.
-13. Формирование `ConfigItem`.
+1. It reads the logical lines. A line that ends with an odd number of `^` continues on the next line.
+2. It loads `PredefinedVariables`, if the caller supplies them.
+3. It collects the usual and the commented `set` commands in sequence.
+4. It follows the known calls of external BAT and CMD files statically.
+5. It finds the `winws` or `winws2` launches.
+6. It keeps a copy of the variables for each launch.
+7. It requires exactly one launch.
+8. It expands a referenced TXT config such as `@config.txt`.
+9. It makes sure that the executable and the option generation agree.
+10. It keeps only the variables that the launch uses.
+11. It makes switches for conditional values and for `ACTIVE_*.bin`.
+12. It finds the existing, missing and generated resources.
+13. It makes the `ConfigItem`.
 
-Запуск распознается по `winws`, `winws.exe`, `winws2` или `winws2.exe`. После executable должны присутствовать параметры `--...`, ссылочный TXT-файл или BAT-переменная. Это уменьшает количество ложных совпадений с обслуживающими строками.
+A comment is a line that starts with `rem`, `@rem` or `::`. After `rem`, a space, a tab or the line end must follow. A commented alternative value must start with `rem ` or `::`. The analyzer does not read `@rem set ...` as an alternative value.
 
-Часть командной строки после неэкранированных `>`, `<`, `|` или `&` вне кавычек не включается в startup string.
+The analyzer finds a launch by the text `winws` or `winws2`, with an optional `.exe`, before a quote, a space or the line end. After the executable, one of these items must follow: options that start with `--`, a referenced TXT file or a BAT variable. This rule decreases false matches with service lines.
 
-### Поддерживаемые BAT-переменные
+The analyzer cuts the command line at the first `>`, `<`, `|` or `&` outside quotes. Outside quotes, it also removes caret escapes as `cmd` does: `^&` becomes `&`, and `^^` becomes `^`.
 
-Статическое раскрытие понимает:
+A backslash is not an escape character in the analyzer. Thus a quoted folder that ends with a backslash, for example `"C:\dir\"`, closes the quote correctly.
 
-- `%~dp0` — каталог текущего BAT-файла;
-- `%~f0` — полный путь текущего BAT-файла;
-- `%~n0` — имя BAT-файла без расширения;
-- `%0` — полный путь BAT-файла;
-- `%NAME%` — известная BAT-переменная или переменная окружения процесса CDPIUI;
-- `!NAME!` — delayed expansion, нормализуемый в `%NAME%` в результирующем Config;
-- `$GETCURRENTDIR()/` и `$GETCURRENTDIR()\` при повторной обработке уже нормализованных значений.
+### Supported BAT variables
 
-Рекурсивное раскрытие ограничено глубиной 16. Неизвестная переменная сохраняется в строке и сопровождается предупреждением.
+The static expansion knows these forms:
 
-### Внешние BAT/CMD и `service.bat`
+- `%~<modifiers>0`: the path of the current BAT file with the modifiers `f` (full path), `d` (drive), `p` (folder), `n` (name) and `x` (extension), combined as `cmd` does. For example, `%~dp0` is the folder of the BAT file, and `%~n0` is its name without the extension;
+- `%0`: the full path of the BAT file;
+- `%%`: a literal percent sign. The expansion does not read it as the start of a variable;
+- `%NAME%`: a known BAT variable or an environment variable of the CDPI UI process;
+- `!NAME!`: delayed expansion. The config gets `%NAME%` instead;
+- `$GETCURRENTDIR()/` and `$GETCURRENTDIR()\` in values that are already normalized.
 
-Анализатор распознает вызовы вида:
+The recursive expansion has a maximum depth of 16. An unknown variable stays in the line, and the analyzer adds a warning.
+
+### External BAT and CMD files and `service.bat`
+
+The analyzer knows calls such as:
 
 ```bat
 call "path\script.bat" argument
 call path\script.cmd argument
 ```
 
-Вызовы локальных меток `call :label` не считаются внешними файлами. Для существующего BAT/CMD:
+A call of a local label, `call :label`, is not an external file. For an existing BAT or CMD file, the analyzer does these steps:
 
-1. путь раскрывается относительно вызывающего скрипта;
-2. при отсутствии расширения добавляется `.bat`;
-3. файл добавляется в `SourceFiles`;
-4. его переменные собираются статически;
-5. результат объединяется с переменными вызывающего файла.
+1. It resolves the path relative to the calling script.
+2. If the path has no extension, it adds `.bat`.
+3. It adds the file to `SourceFiles`.
+4. It collects the variables of the file statically.
+5. It merges the result with the variables of the calling file.
 
-Если первый аргумент вызова сопоставляется с конструкцией вида `if "%~1"=="argument" (...)`, анализируются метки `call :label` внутри соответствующего блока. Если диспетчеризация не распознана, анализируются верхнеуровневые строки до первой BAT-метки.
+If the first argument of the call matches a construct such as `if "%~1"=="argument" (...)`, the analyzer reads the `call :label` labels in this block. If it does not find such a dispatch, it reads the top-level lines before the first BAT label.
 
-Рекурсивные вызовы ограничены `MaxIncludeDepth`, по умолчанию 8. Повтор одного и того же файла с тем же набором аргументов не анализируется второй раз.
+`MaxIncludeDepth` limits the recursive calls. The default value is 8. The analyzer does not read the same file with the same arguments a second time.
 
-Специально поддержан вызов команды `load_user_lists`. В одноименной метке внешнего скрипта анализируются операции:
+The command `load_user_lists` has special support. In the label with this name in the external script, the analyzer reads these operations:
 
 ```bat
 echo content > path\file.txt
 echo content >> path\file.txt
 ```
 
-Если целевой файл отсутствует, его содержимое собирается в памяти и возвращается в `GeneratedFiles`. Исходный каталог не изменяется. Файл вне каталога источника игнорируется с предупреждением.
+If the target file does not exist, the analyzer collects its contents in memory and returns them in `GeneratedFiles`. The source folder does not change. The analyzer ignores a file outside the source folder and adds a warning.
 
-Это специализированная статическая модель, а не общий интерпретатор BAT. Другие способы генерации файлов автоматически не воспроизводятся.
+This is a special static model, not a general BAT interpreter. The analyzer does not repeat other ways to make files.
 
-### TXT-конфиги и response files
+### TXT configs and response files
 
-TXT-конфиг состоит из:
+A TXT config contains:
 
-- комментариев, начинающихся с `#`;
-- непустых строк параметров, объединяемых через пробел.
+- comments that start with `#`;
+- lines with options. The analyzer joins them with a space.
 
-Поддерживаются метаданные:
+The analyzer knows this metadata:
 
 ```text
 # BuiltinVersion: 2.11
@@ -356,61 +369,63 @@ TXT-конфиг состоит из:
 # ActivePreset: Config name
 ```
 
-`BuiltinVersion` одновременно указывает на поколение winws2 и задает версию target. Если метаданные имени отсутствуют, используется имя файла.
+The version line can also have the forms `Built-in version` or `Builtin Version`, with `:` or `=`. `BuiltinVersion` means the winws2 generation and also sets the target version. If the file has no name metadata, the analyzer uses the file name.
 
-Ссылка `@file.txt` обрабатывается как response file только если:
+The analyzer reads a reference `@file.txt` as a response file only if:
 
-1. файл существует;
-2. расширение равно `.txt`;
-3. в первых 64 строках найдена `BuiltinVersion` либо строка, начинающаяся с `--`.
+1. the file exists;
+2. the extension is `.txt`;
+3. one of the first 64 lines contains `BuiltinVersion` or starts with `--`.
 
-Содержимое response file заменяет всю исходную строку параметров. Если рядом с `@file.txt` были другие аргументы, они игнорируются, а в результат добавляется предупреждение `CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS`.
+If the response file does not exist, the analyzer adds the error `INCLUDED_CONFIG_NOT_FOUND`.
 
-Вложенность ограничена `MaxIncludeDepth`, по умолчанию 8. Активный стек файлов контролируется для обнаружения циклов.
+The contents of the response file replace the complete option line. If the line had other arguments near `@file.txt`, the analyzer ignores them and adds the warning `CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS`.
 
-### Определение поколения Zapret
+`MaxIncludeDepth` (default 8) limits the depth of includes. The analyzer keeps a stack of the active files to find cycles.
 
-Поколение определяется в следующем порядке:
+### Zapret generation
 
-1. Наличие `BuiltinVersion` означает winws2.
-2. Наличие winws2-специфичных параметров, включая `--lua-init`, `--lua-desync`, `--blob`, `--out-range`, `--ctrack-*` и расширенные варианты `--wf-*`, означает winws2.
-3. Наличие `--dpi-desync` или старых `--wf-tcp`/`--wf-udp` означает winws1.
-4. Если TXT не содержит однозначных признаков, используется `DefaultTextConfigGeneration`.
+The analyzer finds the generation in this sequence:
 
-При вызове через общий фасад значение по умолчанию равно поколению выбранного target. При прямом использовании `ZapretConfigImportService` значение по умолчанию — winws2. Можно передать `null`, чтобы запретить неявное определение.
+1. `BuiltinVersion` means winws2.
+2. winws2 options mean winws2. These options are `--lua-init`, `--lua-desync`, `--blob`, `--out-range`, `--ctrack-*` and `--wf-tcp-out`, `--wf-tcp-in`, `--wf-udp-out`, `--wf-udp-in`.
+3. `--dpi-desync` or the old `--wf-tcp` and `--wf-udp` mean winws1.
+4. If a TXT file has no clear signs, the analyzer uses `DefaultTextConfigGeneration`.
 
-Если BAT запускает одно поколение, а параметры или подключенный TXT однозначно относятся к другому, импорт завершается ошибкой `GENERATION_MISMATCH`.
+The facade sets the default to the generation of the selected target. For a direct call of `ZapretConfigImportService`, the default is winws2. A `null` value disables the default.
 
-### Определение версии
+If the BAT file starts one generation and the options or the included TXT clearly belong to the other generation, the import fails with `GENERATION_MISMATCH`.
 
-Для winws2 версия выбирается так:
+### Version
 
-1. значение `# BuiltinVersion`, если оно присутствует;
-2. `CurrentVersionResolver` из `ZapretConfigImportOptions`;
-3. `CurrentVersion` установленного Zapret 2 из Store DB;
+For winws2, the analyzer selects the version in this sequence:
+
+1. the value of `# BuiltinVersion`, if it exists;
+2. `CurrentVersionResolver` from `ZapretConfigImportOptions`;
+3. `CurrentVersion` of the installed Zapret 2 in the Store DB;
 4. `%CURRENT%`.
 
-Для winws1 шаг с `BuiltinVersion` не применяется. Ошибки обращения к резолверу или БД не блокируют импорт.
+For winws1, the analyzer does not use `BuiltinVersion`. Errors of the resolver or of the DB do not block the import.
 
-### Преобразование переменных Zapret в ConfigItem
+### Zapret variables in the ConfigItem
 
-#### Обычные `variables`
+#### Usual `variables`
 
-Используемая переменная без альтернатив сохраняется как строка:
+A used variable without alternatives becomes a line in `variables`:
 
 ```text
 %LISTS%=$GETCURRENTDIR()/lists/list-general.txt
 ```
 
-#### `commaVars` и `availableCommaVarsValues`
+#### `commaVars` and `availableCommaVarsValues`
 
-Переменная с альтернативами сохраняется в `commaVars`. Закомментированные `set` и значения, наблюдавшиеся при статическом обходе, образуют список `availableCommaVarsValues`.
+A variable with alternatives goes to `commaVars`. The commented `set` values and the values from the static walk become the list in `availableCommaVarsValues`.
 
-В startup string остается ссылка `%NAME%`, поэтому значение можно менять через соответствующий UI-виджет без ручного редактирования всей строки.
+The startup string keeps the reference `%NAME%`. Thus the user can change the value in the UI widget and does not have to edit the full line.
 
-#### Неизвестные переменные
+#### Unknown variables
 
-Любая нераспознанная `%NAME%`, обнаруженная в startup string, основном значении или альтернативах, добавляется как:
+The analyzer adds each unknown `%NAME%` from the startup string, the main values or the alternatives as:
 
 ```json
 "commaVars": {
@@ -418,66 +433,66 @@ TXT-конфиг состоит из:
 }
 ```
 
-Переменные `%~...%` исключаются из этого правила. Одновременно анализатор сообщает `UNRESOLVED_BATCH_VARIABLE` для неизвестной переменной, реально требуемой startup string.
+The `%~...%` forms are not included. For an unknown variable that the startup string or a used variable requires, the analyzer also adds the warning `UNRESOLVED_BATCH_VARIABLE`.
 
-#### Условные переменные и `jparams`
+#### Conditional variables and `jparams`
 
-Переменная становится кандидатом на логический переключатель, если она была присвоена внутри статически анализируемого вызванного скрипта. Если для нее наблюдаются ровно два различных непустых значения, создаются:
+A variable can become a boolean switch if a statically read called script assigns it. If the analyzer sees exactly two different non-empty values for the variable, it makes:
 
-- boolean-параметр `use<VariableName>` в `jparams`;
-- условная переменная в `variables`.
+- a boolean parameter `use<VariableName>` in `jparams`;
+- a conditional variable in `variables`.
 
-Формат результата:
+The result has this format:
 
 ```text
 %GameFilter%=$LOCALCONDITION(useGameFilter==true ? 1024-65535 $SEPARATOR 12)
 ```
 
-Текущее значение переменной определяет начальное состояние boolean-параметра. Имя параметра очищается от символов, кроме букв, цифр и `_`; при конфликте добавляется числовой суффикс.
+The current value of the variable sets the initial state of the boolean parameter. The analyzer removes all characters except letters, digits and `_` from the parameter name. A name collision gets a number suffix.
 
-Если наблюдается не ровно два значения, обычный boolean-переключатель не создается.
+If the analyzer sees a different number of values, it does not make a boolean switch.
 
-#### Переключатели `ACTIVE_*.bin`
+#### `ACTIVE_*.bin` switches
 
-Ссылка вида `%ROOT%ACTIVE_name.bin` может быть преобразована в отдельную выбираемую переменную.
+The analyzer can convert a reference such as `%ROOT%ACTIVE_name.bin` into a separate variable that the user can select.
 
-Алгоритм:
+The analyzer does these steps:
 
-1. раскрывается каталог из переменной `ROOT`;
-2. в нем перечисляются все `*.bin`, имя которых не начинается с `ACTIVE_`;
-3. SHA-256 активного BIN сравнивается с кандидатами;
-4. совпадающий по содержимому файл становится текущим значением;
-5. все найденные BIN становятся вариантами `availableCommaVarsValues`;
-6. исходная ссылка заменяется на `%<selector>%`.
+1. It expands the folder from the variable `ROOT`.
+2. It finds all `*.bin` files in the folder whose names do not start with `ACTIVE_`. It sorts them by name.
+3. It compares the SHA-256 of the active BIN file with each candidate.
+4. The last candidate with the same contents becomes the current value.
+5. All found BIN files become values in `availableCommaVarsValues`.
+6. The reference becomes `%<selector>%`.
 
-Если активный файл отсутствует, каталог не существует или вариантов нет, исходная ссылка остается без изменения.
+The reference stays unchanged if the `ROOT` variable is unknown, if the folder does not exist or if the folder has no candidates. If the active file is missing or no candidate has the same contents, the analyzer still makes the switch. The current value is then the original `ACTIVE_` file path.
 
-### Формирование Zapret ConfigItem
+### Zapret ConfigItem
 
-Результат имеет следующие базовые поля:
+The result has these basic fields:
 
 ```json
 {
   "meta": "pUC:v1.0",
-  "name": "имя из метаданных или файла",
+  "name": "name from the metadata or the file",
   "target": ["component-id", "version-or-%CURRENT%"],
   "jparams": {},
   "variables": [],
   "commaVars": {},
   "availableCommaVarsValues": [],
-  "startup_string": "нормализованные аргументы"
+  "startup_string": "normalized arguments"
 }
 ```
 
-Последовательности пробельных символов вне двойных кавычек сворачиваются до одного пробела. `%~dp0` заменяется на `$GETCURRENTDIR()/`.
+The analyzer changes each sequence of whitespace outside double quotes to one space. It replaces `%~dp0` with `$GETCURRENTDIR()/`. It does not change backslashes.
 
-Специализированный анализатор сначала использует внутренние ID Zapret/Zapret 2 для поколения, затем `ConfigImportService` заменяет их на фактический ID выбранного Store-компонента. Поэтому другие установленные компоненты с executable `winws` или `winws2` также могут использовать этот парсер.
+The Zapret analyzer first uses the internal Zapret or Zapret 2 ID of the generation. `ConfigImportService` then replaces it with the ID of the selected Store component. Thus other installed components with the executable `winws` or `winws2` can also use this parser.
 
-## Обнаружение внешних ресурсов
+## External resources
 
-### Общий анализатор
+### General analyzer
 
-Ищет ссылки с расширениями:
+The general analyzer looks for references with these extensions:
 
 - `.bin`;
 - `.txt`;
@@ -487,147 +502,149 @@ TXT-конфиг состоит из:
 - `.cfg`;
 - `.json`.
 
-### Zapret-анализатор
+### Zapret analyzer
 
-Ищет `.bin`, `.txt` и `.lua`.
+The Zapret analyzer looks for `.bin`, `.txt` and `.lua`.
 
-Пути могут находиться в кавычках или быть некавычными токенами. Префиксы `@` и `$` удаляются перед проверкой файла. Относительный путь разрешается относительно основного файла, из значения которого собирается ссылка.
+A path can be in quotes or not. The analyzer removes the prefixes `@` and `$` before it checks the file. It resolves a relative path relative to the file that contains the reference.
 
-Существующий файл добавляется в `ReferencedFiles`. Отсутствующий — в `MissingReferencedFiles` и сопровождается предупреждением `REFERENCED_FILE_NOT_FOUND`.
+The analyzer adds a file that exists to `ReferencedFiles`. It adds a missing file to `MissingReferencedFiles` and adds the warning `REFERENCED_FILE_NOT_FOUND`. A missing file that the BAT script generates does not go to `MissingReferencedFiles`.
 
-### Стандартные LUA-библиотеки компонента
+### Standard LUA libraries of the component
 
-Для Zapret отсутствующая `.lua` может быть исключена из списка отсутствующих файлов, если:
+For Zapret, the facade can remove a missing `.lua` file from the missing file list if:
 
-1. путь находится внутри относительной структуры импортируемого каталога;
-2. файл с тем же относительным путем существует в каталоге выбранного установленного компонента;
-3. Config явно не требует импортированную копию через `$GETCURRENTDIR()/relative/path.lua`.
+1. the path is inside the folder structure of the imported file;
+2. a file with the same relative path exists in the folder of the selected installed component;
+3. the config does not require the imported copy through `$GETCURRENTDIR()/relative/path.lua`.
 
-В таком случае предполагается, что LUA-файл поставляется самим компонентом, а соответствующее предупреждение удаляется.
+In this case, the facade assumes that the component supplies the LUA file. It removes the related warning.
 
-## Обработка отсутствующих файлов
+## Missing files
 
-Для каждого пути из `MissingReferencedFiles` мастер требует явное решение до сохранения.
+The wizard requires an explicit decision for each path in `MissingReferencedFiles` before the save.
 
-Возможны два типа решения:
+Two types of decision are possible:
 
-1. существующий файл-замена;
-2. пустая заглушка — `ReplacementPath == null`.
+1. a replacement file that exists;
+2. an empty file: `ReplacementPath == null`.
 
-`ApplyMissingFileResolutions` принимает только решения для файлов, которые действительно присутствуют в исходном списке отсутствующих. Пути нормализуются через `Path.GetFullPath`. Если выбранный файл-замена отсутствует, добавляется блокирующая ошибка `MISSING_FILE_REPLACEMENT_NOT_FOUND`.
+`ApplyMissingFileResolutions` accepts only decisions for files that are in the original missing file list. It normalizes the paths with `Path.GetFullPath`. If the selected replacement file does not exist, it adds the blocking error `MISSING_FILE_REPLACEMENT_NOT_FOUND`.
 
-### Автокорректор
+### Auto-corrector
 
-`ConfigImportAutoCorrector` ищет замену в два этапа:
+`ConfigImportAutoCorrector` looks for a replacement in two steps:
 
-1. рекурсивный поиск файла с тем же именем внутри каталога импортируемого Config;
-2. вызов существующего `Autocorrector.FindAutoCorrectPath` с временно установленным `packId`, указывающим на исходный каталог.
+1. It looks for a file with the same name in the folder of the imported config. The search goes down a maximum of 3 subfolder levels. It skips folders that it cannot open and reparse points.
+2. It calls the existing `Autocorrector.FindAutoCorrectPath` with a temporary `packId` that points to the source folder.
 
-Автокорректор ничего не копирует и не изменяет. Он только возвращает существующий путь. Исключения поиска подавляются, чтобы ошибка подсказки не блокировала мастер.
+The auto-corrector does not copy or change files. It only returns a path that exists. It ignores search exceptions, so that a failed suggestion does not block the wizard.
 
-Для файлов, имя которых содержит `user` или `debug` без учета регистра, автоматически предлагается пустой файл вместо поиска замены.
+For a file whose name contains `user` or `debug` (any case), the wizard suggests an empty file and does not search for a replacement.
 
-На странице исправления пользователь может:
+On the correction page, the user can:
 
-- принять найденную замену;
-- выбрать другой файл;
-- выбрать пустой файл;
-- принять все доступные автоматические предложения кнопкой продолжения.
+- accept the found replacement;
+- select a different file;
+- select an empty file;
+- accept all available suggestions with the continue button.
 
-## Ретаргетинг Config
+## Retarget
 
-Выбор компонента в карточке результата не изменяет исходный объект немедленно. Перед тестированием и сохранением мастер:
+A component selection on the result card does not change the original object immediately. Before the test and the save, the wizard does these steps:
 
-1. применяет решения отсутствующих файлов;
-2. вызывает `ConfigImportService.Retarget`;
-3. проверяет, что после ретаргетинга Config остается успешным.
+1. It applies the decisions for missing files.
+2. It calls `ConfigImportService.Retarget`.
+3. It makes sure that the config is still successful after the retarget.
 
-### Одинаковый executable
+### Same executable
 
-Если исходный и новый target используют одинаковый executable, сохраняется уже вычисленная версия из `config.target`, если она непустая. Component ID заменяется на выбранный.
+If the old and the new target use the same executable, the retarget keeps the version from `config.target`, if it is not empty. It replaces the component ID with the selected ID.
 
 ### `winws1 -> winws2`
 
-Это единственное специализированное межпоколенческое преобразование в `Retarget`.
+This is the only conversion between generations in `Retarget`.
 
-1. В clone исходного Config временно записывается `packId` исходного каталога.
-2. `ConfigurationService.GetStartupParametersByConfigItem` раскрывает `variables`, `commaVars`, `jparams` и служебные функции в готовую строку запуска winws1.
-3. Готовая строка передается существующему `Zapret1ToZapret2Converter`.
-4. Диагностики конвертера добавляются в общий список `Issues`.
-5. При успехе converted startup string записывается в `startup_string`.
-6. `jparams`, `variables`, `commaVars` и `availableCommaVarsValues` очищаются, поскольку строка уже материализована.
-7. Target меняется на выбранный winws2-компонент и его версию.
-8. Временный `packId` сбрасывается.
+1. The retarget writes the source folder as `packId` into a clone of the config.
+2. `ConfigurationService.GetStartupParametersByConfigItem` expands `variables`, `commaVars`, `jparams` and the service functions into a ready winws1 command line.
+3. The existing `Zapret1ToZapret2Converter` gets the ready line.
+4. The converter issues go to `Issues`.
+5. If the conversion is successful, the converted line goes to `startup_string`.
+6. The retarget clears `jparams`, `variables`, `commaVars` and `availableCommaVarsValues`, because the line is already expanded.
+7. The target becomes the selected winws2 component and its version.
+8. The retarget clears the temporary `packId`.
 
-Если конвертер сообщает ошибку, `Config` становится `null`, и тестирование/сохранение блокируется.
+If the converter returns an error, `Config` becomes `null`, and the test and the save are blocked.
 
-Встроенный `Zapret1ToZapret2Converter` не является частью этого AddOn; AddOn только вызывает его и передает диагностики без изменения.
+`Zapret1ToZapret2Converter` is not a part of this add-on. The add-on only calls it and passes its issues without changes.
 
-### Прочие сочетания executable
+### Other executable combinations
 
-Для прочих сочетаний специального преобразования нет: target и версия заменяются, а startup string сохраняется. UI показывает предупреждение, если автоматически определенный executable отличается от выбранного. Это предупреждение информативное и само по себе не является блокирующей ошибкой.
+For other combinations, no special conversion occurs. The retarget replaces the target and the version and keeps the startup string. The UI shows a warning if the detected executable is different from the selected one. This warning is for information and does not block the operation.
 
-В частности, обратная конвертация `winws2 -> winws1` не реализована.
+The add-on cannot convert `winws2 -> winws1`.
 
-## Тестирование Config
+## Config test
 
-Тестовый запуск выполняется из `MainPage`:
+`MainPage` does the test run in these steps:
 
-1. предыдущий активный тест останавливается;
-2. применяются решения отсутствующих файлов;
-3. выполняется ретаргетинг;
-4. `packId` временно устанавливается в каталог исходного файла;
-5. `ConfigurationService.GetStartupParametersByConfigItem` формирует готовые аргументы;
-6. `ConfigImportTestPlaceholder.Create` подготавливает временные зависимости;
-7. выбранный компонент останавливается, если он уже запущен;
-8. компонент запускается через `ComponentTasksManager.CreateAndRunNewTask(componentId, arguments)`;
-9. мастер подписывается на изменение состояния задачи;
-10. при завершении процесса временные файлы удаляются.
+1. It stops the earlier active test.
+2. It applies the decisions for missing files.
+3. It runs the retarget.
+4. It sets `packId` to the folder of the source file temporarily.
+5. `ConfigurationService.GetStartupParametersByConfigItem` makes the ready arguments.
+6. `ConfigImportTestPlaceholder.Create` prepares the temporary dependencies.
+7. It stops the selected component if it operates.
+8. It starts the component through `ComponentTasksManager.CreateAndRunNewTask(componentId, arguments)`.
+9. It subscribes to the state changes of the task.
+10. When the process stops, it deletes the temporary files.
 
-Одновременно поддерживается один активный тест. Повторное нажатие кнопки для той же карточки останавливает тест. Закрытие/выгрузка страницы также останавливает процесс и освобождает временные файлы.
+Only one test can operate at a time. A second click on the button of the same card stops the test. When the page closes or unloads, it also stops the process and releases the temporary files.
 
-Если процесс завершился сразу после запуска, операция считается ошибкой тестирования.
+If the process stops immediately after the start, the test fails.
 
-### Временные зависимости теста
+### Temporary test dependencies
 
-Временный каталог создается по шаблону:
+The temporary folder has this pattern:
 
 ```text
 %TEMP%\CDPIUI\ConfigImportPlaceholders\<GUID>\
 ```
 
-Если хотя бы одно отсутствующее значение должно быть пустым, создается общий нулевой файл:
+If at least one missing value must be empty, the class makes one common empty file:
 
 ```text
 empty.bin
 ```
 
-Если пользователь выбрал существующую замену, используется ее исходный путь. Генерируемые файлы записываются как UTF-8 без BOM в подкаталог `generated` с именами вида `0000_<original-name>`.
+If the user selected an existing replacement, the test uses its original path. The class writes generated files as UTF-8 without BOM into the subfolder `generated`, with names such as `0000_<original-name>`.
 
-В готовых аргументах заменяются:
+The class replaces these forms in the ready arguments:
 
-- абсолютный ожидаемый путь;
-- форма `$GETCURRENTDIR()/relative/path`.
+- the expected absolute path;
+- the form `$GETCURRENTDIR()/relative/path`.
 
-Смешанные `/` и `\` в этих формах поддерживаются. На текущем этапе временный переписчик не обрабатывает отдельно оставшиеся формы `%~dp0relative`, `./relative` и простой `relative/path`, если они не были раскрыты ранее `ConfigurationService`.
+Mixed `/` and `\` are valid in these forms. The class does not process the forms `%~dp0relative`, `./relative` and a plain `relative/path` if `ConfigurationService` did not expand them earlier.
 
-`Dispose` удаляет только каталог внутри разрешенного корня `ConfigImportPlaceholders`. Очистка выполняется best effort.
+`Dispose` deletes only a folder in the permitted root `ConfigImportPlaceholders`. The cleanup is best effort.
 
-## Сохранение Config и ресурсов
+## Config and resource save
 
-`ConfigImportInstaller.InstallAsync` принимает только успешный результат, непустое имя и явное решение для каждого отсутствующего файла.
+`ConfigImportInstaller.InstallAsync` accepts only a successful result, a name that is not empty and an explicit decision for each missing file.
 
-### Корень сохранения
+For a `.cdpiconfig` result (`SharedPackage` is set), the installer calls `ConfigShareService.InstallAsync` with the edited config. The rest of this section applies to the other formats.
 
-Config сохраняется в служебный локальный набор:
+### Save root
+
+The installer saves the config in the local service kit:
 
 ```text
 Store\Items\LocalUserStorage\
 ```
 
-Точный абсолютный путь получает `ConfigurationService.GetItemFolderFromPackId(SharedConstants.LocalUserItemsId)`.
+`ConfigurationService.GetItemFolderFromPackId(SharedConstants.LocalUserItemsId)` gives the exact absolute path.
 
-Ресурсы сохраняются по типу:
+The installer saves the resources by type:
 
 ```text
 LocalUserStorage\List\Converted\<importId>\...
@@ -635,51 +652,51 @@ LocalUserStorage\Bin\Converted\<importId>\...
 LocalUserStorage\Lua\Converted\<importId>\...
 ```
 
-Категория определяется расширением:
+The extension sets the category:
 
 - `.txt` -> `List`;
 - `.lua` -> `Lua`;
-- все остальные найденные ресурсы -> `Bin`.
+- all other resources -> `Bin`.
 
-`importId` состоит из UTC-времени `yyyyMMddHHmmss`, символа `_` и уникального фрагмента GUID; итоговая строка обрезается до 24 символов.
+`importId` is the UTC time `yyyyMMddHHmmss`, the character `_` and a GUID part. The installer cuts the string to 24 characters.
 
-### Организация относительных путей
+### Relative paths
 
-Сохраняется исходная вложенность ресурса. Один стандартный верхний каталог удаляется, чтобы не получить дублирование категорий:
+The installer keeps the original subfolders of a resource. It removes one standard top folder, so that the category does not repeat:
 
-- для `List`: `list` или `lists`;
-- для `Lua`: `lua`;
-- для `Bin`: `bin` или `fake`.
+- for `List`: `list` or `lists`;
+- for `Lua`: `lua`;
+- for `Bin`: `bin` or `fake`.
 
-Пример:
+Example:
 
 ```text
-исходный путь: lists\ipset-exclude.txt
-сохраненный путь: List\Converted\<importId>\ipset-exclude.txt
+original path: lists\ipset-exclude.txt
+saved path: List\Converted\<importId>\ipset-exclude.txt
 ```
 
-Если внешний ресурс находится за пределами каталога исходного Config, для сохранения используется только имя файла. Это не разрешает запись вне целевого каталога: итоговый destination повторно проверяется.
+If an external resource is outside the folder of the source config, the installer uses only the file name. This does not permit a write outside the target folder: the installer checks the final destination again.
 
-При коллизии двух сохраненных относительных путей к имени второго файла добавляются первые восемь hex-символов SHA-256 от его ожидаемого абсолютного пути.
+If two saved relative paths are the same, the installer adds the first eight hex characters of the SHA-256 of the expected absolute path to the name of the second file.
 
-### Источники сохраняемого ресурса
+### Resource sources
 
-Ресурс может быть создан одним из трех способов:
+The installer makes a resource in one of three ways:
 
-1. существующий `ReferencedFile` копируется без перезаписи;
-2. `GeneratedFile` записывается как UTF-8 без BOM;
-3. отсутствующий файл с решением `null` создается нулевой длины, а с выбранной заменой — копируется из выбранного пути.
+1. It copies an existing `ReferencedFile` and does not overwrite.
+2. It writes a `GeneratedFile` as UTF-8 without BOM.
+3. For a missing file with the decision `null`, it makes an empty file. For a missing file with a replacement, it copies the selected file.
 
-### Переписывание путей
+### Path changes
 
-Перед сохранением Config глубоко клонируется через JSON. Переписываются:
+Before the save, the installer makes a deep clone of the config through JSON. It changes the paths in:
 
 - `startup_string`;
-- каждый элемент `variables`;
-- каждое значение `commaVars`;
-- каждое значение в `availableCommaVarsValues`.
+- each item of `variables`;
+- each value of `commaVars`;
+- each value in `availableCommaVarsValues`.
 
-Целевой формат:
+The target format is:
 
 ```text
 $GETCURRENTDIR()/List/Converted/<importId>/file.txt
@@ -687,149 +704,153 @@ $GETCURRENTDIR()/Bin/Converted/<importId>/file.bin
 $GETCURRENTDIR()/Lua/Converted/<importId>/file.lua
 ```
 
-Переписчик поддерживает:
+The installer knows these forms:
 
-- абсолютный исходный путь;
+- the absolute original path;
 - `$GETCURRENTDIR()/source/path`;
-- `%~dp0source/path` для отображения каталогов;
-- относительный `source/path`;
-- `./source/path` и `.\source\path`;
-- необязательный префикс `@` для отдельной ссылки на файл;
-- смешанные разделители `/` и `\`.
+- `%~dp0source/path` for folder mappings;
+- the relative `source/path`;
+- `./source/path` and `.\source\path`;
+- an optional prefix `@` for a single file reference;
+- mixed separators `/` and `\`.
 
-Сначала строятся отображения каталогов. Отображение применяется только когда один исходный каталог однозначно соответствует одному сохраненному каталогу. Затем переписываются конкретные файлы.
+The installer first makes the folder mappings. A mapping applies only when one source folder maps to exactly one saved folder. Then the installer changes the paths of the single files.
 
-### Транзакционность сохранения
+### Transactional save
 
-Для каждой категории сначала создается staging-каталог:
+For each category, the installer first makes a staging folder:
 
 ```text
 <Category>\Converted\.<importId>.tmp
 ```
 
-Порядок операции:
+The installer does these steps:
 
-1. создать staging-каталоги;
-2. записать или скопировать все ресурсы;
-3. подготовить clone Config и переписать пути;
-4. атомарно переместить staging-каталоги в `<importId>`;
-5. сохранить JSON через `ConfigurationService.SaveConfigItem`;
-6. при ошибке удалить созданные каталоги и возможный JSON.
+1. It makes the staging folders.
+2. It writes or copies all resources.
+3. It prepares the config clone and changes the paths.
+4. It moves the staging folders to `<importId>`.
+5. It saves the JSON through `ConfigurationService.SaveConfigItem`.
+6. If an error occurs, it deletes the folders that it made and the JSON, if it exists.
 
-Удаление ограничено проверенным корнем соответствующего `Converted`. Rollback best effort, исходные файлы никогда не удаляются.
+The deletion is limited to the checked `Converted` root of the category. The rollback is best effort. The installer never deletes the original files.
 
-### Имя Config-файла
+### Config file name
 
-Отображаемое имя записывается в `name` и `not_converted_name`.
+The installer writes the display name to `name` and `not_converted_name`.
 
-Имя JSON строится так:
+The JSON name has these rules:
 
-1. сохраняются буквы Unicode, цифры, `_`, `.`, `-`;
-2. остальные символы заменяются на `_`;
-3. пробелы сворачиваются в `_`;
-4. крайние `_` и `.` удаляются;
-5. пустой результат заменяется на `Imported_Config`;
-6. при коллизии добавляется `_2`, `_3` и далее.
+1. Unicode letters, digits, `_`, `.` and `-` stay.
+2. Each other character, also each whitespace character, becomes `_`.
+3. The installer removes `_` and `.` at the start and at the end.
+4. An empty result becomes `Imported_Config`.
+5. A name collision gets `_2`, `_3` and so on.
 
-Config сохраняется с `packId = LocalUserStorage` через API `SaveConfigItem`; значение `packId` не обязано присутствовать внутри самого JSON.
+The installer saves the config with `packId = LocalUserStorage` through `SaveConfigItem`. The JSON does not have to contain `packId`.
 
-После успешного сохранения UI вызывает `ReInitConfigs()` для выбранного компонента.
+After a successful save, the UI calls `ReInitConfigs()` for the selected component.
 
-## Работа мастера импорта
+## Import wizard
 
-### Шаг 1. Выбор
+### Step 1. Selection
 
-Диалог поддерживает множественный выбор `.txt`, `.bat`, `.cmd` и `.json`. Имя будущего Config по умолчанию равно имени файла без расширения.
+The file dialog permits a selection of several `.txt`, `.bat`, `.cmd`, `.json` and `.cdpiconfig` files. The user can also drop files on the component settings page (`ViewComponentSettingsPage`). The page then opens the import window with these files and the component ID. A single dropped `.cdpiconfig` file can go to the ConfigShare dialog instead. The default config name is the file name without the extension. For a `.cdpiconfig` package, the default name is the name from the manifest.
 
-### Шаг 2. Анализ
+### Step 2. Analysis
 
-Файлы обрабатываются последовательно в фоновой задаче. Для каждого файла:
+A background task processes the files one by one. For each file, the wizard does these steps:
 
-1. определяется подходящий target;
-2. выполняется импорт;
-3. создается отдельная карточка результата;
-4. показываются успех, предупреждение или ошибка.
+1. It finds the applicable target.
+2. It runs the import.
+3. It makes a separate result card.
+4. It shows the success, the warning or the error.
 
-Диагностики доступны через Flyout **Подробнее** в формате `[CODE] [line] message`.
+For a `.cdpiconfig` package with a missing component, the wizard offers the Store installer of the component.
 
-### Шаг 3. Исправление отсутствующих файлов
+The **More** flyout shows the issues in the format `[CODE] [line] message`.
 
-Шаг появляется только если успешные результаты содержат отсутствующие ресурсы. Продолжение возможно, когда каждый файл решен вручную либо для всех оставшихся файлов существует автоматическое предложение.
+### Step 3. Missing files
 
-### Шаг 4. Результаты
+The wizard shows this step only if successful results have missing resources. The user can continue when the user resolved each file, or when each remaining file has a suggestion.
 
-Для каждой карточки доступны:
+### Step 4. Results
 
-- изменение имени;
-- выбор любого установленного компонента;
-- предупреждение о несовпадении executable;
-- просмотр диагностик;
-- тестирование/остановка теста;
-- отдельное сохранение.
+Each card lets the user:
 
-Кнопка **Сохранить все** последовательно сохраняет все карточки, для которых `CanSave == true`. Успешные карточки удаляются из списка. Карточки с ошибкой остаются доступными для просмотра.
+- change the name;
+- select an installed component;
+- see a warning about a different executable;
+- see the issues;
+- start and stop the test;
+- save the card.
 
-## Диагностика
+The **Save all** button saves all cards with `CanSave == true` one by one. The wizard removes the saved cards from the list. Cards with an error stay in the list.
 
-Каждая диагностика имеет:
+## Issues
 
-- `Severity`: `Warning` или `Error`;
-- стабильный строковый `Code`;
-- техническое сообщение `Message`;
-- необязательный `SourcePath`;
-- необязательный `LineNumber`.
+Each issue has:
 
-### Общие коды
+- `Severity`: `Warning` or `Error`;
+- a stable string `Code`;
+- a technical `Message`;
+- an optional `SourcePath`;
+- an optional `LineNumber`.
 
-| Код | Уровень | Условие |
+### General codes
+
+| Code | Level | Condition |
 |---|---|---|
-| `FILE_NOT_FOUND` | Error | Исходный файл отсутствует |
-| `TARGET_REQUIRED` | Error | Не выбран component ID |
-| `EXECUTABLE_REQUIRED` | Error | В записи target отсутствует executable |
-| `UNSUPPORTED_FORMAT` | Error | Расширение не поддерживается выбранным анализатором |
-| `IMPORT_FAILED` | Error | Необработанное исключение во время анализа |
-| `EXECUTABLE_LAUNCH_NOT_FOUND` | Error | Общий BAT/CMD не содержит запуска выбранного executable |
-| `MULTIPLE_EXECUTABLE_LAUNCHES` | Error | Найдено более одного запуска выбранного executable |
-| `TEXT_CONFIG_EMPTY` | Error | Общий TXT не содержит аргументов |
-| `JSON_CONFIG_INVALID` | Error | JSON не является поддерживаемым `ConfigItem` или `OldConfigItem` |
-| `EXECUTABLE_MISMATCH` | Error | Zapret-анализ определил поколение, не совпадающее с target первоначального анализа |
-| `UNRESOLVED_VARIABLE` | Warning | Общая BAT-переменная не разрешена статически |
-| `REFERENCED_FILE_NOT_FOUND` | Warning | Внешний ресурс отсутствует |
-| `INVALID_RESOURCE_PATH` | Warning | Путь ресурса невозможно нормализовать |
-| `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | Выбранная пользователем замена отсутствует |
+| `FILE_NOT_FOUND` | Error | The source file does not exist |
+| `TARGET_REQUIRED` | Error | No component ID is selected |
+| `EXECUTABLE_REQUIRED` | Error | The target record has no executable |
+| `UNSUPPORTED_FORMAT` | Error | The selected analyzer does not support the extension |
+| `IMPORT_FAILED` | Error | An unhandled exception occurred during the analysis |
+| `EXECUTABLE_LAUNCH_NOT_FOUND` | Error | The general BAT or CMD file has no launch of the selected executable |
+| `MULTIPLE_EXECUTABLE_LAUNCHES` | Error | The file has more than one launch of the selected executable |
+| `TEXT_CONFIG_EMPTY` | Error | The general TXT file has no arguments |
+| `JSON_CONFIG_INVALID` | Error | The JSON is not a supported `ConfigItem` or `OldConfigItem` |
+| `EXECUTABLE_MISMATCH` | Error | The Zapret analysis found a generation that is different from the target |
+| `UNRESOLVED_VARIABLE` | Warning | The general analyzer cannot resolve a BAT variable |
+| `REFERENCED_FILE_NOT_FOUND` | Warning | An external resource is missing |
+| `INVALID_RESOURCE_PATH` | Warning | The analyzer cannot normalize a resource path |
+| `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | The replacement that the user selected does not exist |
 
-### Коды Zapret-анализатора
+For a `.cdpiconfig` file, the issue code is the code of the `ConfigShareException`, for example `SHARE_IMPORT_FAILED`.
 
-| Код | Уровень | Условие |
+### Zapret analyzer codes
+
+| Code | Level | Condition |
 |---|---|---|
-| `BATCH_READ_FAILED` | Error | Ошибка чтения BAT/CMD |
-| `TEXT_CONFIG_READ_FAILED` | Error | Ошибка чтения TXT |
-| `WINWS_LAUNCH_NOT_FOUND` | Error | BAT/CMD не содержит поддерживаемого запуска winws/winws2 |
-| `MULTIPLE_WINWS_LAUNCHES` | Error | Найдено более одного запуска winws/winws2 |
-| `TEXT_CONFIG_HAS_NO_OPTIONS` | Error | TXT не содержит параметров `--...` или response file |
-| `CONFIG_GENERATION_UNKNOWN` | Error | Поколение TXT не определено, а default отключен |
-| `GENERATION_MISMATCH` | Error | Executable и параметры относятся к разным поколениям |
-| `INCLUDED_CONFIG_NOT_FOUND` | Error | Указанный response file отсутствует |
-| `INCLUDE_CYCLE` | Error | Обнаружен цикл подключений TXT |
-| `INCLUDE_DEPTH_EXCEEDED` | Error | Превышена глубина подключений |
-| `CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS` | Warning | Рядом с response file присутствовали игнорируемые аргументы |
-| `CALLED_SCRIPT_READ_FAILED` | Warning | Вызванный BAT/CMD найден, но не прочитан |
-| `UNRESOLVED_BATCH_VARIABLE` | Warning | Используемая BAT-переменная не разрешена |
-| `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | Генерируемый файл находится вне каталога источника |
-| `REFERENCED_FILE_NOT_FOUND` | Warning | BIN/TXT/LUA-файл отсутствует |
+| `BATCH_READ_FAILED` | Error | The BAT or CMD file cannot be read |
+| `TEXT_CONFIG_READ_FAILED` | Error | The TXT file cannot be read |
+| `WINWS_LAUNCH_NOT_FOUND` | Error | The BAT or CMD file has no supported winws or winws2 launch |
+| `MULTIPLE_WINWS_LAUNCHES` | Error | The file has more than one winws or winws2 launch |
+| `TEXT_CONFIG_HAS_NO_OPTIONS` | Error | The TXT file has no `--...` options and no response file |
+| `CONFIG_GENERATION_UNKNOWN` | Error | The TXT generation is unknown, and the default is disabled |
+| `GENERATION_MISMATCH` | Error | The executable and the options belong to different generations |
+| `INCLUDED_CONFIG_NOT_FOUND` | Error | The referenced response file does not exist |
+| `INCLUDE_CYCLE` | Error | The TXT includes make a cycle |
+| `INCLUDE_DEPTH_EXCEEDED` | Error | The include depth is more than the limit |
+| `CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS` | Warning | The analyzer ignored arguments near the response file |
+| `CALLED_SCRIPT_READ_FAILED` | Warning | A called BAT or CMD file exists but cannot be read |
+| `UNRESOLVED_BATCH_VARIABLE` | Warning | A used BAT variable cannot be resolved |
+| `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | A generated file is outside the source folder |
+| `REFERENCED_FILE_NOT_FOUND` | Warning | A BIN, TXT or LUA file is missing |
 
-### Коды установщика
+### Installer codes
 
-| Код | Условие |
+| Code | Condition |
 |---|---|
-| `IMPORT_RESULT_INVALID` | Анализ или ретаргетинг неуспешен |
-| `IMPORT_NAME_REQUIRED` | Имя Config пусто |
-| `IMPORT_MISSING_FILE_RESOLUTION_REQUIRED` | Не для каждого отсутствующего файла задано решение |
-| `IMPORT_INSTALL_FAILED: ...` | Исключение записи, копирования, переписывания или сохранения |
+| `IMPORT_RESULT_INVALID` | The analysis or the retarget is not successful |
+| `IMPORT_NAME_REQUIRED` | The config name is empty |
+| `IMPORT_MISSING_FILE_RESOLUTION_REQUIRED` | A missing file has no decision |
+| `IMPORT_INSTALL_FAILED: ...` | An exception occurred during a write, a copy, a path change or the save |
+| `<ConfigShare code>: ...` | `ConfigShareService.InstallAsync` failed for a `.cdpiconfig` package |
 
-`ConfigurationService.SaveConfigItem` может вернуть собственный error code. Он передается вызывающей стороне без изменения. Коды встроенного `Zapret1ToZapret2Converter` также добавляются в `Issues` без переименования, поэтому их полный набор определяется реализацией конвертера.
+`ConfigurationService.SaveConfigItem` can return its own error code. The installer passes it to the caller without changes. The installer also adds the codes of `Zapret1ToZapret2Converter` to `Issues` without changes. The converter implementation sets the full list of these codes.
 
-## Пример прямого использования AddOn
+## Example of a direct call
 
 ```csharp
 using CDPIUI.AddOns.ConfigImport;
@@ -865,11 +886,11 @@ ConfigImportInstallResult installed = await installer.InstallAsync(
     "Imported Zapret Config");
 ```
 
-Перед массовым использованием `ReplacementPath: null` вызывающая сторона должна явно подтвердить такое решение пользователю. Сам анализатор не считает отсутствие файла разрешенным автоматически.
+CAUTION: Ask the user to confirm `ReplacementPath: null` before you use it for many files. The analyzer does not treat a missing file as resolved automatically.
 
-## Пример преобразования BAT-переменных
+## Example of a BAT variable conversion
 
-Исходный фрагмент:
+The source fragment:
 
 ```bat
 set "LISTS=%~dp0lists\list-general.txt"
@@ -877,7 +898,7 @@ rem set "LISTS=%~dp0lists\list-alt.txt"
 winws2.exe --hostlist=%LISTS% --lua-desync=fake
 ```
 
-Логическая часть результата до установки:
+The logical part of the result before the save:
 
 ```json
 {
@@ -898,98 +919,108 @@ winws2.exe --hostlist=%LISTS% --lua-desync=fake
 }
 ```
 
-После установки пути обоих значений переписываются в `List/Converted/<importId>/...`.
+After the save, the paths of the two values point to `List/Converted/<importId>/...`.
 
-## Границы статического анализа
+## Limits of the static analysis
 
-Механизм не является интерпретатором `cmd.exe`. Следующие конструкции могут быть обработаны только частично или не обработаны:
+The add-on is not a `cmd.exe` interpreter. It processes these constructs partially or not at all:
 
-- произвольные ветвления `if` и циклы `for`;
-- вычисления `set /a` и сложные подстановки `%VAR:...%`;
-- динамически сформированные имена переменных и команд;
-- `goto` и общий control flow BAT;
-- команды, создающие файлы иначе, чем поддержанный `echo >`/`echo >>` в `load_user_lists`;
-- запуск executable через обертку, функцию или конструкцию, которую токенизатор не распознает;
-- несколько возможных запусков с runtime-выбором — они намеренно считаются неоднозначностью;
-- response files нестандартного формата;
-- ресурсы с расширением, отсутствующим в списке распознаваемых;
-- значения, зависящие от текущего окружения ОС, могут импортироваться по-разному на разных компьютерах;
-- семантическая совместимость произвольно выбранного компонента не проверяется, кроме специальных проверок Zapret;
-- обратное преобразование winws2 в winws1 отсутствует;
-- тестирование не изолирует процесс компонента и не эмулирует весь исходный BAT;
-- временный переписчик теста поддерживает меньше относительных форм пути, чем установщик;
-- текущая реализация не содержит отдельного автоматизированного набора тестов для Config Import.
+- `if` branches and `for` loops;
+- `set /a` calculations and complex substitutions `%VAR:...%`;
+- variable and command names that a script makes at run time;
+- `goto` and the general control flow of BAT files;
+- commands that make files in a way other than the supported `echo >` and `echo >>` in `load_user_lists`;
+- an executable that a wrapper, a function or an unknown construct starts;
+- several possible launches with a selection at run time. The add-on treats them as ambiguous on purpose;
+- response files in a non-standard format;
+- resources with an extension that is not in the known list.
 
-Нераспознанная переменная обычно не удаляется: она становится редактируемой `commaVar` со значением `$EMPTY`. Это сохраняет возможность вручную довести Config до рабочего состояния.
+Also note these limits:
 
-## Требования к расширению механизма
+- Values that depend on the current OS environment can give different results on different computers.
+- The add-on does not check the compatibility of a random component, except for the special Zapret checks.
+- The add-on cannot convert winws2 to winws1.
+- The test does not isolate the component process and does not repeat the full source BAT.
+- The temporary path replacement of the test knows fewer relative forms than the installer.
+- The general analyzer reads BAT files only as UTF-8 and does not read `@rem` as a comment. The Zapret analyzer does both.
 
-### Добавление нового общего компонента
+An unknown variable usually stays: it becomes an editable `commaVar` with the value `$EMPTY`. Thus the user can complete the config manually.
 
-Если его BAT/CMD запускает executable напрямую и параметры представлены обычной командной строкой, отдельный парсер не требуется. Достаточно:
+## Extension rules
 
-1. добавить/установить Store-компонент с корректными `Id`, `Directory`, `Executable`, `CurrentVersion`;
-2. при необходимости расширить список ресурсных расширений;
-3. проверить распознавание executable и сохранение путей.
+### A new general component
 
-### Добавление специализированного синтаксиса
+If its BAT or CMD file starts the executable directly with a usual command line, no separate parser is necessary. Do these steps:
 
-Если компонент использует собственный include-формат, условные переменные или генерирует ресурсы, рекомендуется:
+1. Add or install the Store component with correct `Id`, `Directory`, `Executable` and `CurrentVersion` values.
+2. If necessary, extend the list of resource extensions.
+3. Make sure that the executable detection and the path save operate.
 
-1. оставить `ConfigImportService` фасадом;
-2. добавить отдельный статический анализатор без UI-зависимостей;
-3. преобразовать специализированный результат в `ConfigImportResult`;
-4. не выполнять исходный скрипт;
-5. возвращать стабильные issue codes;
-6. явно описать поколение/версию и правила несовместимости;
-7. добавить обработку зависимостей в `ReferencedFiles`, `MissingReferencedFiles` и `GeneratedFiles`;
-8. обеспечить одинаковое переписывание путей при тестировании и установке;
-9. добавить автоматизированные regression-тесты на реальные наборы.
+### A special syntax
 
-### Изменение структуры хранения
+If the component uses its own include format, conditional variables or generated resources, do these steps:
 
-Структуру `List|Bin|Lua/Converted/<importId>` следует менять только совместно с:
+1. Keep `ConfigImportService` as the facade.
+2. Add a separate static analyzer without UI dependencies.
+3. Convert the special result to `ConfigImportResult`.
+4. Do not run the source script.
+5. Return stable issue codes.
+6. Describe the generation, the version and the incompatibility rules explicitly.
+7. Put the dependencies into `ReferencedFiles`, `MissingReferencedFiles` and `GeneratedFiles`.
+8. Make sure that the test and the save change the paths in the same way.
+9. Add automated tests with real config sets to `CDPIUI.Tests`.
+
+### A change of the storage structure
+
+Change the structure `List|Bin|Lua/Converted/<importId>` only together with:
 
 - `GetResourceCategory`;
 - `GetOrganizedRelativePath`;
 - `BuildResources`;
 - `RewriteResources`;
-- тестами загрузки Config через `ConfigurationService`;
-- логикой удаления/rollback, ограничивающей допустимые корни.
+- the tests that load the config through `ConfigurationService`;
+- the deletion and rollback logic that limits the permitted roots.
 
-## Инварианты реализации
+## Invariants
 
-При дальнейшей разработке должны сохраняться следующие свойства:
+Keep these properties in all changes:
 
-1. Анализ входного BAT/CMD не запускает его.
-2. Исходные файлы не изменяются и не удаляются.
-3. Отсутствующий файл не считается решенным без явного `ConfigImportMissingFileResolution`.
-4. Каждый импорт получает отдельный каталог ресурсов.
-5. Пути в Config после установки указывают на фактическую категорию `List`, `Bin` или `Lua`.
-6. Запись не может выйти за пределы staging/destination-каталога.
-7. Ошибка сохранения Config инициирует rollback созданных ресурсов.
-8. `winws1 -> winws2` преобразует готовую раскрытую строку, а специализированный Zapret-парсер не смешивает поколения.
-9. Нативный winws2 Config сохраняется без конвертации синтаксиса.
-10. Тестовые временные файлы удаляются после остановки процесса или закрытия страницы.
+1. The analysis of an input BAT or CMD file does not run it.
+2. The add-on does not change or delete the source files.
+3. A missing file is not resolved without an explicit `ConfigImportMissingFileResolution`.
+4. Each import gets a separate resource folder.
+5. After the save, the config paths point to the actual category `List`, `Bin` or `Lua`.
+6. A write cannot go outside the staging or destination folder.
+7. A failed config save starts a rollback of the created resources.
+8. `winws1 -> winws2` converts the ready expanded line. The Zapret parser does not mix generations.
+9. A native winws2 config is saved without a syntax conversion.
+10. The test removes the temporary files after the process stops or the page closes.
 
-## Рекомендуемая проверка изменений
+## Tests
 
-Минимальный regression-набор должен включать:
+`CDPIUI.Tests/AddOns` has tests for this add-on:
 
-1. простой BAT для общего компонента;
-2. BAT с caret-продолжениями;
-3. BAT с одним и несколькими executable-запусками;
-4. winws1 BAT с последующим ретаргетингом на winws2;
-5. нативный winws2 BAT;
-6. TXT с `# BuiltinVersion`;
-7. BAT, который ссылается только на TXT response file;
-8. `service.bat` с переменными, диспетчеризацией и `load_user_lists`;
-9. `ACTIVE_*.bin` с совпадающим SHA-256;
-10. известный, отсутствующий, замененный и пустой ресурс каждого типа;
-11. пути `list/lists`, `bin/fake`, `lua`, абсолютные и `$GETCURRENTDIR()`;
-12. тестовый запуск с отсутствующими и генерируемыми файлами;
-13. сохранение двух Config с одинаковым именем;
-14. искусственную ошибку `SaveConfigItem` для проверки rollback;
-15. JSON текущего и старого формата.
+- `ConfigImportServiceTests.cs` checks `ConfigImportService.TryParseSet`;
+- `ZapretConfigImportServiceTests.cs` checks `TrimShellTail` and `ExpandFileModifiers`.
 
-Успешная сборка подтверждает только компиляцию. Отдельно необходимо проверять фактические аргументы процесса, содержимое сохраненного JSON, расположение ресурсов и запуск Config из обычной страницы компонента.
+`CDPIUI.Tests/Core/BatchFileEncodingTests.cs` checks the encoding detection.
+
+A minimum set of manual checks for a change includes:
+
+1. a simple BAT file for a general component;
+2. a BAT file with caret continuations;
+3. a BAT file with one launch and with several launches;
+4. a winws1 BAT file and a retarget to winws2;
+5. a native winws2 BAT file;
+6. a TXT file with `# BuiltinVersion`;
+7. a BAT file that refers only to a TXT response file;
+8. `service.bat` with variables, a dispatch and `load_user_lists`;
+9. `ACTIVE_*.bin` with the same SHA-256;
+10. a known, a missing, a replaced and an empty resource of each type;
+11. the paths `list/lists`, `bin/fake`, `lua`, absolute paths and `$GETCURRENTDIR()`;
+12. a test run with missing and generated files;
+13. a save of two configs with the same name;
+14. an artificial `SaveConfigItem` error to check the rollback;
+15. a current and an old JSON format.
+
+A successful build proves only the compilation. Also check the actual process arguments, the saved JSON, the resource locations and a start of the config from the usual component page.
