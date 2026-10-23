@@ -28,16 +28,7 @@ namespace CDPIUI.Core.Features
         {
             try
             {
-                if (File.Exists(linkTo))
-                {
-                    string backupFilePath = BackupFile(linkTo);
-                    Debug.WriteLine($"{itemId}, {linkFrom}");
-                    SettingsManager.Instance.SetValue(
-                        ["HARDLINKS", itemId, linkTo], "backupFile", backupFilePath);
-                    File.Delete(linkTo);
-                }
-
-                File.CreateSymbolicLink(linkTo, linkFrom);
+                ReplaceWithLink(itemId, linkTo, temporaryPath => File.CreateSymbolicLink(temporaryPath, linkFrom));
                 SettingsManager.Instance.SetValue(
                     ["HARDLINKS", itemId, linkTo], "targetFile", linkFrom);
 
@@ -67,13 +58,16 @@ namespace CDPIUI.Core.Features
                 Debug.WriteLine($">>> {linkTo} {itemId}");
                 string backupFile = SettingsManager.Instance.GetValue<string>(
                     ["HARDLINKS", itemId, linkTo], "backupFile");
-                if (!File.Exists(backupFile))
+                bool hadOriginal = !string.IsNullOrEmpty(backupFile) && backupFile != "NaN";
+                if (hadOriginal && !File.Exists(backupFile))
                 {
                     throw new FileNotFoundException(
                         $"Backup file \"{backupFile}\" not found. Hardlink remove cannot be complete.");
                 }
                 File.Delete(linkTo);
-                File.Move(backupFile, linkTo);
+                // Without an original file the link is only removed (audit 10.12).
+                if (hadOriginal)
+                    File.Move(backupFile, linkTo);
 
                 SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "backupFile", "NaN");
                 SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "targetFile", "NaN");
@@ -101,16 +95,12 @@ namespace CDPIUI.Core.Features
         {
             try
             {
-                if (File.Exists(linkTo))
+                ReplaceWithLink(itemId, linkTo, temporaryPath =>
                 {
-                    string backupFilePath = BackupFile(linkTo);
-                    Debug.WriteLine($"{itemId}, {linkFrom}");
-                    SettingsManager.Instance.SetValue(
-                        ["HARDLINKS", itemId, linkTo], "backupFile", backupFilePath);
-                    File.Delete(linkTo);
-                }
-
-                CreateHardLink(linkTo, linkFrom, nint.Zero);
+                    // Fails, for example, between two volumes; that was reported as success.
+                    if (!CreateHardLink(temporaryPath, linkFrom, nint.Zero))
+                        throw new global::System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                });
                 SettingsManager.Instance.SetValue(
                     ["HARDLINKS", itemId, linkTo], "targetFile", linkFrom);
 
@@ -130,11 +120,38 @@ namespace CDPIUI.Core.Features
             }
         }
 
-        private static string BackupFile(string filePath)
+        /// <summary>
+        /// Creates the link under a temporary name first and replaces the file only when that
+        /// worked: the original was deleted before the link was created, so a failed
+        /// CreateSymbolicLink (no privilege without developer mode) left nothing in its place.
+        /// </summary>
+        private static void ReplaceWithLink(string itemId, string linkTo, Action<string> createLink)
         {
-            string bakFilePath = $"{filePath}.bak";
-            File.Copy(filePath, bakFilePath, true);
-            return bakFilePath;
+            string temporaryPath = $"{linkTo}.{Guid.NewGuid():N}.link";
+            createLink(temporaryPath);
+            try
+            {
+                bool isExistingLink = IsFileLinked(itemId, linkTo) != null ||
+                    (File.Exists(linkTo) && (File.GetAttributes(linkTo) & FileAttributes.ReparsePoint) != 0);
+                if (isExistingLink && File.Exists(linkTo))
+                {
+                    // Linking again: the backup of the original file is already there.
+                    File.Delete(linkTo);
+                }
+                else if (File.Exists(linkTo))
+                {
+                    string backupFilePath = $"{linkTo}.bak";
+                    File.Move(linkTo, backupFilePath, overwrite: true);
+                    SettingsManager.Instance.SetValue(
+                        ["HARDLINKS", itemId, linkTo], "backupFile", backupFilePath);
+                }
+                File.Move(temporaryPath, linkTo);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                    File.Delete(temporaryPath);
+            }
         }
 
         #region WINAPI
