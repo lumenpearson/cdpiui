@@ -177,32 +177,25 @@ namespace CDPIUI.TrayIcon.Helper
 
         public static async Task StopService()
         {
-            string error = "NaN";
-            try
+            string sc = Path.Combine(Environment.SystemDirectory, "sc.exe");
+            foreach (string command in new[] { "stop WinDivert", "delete WinDivert" })
             {
-                await ExecuteCommand(Path.Combine(Environment.SystemDirectory, "sc.exe"), "stop WinDivert");
+                try
+                {
+                    var (exitCode, output) = await ExecuteCommand(sc, command);
+                    // 1060: the service does not exist, 1062: it is not running. Other codes were
+                    // printed to a console the tray does not have.
+                    if (exitCode != 0 && exitCode != 1060 && exitCode != 1062)
+                        Logger.Instance.CreateWarningLog(nameof(ProcessManager), $"sc {command} failed with {exitCode}: {output.Trim()}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateErrorLog(nameof(ProcessManager), $"Cannot run sc {command}: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                error = ex.Message;
-            }
-            try
-            {
-                await ExecuteCommand(Path.Combine(Environment.SystemDirectory, "sc.exe"), "delete WinDivert");
-            }
-            catch (Exception ex)
-            {
-
-                if (error != "NaN") Logger.Instance.CreateErrorLog(nameof(ProcessManager), $"Two or more errors occurred\n" +
-                    $"[1/2]\n" +
-                    $"{error}" +
-                    $"[2/2]\n" +
-                    $"{ex.Message}");
-            }
-
         }
 
-        private static async Task ExecuteCommand(string fileName, string arguments)
+        private static async Task<(int ExitCode, string Output)> ExecuteCommand(string fileName, string arguments)
         {
             using (Process process = new Process())
             {
@@ -228,14 +221,7 @@ namespace CDPIUI.TrayIcon.Helper
                 string output = await outputTask;
                 string error = await errorTask;
 
-                if (process.ExitCode != 0)
-                {
-                    Console.WriteLine($"Unexpected error (Execute Command):\n{output}");
-                }
-                else
-                {
-                    Console.WriteLine("Success (Execute Command)");
-                }
+                return (process.ExitCode, string.IsNullOrWhiteSpace(error) ? output : $"{output}\n{error}");
             }
         }
 
