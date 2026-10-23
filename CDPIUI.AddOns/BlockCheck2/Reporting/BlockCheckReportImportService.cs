@@ -114,7 +114,7 @@ public sealed class BlockCheckReportImportService
             importIssues);
 
         // The preset of a report runs in the tray with administrator rights: a report from
-        // someone else must not make the component write files (audit 14.4). The synthesizer
+        // someone else must not make the component write files. The synthesizer
         // never writes such options, so any of them means the report was edited.
         try
         {

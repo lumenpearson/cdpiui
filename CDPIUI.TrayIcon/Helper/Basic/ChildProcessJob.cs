@@ -6,7 +6,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
     /// <summary>
     /// A job object that ends the components started by the tray when the tray process ends,
     /// also when it is killed or crashes: winws, GoodbyeDPI or ProxiFyre kept running without a
-    /// tray that could stop them (audit 12.5).
+    /// tray that could stop them.
     /// </summary>
     internal static class ChildProcessJob
     {

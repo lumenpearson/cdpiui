@@ -41,7 +41,7 @@ namespace CDPIUI.TrayIcon.Helper
 
         // Checked in this order and the first match of a line wins: with the dictionary every
         // matching key overwrote the previous one, so "Error opening filter" became UNKNOWN
-        // through the generic "error" key (audit 12.8).
+        // through the generic "error" key.
         static readonly (string Text, PrettyErrorCode Code)[] errorMappings =
         {
             ("Error opening filter", PrettyErrorCode.FILTER_OPEN_ERROR),
@@ -435,7 +435,7 @@ namespace CDPIUI.TrayIcon.Helper
                 si.lpAttributeList = lpAttrList;
 
                 // CreateProcessW: CreateProcessA turned characters outside the ANSI code page of
-                // the system into '?' in paths and arguments (audit 12.6).
+                // the system into '?' in paths and arguments.
                 var success = CreateProcess(
                     null,
                     new StringBuilder($"\"{exePath}\" {args}"),

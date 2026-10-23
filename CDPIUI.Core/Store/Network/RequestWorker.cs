@@ -87,7 +87,7 @@ namespace CDPIUI.Core.Store.Network
             var lastUpdate = stopwatch.Elapsed;
 
             // HttpClient.Timeout ends with the response headers: a connection that stops sending
-            // the body would wait forever, so every read gets its own deadline (audit 10.10).
+            // the body would wait forever, so every read gets its own deadline.
             using var stallCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             while (true)
             {

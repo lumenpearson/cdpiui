@@ -12,7 +12,7 @@
         public QueueItemModel? CurrentDownloadingItem { get; set; }
 
         // Every access to Queue and CurrentDownloadingItem changes goes through _queueLock: the
-        // queue is used from the UI thread, download callbacks and the install worker (audit 10.8).
+        // queue is used from the UI thread, download callbacks and the install worker.
         // Events are raised outside the lock.
         public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false) // PUBLIC
         {

@@ -77,7 +77,7 @@ public static partial class ConfigFileReferences
             return null;
         }
         // --lua-init also accepts inline Lua, and --blob accepts inline hexadecimal data. A value
-        // with the @ file marker is a file even when its name has ';' or '=' (audit 11.8).
+        // with the @ file marker is a file even when its name has ';' or '='.
         if (option.Name.Equals("--lua-init", StringComparison.OrdinalIgnoreCase) &&
             !ConfigCommandLine.Unquote(option.Value).StartsWith('@') &&
             expanded.IndexOfAny([';', '=', '\n', '\r']) >= 0)
