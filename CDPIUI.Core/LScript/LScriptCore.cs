@@ -44,7 +44,7 @@ namespace CDPIUI.Core.LScript
                 }
 
                 if (scriptArgs != null)
-                    scriptData = Regex.Replace(scriptData, @"{.*?}", scriptArgs);
+                    scriptData = Regex.Replace(scriptData, @"{.*?}", _ => scriptArgs);
             }
             return scriptData;
         }
@@ -111,7 +111,7 @@ namespace CDPIUI.Core.LScript
             }
             catch (Exception ex)
             {
-                // pass
+                Logger.Instance.CreateWarningLog(nameof(LScriptCore), $"Script {scriptString} failed: {ex.Message}");
             }
 
             return executeResult;
@@ -148,7 +148,7 @@ namespace CDPIUI.Core.LScript
 
                     if (!string.IsNullOrEmpty(scriptArgs))
                     {
-                        scriptData = Regex.Replace(scriptData, @"{.*?}", scriptArgs);
+                        scriptData = Regex.Replace(scriptData, @"{.*?}", _ => scriptArgs);
                     }
 
                     string replacement = m.Value;
@@ -334,6 +334,9 @@ namespace CDPIUI.Core.LScript
                 }
 
                 string[] parts = scriptData.Split(", ", StringSplitOptions.RemoveEmptyEntries);
+                // An empty script, for example after a trailing ';'.
+                if (parts.Length == 0)
+                    continue;
                 string scriptName = parts[0];
                 string[] scriptArgs = parts.Skip(1).ToArray();
 
@@ -350,15 +353,14 @@ namespace CDPIUI.Core.LScript
                     case "install_msi":
                         if (scriptArgs.Length < 2)
                             break;
-                        LScriptMsiHandler.InstallMsi(scriptArgs, extraArgs, cancellationToken ?? default);
+                        // Awaited, so a failed installation fails the item installation instead of the process.
+                        await LScriptMsiHandler.InstallMsi(scriptArgs, extraArgs, cancellationToken ?? default);
                         break;
                     default:
                         Logger.Instance.CreateWarningLog(nameof(LScriptCore), $"Unknown script command: {scriptName}");
                         break;
                 }
             }
-            await Task.CompletedTask;
-
             return result;
         }
 
