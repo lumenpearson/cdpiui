@@ -3396,6 +3396,9 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   <data name="UpdateFileInvalidExtension" xml:space="preserve">
     <value>Выбранный файл не является пакетом обновления CDPI UI.</value>
   </data>
+  <data name="UpdateFileMsiInstallation" xml:space="preserve">
+    <value>Эта копия CDPI UI установлена через Setup.msi. Пакеты обновления (.cdpipatch) подходят только для портативной копии. Используйте Setup.msi новой версии или проверку обновлений в приложении.</value>
+  </data>
   <data name="UpdateFileCurrentVersionFormat" xml:space="preserve">
     <value>Текущая версия: {0}</value>
   </data>

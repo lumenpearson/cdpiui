@@ -435,7 +435,17 @@ namespace CDPIUI.Core.Store.Repository
                         continue;
                     }
 
-                    ReadyKitModel? kit = JSONConvertor.LoadJson<ReadyKitModel>(kitInitPath);
+                    // A damaged kit file must not hide the kits after it.
+                    ReadyKitModel? kit;
+                    try
+                    {
+                        kit = JSONConvertor.LoadJson<ReadyKitModel>(kitInitPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Skip the damaged ready kit: {kitName}: {ex.Message}");
+                        continue;
+                    }
                     if (kit == null || string.IsNullOrWhiteSpace(kit.store_id) || kit.items == null || kit.items.Count == 0)
                     {
                         Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the invalid ready kit: {kitName}");

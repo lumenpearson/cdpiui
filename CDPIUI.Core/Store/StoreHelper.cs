@@ -313,6 +313,31 @@ namespace CDPIUI.Core.Store
         }
 
         /// <summary>
+        /// RemoveItemAsync works from the database record, which a failed first installation does
+        /// not have yet; its downloaded files stayed in the item folder.
+        /// </summary>
+        private static void DeleteFolderWithoutRecord(string itemId)
+        {
+            if (!StoreItemIds.IsValid(itemId) ||
+                itemId == SharedConstants.ApplicationStoreId ||
+                itemId == SharedConstants.LocalUserItemsId ||
+                DatabaseHelper.Instance.GetItemById(itemId) != null)
+                return;
+
+            string itemFolder = Path.Combine(Directories.StoreItemsDirectory, itemId);
+            if (!Directory.Exists(itemFolder) || !StoreItemIds.IsItemFolder(itemFolder))
+                return;
+            try
+            {
+                Directory.Delete(itemFolder, recursive: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot delete \"{itemFolder}\": {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Stops the component before its files are replaced or deleted, together with the
         /// driver service it may hold open. Returns whether the component was running.
         /// </summary>
@@ -444,7 +469,10 @@ namespace CDPIUI.Core.Store
                     // A failed update keeps the installed version; only a failed first
                     // installation is cleaned up.
                     if (!wasInstalled)
+                    {
                         await RemoveItemAsync(qi.ItemId);
+                        DeleteFolderWithoutRecord(qi.ItemId);
+                    }
                 }
                 catch (Exception ex)
                 {
