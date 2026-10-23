@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Network;
 using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Shared;
+using CDPIUI.Shared.Exceptions;
 using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Secrets;
@@ -288,7 +289,9 @@ namespace CDPIUI.Core.Store.Repository
 
             try
             {
-                RepositoryInitializationModel repoInitData = JSONConvertor.LoadJson<RepositoryInitializationModel>(localRepoInitFile);
+                // An empty file or "null" gives no model.
+                RepositoryInitializationModel repoInitData = JSONConvertor.LoadJson<RepositoryInitializationModel>(localRepoInitFile)
+                    ?? throw new UnknownFileFormatException();
 
                 StoreLocalizationPaths = repoInitData.localized_strings_directory;
 

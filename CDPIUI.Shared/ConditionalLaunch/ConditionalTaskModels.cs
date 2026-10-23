@@ -302,6 +302,11 @@ namespace CDPIUI.Shared.ConditionalLaunch
                 throw new InvalidDataException("The process trigger delay must be between 0 and 86400 seconds.");
             if (task.Actions == null || task.Actions.Count == 0)
                 throw new InvalidDataException("At least one action is required.");
+            if (task.Actions.Any(action => action == null))
+                throw new InvalidDataException("The conditional task contains an invalid action.");
+            if (task.Triggers.Cast<ConditionalParameterizedModel>().Concat(task.Actions)
+                .Any(model => model.Parameters == null || model.Parameters.Any(parameter => parameter == null)))
+                throw new InvalidDataException("The conditional task contains an invalid parameter.");
         }
 
         private static void Normalize(ConditionalTask task)

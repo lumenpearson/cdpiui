@@ -2,6 +2,7 @@
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Shared.Extensions;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CDPIUI.AddOns.GoodCheck
@@ -82,7 +83,11 @@ namespace CDPIUI.AddOns.GoodCheck
         {
             try
             {
-                var doc = XDocument.Load(xmlPath);
+                // No DTD processing: internal entities cannot blow up the memory of the process.
+                var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+                XDocument doc;
+                using (var reader = XmlReader.Create(xmlPath, readerSettings))
+                    doc = XDocument.Load(reader);
                 var root = doc.Root ?? throw new InvalidOperationException("ERR_INVALID_FILE");
                 string componentId = string.Empty;
 

@@ -92,8 +92,9 @@ namespace CDPIUI.Core.Store.Application
             try
             {
                 string requirementsFile = Path.Combine(patchDirectory, "requirements.json");
-                PatchRequirementsModel requirements = JSONConvertor.LoadJson<PatchRequirementsModel>(requirementsFile);
-                if (string.IsNullOrEmpty(requirements.version))
+                PatchRequirementsModel? requirements = JSONConvertor.LoadJson<PatchRequirementsModel>(requirementsFile);
+                // An empty file or "null" gives no model.
+                if (requirements == null || string.IsNullOrEmpty(requirements.version))
                     throw new UnknownFileFormatException();
                 return OperationResultModel<PatchRequirementsModel>.SuccessResult(requirements);
             }

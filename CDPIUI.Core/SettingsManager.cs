@@ -1,5 +1,6 @@
 ﻿using CDPIUI.Core.Data;
 using CDPIUI.Shared.Basic;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CDPIUI.Core
@@ -30,7 +31,7 @@ namespace CDPIUI.Core
             if (!File.Exists(templatePath)) return GetDefaultValue<T>()!;
             try
             {
-                XDocument temp_xDocument = XDocument.Load(templatePath);
+                XDocument temp_xDocument = LoadTemplate(templatePath);
                 return GetValue<T>(group, key, temp_xDocument.Root, raiseExceptionIfNotExits:true)!;
             }
             catch
@@ -46,13 +47,21 @@ namespace CDPIUI.Core
             if (!File.Exists(templatePath)) return GetDefaultValue<T>()!;
             try
             {
-                XDocument temp_xDocument = XDocument.Load(templatePath);
+                XDocument temp_xDocument = LoadTemplate(templatePath);
                 return GetValue<T>(groupPath, key, temp_xDocument.Root, raiseExceptionIfNotExits: true)!;
             }
             catch
             {
                 return GetDefaultValue<T>()!;
             }
+        }
+
+        // No DTD processing: internal entities cannot blow up the memory of the process.
+        private static XDocument LoadTemplate(string path)
+        {
+            var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+            using var reader = XmlReader.Create(path, readerSettings);
+            return XDocument.Load(reader);
         }
 
     }

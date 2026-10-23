@@ -5,7 +5,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <RootNamespace>EditHostFile</RootNamespace>
     <AssemblyName>EditHostFile</AssemblyName>
     <!-- A 32-bit process would see SysWOW64 instead of the real hosts file. -->
