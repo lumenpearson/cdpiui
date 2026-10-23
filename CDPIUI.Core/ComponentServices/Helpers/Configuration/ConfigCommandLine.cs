@@ -106,7 +106,8 @@ public static class ConfigCommandLine
         return IsOption(name);
     }
 
-    public static bool IsOption(string token) => token.Length > 1 && token[0] == '-';
+    // A negative number such as -10000 is a value, not an option.
+    public static bool IsOption(string token) => token.Length > 1 && token[0] == '-' && !char.IsDigit(token[1]);
 
     public static string ToSingleLine(string? commandLine) =>
         string.Join(
