@@ -27,7 +27,7 @@ public sealed record ConfigUsedFile(
 }
 
 /// <summary>Shared, UI-independent parsing and rewriting of config file references.</summary>
-public static class ConfigFileReferences
+public static partial class ConfigFileReferences
 {
     public static IReadOnlyList<ConfigUsedFile> ExtractFromText(
         string? text,
@@ -76,8 +76,10 @@ public static class ConfigFileReferences
         {
             return null;
         }
-        // --lua-init also accepts inline Lua, and --blob accepts inline hexadecimal data.
+        // --lua-init also accepts inline Lua, and --blob accepts inline hexadecimal data. A value
+        // with the @ file marker is a file even when its name has ';' or '=' (audit 11.8).
         if (option.Name.Equals("--lua-init", StringComparison.OrdinalIgnoreCase) &&
+            !ConfigCommandLine.Unquote(option.Value).StartsWith('@') &&
             expanded.IndexOfAny([';', '=', '\n', '\r']) >= 0)
         {
             return null;
@@ -131,9 +133,19 @@ public static class ConfigFileReferences
         {
             int separator = path.IndexOf(':');
             path = separator >= 0 ? path[(separator + 1)..] : path;
+            path = StripBlobOffset(path);
         }
         return NormalizePath(path);
     }
+
+    /// <summary>
+    /// --blob=name:+4@file.bin reads the file from offset 4: the "+4" is not part of the path.
+    /// </summary>
+    private static string StripBlobOffset(string source) =>
+        BlobOffsetRegex().Replace(source, string.Empty, 1);
+
+    [GeneratedRegex(@"^\+\d+(?=[@$])")]
+    private static partial Regex BlobOffsetRegex();
 
     /// <summary>Replaces all matching file arguments, retaining blob names and Lua markers.</summary>
     public static string ReplaceFileInText(string? text, string filePath, ConfigFileKind kind, string replacementPath)
@@ -175,8 +187,10 @@ public static class ConfigFileReferences
                 int separator = unquoted.IndexOf(':');
                 string prefix = separator >= 0 ? unquoted[..(separator + 1)] : string.Empty;
                 string source = separator >= 0 ? unquoted[(separator + 1)..] : unquoted;
+                string offset = source[..^StripBlobOffset(source).Length];
+                source = source[offset.Length..];
                 char marker = source.StartsWith('$') && !source.StartsWith("$GETCURRENTDIR()", StringComparison.OrdinalIgnoreCase) ? '$' : '@';
-                updatedValue = ConfigCommandLine.Quote($"{prefix}{marker}{replacementPath}");
+                updatedValue = ConfigCommandLine.Quote($"{prefix}{offset}{marker}{replacementPath}");
             }
             else
             {
