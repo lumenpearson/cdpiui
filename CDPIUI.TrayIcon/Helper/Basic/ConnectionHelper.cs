@@ -99,6 +99,18 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     }
 
                     Logger?.CreateDebugLog(nameof(PipeServer), $"Client connected on thread[{threadId}].");
+                    // The pipe takes one client at a time: a client that never authorizes would
+                    // keep the real GUI out (audit 12.10).
+                    var connectedStream = (NamedPipeServerStream)PipeStream;
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(AuthorizationTimeout);
+                        if (!IsAuthorized && ReferenceEquals(PipeStream, connectedStream) && connectedStream.IsConnected)
+                        {
+                            Logger?.CreateWarningLog(nameof(PipeServer), "The client did not authorize in time; disconnecting.");
+                            try { connectedStream.Disconnect(); } catch (Exception) { }
+                        }
+                    });
                     await HandleConnectionAsync();
                 }
                 catch (OperationCanceledException)
@@ -127,6 +139,24 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
                     Logger?.CreateDebugLog(nameof(PipeServer), $"Client handler finished.");
                 }
+            }
+        }
+
+        private static readonly TimeSpan AuthorizationTimeout = TimeSpan.FromSeconds(15);
+
+        // Before authorization only service messages (connection, authorization result) go out:
+        // component output and paths are for the authorized GUI only (audit 12.10).
+        protected override bool CanSend(string message)
+        {
+            if (IsAuthorized)
+                return true;
+            try
+            {
+                return PipeModelConvertor.ConvertBack(message) is ServiceMessageModel;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
