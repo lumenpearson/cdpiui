@@ -1,3 +1,5 @@
+**English** | [Русский](RELEASES.ru.md)
+
 # CI and releases
 
 The workflows are in `.github/workflows`. The scripts that they run are in `.github/scripts`.

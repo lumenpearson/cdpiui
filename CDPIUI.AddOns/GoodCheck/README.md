@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # GoodCheck add-on
 
 ## Purpose
@@ -56,7 +58,7 @@ All paths are relative to the add-on folder. `GoodCheckProcessService.GetAddOnDi
 | `<Executable>.exe` | The GoodCheck executable. The name comes from the `Executable` field of the Store item. |
 | `config.ini` | The GoodCheck settings |
 | `CheckLists/` | The site lists of the current run |
-| `StrategiesGoGo/<ciadpi|gdpi|zapret>/*.txt` | The strategy lists of each component |
+| `StrategiesGoGo/<ciadpi\|gdpi\|zapret>/*.txt` | The strategy lists of each component |
 | `Logs/logfile_GoodCheckGoGo_*.log` | The logs that GoodCheck writes |
 | `Reports/GoodCheckReport_<Unix time>.xml` | The reports that CDPI UI writes |
 

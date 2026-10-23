@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # LScript reference
 
 LScript is a small expression language. Store metadata, preset variables and preset startup strings use it.

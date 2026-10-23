@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # NewSetup
 
 NewSetup is a WiX Toolset 6 project (`WixToolset.Sdk/6.0.2`). It builds the x64 per-machine MSI.
@@ -117,8 +119,8 @@ Notes on `UninstallCleanup`:
 
 1. Set the `Global\CDPIUI_TrayShutdown` event.
 2. Wait a maximum of 20 s for the running trays to exit. The trays stop the components and restore the proxy settings.
-3. Kill the remaining processes that run from the installation folder.
-4. Stop and delete each `WinDivert*` service whose image is in the installation folder.
+3. Kill the remaining processes that run from the installation folder or from a user folder `\AppData\Local\CDPIUI\` (`ApplicationPathMatcher`).
+4. Stop and delete each `WinDivert*` service whose image is in one of these folders.
 5. Delete the autorun task.
 6. Run `EditHostFile.exe /remove`.
 7. Delete the runtime files that the MSI does not know: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log`, `.update-manifest`.

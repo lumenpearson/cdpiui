@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # Update
 
 `Update.exe` is a .NET Framework 4.7.2 WinForms tool. It installs an application patch

@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # CDPIUI.Tests
 
 `CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core` and `CDPIUI.AddOns`. The target framework is `net8.0`.

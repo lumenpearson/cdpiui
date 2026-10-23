@@ -1,0 +1,231 @@
+[English](README.md) | **Русский**
+
+# CDPIUI.TrayIcon
+
+`CDPIUI.TrayIcon` — это фоновый процесс CDPI UI (`CDPIUI_TrayIcon.exe`).
+Это приложение WinForms для `net8.0-windows10.0.17763.0`, x64.
+`app.manifest` задаёт `requireAdministrator`, поэтому трей всегда работает с правами администратора.
+Главное окно (GUI) работает от имени пользователя рабочего стола и отправляет команды трею через именованный канал (pipe).
+Протокол pipe описан в [CDPIUI.Shared/Pipe/README.ru.md](../CDPIUI.Shared/Pipe/README.ru.md).
+
+## Обязанности
+
+- Показывать значок в трее и его меню.
+- Запускать, останавливать и перезапускать компоненты (Zapret, ByeDPI, GoodbyeDPI и другие) через ConPTY.
+- Останавливать компоненты, когда процесс трея завершается.
+- Задавать и восстанавливать системный прокси.
+- Добавлять трей в автозапуск и удалять его оттуда.
+- Выполнять задачи условного запуска.
+- Показывать всплывающие уведомления (toast).
+- Устанавливать пакеты MSI и EXE и обновления приложения.
+- Запускать GoodCheck и выдавать GUI доступ к папкам.
+- Выполнять очистку перед тем, как пакет MSI удалит приложение.
+
+## Запуск
+
+`Program.cs` (`Programm.Main`) выполняет следующие шаги:
+
+1. Если аргументы содержат `--uninstall-cleanup`, запускает `UninstallHelper.Cleanup` и завершается.
+2. Получает мьютекс `Global\CDPIUI_TrayInstance`. Ждёт 10 секунд. Если мьютекс занят другим треем, завершается. Брошенный (abandoned) мьютекс принимается.
+3. Удаляет папку `.staging` (`PackageStaging.CleanUp`).
+4. Восстанавливает резервную копию прокси, которую оставил предыдущий трей (`RegeditHelper.RestoreLeftoverSnapshot`).
+5. Запускает сервер pipe.
+6. Если процесс запустило всплывающее уведомление, показывает только значок и обрабатывает уведомление.
+7. Если этого требуют аргументы, запускает GUI от имени пользователя рабочего стола (см. таблицу ниже).
+8. Переименовывает `_Update.exe` в `Update.exe`, если `_Update.exe` существует.
+9. Показывает уведомления об ошибке обновления и для `--autorun`.
+10. Через 30 минут просит GUI проверить наличие обновлений (`NOTIFICATIONS/appUpdates`).
+11. Через 60 минут просит GUI запустить проверку совместимости (`NOTIFICATIONS/compatibilityCheck`).
+12. Создаёт `TrayApplicationContext`: значок, обработчик события удаления, движок условного запуска и обработчик уведомлений.
+
+Если сервер pipe не может создать pipe и работает другой процесс трея, трей завершает свой процесс.
+
+### Аргументы командной строки
+
+| Аргумент | Действие |
+|---|---|
+| `--uninstall-cleanup` | Выполняет очистку при удалении и завершается. |
+| `--autorun` | Запрашивает у GUI строки запуска всех компонентов автозапуска (`GetAllStartupStrings`). Повторяет попытку каждые 5 секунд, пока отправка не пройдёт успешно. Показывает уведомление «свёрнуто в трей», если `NOTIFICATIONS/trayHide` равен `true`. |
+| `--show-ui` | Запускает GUI. |
+| `--gui-args:<data>` | Вместе с `--show-ui`: аргументы для GUI. Их декодирует `GuiActivationArguments`. |
+| `--gdpiui-migration=<data>` | Запускает GUI с этим аргументом. |
+| `--after-patching` | Запускает GUI. Если `_Update.exe` не удаётся переименовать, показывает уведомление об ошибке обновления. |
+| `--after-failed-update` | Запускает GUI и показывает уведомление об ошибке обновления. |
+
+GUI запускает трей с `--autorun` или `--show-ui`, когда GUI не может подключиться к pipe.
+Задача автозапуска запускает трей с `--autorun`.
+
+## Папки
+
+| Папка | Содержимое |
+|---|---|
+| `ConditionalLaunch/` | `ConditionalLaunchEngine` (триггеры) и `ConditionalActionExecutor` (действия) |
+| `Controls/` | Собственные элементы управления WinForms для меню трея |
+| `Forms/` | `EmptyForm` (скрытое окно, которому принадлежит значок), `TrayMenuForm` (меню) |
+| `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
+| `Helper/Basic/` | Сервер pipe, обработчик команд, ConPTY, объект задания (job object), помощник запуска, реестр, уведомления, журнал, помощник ошибок, панель задач |
+| `Helper/Locale/` | `LocaleHelper`: строки трея на английском и русском, названия компонентов |
+| `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
+| `Assets/` | Значки (встроенные ресурсы) |
+
+## Компоненты и ConPTY
+
+- `TasksHelper` — это `TasksManageService<ProcessManager>`. У каждого id компонента одна задача.
+- `GetProcessIdFullOutput` и `GetProcessIdState` применяются к задаче с `componentId` из сообщения. Если `componentId` пуст, они применяются ко всем задачам. `GetAllProcessStates` применяется ко всем задачам. `TasksHelper.SendTasksOutput` и `TasksHelper.SendTasksState` читают снимок списка задач.
+- `ProcessManager` хранит исполняемый файл и аргументы последнего запуска. Перезапуск использует их снова, если GUI не отправил `ProcessIdStartupArgsChanged`. В этом случае трей отправляет GUI `GetStartupString`.
+- `ConPTYHelper` запускает процесс в псевдоконсоли с помощью `CreateProcessW` и отправляет вывод в GUI.
+- `ConPTYHelper` заменяет известные строки вывода на `PrettyErrorCode`. Используется первое совпадение для строки.
+- `ChildProcessJob` помещает каждый компонент в один объект задания (job object) с `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`. Windows останавливает компоненты, когда процесс трея завершается, в том числе после сбоя.
+- GoodCheck работает в своём объекте задания с завершением при закрытии (`GoodCheckProcessHelper`). Трей останавливает все компоненты перед запуском GoodCheck. Трей останавливает GoodCheck, когда GUI отключается.
+- `StopService` останавливает компоненты, которые используют WinDivert (`CSGIVS036`, `CSZTBN012`, `CSZTBN062`). Затем выполняет `sc stop WinDivert` и `sc delete WinDivert`.
+- Когда компьютер выходит из спящего режима, трей ждёт сеть до 30 секунд. Затем перезапускает компоненты, которые работали.
+- При выходе и при завершении сеанса трей останавливает все компоненты. Он ждёт до 5 секунд.
+
+### Сообщения для закрытого GUI
+
+Если трей не может отправить сообщение, `PipeHelper.TrySendMessage` запускает `<tray directory>\CDPIUI.exe` от имени пользователя рабочего стола с `--direct:<message>`.
+Это относится ко всем получателям сообщений. Для фоновых сообщений трей также добавляет `--create-no-window`.
+См. [CDPIUI.Shared/Pipe/README.ru.md](../CDPIUI.Shared/Pipe/README.ru.md#messages-when-the-gui-is-not-connected).
+
+## Прокси
+
+`ProxyMessageIds.Setup` задаёт прокси для компонента. `proxyType` может иметь два значения:
+
+- `ProxiFyre`: трей запускает ProxiFyre (из `Init`) во второй ConPTY.
+- `AllSystem`: трей записывает `socks=<ip>:<port>` в настройки Интернета пользователя рабочего стола.
+
+Трей пишет в `HKEY_USERS\<desktop user SID>`, когда пользователь рабочего стола не совпадает с пользователем трея. Иначе он пишет в `HKEY_CURRENT_USER`.
+
+Резервное копирование и восстановление:
+
+1. Перед первым изменением трей читает `ProxyEnable`, `ProxyServer` и `ProxyOverride`.
+2. Записывает этот снимок в `proxy-backup.json` в папке трея.
+3. Когда компонент останавливается, трей восстанавливает снимок и удаляет файл.
+4. Если трей не восстановил снимок (сбой, принудительное завершение, выключение), его восстанавливает следующий запуск трея.
+
+Когда один компонент запускает прокси, трей останавливает другие компоненты, которые используют прокси.
+
+## Автозапуск
+
+`AutoStartManager` создаёт задачу Планировщика заданий `CDPIUI_Autostart`:
+
+- Триггер: вход текущего пользователя в систему.
+- Действие: исполняемый файл трея с `--autorun`.
+- Уровень запуска: наивысший. Тип входа: интерактивный токен.
+- Без ограничения времени выполнения. Задача также выполняется при работе от батареи.
+
+Если `AddToAutorun` завершается с ошибкой, трей отправляет GUI `Settings/AutorunFalse` и показывает уведомление.
+
+## Условный запуск
+
+`ConditionalLaunchEngine` читает файлы `.cdpitask` из папки задач.
+Папка по умолчанию определяется по пути к файлу настроек (`ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile`).
+GUI может отправить другую папку в `ReloadTasks`. Трей принимает её, только если её принимает `TrustedPaths.IsAllowed`.
+
+- `FileSystemWatcher` перезагружает задачи, когда файл изменяется. После ошибки наблюдателя движок создаёт новый наблюдатель.
+- Триггеры горячих клавиш используют `RegisterHotKey` в окне `EmptyForm`.
+- Триггеры процессов опрашивают список процессов каждую секунду.
+- Если подходят несколько задач, выполняется задача с наивысшим приоритетом.
+- Действия, которым нужен GUI (`ApplyPreset`, `StartComponent`, `ToggleComponent`, `StartAutorunComponents`, `CheckStoreUpdates`, `CheckApplicationUpdates`), передаются в GUI как `ExecuteAction`. Трей ждёт результат 45 секунд.
+- Остальные действия трей выполняет сам или открывает окно GUI.
+
+## Уведомления
+
+`NotifyHelper.ShowMessage` показывает всплывающее уведомление с аргументом `action`.
+`HandleToastActionFromBackground` обрабатывает действие, когда пользователь нажимает на уведомление:
+
+| Действие | Результат |
+|---|---|
+| `SHOW_MAIN_WINDOW` | Открывает `MainWindow`. |
+| `OPEN_PSEUDOCONSOLE(<id>)` | Открывает `ViewWindow` для компонента. |
+| `OPEN_PROXY_SETUP` | Открывает `ProxySetupUtilWindow`. |
+| `OPEN_BEGIN_STORE_UPDATE_CHECK` | Открывает страницу загрузок Магазина. |
+| `UPDATE:OPEN_DOWNLOAD_PAGE` | Открывает страницу обновления в `MainWindow`. |
+| `LOGGER:OPEN_TRAY_LOG`, `LOGGER:OPEN_MSI_LOG`, `UPDATE:OPEN_LOG` | Открывает файл журнала. |
+
+Уведомления о запуске и остановке компонентов показываются, только если `NOTIFICATIONS/procState` равен `true`.
+
+## Пакеты и обновления
+
+### Пакеты MSI и EXE
+
+`MsiInstallerHelper` устанавливает пакеты по одному из очереди (`MSIInstallation/Begin`):
+
+1. Путь должен приниматься `TrustedPaths.IsAllowed`.
+2. `PackageStaging.Stage` копирует файл в `<tray directory>\.staging\<GUID>\`.
+3. У копии должна быть действительная подпись Authenticode (`WinVerifyTrust`, без проверки отзыва).
+4. Для `.msi` трей выполняет `msiexec.exe /i "<copy>" /passive /norestart`. Для других файлов он выполняет `<copy> /install /passive /norestart`.
+5. Коды выхода 0 и 1638 дают `Complete`. Коды выхода 3010 и 1641 дают `CompleteRestartRequest`. Другие коды дают `ExceptionHappens`.
+6. Трей удаляет промежуточную папку.
+
+`MSIInstallation/Kill` останавливает работающий установщик или удаляет операцию из очереди.
+
+### Обновление приложения
+
+`Utils.StartUpdate` обрабатывает `Update/BeginApplicationUpdate`:
+
+1. Путь должен приниматься `TrustedPaths.IsAllowed`.
+2. Трей копирует пакет в `.staging`.
+3. Для пакета `.msi` трей выполняет `msiexec.exe /i "<copy>" /qn+`, закрывает GUI и завершается. У опубликованного `Setup.msi` нет подписи, поэтому проверка подписи не выполняется.
+4. Для пакета ZIP трей проверяет `catalog.cat` каждого слоя с помощью `CatalogVerifier` и `Secret.TrustedCertificates`. Затем выполняет `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
+
+## Очистка при удалении
+
+Программа удаления MSI запускает `CDPIUI_TrayIcon.exe --uninstall-cleanup` от имени SYSTEM. `UninstallHelper.Cleanup` выполняет следующие шаги:
+
+1. Устанавливает событие `Global\CDPIUI_TrayShutdown`. Каждый работающий трей завершается так, как если бы пользователь нажал «Выход», поэтому он останавливает компоненты и восстанавливает прокси.
+2. Ждёт завершения треев до 20 секунд.
+3. Останавливает процессы, которые `ApplicationPathMatcher` находит в папке установки или в `\AppData\Local\CDPIUI\`.
+4. Останавливает и удаляет службы `WinDivert*`, у которых `ImagePath` относится к приложению.
+5. Удаляет задачу `CDPIUI_Autostart`.
+6. Выполняет `EditHostFile.exe /remove`.
+7. Удаляет `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log` и `.update-manifest` в папке установки.
+
+Очистка не изменяет настройки и журналы, потому что профиль SYSTEM — это не профиль пользователя.
+
+## Настройки и журналы
+
+- `SettingsManager` использует первый существующий `Settings.xml`:
+  1. `<tray directory>\Settings\Settings.xml`
+  2. `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` пользователя рабочего стола
+  3. `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` пользователя трея
+- Если ни одного файла нет, трей выбирает путь для нового файла:
+  - Для установки из MSI трей использует `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` пользователя рабочего стола. GUI установки из MSI использует тот же файл.
+  - Во всех остальных случаях трей использует пункт 1.
+- Трей определяет установку из MSI по значению реестра `HKLM\Software\Storik4\CDPI UI\InstallLocation` (`Utils.GetSettingsFile`). Значение должно совпадать с папкой трея. GUI использует ту же проверку (`CDPIUI.Core/State.cs`).
+- GUI отправляет `Settings/ReloadSettings` после того, как изменяет настройку, которую читает трей.
+- Трей записывает журналы в `<tray directory>\Logs\`. Сборки `DEBUG` записывают все уровни. Релизные сборки используют `DEBUG/logLevel` (по умолчанию `WARN`).
+
+## Разработка
+
+Трей нужно запускать с правами администратора, а GUI — от имени обычного пользователя. Некоторые функции GUI не работают, когда GUI запущен с правами администратора.
+
+1. Создайте `CDPIUI.Shared/Secrets/Secret.cs` (см. [CDPIUI.Shared/README.ru.md](../CDPIUI.Shared/README.ru.md#secrets)).
+2. Запустите `CDPIUI.TrayIcon` от имени администратора. В Visual Studio запустите саму Visual Studio от имени администратора.
+3. Запустите `CDPIUI` от имени обычного пользователя рабочего стола.
+
+Примечания:
+
+- В сборках `DEBUG` проверка собеседника pipe сравнивает только имена файлов. Поэтому GUI и трей могут работать из разных выходных папок.
+- Трей запускает только исполняемые файлы внутри своей папки или внутри `%LOCALAPPDATA%\CDPIUI` (`TrustedPaths`). Чтобы проверить компоненты, запускайте GUI и трей из одной папки. Можно использовать папку publish из `.github/scripts/build_portable.ps1`.
+- Трей запускает GUI из `<tray directory>\CDPIUI.exe`. При разных выходных папках трей не может запустить GUI.
+- Два трея не могут работать одновременно. Закройте установленный трей перед запуском отладочной сборки.
+
+## Правила безопасности
+
+Трей работает с правами администратора, а GUI — нет. Считайте каждое сообщение pipe данными от менее доверенного процесса.
+
+- Принимайте клиентов pipe только после проверки собеседника и авторизации по `AuthGuid` (см. README pipe). Пустой `AuthGuid` не авторизует ни одного клиента. При неудачной авторизации клиент отключается.
+- Проверяйте каждый путь от GUI с помощью `TrustedPaths` перед тем, как запускать, устанавливать или изменять его:
+  - `IsAllowed`: внутри папки трея, `%LOCALAPPDATA%\CDPIUI` пользователя трея или `%LOCALAPPDATA%\CDPIUI` пользователя рабочего стола.
+  - `IsInStore`: внутри папки `Store` этих корневых папок. Его использует `GrantAccessRequest`.
+  - `TrustedPathValidator` отклоняет путь, в котором ниже корня есть символическая ссылка или точка соединения (junction).
+- Копируйте пакет в `.staging` перед проверкой. Проверяйте и запускайте копию, а не исходный файл.
+- Используйте только подписанные пакеты: Authenticode для установщиков, каталоги с закреплёнными отпечатками для обновлений приложения.
+- Используйте полные пути для системных программ (`msiexec.exe`, `sc.exe`, `powershell.exe`, `explorer.exe`, `notepad.exe`).
+- Запускайте процессы с `UseShellExecute = false` (`RunHelper.Run`).
+- Не используйте `ShellExecute` из трея, чтобы открыть файл или URL. Сопоставления файлов задаёт пользователь, поэтому обработчик может запуститься с правами администратора. Используйте `RunHelper.RunAsDesktopUser`, как это делает `NotifyHelper.OpenFileInDefaultApp` с `explorer.exe`.
+- Запускайте GUI с помощью `RunHelper.RunAsDesktopUser`. Он использует токен процесса оболочки, поэтому GUI не получает права администратора.
+- `GrantAccess` выдаёт доступ `Modify` только пользователю трея.
+
+ПРЕДУПРЕЖДЕНИЕ: Не добавляйте обработчик pipe, который запускает файл или изменяет доступ без проверки `TrustedPaths`.

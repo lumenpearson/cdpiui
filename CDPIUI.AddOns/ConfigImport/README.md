@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # Config Import add-on
 
 ## About this document
@@ -212,7 +214,7 @@ The normalization of the executable name removes the folder, the quotes and the 
 7. It looks for a token that is the executable of the selected component after the static expansion.
 8. The text after the executable becomes the argument line. A redirection, a pipe or `&` outside quotes cuts the rest of the line.
 9. For each launch, the analyzer keeps a copy of the variables at the time of the launch.
-10. Exactly one applicable launch must exist. Zero or more launches are ambiguous, and the import fails.
+10. Exactly one applicable launch must exist. If there is no launch or more than one launch, the import fails.
 
 If the launch arguments are one token that points to an existing `.txt` file, the analyzer imports this file as the config contents. The token can have the prefix `@` or `$`. The analyzer resolves the path relative to the BAT or CMD file.
 

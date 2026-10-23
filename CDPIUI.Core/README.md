@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # CDPIUI.Core
 
 `CDPIUI.Core` is a .NET 8 class library. It contains the logic of the GUI process
