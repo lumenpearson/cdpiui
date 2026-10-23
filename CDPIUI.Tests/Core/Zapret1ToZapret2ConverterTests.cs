@@ -28,4 +28,17 @@ public class Zapret1ToZapret2ConverterTests
         Assert.Contains(result.Issues, i => i.Code == "DROPPED_OPTION");
         Assert.DoesNotContain("wssize", result.StartupString);
     }
+
+    [Fact]
+    public void FlowsealGeneralMatchesExpectedFile()
+    {
+        GoldenFile input = GoldenFile.Load("Zapret1ToZapret2", "flowseal-general.winws1.txt");
+        GoldenFile expected = GoldenFile.Load("Zapret1ToZapret2", "flowseal-general.winws2.expected.txt");
+
+        var result = new Zapret1ToZapret2Converter().Convert(input.CommandLine("arguments"));
+
+        Assert.True(result.IsSuccessful, string.Join("; ", result.Issues.Select(i => i.Message)));
+        Assert.Equal(expected.Lines("issues"), result.Issues.Select(i => i.Code).Order(StringComparer.Ordinal));
+        Assert.Equal(expected.CommandLine("startup"), result.StartupString);
+    }
 }
