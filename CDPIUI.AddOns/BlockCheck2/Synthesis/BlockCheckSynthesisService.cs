@@ -41,10 +41,12 @@ public sealed class BlockCheckSynthesisService
             baselineProbeResults,
             options,
             issues);
-        BlockCheckTarget[] targetsRequiringProfile = targetArray
-            .GroupBy(target => target.GetRuntimeRouteKey())
-            .Where(group => group.Any(target => !baselineAccessibleTargetIds.Contains(target.Id)))
-            .SelectMany(group => group)
+        // The units are the same as in the optimizers: an emitted --hostlist covers the whole
+        // file, so a site from the list that passed the baseline stays in the unit and the chosen
+        // strategy must not break it.
+        BlockCheckTarget[] targetsRequiringProfile = BlockCheckTargetGroupBuilder.Build(targetArray)
+            .Where(group => group.Targets.Any(target => !baselineAccessibleTargetIds.Contains(target.Id)))
+            .SelectMany(group => group.Targets)
             .ToArray();
 
         if (targetsRequiringProfile.Length == 0)
