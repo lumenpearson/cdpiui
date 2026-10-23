@@ -223,9 +223,15 @@ namespace CDPIUI.Helper.AddOns
                     }
                     else
                     {
-                        string host = value;
-                        try { host = new Uri(value).Host; } catch { }
-                        targets.Add(new PresetTestTarget { Name = name, Url = value, PingHost = host });
+                        // The value goes to curl as an argument, so only an absolute http or https URL is accepted:
+                        // a value that starts with "-" would be read as a curl option.
+                        if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri)
+                            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                        {
+                            Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Skipped target {name}: not an http or https URL");
+                            continue;
+                        }
+                        targets.Add(new PresetTestTarget { Name = name, Url = value, PingHost = uri.Host });
                     }
                 }
             }
