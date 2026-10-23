@@ -96,9 +96,11 @@ namespace CDPIUI.Core.Data
             }
             else
             {
-                DataDirectoryProperty = string.Empty;
+                // An empty path made every file go to the current working directory.
+                DataDirectoryProperty = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CDPIUI");
                 CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(result.Error ?? new UnknownException());
-                return string.Empty;
+                return DataDirectoryProperty;
             }
         }
 
