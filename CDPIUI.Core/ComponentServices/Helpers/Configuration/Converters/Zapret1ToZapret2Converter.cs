@@ -80,6 +80,23 @@ public sealed class Zapret1ToZapret2Converter
         "dpi-desync-udplen-pattern", "dpi-desync-start", "dpi-desync-cutoff"
     };
 
+    // Names of older zapret1 versions, renamed in zapret 67 to the names Zapret2 also uses.
+    private static readonly Dictionary<string, string> LegacyModeAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["split2"] = "multisplit",
+        ["disorder2"] = "multidisorder",
+        ["split"] = "fakedsplit",
+        ["disorder"] = "fakeddisorder",
+    };
+
+    // Options that only tune details of the packets and have no Zapret2 counterpart here. They are
+    // dropped with a warning: failing the whole preset for them left the user with nothing.
+    private static readonly HashSet<string> DroppedLegacyOptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "wssize", "wssize-cutoff", "hostcase", "hostspell", "hostnospace", "domcase",
+        "methodspace", "methodeol", "unixeol"
+    };
+
     private static readonly HashSet<string> ZeroPhaseModes = new(StringComparer.OrdinalIgnoreCase)
     {
         "synack", "syndata"
@@ -240,6 +257,16 @@ public sealed class Zapret1ToZapret2Converter
                 continue;
             }
 
+            if (DroppedLegacyOptions.Contains(option.Name))
+            {
+                AddWarning(
+                    "DROPPED_OPTION",
+                    $"Zapret1 option '--{option.Name}' has no Zapret2 counterpart and was left out.",
+                    option.Name,
+                    profile.Index);
+                continue;
+            }
+
             if (!SupportedLegacyOptions.Contains(option.Name))
             {
                 AddError(
@@ -267,7 +294,9 @@ public sealed class Zapret1ToZapret2Converter
         }
 
         string[] modes = strategyValue
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(mode => LegacyModeAliases.TryGetValue(mode, out string? current) ? current : mode)
+            .ToArray();
 
         if (modes.Length == 0)
         {
