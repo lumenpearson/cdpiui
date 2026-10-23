@@ -129,7 +129,7 @@ public sealed partial class SetupProxyForSystem : TemplatePage
                 CloseButtonText = "OK",
                 Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
                 XamlRoot = this.XamlRoot
-            }.ShowAsync();
+            }.ShowQueuedAsync();
         }
         return false;
     }

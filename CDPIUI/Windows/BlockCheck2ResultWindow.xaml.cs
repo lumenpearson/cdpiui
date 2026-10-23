@@ -156,7 +156,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
                 : ContentDialogButton.Secondary,
             IsPrimaryButtonEnabled = viewModel.CanUseConfig,
         };
-        ContentDialogResult result = await dialog.ShowAsync();
+        ContentDialogResult result = await dialog.ShowQueuedAsync();
         if (result == ContentDialogResult.Primary)
         {
             OpenPresetReview();

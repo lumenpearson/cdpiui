@@ -295,7 +295,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                 DisplayName = DatabaseHelper.Instance.GetItemById(KitId)?.ShortName + $" ({localizer.GetLocalizedString("Edited")})" ?? string.Empty,
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             var result = dialog.Result;
 

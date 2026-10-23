@@ -371,7 +371,7 @@ public sealed partial class ComponentSettingUserControl : UserControl
                 XamlRoot = this.XamlRoot,
                 FilePath = TextValue.Replace("\"", ""),
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             if (dialog.IsSuccess)
                 SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
         }

@@ -1038,7 +1038,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             CloseButtonText = localizer.GetLocalizedString("Cancel"),
             DefaultButton = ContentDialogButton.Primary,
         };
-        ContentDialogResult result = await dialog.ShowAsync();
+        ContentDialogResult result = await dialog.ShowQueuedAsync();
         if (result == ContentDialogResult.Primary)
         {
             ConfigImportAutoCorrector autoCorrector = new();
@@ -1393,7 +1393,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     XamlRoot = XamlRoot,
                     FilePath = path,
                 };
-                await dialog.ShowAsync();
+                await dialog.ShowQueuedAsync();
                 if (dialog.IsSuccess)
                 {
                     SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
@@ -1548,7 +1548,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
@@ -2082,7 +2082,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             OverwriteEnable = !string.IsNullOrWhiteSpace(presetDocument.PackId) &&
                               !string.IsNullOrWhiteSpace(presetDocument.FileName),
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
         {
             return ConfigMakerPresetSaveResult.Failed("CANCELED");
         }
@@ -2136,7 +2136,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             XamlRoot = XamlRoot,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary &&
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary &&
             dialog.ResultVariable != null)
         {
             presetDocument.Variables.Add(dialog.ResultVariable);
@@ -2162,7 +2162,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             XamlRoot = XamlRoot,
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary ||
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary ||
             dialog.ResultVariable == null)
         {
             return;
@@ -2203,7 +2203,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
@@ -2906,7 +2906,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
@@ -3029,7 +3029,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }

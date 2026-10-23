@@ -432,7 +432,7 @@ namespace CDPIUI
                 XamlRoot = Content.XamlRoot
             };
 
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                 return;
 
             try

@@ -101,7 +101,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
                 XamlRoot = XamlRoot
             };
 
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                 return;
 
             try

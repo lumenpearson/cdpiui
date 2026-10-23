@@ -211,7 +211,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
             CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
         {
             return;
         }

@@ -253,7 +253,7 @@ namespace CDPIUI.Views.Store
                     Content = string.Format(localizer.GetLocalizedString("ElementNotExistMessage"), _storeId, "ERR_STORE_ITEM_NOT_FOUND"),
                     PrimaryButtonText = "OK"
                 };
-                await dialog.ShowAsync();
+                await dialog.ShowQueuedAsync();
                 if (Frame.CanGoBack)
                     Frame.GoBack();
                 else
@@ -534,7 +534,7 @@ namespace CDPIUI.Views.Store
                 PrimaryButtonText = "OK",
                 XamlRoot = this.XamlRoot,
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
         }
 
         private async void ItemActionButton_Click(object sender, RoutedEventArgs e)
@@ -567,7 +567,7 @@ namespace CDPIUI.Views.Store
             {
                 XamlRoot = XamlRoot
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -598,7 +598,7 @@ namespace CDPIUI.Views.Store
                 CloseButtonText = localizer.GetLocalizedString("No"),
                 Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style
             };
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             {
                 StoreHelper.Instance.RemoveItem(_storeId);
                 InstallingItemActions();
@@ -615,7 +615,7 @@ namespace CDPIUI.Views.Store
                 Licenses = item.license,
                 XamlRoot = this.XamlRoot
             };
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             {
                 return true;
             }

@@ -60,7 +60,7 @@ public sealed partial class ConfigSelector : UserControl
                 XamlRoot = XamlRoot, Title = Helper.AddOns.ConfigShare.ConfigShareUI.Text("ConfigShareError"),
                 Message = Helper.AddOns.ConfigShare.ConfigShareUI.ErrorText(exception)
             };
-            await error.ShowAsync();
+            await error.ShowQueuedAsync();
         }
         finally { ShareButton.IsEnabled = true; }
     }

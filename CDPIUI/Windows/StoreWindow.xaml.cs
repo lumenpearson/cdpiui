@@ -90,7 +90,7 @@ public sealed partial class StoreWindow : TemplateWindow
             CloseButtonText = "OK",
             XamlRoot = this.Content.XamlRoot,
         };
-        _ = dialog.ShowAsync();
+        _ = dialog.ShowQueuedAsync();
         */
     }
 

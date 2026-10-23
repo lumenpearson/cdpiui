@@ -174,7 +174,7 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
         {
             XamlRoot = this.XamlRoot,
         };
-        await q.ShowAsync();
+        await q.ShowQueuedAsync();
     }
 
     private void RootGrid_SizeChanged(object sender, SizeChangedEventArgs e)

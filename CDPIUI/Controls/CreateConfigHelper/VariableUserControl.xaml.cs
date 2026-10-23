@@ -125,7 +125,7 @@ namespace CDPIUI
             { 
                 XamlRoot = this.XamlRoot,
             };
-            var result = await dialog.ShowAsync();
+            var result = await dialog.ShowQueuedAsync();
             if (result == ContentDialogResult.Primary)
             {
                 VarValue = dialog.VarValue;

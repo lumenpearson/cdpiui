@@ -168,7 +168,7 @@ namespace CDPIUI.Helper.ViewModels
 
                         dialog.XamlRoot = xamlRoot;
 
-                        await dialog.ShowAsync();
+                        await dialog.ShowQueuedAsync();
                         break;
 
                     case WidgetType.LaunchUrl: 

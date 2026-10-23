@@ -35,7 +35,7 @@ public class HostsFileEditHelper
             UseUAC = true,
             UseNotepadAsDefault = true,
         };
-        await editSitelistAskApplicationContentDialog.ShowAsync();
+        await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
         if (editSitelistAskApplicationContentDialog.IsSuccess)
             SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
     }

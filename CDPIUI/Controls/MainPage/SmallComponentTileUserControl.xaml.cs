@@ -367,6 +367,6 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         {
             XamlRoot = this.XamlRoot
         };
-        await dialog.ShowAsync();
+        await dialog.ShowQueuedAsync();
     }
 }

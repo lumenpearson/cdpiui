@@ -229,7 +229,7 @@ namespace CDPIUI
                         Licenses = licenses,
                         XamlRoot = this.Content.XamlRoot
                     };
-                    if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                    if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                         return;
                 }
 
@@ -437,7 +437,7 @@ namespace CDPIUI
                     Licenses = licenses,
                     XamlRoot = Content.XamlRoot
                 };
-                if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                 {
                     migrationFlowStarted = false;
                     RetryMigrationButton.Visibility = Visibility.Visible;

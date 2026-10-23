@@ -483,7 +483,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             XamlRoot = this.XamlRoot
         };
-        var result = await dialog.ShowAsync();
+        var result = await dialog.ShowQueuedAsync();
         if (dialog.Result == CreateConfigResult.Selected)
         {
             ConfigItem = ConfigurationService.ReplaceFilesPath(ConfigItem, dialog.Files);
@@ -789,7 +789,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             XamlRoot = this.XamlRoot
         };
         CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = false;
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             CreateConfigHelperWindow.Instanse.Close();
         else
         {

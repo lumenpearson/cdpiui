@@ -212,7 +212,7 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
             Args = [this.Args ?? string.Empty]
 
         };
-        _ = dialog.ShowAsync();
+        _ = dialog.ShowQueuedAsync();
     }
 
     private void SetVisible(bool isVisible)

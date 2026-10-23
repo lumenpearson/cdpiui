@@ -107,7 +107,7 @@ namespace CDPIUI
                     CloseButtonText = localizer.GetLocalizedString("No"),
                     XamlRoot = this.Content.XamlRoot
                 };
-                if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
                 {
                     StopActiveSelection();
                     this.Close();
