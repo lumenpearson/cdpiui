@@ -177,7 +177,7 @@
         <File Source="$(var.SourceDir)\CDPIUI.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CDPIUI.exe" KeyPath="yes">
+        <File Id="CdpiUiExe" Source="$(var.SourceDir)\CDPIUI.exe" KeyPath="yes">
           <Shortcut Id="scDF15AB8DBDE02B13172C6C48362FA537" Name="CDPI UI" Directory="ProgramMenuFolder" Advertise="yes" Description="CDPI UI Application shortcut" />
           <Shortcut Id="sc24258E37998A672CD76DCF8DFF1718FE" Name="CDPI UI" Directory="DesktopFolder" Advertise="yes" Description="CDPI UI Application shortcut" />
         </File>

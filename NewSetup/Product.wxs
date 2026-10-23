@@ -8,11 +8,12 @@
   The Product@Id attribute (ProductCode Property) will be a random GUID for each build.  This is to support "Major Upgrades" where each install 
   is a seamless uninstall/reinstall.
   -->
-  <Package Name="CDPI UI" Language="0" Version="$(var.MSIProductVersion)" Manufacturer="Storik4" UpgradeCode="{AB14590E-0D10-416F-9A0E-07E63074B603}">
+  <Package Name="CDPI UI" Language="0" Version="!(bind.FileVersion.CdpiUiExe)" Manufacturer="Storik4" UpgradeCode="{AB14590E-0D10-416F-9A0E-07E63074B603}">
     <SummaryInformation />
     <MediaTemplate EmbedCab="yes" />
-    <!-- Major Upgrade Rule to disallow downgrades -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <!-- Major Upgrade Rule to disallow downgrades. The package version follows CDPIUI.exe, and Windows Installer
+         ignores the fourth field, so builds that differ only in it must still replace each other. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" />
     <!-- Uncomment below two lines to require .NET 4.8 or Later to install -->
     <!-- <PropertyRef Id="WIX_IS_NETFRAMEWORK_48_OR_LATER_INSTALLED" /> -->
     <!-- <Launch Condition="Installed OR WIX_IS_NETFRAMEWORK_48_OR_LATER_INSTALLED" Message="[ProductName] requires .NET Framework 4.8 or later." /> -->
@@ -21,8 +22,6 @@
     <Property Id="DISABLEADVTSHORTCUTS" Value="0"></Property>
 
     <Property Id="MSIUSEREALADMINDETECTION" Value="1" />
-    <Property Id="InstallPrivileges" Value="elevated" />
-    <Property Id="AdminImage" Value="yes" />
 
     <UIRef Id="UI" />
     <StandardDirectory Id="ProgramFiles6432Folder">
@@ -38,7 +37,7 @@
          application processes and removes the WinDivert driver and the autorun task created by the application. -->
     <CustomAction Id="UninstallCleanup" FileRef="TrayIconExe" ExeCommand="--uninstall-cleanup" Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
-      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT REMOVE" />
+      <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
       <Custom Action="UninstallCleanup" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
   </Package>

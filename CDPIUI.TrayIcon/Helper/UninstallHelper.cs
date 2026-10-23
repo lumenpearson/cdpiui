@@ -58,6 +58,8 @@ namespace CDPIUI.TrayIcon.Helper
                 KillApplicationProcesses(installDirectory, selfId);
                 RemoveDrivers(installDirectory);
                 RemoveAutorunTask();
+                RemoveHostsBlock(installDirectory);
+                RemoveRuntimeFiles(installDirectory);
             }
             finally
             {
@@ -145,6 +147,47 @@ namespace CDPIUI.TrayIcon.Helper
                 process?.WaitForExit(15000);
             }
             catch { }
+        }
+
+        private static void RemoveHostsBlock(string installDirectory)
+        {
+            string editor = Path.Combine(installDirectory, "EditHostFile.exe");
+            if (!File.Exists(editor))
+                return;
+
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo(editor, "/remove")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                });
+                process?.WaitForExit(15000);
+            }
+            catch { }
+        }
+
+        // Files the application creates next to the installed ones; the package does not know them,
+        // so the installation directory would otherwise stay behind.
+        private static readonly string[] RuntimeDirectories = ["Logs", ".update-staging", ".update-backup", ".old"];
+        private static readonly string[] RuntimeFiles = ["update.log"];
+
+        private static void RemoveRuntimeFiles(string installDirectory)
+        {
+            foreach (string name in RuntimeDirectories)
+            {
+                try
+                {
+                    string path = Path.Combine(installDirectory, name);
+                    if (Directory.Exists(path)) Directory.Delete(path, true);
+                }
+                catch { }
+            }
+            foreach (string name in RuntimeFiles)
+            {
+                try { File.Delete(Path.Combine(installDirectory, name)); }
+                catch { }
+            }
         }
 
         private static void RemoveAutorunTask()
