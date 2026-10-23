@@ -76,8 +76,19 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
 
                     case UnknownException:
                         return PrettyErrorCode.UNKNOWN;
+                    case TimeoutException:
+                        return PrettyErrorCode.TIMEOUT;
+                    case SocketException socketException:
+                        {
+                            PrettyErrorCode socketCode = MapSocketError(socketException.SocketErrorCode);
+                            if (socketCode != PrettyErrorCode.UNKNOWN) return socketCode;
+                            break;
+                        }
                 }
-                if (current is IOException)
+
+                statusCode ??= GetHttpStatusCode(current);
+                // A network IOException wraps the socket error, which says more.
+                if (current is IOException && current.InnerException is not SocketException)
                 {
                     var hrGeneric = unchecked((uint)current.HResult);
 
@@ -92,7 +103,7 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
                     return PrettyErrorCode.EXTRACT_INVALID_ARCHIVE;
 
                 int _hr = current.HResult;
-                if (ex is Win32Exception w32ex)
+                if (current is Win32Exception w32ex)
                 {
                     _hr = w32ex.NativeErrorCode;
                 }
@@ -106,17 +117,65 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
                     if (code != PrettyErrorCode.UNKNOWN) return code;
                 }
             }
-            if (ex is UriFormatException)
-                return PrettyErrorCode.INVALID_URI;
-            if (ex is TimeoutException)
-                return PrettyErrorCode.TIMEOUT;
+            if (statusCode != null)
+                return PrettyErrorCode.UNEXPECTED_STATUS_CODE;
+            if (ex is HttpRequestException)
+                return PrettyErrorCode.HTTP_REQUEST_EXCEPTION;
             return PrettyErrorCode.UNKNOWN;
+        }
+
+        private static PrettyErrorCode MapSocketError(SocketError error)
+        {
+            switch (error)
+            {
+                case SocketError.HostNotFound:
+                case SocketError.NoData:
+                case SocketError.TryAgain:
+                    return PrettyErrorCode.HOST_NAME_NOT_RESOLVED;
+                case SocketError.ConnectionRefused:
+                case SocketError.NetworkUnreachable:
+                case SocketError.HostUnreachable:
+                case SocketError.NetworkDown:
+                    return PrettyErrorCode.CANNOT_CONNECT;
+                case SocketError.ConnectionReset:
+                    return PrettyErrorCode.CONNECTION_RESET;
+                case SocketError.ConnectionAborted:
+                    return PrettyErrorCode.CONNECTION_ABORTED;
+                case SocketError.TimedOut:
+                    return PrettyErrorCode.TIMEOUT;
+                default:
+                    return PrettyErrorCode.UNKNOWN;
+            }
+        }
+
+        // HttpRequestException.StatusCode exists only on .NET 5 and later.
+        private static int? GetHttpStatusCode(Exception exception)
+        {
+            if (exception is not HttpRequestException)
+                return null;
+            object? value = exception.GetType().GetProperty("StatusCode")?.GetValue(exception);
+            return value == null ? null : Convert.ToInt32(value);
         }
 
         private static PrettyErrorCode ConvertHresultToCode(int HResult, out uint? rawHResult)
         {
             uint hr = unchecked((uint)HResult);
             rawHResult = hr;
+
+            // Win32 error codes arrive both as such (Win32Exception.NativeErrorCode) and wrapped
+            // into an HRESULT; the table below knows some codes in only one of these forms.
+            PrettyErrorCode code = ConvertExactHresultToCode(hr);
+            if (code != PrettyErrorCode.UNKNOWN || hr == 0)
+                return code;
+            if (hr < 0x10000)
+                return ConvertExactHresultToCode(0x80070000u | hr);
+            if ((hr & 0xFFFF0000u) == 0x80070000u)
+                return ConvertExactHresultToCode(hr & 0xFFFFu);
+            return code;
+        }
+
+        private static PrettyErrorCode ConvertExactHresultToCode(uint hr)
+        {
             switch (hr)
             {
                 case 0:
@@ -234,7 +293,7 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
 
             logger?.CreateErrorLog(nameof(ErrorConvertor), $"{code} - {ex}");
 
-            string hrHex = null;
+            string? hrHex = hr != null ? $"0x{hr.Value:X8}" : null;
 
             ErrorModel errorModel = new()
             {
