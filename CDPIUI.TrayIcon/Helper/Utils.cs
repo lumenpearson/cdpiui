@@ -56,6 +56,12 @@ namespace CDPIUI.TrayIcon.Helper
 
         public static void StartUpdate(string targetFile)
         {
+            if (!TrustedPaths.IsAllowed(targetFile, "application update"))
+            {
+                NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
+                return;
+            }
+
             if (Path.GetExtension(targetFile).ToLower() == ".msi")
             {
                 RunHelper.Run("msiexec.exe", $"/i \"{targetFile}\" /qn+");
@@ -88,6 +94,12 @@ namespace CDPIUI.TrayIcon.Helper
 
         public static async void GrantAccess(string file, bool conptySignal)
         {
+            if (!TrustedPaths.IsInStore(file, "access change"))
+            {
+                if (conptySignal) await PipeHelper.SendGrantAcessPacket(false);
+                return;
+            }
+
             try
             {
                 bool exists = System.IO.Directory.Exists(file);
@@ -97,17 +109,22 @@ namespace CDPIUI.TrayIcon.Helper
                 }
                 DirectoryInfo dInfo = new DirectoryInfo(file);
                 DirectorySecurity dSecurity = dInfo.GetAccessControl();
+                // Only the user the tray runs for gets write access: these directories hold
+                // the executables that the tray starts elevated.
+                SecurityIdentifier user = WindowsIdentity.GetCurrent().User
+                    ?? throw new InvalidOperationException("Cannot get the current user.");
                 dSecurity.AddAccessRule(
                     new FileSystemAccessRule(
-                        new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                        FileSystemRights.FullControl,
+                        user,
+                        FileSystemRights.Modify,
                         InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit,
-                        PropagationFlags.NoPropagateInherit,
+                        PropagationFlags.None,
                         AccessControlType.Allow
                         )
                     );
                 dInfo.SetAccessControl(dSecurity);
                 if (conptySignal) await PipeHelper.SendGrantAcessPacket(true);
+                return;
             }
             catch (Exception ex)
             {
