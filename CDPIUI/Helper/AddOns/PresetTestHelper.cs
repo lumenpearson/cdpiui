@@ -431,6 +431,8 @@ namespace CDPIUI.Helper.AddOns
             {
                 wasCancelled = true;
                 CancelAllCurls();
+                // Do not leave the component running with the preset that was being tested.
+                try { await processManager.StopProcess(false); } catch { }
             }
             finally
             {
