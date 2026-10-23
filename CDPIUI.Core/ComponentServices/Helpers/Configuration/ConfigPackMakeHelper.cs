@@ -188,7 +188,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
             modelTemplate.Name ??= modelTemplate.ShortName;
 
             modelTemplate.BeforeInstallActions ??= string.Empty;
-            modelTemplate.AfterInstallActions ??= $"$RUNSCRIPT(apply_config, {modelTemplate.StoreId})";
+            // Nothing to run: the preset lists are reloaded after every installation.
+            modelTemplate.AfterInstallActions ??= string.Empty;
 
             modelTemplate.Type = "configlist";
 

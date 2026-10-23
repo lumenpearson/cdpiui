@@ -345,6 +345,10 @@ namespace CDPIUI.Core.LScript
                     case "finish_component_setup":
                         await FinishComponentSetup(scriptArgs);
                         break;
+                    case "apply_config":
+                        // Written by older preset pack builders. The preset lists are reloaded
+                        // after every installation, so there is nothing left to do.
+                        break;
                     case "download_easy_designer_annotation_file":
                         if (scriptArgs.Length < 1)
                             break;
