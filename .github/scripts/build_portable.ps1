@@ -2,8 +2,7 @@
 .SYNOPSIS
 Builds the x64 release layout of CDPI UI: the GUI publish folder with the tray, Update.exe and
 EditHostFile.exe next to it. NewSetup/NewSetupFiles.wxs takes its files from the same folder.
-Needs msbuild (Visual Studio or microsoft/setup-msbuild) for the GUI and the .NET 8 SDK.
-The tray, Update.exe and EditHostFile.exe are framework-dependent single-file executables.
+Needs msbuild (Visual Studio or microsoft/setup-msbuild) and the .NET 8 SDK.
 #>
 param(
     [string] $Configuration = "Release"
@@ -48,20 +47,17 @@ Invoke-Checked "Publish CDPIUI.TrayIcon" {
         -r win-x64 --self-contained false -p:PublishSingleFile=true -o (Join-Path $tools "tray")
 }
 
-# Update.exe replaces the application files while it runs, so it must not load a DLL from the
-# installation folder: a single file has everything in it.
-Invoke-Checked "Publish Update" {
-    dotnet publish (Join-Path $root "Update/Update.csproj") -c $Configuration -p:Platform=x64 `
-        -r win-x64 --self-contained false -p:PublishSingleFile=true -o (Join-Path $tools "update")
+Invoke-Checked "Build Update" {
+    msbuild (Join-Path $root "Update/Update.csproj") /restore /p:RestorePackagesConfig=true /m /nologo /v:minimal `
+        "/p:SolutionDir=$root\" "/p:Configuration=$Configuration" /p:Platform=x64
 }
 
-Invoke-Checked "Publish EditHostFile" {
-    dotnet publish (Join-Path $root "EditHostFile/EditHostFile.csproj") -c $Configuration -p:Platform=x64 `
-        -r win-x64 --self-contained false -p:PublishSingleFile=true -o (Join-Path $tools "edithostfile")
+Invoke-Checked "Build EditHostFile" {
+    msbuild (Join-Path $root "EditHostFile/EditHostFile.csproj") /m /nologo /v:minimal "/p:Configuration=$Configuration"
 }
 
 Copy-Item -LiteralPath (Join-Path $tools "tray/CDPIUI_TrayIcon.exe") -Destination $publish
-Copy-Item -LiteralPath (Join-Path $tools "update/Update.exe") -Destination $publish
-Copy-Item -LiteralPath (Join-Path $tools "edithostfile/EditHostFile.exe") -Destination $publish
+Copy-Item -LiteralPath (Join-Path $root "Update/bin/x64/$Configuration/Update.exe") -Destination $publish
+Copy-Item -LiteralPath (Join-Path $root "EditHostFile/bin/$Configuration/EditHostFile.exe") -Destination $publish
 
 Write-Output "Portable layout: $publish"
