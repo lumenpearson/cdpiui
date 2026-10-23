@@ -102,9 +102,7 @@ namespace CDPIUI.Core.Communication
                         var id = model.MessageData?["componentId"];
                         if (id == null) return;
 
-                        ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager?
                             .ClearOutput();
 
@@ -116,9 +114,7 @@ namespace CDPIUI.Core.Communication
                         var id = model.MessageData?["componentId"];
                         if (id == null) return;
 
-                        ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager?
                             .MarkAsStarted();
 
@@ -133,9 +129,7 @@ namespace CDPIUI.Core.Communication
                         var title = model.MessageData?["errorMessage"];
                         var text = model.MessageData?["errorObject"];
 
-                        var pm = ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        var pm = (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager;
 
                         if (title != null && text != null)
@@ -159,9 +153,7 @@ namespace CDPIUI.Core.Communication
                         if (id == null || processName == null)
                             return;
 
-                        ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager?
                             .ChangeProcName(processName);
 
@@ -176,9 +168,7 @@ namespace CDPIUI.Core.Communication
                         if (id == null || output == null)
                             return;
 
-                        ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager?
                             .AddOutput(output);
 
@@ -193,9 +183,7 @@ namespace CDPIUI.Core.Communication
                         if (id == null || output == null)
                             return;
 
-                        var pm = ComponentTasksManager.Instance
-                            .GetTaskFromId(id)
-                            .Result?
+                        var pm = (await ComponentTasksManager.Instance.GetTaskFromId(id))?
                             .ProcessManager;
 
                         pm?.SetOutput(output);
