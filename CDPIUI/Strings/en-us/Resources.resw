@@ -1633,7 +1633,7 @@ Some features may work not as planned — don't worry. Just say about it to deve
     <value>What does not work as planned?</value>
   </data>
   <data name="NotOneConfigDoesWorkCard.Header" xml:space="preserve">
-    <value>All configs not work to me</value>
+    <value>None of the configs work for me</value>
   </data>
   <data name="MyProblemNotInListCard.Header" xml:space="preserve">
     <value>My problem is not on the list</value>

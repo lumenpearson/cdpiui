@@ -1,6 +1,7 @@
 ﻿using CDPIUI.Core.Data;
 
 using CDPIUI.Shared.Basic.Filesystem;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,7 +63,8 @@ namespace CDPIUI.Helper.Parsers
                 return null;
             }
 
-            string[] files = Directory.GetFiles(path);
+            // Sorted: the file system does not promise an order, and the menu followed it.
+            string[] files = Directory.GetFiles(path).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToArray();
             foreach (string file in files)
             {
                 string id = Path.GetFileNameWithoutExtension(file);
@@ -75,7 +77,7 @@ namespace CDPIUI.Helper.Parsers
                     Items = [],
                 });
             }
-            string[] folders = Directory.GetDirectories(path);
+            string[] folders = Directory.GetDirectories(path).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToArray();
 
             foreach (string folder in folders)
             {
@@ -83,7 +85,7 @@ namespace CDPIUI.Helper.Parsers
 
                 List<HelpItem> helpSubItems = [];
 
-                string[] subFiles = Directory.GetFiles(folder);
+                string[] subFiles = Directory.GetFiles(folder).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToArray();
                 foreach (string subFile in subFiles)
                 {
                     string _id = Path.GetFileNameWithoutExtension(subFile);
