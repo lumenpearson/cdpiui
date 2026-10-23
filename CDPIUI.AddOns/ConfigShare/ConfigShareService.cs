@@ -22,6 +22,7 @@ public sealed class ConfigShareService
     internal const string ReferencePrefix = "share://";
     private const string ManifestName = "manifest.json";
     private const long MaxTotalBytes = 512L * 1024 * 1024;
+    private const long MaxCompressionRatio = 200;
     private const int MaxEntries = 4096;
     private const int MaxManifestBytes = 4 * 1024 * 1024;
     private static readonly SemaphoreSlim InstallGate = new(1, 1);
@@ -190,6 +191,10 @@ public sealed class ConfigShareService
                     throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Duplicate entries or excessive archive size.");
                 if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
                     throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Symbolic links are not supported.");
+                // Site lists compress well, but not a thousand times: a small file that unpacks to
+                // the size limit only fills memory and disk (audit 14.12).
+                if (entry.Length > 1024 * 1024 && entry.Length > entry.CompressedLength * MaxCompressionRatio)
+                    throw new ConfigShareException("SHARE_ARCHIVE_INVALID", $"The entry {entry.FullName} is compressed too strongly.");
             }
             if (!entries.TryGetValue(ManifestName, out var manifestEntry) || manifestEntry.Length > MaxManifestBytes)
                 throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The archive has no valid manifest.");
