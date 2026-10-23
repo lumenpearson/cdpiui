@@ -578,6 +578,9 @@
     <None Update="Template\Settings\Settings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Template\PresetTest\test_targets.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Page Update="Views\Settings\AutorunPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

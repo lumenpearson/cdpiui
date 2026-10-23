@@ -921,6 +921,9 @@
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\System.ServiceProcess.ServiceController.dll" KeyPath="yes" />
       </Component>
+      <Component Directory="INSTALLLOCATION" Subdirectory="Template\PresetTest">
+        <File Source="$(var.SourceDir)\Template\PresetTest\test_targets.txt" KeyPath="yes" />
+      </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="Template\Settings">
         <File Source="$(var.SourceDir)\Template\Settings\Settings.xml" KeyPath="yes" />
       </Component>
