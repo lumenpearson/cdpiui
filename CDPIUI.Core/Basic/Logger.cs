@@ -30,7 +30,7 @@ namespace CDPIUI.Core.Basic
 #if DEBUG
             return LogSelevirity.DEBG;
 #else
-            return SettingsManager.Instance.GetValue<string>("DEBUG", "logLevel").ToEnum<LogSelevirity>(LogSelevirity.DEBG);
+            return SettingsManager.Instance.GetValue<string>("DEBUG", "logLevel").ToEnum<LogSelevirity>(LogSelevirity.WARN);
 #endif
         }
     }
