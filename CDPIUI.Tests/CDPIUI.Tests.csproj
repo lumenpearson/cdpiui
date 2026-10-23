@@ -8,6 +8,8 @@
     <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Reports unused code; the rules are set in the root .editorconfig. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>

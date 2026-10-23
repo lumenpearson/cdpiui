@@ -80,7 +80,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 {
                     messageWindow.BeginInvoke(new Action(() => Reload(tasksDirectory)));
                 }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException)
+                {
+                    // The window is closing, so the engine stops and needs no reload.
+                }
                 return;
             }
 
@@ -270,7 +273,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                     {
                         runningProcessNames.Add(process.ProcessName);
                     }
-                    catch { }
+                    catch
+                    {
+                        // The process exited after the list was taken; it is not running.
+                    }
                     finally
                     {
                         process.Dispose();
@@ -377,7 +383,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 if (!cancellation.IsCancellationRequested)
                     await RunTaskOnceAsync(match.Task);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // The trigger was cancelled during the delay; the task must not run.
+            }
             finally
             {
                 lock (_sync)

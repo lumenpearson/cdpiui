@@ -34,7 +34,7 @@ namespace CDPIUI.Core.LScript
             return scriptData;
         }
 
-        public static string GetScriptArgs(string scriptString, string scriptArgs = null)
+        public static string GetScriptArgs(string scriptString, string? scriptArgs = null)
         {
             string scriptData = "";
             if (scriptString != null && scriptString.StartsWith("$"))

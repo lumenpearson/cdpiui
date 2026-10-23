@@ -181,13 +181,20 @@ namespace CDPIUI.Core.Store.Repository
             }
             finally
             {
-                try { File.Delete(tempZipPath); } catch (IOException) { }
+                try { File.Delete(tempZipPath); }
+                catch (IOException ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary archive {tempZipPath}: {ex.Message}");
+                }
                 try
                 {
                     if (Directory.Exists(newFolder))
                         Directory.Delete(newFolder, recursive: true);
                 }
-                catch (IOException) { }
+                catch (IOException ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary folder {newFolder}: {ex.Message}");
+                }
             }
         }
 
@@ -324,7 +331,7 @@ namespace CDPIUI.Core.Store.Repository
                     RepoCategoryInitializationModel? repoCategoryInit = TryLoad<RepoCategoryInitializationModel>(categoryInitPath);
 
                     if (repoCategoryInit?.items == null || repoCategoryInit.items_directories == null ||
-                        !SupportedCategoryTypes.Contains(repoCategoryInit.type))
+                        repoCategoryInit.type == null || !SupportedCategoryTypes.Contains(repoCategoryInit.type))
                     {
                         Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the category: {categoryName}, {categoryPath}");
                         continue;

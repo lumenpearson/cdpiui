@@ -98,8 +98,8 @@ namespace CDPIUI.Core.Proxy
 
         internal static string ReplaceArgsForProxy(
             string args, 
-            string ip, 
-            string port, 
+            string? ip, 
+            string? port, 
             string componentId)
         {
             string finalArgs = ReplaceIp(args);

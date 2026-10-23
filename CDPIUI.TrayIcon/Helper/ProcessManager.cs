@@ -56,9 +56,11 @@ namespace CDPIUI.TrayIcon.Helper
 
         public bool IsProcessInfoChanged = false;
 
-        public event Action<ErrorModel>? ErrorHappens;
-        public event Action<string>? OutputReceived;
-        public event Action<string>? ProcessNameChanged;
+        // The tray sends errors, output and process names to the GUI through the pipe, so these
+        // events of the interface are never raised here.
+        event Action<ErrorModel>? IProcessService.ErrorHappens { add { } remove { } }
+        event Action<string>? IProcessService.OutputReceived { add { } remove { } }
+        event Action<string>? IProcessService.ProcessNameChanged { add { } remove { } }
         // The tray shows no error windows; errors go to the GUI through the pipe.
         event Action<string>? IProcessService.ShowErrorMessageWindow { add { } remove { } }
 
@@ -97,7 +99,7 @@ namespace CDPIUI.TrayIcon.Helper
                 }
                 else if (proxyType == "ProxiFyre")
                 {
-                    proxiFyreHelper.RunProcess(proxiFyreDir, string.Empty, Path.GetDirectoryName(proxiFyreDir)!);
+                    _ = proxiFyreHelper.RunProcess(proxiFyreDir, string.Empty, Path.GetDirectoryName(proxiFyreDir)!);
                 }
             }
             await Task.CompletedTask;
@@ -128,7 +130,7 @@ namespace CDPIUI.TrayIcon.Helper
         }
         
 
-        public async Task StartProcess(string executable, string args)
+        public async Task StartProcess(string executable, string? args)
         {
             LastError = null;
             IsProcessInfoChanged = false;
@@ -144,7 +146,7 @@ namespace CDPIUI.TrayIcon.Helper
 
             SendNowSelectedComponentName();
 
-            conPTYHelper.RunProcess(exePath, args, workingDirectory?? "");
+            _ = conPTYHelper.RunProcess(exePath, args ?? string.Empty, workingDirectory?? "");
         }
 
         public void SendNowSelectedComponentName()

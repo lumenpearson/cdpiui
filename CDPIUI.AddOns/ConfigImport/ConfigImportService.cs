@@ -480,7 +480,7 @@ public sealed partial class ConfigImportService
         if (TryResolveTextInclude(arguments, filePath, selected.Variables, out string includePath))
         {
             context.AddSourceFile(includePath);
-            arguments = ReadTextArguments(includePath, executable, selected.Variables, context);
+            arguments = ReadTextArguments(includePath, executable, selected.Variables);
             argumentsSourcePath = includePath;
         }
 
@@ -513,8 +513,7 @@ public sealed partial class ConfigImportService
         string arguments = ReadTextArguments(
             filePath,
             executable,
-            new Dictionary<string, MutableVariable>(StringComparer.OrdinalIgnoreCase),
-            context);
+            new Dictionary<string, MutableVariable>(StringComparer.OrdinalIgnoreCase));
         if (string.IsNullOrWhiteSpace(arguments))
         {
             context.AddError("TEXT_CONFIG_EMPTY", "The text config does not contain launch arguments.", filePath);
@@ -626,8 +625,7 @@ public sealed partial class ConfigImportService
     private static string ReadTextArguments(
         string filePath,
         string executable,
-        IReadOnlyDictionary<string, MutableVariable> variables,
-        GenericImportContext context)
+        IReadOnlyDictionary<string, MutableVariable> variables)
     {
         IReadOnlyList<LogicalLine> lines = ReadLogicalLines(filePath);
         var content = new StringBuilder();

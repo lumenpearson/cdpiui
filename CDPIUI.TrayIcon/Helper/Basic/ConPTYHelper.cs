@@ -318,6 +318,8 @@ namespace CDPIUI.TrayIcon.Helper
                     }
                     catch
                     {
+                        // The capture has already failed and its handles are closed; a read error
+                        // here only follows from that and must not replace the first exception.
                     }
                 }
             }
@@ -348,7 +350,8 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         // Not awaited by the callers: the lock is held by a running component until it exits.
-        public async void RunProcess(string exePath, string args, string workingDirectory)
+        // Catches and logs its own errors.
+        public async Task RunProcess(string exePath, string args, string workingDirectory)
         {
             try
             {
@@ -385,7 +388,8 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        public async void RunProcessWithConPTY(string exePath, string args, string workingDirectory, CancellationToken token, bool disableKillAfterError=false)
+        // Catches and logs its own errors, so a caller can start it without waiting for it.
+        public async Task RunProcessWithConPTY(string exePath, string args, string workingDirectory, CancellationToken token, bool disableKillAfterError=false)
         {
             try
             {

@@ -8,6 +8,8 @@
 	<UseWindowsForms>true</UseWindowsForms>
 	<DebugType>embedded</DebugType>
     <Nullable>enable</Nullable>
+    <!-- Reports unused code; the rules are set in the root .editorconfig. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\trayLogoNormal.ico</ApplicationIcon>
     <Platforms>x64</Platforms>

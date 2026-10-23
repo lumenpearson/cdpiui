@@ -54,7 +54,6 @@ namespace CDPIUI.Core.Store
         }
 
         public event Action<string>? StoreInternalErrorHappens;
-        public event Action<Tuple<string, string, List<string>>>? SelectFileNeeded;
         public event Action<string>? NowProcessItemActions;
         public event Action<string>? ItemActionsStopped;
 
@@ -526,7 +525,6 @@ namespace CDPIUI.Core.Store
                 var gettingPatchReadyResult = await ApplicationUpdateService
                     .GetPatchReadyToInstall(
                     Path.Combine(itemFolder, "patch.cdpipatch"), 
-                    qi.OperationId, 
                     OnlineItemsInstallationService.DownloadWorker);
 
                 ApplicationUpdateService = null;
@@ -553,7 +551,8 @@ namespace CDPIUI.Core.Store
                     .FailureResult(HandleException(PrettyErrorCode.ITEM_NOT_FOUND));
             }
 
-            var result = await OnlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, cancellationTokenSource);
+            // Set by ProcessAsync for the whole installation.
+            var result = await OnlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, cancellationTokenSource!);
 
             if (!result.Success && result.ErrorHappens)
             {
@@ -577,10 +576,10 @@ namespace CDPIUI.Core.Store
                 .SuccessResult(Tuple.Create(tag, downloadUrl, item));
         }
         
-        private OperationResultModel<Tuple<string, string?, RepoItemModel>> GetReadyLocalItem(QueueItemModel qi)
+        private OperationResultModel<Tuple<string?, string?, RepoItemModel>> GetReadyLocalItem(QueueItemModel qi)
         {
             RepoItemModel item;
-            string tag;
+            string? tag;
             string downloadUrl;
 
             string id = qi.ItemId;
@@ -589,7 +588,7 @@ namespace CDPIUI.Core.Store
             string itemFolder = Path.Combine(Directories.StoreItemsDirectory, qi.ItemId);
 
             var copyResult = CopyLocalPack(id, itemFolder, packFilePath);
-            if (!copyResult.Success) return OperationResultModel<Tuple<string, string?, RepoItemModel>>.FailureResult(copyResult.Error);
+            if (!copyResult.Success) return OperationResultModel<Tuple<string?, string?, RepoItemModel>>.FailureResult(copyResult.Error);
 
             if (qi.ItemId == SharedConstants.ApplicationStoreId)
             {
@@ -602,7 +601,7 @@ namespace CDPIUI.Core.Store
                 string initFilePath = Path.Combine(itemFolder, "init.json");
 
                 if (!File.Exists(initFilePath))
-                    return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                    return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                         .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
                 LocalItemInitModel? localItemInitModel;
@@ -616,7 +615,7 @@ namespace CDPIUI.Core.Store
                     localItemInitModel = null;
                 }
                 if (localItemInitModel == null)
-                    return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                    return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                         .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
                 item = new()
@@ -642,10 +641,10 @@ namespace CDPIUI.Core.Store
             }
 
             if (item == null)
-                return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                     .FailureResult(HandleException(PrettyErrorCode.NULL_REFERENCE));
 
-            return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+            return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                 .SuccessResult(Tuple.Create(tag, downloadUrl, item));
         }
 
@@ -748,7 +747,7 @@ namespace CDPIUI.Core.Store
         }
         
         private async Task<OperationResultModel<EmptyResult>> AddItemToDatabase(
-            string version,
+            string? version,
             string? downloadUrl,
             string itemFolder,
             RepoItemModel item,

@@ -17,7 +17,6 @@ namespace CDPIUI.Core.Store.Application
     {
         public async Task<OperationResultModel<EmptyResult>> GetPatchReadyToInstall(
             string filePath,
-            string operationId,
             DownloadWorker? downloadWorker)
         {
             string appItemDirectory = Path.Combine(Directories.StoreItemsDirectory, SharedConstants.ApplicationStoreId);
@@ -74,7 +73,14 @@ namespace CDPIUI.Core.Store.Application
                 {
                     Directory.Delete(patchesDirectory, recursive: true);
                 }
-                catch { }
+                catch (DirectoryNotFoundException)
+                {
+                    // The patch was not unpacked, so there is nothing to clean up.
+                }
+                catch (Exception ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(ApplicationUpdateService), $"Cannot delete the patches folder {patchesDirectory}: {ex.Message}");
+                }
             }
         }
 

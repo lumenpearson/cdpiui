@@ -23,6 +23,8 @@ namespace CDPIUI.Core
 
         private static bool DetectMsiInstallation()
         {
+            if (!OperatingSystem.IsWindows())
+                return false;
             try
             {
                 using RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)

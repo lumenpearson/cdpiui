@@ -6,6 +6,9 @@
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>CDPIUI</RootNamespace>
+    <!-- The code uses "?" annotations (CS8632 without a nullable context). "annotations" makes them
+         valid without the nullable warnings; files with "#nullable enable" keep the full checks. -->
+    <Nullable>annotations</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- x64 only, like the tray, the tools and the MSI: the GUI also calls user32 exports
          (SetWindowLongPtrW) that 32-bit Windows does not have. -->

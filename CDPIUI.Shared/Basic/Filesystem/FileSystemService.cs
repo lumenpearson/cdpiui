@@ -183,7 +183,10 @@ namespace CDPIUI.Shared.Basic.Filesystem
                     var info = new FileInfo(filePath);
                     if (info.Exists) fileSize = info.Length;
                 }
-                catch (Exception) { }
+                catch (Exception)
+                {
+                    // The warning above already reports the file; its size stays unknown.
+                }
             }
             return fileSize;
         }

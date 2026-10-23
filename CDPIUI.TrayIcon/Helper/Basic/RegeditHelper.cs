@@ -100,7 +100,12 @@ namespace CDPIUI.TrayIcon.Helper
 
         public static void DeleteSnapshotBackup()
         {
-            try { File.Delete(BackupFilePath); } catch (IOException) { }
+            try { File.Delete(BackupFilePath); }
+            catch (IOException ex)
+            {
+                // A stale backup would restore an old proxy after the next start.
+                Logger.Instance.CreateWarningLog(nameof(RegeditHelper), $"Cannot delete the proxy backup: {ex.Message}");
+            }
         }
 
         /// <summary>

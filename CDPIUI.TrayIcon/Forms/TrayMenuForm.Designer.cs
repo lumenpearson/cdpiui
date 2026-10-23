@@ -146,9 +146,6 @@ namespace CDPIUI.TrayIcon.Forms
 
         #endregion
 
-        private TextBox textBox1;
-        private FlowLayoutPanel flowLayoutPanel1;
-        private Controls.ModernListView MainFlowLayoutPanel;
         private Controls.ModernButtonUserControl ExitButton;
         private Controls.ModernButtonUserControl MaximizeButton;
         private Controls.ModernSeparatorUserControl Separator;

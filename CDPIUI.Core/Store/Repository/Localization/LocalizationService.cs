@@ -83,7 +83,7 @@ namespace CDPIUI.Core.Store.Repository.Localization
                         localizedString = localized;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Logger.Instance.CreateWarningLog(nameof(LocalizationService), $"Cannot get localization for {name} [{langCode}]");
             }

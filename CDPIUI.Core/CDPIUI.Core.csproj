@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Reports unused code; the rules are set in the root .editorconfig. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Configurations>Debug;Release;MsiRelease;SingleFileRelease</Configurations>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>

@@ -43,7 +43,10 @@ namespace CDPIUI.Core.System
                     if (Directory.Exists(verifyDirectory))
                         Directory.Delete(verifyDirectory, recursive: true);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(ZipService), $"Cannot delete the verification folder {verifyDirectory}: {ex.Message}");
+                }
             }
         }
 

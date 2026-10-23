@@ -356,7 +356,8 @@ namespace CDPIUI.AddOns.Troubleshooting
         }
 
         private bool IsServiceRunning(string name) =>
-            IsServiceRunning(service => service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
+            IsServiceRunning(service =>
+                OperatingSystem.IsWindows() && service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
 
         // Any matching service that runs: the first match alone could be a stopped one.
         private bool IsServiceRunning(Func<ServiceController, bool> match)
@@ -437,7 +438,12 @@ namespace CDPIUI.AddOns.Troubleshooting
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); }
+                catch (Exception ex)
+                {
+                    // For example, the process exited at the same time; the timeout is reported below.
+                    Logger.Instance.CreateWarningLog(nameof(TroubleshootingService), $"Cannot stop {fileName}: {ex.Message}");
+                }
                 throw new System.TimeoutException($"{fileName} did not finish in time");
             }
             await errors;
