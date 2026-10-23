@@ -105,6 +105,18 @@ namespace CDPIUI.Shared.Basic
             return document;
         }
 
+        // Items are separated by ';'. A ';' or '%' inside an item is stored as %3B or %25, so file
+        // names with ';' survive; values written before contain neither sequence and read the same.
+        private static string JoinList(IEnumerable<string> items) =>
+            string.Join(";", items.Select(item => (item ?? string.Empty).Replace("%", "%25").Replace(";", "%3B")));
+
+        private static List<string> SplitList(string value) =>
+            value.Split(';')
+                .Select(item => System.Text.RegularExpressions.Regex.Replace(item, "%(3B|25)", match =>
+                    string.Equals(match.Groups[1].Value, "3B", StringComparison.OrdinalIgnoreCase) ? ";" : "%",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                .ToList();
+
         private static void ApplySetting(XElement root, IEnumerable<string> groupPath, string key, string type, string valueString)
         {
             XElement current = root;
@@ -464,7 +476,7 @@ namespace CDPIUI.Shared.Basic
             else if (typeof(T) == typeof(List<string>))
             {
                 type = nameof(List<string>);
-                valueString = string.Join(";", (List<string>)(object)value);
+                valueString = JoinList((List<string>)(object)value);
 
                 Debug.WriteLine(valueString);
             }
@@ -510,7 +522,7 @@ namespace CDPIUI.Shared.Basic
                     break;
                 case List<string> lst:
                     type = nameof(List<string>);
-                    valueString = string.Join(";", lst);
+                    valueString = JoinList(lst);
                     break;
                 case DateTime dateTime:
                     type = nameof(DateTime);
@@ -533,7 +545,7 @@ namespace CDPIUI.Shared.Basic
             if (typeof(T) == typeof(bool) && type == "bool" && bool.TryParse(value, out var bv)) return (T)(object)bv;
             if (typeof(T) == typeof(string) && type == "string") return (T)(object)value;
 
-            if (typeof(T) == typeof(List<string>) && type == nameof(List<string>)) return string.IsNullOrEmpty(value) ? (T)(object)new List<string>() : (T)(object)value.Split(';').ToList();
+            if (typeof(T) == typeof(List<string>) && type == nameof(List<string>)) return string.IsNullOrEmpty(value) ? (T)(object)new List<string>() : (T)(object)SplitList(value);
 
             if (typeof(T) == typeof(DateTime) && type == nameof(DateTime) && TryParseDateTime(value, out var dtv))
                 return (T)(object)dtv;
