@@ -1,8 +1,5 @@
-﻿using CDPIUI.Shared.Exceptions.Catalog;
-using CDPIUI.Shared.Secrets;
-using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+﻿using CDPIUI.Shared.Secrets;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Security
 {
@@ -19,57 +16,24 @@ namespace CDPIUI.Core.Security
     {
         public static async Task<CatalogCheckResult> CheckCatalog(string catalogFile, string compareDirectory)
         {
-            CatalogCheckResult catalogCheckResult;
-            bool result = false;
             try
             {
-                result = await OpenAndCompareCatalogFile(catalogFile, compareDirectory);
-                if (result) catalogCheckResult = CatalogCheckResult.Success;
-                else catalogCheckResult = CatalogCheckResult.FailureNotValid;
+                CatalogVerification verification = await CatalogVerifier.VerifyAsync(
+                    catalogFile, compareDirectory, Secret.TrustedCertificates);
+
+                return verification switch
+                {
+                    CatalogVerification.Success => CatalogCheckResult.Success,
+                    CatalogVerification.NoSignature => CatalogCheckResult.FailureNoSignature,
+                    CatalogVerification.NotTrustedSignature => CatalogCheckResult.FailureNotTrustedSignature,
+                    CatalogVerification.FilesDoNotMatch => CatalogCheckResult.FailureNotValid,
+                    _ => CatalogCheckResult.FailureUnknown,
+                };
             }
-            catch (Exception ex)
+            catch
             {
-                if (ex is CertificateNotTrusted) catalogCheckResult = CatalogCheckResult.FailureNotTrustedSignature;
-                else if (ex is CryptographicException) catalogCheckResult = CatalogCheckResult.FailureNoSignature;
-                else catalogCheckResult = CatalogCheckResult.FailureUnknown;
+                return CatalogCheckResult.FailureUnknown;
             }
-
-            await Task.CompletedTask;
-            return catalogCheckResult;
-        }
-
-        private static async Task<bool> OpenAndCompareCatalogFile(string catalogFile, string compareDirectory)
-        {
-            X509Certificate catalogFileSign = X509Certificate.CreateFromSignedFile(catalogFile);
-            if (!Secret.TrustedCertificates.Contains(catalogFileSign.GetCertHashString()))
-            {
-                throw new CertificateNotTrusted("Certificate not trusted");
-            }
-            
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-
-            startInfo.FileName = @"powershell.exe";
-            startInfo.Arguments = 
-                $"Test-FileCatalog " +
-                $"-CatalogFilePath \'{catalogFile}\' " +
-                $"-Path \'{compareDirectory}\' " +
-                $"-FilesToSkip catalog.cat";
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardError = true;
-            startInfo.UseShellExecute = false;
-            startInfo.CreateNoWindow = true;
-
-            Process process = new Process();
-            
-            process.StartInfo = startInfo;
-            process.Start();
-            await process.WaitForExitAsync();
-
-            string output = process.StandardOutput.ReadToEnd().ReplaceLineEndings("");
-            if (string.Equals("Valid", output, StringComparison.OrdinalIgnoreCase))
-                return true;
-            else 
-                return false;
         }
     }
 }
