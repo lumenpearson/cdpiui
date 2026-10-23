@@ -78,10 +78,12 @@ namespace CDPIUI
             public Windows.Foundation.TypedEventHandler<object, WindowEventArgs> ClosedHandler;
         }
         private readonly SemaphoreSlim migrationWindowActivationLock = new(1, 1);
+        private int isUnhandledErrorShown;
 
         public App()
         {
             this.InitializeComponent();
+            RegisterUnhandledExceptionHandlers();
             PipeClientService.Instance.MessageReceived += (m) => CommandsHandler.HandleCommand(m);
             CoreErrorsLookupService.Instance.Init();
 
@@ -93,6 +95,55 @@ namespace CDPIUI
             ApplicationTaskMonitor.Instance.StoreStateChanged += StoreStateChanged;
 
             GetReadyFeatures();
+        }
+
+        private void RegisterUnhandledExceptionHandlers()
+        {
+            UnhandledException += App_UnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+                Logger.Instance.CreateErrorLog(nameof(App), $"Fatal unhandled exception: {e.ExceptionObject}");
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                Logger.Instance.CreateErrorLog(nameof(App), $"Unobserved task exception: {e.Exception}");
+                e.SetObserved();
+            };
+        }
+
+        private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            Logger.Instance.CreateErrorLog(nameof(App), $"Unhandled exception: {e.Exception?.ToString() ?? e.Message}");
+
+            // Exceptions from async void event handlers end up here. Keep the application
+            // running and show the error instead of closing every window without a trace.
+            e.Handled = true;
+            ShowUnhandledError(e.Exception);
+        }
+
+        private async void ShowUnhandledError(Exception exception)
+        {
+            if (Interlocked.Exchange(ref isUnhandledErrorShown, 1) != 0)
+                return;
+
+            try
+            {
+                XamlRoot xamlRoot = OpenWindows.LastOrDefault(w => w.Content?.XamlRoot != null)?.Content.XamlRoot;
+                if (xamlRoot == null)
+                    return;
+
+                string code = exception != null
+                    ? ErrorsHelper.Convertor.GetPrettyErrorCode("APP", exception)
+                    : "APP_UNKNOWN";
+                await new Controls.Dialogs.Universal.ErrorContentDialog().ShowErrorDialogAsync(
+                    Localizer.Get().GetLocalizedString("SomethingWentWrong"), code, xamlRoot);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(App), $"Cannot show unhandled exception: {ex.Message}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref isUnhandledErrorShown, 0);
+            }
         }
 
         private void StoreStateChanged(bool isWorking)
