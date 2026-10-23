@@ -34,8 +34,12 @@
       <ComponentGroupRef Id="NewSetupFiles" />
     </Feature>
     <CustomAction Id="LaunchApp" Directory="INSTALLLOCATION" ExeCommand="[SystemFolder]cmd.exe /C start CDPIUI.exe" Return="asyncNoWait" />
+    <!-- Closes the tray so it stops the components and restores the proxy settings, then ends the remaining
+         application processes and removes the WinDivert driver and the autorun task created by the application. -->
+    <CustomAction Id="UninstallCleanup" FileRef="TrayIconExe" ExeCommand="--uninstall-cleanup" Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
       <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT REMOVE" />
+      <Custom Action="UninstallCleanup" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
   </Package>
 </Wix>
