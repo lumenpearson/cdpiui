@@ -69,6 +69,7 @@ The autorun task starts the tray with `--autorun`.
 ## Components and ConPTY
 
 - `TasksHelper` is a `TasksManageService<ProcessManager>`. Each component id has one task.
+- `GetProcessIdFullOutput` and `GetProcessIdState` apply to the task of the `componentId` in the message. If `componentId` is empty, they apply to all tasks. `GetAllProcessStates` applies to all tasks. `TasksHelper.SendTasksOutput` and `TasksHelper.SendTasksState` read a snapshot of the task list.
 - `ProcessManager` keeps the executable and the arguments of the last start. A restart uses them again, unless the GUI sent `ProcessIdStartupArgsChanged`. In that case, the tray sends `GetStartupString` to the GUI.
 - `ConPTYHelper` starts the process in a pseudo console with `CreateProcessW` and sends the output to the GUI.
 - `ConPTYHelper` changes known output lines to a `PrettyErrorCode`. The first match of a line is used.
@@ -77,6 +78,12 @@ The autorun task starts the tray with `--autorun`.
 - `StopService` stops the components that use WinDivert (`CSGIVS036`, `CSZTBN012`, `CSZTBN062`). Then it runs `sc stop WinDivert` and `sc delete WinDivert`.
 - When the computer resumes, the tray waits up to 30 seconds for the network. Then it restarts the components that were running.
 - On exit and on session end, the tray stops all components. It waits up to 5 seconds.
+
+### Messages to a closed GUI
+
+If the tray cannot send a message, `PipeHelper.TrySendMessage` starts `<tray directory>\CDPIUI.exe` as the desktop user with `--direct:<message>`.
+This applies to all message targets. For background messages, the tray also adds `--create-no-window`.
+See [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/README.md#messages-when-the-gui-is-not-connected).
 
 ## Proxy
 
@@ -180,7 +187,10 @@ The cleanup does not change settings or logs, because the SYSTEM profile is not 
   1. `<tray directory>\Settings\Settings.xml`
   2. `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` of the desktop user
   3. `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` of the tray user
-- If no file exists, the tray uses item 1 and creates it.
+- If no file exists, the tray selects the path of a new file:
+  - For an MSI installation, the tray uses `%LOCALAPPDATA%\CDPIUI\Settings\Settings.xml` of the desktop user. The GUI of an MSI installation uses the same file.
+  - In all other conditions, the tray uses item 1.
+- The tray finds an MSI installation with the registry value `HKLM\Software\Storik4\CDPI UI\InstallLocation` (`Utils.GetSettingsFile`). The value must be equal to the tray directory. The GUI uses the same check (`CDPIUI.Core/State.cs`).
 - The GUI sends `Settings/ReloadSettings` after it changes a setting that the tray reads.
 - The tray writes logs to `<tray directory>\Logs\`. `DEBUG` builds write all levels. Release builds use `DEBUG/logLevel` (default `WARN`).
 
@@ -203,7 +213,7 @@ Notes:
 
 The tray is elevated, and the GUI is not. Treat each pipe message as data from a less trusted process.
 
-- Accept pipe clients only after the peer check and the `AuthGuid` authorization (see the pipe README).
+- Accept pipe clients only after the peer check and the `AuthGuid` authorization (see the pipe README). An empty `AuthGuid` authorizes no client. A failed authorization disconnects the client.
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots. `GrantAccessRequest` uses it.
@@ -212,7 +222,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Use only signed packages: Authenticode for installers, catalogs with pinned thumbprints for application updates.
 - Use full paths for system tools (`msiexec.exe`, `sc.exe`, `powershell.exe`, `explorer.exe`, `notepad.exe`).
 - Start processes with `UseShellExecute = false` (`RunHelper.Run`).
-- Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler would run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.
+- Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler can run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.
 - Start the GUI with `RunHelper.RunAsDesktopUser`. It uses the token of the shell process, so the GUI does not run elevated.
 - `GrantAccess` gives `Modify` access only to the tray user.
 

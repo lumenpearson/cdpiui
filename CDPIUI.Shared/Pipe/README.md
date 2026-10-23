@@ -57,19 +57,20 @@ The client stops its own process if the server fails the check.
 
 1. The server sends `Service/ConnectOK` after the connection.
 2. The client sends `Service/RequestAuth` with the `GUID` key. The value is `Secret.AuthGuid`.
-3. If the value is equal to the tray `Secret.AuthGuid`, the server sends `Service/AuthOK`.
-4. If the value is not equal, the server sends `Service/AuthFAIL`.
+3. If the tray `Secret.AuthGuid` is not empty and the value is equal to it, the server sends `Service/AuthOK`.
+4. In all other conditions, the server sends `Service/AuthFAIL` and disconnects the client.
 
 Rules:
 
+- An empty `Secret.AuthGuid` in the tray authorizes no client.
 - The server disconnects the client if the client is not authorized 15 seconds after the connection.
-- A failed `RequestAuth` does not close the connection. A failed `RequestAuth` after `AuthOK` removes the authorization.
+- A failed `RequestAuth` always disconnects the client, also after an earlier `AuthOK`. The client cannot try again on the same connection.
 - Before authorization, the server sends only `Service` messages (`PipeServer.CanSend`).
 - Before authorization, the server handles only `RequestAuth`. It ignores all other messages and writes a warning to the log.
 - The GUI and the tray must be built with the same `Secret.AuthGuid`.
-- Log messages replace the `GUID` value with `***` (`PipeServiceBase.RedactSecrets`).
+- The log entries for received, queued and failed messages replace the `GUID` value with `***` (`PipeServiceBase.RedactSecrets`).
 
-CAUTION: Do not use an empty `AuthGuid` in a release build. With an empty value, a `RequestAuth` with an empty `GUID` is accepted.
+CAUTION: Do not build with an empty `AuthGuid`. With an empty value, the GUI cannot connect to the tray. `create_secret_stub.ps1` and `create_release_secret.ps1` write a random value.
 
 ## Framing
 
@@ -135,11 +136,11 @@ Component processes. `componentId` is the component id, for example `CSZTBN012`.
 | `StopProcessId` | GUI → tray | `componentId` | Stops the component. |
 | `RestartProcessId` | GUI → tray | `componentId` | Restarts the component. |
 | `StopService` | GUI → tray | none | Stops the WinDivert components, then stops and deletes the `WinDivert` service. |
-| `GetProcessIdFullOutput` | GUI → tray | `componentId` | The tray sends `ProcessIdFullOutput` for all tasks. |
+| `GetProcessIdFullOutput` | GUI → tray | `componentId` | The tray sends `ProcessIdFullOutput` for the task of `componentId`. If `componentId` is empty, the tray sends it for all tasks. |
 | `GetAllProcessStates` | GUI → tray | none | The tray sends the state and the process name of all tasks. |
 | `ProcessIdStartupArgsChanged` | GUI → tray | `componentId` | The next start asks the GUI for a new startup string. |
 | `CaptureHelpOutput` | GUI → tray | `componentId`, `requestId`, `exePath` (`PipePayloadCodec`) | Runs `<exe> --help` for 10 seconds. |
-| `GetProcessIdState` | GUI → tray | `componentId` | The tray has no handler. |
+| `GetProcessIdState` | GUI → tray | `componentId` | The tray sends the state and the process name of the task of `componentId`. If `componentId` is empty, the tray sends them for all tasks. |
 | `GetStartupString` | tray → GUI | `componentId` | The GUI starts the task. |
 | `GetAllStartupStrings` | tray → GUI | `componentId` (empty) | The GUI starts all autorun components. |
 | `CleanOutputForId` | tray → GUI | `componentId` | The GUI clears the output. |
@@ -247,13 +248,14 @@ The tray waits 45 seconds for `ActionCompleted`.
 
 ## Messages when the GUI is not connected
 
-`PipeHelper.TrySendMessage` in the tray starts the GUI as the desktop user when the send fails:
+`PipeHelper.TrySendMessage` in the tray starts the GUI as the desktop user when the send fails.
+The message goes in the argument `--direct:<message>` for all targets.
 
-- `Service`, `CONPTY`, `Settings`, `Application`, `ConditionalLaunch`, `CompatibilityCheck` and `Update` messages go in `--direct:<message>`. Background messages also get `--create-no-window`.
-- All other targets go in `----ms-protocol:<message>`.
+- For background messages to the `Service`, `CONPTY`, `Settings`, `Application`, `ConditionalLaunch`, `CompatibilityCheck` and `Update` targets, the tray also adds `--create-no-window`.
+- For the other targets, for example `Presentation`, the tray does not add `--create-no-window`.
 
 The GUI handles `--direct:` with `CoreCommandsHandler`, then with `CommandsHandler.HandleCommand`.
-The GUI handles `----ms-protocol:` with `CommandUriMapper`, which accepts only public routes.
+The tray does not use `----ms-protocol:`. The GUI handles `----ms-protocol:` with `CommandUriMapper`, which accepts only public routes. Thus a pipe message in `----ms-protocol:`, for example `ShowWindow`, has no effect.
 
 ## Add a message
 
