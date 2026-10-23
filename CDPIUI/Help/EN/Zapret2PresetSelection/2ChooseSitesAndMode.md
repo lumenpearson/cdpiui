@@ -10,7 +10,7 @@ The preparation has three steps:
 
 Select [Add a site list]. Then do one of these steps:
 
-- Select a list that is installed in CDPIUI.
+- Select a list that is installed in CDPI UI.
 - Add a TXT file.
 - Drag a TXT file into the window.
 - Make your own list.
@@ -54,6 +54,7 @@ Most modern sites need HTTPS checks. A check of only HTTP is not sufficient. A s
 - **HTTPS (automatic TLS)** is the nearest to a usual secure connection.
 - **TLS 1.2** adds a test of a different frequent HTTPS option.
 - **TLS 1.3 (exact)** tests only TLS 1.3.
+- **QUIC / HTTP/3** tests HTTP/3 connections over QUIC. The curl build must support HTTP/3.
 - **IPv4** is applicable to most connections.
 - **IPv6**: enable it only if your provider gives a working IPv6 connection.
 
@@ -62,8 +63,8 @@ Most modern sites need HTTPS checks. A check of only HTTP is not sufficient. A s
 | Setting | Description |
 | ------- | ----------- |
 | **Connection timeout** | The time to wait for a connection to the site. |
-| **Total request time** | The maximum time for one attempt. It cannot be shorter than the connection timeout. |
-| **Zapret2 startup wait** | The pause between the start of a strategy and the request to the site. |
+| **Total request timeout** | The maximum time for one attempt. It cannot be shorter than the connection timeout. |
+| **Zapret 2 startup wait** | The pause between the start of a strategy and the request to the site. |
 | **Requests per domain** | The number of times that the utility repeats each check. More attempts find unstable results better, but the scan takes much more time. |
 | **Continue after finding the best strategies** | The utility tests the remaining strategies of the selected mode. The scan takes more time. This setting does not add strategies from a more exhaustive mode. |
 

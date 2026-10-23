@@ -47,7 +47,7 @@ If the list changed, a new scan gives a more reliable result.
 
 Open [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports). A partial report can contain useful strategies. When you ask for support, save a JSON report.
 
-CAUTION: The report can contain the tested addresses and the paths to your files. Examine the report before you send it.
+CAUTION: Examine the report before you send it. The report can contain the tested addresses and the paths to your files.
 
 ### For advanced users
 

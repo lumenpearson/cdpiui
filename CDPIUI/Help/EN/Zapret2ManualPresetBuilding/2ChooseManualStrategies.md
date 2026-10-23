@@ -8,7 +8,7 @@ Open [Selection result]. Each row is for one site and one connection type, for e
 2. Show the successful results.
 3. Select [Best results first].
 4. Compare the success rate first. Then compare the response time.
-5. Examine [Without Zapret2]. If the site is always available without bypass settings, it does not need a strategy.
+5. Examine [Without Zapret 2]. If the site is always available without bypass settings, it does not need a strategy.
 6. Before you use a row with a warning icon, read the explanation. The strategy possibly passed only some related connection types.
 
 The most reliable strategy passes all repeated attempts. A `5/5 (100%)` result is usually better than `1/1 (100%)`, because the test was repeated more times.
