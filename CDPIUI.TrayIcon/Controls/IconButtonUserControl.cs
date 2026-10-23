@@ -145,6 +145,9 @@ namespace CDPIUI.TrayIcon.Controls
 
         private void IconButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
         {
+            // Enabled only changed the colors: a disabled button, such as start for a component
+            // without a preset, still started it.
+            if (!Enabled) return;
             Clicked?.Invoke(this, e);
         }
 
