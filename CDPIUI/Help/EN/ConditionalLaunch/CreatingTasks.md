@@ -1,28 +1,32 @@
-# Creating and editing a task
+# Create and edit a task
 
-Open [Conditional Launch] from the [Utilities] page.
+Open [Conditional Launch] on the [Utilities] page.
 
-### Creating a task
+### Create a task
 
 1. Select [New task] on the toolbar.
-2. On the [General] page, enter a name and select a priority.
-3. Keep [Run this task when a trigger is matched] selected if the task should be active.
-4. Choose whether the task should stop after an error.
-5. On the [Triggers] page, add a start condition.
-6. On the [Actions] page, add the required actions and place them in the correct order.
-7. Select [OK].
+2. On the [General] page, enter a name.
+3. Select a priority.
+4. To make the task active, keep [Run this task when a trigger is matched] selected.
+5. Select if the task must stop after an error.
+6. On the [Triggers] page, add a start condition.
+7. On the [Actions] page, add the necessary actions.
+8. Put the actions in the correct sequence.
+9. Select [OK].
 
-The application automatically suggests a unique name. You can change it if necessary.
+The application automatically gives a unique name. You can change this name.
 
-### Editing and testing
+### Edit and test a task
 
-Double-click a task to edit it.
+To edit a task, double-click it.
 
-Select a task and then select [Run] to test it without waiting for a trigger.
+To test a task without a trigger:
+
+1. Select the task.
+2. Select [Run].
 
 ### Import and export
 
-Select [Import] or [Export] on the toolbar. Each task is stored in one `.cdpitask` file.
+Select [Import] or [Export] on the toolbar. Each task is in one `.cdpitask` file.
 
 Next: [Triggers and actions](cdpiui://Help/ConditionalLaunch/TriggersAndActions/).
-

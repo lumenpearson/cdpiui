@@ -188,6 +188,9 @@
   <data name="EditHostsFileUtility" xml:space="preserve">
     <value>Утилита изменения файла hosts</value>
   </data>
+  <data name="TroubleshootingUtility" xml:space="preserve">
+    <value>Утилита устранения неполадок</value>
+  </data>
   <data name="Autoselection" xml:space="preserve">
     <value>Средства автоподбора</value>
   </data>

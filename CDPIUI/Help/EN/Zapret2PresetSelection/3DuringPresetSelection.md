@@ -1,35 +1,43 @@
-# Starting and monitoring the scan
+# Start and monitor the scan
 
-On [Review settings], select [Start selection]. Until the scan finishes, do not change your internet connection, VPN, proxy, or DNS. Changing the network during the scan can make its results inconsistent.
+1. On [Review settings], select [Start selection].
+2. Do not change your internet connection, VPN, proxy or DNS until the scan is complete.
 
-CDPIUI then:
+A network change during the scan can make the results inconsistent.
 
-1. Checks access to the sites without bypass settings.
-2. Starts different Zapret2 strategies and repeats the requests.
-3. Combines successful options into one config.
-4. Tests the complete config.
-5. Attempts to replace a conflicting option when necessary.
+CDPIUI then does these steps:
 
-Open [Details] to see the current stage and estimated remaining time. An estimate may not be available at first. It is calculated from completed checks and becomes more accurate while the scan runs.
+1. It checks the access to the sites without bypass settings.
+2. It starts different Zapret2 strategies and repeats the requests.
+3. It combines the successful strategies into one preset.
+4. It tests the full preset.
+5. If necessary, it tries to replace a strategy that causes a conflict.
 
-### While the scan is running
+To see the current stage and the estimated remaining time, open [Details]. At the start, the estimate can be unavailable. The utility calculates it from the completed checks. The estimate becomes more accurate during the scan.
 
-- Other CDPIUI network components are temporarily stopped.
-- Internet access may be intermittent or unavailable.
-- Do not manually start another bypass component because it can affect the results.
-- You can leave the window in the background.
+### During the scan
 
-### To stop the scan
+- CDPIUI stops its other network components.
+- The internet connection can be intermittent or unavailable.
+- Do not start a different bypass component manually. It can change the results.
+- You can keep the window in the background.
 
-Select [Stop] and confirm. CDPIUI stops the temporary Zapret2 process and restores the components that were active before the scan.
+### Stop the scan
 
-Completed checks are not discarded. If a report can be created, you can open it immediately or later under [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports).
+1. Select [Stop].
+2. Confirm the stop.
 
-### Possible outcomes
+CDPIUI stops the temporary Zapret2 process. It starts again the components that operated before the scan.
 
-- **Config selected successfully** — a common option was found and tested.
-- **Preliminary config assembled** — the utility selected the best available option, but some targets may not have passed.
-- **Scan stopped** — the report contains only the data collected before it was stopped.
-- **Error** — open the result and diagnostic information. Earlier successful checks may still be available.
+The completed checks stay available. If the utility can make a report, you can open it immediately. You can also open it later in [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports).
 
-Next: [review the results and assembled config](cdpiui://Help/Zapret2PresetSelection/4ResultsAndPreset/).
+### Possible results
+
+| Result | Meaning |
+| ------ | ------- |
+| **Config selected successfully** | The utility found and tested a common strategy. |
+| **Preliminary config assembled** | The utility selected the best available strategy. Some targets possibly did not pass. |
+| **Scan stopped** | The report contains only the data from before the stop. |
+| **Error** | Open the result and the diagnostic information. The previous successful checks can still be available. |
+
+Next: [Results and preset assembly](cdpiui://Help/Zapret2PresetSelection/4ResultsAndPreset/).

@@ -1,32 +1,39 @@
-# Testing and finishing the manual config
+# Test and complete the manual preset
 
-Before continuing, make sure that:
+Before you continue, make sure that:
 
-- every required site and connection type has a strategy;
-- there are no errors that prevent the config from being generated;
-- you understand and have checked every warning;
-- the preview contains non-empty config text.
+- each necessary site and connection type has a strategy;
+- there are no errors that prevent the preset text;
+- you examined and understand each warning;
+- the preview contains preset text.
 
-Select [Proceed to testing and saving the config]. The text on the review page is read-only to prevent accidental changes.
+Select [Proceed to testing and saving the config]. On the review page, you cannot edit the text. This prevents accidental changes.
 
 ### Final test
 
-1. Check [Used files]. Replace any missing lists or external files.
-2. Start the completed config temporarily.
-3. Test the sites in your browser or required application.
-4. Check sign-in, images, video, and other important service features.
-5. Stop the temporary process after testing.
+1. Examine [Used files].
+2. Replace the missing lists or external files.
+3. Start the preset temporarily.
+4. Test the sites in your browser or in the necessary application.
+5. Check the sign-in, images, video and other important functions of the service.
+6. Stop the temporary process after the test.
 
-If a site does not work, return to the builder and try the next reliable strategy from the scan results.
+If a site does not operate, go back to the builder. Try the next reliable strategy from the scan results.
 
-When the result works for you, select [Save as new config], enter a name, and save it to CDPIUI. For more information, see [Testing and saving the config](cdpiui://Help/Zapret2PresetSelection/5SavePreset/).
+When the result is satisfactory, do these steps:
+
+1. Select [Save as new config].
+2. Enter a name.
+3. Save the preset to CDPIUI.
+
+For more information, see [Test and save the preset](cdpiui://Help/Zapret2PresetSelection/5SavePreset/).
 
 ### For advanced users
 
-[Allow editing] enables direct changes to the config text. Finish the structured manual assembly before using this mode.
+[Allow editing] lets you change the preset text directly. Complete the structured manual assembly before you use this mode.
 
-Direct text changes are not transferred back to the list of scopes and strategies. If you return to the builder after editing, CDPIUI warns that the expert changes will be removed and rebuilds the text from the builder rows.
+The application does not move direct text changes back into the list of scopes and strategies. If you go back to the builder after an edit, CDPIUI shows a warning. It removes the expert changes and makes the text again from the builder rows.
 
-If even the tested manual config does not solve the problem, see [If the result is not suitable](cdpiui://Help/Zapret2PresetSelection/6TroubleshootingPresetSelection/).
+If the tested manual preset does not solve the problem, see [If the result is not applicable](cdpiui://Help/Zapret2PresetSelection/6TroubleshootingPresetSelection/).
 
-Back to the beginning: [Building a config manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).
+Back to the start: [Build a preset manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).

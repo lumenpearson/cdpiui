@@ -1,16 +1,25 @@
-﻿# Add custom site to list for bypass
+# Add custom sites to the bypass list
 
-To change the list of URLs/IP addresses to be crawled, go to the preset settings for the component you're using.
+To change the list of sites and IP addresses for the bypass, open the preset settings of the component that you use.
 
-If the preset you're using uses site lists, you'll see the [Used Site Lists] widget. This widget lists all the sites to be crawled.
-To edit them, simply click the [Edit] button next to the site/IP list name. The default .txt file editor will open for editing.
+If the preset uses site lists, the [Used Site Lists] widget shows. This widget shows all sites for the bypass.
 
-You can also view the specific arguments applied to a particular site list by clicking the [Show Applied Parameters] button next to the site/IP list.
+To edit a site list:
 
-### Please Note
-Site/IP lists are not unique to each preset. Changing the list of websites/IP addresses will change it for all presets in the set.
-(Except the "Local data storage" set, StoreId:`LocalUserStorage`)
+1. Find the site list in the [Used Site Lists] widget.
+2. Click [Edit] next to the name of the list.
+3. Edit the list in the default editor for .txt files.
+
+To see the arguments for a site list, click [Show Applied Parameters] next to the list.
+
+### Note
+
+Site lists and IP lists are not unique to each preset. When you change a list, the change applies to all presets in the set. The exception is the "Local data storage" set (StoreId: `LocalUserStorage`).
 
 ### For advanced users
-You can find out the working directories of preset sets in the Store. Go to the [Library] page, click the [Show more actions] button for the desired item, and select
-[Show local files] from the drop-down list.
+
+The Store shows the working directories of preset sets.
+
+1. Open the [Library] page in the Store.
+2. Click [Show more actions] for the item.
+3. Select [Show local files] in the drop-down list.

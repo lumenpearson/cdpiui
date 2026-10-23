@@ -1,25 +1,28 @@
-# Choose and prepare files
+# Select and prepare files
 
-1. [Open the import utility](cdpiui://Tools/ImportConfig) and select **Next**.
-2. Select one or more preset files in the file picker.
-3. Wait for analysis to finish. When several files are selected, the wizard processes them one at a time and shows the current file name.
+1. [Open the import utility](cdpiui://Tools/ImportConfig).
+2. Select **Next**.
+3. In the file picker, select one or more preset files.
+4. Wait until the analysis is complete.
 
-### Which format should I select?
+If you select more than one file, the wizard examines them one at a time. It shows the name of the current file.
 
-- Select `.bat` or `.cmd` when the preset is distributed as a ready-to-run script.
-- Select `.txt` when the file contains component launch arguments.
-- Select `.json` only for an exported CDPIUI preset or a compatible preset in the older format.
+### Which format must I select?
 
-If the main file has nearby `lists`, `bin`, `fake`, or `lua` folders, keep the package structure unchanged until import is complete. This helps the wizard find its resources.
+- Select `.bat` or `.cmd` when the preset is a ready-to-run script.
+- Select `.txt` when the file contains launch arguments of a component.
+- Select `.json` only for an exported CDPIUI preset or a compatible preset in the old format.
 
-### What happens after analysis?
+The main file can have `lists`, `bin`, `fake` or `lua` folders near it. Do not change the package structure until the import is complete. Then the wizard can find the resources.
 
-- If all required dependencies are found, the result page opens.
-- If some files are missing, the **Missing files** page appears first.
-- If a file cannot be recognized, its result card remains available with the **Failed** status. Select the status to see the reason.
+### What occurs after the analysis?
+
+- If the wizard finds all necessary dependencies, the result page opens.
+- If some files are missing, the **Missing files** page opens first.
+- If the wizard cannot identify a file, the result card of the file has the **Failed** status. To see the cause, select the status.
 
 ### For advanced users
 
-The wizard is not a complete Windows command-line interpreter. It looks for a recognizable launch of an installed component and extracts its arguments. A file with several possible launches, complex conditions, loops, or dynamically assembled commands may need to be simplified. A regular BAT or CMD file should contain one unambiguous component launch.
+The wizard is not a full Windows command-line interpreter. It finds a known launch of an installed component and gets its arguments. A file can have more than one possible launch, complex conditions, loops or dynamic commands. Then you possibly must make the file simpler. A usual BAT or CMD file must contain one clear launch of a component.
 
-Next: [resolve missing files](cdpiui://Help/ConfigImport/3ResolveMissingFiles/).
+Next: [Resolve missing files](cdpiui://Help/ConfigImport/3ResolveMissingFiles/).

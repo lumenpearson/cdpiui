@@ -1,41 +1,58 @@
-# If the result is not suitable
+# If the result is not applicable
 
-### No suitable config was found
+### The utility found no applicable preset
 
-1. Check the spelling of the address and confirm that it is actually unavailable without Zapret2.
-2. Use Balanced mode, then Exhaustive if necessary.
+1. Examine the spelling of the address. Make sure that the site is really unavailable without Zapret2.
+2. Use the Balanced mode. If necessary, use the Exhaustive mode.
 3. If you selected [One strategy for the whole list], try [Select for every site].
-4. Make sure the appropriate HTTPS and IP options are selected.
-5. Repeat the scan on a stable connection without changing your VPN, proxy, or DNS.
+4. Make sure that you selected the correct HTTPS and IP options.
+5. Do the scan again on a stable connection. Do not change your VPN, proxy or DNS.
 
-### Only a preliminary config was created
+### The utility made only a preliminary preset
 
-This is the best option found, but it did not pass the full threshold for every target. Open [Diagnostic information], find the failed sites, and test them manually. You can save this config for further work, but it should not be treated as fully verified.
+This is the best strategy that the utility found. But it did not pass the full threshold for all targets.
 
-If the report contains other successful strategies, try to [build a config manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).
+1. Open [Diagnostic information].
+2. Find the sites that failed.
+3. Test these sites manually.
 
-### The automated check succeeds, but the site does not work in a browser
+You can save this preset for more work. But it is not fully verified.
 
-Add the addresses used by the site for sign-in, images, video, APIs, or content delivery. Sometimes the main page is available while one of its supporting addresses remains blocked.
+If the report has other successful strategies, [build a preset manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).
 
-Also check IPv4 and IPv6. The browser may choose a different IP version from the one tested by the utility.
+### The automatic check is successful, but the site does not operate in a browser
 
-### A site was ignored because of DNS
+Add the addresses that the site uses for sign-in, images, video, APIs or content delivery. Sometimes the main page is available, but one of the related addresses is blocked.
 
-The utility could not obtain a network address for the domain. Check the spelling and try to open it without Zapret2. If other applications cannot resolve it either, fix the connection or DNS settings before running another scan.
+Also examine IPv4 and IPv6. The browser can use a different IP version than the utility.
 
-### A site list is missing from an old report
+### The utility skipped a site because of DNS
 
-On the config review page, find the file with a warning and select [Replace]. Choose the current copy of the list. If the list has changed, running a new scan is more reliable.
+The utility cannot get a network address for the domain.
 
-### The scan was stopped or ended with an error
+1. Examine the spelling.
+2. Try to open the domain without Zapret2.
+3. If other applications also cannot find the domain, correct the connection or the DNS settings.
+4. Do the scan again.
 
-Open [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports). A partial report may still contain useful strategies. Save a JSON report when asking for support. Before sending it, remember that it may contain the tested addresses and paths to your files.
+### An old report does not have a site list
+
+1. On the preset review page, find the file with a warning.
+2. Select [Replace].
+3. Select the current copy of the list.
+
+If the list changed, a new scan gives a more reliable result.
+
+### The scan stopped or had an error
+
+Open [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports). A partial report can contain useful strategies. When you ask for support, save a JSON report.
+
+CAUTION: The report can contain the tested addresses and the paths to your files. Examine the report before you send it.
 
 ### For advanced users
 
-An automated request tests one specific address, protocol, and IP version, but it does not reproduce the complete behavior of a browser. It does not test JavaScript or every additional page resource, and a browser may use different secure connection parameters.
+An automatic request tests one specific address, protocol and IP version. It does not do all the operations of a browser. It does not test JavaScript or all additional page resources. A browser can also use different secure connection parameters.
 
-The utility is intended primarily for HTTP and HTTPS sites. Discord voice connections and other arbitrary application UDP traffic cannot be tested this way.
+The utility is mainly for HTTP and HTTPS sites. It cannot test Discord voice connections or other UDP traffic of applications.
 
-Back to the beginning: [Selecting a config for Zapret2](cdpiui://Help/Zapret2PresetSelection/1AboutPresetSelection/).
+Back to the start: [Preset selection for Zapret2](cdpiui://Help/Zapret2PresetSelection/1AboutPresetSelection/).

@@ -2,29 +2,31 @@
 
 ### Triggers
 
-Three trigger types are available:
+There are three trigger types:
 
-- [Hot key] starts a task from the selected key combination.
-- [When a process starts] starts a task after a process appears.
-- [When a process stops] starts a task after a process exits.
+| Trigger | Function |
+| ------- | -------- |
+| [Hot key] | Starts the task when you push the selected key combination. |
+| [When a process starts] | Starts the task after a process starts. |
+| [When a process stops] | Starts the task after a process stops. |
 
-A process name can be entered with or without the `.exe` extension. A delay helps make sure the process state did not change by accident.
+You can enter a process name with the `.exe` extension or without it. A delay makes sure that the process state did not change by accident.
 
-Multiple triggers use OR logic: any one of them can start the task.
+More than one trigger operates with OR logic. Each trigger can start the task.
 
 ### Actions
 
-Select an action and fill in the fields that appear. The application hides fields that are not needed.
+Select an action. Then complete the fields that show. The application hides the fields that are not necessary.
 
-Actions run from top to bottom. Use the arrow buttons to change their order.
+The actions run from top to bottom. To change their sequence, use the arrow buttons.
 
-Simple example:
+Example:
 
 1. Add a [Hot key] trigger.
 2. Select a key combination.
 3. Add the [Start component] action.
 4. Select an installed component.
-5. Save the task and select [Run] to test it.
+5. Save the task.
+6. Select [Run] to test the task.
 
-If [Stop task when an action fails] is selected, actions after the error are not run.
-
+If [Stop task when an action fails] is selected, the actions after an error do not run.
