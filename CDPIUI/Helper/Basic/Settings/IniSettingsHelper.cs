@@ -126,19 +126,36 @@ namespace CDPIUI.Helper.Basic.Settings
             return defaultValue;
         }
 
+        /// <summary>
+        /// The value, or the default of <typeparamref name="T"/> (an empty string for strings) when
+        /// the key is missing: a config.ini of another GoodCheck version must not crash the page.
+        /// </summary>
         public T GetValue<T>(string section, string key)
         {
             if (TryGetValue<T>(section, key, out var val)) return val!;
-            throw new KeyNotFoundException($"Section '{section}' or key '{key}' not found or cannot convert to {typeof(T).Name}.");
+            return typeof(T) == typeof(string) ? (T)(object)string.Empty : default!;
         }
 
         public void Save()
         {
             lock (_lock)
             {
-                using (var sw = new StreamWriter(_filePath, false, FileEncoding))
+                // Written next to the file and moved over it, so an interrupted save cannot leave a
+                // half-written config.ini. No BOM: GoodCheck does not expect one.
+                Encoding encoding = FileEncoding is UTF8Encoding ? new UTF8Encoding(false) : FileEncoding;
+                string tempPath = $"{_filePath}.{Guid.NewGuid():N}.tmp";
+                try
                 {
-                    _parser.WriteData(sw, _data);
+                    using (var sw = new StreamWriter(tempPath, false, encoding))
+                    {
+                        _parser.WriteData(sw, _data);
+                    }
+                    File.Move(tempPath, _filePath, overwrite: true);
+                }
+                finally
+                {
+                    if (File.Exists(tempPath))
+                        File.Delete(tempPath);
                 }
 
                 Reload();
@@ -149,14 +166,10 @@ namespace CDPIUI.Helper.Basic.Settings
         {
             lock (_lock)
             {
-                if (File.Exists(_filePath))
-                {
-                    _data = _parser.ReadFile(_filePath);
-                }
-                else
-                {
-                    throw new FileNotFoundException("INI file not found.");
-                }
+                // ReadFile without an encoding reads ASCII and breaks non-Latin values.
+                _data = File.Exists(_filePath)
+                    ? _parser.ReadFile(_filePath, FileEncoding)
+                    : new IniData();
             }
         }
 
