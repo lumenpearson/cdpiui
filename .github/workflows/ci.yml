@@ -52,3 +52,17 @@ jobs:
 
       - name: Build GUI
         run: msbuild CDPIUI/CDPIUI.csproj /restore /p:Configuration=Release /p:Platform=x64 /m
+
+  tools:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build Update and EditHostFile
+        shell: pwsh
+        run: |
+          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /m
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild EditHostFile/EditHostFile.csproj /p:Configuration=Release /m
