@@ -46,7 +46,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers
                     continue;
 
                 // New helpers: an installed or updated pack changes the preset lists they cache.
-                components.Add(new ComponentHelper(item.Id!));
+                components.Add(new ComponentHelper(item));
             }
             Components = components;
             InitRequested?.Invoke();

@@ -20,10 +20,23 @@ namespace CDPIUI.Core.ComponentServices.Helpers
         public Action? ConfigListUpdated;
 
         public ComponentHelper(string id)
+            : this(DatabaseHelper.Instance.GetItemById(id), id)
+        {
+        }
+
+        /// <summary>
+        /// Uses a row that was already read, so a list of components does not query each one again.
+        /// </summary>
+        public ComponentHelper(DatabaseStoreItem item)
+            : this(item, item.Id!)
+        {
+        }
+
+        private ComponentHelper(DatabaseStoreItem? item, string id)
         {
             Id = id;
 
-            DatabaseStoreItem = DatabaseHelper.Instance.GetItemById(Id);
+            DatabaseStoreItem = item;
 
             Directory = DatabaseStoreItem.Directory;
             ExecutablePath = Path.Combine(
@@ -70,6 +83,9 @@ namespace CDPIUI.Core.ComponentServices.Helpers
 
             ConfigListUpdated?.Invoke();
         }
+
+        /// <summary>The executable name from the row this helper was built from.</summary>
+        public string? ExecutableName => DatabaseStoreItem?.Executable;
 
         public ConfigurationService GetConfigHelper()
         {

@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Core.Store.Repository;
 using static CDPIUI.Core.Basic.ErrorsHelper;
 using TimeSpan = System.TimeSpan;
+using System.Runtime.ExceptionServices;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.Queue;
@@ -366,6 +367,9 @@ namespace CDPIUI.Core.Store
             return wasRunning;
         }
 
+        // Update checks sent at the same time; more would hit the API rate limits sooner.
+        private const int UpdateCheckConcurrency = 4;
+
         public async Task CheckUpdates()
         {
             if (IsNowUpdatesChecked) return;
@@ -379,20 +383,59 @@ namespace CDPIUI.Core.Store
 
                 List<DatabaseStoreItem> storeItems = DatabaseHelper.Instance.GetAllInstalledItems();
 
+                List<(DatabaseStoreItem Item, string RepoUrl)> itemsToCheck = [];
+                ExceptionDispatchInfo? prepareError = null;
                 foreach (var item in storeItems)
                 {
                     if (item.Id == SharedConstants.LocalUserItemsId || item.VersionControlType == "local") continue;
 
-                    string downloadUrl = item.DownloadUrl;
-                    string versionControlType = item.VersionControlType;
-                    string directory = item.Directory;
-
-                    string? repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
+                    string? repoUrl;
+                    try
+                    {
+                        repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        // The items before this one are still checked, as when they were checked one by one.
+                        prepareError = ExceptionDispatchInfo.Capture(ex);
+                        break;
+                    }
                     // Local packs have no update source; that is not an error.
                     if (string.IsNullOrEmpty(repoUrl))
                         continue;
 
-                    var versionDataCheckResult = await APIWorker.GetLastVersionAndVersionNotes(repoUrl);
+                    itemsToCheck.Add((item, repoUrl));
+                }
+
+                // The requests run a few at a time; the results are handled below in the item order.
+                using SemaphoreSlim requestSlots = new(UpdateCheckConcurrency);
+                var versionRequests = itemsToCheck
+                    .Select(async x =>
+                    {
+                        await requestSlots.WaitAsync().ConfigureAwait(false);
+                        try
+                        {
+                            return await APIWorker.GetLastVersionAndVersionNotes(x.RepoUrl).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            requestSlots.Release();
+                        }
+                    })
+                    .ToList();
+                try
+                {
+                    await Task.WhenAll(versionRequests);
+                }
+                catch
+                {
+                    // Each failed request is handled below at its place in the list.
+                }
+
+                for (int i = 0; i < itemsToCheck.Count; i++)
+                {
+                    var (item, repoUrl) = itemsToCheck[i];
+                    var versionDataCheckResult = await versionRequests[i];
 
                     if (versionDataCheckResult.ErrorHappens || !versionDataCheckResult.Success)
                     {
@@ -431,6 +474,8 @@ namespace CDPIUI.Core.Store
                         continue;
                     }
                 }
+
+                prepareError?.Throw();
             }
             catch (Exception ex)
             {

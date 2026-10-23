@@ -77,7 +77,10 @@ namespace CDPIUI.Core.ComponentServices
                 ComponentHelper componentHelper =
                     ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(Id);
 
-                ProcessName = DatabaseHelper.Instance.GetItemById(Id)?.Executable?.FirstCharToUpper() ?? string.Empty;
+                // The helper was just built from the same row, so there is no need to read it again.
+                ProcessName = (componentHelper != null
+                    ? componentHelper.ExecutableName
+                    : DatabaseHelper.Instance.GetItemById(Id)?.Executable)?.FirstCharToUpper() ?? string.Empty;
 
                 if (componentHelper == null)
                     throw new InvalidOperationException($"Component {Id} is not installed or its executable is missing.");
