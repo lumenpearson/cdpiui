@@ -30,7 +30,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
         private System.Threading.Timer? _processTimer;
         private System.Threading.Timer? _reloadTimer;
         private int _isPolling;
-        private int _nextHotKeyId = 0x4300;
+        private const int FirstHotKeyId = 0x4300;
+        private int _nextHotKeyId = FirstHotKeyId;
         private bool _disposed;
 
         public static ConditionalLaunchEngine Instance => LazyInstance.Value;
@@ -251,6 +252,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             foreach (var id in _hotKeyTasks.Keys)
                 UnregisterHotKey(_windowHandle, id);
             _hotKeyTasks.Clear();
+            // Ids above 0xBFFF are rejected; every reload used new ones.
+            _nextHotKeyId = FirstHotKeyId;
         }
 
         private void PollProcesses()

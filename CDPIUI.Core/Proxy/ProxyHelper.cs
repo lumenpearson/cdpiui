@@ -13,7 +13,7 @@ namespace CDPIUI.Core.Proxy
 
     public static class ProxyHelper
     {
-        public static List<string> Tokens = new() { "-p", "--port", "-i", "--ip", "-addr", "--host" };
+        public static List<string> Tokens = new() { "-p", "--port", "-i", "--ip", "-addr", "-port", "--host" };
 
         /// <summary>
         /// Removes the address and port arguments, which the application sets itself

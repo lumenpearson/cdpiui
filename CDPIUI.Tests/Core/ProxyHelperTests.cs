@@ -9,6 +9,7 @@ public class ProxyHelperTests
     [InlineData("--ip=127.0.0.1 --port=1080 --auto=a=b", "--auto=a=b ")]
     [InlineData("-addr 0.0.0.0 -f \"C:\\Program Files\\list.txt\"", "-f \"C:\\Program Files\\list.txt\" ")]
     [InlineData("  --disorder 1   --host example.com  ", "--disorder 1 ")]
+    [InlineData("-addr=127.0.0.1 -port=8080 -dns-addr 8.8.8.8", "-dns-addr 8.8.8.8 ")]
     public void AddressAndPortArgumentsAreRemoved(string args, string expected)
     {
         Assert.Equal(expected, ProxyHelper.ReplaseIp(args));

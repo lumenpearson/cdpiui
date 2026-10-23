@@ -318,11 +318,17 @@ namespace CDPIUI.Core.ComponentServices
             ProcessName = name;
             ProcessNameChanged?.Invoke(name);
         }
+        // An escape sequence split between two chunks is cleaned once the rest arrives.
+        private string _pendingEscape = string.Empty;
+
         public void AddOutput(string output)
         {
-            string prettyOutput = OutputCleanupHelper.ReplaceSymbols(output);
+            string prettyOutput;
             lock (outputLock)
             {
+                string chunk = _pendingEscape + output;
+                _pendingEscape = OutputCleanupHelper.TakeIncompleteTail(ref chunk);
+                prettyOutput = OutputCleanupHelper.ReplaceSymbols(chunk);
                 _outputDefaultBuffer.Append(output);
                 _outputBuffer.Append(prettyOutput);
                 // A component running with --debug for hours filled memory: only the end is kept (audit 22.2).
@@ -342,6 +348,7 @@ namespace CDPIUI.Core.ComponentServices
             lock (outputLock)
             {
                 _outputDefaultBuffer.Clear().Append(output);
+                _pendingEscape = string.Empty;
                 _outputBuffer.Clear().Append(OutputCleanupHelper.ReplaceSymbols(output));
             }
             OutputReset?.Invoke();

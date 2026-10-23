@@ -28,18 +28,14 @@ namespace CDPIUI.Core.LScript
                     var _result = await InstallAllMsiFromPath(path.Replace("$ALL", ""), removeAfterAction, cancellationToken);
                     if (!_result.Item1) throw new MsiInstallException("Install failure");
                     if (_result.Item2)
-                    {
-                        // TODO: ask restart
-                    }
+                        CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
                 }
                 else
                 {
                     var _result = await InstallMsi(path, removeAfterAction, cancellationToken);
                     if (!_result.Item1) throw new MsiInstallException("Install failure");
                     if (_result.Item2)
-                    {
-                        // TODO: ask restart
-                    }
+                        CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
                 }
             }
             else
