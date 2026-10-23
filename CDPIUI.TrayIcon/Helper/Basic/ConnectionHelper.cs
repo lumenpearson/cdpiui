@@ -70,11 +70,21 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                 }
                 catch (Exception ex)
                 {
-                    Logger?.CreateDebugLog(nameof(PipeServer),
-                        $"Terminating PID={Environment.ProcessId}: pipe creation failed. " +
-                        $"Another tray instance may already own the pipe. Exception: {ex}");
-                    Process.GetCurrentProcess().Kill();
-                    return;
+                    if (IsAnotherTrayRunning())
+                    {
+                        Logger?.CreateDebugLog(nameof(PipeServer),
+                            $"Terminating PID={Environment.ProcessId}: pipe creation failed and another tray instance is running. " +
+                            $"Exception: {ex}");
+                        Process.GetCurrentProcess().Kill();
+                        return;
+                    }
+
+                    // Another process took the name while the pipe was being recreated. Clients check
+                    // that the server is this tray, so waiting for the name to be released is enough.
+                    Logger?.CreateWarningLog(nameof(PipeServer), $"Cannot create the pipe, retrying: {ex.Message}");
+                    try { await Task.Delay(TimeSpan.FromSeconds(2), CancellationToken ?? default); }
+                    catch (OperationCanceledException) { break; }
+                    continue;
                 }
 
                 try
@@ -117,6 +127,20 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
                     Logger?.CreateDebugLog(nameof(PipeServer), $"Client handler finished.");
                 }
+            }
+        }
+
+        private static bool IsAnotherTrayRunning()
+        {
+            using var current = Process.GetCurrentProcess();
+            Process[] trays = Process.GetProcessesByName(current.ProcessName);
+            try
+            {
+                return trays.Any(process => process.Id != current.Id);
+            }
+            finally
+            {
+                foreach (var process in trays) process.Dispose();
             }
         }
 
