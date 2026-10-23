@@ -24,6 +24,8 @@ namespace CDPIUI.Core.Store.MSI
         private readonly string _filename;
         private MsiState _state;
 
+        private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(30);
+
         public MsiInstallerService(string operationId, string filename) 
         {
             _operationId = operationId;
@@ -34,11 +36,25 @@ namespace CDPIUI.Core.Store.MSI
         {
             _tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            // The task finished only with an answer of the tray: a lost answer or a hanging
+            // msiexec kept the Store busy forever, and a cancellation left msiexec running (audit 10.11).
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(InstallTimeout);
             using (cts.Token.Register(() => _tcs.TrySetCanceled()))
             {
                 MsiInstallerQueueManager.Instance.SendMsiInstallMessage(_operationId, _filename, this);
-                await _tcs.Task.ConfigureAwait(false);
+                try
+                {
+                    await _tcs.Task.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    MsiInstallerQueueManager.Instance.RemoveMsiInstallerModel(_operationId, notify: true);
+                    if (ct.IsCancellationRequested)
+                        throw;
+                    Logger.Instance.CreateErrorLog(nameof(MsiInstallerService), $"The installation of {_filename} did not finish in {InstallTimeout.TotalMinutes} minutes.");
+                    _state = MsiState.ExceptionHappens;
+                }
                 return new MsiCallback()
                 {
                     operationId = _operationId,
