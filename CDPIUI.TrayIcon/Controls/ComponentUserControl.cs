@@ -121,36 +121,57 @@ namespace CDPIUI.TrayIcon.Controls
 
         private async void OpenSettingsButton_Clicked(object? sender, EventArgs e)
         {
-            EventHappens?.Invoke();
-
-            await PipeHelper.SendOpenWindowPacket("MainWindow", new() 
+            try
             {
-                { "page", "Components.ViewComponentSettingsPage" },
-                { "componentId", ComponentId },
-            }, true);
+                EventHappens?.Invoke();
+
+                await PipeHelper.SendOpenWindowPacket("MainWindow", new() 
+                {
+                    { "page", "Components.ViewComponentSettingsPage" },
+                    { "componentId", ComponentId },
+                }, true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the settings of {ComponentId}: {ex}");
+            }
         }
 
         private async void OpenPseudoConsoleButton_Clicked(object? sender, EventArgs e)
         {
-            EventHappens?.Invoke();
-
-            await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
+            try
             {
-                { "id", ComponentId },
-            }, true);
+                EventHappens?.Invoke();
+
+                await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
+                {
+                    { "id", ComponentId },
+                }, true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the pseudo console of {ComponentId}: {ex}");
+            }
         }
 
         private async void ComponentWorkButton_Clicked(object? sender, EventArgs e)
         {
-            EventHappens?.Invoke();
+            try
+            {
+                EventHappens?.Invoke();
 
-            if (!await TasksHelper.Instance.IsTaskRunning(ComponentId))
-            {
-                _ = TasksHelper.Instance.CreateAndRunNewTask(ComponentId);
+                if (!await TasksHelper.Instance.IsTaskRunning(ComponentId))
+                {
+                    _ = TasksHelper.Instance.CreateAndRunNewTask(ComponentId);
+                }
+                else
+                {
+                    await TasksHelper.Instance.StopTask(ComponentId);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await TasksHelper.Instance.StopTask(ComponentId);
+                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot change the state of {ComponentId}: {ex}");
             }
         }
 

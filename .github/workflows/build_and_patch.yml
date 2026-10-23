@@ -45,7 +45,6 @@ jobs:
           STORE_PROXY_URL: ${{ secrets.STORE_PROXY_URL }}
           STORE_PROXY_KEY: ${{ secrets.STORE_PROXY_KEY }}
           TRUSTED_CERTIFICATES: ${{ secrets.TRUSTED_CERTIFICATES }}
-          PIPE_AUTH_GUID: ${{ secrets.PIPE_AUTH_GUID }}
           CATALOG_CERTIFICATE: ${{ secrets.CATALOG_CERTIFICATE_PFX_BASE64 }}
           CATALOG_CERTIFICATE_PASSWORD: ${{ secrets.CATALOG_CERTIFICATE_PASSWORD }}
         run: ./.github/scripts/create_release_secret.ps1 -Force
@@ -125,14 +124,22 @@ jobs:
             }
             Move-Item $catalog (Join-Path $portable "catalog.cat")
             Compress-Archive -Path "$portable/*" -DestinationPath out/_portable.zip
+
+            $msi = Get-ChildItem NewSetup/bin -Recurse -Filter *.msi | Select-Object -First 1
+            if (-not $msi) { throw "Setup.msi was not built" }
+            Copy-Item $msi.FullName out/Setup.msi
+            # The tray installs an MSI update only when this certificate signed it.
+            if ($certPath) {
+              $signature = Set-AuthenticodeSignature -FilePath out/Setup.msi -Certificate $cert -HashAlgorithm SHA256
+              if ($null -eq $signature.SignerCertificate) { throw "Cannot sign Setup.msi: $($signature.StatusMessage)" }
+            }
+            else {
+              Write-Warning "No catalog certificate: Setup.msi is not signed, and installed copies will not accept it as an update."
+            }
           }
           finally {
             if ($certPath) { Remove-Item $certPath -Force -ErrorAction SilentlyContinue }
           }
-
-          $msi = Get-ChildItem NewSetup/bin -Recurse -Filter *.msi | Select-Object -First 1
-          if (-not $msi) { throw "Setup.msi was not built" }
-          Copy-Item $msi.FullName out/Setup.msi
 
       - uses: actions/upload-artifact@v4
         with:

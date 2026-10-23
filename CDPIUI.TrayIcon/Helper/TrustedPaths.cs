@@ -18,6 +18,8 @@ namespace CDPIUI.TrayIcon.Helper
             GetDesktopUserDataDirectory(),
         ];
 
+        public static IEnumerable<string?> AllowedRoots => Roots;
+
         public static string? GetDesktopUserDataDirectory()
         {
             try

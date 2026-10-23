@@ -100,13 +100,15 @@ The MSI uninstall cleanup deletes `update.log`, `.update-manifest`, `.update-sta
 ## Window
 
 The `Update Assistant` window (`Update/Form1.cs`, `Update/Form1.Designer.cs`) has a fixed size
-and no control box. It contains these controls:
+and no control box. The window texts are in English. If the Windows UI language is Russian, they are in Russian (`Update/Strings.cs`). The log lines are always in English.
+
+The window contains these controls:
 
 | Control | Content |
 |---------|---------|
 | Progress bar | Goes from 0 % to 100 % during extraction. Then it goes from 0 % to 100 % again during the apply step. |
 | Status line | `Preparing...`, `Unpacking...`, `Copying files...`, `Finalizing...`, the current file, `Complete` or `Exception happens`. |
-| Button (`Cancel`) | Disabled until the procedure completes or fails. Then it closes the tool. |
+| Button (`Cancel`) | Disabled until the procedure completes or fails. Then its text changes to `Close`, and it closes the tool. |
 
 The user cannot close the window while the update runs (`FinishStatus` is `None`). After the
 tray starts successfully, the tool closes automatically.

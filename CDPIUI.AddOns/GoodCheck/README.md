@@ -90,17 +90,18 @@ The service passes only the file names of the site list and the strategy list.
 
 `CDPIUI.TrayIcon/Helper/GoodCheckProcessHelper.cs` starts the process. It operates with administrator rights. It does these steps:
 
-1. It makes sure that the executable is in a trusted path (`TrustedPaths.IsAllowed`). Otherwise, it reports `ERR_UNABLE_START_PROCESS`.
-2. It stops all component tasks.
-3. It sends `Running` to the GUI and blocks the component buttons.
-4. It starts GoodCheck without a window. The working folder is the folder of the executable.
-5. It puts the process into a job object that kills the process when the job closes.
-6. When the process stops, it sends `Died` with the operation ID.
-7. It unblocks the component buttons.
+1. It checks the arguments with `FileWritingOptions`. It also reads the argument files (`@file`). If an option writes a file outside the application folders, it reports `ERR_UNABLE_START_PROCESS`.
+2. It checks the executable with `ExecutableTrust.AcquireAsync`. The executable must be in a trusted path (`TrustedPaths.IsAllowed`). In an MSI installation, an additional check applies to a program outside the installation folder. It must be a signed Store item, or the user must approve its new or changed files. Otherwise, it reports `ERR_UNABLE_START_PROCESS`.
+3. It stops all component tasks.
+4. It sends `Running` to the GUI and blocks the component buttons.
+5. It starts GoodCheck without a window. The working folder is the folder of the executable.
+6. It puts the process into a job object that kills the process when the job closes.
+7. When the process stops, it sends `Died` with the operation ID.
+8. It unblocks the component buttons.
 
 A start error gives `DiedViaError` with `ERR_UNABLE_START_PROCESS` or `ERR_WIN32_EXCEPTION`. The message `Stop` kills the process. When the pipe disconnects, the tray also stops GoodCheck.
 
-In the GUI, `CDPIUI/Commands/CommandsHandler.cs` sends `Died` to `OperationWithIdDied` and `DiedViaError` to `OperationWithIdFailed`. `OperationWithIdFailed` marks the operation as failed and stops the log monitor of the operation.
+In the GUI, `CDPIUI/Commands/CommandsHandler.cs` sends `Died` to `OperationWithIdDied` and `DiedViaError` to `OperationWithIdFailed`. `OperationWithIdFailed` marks the operation as failed and stops the log monitor of the operation. If the message has no error code, the code is `ERR_UNKNOWN`.
 
 ## Log monitor
 
@@ -167,7 +168,8 @@ When the run ends, the service sets each check that is still `WorkInProgress` to
 | `ERR_GOODCHECK_EXITED_EARLY` | Service | The process stopped before `All Done` |
 | `ERR_MONITOR_EXCEPTION` | Service | The log monitor failed |
 | `ERR_INTERNAL` | Service | An unhandled exception in the run |
-| `ERR_UNABLE_START_PROCESS` | Tray | The path is not trusted, or the process did not start |
+| `ERR_UNKNOWN` | Service | The tray sent `DiedViaError` without an error code |
+| `ERR_UNABLE_START_PROCESS` | Tray | The path is not trusted, the files are not approved, the arguments write a file outside the application folders, or the process did not start |
 | `ERR_WIN32_EXCEPTION` | Tray | The job object or the process start failed |
 
 ## Settings
@@ -197,7 +199,7 @@ If `config.ini` is missing, the page tells the user to install the add-on again.
 
 ## Site lists
 
-`SiteListHelper.GetAllAvailableSiteListTemplatesAsync` finds the TXT files in the folders of all `configlist` Store items. If one kit has several files with the same name and different contents, all of them stay in the list. Files with the same name and the same SHA-256 appear once.
+`SiteListHelper.GetAllAvailableSiteListTemplatesAsync` finds the TXT files in the folders and subfolders of all `configlist` Store items. Only the files that pass the `Quick` check of `DomainValidationHelper` are shown. If one kit has several files with the same name and different contents, all of them stay in the list. Files with the same name and the same SHA-256 appear once.
 
 `DomainValidationHelper` checks a list. In `Quick` mode, it reads the first 10 lines that are not empty and not comments. A list is not valid if a line contains whitespace or `/`, or if a line is an IP address. A file that the user selects must pass the `Quick` check. The page then copies it to `Store/Items/LocalUserStorage/List` with a unique name.
 

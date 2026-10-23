@@ -10,7 +10,7 @@ The HostsFileEditor add-on adds the CDPI UI domain block to the Windows hosts fi
 
 ## Main type
 
-`HostsFileEditService` (`HostsFileEditorService.cs`, namespace `CDPIUI.AddOns.HostsFileEditor`) is a static class.
+`HostsFileEditService` (`HostsFileEditorService.cs`, namespace `CDPIUI.AddOns.HostsFileEditor`) is a class with static methods only.
 
 | Method | Tool argument | Function |
 |---|---|---|
@@ -76,4 +76,5 @@ The page uses these values to enable the cards:
 
 - The page does not read the hosts file to find its state. It uses only the `HOSTS` settings. A change of the hosts file outside CDPI UI does not change these settings. For example, the MSI uninstall cleanup runs `EditHostFile.exe /remove` but does not change the settings.
 - Each operation shows a UAC prompt.
+- The add-on does not check a signature of `EditHostFile.exe`. In an MSI installation, only administrators can change the installation folder. A portable copy is in a folder that the user can change, together with `CDPIUI.exe` and the tray. Thus a check of one file does not protect it. The UAC prompt shows the path of the file.
 - The add-on has no tests in `CDPIUI.Tests`.

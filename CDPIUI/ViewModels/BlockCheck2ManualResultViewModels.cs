@@ -1,5 +1,6 @@
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,7 +32,7 @@ public sealed class BlockCheck2ManualIssueItem
     {
         Severity = severity;
         Code = code;
-        Message = message;
+        Message = BlockCheck2IssueText.GetMessage(code, message);
         Count = Math.Max(1, count);
         string[] materializedSubjects = subjects
             .Where(subject => !string.IsNullOrWhiteSpace(subject))
@@ -39,7 +40,7 @@ public sealed class BlockCheck2ManualIssueItem
             .OrderBy(subject => subject, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
         SubjectText = string.Join(", ", materializedSubjects);
-        Key = $"{Severity}|{Code}|{Message}|{string.Join('|', materializedSubjects)}";
+        Key = $"{Severity}|{Code}|{message}|{string.Join('|', materializedSubjects)}";
     }
 
     public BlockCheckIssueSeverity Severity { get; }

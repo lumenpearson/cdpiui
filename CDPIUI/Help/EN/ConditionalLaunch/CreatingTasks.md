@@ -1,6 +1,6 @@
 # Create and edit a task
 
-Open [Conditional Launch] on the [Utilities] page.
+Open [Conditional Launch] on the [Utils] page.
 
 ### Create a task
 
@@ -27,6 +27,6 @@ To test a task without a trigger:
 
 ### Import and export
 
-Select [Import] or [Export] on the toolbar. Each task is in one `.cdpitask` file.
+Select [Import task from file] or [Export selected task] on the toolbar. Each task is in one `.cdpitask` file.
 
 Next: [Triggers and actions](cdpiui://Help/ConditionalLaunch/TriggersAndActions/).

@@ -37,6 +37,7 @@ namespace CDPIUI
             IsAppShownInSwitchers = false;
             IconUri = @"Assets/favicon.ico";
             this.CustomTitleBarUserControl = TitleBarUserControl;
+            WindowTitle = WinUI3Localizer.Localizer.Get().GetLocalizedString("PrepareWindowTitle");
 
             this.OverlappedPresenter.SetBorderAndTitleBar(true, false);
 

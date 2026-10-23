@@ -69,7 +69,7 @@ namespace CDPIUI.Core.Communication
             {
                 case ServiceMessageIds.AuthFAIL:
                     Logger.Instance
-                        .CreateErrorLog(nameof(PipeClientService), "Auth status: FAIL. Check auth guid!");
+                        .CreateErrorLog(nameof(PipeClientService), "Auth status: FAIL. The pipe key in .session\\pipe.key does not match the key of the running tray.");
                     return;
                 default: return;
             }

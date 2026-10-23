@@ -25,9 +25,10 @@
 
 ### Запуск трея и `--gui-args:`
 
-При запуске `PipeClientService` подключается к pipe трея. Если подключиться не удаётся, он запускает `CDPIUI_TrayIcon.exe` с правами администратора. Затем процесс GUI завершается.
+При запуске `PipeClientService` подключается к pipe трея. Предел ожидания — 2 секунды. Если процесс трея запущен, GUI ждёт ещё 15 секунд. Если подключиться не удаётся, он запускает `CDPIUI_TrayIcon.exe` с правами администратора. Затем процесс GUI завершается.
 
 - GUI передаёт трею `--autorun`, если настройка `APPEARANCE/hideToTrayOnStartup` равна true. Иначе он передаёт `--show-ui`.
+- Если у GUI есть собственные аргументы, он всегда передаёт `--show-ui` и аргумент `--gui-args:`. Аргумент миграции с GoodbyeDPI передаётся трею без кодирования.
 - GUI кодирует свои аргументы через `GuiActivationArguments.Encode` (`CDPIUI.Shared/Basic/CommandLine`). Результат — один аргумент `--gui-args:`.
 - Каждый аргумент кодируется в UTF-8 и Base64. Аргументы разделяет точка. Максимальная длина в закодированном виде — 16 КиБ. Более длинное значение не отправляется.
 - Трей декодирует значение через `GuiActivationArguments.TryDecode`. Он снова запускает `CDPIUI.exe` с исходными аргументами.
@@ -61,13 +62,15 @@
 
 1. Регистрирует обработчики необработанных исключений. Исключение XAML записывается в журнал и показывается в `ErrorContentDialog`. Приложение не закрывается.
 2. Подключает `PipeClientService.MessageReceived` к `CommandsHandler.HandleCommand`.
-3. Применяет тему из `APPEARANCE/Theme`.
-4. Запускает `PipeClientService` и подписывается на `Connected`.
-5. Вызывает `GetReadyFeatures`.
+3. Вызывает `CoreErrorsLookupService.Init`.
+4. Применяет тему из `APPEARANCE/Theme`.
+5. Вызывает `PipeClientService.Init` и подписывается на `Connected`.
+6. Подписывается на `ApplicationTaskMonitor.StoreStateChanged`.
+7. Вызывает `GetReadyFeatures`.
 
 `GetReadyFeatures` запускает `GetReadyFeaturesAsync` и сохраняет задачу в `_localizerReady`. Задача восстанавливает базу данных (`DatabaseInitializationService.QuickRestore`), создаёт локализатор и регистрирует сопоставления файлов и протокол `cdpiui` (`FileAssociationService`).
 
-`OnLaunched` создаёт `PrepareWindow` и вызывает `PipeClientService.Start`. `PrepareWindow` закрывается после стартовых действий. `App` также создаёт его, когда выполняется операция Магазина и другие окна не открыты.
+`OnLaunched` создаёт `PrepareWindow` (кроме случая миграции с GoodbyeDPI) и вызывает `PipeClientService.Start`. `PrepareWindow` закрывается после стартовых действий. `App` также создаёт его, когда выполняется операция Магазина и другие окна не открыты.
 
 Приложение закрывается в `ExitIfIdle`, когда ни одно окно не открыто и не выполняется ни одна операция Магазина или GoodCheck.
 
@@ -335,7 +338,7 @@ var result = await dialog.ShowQueuedAsync();
 1. Добавьте элемент `Setting` в нужный `Group` в `Template/Settings/Settings.xml`.
 2. Читайте её через `SettingsManager.Instance.GetValue<T>`.
 
-Часто используемые группы — `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` и `ZAPRET2`. Некоторых ключей, например `WELCOMEWIZARD/Shown`, нет в шаблоне. Читайте такие ключи через `GetValueOrDefault`.
+Часто используемые группы — `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` и `ZAPRET2`. `ADDONS/PRESETTEST/dpiSuiteUrl` заменяет адрес набора тестов DPI для проверки пресета. Значение должно быть абсолютным адресом `https`. Пустое значение означает встроенный адрес. Некоторых ключей, например `WELCOMEWIZARD/Shown`, нет в шаблоне. Читайте такие ключи через `GetValueOrDefault`.
 
 ## Структура папок
 
@@ -350,12 +353,13 @@ var result = await dialog.ShowQueuedAsync();
 | `Extensions` | Методы расширения |
 | `Help` | Статьи встроенной справки (`EN`, `RU`) |
 | `Helper` | Вспомогательные классы UI: окна, парсер справки, база данных, миграция, UI дополнений, `ContentDialogQueue` |
+| `Properties` | `Resources.resx` и `launchSettings.json` |
 | `Strings` | Строковые ресурсы `.resw` (`en-us`, `ru`) |
 | `Template` | Настройки по умолчанию (`Template/Settings/Settings.xml`) |
 | `ViewModels` | Модели представления и `RelayCommand` |
 | `Views` | Страницы, по окнам |
 | `Windows` | Окна (пространство имён `CDPIUI`), `Windows/Default/TemplateWindow.cs`, `Windows/Messages` (диалоговые окна), `Windows/Service` (`PrepareWindow`, `CriticalErrorHandlerWindow`) |
 
-В корне находятся `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest` и `RemoveLanguageFolders.targets`.
+В корне находятся `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest`, `nuget.config` и `RemoveLanguageFolders.targets`.
 
-Проект `CDPIUI.Tests` не тестирует этот проект. См. `CDPIUI.Tests/README.md`.
+Проект `CDPIUI.Tests` не тестирует этот проект. См. `CDPIUI.Tests/README.ru.md`.

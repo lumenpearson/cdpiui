@@ -173,7 +173,7 @@
     <value>Начать новый подбор</value>
   </data>
   <data name="Calculating" xml:space="preserve">
-    <value>Расчет...</value>
+    <value>Расчёт...</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
@@ -332,7 +332,7 @@
     <value>Файл</value>
   </data>
   <data name="FileSaveErrorMessage" xml:space="preserve">
-    <value>Файл "{0}" не может быть сохранен. {1}</value>
+    <value>Файл "{0}" не может быть сохранён. {1}</value>
   </data>
   <data name="Finishing" xml:space="preserve">
     <value>Завершение</value>
@@ -410,7 +410,7 @@
     <value>Завершить текущий процесс</value>
   </data>
   <data name="GoodCheckSelectionComplete.Text" xml:space="preserve">
-    <value>Подбор завершен</value>
+    <value>Подбор завершён</value>
   </data>
   <data name="GoodCheckSelectionCompleteTip.Text" xml:space="preserve">
     <value>Нажмите на кнопку "Далее", чтобы перейти к просмотру результата.</value>
@@ -542,7 +542,7 @@
     <value>Создать пресет вручную</value>
   </data>
   <data name="OpenLogsFolderTextBlock.Text" xml:space="preserve">
-    <value>Открыть расположение отчета</value>
+    <value>Открыть расположение отчёта</value>
   </data>
   <data name="OriginalModeMenuItem.Text" xml:space="preserve">
     <value>Оригинальный</value>
@@ -824,10 +824,10 @@
     <value>Начать новый подбор</value>
   </data>
   <data name="RecentSelectionsMenuItem.Text" xml:space="preserve">
-    <value>Открыть и просмотреть отчет предыдущего подбора</value>
+    <value>Открыть и просмотреть отчёт предыдущего подбора</value>
   </data>
   <data name="XmlReportMenuItem.Text" xml:space="preserve">
-    <value>Открыть .XML файл отчета...</value>
+    <value>Открыть .XML файл отчёта...</value>
   </data>
   <data name="StoreMenuBarItem.Title" xml:space="preserve">
     <value>Магазин</value>
@@ -906,7 +906,7 @@
   </data>
   <data name="ExceptionSystemProxySet" xml:space="preserve">
     <value>Программа не может сохранить настройки прокси из-за неожиданного исключения.
-Пожалуйста, убедитесь в правильности введенных данных, наличии у программы прав на чтение/запись раздела "{0}" реестра и проверьте вашу систему на наличие ошибок утилитой `sfc`
+Пожалуйста, убедитесь в правильности введённых данных, наличии у программы прав на чтение/запись раздела "{0}" реестра и проверьте вашу систему на наличие ошибок утилитой `sfc`
 Дополнительная информация об ошибке:
 {1}</value>
   </data>
@@ -920,7 +920,7 @@
   </data>
   <data name="ExceptionProxySet" xml:space="preserve">
     <value>Программа не может сохранить настройки прокси из-за неожиданного исключения.
-Пожалуйста, убедитесь в правильности введенных данных.
+Пожалуйста, убедитесь в правильности введённых данных.
 Дополнительная информация об ошибке:
 {0}</value>
   </data>
@@ -1265,10 +1265,10 @@
     <value>Просмотр</value>
   </data>
   <data name="Report" xml:space="preserve">
-    <value>Отчет</value>
+    <value>Отчёт</value>
   </data>
   <data name="ViewGoodCheckReportTextBlock.Text" xml:space="preserve">
-    <value>Просмотр отчета GoodCheck</value>
+    <value>Просмотр отчёта GoodCheck</value>
   </data>
   <data name="HideTipTextBlock.Text" xml:space="preserve">
     <value>Спрятать подсказку</value>
@@ -1564,7 +1564,7 @@
     <value>Фон редактора</value>
   </data>
   <data name="DefaultBackgroundMenuItem.Text" xml:space="preserve">
-    <value>Идеально черный</value>
+    <value>Идеально чёрный</value>
   </data>
   <data name="MicaBackgroundMenuItem.Text" xml:space="preserve">
     <value>Классическое размытие мика</value>
@@ -1718,7 +1718,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Нет</value>
   </data>
   <data name="LocalItemInstallingWarningContentDialog.SecondaryButtonText" xml:space="preserve">
-    <value>Все равно продолжить</value>
+    <value>Всё равно продолжить</value>
   </data>
   <data name="ItemLocalInstallingWarningTextBlock.Text" xml:space="preserve">
     <value>Разработчик не несет ответственности за вред, который может нанести элемент установленный из неизвестного источника.
@@ -1896,7 +1896,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Это действие удалит ВСЕ ваши настройки. Продолжить в любом случае?</value>
   </data>
   <data name="ContinueAnywayButton.Content" xml:space="preserve">
-    <value>Все равно продолжить</value>
+    <value>Всё равно продолжить</value>
   </data>
   <data name="LocalDrive" xml:space="preserve">
     <value>Локальный диск</value>
@@ -2216,7 +2216,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Подходящие элементы не найдены среди установленных из Магазина. Попробуйте установить новые поддерживаемые элементы или выберите ручной способ.</value>
   </data>
   <data name="YouDontAddAnyFilesYet.Text" xml:space="preserve">
-    <value>Вы еще не добавляли собственные файлы. Чтобы добавить новый файл нажмите на кнопку ниже.</value>
+    <value>Вы ещё не добавляли собственные файлы. Чтобы добавить новый файл нажмите на кнопку ниже.</value>
   </data>
   <data name="RevertChangeSiteList" xml:space="preserve">
     <value>Восстановить оригинальный файл</value>
@@ -2478,10 +2478,10 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Статус замены:</value>
   </data>
   <data name="HostsFileStatusEnabled" xml:space="preserve">
-    <value>Файл hosts был изменен</value>
+    <value>Файл hosts был изменён</value>
   </data>
   <data name="HostsFileStatusDisabled" xml:space="preserve">
-    <value>Файл hosts не изменен</value>
+    <value>Файл hosts не изменён</value>
   </data>
   <data name="HostsFileAreAllreadyEdited" xml:space="preserve">
     <value>Невозможно добавить адреса в файл hosts – адреса уже добавлены.</value>
@@ -3598,7 +3598,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Идет работа над этим</value>
   </data>
   <data name="ConfigImportCompletedStepTitle.Text" xml:space="preserve">
-    <value>Импорт завершен</value>
+    <value>Импорт завершён</value>
   </data>
   <data name="ConfigImportResultNameLabel.Text" xml:space="preserve">
     <value>Название пресета</value>
@@ -3678,7 +3678,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   <data name="ConfigImportUseSuggestedFileButton.Content" xml:space="preserve">
     <value>Применить</value>
   </data>
-  <data name="ConfigImportChooseReplacementButton.Content" xml:space="preserve">
+  <data name="ConfigImportChooseReplacementTextBlock.Text" xml:space="preserve">
     <value>Выбрать файл</value>
   </data>
   <data name="ConfigImportUseEmptyFileButton.Content" xml:space="preserve">
@@ -4181,7 +4181,7 @@ https://example.org/path</value>
     <value>Дизайн главной, как в GoodbyeDPI-UI. Компоненты расположены вертикально. На странице отображается минимальное кол-во контента</value>
   </data>
   <data name="ModernMarkupDescription" xml:space="preserve">
-    <value>Современный вид главной. Компоненты расположены горизонтально в плитках, размер которых может быть изменен. Плитки содержат ссылки на возможности компонентов и быстрые настройки пресетов</value>
+    <value>Современный вид главной. Компоненты расположены горизонтально в плитках, размер которых может быть изменён. Плитки содержат ссылки на возможности компонентов и быстрые настройки пресетов</value>
   </data>
   <data name="BlockCheck2HttpOnlyInfoBar.Title" xml:space="preserve">
     <value>Проверяется только HTTP</value>
@@ -5575,12 +5575,12 @@ https://discord.com/app</value>
 https://discord.com/app</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Header" xml:space="preserve">
-    <value>Подбор завершен</value>
+    <value>Подбор завершён</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Description" xml:space="preserve">
-    <value>Подбор пресета для Zapret 2 завершен. Вы можете получить доступ к результатам этого подбора в любой момент через меню [Недавние подборы] на главной этого мастера.
+    <value>Подбор пресета для Zapret 2 завершён. Результаты этого подбора доступны в любой момент в разделе [Недавние подборы] на главной странице этого мастера.
 
-Нажмите [Показать результаты], чтобы перейти к просмотру результатов.</value>
+Нажмите [Просмотреть результат], чтобы перейти к просмотру результатов.</value>
   </data>
   <data name="BlockCheck2TestAllStrategiesCard.Header" xml:space="preserve">
     <value>Не завершать после нахождения лучших стратегий</value>
@@ -5676,7 +5676,7 @@ https://discord.com/app</value>
     <value>Одно значение на строку</value>
   </data>
   <data name="ConfigMakerVariableOnValueTextBox.Header" xml:space="preserve">
-    <value>Значение во включенном состоянии</value>
+    <value>Значение во включённом состоянии</value>
   </data>
   <data name="ConfigMakerVariableOffValueTextBox.Header" xml:space="preserve">
     <value>Значение в выключенном состоянии</value>
@@ -6275,5 +6275,377 @@ https://discord.com/app</value>
   </data>
   <data name="GoodCheckNoStrategyLists" xml:space="preserve">
     <value>У GoodCheck нет списков стратегий для этого компонента. Установите набор стратегий с его поддержкой или переустановите дополнение.</value>
+  </data>
+  <data name="ConfigMakerActionFailedMessage" xml:space="preserve">
+    <value>Не удалось выполнить действие: {0}</value>
+  </data>
+  <data name="ConfigMakerDesignerLoadFailedMessage" xml:space="preserve">
+    <value>Не удалось загрузить упрощённый дизайнер: {0}</value>
+  </data>
+  <data name="ConfigMakerHelpExecutableNotFound" xml:space="preserve">
+    <value>Исполняемый файл компонента не найден.</value>
+  </data>
+  <data name="ConfigMakerHelpTimedOut" xml:space="preserve">
+    <value>Компонент не вернул справку за отведённое время.</value>
+  </data>
+  <data name="ConfigMakerHelpNoOutput" xml:space="preserve">
+    <value>Компонент не вернул текст справки (код выхода {0}).</value>
+  </data>
+  <data name="ConfigMakerHelpIncomplete" xml:space="preserve">
+    <value>Получение справки превысило лимит времени. Показанный вывод может быть неполным.</value>
+  </data>
+  <data name="AppliedFlagsDialogTitle" xml:space="preserve">
+    <value>Применённые параметры</value>
+  </data>
+  <data name="SelectConfigLoadingTextBlock.Text" xml:space="preserve">
+    <value>Загрузка...</value>
+  </data>
+  <data name="HorizontalScrollBackButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Прокрутить влево</value>
+  </data>
+  <data name="HorizontalScrollForwardButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Прокрутить вправо</value>
+  </data>
+  <data name="AboutHelpNavigationViewItem.Content" xml:space="preserve">
+    <value>О справке</value>
+  </data>
+  <data name="StoreCategoryLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить категорию «{0}».</value>
+  </data>
+  <data name="PrepareWindowTitle" xml:space="preserve">
+    <value>Подготовка приложения</value>
+  </data>
+  <data name="PrepareWindowTextBlock.Text" xml:space="preserve">
+    <value>Мы готовим приложение CDPI UI к работе</value>
+  </data>
+  <data name="AutorunBadgeTextBlock.Text" xml:space="preserve">
+    <value>АВТО</value>
+  </data>
+  <data name="AppFeatureNewBadge" xml:space="preserve">
+    <value>НОВОЕ</value>
+  </data>
+  <data name="BlockCheck2CustomSiteListEmpty" xml:space="preserve">
+    <value>Пользовательский список сайтов пуст.</value>
+  </data>
+  <data name="ConfigImportConvertFailed" xml:space="preserve">
+    <value>Не удалось преобразовать импортированный пресет для выбранного компонента.</value>
+  </data>
+  <data name="ConfigImportIssue_FILE_NOT_FOUND" xml:space="preserve">
+    <value>Исходный файл пресета не найден.</value>
+  </data>
+  <data name="ConfigImportIssue_TARGET_REQUIRED" xml:space="preserve">
+    <value>Не выбран целевой компонент.</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_REQUIRED" xml:space="preserve">
+    <value>У выбранного компонента нет исполняемого файла в базе данных.</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_MISMATCH" xml:space="preserve">
+    <value>Источник запускает не тот исполняемый файл, который использует выбранный компонент.</value>
+  </data>
+  <data name="ConfigImportIssue_UNSUPPORTED_FORMAT" xml:space="preserve">
+    <value>Формат файла «{0}» не поддерживается.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_FAILED" xml:space="preserve">
+    <value>Не удалось импортировать пресет: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_LAUNCH_NOT_FOUND" xml:space="preserve">
+    <value>Командный файл не содержит поддерживаемого запуска исполняемого файла компонента.</value>
+  </data>
+  <data name="ConfigImportIssue_MULTIPLE_EXECUTABLE_LAUNCHES" xml:space="preserve">
+    <value>Командный файл запускает исполняемый файл компонента несколько раз, поэтому выбрать запуск автоматически нельзя.</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_EMPTY" xml:space="preserve">
+    <value>Текстовый пресет не содержит аргументов запуска.</value>
+  </data>
+  <data name="ConfigImportIssue_JSON_CONFIG_INVALID" xml:space="preserve">
+    <value>JSON-файл не является поддерживаемым пресетом.</value>
+  </data>
+  <data name="ConfigImportIssue_UNRESOLVED_VARIABLE" xml:space="preserve">
+    <value>Не удалось определить значение переменной «{0}».</value>
+  </data>
+  <data name="ConfigImportIssue_INVALID_RESOURCE_PATH" xml:space="preserve">
+    <value>Не удалось разобрать путь к используемому файлу: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_REFERENCED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>Пресет использует файл за пределами своей папки: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_REFERENCED_FILE_NOT_FOUND" xml:space="preserve">
+    <value>Используемый файл не найден: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_MISSING_FILE_REPLACEMENT_NOT_FOUND" xml:space="preserve">
+    <value>Выбранный файл для замены не найден: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_BATCH_READ_FAILED" xml:space="preserve">
+    <value>Не удалось прочитать BAT-файл: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_WINWS_LAUNCH_NOT_FOUND" xml:space="preserve">
+    <value>BAT-файл не содержит поддерживаемого запуска winws или winws2.</value>
+  </data>
+  <data name="ConfigImportIssue_MULTIPLE_WINWS_LAUNCHES" xml:space="preserve">
+    <value>BAT-файл содержит несколько запусков winws, поэтому выбрать запуск автоматически нельзя.</value>
+  </data>
+  <data name="ConfigImportIssue_GENERATION_MISMATCH" xml:space="preserve">
+    <value>Аргументы не соответствуют версии winws, которую использует файл.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDE_DEPTH_EXCEEDED" xml:space="preserve">
+    <value>Слишком глубокая вложенность подключаемых файлов пресета.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDE_CYCLE" xml:space="preserve">
+    <value>Обнаружено циклическое подключение файлов пресета.</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_READ_FAILED" xml:space="preserve">
+    <value>Не удалось прочитать текстовый пресет: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_HAS_NO_OPTIONS" xml:space="preserve">
+    <value>Текстовый файл не содержит параметров командной строки winws.</value>
+  </data>
+  <data name="ConfigImportIssue_CONFIG_GENERATION_UNKNOWN" xml:space="preserve">
+    <value>По текстовому файлу нельзя определить, для winws1 он или для winws2.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDED_CONFIG_NOT_FOUND" xml:space="preserve">
+    <value>Подключаемый файл пресета «{0}» не найден.</value>
+  </data>
+  <data name="ConfigImportIssue_CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS" xml:space="preserve">
+    <value>Файл параметров заменяет командную строку, поэтому остальные аргументы winws игнорирует.</value>
+  </data>
+  <data name="ConfigImportIssue_UNRESOLVED_BATCH_VARIABLE" xml:space="preserve">
+    <value>Не удалось заранее определить значение переменной «{0}».</value>
+  </data>
+  <data name="ConfigImportIssue_CALLED_SCRIPT_READ_FAILED" xml:space="preserve">
+    <value>Не удалось прочитать вызываемый скрипт: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_GENERATED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>Файл, который BAT-файл создаёт за пределами исходной папки, пропущен.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_RESULT_INVALID" xml:space="preserve">
+    <value>Пресет нельзя сохранить: анализ завершился с ошибкой.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_NAME_REQUIRED" xml:space="preserve">
+    <value>Укажите название пресета.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_MISSING_FILE_RESOLUTION_REQUIRED" xml:space="preserve">
+    <value>Перед сохранением выберите действие для каждого отсутствующего файла.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_INSTALL_FAILED" xml:space="preserve">
+    <value>Не удалось сохранить пресет: {0}</value>
+  </data>
+  <data name="ConfigShareError_SHARE_UNSAFE_OPTION" xml:space="preserve">
+    <value>Пресет записывает файл за пределами своего пакета. Таким пресетом нельзя поделиться.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_EXPORT_FAILED" xml:space="preserve">
+    <value>Не удалось экспортировать пресет.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_IMPORT_FAILED" xml:space="preserve">
+    <value>Не удалось импортировать пресет.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_INSTALL_FAILED" xml:space="preserve">
+    <value>Не удалось установить пресет. Изменения отменены.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_EMPTY" xml:space="preserve">
+    <value>Укажите хотя бы один домен, URL или список сайтов.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_HOST_INVALID" xml:space="preserve">
+    <value>Строка не содержит допустимого DNS-имени хоста.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_INVALID" xml:space="preserve">
+    <value>Строка не является допустимым доменом или абсолютным URL.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_IP_VERSIONS_EMPTY" xml:space="preserve">
+    <value>Выберите хотя бы одну версию IP.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_PROTOCOLS_EMPTY" xml:space="preserve">
+    <value>Выберите хотя бы один протокол.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_PROTOCOL_DISABLED" xml:space="preserve">
+    <value>Протокол URL отключён в текущем выборе протоколов.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_SCHEME_UNSUPPORTED" xml:space="preserve">
+    <value>Поддерживаются только URL с HTTP и HTTPS.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_NO_TARGETS" xml:space="preserve">
+    <value>Для выбранных протоколов не удалось создать ни одной цели проверки.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_LIMIT_EXCEEDED" xml:space="preserve">
+    <value>Из введённых данных получается целей: {0}. Допустимо не больше {1}.</value>
+  </data>
+  <data name="BlockCheck2Issue_HTTP_ONLY_BROWSER_LIMITATION" xml:space="preserve">
+    <value>Выбран только незашифрованный HTTP на порту 80. Успешный ответ или перенаправление не означает, что откроется HTTPS-страница, которую использует браузер. Для проверки сайтов вроде YouTube включите TLS 1.2 и автоматический HTTPS.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_EMPTY" xml:space="preserve">
+    <value>Список сайтов не содержит доменов.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_NOT_FOUND" xml:space="preserve">
+    <value>Файл списка сайтов не найден: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_PATH_INVALID" xml:space="preserve">
+    <value>Недопустимый путь к списку сайтов: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_READ_FAILED" xml:space="preserve">
+    <value>Не удалось прочитать список сайтов: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_DIRECTORY_FAILED" xml:space="preserve">
+    <value>Не удалось подготовить списки для отдельных сайтов: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_WRITE_FAILED" xml:space="preserve">
+    <value>Не удалось создать список для отдельного сайта: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_NOT_AVAILABLE" xml:space="preserve">
+    <value>Не удалось запустить curl: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_HTTP3_UNSUPPORTED" xml:space="preserve">
+    <value>Установленная сборка curl не поддерживает HTTP/3, который нужен для проверок QUIC.</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_TLS13_UNSUPPORTED" xml:space="preserve">
+    <value>curl не распознаёт параметры TLS 1.3, которые нужны BlockCheck.</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_TLS_MAX_UNSUPPORTED" xml:space="preserve">
+    <value>curl не поддерживает --tls-max, поэтому точные версии TLS проверить нельзя.</value>
+  </data>
+  <data name="BlockCheck2Issue_DNS_TARGETS_IGNORED" xml:space="preserve">
+    <value>Пропущено целей: {0} (хостов: {1}), так как выбранный DNS-резолвер не вернул для них адрес: {2}. Часто это блокировка DNS, которую не исправит ни одна стратегия обхода DPI: используйте для этих хостов зашифрованный DNS (DoH).</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_RESOLVABLE_TARGETS" xml:space="preserve">
+    <value>Выбранный DNS-резолвер не вернул адрес ни для одного из указанных URL.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_NO_APPLICABLE_STRATEGIES" xml:space="preserve">
+    <value>Ни одна выбранная стратегия не подходит для всех целей выбранных маршрутов.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_CANCELED" xml:space="preserve">
+    <value>Проверка остановлена пользователем. Отчёт содержит только проверки, завершённые до остановки.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_CANCELED" xml:space="preserve">
+    <value>Подбор остановлен пользователем. Отчёт содержит только проверки, завершённые до остановки.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_BASELINE_FAILED" xml:space="preserve">
+    <value>Не удалось выполнить проверку без обхода: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_PREPARE_FAILED" xml:space="preserve">
+    <value>Не удалось подготовить окружение процессов BlockCheck: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_COMPLETE_FAILED" xml:space="preserve">
+    <value>Не удалось восстановить окружение процессов: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STOP_FAILED" xml:space="preserve">
+    <value>Не удалось остановить процесс стратегии: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGIES_DO_NOT_START" xml:space="preserve">
+    <value>Не удалось запустить последние стратегии ({0}), поэтому проверка остановлена: {1}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_CONFIG_FAILED" xml:space="preserve">
+    <value>Не удалось создать конфигурацию стратегии: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_FAILED" xml:space="preserve">
+    <value>Не удалось проверить стратегию: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_TARGET_PROBE_FAILED" xml:space="preserve">
+    <value>Не удалось проверить цель со стратегией: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_BYPASS_REQUIRED" xml:space="preserve">
+    <value>Все выбранные маршруты прошли проверку без обхода, поэтому профиль Zapret2 для них не нужен. Это не проверяет отображение в браузере или другой протокол, например HTTPS после перенаправления с HTTP.</value>
+  </data>
+  <data name="BlockCheck2Issue_BEST_EFFORT_CONFIG" xml:space="preserve">
+    <value>Ни одна стратегия не прошла строгий порог для целей: {0}. Пресет собран из стратегии с наибольшим улучшением. Результат проверен не полностью, и часть сайтов может остаться недоступной.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_EFFECTIVE_STRATEGY" xml:space="preserve">
+    <value>Ни одна из проверенных стратегий не достигла порога успеха для целей, недоступных без Zapret2: {0}. Пресет не создан, так как он не улучшил бы результат. Попробуйте более широкий режим подбора.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_COMMON_SITE_LIST_STRATEGY" xml:space="preserve">
+    <value>Часть доменов прошла проверку с разными стратегиями, но ни одна стратегия не подошла для всего выбранного списка сайтов. Результат для этого списка может работать лишь частично.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_PROFILES" xml:space="preserve">
+    <value>По успешным результатам проверки не удалось создать ни одного совместимого профиля.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGETS_UNCOVERED" xml:space="preserve">
+    <value>Нет совместимой стратегии для целей проверки: {0}.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIRED" xml:space="preserve">
+    <value>Общий пресет прошёл проверку после исправлений: {0}.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_LIMIT_REACHED" xml:space="preserve">
+    <value>Общий пресет не проходит проверку и после заданного числа исправлений.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_NO_CANDIDATE" xml:space="preserve">
+    <value>Не осталось совместимой стратегии, которой можно заменить неработающий профиль.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_STALLED" xml:space="preserve">
+    <value>Не удалось сопоставить недоступные цели со стратегией пресета, которую можно заменить.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_FAILED" xml:space="preserve">
+    <value>Общий пресет не прошёл проверку, а автоматическое исправление отключено.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_PREPARE_FAILED" xml:space="preserve">
+    <value>Не удалось подготовить проверку пресета: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_COMPLETE_FAILED" xml:space="preserve">
+    <value>Не удалось восстановить окружение процессов после проверки пресета: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_PROBE_FAILED" xml:space="preserve">
+    <value>Не удалось проверить пресет: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_START_FAILED" xml:space="preserve">
+    <value>Не удалось запустить общий пресет: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_STOP_FAILED" xml:space="preserve">
+    <value>Не удалось остановить общий пресет: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_ASSIGNMENTS_EMPTY" xml:space="preserve">
+    <value>Добавьте в ручной пресет хотя бы одну стратегию.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_CIRCULAR_UNSUPPORTED" xml:space="preserve">
+    <value>Как минимум одну из выбранных стратегий нельзя использовать в циклической комбинации.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_DUPLICATE_STRATEGY" xml:space="preserve">
+    <value>Повторяющаяся стратегия в той же области пропущена.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SCOPE_OVERLAP" xml:space="preserve">
+    <value>Две ручные области содержат одни и те же подключения к сайтам. Профиль для более конкретного домена будет размещён первым; проверьте итоговый порядок.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SCOPE_PARTIAL" xml:space="preserve">
+    <value>Стратегия прошла проверку для {0} из {1} подключений к сайтам в этой области.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SITE_LIST_INVALID" xml:space="preserve">
+    <value>Выбранный список сайтов не связан с текущим сайтом.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_INAPPLICABLE" xml:space="preserve">
+    <value>Выбранная стратегия поддерживает не все подключения в этой области.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Выбранной стратегии нет в текущем каталоге.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNPROVEN" xml:space="preserve">
+    <value>Стратегия не достигла заданного порога ни для одного проверенного сайта в этой области.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNTESTED" xml:space="preserve">
+    <value>Для этой стратегии нет результатов проверки в выбранной области. Проверьте её перед использованием пресета.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TARGET_UNKNOWN" xml:space="preserve">
+    <value>Выбранного сайта нет в этом сеансе BlockCheck.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_PREPARE_FAILED" xml:space="preserve">
+    <value>Не удалось завершить проверку стратегии: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_RESTORE_FAILED" xml:space="preserve">
+    <value>Не удалось восстановить прежнее состояние компонента: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_STOP_FAILED" xml:space="preserve">
+    <value>Не удалось остановить временную стратегию: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_STRATEGY_INAPPLICABLE" xml:space="preserve">
+    <value>Выбранная стратегия не поддерживает это подключение.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SESSION_UNAVAILABLE" xml:space="preserve">
+    <value>Исходный сеанс BlockCheck недоступен, поэтому из этого отчёта нельзя запустить проверку стратегии.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_CATALOG_VERSION_MISMATCH" xml:space="preserve">
+    <value>Отчёт использует каталог «{0}», а в этой версии CDPI UI каталог «{1}». Неизвестные стратегии нельзя изменить или проверить.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_SITE_LIST_MISSING" xml:space="preserve">
+    <value>Список сайтов из импортированного отчёта отсутствует на этом компьютере. Сохранённый пресет можно просмотреть, но перед использованием этот список нужно восстановить.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Стратегии из импортированного отчёта нет в текущем каталоге.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_TEXT_SCOPE_INFERRED" xml:space="preserve">
+    <value>Этот текстовый отчёт старого формата не хранит точное соответствие целей и списков. Оно будет восстановлено по используемым файлам списков, если они есть. Для импорта без потерь сохраняйте отчёт в JSON.</value>
   </data>
 </root>

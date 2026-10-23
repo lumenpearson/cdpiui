@@ -60,7 +60,7 @@ WiX завершается с ошибкой, если указанного в �
 - `NewSetup.wixproj` не задаёт свойство версии. Версию пакета задаёт только версия файла `CDPIUI.exe`.
 - `UpgradeCode` равен `{AB14590E-0D10-416F-9A0E-07E63074B603}`.
 - Каждая сборка получает новый код продукта. Поэтому каждая установка — это крупное обновление (major upgrade) предыдущей.
-- `MajorUpgrade` запрещает установку более старой версии с сообщением "A newer version of [ProductName] is already installed."
+- `MajorUpgrade` запрещает установку более старой версии с сообщением «A newer version of [ProductName] is already installed.»
 - `MajorUpgrade` задаёт `AllowSameVersionUpgrades="yes"`. Windows Installer игнорирует четвёртое поле версии. С этой настройкой две сборки, которые различаются только этим полем, могут заменять друг друга.
 - MSI содержит файл cabinet. `MSIUSEREALADMINDETECTION` равен `1`.
 
@@ -109,7 +109,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 
 Замечания о `LaunchApp`:
 
-- GUI запускает Проводник. Поэтому GUI работает от имени вошедшего пользователя, а не с правами установщика.
+- Проводник запускает GUI. Поэтому GUI работает от имени вошедшего пользователя, а не с правами установщика.
 - `UILevel >= 4` означает сокращённый или полный интерфейс. Тихая установка (`/qn`) или установка с базовым интерфейсом (`/qb`) не запускает GUI.
 
 Замечания о `UninstallCleanup`:
@@ -123,7 +123,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 4. Останавливает и удаляет каждую службу `WinDivert*`, образ которой находится в одной из этих папок.
 5. Удаляет задачу автозапуска.
 6. Выполняет `EditHostFile.exe /remove`.
-7. Удаляет файлы времени выполнения, о которых MSI не знает: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log`, `.update-manifest`.
+7. Удаляет файлы времени выполнения, о которых MSI не знает: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log`, `.update-manifest`.
 
 ## Сборка
 
@@ -136,4 +136,5 @@ dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
 ```
 
 MSI помещается в `NewSetup/bin/`. Его выходное имя — `NewSetup`. Релизный workflow копирует его
-как `Setup.msi`. У MSI нет подписи Authenticode (`CDPIUI.TrayIcon/Helper/Utils.cs`).
+как `Setup.msi` и подписывает его сертификатом каталогов. Трей устанавливает обновление MSI только
+с этой подписью (`PackageStaging.HasPinnedSignature`). Локальная сборка не подписана.

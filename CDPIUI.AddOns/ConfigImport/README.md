@@ -679,7 +679,7 @@ saved path: List\Converted\<importId>\ipset-exclude.txt
 
 If an external resource is outside the folder of the source config, the installer uses only the file name. This does not permit a write outside the target folder: the installer checks the final destination again.
 
-If two saved relative paths are the same, the installer adds the first eight hex characters of the SHA-256 of the expected absolute path to the name of the second file.
+Two saved relative paths can be the same. In this case, the installer adds a suffix to the name of the second file: the first eight hex characters of the SHA-256 of its expected absolute path.
 
 ### Resource sources
 
@@ -815,6 +815,7 @@ Each issue has:
 | `EXECUTABLE_MISMATCH` | Error | The Zapret analysis found a generation that is different from the target |
 | `UNRESOLVED_VARIABLE` | Warning | The general analyzer cannot resolve a BAT variable |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | An external resource is missing |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
 | `INVALID_RESOURCE_PATH` | Warning | The analyzer cannot normalize a resource path |
 | `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | The replacement that the user selected does not exist |
 
@@ -839,6 +840,7 @@ For a `.cdpiconfig` file, the issue code is the code of the `ConfigShareExceptio
 | `UNRESOLVED_BATCH_VARIABLE` | Warning | A used BAT variable cannot be resolved |
 | `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | A generated file is outside the source folder |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | A BIN, TXT or LUA file is missing |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
 
 ### Installer codes
 
@@ -1001,10 +1003,11 @@ Keep these properties in all changes:
 
 `CDPIUI.Tests/AddOns` has tests for this add-on:
 
-- `ConfigImportServiceTests.cs` checks `ConfigImportService.TryParseSet`;
-- `ZapretConfigImportServiceTests.cs` checks `TrimShellTail` and `ExpandFileModifiers`.
+- `ConfigImportServiceTests.cs` checks `ConfigImportService.TryParseSet` and the warning `REFERENCED_FILE_OUTSIDE_SOURCE`;
+- `ZapretConfigImportServiceTests.cs` checks `TrimShellTail`, `ExpandFileModifiers` and the warning `REFERENCED_FILE_OUTSIDE_SOURCE`;
+- `ConfigImportGoldenTests.cs` imports Flowseal BAT files from `TestData/ConfigImport` with the two analyzers. It compares the results with the expected files next to the BAT files.
 
-`CDPIUI.Tests/Core/BatchFileEncodingTests.cs` checks the encoding detection.
+`CDPIUI.Tests/Core/BatchFileEncodingTests.cs` checks the encoding detection. `CDPIUI.Tests/Core/Zapret1ToZapret2ConverterTests.cs` checks the conversion that `Retarget` uses.
 
 A minimum set of manual checks for a change includes:
 

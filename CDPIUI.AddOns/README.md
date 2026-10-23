@@ -30,7 +30,7 @@ ConfigImport converts `.bat`, `.cmd`, `.txt` and `.json` files into a CDPI UI co
 
 ### ConfigShare
 
-ConfigShare exports one preset with its resources into a `.cdpiconfig` ZIP archive. It checks, extracts and installs such archives. It limits the archive size, the entry count and the compression ratio, and it rejects options that write files outside the package. The export dialog of `ConfigSelector` and the file activation use it. Refer to [ConfigShare/README.md](ConfigShare/README.md).
+ConfigShare exports one preset with its resources into a `.cdpiconfig` ZIP archive. It checks, extracts and installs such archives. It limits the archive size, the entry count and the compression ratio, and it rejects options that write files outside the package. The export dialog of `ConfigSelector`, the preset editor (`ConfigMakerUserControl`) and the file activation use it. Refer to [ConfigShare/README.md](ConfigShare/README.md).
 
 ### GoodCheck
 
@@ -53,7 +53,7 @@ Troubleshooting checks Windows services, network settings and programs that can 
 3. Put only logic without UI into the folder. The project targets `net8.0` and cannot use WinUI or XAML types.
 4. Use the public types of `CDPIUI.Core` and `CDPIUI.Shared` directly. Do not add a reference to the `CDPIUI` project.
 5. Add an `EmbeddedResource` item to `CDPIUI.AddOns.csproj` for each file that the add-on embeds. The SDK includes `.cs` files automatically.
-6. Write a `README.md` in the folder. Add a paragraph and a link to this file.
+6. Write a `README.md` and a `README.ru.md` in the folder. Add a paragraph and a link to this file.
 
 Use these rules:
 
