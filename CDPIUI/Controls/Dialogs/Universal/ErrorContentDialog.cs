@@ -35,7 +35,7 @@ namespace CDPIUI.Controls.Dialogs.Universal
             {
                 Title = GetLocalizedString("UnexpectedError", "Unexpected Error"),
                 XamlRoot = xamlRoot,
-                PrimaryButtonText = "OK",
+                PrimaryButtonText = GetLocalizedString("OkButtonText", "OK"),
                 DefaultButton = ContentDialogButton.Primary
             };
             var scrollView = new ScrollView();

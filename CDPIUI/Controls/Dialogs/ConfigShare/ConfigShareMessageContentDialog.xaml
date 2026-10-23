@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentDialog
+    l:Uids.Uid="ConfigShareMessageContentDialog"
     x:Class="CDPIUI.Controls.Dialogs.ConfigShare.ConfigShareMessageContentDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:WinUI3Localizer"
     CloseButtonText="OK">
     <TextBlock x:Name="MessageTextBlock" TextWrapping="Wrap" />
 </ContentDialog>
