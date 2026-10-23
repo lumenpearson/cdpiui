@@ -31,6 +31,18 @@ public sealed class BlockCheckSiteListLoader
         _targetParser = targetParser ?? new BlockCheckTargetInputParser();
     }
 
+    private static string NormalizePath(string? path)
+    {
+        try
+        {
+            return string.IsNullOrWhiteSpace(path) ? string.Empty : Path.GetFullPath(path);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return path ?? string.Empty;
+        }
+    }
+
     public BlockCheckSiteListLoadResult Load(
         IEnumerable<BlockCheckSiteListInput> siteLists,
         BlockCheckTargetInputOptions options)
@@ -40,8 +52,9 @@ public sealed class BlockCheckSiteListLoader
 
         List<BlockCheckTarget> targets = [];
         List<BlockCheckIssue> issues = [];
+        // Compared by full path: "list.txt" and ".\\list.txt" are the same file.
         foreach (BlockCheckSiteListInput siteList in siteLists
-                     .DistinctBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase))
+                     .DistinctBy(item => NormalizePath(item.FilePath), StringComparer.OrdinalIgnoreCase))
         {
             string subject = string.IsNullOrWhiteSpace(siteList.DisplayName)
                 ? siteList.FilePath
