@@ -65,6 +65,8 @@ namespace CDPIUI.Shared.PrettyErrorConversionService
                         return PrettyErrorCode.CATALOG_SIGNATURE_CHECK_FAILURE;
                     case CatalogInvalid:
                         return PrettyErrorCode.CATALOG_INVALID;
+                    case CertificateNotTrusted:
+                        return PrettyErrorCode.CERTIFICATE_INVALID;
                     case NewestVersionAlreadyInstalledException:
                         return PrettyErrorCode.NEWEST_VERSION_INSTALLED;
                     case UnknownFileFormatException:
