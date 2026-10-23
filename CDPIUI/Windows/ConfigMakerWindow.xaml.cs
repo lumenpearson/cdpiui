@@ -18,15 +18,22 @@ namespace CDPIUI;
 
 public sealed partial class ConfigMakerWindow : TemplateWindow
 {
-    public static async void EditConfig(ConfigItem configItem)
+    public static async Task EditConfig(ConfigItem configItem)
     {
-        if (configItem?.target == null || configItem.target.Count == 0) return;
-        var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
-        window.componentSelectionRequested = true;
-        App.ActivateWindow(window);
-        if (await window.IsExitAvailable())
+        try
         {
-            await window.OpenConfigFile(configItem);
+            if (configItem?.target == null || configItem.target.Count == 0) return;
+            var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
+            window.componentSelectionRequested = true;
+            App.ActivateWindow(window);
+            if (await window.IsExitAvailable())
+            {
+                await window.OpenConfigFile(configItem);
+            }
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerWindow), exception.ToString());
         }
     }
 
@@ -64,15 +71,22 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     private void ConfigMaker_Loaded(object sender, RoutedEventArgs e)
     {
-        Load();
+        _ = Load(); // Load catches and logs its own errors.
     }
 
-    private async void Load()
+    private async Task Load()
     {
-        if (!string.IsNullOrEmpty(Id))
+        try
         {
-            await ConfigMaker.SetComponentAsync(Id);
-            await ConfigMaker.NewDocumentAsync();
+            if (!string.IsNullOrEmpty(Id))
+            {
+                await ConfigMaker.SetComponentAsync(Id);
+                await ConfigMaker.NewDocumentAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerWindow), exception.ToString());
         }
     }
 
@@ -228,7 +242,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(Content.XamlRoot);
+        _ = ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(Content.XamlRoot); // ShowFontSettingsDialogForXamlRoot catches and logs its own errors.
     }
 
     public async Task OpenConfigFile(ConfigItem configItem)

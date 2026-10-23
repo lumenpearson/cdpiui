@@ -36,6 +36,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
 using TextControlBoxNS;
@@ -381,7 +382,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 {
                     startup_string = startupString,
                 };
-                AskAutoFillFiles(
+                // AskAutoFillFiles catches and logs its own errors.
+                _ = AskAutoFillFiles(
                     ConfigItem,
                     LScriptLangHelper.ExecuteScript(
                         "$GETCURRENTDIR()", 
@@ -405,7 +407,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
                 LoadVars(ConfigItem);
 
-                AskAutoFillFiles(ConfigItem, filePath);
+                _ = AskAutoFillFiles(ConfigItem, filePath); // AskAutoFillFiles catches and logs its own errors.
             }
             else if (operationType == "CFGEDIT")
             {
@@ -431,7 +433,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
                 if (ConfigItem.packId != SharedConstants.LocalUserItemsId)
                 {
-                    AskAutoFillFiles(
+                    // AskAutoFillFiles catches and logs its own errors.
+                    _ = AskAutoFillFiles(
                         ConfigItem,
                         LScriptLangHelper.ExecuteScript("$GETCURRENTDIR()", 
                         callItemId: ConfigItem.packId), AskAutoFillMode.Quiet);
@@ -476,27 +479,34 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         CheckViewType();
     }
 
-    private async void AskAutoFillFiles(ConfigItem configItem, string dir, AskAutoFillMode askAutoFillMode = AskAutoFillMode.Ask)
+    private async Task AskAutoFillFiles(ConfigItem configItem, string dir, AskAutoFillMode askAutoFillMode = AskAutoFillMode.Ask)
     {
-        List<string> usedFiles = ConfigurationService.GetUsedFilesFromConfigItem(configItem);
-
-        SelectUsedFilesForConfigContentDialog dialog = new(usedFiles, configItem.name, dir, configItem, askAutoFillMode)
+        try
         {
-            XamlRoot = this.XamlRoot
-        };
-        var result = await dialog.ShowQueuedAsync();
-        if (dialog.Result == CreateConfigResult.Selected)
-        {
-            ConfigItem = ConfigurationService.ReplaceFilesPath(ConfigItem, dialog.Files);
-            AddWrap();
+            List<string> usedFiles = ConfigurationService.GetUsedFilesFromConfigItem(configItem);
 
-            LoadVars(configItem);
-            AuditSaveAvailable();
+            SelectUsedFilesForConfigContentDialog dialog = new(usedFiles, configItem.name, dir, configItem, askAutoFillMode)
+            {
+                XamlRoot = this.XamlRoot
+            };
+            var result = await dialog.ShowQueuedAsync();
+            if (dialog.Result == CreateConfigResult.Selected)
+            {
+                ConfigItem = ConfigurationService.ReplaceFilesPath(ConfigItem, dialog.Files);
+                AddWrap();
+
+                LoadVars(configItem);
+                AuditSaveAvailable();
+            }
+            else
+            {
+                CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = false;
+                Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
+            }
         }
-        else
+        catch (Exception exception)
         {
-            CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = false;
-            Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
+            Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), exception.ToString());
         }
     } 
 
@@ -713,7 +723,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         }
         catch (Exception ex)
         {
-            ShowErrorDialog(
+            // ShowErrorDialog catches and logs its own errors.
+            _ = ShowErrorDialog(
                 string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)), 
                 localizer.GetLocalizedString("SomethingWentWrong")
                 );
@@ -815,7 +826,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         _ = ComponentTasksManager.Instance.StopTask(runId);
     }
 
-    private async void ShowDialog()
+    private async Task ShowDialog()
     {
         CreateCompleteDialog dialog = new()
         {
@@ -869,7 +880,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         string errorCode = await ConfigurationService.SaveConfigItem(transl, SharedConstants.LocalUserItemsId, configItem);
         if (!string.IsNullOrEmpty(errorCode))
         {
-            ShowErrorDialog(
+            await ShowErrorDialog(
                 string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), errorCode),
                 localizer.GetLocalizedString("SomethingWentWrong")
                 );
@@ -881,7 +892,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                     (ComponentChooseComboBox.SelectedItem as ComponentModel).Id);
         componentHelper?.ReInitConfigs();
 
-        ShowDialog();
+        await ShowDialog();
     }
 
     private void ComponentChooseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1239,12 +1250,19 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     }
     #endregion
 
-    private async void ShowErrorDialog(string message, string title)
+    private async Task ShowErrorDialog(string message, string title)
     {
-        var dlg = new MessageDialog(message, title);
-        InitializeWithWindow.Initialize(
-            dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
-            );
-        await dlg.ShowAsync();
+        try
+        {
+            var dlg = new MessageDialog(message, title);
+            InitializeWithWindow.Initialize(
+                dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
+                );
+            await dlg.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), exception.ToString());
+        }
     }
 }

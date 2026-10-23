@@ -66,6 +66,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
                     PrepareToConnectedBackwardAnimate(NavGrid);
                 }
             }
+            // The connected animation is cosmetic; the navigation goes on without it.
             catch { }
         }
 

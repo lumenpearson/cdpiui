@@ -61,7 +61,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         InitializeComponent();
 
         InitDialog();
-        LoadConfigKits();
+        _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
 
         ConfigsListView.ItemsSource = ConfigModels;
         ConfigKitsListView.ItemsSource = ConfigKits;
@@ -127,24 +127,31 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         }
     }
 
-    private async void LoadConfigKits()
+    private async Task LoadConfigKits()
     {
-        ConfigKits.Clear();
-        List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
-
-        foreach (DatabaseStoreItem item in items)
+        try
         {
-            ConfigKits.Add(new()
-            {
-                StoreId = item.Id,
-                Name = item.ShortName,
-                Developer = item.Developer,
-                ColorHEX = item.BackgroundColor,
-                ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs: item.Directory)))
-            });
-        }
+            ConfigKits.Clear();
+            List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
-        await Task.CompletedTask;
+            foreach (DatabaseStoreItem item in items)
+            {
+                ConfigKits.Add(new()
+                {
+                    StoreId = item.Id,
+                    Name = item.ShortName,
+                    Developer = item.Developer,
+                    ColorHEX = item.BackgroundColor,
+                    ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs: item.Directory)))
+                });
+            }
+
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(EditConfigWindowWelcomeContentDialog), exception.ToString());
+        }
     }
 
     private void ComponentChooseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -183,7 +190,10 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
                 CloseWithResult(EditConfigWelcomeWindowResult.EditConfig, item);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(EditConfigWindowWelcomeContentDialog), exception.ToString());
+            }
         }
     }
 

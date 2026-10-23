@@ -155,29 +155,36 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     {
         if (ComponentId != null)
         {
-            PlayAsync();
+            _ = PlayAsync(); // PlayAsync catches and logs its own errors.
         }
     }
 
-    private async void PlayAsync()
+    private async Task PlayAsync()
     {
-        if (!isRunning)
+        try
         {
-            await ComponentTasksManager.Instance.StopTask(ComponentId);
+            if (!isRunning)
+            {
+                await ComponentTasksManager.Instance.StopTask(ComponentId);
 
-            ComponentTasksManager.Instance.TaskStateUpdated += ProcessManager_onProcessStateChanged;
+                ComponentTasksManager.Instance.TaskStateUpdated += ProcessManager_onProcessStateChanged;
 
-            _ = ComponentTasksManager.Instance.CreateAndRunNewTask(ComponentId, Args);
+                _ = ComponentTasksManager.Instance.CreateAndRunNewTask(ComponentId, Args);
 
+            }
+            else
+            {
+                await ComponentTasksManager.Instance.StopTask(ComponentId);
+                PlayIconButton.Checked = false;
+                PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
+                if (!IsPointerOnControl)
+                    PlayIconButton.Visibility = Visibility.Collapsed;
+                ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
+            }
         }
-        else
+        catch (Exception exception)
         {
-            await ComponentTasksManager.Instance.StopTask(ComponentId);
-            PlayIconButton.Checked = false;
-            PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
-            if (!IsPointerOnControl)
-                PlayIconButton.Visibility = Visibility.Collapsed;
-            ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckReportStrategyUserControl), exception.ToString());
         }
     }
 

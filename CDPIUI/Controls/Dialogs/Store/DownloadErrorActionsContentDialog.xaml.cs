@@ -18,7 +18,7 @@ public sealed partial class DownloadErrorActionsContentDialog : ContentDialog
     private void Support_Click(object sender, RoutedEventArgs e)
     {
         Hide();
-        UrlOpenHelper.LaunchReportUrl();
+        _ = UrlOpenHelper.LaunchReportUrl();
     }
 
     private void NetworkHelp_Click(object sender, RoutedEventArgs e)

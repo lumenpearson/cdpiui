@@ -91,38 +91,45 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
 
     private async void ViewGoodCheckSiteListReportPage_Loaded(object sender, RoutedEventArgs e)
     {
-        LoadResultFor(true);
+        _ = LoadResultFor(true); // LoadResultFor catches and logs its own errors.
 
         this.Loaded -= ViewGoodCheckSiteListReportPage_Loaded;
 
         await Task.CompletedTask;
     }
 
-    private async void LoadResultFor(bool isSuccess)
+    private async Task LoadResultFor(bool isSuccess)
     {
-        var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
-        window?.SetStatus(true, localizer.GetLocalizedString("ReadingReportResults"));
+        try
+        {
+            var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
+            window?.SetStatus(true, localizer.GetLocalizedString("ReadingReportResults"));
 
-        await Task.Run(() => LoadResultToCollection(isSuccess, isSuccess? SuccessStrategiesList : FailureStrategiesList));
+            await Task.Run(() => LoadResultToCollection(isSuccess, isSuccess? SuccessStrategiesList : FailureStrategiesList));
 
-        if (SuccessStrategiesList.Count == 0)
-        {
-            SuccessNotShow.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            SuccessNotShow.Visibility = Visibility.Collapsed;
-        }
-        if (FailureStrategiesList.Count == 0)
-        {
-            FailureNotShow.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            FailureNotShow.Visibility = Visibility.Collapsed;
-        }
+            if (SuccessStrategiesList.Count == 0)
+            {
+                SuccessNotShow.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                SuccessNotShow.Visibility = Visibility.Collapsed;
+            }
+            if (FailureStrategiesList.Count == 0)
+            {
+                FailureNotShow.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                FailureNotShow.Visibility = Visibility.Collapsed;
+            }
 
-            window?.SetStatus(false);
+                window?.SetStatus(false);
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ViewGoodCheckSiteListReportPage), exception.ToString());
+        }
     }
 
     private SemaphoreSlim Semaphore = new(1, 1);
@@ -216,13 +223,13 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
         {
             SuccessStackPanel.Visibility = Visibility.Visible;
             FailureStackPanel.Visibility = Visibility.Collapsed;
-            if (SuccessStrategiesList.Count == 0) LoadResultFor(true);
+            if (SuccessStrategiesList.Count == 0) await LoadResultFor(true);
         }
         else
         {
             SuccessStackPanel.Visibility = Visibility.Collapsed;
             FailureStackPanel.Visibility = Visibility.Visible;
-            if (FailureStrategiesList.Count == 0 && SettingsManager.Instance.GetValue<bool>("CONFIGDESIGNER", "showFailureStrategies")) LoadResultFor(false);
+            if (FailureStrategiesList.Count == 0 && SettingsManager.Instance.GetValue<bool>("CONFIGDESIGNER", "showFailureStrategies")) await LoadResultFor(false);
         }
     }
 
@@ -232,7 +239,7 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
         FailureStackPanel.Visibility = Visibility.Visible;
         FailureStrategiesListView.Visibility = Visibility.Visible;
         ContentNotDisplayedStackPanel.Visibility = Visibility.Collapsed;
-        if (FailureStrategiesList.Count == 0) LoadResultFor(false);
+        if (FailureStrategiesList.Count == 0) _ = LoadResultFor(false); // LoadResultFor catches and logs its own errors.
     }
 
     private void HeaderClick(object parameter)

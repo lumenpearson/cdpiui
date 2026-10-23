@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Unidecode.NET;
 using Windows.ApplicationModel.Chat;
@@ -181,11 +182,18 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
             }
         }
         private ILocalizer localizer = Localizer.Get();
-        private async void ShowDialog(string message)
+        private async Task ShowDialog(string message)
         {
-            var dlg = new MessageDialog(message, localizer.GetLocalizedString("AutoCorrectError"));
-            InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
-            await dlg.ShowAsync();
+            try
+            {
+                var dlg = new MessageDialog(message, localizer.GetLocalizedString("AutoCorrectError"));
+                InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
+                await dlg.ShowAsync();
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(SelectUsedFilesForConfigContentDialog), exception.ToString());
+            }
         }
 
         private void AutoCorrectActions()
@@ -219,7 +227,8 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                 }
                 catch (Exception ex)
                 {
-                    ShowDialog($"{ErrorsHelper.Convertor.GetPrettyErrorCode("AUTOCORRECT", ex)}:\n" + ex.Message);
+                    // ShowDialog catches and logs its own errors.
+                    _ = ShowDialog($"{ErrorsHelper.Convertor.GetPrettyErrorCode("AUTOCORRECT", ex)}:\n" + ex.Message);
                     Result = CreateConfigResult.Canceled;
                     return;
                 }

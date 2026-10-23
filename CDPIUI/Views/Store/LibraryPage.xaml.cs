@@ -69,7 +69,7 @@ namespace CDPIUI.Views.Store
 
         private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadItems();
+            _ = LoadItems(); // LoadItems catches and logs its own errors.
             this.Loaded -= LibraryPage_Loaded;
         }
 
@@ -81,46 +81,53 @@ namespace CDPIUI.Views.Store
             StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
         }
 
-        public async void LoadItems()
+        public async Task LoadItems()
         {
-            _libraryItems.Clear();
-            List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
-
-            foreach (DatabaseStoreItem item in databaseStoreItems)
+            try
             {
-                string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
-                title = title.StartsWith("slocale:")? item.ShortName : title;
+                _libraryItems.Clear();
+                List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
 
-                string category = localizer.GetLocalizedString(item.Type);
-                category = string.IsNullOrEmpty(category) ? item.Type : category;
-
-                BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));
-
-                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
-
-                LibraryItemModel libraryItemModel = new()
+                foreach (DatabaseStoreItem item in databaseStoreItems)
                 {
-                    StoreId = item.Id,
-                    Title = title,
-                    Developer = item.Developer,
-                    Category = category,
-                    ImageSource = image,
-                    CardBackgroundBrush = solidColorBrush
-                };
-                _libraryItems.Add(libraryItemModel);
+                    string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
+                    title = title.StartsWith("slocale:")? item.ShortName : title;
+
+                    string category = localizer.GetLocalizedString(item.Type);
+                    category = string.IsNullOrEmpty(category) ? item.Type : category;
+
+                    BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));
+
+                    SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
+
+                    LibraryItemModel libraryItemModel = new()
+                    {
+                        StoreId = item.Id,
+                        Title = title,
+                        Developer = item.Developer,
+                        Category = category,
+                        ImageSource = image,
+                        CardBackgroundBrush = solidColorBrush
+                    };
+                    _libraryItems.Add(libraryItemModel);
+                }
+                // _libraryItems.Reverse();
+                await Task.CompletedTask;
             }
-            // _libraryItems.Reverse();
-            await Task.CompletedTask;
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(LibraryPage), exception.ToString());
+            }
         }
 
         private void StoreHelper_ItemActionsStopped(string obj)
         {
-            LoadItems();
+            _ = LoadItems(); // LoadItems catches and logs its own errors.
         }
 
         private void StoreHelper_ItemRemoved(string obj)
         {
-            LoadItems();
+            _ = LoadItems(); // LoadItems catches and logs its own errors.
         }
     }
 }

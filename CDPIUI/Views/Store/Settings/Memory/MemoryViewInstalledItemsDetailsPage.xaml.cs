@@ -62,14 +62,14 @@ namespace CDPIUI.Views.Store.Settings.Memory
             StoreHelper.Instance.ItemRemoved += StoreHelper_ItemRemoved;
             StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
 
-            CalcSize();
+            _ = CalcSize(); // CalcSize catches and logs its own errors.
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            LoadItems();
+            _ = LoadItems(); // LoadItems catches and logs its own errors.
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -83,6 +83,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
                     PrepareToConnectedBackwardAnimate(NavGrid);
                 }
             }
+            // The connected animation is cosmetic; the navigation goes on without it.
             catch { }
 
             StoreHelper.Instance.ItemRemoved -= StoreHelper_ItemRemoved;
@@ -119,61 +120,77 @@ namespace CDPIUI.Views.Store.Settings.Memory
             Frame.Navigate(item.Tag, null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromLeft });
         }
 
-        public async void LoadItems()
+        public async Task LoadItems()
         {
-            LibraryItems.Clear();
-            List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
-
-            foreach (DatabaseStoreItem item in databaseStoreItems)
+            try
             {
-                if (item.Id == SharedConstants.ApplicationStoreId) continue;
+                LibraryItems.Clear();
+                List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
 
-                string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
-                title = title.StartsWith("slocale:") ? item.ShortName : title;
-
-                string category = localizer.GetLocalizedString(item.Type);
-                category = string.IsNullOrEmpty(category) ? item.Type : category;
-
-                string eImageSource = LScriptLangHelper.ExecuteScript(item.IconPath);
-                
-                BitmapImage image = new BitmapImage(UIHelper.GetUriFromString(eImageSource));
-
-                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
-
-                LibraryItemModel libraryItemModel = new()
+                foreach (DatabaseStoreItem item in databaseStoreItems)
                 {
-                    StoreId = item.Id,
-                    Title = title,
-                    Developer = item.Developer,
-                    Category = category,
-                    ImageSource = image,
-                    CardBackgroundBrush = solidColorBrush,
-                    Size = await FileSystemService.GetDirectorySize(item.Directory)
-                };
-                LibraryItems.Add(libraryItemModel);
+                    if (item.Id == SharedConstants.ApplicationStoreId) continue;
+
+                    string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
+                    title = title.StartsWith("slocale:") ? item.ShortName : title;
+
+                    string category = localizer.GetLocalizedString(item.Type);
+                    category = string.IsNullOrEmpty(category) ? item.Type : category;
+
+                    string eImageSource = LScriptLangHelper.ExecuteScript(item.IconPath);
+                
+                    BitmapImage image = new BitmapImage(UIHelper.GetUriFromString(eImageSource));
+
+                    SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
+
+                    LibraryItemModel libraryItemModel = new()
+                    {
+                        StoreId = item.Id,
+                        Title = title,
+                        Developer = item.Developer,
+                        Category = category,
+                        ImageSource = image,
+                        CardBackgroundBrush = solidColorBrush,
+                        Size = await FileSystemService.GetDirectorySize(item.Directory)
+                    };
+                    LibraryItems.Add(libraryItemModel);
+                }
+                LibraryItems.Sort();
+                // _libraryItems.Reverse();
+                await Task.CompletedTask;
             }
-            LibraryItems.Sort();
-            // _libraryItems.Reverse();
-            await Task.CompletedTask;
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(MemoryViewInstalledItemsDetailsPage), exception.ToString());
+            }
         }
 
 
 
         private void StoreHelper_ItemActionsStopped(string obj)
         {
-            LoadItems();
-            CalcSize();
+            // LoadItems and CalcSize catch and log their own errors.
+            _ = LoadItems();
+            _ = CalcSize();
         }
 
         private void StoreHelper_ItemRemoved(string obj)
         {
-            LoadItems();
-            CalcSize();
+            // LoadItems and CalcSize catch and log their own errors.
+            _ = LoadItems();
+            _ = CalcSize();
         }
 
-        private async void CalcSize()
+        private async Task CalcSize()
         {
-            MemoryTextBlock.Text = UnitsParser.FormatSize(await FileSystemService.GetDirectorySize(Directories.StoreItemsDirectory, Logger.Instance));
+            try
+            {
+                MemoryTextBlock.Text = UnitsParser.FormatSize(await FileSystemService.GetDirectorySize(Directories.StoreItemsDirectory, Logger.Instance));
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(MemoryViewInstalledItemsDetailsPage), exception.ToString());
+            }
         }
 
 

@@ -2707,6 +2707,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
         catch (OperationCanceledException)
         {
+            // The load was cancelled (a newer request or the control was unloaded): nothing is left to show.
         }
         finally
         {

@@ -355,6 +355,7 @@ namespace CDPIUI
                 SetPreferredAppMode(2);
                 FlushMenuThemes();
             }
+            // The exports are missing on older systems: the system menu keeps its light theme.
             catch (EntryPointNotFoundException) { }
             catch (DllNotFoundException) { }
         }

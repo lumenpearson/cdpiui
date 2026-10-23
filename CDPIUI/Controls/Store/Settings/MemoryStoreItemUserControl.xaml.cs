@@ -167,9 +167,9 @@ namespace CDPIUI.Controls.Store.Settings
             {
                 ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
-            catch
+            catch (Exception exception)
             {
-
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MemoryStoreItemUserControl), exception.ToString());
             }
         }
 

@@ -554,8 +554,9 @@ public sealed class ConfigMakerPresetStorageService
                     File.Delete(file);
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), exception.ToString());
             }
         }
         foreach (string root in roots.OrderByDescending(path => path.Length))
@@ -567,8 +568,9 @@ public sealed class ConfigMakerPresetStorageService
                     Directory.Delete(root, recursive: true);
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), exception.ToString());
             }
         }
     }

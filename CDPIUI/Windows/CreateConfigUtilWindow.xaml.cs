@@ -20,6 +20,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinRT.Interop;
@@ -90,7 +91,7 @@ namespace CDPIUI
         private readonly SemaphoreSlim _dialogLock = new SemaphoreSlim(1, 1);
         private bool isDialogOpened = false;
 
-        private async void AskForExit()
+        private async Task AskForExit()
         {
             await _dialogLock.WaitAsync();
             isDialogOpened = true;
@@ -112,9 +113,9 @@ namespace CDPIUI
                     this.Close();
                 }
             }
-            catch
+            catch (Exception exception)
             {
-
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(CreateConfigUtilWindow), exception.ToString());
             }
             finally
             {
@@ -132,7 +133,8 @@ namespace CDPIUI
             }
             else if (IsSelectionRunning)
             {
-                AskForExit();
+                // AskForExit catches and logs its own errors.
+                _ = AskForExit();
                 args.Handled = true;
                 return;
             }
