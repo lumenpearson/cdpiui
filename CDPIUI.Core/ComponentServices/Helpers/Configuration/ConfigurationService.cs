@@ -17,7 +17,9 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 {
     public partial class ConfigurationService
     {
-        private const string BatStartRegex = @"start\s+(?:"".*?"")?"".*?""\s+(((?:/min){0,1}\s+"".*?"")|(\S*))?(.*)\^?$";
+        // start ["title"] [/min /b ...] program args: the program may be quoted or not, so that
+        // `start "t" /min %BIN%winws.exe ...` does not leave the program in the arguments.
+        private const string BatStartRegex = @"^start\s+(?:""[^""]*""\s+)?(?:/\w+\s+)*(?:""[^""]*""|\S+)(?<args>.*?)\^?\s*$";
 
         private readonly List<ConfigItem> Items = [];
 
@@ -876,11 +878,13 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     string[] setLine = line[3..].Split("=");
                     if (setLine.Length >= 2)
                     {
-                        string key = setLine[0].Replace("\"", "");
+                        // set "WF=..." keeps a space before the name: trimmed here, or the
+                        // variable was not found by the alternatives below.
+                        string key = setLine[0].Replace("\"", "").Trim();
                         string value = line[3..].Replace($"{setLine[0]}=", "").Replace("\"", "").Trim();
 
-                        Match match = VarInVarRegex().Match(setLine[1]);
-                        if (match.Success)
+                        // Every !VAR! of the value, not only the first one.
+                        foreach (Match match in VarInVarRegex().Matches(value))
                         {
                             string varInVar = match.Groups[1].Value;
                             if (vars.ContainsKey(varInVar))
@@ -919,7 +923,9 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     comment = line[2..^2].Trim();
                     continue;
                 }
-                if (line.StartsWith("rem", StringComparison.OrdinalIgnoreCase) && line.Contains("set", StringComparison.OrdinalIgnoreCase))
+                // "rem set NAME=value" lists another value of a variable; a comment such as
+                // "rem settings = ..." is no such line.
+                if (RemSetRegex().IsMatch(line))
                 {
                     string _l = line[3..];
                     var rx = new Regex(@"\s+set\b", RegexOptions.None);
@@ -983,7 +989,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     Match match = BatFileStartRegex().Match(line);
                     if (match.Success)
                     {
-                        comma = match.Groups[4].Value.Trim().Replace('^', ' ');
+                        comma = match.Groups["args"].Value.Trim().Replace('^', ' ');
                         Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Found start line {comma}");
                     }
                     continue;
@@ -1194,9 +1200,11 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         [GeneratedRegex(@"("")(/.*?\\)(.*?"")")]
         private static partial Regex WindowConverterRegex();
-        [GeneratedRegex(BatStartRegex)]
+        [GeneratedRegex(BatStartRegex, RegexOptions.IgnoreCase)]
         private static partial Regex BatFileStartRegex();
         [GeneratedRegex(@"!(.*?)!")]
         private static partial Regex VarInVarRegex();
+        [GeneratedRegex(@"^rem\s+set\s", RegexOptions.IgnoreCase)]
+        private static partial Regex RemSetRegex();
     }
 }
