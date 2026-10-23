@@ -652,6 +652,26 @@ public sealed partial class MainPage : TemplatePage
 
     private async void NextButton_Click(object sender, RoutedEventArgs e)
     {
+        // An exception in an async void handler ended the process and left IsLoading set.
+        try
+        {
+            await NextStepAsync();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
+            if (isUnloaded) return;
+            UtilityButtonContols.IsLoading = false;
+            ResultItemsControl.IsEnabled = true;
+            NextButton.Visibility = Visibility.Visible;
+            if (IsLoaded)
+                await new CDPIUI.Controls.Dialogs.Universal.ErrorContentDialog().ShowErrorDialogAsync(
+                    localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
+        }
+    }
+
+    private async Task NextStepAsync()
+    {
         if (MainContent.SelectedItem == SelectionStep)
         {
             NextButton.Visibility = Visibility.Collapsed;

@@ -177,13 +177,13 @@ public sealed partial class ViewConfigOutput : UserControl
 
     private void ProcessManager_ProcessStateChanged(Tuple<string, bool> state)
     {
-        if (!string.Equals(state.Item1, ComponentId, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
+        // ComponentId is a DependencyProperty and may be read on the UI thread only.
         QueueRefresh(() =>
         {
+            if (!string.Equals(state.Item1, ComponentId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
             SynchronizeOutput();
             UpdateRunningState(IsProcessRunning, showMessage: true);
         });
