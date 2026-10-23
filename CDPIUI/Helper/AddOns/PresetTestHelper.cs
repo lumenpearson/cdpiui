@@ -175,29 +175,23 @@ namespace CDPIUI.Helper.AddOns
             }
         }
 
+        // The default endpoints ship as Template\PresetTest\test_targets.txt, so they can change
+        // without a change of the code. Without the template, the file gets only its format help.
         private static string GetDefaultTargetsContent()
         {
+            string template = Path.Combine(Directories.TemplatesDirectory, "PresetTest", "test_targets.txt");
+            try
+            {
+                if (File.Exists(template))
+                    return File.ReadAllText(template, Encoding.UTF8);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't read the default targets file: {ex.Message}");
+            }
             return
                 "# test_targets.txt - endpoints checked for each preset (standard mode)" + Environment.NewLine +
-                "# Format:  Name = \"https://host\"  (HTTPS+ping)  or  Name = \"PING:1.2.3.4\"  (ping only)" + Environment.NewLine +
-                Environment.NewLine +
-                "DiscordMain          = \"https://discord.com\"" + Environment.NewLine +
-                "DiscordGateway       = \"https://gateway.discord.gg\"" + Environment.NewLine +
-                "DiscordCDN           = \"https://cdn.discordapp.com\"" + Environment.NewLine +
-                "DiscordUpdates       = \"https://updates.discord.com\"" + Environment.NewLine +
-                "YouTubeWeb           = \"https://www.youtube.com\"" + Environment.NewLine +
-                "YouTubeShort         = \"https://youtu.be\"" + Environment.NewLine +
-                "YouTubeImage         = \"https://i.ytimg.com\"" + Environment.NewLine +
-                "YouTubeVideoRedirect = \"https://redirector.googlevideo.com\"" + Environment.NewLine +
-                "GoogleMain           = \"https://www.google.com\"" + Environment.NewLine +
-                "GoogleGstatic        = \"https://www.gstatic.com\"" + Environment.NewLine +
-                "CloudflareWeb        = \"https://www.cloudflare.com\"" + Environment.NewLine +
-                "CloudflareCDN        = \"https://cdnjs.cloudflare.com\"" + Environment.NewLine +
-                "CloudflareDNS1111    = \"PING:1.1.1.1\"" + Environment.NewLine +
-                "CloudflareDNS1001    = \"PING:1.0.0.1\"" + Environment.NewLine +
-                "GoogleDNS8888        = \"PING:8.8.8.8\"" + Environment.NewLine +
-                "GoogleDNS8844        = \"PING:8.8.4.4\"" + Environment.NewLine +
-                "Quad9DNS9999         = \"PING:9.9.9.9\"" + Environment.NewLine;
+                "# Format:  Name = \"https://host\"  (HTTPS+ping)  or  Name = \"PING:1.2.3.4\"  (ping only)" + Environment.NewLine;
         }
 
         public static List<PresetTestTarget> LoadTargets()
