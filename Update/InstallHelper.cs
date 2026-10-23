@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -84,12 +85,11 @@ namespace Update
                 {
                     InstallationStateChanged?.Invoke(InstallState.Prepare);
                     Log("Starting extraction process");
-                    CloseProcessIfRunning("goodbyeDPI");
-                    CloseProcessIfRunning("CDPIUI");
-                    CloseProcessIfRunning("CDPIUI_TrayIcon");
+                    if (!StopApplication())
+                        FinishStatus = InstallError.PermissionDenied;
 
                     InstallationStateChanged?.Invoke(InstallState.Unpack);
-                    List<string> stagedFiles = await StageAsync();
+                    List<string> stagedFiles = FinishStatus == InstallError.None ? await StageAsync() : null;
 
                     bool applied = false;
                     if (FinishStatus == InstallError.None && stagedFiles != null)
@@ -101,6 +101,7 @@ namespace Update
                     if (applied)
                     {
                         InstallationStateChanged?.Invoke(InstallState.Finalize);
+                        WriteManifest(stagedFiles);
                         Cleanup();
                         FinishStatus = InstallError.OK;
                         bool launched = LaunchApplication(false);
@@ -147,6 +148,74 @@ namespace Update
 
         private string StagingFolder => Path.Combine(_targetFolder, ".update-staging");
         private string BackupFolder => Path.Combine(_targetFolder, ".update-backup");
+        // Files written by the last update, so files dropped from a newer version can be removed.
+        private string ManifestPath => Path.Combine(_targetFolder, ".update-manifest");
+
+        private static readonly string[] ApplicationProcesses = { "goodbyeDPI", "CDPIUI", "CDPIUI_TrayIcon" };
+        private const string TrayShutdownEventName = @"Global\CDPIUI_TrayShutdown";
+
+        /// <summary>
+        /// Closes the application and checks that no process that holds its files is left
+        /// </summary>
+        private bool StopApplication()
+        {
+            EventWaitHandle shutdownEvent = null;
+            try
+            {
+                // Let the tray exit as from its menu first: it then stops the components and
+                // restores the system proxy settings, which a killed tray leaves behind.
+                bool opened;
+                try { opened = EventWaitHandle.TryOpenExisting(TrayShutdownEventName, out shutdownEvent); }
+                catch (Exception ex)
+                {
+                    Log($"Cannot ask the tray to exit: {ex.Message}");
+                    opened = false;
+                }
+                if (opened)
+                {
+                    shutdownEvent.Set();
+                    WaitForExit("CDPIUI_TrayIcon", TimeSpan.FromSeconds(20));
+                }
+
+                foreach (string name in ApplicationProcesses)
+                    CloseProcessIfRunning(name);
+
+                foreach (string name in ApplicationProcesses)
+                {
+                    if (!WaitForExit(name, TimeSpan.FromSeconds(10)))
+                    {
+                        Log($"{name}.exe is still running. Update aborted.");
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"Cannot close the application: {ex}");
+                return false;
+            }
+            finally
+            {
+                try { shutdownEvent?.Reset(); } catch { }
+                shutdownEvent?.Dispose();
+            }
+        }
+
+        private static bool WaitForExit(string processName, TimeSpan timeout)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            while (true)
+            {
+                Process[] processes = Process.GetProcessesByName(processName);
+                bool running = processes.Length > 0;
+                foreach (var process in processes) process.Dispose();
+
+                if (!running) return true;
+                if (stopwatch.Elapsed > timeout) return false;
+                Thread.Sleep(250);
+            }
+        }
 
         private void CloseProcessIfRunning(string processNameWithoutExt)
         {
@@ -293,6 +362,20 @@ namespace Update
                     ProgressChanged?.Invoke((double)(i + 1) / stagedFiles.Count);
                 }
 
+                foreach (string relativePath in GetRemovedFiles(stagedFiles))
+                {
+                    string destPath, backupPath;
+                    if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
+                        !TryGetDestination(BackupFolder, relativePath, out backupPath) ||
+                        !File.Exists(destPath))
+                        continue;
+
+                    CurrentFileChanged?.Invoke($"Removing {relativePath}");
+                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                    File.Move(destPath, backupPath);
+                    applied.Add(new KeyValuePair<string, bool>(relativePath, true));
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -307,6 +390,30 @@ namespace Update
                     ErrorOccurred?.Invoke(FinishStatus, ex.Message);
                 }
                 return false;
+            }
+        }
+
+        private IEnumerable<string> GetRemovedFiles(List<string> stagedFiles)
+        {
+            if (!File.Exists(ManifestPath))
+                return Enumerable.Empty<string>();
+
+            var current = new HashSet<string>(stagedFiles, StringComparer.OrdinalIgnoreCase);
+            return File.ReadAllLines(ManifestPath)
+                .Where(line => !string.IsNullOrWhiteSpace(line) && !current.Contains(line))
+                .Where(line => !_skipFiles.Contains(Path.GetFileName(line), StringComparer.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private void WriteManifest(List<string> stagedFiles)
+        {
+            try
+            {
+                File.WriteAllLines(ManifestPath, stagedFiles);
+            }
+            catch (Exception ex)
+            {
+                Log($"Cannot write the update manifest: {ex.Message}");
             }
         }
 
