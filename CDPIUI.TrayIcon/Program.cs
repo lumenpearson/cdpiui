@@ -218,7 +218,10 @@ class Programm
 
             ValueSet userInput = toastArgs.UserInput;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog("Tray", $"Cannot handle the notification action: {ex}");
+        }
     }
 
     private static async Task CheckProgramUpdates()

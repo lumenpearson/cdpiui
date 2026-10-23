@@ -160,8 +160,8 @@ namespace CDPIUI.Core.ComponentServices
                 return args;
             }
 
-            string ip = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
-            string port = SettingsManager.Instance.GetValue<string>("PROXY", "port");
+            string? ip = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
+            string? port = SettingsManager.Instance.GetValue<string>("PROXY", "port");
 
             string proxyType = SettingsManager.Instance.GetValue<string>("PROXY", "proxyType");
 
@@ -207,7 +207,7 @@ namespace CDPIUI.Core.ComponentServices
         private string GetProxiFyrePath()
         {
             var item = DatabaseHelper.Instance.GetItemById("ASPEWK002");
-            if (item == null) return string.Empty;
+            if (item?.Directory == null) return string.Empty;
 
             return Path.Combine(item.Directory, item.Executable + ".exe");
         }
@@ -226,7 +226,7 @@ namespace CDPIUI.Core.ComponentServices
                 if (output) ProcessStateChanged?.Invoke(Tuple.Create(Id, false));
                 IsProcessRunning = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 IsProcessRunning = false;
             }

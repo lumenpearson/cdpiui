@@ -180,7 +180,10 @@ namespace CDPIUI.TrayIcon.Forms
             if (InvokeRequired)
             {
                 try { BeginInvoke(new Action(() => HandleTaskStateUpdate(taskStateUpdate))); }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException)
+                {
+                    // The window handle was destroyed after the check above; the icon is gone too.
+                }
                 return;
             }
             UpdateIcon(GetCurrentIcon(), GetNowRunningComponentsString());
@@ -371,8 +374,8 @@ namespace CDPIUI.TrayIcon.Forms
             return rect;
         }
 
-        // Called from WndProc, which must not wait for the pipe.
-        private static async void MaximizeApp()
+        // Called from WndProc, which must not wait for the pipe. Catches and logs its own errors.
+        private static async Task MaximizeApp()
         {
             try
             {
@@ -435,7 +438,7 @@ namespace CDPIUI.TrayIcon.Forms
                         break;
                     case NIN_KEYSELECT:
                         // Enter or Space on the icon focused with the keyboard.
-                        MaximizeApp();
+                        _ = MaximizeApp();
                         break;
                     case WM_CONTEXTMENU:
                         var rect = GetRectIcon();
@@ -444,7 +447,7 @@ namespace CDPIUI.TrayIcon.Forms
 
                     //get what mouse messages you want
                     case WM_LBUTTONDOWN:
-                        MaximizeApp();
+                        _ = MaximizeApp();
                         break;
                     default:
 

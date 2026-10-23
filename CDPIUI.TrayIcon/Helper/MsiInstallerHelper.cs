@@ -226,7 +226,11 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 lock (_lock)
                 {
-                    try { _currentProcess?.Dispose(); } catch { }
+                    try { _currentProcess?.Dispose(); }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(MsiInstallerHelper), $"Cannot release the installer process: {ex.Message}");
+                    }
                     _currentProcess = null;
                     _currentOperationId = null;
                 }

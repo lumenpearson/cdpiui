@@ -85,7 +85,7 @@ public sealed class ConfigShareService
             ConfigShareResources.MapConfig(config, text =>
             {
                 EnsureNoOutsideWrites(
-                    text?.Replace(ReferencePrefix, directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase),
+                    text.Replace(ReferencePrefix, directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase),
                     directory);
                 return text;
             });

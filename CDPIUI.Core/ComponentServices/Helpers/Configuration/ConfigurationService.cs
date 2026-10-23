@@ -37,10 +37,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         private List<ConfigItem> InitConfigDirectory(DatabaseStoreItem item)
         {
-            string directory = item.Directory;
-            string id = item.Id;
+            string? directory = item.Directory;
+            string? id = item.Id;
 
-            if (string.IsNullOrEmpty(id)) return [];
+            if (string.IsNullOrEmpty(id) || directory == null) return [];
 
             List<ConfigItem> configItems = new List<ConfigItem>();
 
@@ -344,7 +344,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
                 return string.Empty;
             }
-            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN", null) ?? string.Empty;
+            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN") ?? string.Empty;
             return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
         }
 
@@ -362,15 +362,19 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // A missing translation is not an error for the user; the default name is shown.
+                Basic.Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Cannot get the localized name of {name}: {ex.Message}");
+            }
 
             return $"Toggle \"{name}\"";
         }
 
         public static Dictionary<string, string>? GetReadyToUseVariables(
-            string id, 
-            List<string> variables, 
-            Dictionary<string, bool> jparams)
+            string? id,
+            List<string>? variables,
+            Dictionary<string, bool>? jparams)
         {
             // Same rules as ConfigItem.ExpandVariables in the UI: names ignore case, and a name
             // declared twice takes the last value instead of failing the start.
@@ -409,7 +413,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         [GeneratedRegex("%(?<name>[A-Za-z0-9_.\\-]+)%", RegexOptions.CultureInvariant)]
         private static partial Regex VariableReferenceRegex();
 
-        public static string ReplaceVariables(string input, IDictionary<string, string> readyToUseVars)
+        public static string ReplaceVariables(string input, IDictionary<string, string>? readyToUseVars)
         {
             if (string.IsNullOrEmpty(input) || readyToUseVars == null || readyToUseVars.Count == 0)
             {
@@ -449,16 +453,16 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         /// <returns>Component startup string for item</returns>
         public static string GetStartupParametersByConfigItem(ConfigItem item, bool forceRebuild = false)
         {
-            Dictionary<string, bool> jparams = item.jparams;
-            List<string> variables = item.variables;
-            string startupString = item.startup_string;
-            string packId = item.packId;
-            Dictionary<string, string> commaVars = item.commaVars;
+            Dictionary<string, bool>? jparams = item.jparams;
+            List<string>? variables = item.variables;
+            string? startupString = item.startup_string;
+            string? packId = item.packId;
+            Dictionary<string, string>? commaVars = item.commaVars;
 
             if (jparams == null || variables == null || startupString == null)
                 return string.Empty;
 
-            Dictionary<string, string> readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
+            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
 
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
@@ -481,9 +485,9 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 validateHashes,
                 forceRebuild);
         }
-        public static string ReplaceCommaVariables(string startupString, Dictionary<string, string> commaVars)
+        public static string ReplaceCommaVariables(string startupString, Dictionary<string, string>? commaVars)
         {
-            Dictionary<string, string> vars = commaVars;
+            Dictionary<string, string>? vars = commaVars;
 
             if (vars == null || vars.Count == 0)
                 return startupString;
@@ -494,10 +498,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         public string GetStartupParameters(string filename, string packId)
         {
-            Dictionary<string, bool> jparams = null;
-            List<string> variables = null;
-            string startupString = null;
-            Dictionary<string, string> commaVars = null;
+            Dictionary<string, bool>? jparams = null;
+            List<string>? variables = null;
+            string? startupString = null;
+            Dictionary<string, string>? commaVars = null;
 
             foreach (ConfigItem item in Items)
             {
@@ -514,7 +518,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             if (startupString == null)
                 return string.Empty;
 
-            Dictionary<string, string> readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
+            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
 
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
@@ -604,7 +608,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 string.Equals(x.file_name, filename, StringComparison.Ordinal)
                 );
 
-            return configItem != null ? configItem.toggle_lists : [];
+            // The callers read Count: a preset without toggle lists gives an empty list.
+            return configItem?.toggle_lists ?? [];
         }
 
         public async Task<List<SiteListItem>> GetExcludedSiteListItemsAsync(
@@ -1041,7 +1046,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             return Tuple.Create(configItem, errorHappens);
         }
 
-        public static Tuple<ConfigItem, bool>? LoadConfigFromFile(string filepath)
+        // The item is null when a .json file holds "null".
+        public static Tuple<ConfigItem?, bool>? LoadConfigFromFile(string filepath)
         {
             if (!File.Exists(filepath))
                 return null;
@@ -1061,7 +1067,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                         variables = [],
                         startup_string = oldConfig.custom_parameters,
                     };
-                    return Tuple.Create(newConfig, true);
+                    return Tuple.Create<ConfigItem?, bool>(newConfig, true);
                 }
                 return Tuple.Create(JSONConvertor.LoadJson<ConfigItem>(filepath), true);
             }
@@ -1072,7 +1078,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 {
                     var (configItem, errorHappens) = ConvertConfigFromBAT(filepath);
 
-                    return Tuple.Create(configItem, errorHappens);
+                    return Tuple.Create<ConfigItem?, bool>(configItem, errorHappens);
                 }
                 catch (Exception ex)
                 {

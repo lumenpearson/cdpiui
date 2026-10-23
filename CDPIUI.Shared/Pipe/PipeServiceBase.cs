@@ -62,7 +62,7 @@ namespace CDPIUI.Shared.Pipe
                         continue;
                     }
 
-                    RunStringMessageActions(message);
+                    _ = RunStringMessageActions(message);
                 }
                 catch (EndOfStreamException)
                 {
@@ -79,9 +79,17 @@ namespace CDPIUI.Shared.Pipe
             System.Text.RegularExpressions.Regex.Replace(message, "(GUID=)[^&]*", "$1***",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        public async void SendMessage(string message)
+        // Catches and logs its own errors, so a caller can start it without waiting for it.
+        public async Task SendMessage(string message)
         {
-            await SendMessageAsync(message);
+            try
+            {
+                await SendMessageAsync(message);
+            }
+            catch (Exception ex)
+            {
+                Logger?.CreateWarningLog(nameof(PipeServiceBase), $"Cannot send a message: {ex.Message}");
+            }
         }
         public async Task<bool> SendMessageAsync(string message)
         {
@@ -102,7 +110,8 @@ namespace CDPIUI.Shared.Pipe
             await SendMessageAsync(ServiceMessageModel.ConnectionSuccessful().ToString());
         }
 
-        private async void RunStringMessageActions(string message)
+        // Catches and logs its own errors; the read loop does not wait for it.
+        private async Task RunStringMessageActions(string message)
         {
             try
             {
@@ -165,7 +174,10 @@ namespace CDPIUI.Shared.Pipe
                 if (PipeStream?.IsConnected == true)
                     PipeStream.WaitForPipeDrain();
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException) { }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+            {
+                // The other side has already closed the pipe; there is nothing left to drain.
+            }
             PipeStream?.Dispose();
             StreamString = null;
 

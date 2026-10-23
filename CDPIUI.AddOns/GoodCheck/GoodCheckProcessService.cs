@@ -71,8 +71,9 @@ namespace CDPIUI.AddOns.GoodCheck
 
         public int CorrectCount { get; private set; }
         public int IncorrectCount { get; private set; }
-        public string CurrentSiteList { get; private set; }
-        public Tuple<int, int> CurrentSiteListIndex { get; private set; }
+        // Null until the first site list starts.
+        public string? CurrentSiteList { get; private set; }
+        public Tuple<int, int>? CurrentSiteListIndex { get; private set; }
 
         private static readonly string AddonId = HardcodedItemIds.AddOnsIds[Core.Store.Data.AddOns.GoodCheck];
         private const string CheckLists = "CheckLists";
@@ -87,7 +88,7 @@ namespace CDPIUI.AddOns.GoodCheck
         private const string GetStrategyCountRegex = @"worst result for this strategy: (\d{1,})/(\d{1,})\n{1,}Terminating program\.\.\.";
         private const string AnalyzeRegex = @"Launching '[a-zA-Z]{1,}', strategy (\d{1,})/(\d{1,}): \[(.*?)\](?:.*?)worst result for this strategy: (\d{1,})/(\d{1,})(\n||This strategy has no successes){1,}Terminating program\.\.\.";
 
-        private CancellationTokenSource CancellationTokenSource;
+        private CancellationTokenSource? CancellationTokenSource;
         private CancellationToken CancellationToken;
 
         private GoodCheckProcessMode _mode;
@@ -238,15 +239,17 @@ namespace CDPIUI.AddOns.GoodCheck
                 for (int i = 0; i < siteListsToCheck.Count; i++)
                 {
                     var model = siteListsToCheck[i];
-                    string path = model.SiteListPath;
+                    // The same exception that File.Copy threw for a list without a path.
+                    string path = model.SiteListPath
+                        ?? throw new ArgumentNullException(nameof(siteListsToCheck), "A site list has no path.");
                     // Lists with the same file name from different packs overwrote each other.
-                    string name = Path.GetFileName(model.SiteListPath);
+                    string name = Path.GetFileName(path);
                     if (!usedNames.Add(name))
                     {
                         name = $"{i}_{name}";
                         usedNames.Add(name);
                     }
-                    File.Copy(model.SiteListPath, Path.Combine(siteListFolder, name), true);
+                    File.Copy(path, Path.Combine(siteListFolder, name), true);
 
                     model.SiteListPath = name;
                     model.StrategyListPath = Path.GetFileName(model.StrategyListPath);
@@ -435,7 +438,7 @@ namespace CDPIUI.AddOns.GoodCheck
 
         }
 
-        string goodStrategyCountString;
+        string? goodStrategyCountString;
 
         private void AddOutput(string output)
         {
@@ -677,11 +680,12 @@ namespace CDPIUI.AddOns.GoodCheck
             foreach (var operation in Operations)
             {
                 opIndex++;
-                string operationName = operation.SiteListName;
+                // Both are set by InitGoodCheck; XAttribute does not take null.
+                string operationName = operation.SiteListName ?? string.Empty;
 
                 var group = new XElement("Group",
                     new XAttribute("Name", operationName),
-                    new XAttribute("FullPath", operation.SiteListPath),
+                    new XAttribute("FullPath", operation.SiteListPath ?? string.Empty),
                     new XAttribute("ComponentId", ComponentId));
 
                 var matches = Regex.Matches(operation.Output, AnalyzeRegex, RegexOptions.Singleline);
@@ -730,9 +734,13 @@ namespace CDPIUI.AddOns.GoodCheck
                 CancellationTokenSource?.Cancel();
                 CancellationTokenSource?.Dispose();
             }
-            catch
+            catch (ObjectDisposedException)
             {
-
+                // Kill was already called; the check is stopped.
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessService), $"Cannot stop the check: {ex.Message}");
             }
         }
 

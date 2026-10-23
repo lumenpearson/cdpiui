@@ -382,12 +382,13 @@ namespace CDPIUI.Core.Store.Database
                      item.Directory.StartsWith(baseWithSeparator, StringComparison.OrdinalIgnoreCase));
                 if (!isInsideBase || !Directory.Exists(item.Directory))
                 {
-                    string folderName = string.IsNullOrEmpty(item.Directory)
+                    string? folderName = string.IsNullOrEmpty(item.Directory)
                         ? item.Id
                         : Path.GetFileName(item.Directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                    string newPath = Path.Combine(Directories.StoreItemsDirectory, folderName);
+                    // Without a folder and an id the item cannot be found again.
+                    string? newPath = folderName == null ? null : Path.Combine(Directories.StoreItemsDirectory, folderName);
 
-                    if (Directory.Exists(newPath))
+                    if (newPath != null && Directory.Exists(newPath))
                     {
                         item.Directory = newPath;
                         itemsToUpdate.Add(item);

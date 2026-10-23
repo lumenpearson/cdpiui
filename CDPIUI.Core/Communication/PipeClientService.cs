@@ -56,93 +56,120 @@ namespace CDPIUI.Core.Communication
                             TokenImpersonationLevel.Identification);
         }
 
-        public async void Start()
+        // Catches and logs its own errors after the check below, so a caller can start it without waiting for it.
+        public Task Start()
         {
             if (PipeStream == null)
             {
                 throw new NullReferenceException("Call PipeClient.Instanse.Init first");
             }
-            CreateCancellationToken();
+            return StartConnectionAsync();
+        }
 
-            CancellationTokenSource.CancelAfter(2000);
+        private async Task StartConnectionAsync()
+        {
+            if (PipeStream == null) return;
             try
             {
-                await ((NamedPipeClientStream)PipeStream).ConnectAsync(CancellationToken ?? default);
-            }
-            catch { }
+                CreateCancellationToken();
 
-            if (!PipeStream.IsConnected && IsTrayProcessRunning())
-            {
+                CancellationTokenSource.CancelAfter(2000);
                 try
                 {
-                    await ((NamedPipeClientStream)PipeStream).ConnectAsync(TrayStartupWaitMs);
+                    await ((NamedPipeClientStream)PipeStream).ConnectAsync(CancellationToken ?? default);
                 }
-                catch (Exception ex) when (ex is TimeoutException or IOException)
+                catch (OperationCanceledException)
                 {
-                    Logger?.CreateErrorLog(nameof(PipeClientService), $"Tray process is running but did not accept the connection: {ex.Message}");
+                    // Expected when the tray does not run yet; the checks below start it.
                 }
-            }
+                catch (Exception ex)
+                {
+                    Logger?.CreateWarningLog(nameof(PipeClientService), $"Cannot connect to the tray: {ex.Message}");
+                }
 
-            if (!PipeStream.IsConnected)
-            {
+                if (!PipeStream.IsConnected && IsTrayProcessRunning())
+                {
+                    try
+                    {
+                        await ((NamedPipeClientStream)PipeStream).ConnectAsync(TrayStartupWaitMs);
+                    }
+                    catch (Exception ex) when (ex is TimeoutException or IOException)
+                    {
+                        Logger?.CreateErrorLog(nameof(PipeClientService), $"Tray process is running but did not accept the connection: {ex.Message}");
+                    }
+                }
+
+                if (!PipeStream.IsConnected)
+                {
+                    try
+                    {
+                        string startupString = SettingsManager.Instance.GetValue<bool>("APPEARANCE", "hideToTrayOnStartup") ? "--autorun" : "--show-ui";
+                        if (GoodbyeDpiMigrationActivation.TryFindArgument(
+                            Environment.GetCommandLineArgs(), out var migrationRequest))
+                        {
+                            startupString = $"--show-ui {migrationRequest!.RawArgument}";
+                        }
+                        else if (Shared.Basic.CommandLine.GuiActivationArguments.Encode(
+                            Environment.GetCommandLineArgs().Skip(1)) is string guiArgs)
+                        {
+                            // The tray starts the GUI again with these, so the opened file or link is not lost.
+                            startupString = $"--show-ui {guiArgs}";
+                        }
+                        var psi = new ProcessStartInfo(Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe"), startupString)
+                        {
+                            UseShellExecute = true,
+                            Verb = "runas"
+                        };
+                        Process.Start(psi);
+                    }
+                    catch (Exception ex)
+                    {
+                        // For example, the user declined the elevation prompt.
+                        Logger?.CreateErrorLog(nameof(PipeClientService), $"Cannot start the tray: {ex.Message}");
+                    }
+                    Logger?.CreateErrorLog(nameof(PipeClientService), "Connection timeout");
+
+
+                    Process.GetCurrentProcess().Kill();
+                    return;
+                }
+
+                if (!PipePeerVerifier.IsServerExpected((NamedPipeClientStream)PipeStream, Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe")))
+                {
+                    Logger?.CreateErrorLog(nameof(PipeClientService), "Pipe server is not the application tray process. Connection closed.");
+                    Dispose();
+                    Process.GetCurrentProcess().Kill();
+                    return;
+                }
+
+                CancellationTokenSource.Dispose();
+                CancellationTokenSource = null;
+                CreateCancellationToken();
+
                 try
                 {
-                    string startupString = SettingsManager.Instance.GetValue<bool>("APPEARANCE", "hideToTrayOnStartup") ? "--autorun" : "--show-ui";
-                    if (GoodbyeDpiMigrationActivation.TryFindArgument(
-                        Environment.GetCommandLineArgs(), out var migrationRequest))
-                    {
-                        startupString = $"--show-ui {migrationRequest!.RawArgument}";
-                    }
-                    else if (Shared.Basic.CommandLine.GuiActivationArguments.Encode(
-                        Environment.GetCommandLineArgs().Skip(1)) is string guiArgs)
-                    {
-                        // The tray starts the GUI again with these, so the opened file or link is not lost.
-                        startupString = $"--show-ui {guiArgs}";
-                    }
-                    var psi = new ProcessStartInfo(Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe"), startupString)
-                    {
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    };
-                    Process.Start(psi);
+                    await HandleConnectionAsync();
                 }
-                catch { }
-                Logger?.CreateErrorLog(nameof(PipeClientService), "Connection timeout");
-
-
-                Process.GetCurrentProcess().Kill();
-                return;
-            }
-
-            if (!PipePeerVerifier.IsServerExpected((NamedPipeClientStream)PipeStream, Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe")))
-            {
-                Logger?.CreateErrorLog(nameof(PipeClientService), "Pipe server is not the application tray process. Connection closed.");
-                Dispose();
-                Process.GetCurrentProcess().Kill();
-                return;
-            }
-
-            CancellationTokenSource.Dispose();
-            CancellationTokenSource = null;
-            CreateCancellationToken();
-
-            try
-            {
-                await HandleConnectionAsync();
-            }
-            catch { }
-            finally
-            {
-                CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(new ErrorModel()
+                catch (Exception ex)
                 {
-                    ErrorCode = "ERR_PROCESS_DIED",
-                    FriendlyDescription = "One of application process is died by unknown reason. Application can't restart this process, " +
-                                          "because ERR_ACCESS_DENIED happens. Please, restart app manually.",
-                    Object = nameof(PipeClientService)
-                });
-                Dispose();
+                    Logger?.CreateErrorLog(nameof(PipeClientService), $"The pipe connection failed: {ex}");
+                }
+                finally
+                {
+                    CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(new ErrorModel()
+                    {
+                        ErrorCode = "ERR_PROCESS_DIED",
+                        FriendlyDescription = "One of application process is died by unknown reason. Application can't restart this process, " +
+                                              "because ERR_ACCESS_DENIED happens. Please, restart app manually.",
+                        Object = nameof(PipeClientService)
+                    });
+                    Dispose();
+                }
             }
-            
+            catch (Exception ex)
+            {
+                Logger?.CreateErrorLog(nameof(PipeClientService), $"Cannot start the pipe client: {ex}");
+            }
         }
 
         private const int TrayStartupWaitMs = 15000;

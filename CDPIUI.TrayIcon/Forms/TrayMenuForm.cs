@@ -218,8 +218,14 @@ namespace CDPIUI.TrayIcon.Forms
                 if (!IsDisposed && IsHandleCreated)
                     Invoke(action);
             }
-            catch (ObjectDisposedException) { }
-            catch (InvalidOperationException) { }
+            catch (ObjectDisposedException)
+            {
+                // The form was closed after the check above; there is nothing to update.
+            }
+            catch (InvalidOperationException)
+            {
+                // The window handle was destroyed after the check above; there is nothing to update.
+            }
         }
 
         private void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate) =>

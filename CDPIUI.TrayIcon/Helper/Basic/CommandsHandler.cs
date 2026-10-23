@@ -205,7 +205,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
                 case GoodCheckMessageIds.Stop:
                     GoodCheckProcessHelper.Instance.Stop();
-                    TasksHelper.Instance.ApplyStatusToAllTasks(true);
+                    await TasksHelper.Instance.ApplyStatusToAllTasks(true);
                     return;
             }
         }
@@ -240,8 +240,8 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        TasksHelper.Instance.AddNewTask(id);
-                        TasksHelper.Instance.SetTaskStatus(id, true);
+                        await TasksHelper.Instance.AddNewTask(id);
+                        await TasksHelper.Instance.SetTaskStatus(id, true);
                         return;
                     }
 
@@ -251,8 +251,8 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        TasksHelper.Instance.AddNewTask(id);
-                        TasksHelper.Instance.SetTaskStatus(id, false);
+                        await TasksHelper.Instance.AddNewTask(id);
+                        await TasksHelper.Instance.SetTaskStatus(id, false);
                         return;
                     }
 

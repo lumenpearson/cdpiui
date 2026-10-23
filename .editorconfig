@@ -5,3 +5,21 @@ dotnet_diagnostic.CS8602.severity = suggestion
 
 # CS8600: Converting null literal or possible null value to non-nullable type.
 dotnet_diagnostic.CS8600.severity = none
+
+# Unused code in the library, tray and test projects (not the GUI project).
+# These projects set EnforceCodeStyleInBuild, so the IDE rules also run in the build.
+[{CDPIUI.Core,CDPIUI.AddOns,CDPIUI.Shared,CDPIUI.TrayIcon,CDPIUI.Tests}/**.cs]
+
+# IDE0051: Unused private member.
+dotnet_diagnostic.IDE0051.severity = warning
+
+# IDE0052: Private member is assigned but never read.
+dotnet_diagnostic.IDE0052.severity = warning
+
+# IDE0060: Unused parameter. Public methods are left out: their parameters can be part of the API.
+dotnet_diagnostic.IDE0060.severity = warning
+dotnet_code_quality_unused_parameters = non_public
+
+# CS0169: Field is never used. CS0414: Field is assigned but never read.
+dotnet_diagnostic.CS0169.severity = warning
+dotnet_diagnostic.CS0414.severity = warning
