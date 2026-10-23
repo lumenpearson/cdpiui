@@ -94,7 +94,7 @@ namespace CDPIUI.Shared.Basic.Filesystem
         /// <summary>
         /// Get unique temp file/folder name. Format 
         /// <code>
-        /// secondsSinceEpoch_suffix(.extention)
+        /// secondsSinceEpoch_suffix_random(.extention)
         /// </code>
         /// </summary>
         /// <param name="suffix">Suffix of file</param>
@@ -104,9 +104,11 @@ namespace CDPIUI.Shared.Basic.Filesystem
         {
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
             int secondsSinceEpoch = (int)t.TotalSeconds;
+            // Seconds alone repeat when two names are requested within the same second.
+            string unique = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-            if (string.IsNullOrEmpty(extention)) return $"{secondsSinceEpoch}_{suffix}";
-            return $"{secondsSinceEpoch}_{suffix}.{extention}";
+            if (string.IsNullOrEmpty(extention)) return $"{secondsSinceEpoch}_{suffix}_{unique}";
+            return $"{secondsSinceEpoch}_{suffix}_{unique}.{extention!.TrimStart('.')}";
         }
 
         /// <summary>
@@ -116,6 +118,10 @@ namespace CDPIUI.Shared.Basic.Filesystem
         /// <param name="destinationPath">Copy destination</param>
         public static async Task CopyFileAsync(string sourcePath, string destinationPath)
         {
+            // Creating the destination first would truncate the source when both are the same file.
+            if (string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(destinationPath), StringComparison.OrdinalIgnoreCase))
+                return;
+
             using Stream source = File.OpenRead(sourcePath);
             using Stream destination = File.Create(destinationPath);
             await source.CopyToAsync(destination);
