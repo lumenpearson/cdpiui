@@ -18,7 +18,7 @@ The export puts resources into these folders:
 
 The file list comes only from `ConfigItem.UsedFiles`. The export resolves each path with `ConfigItem.ResolveFilePath`. It uses the component folder and the preset kit folder. ConfigShare packages only this list and changes the related references in the preset. It copies the files, also component libraries, without changes. ConfigShare does not parse Lua and does not look for more dependencies.
 
-`UsedFiles` does not contain the target of `--debug`, so the export does not package it. If a file from `UsedFiles` is missing, the export fails with `SHARE_FILE_MISSING`. Exception: if the list of `--hostlist-auto` or `--hostlist-auto-debug` is missing and its folder exists, the export makes an empty file at the original location and packages it. The component makes this list while it operates.
+`UsedFiles` does not contain the target of `--debug`, so the export does not package it. If a file from `UsedFiles` is missing, the export fails with `SHARE_FILE_MISSING`. Exception: if the list of `--hostlist-auto` or `--hostlist-auto-debug` is missing, the export packages an empty file for it. The export does not make a file in the preset kit. The component makes this list while it operates.
 
 ## Limits and checks
 
@@ -54,6 +54,8 @@ The tray starts components with administrator rights. Thus a shared preset must 
 - `--hostlist-auto-debug`.
 
 The value of such an option must be an absolute path in the extracted package folder. Otherwise, the reader fails with `SHARE_UNSAFE_OPTION`. A relative path is also rejected.
+
+The export does the same check after it replaces the references. Thus the export fails with `SHARE_UNSAFE_OPTION` for a preset that the reader would reject.
 
 `BlockCheckReportImportService` uses the same check for the preset line of an imported BlockCheck2 report. Refer to [BlockCheck2/README.md](../BlockCheck2/README.md).
 

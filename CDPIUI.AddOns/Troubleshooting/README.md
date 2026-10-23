@@ -39,7 +39,7 @@ The service raises `CurrentStateChanged` with the current step before each check
 | `CheckDNS` | At least one network interface has DoH flags (`DohFlags > 0` under `HKLM:System\CurrentControlSet\Services\Dnscache\InterfaceSpecificParameters`) | `true` |
 | `CheckWinDivert` | A service with `windivert` in its name operates | `false` |
 | `CheckAnotherComponentsServices` | A service with `GoodbyeDPI`, `discordfix_zapret`, `winws1` or `winws2` in its name exists | `false` |
-| `CheckAnotherComponents` | A process `winws` or `goodbyedpi` operates | `false` |
+| `CheckAnotherComponents` | A process `winws`, `winws2` or `goodbyedpi` operates | `false` |
 
 The service name checks ignore the case. A service is "operating" if its state is `Running`, `StartPending` or `StopPending`. The service reads the service list one time for each check run.
 
