@@ -292,7 +292,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
                     string jsonString = JSONConvertor.SerializeObject(item);
                     File.WriteAllText(targetFile, jsonString);
 
-                    if (requirements.FirstOrDefault(x => x.Item1 == item.target[0]) == null)
+                    if (item.target is { Count: >= 2 } &&
+                        requirements.FirstOrDefault(x => x.Item1 == item.target[0]) == null)
                     {
                         requirements.Add(Tuple.Create(item.target[0], item.target[1]));
                     }
@@ -343,6 +344,16 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
                         string dir = Path.GetRelativePath(
                             ConfigurationService.GetItemFolderFromPackId(idFilePair.Item1), idFilePair.Item2);
 
+                        // A file of another item gives "..\..\" here, and the copy would land
+                        // outside the pack being built.
+                        if (Path.IsPathRooted(dir) || dir == ".." ||
+                            dir.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                        {
+                            Logger.Instance.CreateWarningLog(nameof(ConfigPackMakeHelper),
+                                $"\"{idFilePair.Item2}\" is outside the pack {idFilePair.Item1} and is not copied.");
+                            continue;
+                        }
+
                         Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(targetDirectory, dir))!);
                         await FileSystemService.CopyFileAsync(idFilePair.Item2, Path.Combine(targetDirectory, dir));
                     }
@@ -350,7 +361,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
             }
             catch (Exception ex)
             {
-                OperationResultModel<EmptyResult>.FailureResult(
+                // The failure was created and dropped, so the export reported success without files.
+                return OperationResultModel<EmptyResult>.FailureResult(
                     new ErrorModel()
                     {
                         ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_F", ex),
