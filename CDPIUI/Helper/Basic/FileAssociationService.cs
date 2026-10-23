@@ -23,18 +23,30 @@ namespace CDPIUI.Helper.Basic
             new(".cdpipatch", "CDPIUI.Patch", "PatchFileTypeDisplayName", @"Assets\Store\Files\Pack.ico")
         ];
 
+        private const string RegisteredPathValueName = "ExecutablePath";
+
+        /// <summary>
+        /// Registers the associations once per executable path: after the application was moved
+        /// or reinstalled elsewhere, the old registration points to a missing file (audit 9.8).
+        /// </summary>
         internal static void EnsureRegistered()
         {
-            if (WasAutomaticRegistrationAttempted() || !TryCreateAutomaticRegistrationMarker())
+            string executablePath = Environment.ProcessPath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(executablePath) ||
+                string.Equals(GetRegisteredExecutablePath(), executablePath, StringComparison.OrdinalIgnoreCase))
                 return;
 
+            // Attempted once per path, also when a part failed, so the warnings are not repeated on every start.
             _ = RegisterAssociations();
+            _ = TryCreateAutomaticRegistrationMarker(executablePath);
         }
 
         internal static bool RegisterManually()
         {
-            _ = TryCreateAutomaticRegistrationMarker();
-            return RegisterAssociations();
+            bool registered = RegisterAssociations();
+            if (registered)
+                _ = TryCreateAutomaticRegistrationMarker(Environment.ProcessPath ?? string.Empty);
+            return registered;
         }
 
         private static bool RegisterAssociations()
@@ -192,27 +204,28 @@ namespace CDPIUI.Helper.Basic
             return $"\"{iconPath}\",0";
         }
 
-        private static bool WasAutomaticRegistrationAttempted()
+        private static string? GetRegisteredExecutablePath()
         {
             try
             {
                 using var key = Registry.CurrentUser.OpenSubKey(AutomaticRegistrationMarkerPath);
-                return key is not null;
+                return key?.GetValue(RegisteredPathValueName) as string;
             }
             catch (Exception ex)
             {
                 Logger.Instance.CreateWarningLog(
                     nameof(FileAssociationService),
                     $"Cannot read the automatic association registration marker: {ex.Message}");
-                return false;
+                return null;
             }
         }
 
-        private static bool TryCreateAutomaticRegistrationMarker()
+        private static bool TryCreateAutomaticRegistrationMarker(string executablePath)
         {
             try
             {
                 using var key = Registry.CurrentUser.CreateSubKey(AutomaticRegistrationMarkerPath);
+                key?.SetValue(RegisteredPathValueName, executablePath);
                 return key is not null;
             }
             catch (Exception ex)
