@@ -64,7 +64,7 @@ GUI запускает трей с `--autorun` или `--show-ui`, когда GU
 | `Forms/` | `EmptyForm` (скрытое окно, которому принадлежит значок), `TrayMenuForm` (меню) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
 | `Helper/Basic/` | Сервер pipe, доступ к pipe (`PipeAccessPolicy`), ключ pipe (`PipeSessionKeyWriter`), обработчик команд, ConPTY, объект задания (job object), помощник запуска, реестр, уведомления, журнал, помощник ошибок, панель задач |
-| `Helper/Locale/` | `LocaleHelper`: строки трея на английском и русском, названия компонентов |
+| `Helper/Locale/` | `LocaleHelper`: строки трея на английском и русском, названия компонентов. Язык — тот, что пользователь выбрал в приложении (`SYSTEM/language`). Если значения нет или оно неизвестно, используется язык интерфейса Windows |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Значки (встроенные ресурсы) |
 

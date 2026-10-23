@@ -64,7 +64,7 @@ The autorun task starts the tray with `--autorun`.
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
 | `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
-| `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names |
+| `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names. The language is the language that the user selected in the app (`SYSTEM/language`). If this value is missing or unknown, the Windows display language is used |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
 
