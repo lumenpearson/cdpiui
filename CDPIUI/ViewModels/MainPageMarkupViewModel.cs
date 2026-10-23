@@ -43,7 +43,9 @@ namespace CDPIUI.ViewModels
         {
             LoadMarkups();
 
-            CurrentMarkup = Markups.FirstOrDefault(x => x.Type.ToString() == SettingsManager.Instance.GetValue<string>("APPEARANCE", "mainPageMarkup"));
+            // An unknown or missing value uses the first markup (Classic, the default in Settings.xml).
+            CurrentMarkup = Markups.FirstOrDefault(x => x.Type.ToString() == SettingsManager.Instance.GetValue<string>("APPEARANCE", "mainPageMarkup"))
+                ?? Markups[0];
         }
 
         private MainPageMarkupViewModel currentMarkup;

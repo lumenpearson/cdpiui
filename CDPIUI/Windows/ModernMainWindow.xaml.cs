@@ -52,10 +52,11 @@ namespace CDPIUI
             NavView.SelectedItem = NavView.MenuItems[0];
             ContentFrame.Navigated += On_Navigated;
             ContentFrame.Navigate(GetMainPage(), new NameValueCollection());
+            RestartPrompt.Attach(this);
 
             if (!SettingsManager.Instance.GetValue<bool>("AD", "welcomeToPreview"))
             {
-                // ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
+                // _ = ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
                 // SettingsManager.Instance.SetValue("AD", "welcomeToPreview", true);
             }
         }
