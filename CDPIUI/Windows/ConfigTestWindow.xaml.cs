@@ -32,6 +32,7 @@ namespace CDPIUI
 
         private CancellationTokenSource _testCts;
         private bool _isTesting = false;
+        private bool _isClosed = false;
 
         private string componentIdToTest = string.Empty;
         public string ComponentIdToTest
@@ -75,6 +76,13 @@ namespace CDPIUI
             ComponentComboBox.ItemsSource = Models;
             ResultsListView.ItemsSource = _resultItems;
             LoadComponents();
+
+            // Closing the window must not leave a test switching presets in the background.
+            Closed += (_, _) =>
+            {
+                _isClosed = true;
+                CancelTest();
+            };
         }
 
         private void LoadComponents()
@@ -190,7 +198,8 @@ namespace CDPIUI
                 if (runResult.WasCancelled)
                     AppendLine(new TestLogSegment(localizer.GetLocalizedString("PT_Cancelled"), TestLogColor.Yellow));
 
-                ShowResults(runResult, _lastTestType);
+                if (!_isClosed)
+                    ShowResults(runResult, _lastTestType);
             }
             catch (Exception ex)
             {
@@ -200,8 +209,11 @@ namespace CDPIUI
             }
             finally
             {
-                SetTestingUi(false);
-                HideProgress();
+                if (!_isClosed)
+                {
+                    SetTestingUi(false);
+                    HideProgress();
+                }
                 _activeHelper = null;
                 _testCts?.Dispose();
                 _testCts = null;
@@ -209,6 +221,11 @@ namespace CDPIUI
         }
 
         private void StopTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            CancelTest();
+        }
+
+        private void CancelTest()
         {
             try
             {
@@ -311,7 +328,7 @@ namespace CDPIUI
 
         private void UpdateProgress(PresetTestProgress p)
         {
-            if (p == null) return;
+            if (p == null || _isClosed) return;
 
             ProgressPanel.Visibility = Visibility.Visible;
             TestProgressBar.Value = p.Percent;
@@ -379,7 +396,7 @@ namespace CDPIUI
 
         private void AppendLine(List<TestLogSegment> segments)
         {
-            if (segments == null) return;
+            if (segments == null || _isClosed) return;
             foreach (TestLogSegment segment in segments)
             {
                 OutputParagraph.Inlines.Add(new Run
