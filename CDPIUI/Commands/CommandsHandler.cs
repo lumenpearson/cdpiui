@@ -46,9 +46,12 @@ namespace CDPIUI.Commands
         #endregion
 
 
+        /// <summary>
+        /// Handles a link built by the application itself; it may be an internal pipe message.
+        /// </summary>
         public static bool HandleCommand(string commandUri)
         {
-            var message = CommandUriMapper.ConvertBack(commandUri);
+            var message = CommandUriMapper.ConvertBack(commandUri, allowPipeMessages: true);
             return message != null && HandleCommand(message);
         }
 
@@ -61,6 +64,10 @@ namespace CDPIUI.Commands
             return true;
         }
 
+        /// <summary>
+        /// Handles a link that comes from outside the application, such as a cdpiui:// activation:
+        /// only the public routes are accepted.
+        /// </summary>
         public static async Task<bool> HandleCommandAsync(string commandUri)
         {
             var message = CommandUriMapper.ConvertBack(commandUri);

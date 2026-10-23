@@ -228,7 +228,8 @@ namespace CDPIUI
             
             if (url.StartsWith("cdpiui://", StringComparison.OrdinalIgnoreCase))
             {
-                Commands.CommandsHandler.HandleCommand(url);
+                // Help pages are documents: their links get the same routes as links from a browser.
+                _ = Commands.CommandsHandler.HandleCommandAsync(url);
             }
             return;
         }

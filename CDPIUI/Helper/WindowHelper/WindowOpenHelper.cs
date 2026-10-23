@@ -86,12 +86,13 @@ namespace CDPIUI.Helper.WindowHelper
 
         private static Type GetWindowType(string windowName)
         {
-            var fullName = $"CDPIUI.{windowName}";
-
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .Select(a => a.GetType(fullName, false))
-                .FirstOrDefault(t => t != null)
-                ?? null;
+            // Only windows of this application: the name can come from a cdpiui:// link, and any
+            // other type found by name would be instantiated before the cast.
+            var type = typeof(App).Assembly.GetType($"CDPIUI.{windowName}", false);
+            return type != null && typeof(Window).IsAssignableFrom(type) && !type.IsAbstract &&
+                type.GetConstructor(Type.EmptyTypes) != null
+                ? type
+                : null;
         }
 
         private static Type GetPageType(string windowName, string pageName)
