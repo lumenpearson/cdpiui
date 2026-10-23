@@ -31,6 +31,24 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
+        // The MSI writes its install folder here (NewSetup/Product.wxs); the GUI uses the same check.
+        private static bool IsInstalledByMsi()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64)
+                    .OpenSubKey(@"Software\Storik4\CDPI UI");
+                return key?.GetValue("InstallLocation") is string location &&
+                    string.Equals(Path.GetFullPath(location).TrimEnd(Path.DirectorySeparatorChar),
+                        Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar),
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static string GetSettingsFile()
         {
             string filePath = Path.Combine(GetDataDirectory(), "Settings", "Settings.xml");
@@ -60,7 +78,12 @@ namespace CDPIUI.TrayIcon.Helper
                     return localAppDataFile;
                 }
 
-                return filePath; 
+                // No settings yet. An MSI installation keeps the GUI settings in the profile of the
+                // desktop user; a file created next to the tray would later win over them.
+                if (desktopUserFolder != null && IsInstalledByMsi())
+                    return Path.Combine(desktopUserFolder, "Settings", "Settings.xml");
+
+                return filePath;
             }
         }
 

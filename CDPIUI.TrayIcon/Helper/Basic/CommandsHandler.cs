@@ -91,12 +91,17 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         return;
                     }
 
+                // Both requests name one component; without an id they apply to all tasks.
                 case CONPTYMessageIds.GetProcessIdFullOutput:
-                    TasksHelper.Instance.SendAllTasksOutput();
+                    await TasksHelper.Instance.SendTasksOutput(model.MessageData?["componentId"]);
+                    return;
+
+                case CONPTYMessageIds.GetProcessIdState:
+                    await TasksHelper.Instance.SendTasksState(model.MessageData?["componentId"]);
                     return;
 
                 case CONPTYMessageIds.GetAllProcessStates:
-                    TasksHelper.Instance.SendAllTasksState();
+                    await TasksHelper.Instance.SendTasksState();
                     return;
 
                 case CONPTYMessageIds.ProcessIdStartupArgsChanged:

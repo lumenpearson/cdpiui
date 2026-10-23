@@ -113,8 +113,15 @@ namespace Update
 
         private void ErrorOccurred(InstallError installError, string error)
         {
-            DialogResult dialogResult = MessageBox.Show(string.Format(ErrorMessage, error), "An error occurred", 
-                                                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+            // Raised on the installation thread: the message box is shown on the UI thread and
+            // owned by this window, so it cannot open behind it.
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => ErrorOccurred(installError, error)));
+                return;
+            }
+            MessageBox.Show(this, string.Format(ErrorMessage, error), "An error occurred",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
             Application.Exit();
         }
 
