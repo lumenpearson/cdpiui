@@ -37,6 +37,8 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 |---|---|
 | `XMLSettingsService` | Reads and writes `Settings.xml`. The GUI and the tray use it. |
 | `CommandLine/GuiActivationArguments` | Encodes the GUI arguments as `--gui-args:`, so the tray can start the GUI with the same arguments. |
+| `CommandLine/CommandLineTokens` | Splits a component command line into arguments as the Windows command line does. `ConfigCommandLine` in Core uses it. |
+| `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. |
 | `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no part below the root is a reparse point. |
 | `Filesystem/ApplicationPathMatcher` | Finds the processes and drivers of the application during uninstall. |
 | `Filesystem/DirectoriesManager` | Returns the executable directory if it is writable. Otherwise, or if the caller sets `forceAppData` (MSI installation), it returns `%LOCALAPPDATA%\CDPIUI`. |
@@ -136,7 +138,7 @@ Files and rotation:
 Levels (`LogSelevirity`): `DEBG`, `INFO`, `WARN`, `CRIT`. `CreateErrorLog` writes `CRIT`.
 The logger writes only messages at the minimum level or higher. Each message also goes to `Debug.WriteLine`.
 
-WARNING: Do not write secrets (tokens, `AuthGuid`) to the log.
+WARNING: Do not write secrets (tokens, the pipe key) to the log.
 
 ## Migration
 
@@ -187,7 +189,7 @@ The tray uses a subclass, `CustomErrorConvertor`, that always writes to the tray
 `Secrets/Secret.cs` contains the build secrets. Git ignores this file.
 You must create it before you build the solution.
 
-1. For a local build, run `pwsh .github/scripts/create_secret_stub.ps1`. The script creates `Secret.cs` with empty tokens, an empty `TrustedCertificates` list and a random `AuthGuid`. In a file that exists, the script changes only an empty `AuthGuid`.
+1. For a local build, run `pwsh .github/scripts/create_secret_stub.ps1`. The script creates `Secret.cs` with empty tokens and an empty `TrustedCertificates` list. The script does not change a file that exists.
 2. Alternatively, create a `public static class Secret` in the `CDPIUI.Shared.Secrets` namespace. Copy only the members of `SecretExample` in `SecretExample.cs`.
 
 The release workflow writes `Secret.cs` with `.github/scripts/create_release_secret.ps1` from repository secrets. See [.github/RELEASES.md](../.github/RELEASES.md).
@@ -198,14 +200,13 @@ The release workflow writes `Secret.cs` with `.github/scripts/create_release_sec
 |---|---|
 | `GitHubToken`, `GitLabToken` | The Store is not available. |
 | `ProxyURL`, `ProxyKey` | No Store reverse proxy. |
-| `AuthGuid` | The tray authorizes no pipe client. The GUI cannot connect. |
 | `TrustedCertificates` | Signed packages, signed patches and application updates cannot be verified. |
 
-`TrustedCertificates` contains the SHA-1 thumbprints of the certificates that can sign catalogs.
+`TrustedCertificates` contains the SHA-1 thumbprints of the certificates that can sign catalogs and `Setup.msi`.
+
+The application is public, so each value in `Secret.cs` is public too. Use only Store tokens that cannot change anything. `create_release_secret.ps1` refuses a GitHub token with scopes and a GitLab token with scopes other than `read_api`, `read_repository` and `read_registry`. The GUI sends a Store token only to GitHub and GitLab hosts (`RequestWorker`). An older `Secret.cs` can contain `AuthGuid`. The application does not use this member.
 
 CAUTION: Do not commit `Secret.cs`. Do not use the stub values in a release build.
-
-The GUI and the tray must come from the same build, because they must have the same `AuthGuid`.
 
 ## Security
 
@@ -213,10 +214,14 @@ The GUI and the tray must come from the same build, because they must have the s
 
 1. The signature is decoded as CMS. Each signer certificate must be in the trusted thumbprint list. The certificates are self-signed, so the chain is not built.
 2. Each signature must be valid (`CheckSignature(verifySignatureOnly: true)`).
-3. `powershell.exe` from the system directory runs `Test-FileCatalog` with `-FilesToSkip catalog.cat`. The paths go through environment variables.
+3. `powershell.exe` from the system directory runs `Test-FileCatalog` with `-FilesToSkip catalog.cat` and the file names that the caller gives (`filesToSkip`). The paths and the names go through environment variables.
 4. The result must be `Valid` in 2 minutes.
 
 The result is a `CatalogVerification` value: `Success`, `NoSignature`, `NotTrustedSignature`, `FilesDoNotMatch` or `Failure`.
+
+The certificates are pinned by thumbprint, and the chain, the revocation and the expiry date are not checked. This is intentional: the certificates are self-signed, and an expiry check would reject all packages that were signed before the expiry date. To replace a certificate, add the new thumbprint to `TrustedCertificates`, release this build, and only then sign with the new certificate. To revoke a certificate, remove its thumbprint and release a build.
+
+`FileWritingOptions` finds component options that write a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) and checks that the file is in the allowed folders. It can also read the argument files (`@<file>`). The tray uses it before each component start, and `ConfigShare` uses it for shared presets.
 
 ## System
 

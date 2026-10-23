@@ -12,7 +12,7 @@ CI runs on pushes to `main`, `dev` and `fix/**`, and on pull requests. It has re
 
 | Job | Steps |
 |-----|-------|
-| `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. |
+| `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores each project with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
 | `gui` | Runs `build_portable.ps1` and `check_setup_files.ps1`. Builds the MSI. Uploads `NewSetup/bin/**/*.msi` as the `setup-msi` artifact for 7 days. |
 | `tools` | Builds `Update/Update.csproj` (with packages.config restore) and `EditHostFile/EditHostFile.csproj` in Release with `msbuild`. |
 
@@ -37,10 +37,9 @@ A user starts this workflow manually (`workflow_dispatch`).
 
 | Secret | Use |
 |--------|-----|
-| `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | The Store tokens in `Secret.cs` (`GitHubToken`, `GitLabToken`). |
-| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). |
+| `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | The Store tokens in `Secret.cs` (`GitHubToken`, `GitLabToken`). The application makes them public, so they must not have write access (see `create_release_secret.ps1`). |
+| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). The key is in each copy of the application. Thus the proxy must not trust the key more than an anonymous client: limit the rate and the allowed targets on the proxy. |
 | `TRUSTED_CERTIFICATES` | The SHA-1 thumbprints for `Secret.TrustedCertificates`, separated by spaces, commas or semicolons. |
-| `PIPE_AUTH_GUID` | The pipe secret `Secret.AuthGuid`. Keep the same value for all releases. |
 | `CATALOG_CERTIFICATE_PFX_BASE64` | The PFX file of the catalog signature certificate, in Base64. The patch step writes it to `RUNNER_TEMP\catalog.pfx` and deletes it after the step. |
 | `CATALOG_CERTIFICATE_PASSWORD` | The password of the PFX file. |
 
@@ -70,6 +69,7 @@ rejects all signed catalogs, also its own patches.
    3. Make a `catalog.cat` (version 2.0) of the full folder.
    4. Sign the catalog if the certificate is available. If the signature has no signer certificate, the step fails.
    5. Put the catalog in the folder and make the ZIP file.
+9. Copy `Setup.msi` and sign it with the catalog certificate (Authenticode, SHA-256). If the signature has no signer certificate, the step fails. Without the certificate, the step shows a warning: an installed copy does not accept an unsigned `Setup.msi` as an update.
 
 ### Output
 
@@ -111,12 +111,11 @@ The script fails if a file is missing from one of the lists.
 This script has no parameters. Git ignores `CDPIUI.Shared/Secrets/Secret.cs`. The script does
 these steps:
 
-- If the file does not exist, the script writes a `Secret` class with empty tokens, an empty
-  `TrustedCertificates` list and a random `AuthGuid`. With this class, the solution compiles.
-- If the file exists and its `AuthGuid` is empty, the script writes a random `AuthGuid` into it.
-- The script does not change other values of an existing file.
+- If the file does not exist, the script writes a `Secret` class with empty tokens and an empty
+  `TrustedCertificates` list. With this class, the solution compiles.
+- The script does not change an existing file.
 
-The pipe rejects all clients when `AuthGuid` is empty. Thus the stub must have a value.
+The pipe key is not a build secret. The tray makes a new key at each start (see [Pipe](../CDPIUI.Shared/Pipe/README.md)).
 
 ### `create_release_secret.ps1`
 
@@ -128,15 +127,16 @@ The release workflow runs this script. It writes `Secret.cs` from these environm
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | `ProxyURL`, `ProxyKey` |
 | `TRUSTED_CERTIFICATES` | `TrustedCertificates` |
 | `CATALOG_CERTIFICATE`, `CATALOG_CERTIFICATE_PASSWORD` | `TrustedCertificates`, if `TRUSTED_CERTIFICATES` gives no thumbprint |
-| `PIPE_AUTH_GUID` | `AuthGuid` |
 
 Rules:
 
 - The script keeps only thumbprints with 40 hexadecimal characters, in upper case.
 - If `TRUSTED_CERTIFICATES` gives no thumbprint, the script uses the thumbprint of the PFX in `CATALOG_CERTIFICATE`.
 - If there is no thumbprint, the script shows a warning. The build then rejects signed packages and patches.
-- `AuthGuid` comes from `PIPE_AUTH_GUID`. Without it, the script derives the value from `CATALOG_CERTIFICATE` (SHA-256). Without both, the value is random and the script shows a warning.
-- `AuthGuid` must stay the same from build to build. A new value changes `CDPIUI.Shared.dll` and the tray, and every patch then contains them.
+- The script checks the Store tokens before it writes them, because the application makes them public:
+  - A classic GitHub token must have no scopes (`X-OAuth-Scopes` of `https://api.github.com/rate_limit` is empty). A fine-grained token has no scopes in this header; give it only read access to public repositories.
+  - A GitLab token can have only `read_api`, `read_repository` and `read_registry` (`/api/v4/personal_access_tokens/self`).
+  - If a token has other scopes, or if the script cannot check it, the script fails.
 - If `Secret.cs` exists, the script does not change it. With `-Force`, the script replaces it.
 
 ### `make_patch.ps1`
@@ -201,7 +201,8 @@ installation (`State.IsApplicationBuildAsSingleFile`), the Store puts the patch 
 
 When the Store operation completes without errors, the GUI sends the `BeginApplicationUpdate`
 message to the tray (`CDPIUI.Core/Features/ApplicationUpdate.cs`). For an MSI installation, the
-file is `patch.msi`. The tray installs it with `msiexec /i ... /qn+`.
+file is `patch.msi`. The tray installs it with `msiexec /i ... /qn+` only if it has the Authenticode
+signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`).
 
 ### Tray side
 
@@ -209,7 +210,7 @@ file is `patch.msi`. The tray installs it with `msiexec /i ... /qn+`.
 
 1. Check the path with `TrustedPaths.IsAllowed`.
 2. Copy the file to `<install>\.staging\<GUID>\`. In a per-machine installation, only administrators can write to this folder. Thus nobody can replace the file between the check and the installation.
-3. Extract the copy to `verify\`.
+3. Check the limits of the archive (`ArchivePaths`: entries, size, compression ratio, links). Then extract the copy to `verify\`.
 4. Verify the catalog of each `layers/*` folder. If there are no layers, verify the `CDPIUI/` folder.
 5. If a check fails, stop and show the `UpdateFailure` notification.
 6. Start `Update.exe --directory-to-zip "<staged file>" --destination-directory "<install>"`.
@@ -229,6 +230,7 @@ does not remove files that are not in the patch, because a patch contains only t
 - The signature of each signer must be valid.
 - The verifier does not build the certificate chain, because the certificates are pinned and self-signed.
 - `Test-FileCatalog ... -FilesToSkip catalog.cat` must return `Valid` in a maximum of 2 minutes.
+- The verifier does not check revocation or the expiry date. See the certificate rules in [CDPIUI.Shared/README.md](../CDPIUI.Shared/README.md#security).
 
 The verifier runs `Test-FileCatalog` in `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`.
 It gives the paths through environment variables.

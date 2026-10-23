@@ -123,7 +123,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 4. Останавливает и удаляет каждую службу `WinDivert*`, образ которой находится в одной из этих папок.
 5. Удаляет задачу автозапуска.
 6. Выполняет `EditHostFile.exe /remove`.
-7. Удаляет файлы времени выполнения, о которых MSI не знает: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log`, `.update-manifest`.
+7. Удаляет файлы времени выполнения, о которых MSI не знает: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log`, `.update-manifest`.
 
 ## Сборка
 
@@ -136,4 +136,5 @@ dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
 ```
 
 MSI помещается в `NewSetup/bin/`. Его выходное имя — `NewSetup`. Релизный workflow копирует его
-как `Setup.msi`. У MSI нет подписи Authenticode (`CDPIUI.TrayIcon/Helper/Utils.cs`).
+как `Setup.msi` и подписывает его сертификатом каталогов. Трей устанавливает обновление MSI только
+с этой подписью (`PackageStaging.HasPinnedSignature`). Локальная сборка не подписана.

@@ -815,6 +815,7 @@ Each issue has:
 | `EXECUTABLE_MISMATCH` | Error | The Zapret analysis found a generation that is different from the target |
 | `UNRESOLVED_VARIABLE` | Warning | The general analyzer cannot resolve a BAT variable |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | An external resource is missing |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
 | `INVALID_RESOURCE_PATH` | Warning | The analyzer cannot normalize a resource path |
 | `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | The replacement that the user selected does not exist |
 
@@ -839,6 +840,7 @@ For a `.cdpiconfig` file, the issue code is the code of the `ConfigShareExceptio
 | `UNRESOLVED_BATCH_VARIABLE` | Warning | A used BAT variable cannot be resolved |
 | `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | A generated file is outside the source folder |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | A BIN, TXT or LUA file is missing |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
 
 ### Installer codes
 

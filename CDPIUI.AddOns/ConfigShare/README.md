@@ -48,14 +48,16 @@ The archive cannot contain filesystem links. The reader rejects symbolic link en
 
 ## Options that write files
 
-The tray starts components with administrator rights. Thus a shared preset must not write files outside its package. After the reader replaces the `share://` references, `EnsureNoOutsideWrites` checks each text of the config. It looks for these options:
+The tray starts components with administrator rights. Thus a shared preset must not write files outside its package. After the reader replaces the `share://` references, `EnsureNoOutsideWrites` checks each text of the config with `FileWritingOptions` from `CDPIUI.Shared`. It looks for these options:
 
 - `--debug=@<file>` (`--debug` with other values does not write a file);
 - `--wf-save`;
 - `--hostlist-auto`;
 - `--hostlist-auto-debug`.
 
-The value of such an option must be an absolute path in the extracted package folder. Otherwise, the reader fails with `SHARE_UNSAFE_OPTION`. A relative path is also rejected.
+The value of such an option must be an absolute path in the extracted package folder. Otherwise, the reader fails with `SHARE_UNSAFE_OPTION`. A relative path is also rejected. The check removes the quotes around the path of `--debug=@"<file>"` first.
+
+The tray also checks these options before each component start, for all presets (see [CDPIUI.TrayIcon/README.md](../../CDPIUI.TrayIcon/README.md#elevated-start-of-a-program)).
 
 The export does the same check after it replaces the references. Thus the export fails with `SHARE_UNSAFE_OPTION` for a preset that the reader would reject.
 

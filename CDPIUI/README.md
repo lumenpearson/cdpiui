@@ -335,7 +335,7 @@ To add a setting:
 1. Add the `Setting` element to the correct `Group` in `Template/Settings/Settings.xml`.
 2. Read it with `SettingsManager.Instance.GetValue<T>`.
 
-Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` and `ZAPRET2`. Some keys, for example `WELCOMEWIZARD/Shown`, are not in the template. Read these keys with `GetValueOrDefault`.
+Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` and `ZAPRET2`. `ADDONS/PRESETTEST/dpiSuiteUrl` replaces the address of the DPI test suite of the preset test. The value must be an absolute `https` address. An empty value uses the built-in address. Some keys, for example `WELCOMEWIZARD/Shown`, are not in the template. Read these keys with `GetValueOrDefault`.
 
 ## Folder structure
 

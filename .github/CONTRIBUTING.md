@@ -39,8 +39,7 @@ Do these steps:
    - The class must be `public static class Secret` in the namespace `CDPIUI.Shared.Secrets`.
    - The class must have the members of the `ISecret` interface in [SecretExample.cs](../CDPIUI.Shared/Secrets/SecretExample.cs).
    - Copy only the members. Do not copy the interface, because it is already in that file.
-   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty tokens and a random `AuthGuid`.
-   - `AuthGuid` must not be empty. With an empty `AuthGuid`, the tray authorizes no pipe client, and the GUI cannot connect.
+   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty tokens.
    - Git ignores this file. Do not add it to the repository.
 2. Restore the NuGet packages.
    - The GUI uses CommunityToolkit Labs packages.

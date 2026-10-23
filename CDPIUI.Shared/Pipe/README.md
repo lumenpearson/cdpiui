@@ -57,22 +57,21 @@ The client stops its own process if the server fails the check.
 
 ### Authorization
 
+The tray makes a new random key (32 bytes, hexadecimal) at each start (`PipeSessionKeyWriter`). It writes the key to `<application folder>\.session\pipe.key` before it starts the pipe server (`PipeSessionKey`). The file has a protected access list: SYSTEM, Administrators and the tray user have full control, and the desktop user can read it. Other users cannot read the key. In an MSI installation, only administrators can create files in the installation folder, so nobody can put a key there before the tray.
+
 1. The server sends `Service/ConnectOK` after the connection.
-2. The client sends `Service/RequestAuth` with the `GUID` key. The value is `Secret.AuthGuid`.
-3. If the tray `Secret.AuthGuid` is not empty and the value is equal to it, the server sends `Service/AuthOK`.
+2. The client reads `pipe.key` and sends `Service/RequestAuth` with the `GUID` key. The value is the key. The client reads the file again for each connection, because a restarted tray has a new key.
+3. If the key of the tray is not empty and the value is equal to it, the server sends `Service/AuthOK`. The comparison takes the same time for each wrong value.
 4. In all other conditions, the server sends `Service/AuthFAIL` and disconnects the client.
 
 Rules:
 
-- An empty `Secret.AuthGuid` in the tray authorizes no client.
+- If the tray cannot write the key file, the key is empty. An empty key authorizes no client.
 - The server disconnects the client if the client is not authorized 15 seconds after the connection.
 - A failed `RequestAuth` always disconnects the client, also after an earlier `AuthOK`. The client cannot try again on the same connection.
 - Before authorization, the server sends only `Service` messages (`PipeServer.CanSend`).
 - Before authorization, the server handles only `RequestAuth`. It ignores all other messages and writes a warning to the log.
-- The GUI and the tray must be built with the same `Secret.AuthGuid`.
 - The log entries for received, queued and failed messages replace the `GUID` value with `***` (`PipeServiceBase.RedactSecrets`).
-
-CAUTION: Do not build with an empty `AuthGuid`. With an empty value, the GUI cannot connect to the tray. `create_secret_stub.ps1` and `create_release_secret.ps1` write a random value.
 
 ## Framing
 

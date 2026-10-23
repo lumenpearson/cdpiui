@@ -815,6 +815,7 @@ $GETCURRENTDIR()/Lua/Converted/<importId>/file.lua
 | `EXECUTABLE_MISMATCH` | Error | Анализ Zapret нашёл поколение, которое отличается от цели |
 | `UNRESOLVED_VARIABLE` | Warning | Общий анализатор не может разрешить переменную BAT |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | Внешний ресурс отсутствует |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | Конфигурация использует файл вне папки импортируемого файла. Импорт копирует этот файл в пресет |
 | `INVALID_RESOURCE_PATH` | Warning | Анализатор не может нормализовать путь ресурса |
 | `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | Замена, которую выбрал пользователь, не существует |
 
@@ -839,6 +840,7 @@ $GETCURRENTDIR()/Lua/Converted/<importId>/file.lua
 | `UNRESOLVED_BATCH_VARIABLE` | Warning | Используемую переменную BAT нельзя разрешить |
 | `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | Генерируемый файл находится вне исходной папки |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | Файл BIN, TXT или LUA отсутствует |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | Конфигурация использует файл вне папки импортируемого файла. Импорт копирует этот файл в пресет |
 
 ### Коды установщика
 
