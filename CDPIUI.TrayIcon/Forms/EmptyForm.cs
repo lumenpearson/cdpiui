@@ -214,6 +214,9 @@ namespace CDPIUI.TrayIcon.Forms
 
         private void ShowContextMenuAt(Point location, int vertOffset, int horOffset)
         {
+            // A second right click opened another menu and the first one, with its task
+            // subscriptions, was never closed (audit 12.4).
+            HideContextMenu();
             TrayMenuForm = new();
             TrayMenuForm.ShowWindow(location, vertOffset, horOffset);
             TrayMenuForm.Hided += HideContextMenu;
