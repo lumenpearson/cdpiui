@@ -160,6 +160,9 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
+                if (!TrustedPaths.IsAllowed(filePath, "package installation"))
+                    throw new UnauthorizedAccessException("The package is outside the application directories.");
+
                 _ = PipeHelper
                     .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Installing);
 

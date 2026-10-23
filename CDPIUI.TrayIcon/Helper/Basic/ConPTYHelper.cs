@@ -363,6 +363,9 @@ namespace CDPIUI.TrayIcon.Helper
 
             try
             {
+                if (!TrustedPaths.IsAllowed(exePath, "process start"))
+                    throw new UnauthorizedAccessException("The executable is outside the application directories.");
+
                 CreatePipe(out hInputRead, out hInputWrite, false);
                 CreatePipe(out hOutputRead, out hOutputWrite, false);
 

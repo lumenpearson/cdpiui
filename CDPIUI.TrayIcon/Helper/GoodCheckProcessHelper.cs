@@ -45,6 +45,12 @@ namespace CDPIUI.TrayIcon.Helper
 
         public async Task<bool> StartAsync(string executable, string args, string operationId)
         {
+            if (!TrustedPaths.IsAllowed(executable, "GoodCheck start"))
+            {
+                HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                return false;
+            }
+
             await TasksHelper.Instance.StopAllTasks();
 
             _cancellationTokenSource = new();

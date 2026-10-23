@@ -139,6 +139,10 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         "The component executable was not found.",
                         executablePath);
                 }
+                if (!TrustedPaths.IsAllowed(executablePath, "help output capture"))
+                {
+                    throw new UnauthorizedAccessException("The executable is outside the application directories.");
+                }
 
                 ConPTYCaptureResult result = await ConPTYHelper.CaptureProcessOutputAsync(
                     executablePath,
