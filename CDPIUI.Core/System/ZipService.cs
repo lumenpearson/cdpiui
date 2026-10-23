@@ -1,4 +1,5 @@
 ﻿using CDPIUI.Core.Security;
+using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Exceptions.Catalog;
 using System;
 using System.Collections.Generic;
@@ -75,6 +76,7 @@ namespace CDPIUI.Core.System
             using (var archive = ZipFile.OpenRead(zipFilePath))
             {
                 var entries = archive.Entries;
+                ArchivePaths.EnsureWithinLimits(entries);
                 int totalFiles = entries.Count;
                 int extractedFiles = 0;
 
@@ -137,6 +139,7 @@ namespace CDPIUI.Core.System
                         continue;
 
                     var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);
+                    ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
                     var destinationDir = Path.GetDirectoryName(destinationPath);
                     if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
                         Directory.CreateDirectory(destinationDir);
@@ -198,7 +201,7 @@ namespace CDPIUI.Core.System
                     }
                     else
                     {
-                        entry.ExtractToFile(destinationPath, overwrite: true);
+                        ArchivePaths.ExtractToFileBounded(entry, destinationPath);
                     }
 
                     extractedFiles++;

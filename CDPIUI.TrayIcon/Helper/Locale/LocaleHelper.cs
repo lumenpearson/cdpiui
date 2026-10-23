@@ -58,13 +58,16 @@ namespace CDPIUI.TrayIcon.Helper
             { "ConditionalLaunchNotificationTitle", "Conditional Launch" },
             { "ConditionalLaunchActionCompletedMessage", "Task \"{0}\" was executed." },
             { "TrayErrorTitle", "Notify icon" },
-            { "TrayErrorMessage", "We're unable to create icon in system notify aera. Click or tap here to view details.\n{0}" }
+            { "TrayErrorMessage", "We're unable to create icon in system notify area. Click or tap here to view details.\n{0}" },
+            { "ExecutableTrustTitle", "CDPI UI: start with administrator rights?" },
+            { "ExecutableTrustQuestion", "CDPI UI is about to start this program with administrator rights:\n\n{0}\n\nThe program or a library next to it is new or changed since the last start.\n\nSHA-256: {1}\nSigned by: {2}\n\nAllow the start only if you installed or updated this component yourself. Another program could have changed these files.\n\nStart the program?" },
+            { "ExecutableTrustNoSignature", "no signature" }
         };
 
         public static Dictionary<string, string> Russian = new Dictionary<string, string>()
         {
             { "SettingsRecoveryWarning", "Не удалось прочитать или восстановить Settings.xml. Настройки сброшены. Откройте приложение, чтобы проверить их." },
-            { "UpdateFailure", "Не удалось обновить приложение.\nНажмите или коснитесь здесь, чтобы покзать журнал" },
+            { "UpdateFailure", "Не удалось обновить приложение.\nНажмите или коснитесь здесь, чтобы показать журнал" },
             { "TrayHide", "Приложение запущено и свернуто в системный лоток.\nНажмите или коснитесь здесь, чтобы показать интерфейс" },
             { "Autorun", "Автозапуск" },
             { "AutorunERR", "Не удалось добавить приложение в автозапуск." },
@@ -94,7 +97,10 @@ namespace CDPIUI.TrayIcon.Helper
             { "ConditionalLaunchNotificationTitle", "Условный запуск" },
             { "ConditionalLaunchActionCompletedMessage", "Была выполнена задача \"{0}\"" },
             { "TrayErrorTitle", "Индикатор уведомлений" },
-            { "TrayErrorMessage", "Невозможно создать индикатор в системном лотке уведомлений. Нажмите или коснитесь здесь, чтобы узнать подробности.\n{0}" }
+            { "TrayErrorMessage", "Невозможно создать индикатор в системном лотке уведомлений. Нажмите или коснитесь здесь, чтобы узнать подробности.\n{0}" },
+            { "ExecutableTrustTitle", "CDPI UI: запустить с правами администратора?" },
+            { "ExecutableTrustQuestion", "CDPI UI собирается запустить эту программу с правами администратора:\n\n{0}\n\nПрограмма или библиотека рядом с ней появилась или изменилась после прошлого запуска.\n\nSHA-256: {1}\nПодпись: {2}\n\nРазрешите запуск, только если вы сами установили или обновили этот компонент. Эти файлы могла изменить другая программа.\n\nЗапустить программу?" },
+            { "ExecutableTrustNoSignature", "нет подписи" }
         };
 
         public static string GetLocaleString(string key)

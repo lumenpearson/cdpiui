@@ -42,7 +42,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        public async void SetIsStartArgsChangedProperty(string id, bool value)
+        public async Task SetIsStartArgsChangedProperty(string id, bool value)
         {
             var task = await GetTaskFromId(id);
             if (task == null) return;
@@ -50,7 +50,7 @@ namespace CDPIUI.TrayIcon.Helper
             task.ProcessManager.IsProcessInfoChanged = value;
         }
 
-        public async void EnableProxyOnTask(string id, string _proxyType, string ip, string port)
+        public async Task EnableProxyOnTask(string id, string _proxyType, string ip, string port)
         {
             var existTask = await GetTaskFromId(id);
 
@@ -62,16 +62,17 @@ namespace CDPIUI.TrayIcon.Helper
                 }
             }
             
-            existTask?.ProcessManager.StartProxy(_proxyType, ip, port);
+            if (existTask != null)
+                await existTask.ProcessManager.StartProxy(_proxyType, ip, port);
         }
 
-        public async void InitProxyOnTask(string id, string proxiFyrePath)
+        public async Task InitProxyOnTask(string id, string proxiFyrePath)
         {
             var existTask = await GetTaskFromId(id);
             existTask?.ProcessManager.InitProxy(proxiFyrePath);
         }
 
-        public async void CleanProxyOnTask(string id)
+        public async Task CleanProxyOnTask(string id)
         {
             var existTask = await GetTaskFromId(id);
             existTask?.ProcessManager.CleanProxy();

@@ -41,17 +41,24 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
         private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
         {
-            string procName = (await TasksHelper.Instance.GetTaskFromId(taskStateUpdate.Item1))?.ProcessManager.ProcessName ?? $"{taskStateUpdate.Item1}";
+            try
+            {
+                string procName = (await TasksHelper.Instance.GetTaskFromId(taskStateUpdate.Item1))?.ProcessManager.ProcessName ?? $"{taskStateUpdate.Item1}";
 
-            if (taskStateUpdate.Item2)
-            {
-                if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
-                ShowMessage(procName, LocaleHelper.GetLocaleString("ProcRun"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
+                if (taskStateUpdate.Item2)
+                {
+                    if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
+                    ShowMessage(procName, LocaleHelper.GetLocaleString("ProcRun"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
+                }
+                else
+                {
+                    if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
+                    ShowMessage(procName, LocaleHelper.GetLocaleString("ProcStop"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
-                ShowMessage(procName, LocaleHelper.GetLocaleString("ProcStop"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
+                Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot show the state notification for {taskStateUpdate.Item1}: {ex}");
             }
         }
 
@@ -64,59 +71,66 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                 .Show();
         }
 
-        public static async void HandleToastActionFromBackground(string action)
+        public static async Task HandleToastActionFromBackground(string action)
         {
-            if (action.StartsWith("OPEN_PSEUDOCONSOLE"))
+            try
             {
-                var result = ScriptHelper.GetArgsFromString(action);
-                if (result.Length < 1)
+                if (action.StartsWith("OPEN_PSEUDOCONSOLE"))
                 {
-                    Console.WriteLine($"ERR, {action} => args exception");
+                    var result = ScriptHelper.GetArgsFromString(action);
+                    if (result.Length < 1)
+                    {
+                        Console.WriteLine($"ERR, {action} => args exception");
+                        return;
+                    }
+
+                    await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
+                    { 
+                        { "id", result[0] },
+                    }, true);
+
                     return;
                 }
+                switch (action)
+                {
+                    case "SHOW_MAIN_WINDOW":
+                        await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+                        break;
+                    case "OPEN_PROXY_SETUP":
+                        await PipeHelper.SendOpenWindowPacket("ProxySetupUtilWindow", true);
+                        break;
+                    case "OPEN_BEGIN_STORE_UPDATE_CHECK":
+                        await PipeHelper.SendOpenWindowPacket("StoreWindow", new()
+                        {
+                            { "page", "DownloadPage" },
+                            { "isUpdateRequested", "true" },
 
-                await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
-                { 
-                    { "id", result[0] },
-                }, true);
+                        }, true);
+                        break;
+                    case "LOGGER:OPEN_TRAY_LOG":
+                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "EmptyForm.log"));
+                        break;
+                    case "LOGGER:OPEN_MSI_LOG":
+                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "MsiInstallerHelper.log"));
+                        break;
+                    case "UPDATE:OPEN_LOG":
+                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "update.log"));
+                        break;
+                    case "UPDATE:OPEN_DOWNLOAD_PAGE":
+                        await PipeHelper.SendOpenWindowPacket("MainWindow", new()
+                        {
+                            { "page", "DownloadPage" },
+                            { "isUpdateRequested", "true" },
 
-                return;
-            }
-            switch (action)
-            {
-                case "SHOW_MAIN_WINDOW":
-                    await PipeHelper.SendOpenWindowPacket("MainWindow", true);
-                    break;
-                case "OPEN_PROXY_SETUP":
-                    await PipeHelper.SendOpenWindowPacket("ProxySetupUtilWindow", true);
-                    break;
-                case "OPEN_BEGIN_STORE_UPDATE_CHECK":
-                    await PipeHelper.SendOpenWindowPacket("StoreWindow", new()
-                    {
-                        { "page", "DownloadPage" },
-                        { "isUpdateRequested", "true" },
-
-                    }, true);
-                    break;
-                case "LOGGER:OPEN_TRAY_LOG":
-                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "EmptyForm.log"));
-                    break;
-                case "LOGGER:OPEN_MSI_LOG":
-                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "MsiInstallerHelper.log"));
-                    break;
-                case "UPDATE:OPEN_LOG":
-                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "update.log"));
-                    break;
-                case "UPDATE:OPEN_DOWNLOAD_PAGE":
-                    await PipeHelper.SendOpenWindowPacket("MainWindow", new()
-                    {
-                        { "page", "DownloadPage" },
-                        { "isUpdateRequested", "true" },
-
-                    }, true);
-                    break;
+                        }, true);
+                        break;
                 
 
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot handle the toast action {action}: {ex}");
             }
         }
 

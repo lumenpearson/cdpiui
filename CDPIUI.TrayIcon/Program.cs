@@ -72,6 +72,8 @@ class Programm
         PackageStaging.CleanUp();
         RegeditHelper.RestoreLeftoverSnapshot();
 
+        // Before the pipe starts, so that the GUI never reads a key of an earlier start.
+        PipeSessionKeyWriter.Create();
         PipeServer.Instance.Init();
         PipeServer.Instance.Start();
 
@@ -127,8 +129,8 @@ class Programm
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("TrayHide"), "SHOW_MAIN_WINDOW");
         }
 
-        CheckProgramUpdates();
-        BeginCompatibilityCheck();
+        _ = CheckProgramUpdates();
+        _ = BeginCompatibilityCheck();
 
         
 
@@ -210,7 +212,7 @@ class Programm
 
             if (_toastArgs.TryGetValue("action", out string action))
             {
-                NotifyHelper.HandleToastActionFromBackground(action);
+                _ = NotifyHelper.HandleToastActionFromBackground(action);
             }
             else { }
 
@@ -219,21 +221,35 @@ class Programm
         catch { }
     }
 
-    private static async void CheckProgramUpdates()
+    private static async Task CheckProgramUpdates()
     {
-        await Task.Delay(TimeSpan.FromMinutes(30));
-        if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "appUpdates"))
+        try
         {
-            await PipeHelper.SendCheckUpdatesPacket();
+            await Task.Delay(TimeSpan.FromMinutes(30));
+            if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "appUpdates"))
+            {
+                await PipeHelper.SendCheckUpdatesPacket();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(Programm), $"Update check request failed: {ex}");
         }
     }
 
-    private static async void BeginCompatibilityCheck()
+    private static async Task BeginCompatibilityCheck()
     {
-        await Task.Delay(TimeSpan.FromMinutes(60));
-        if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "compatibilityCheck"))
+        try
         {
-            await PipeHelper.SendCompatibilityCheckPacket();
+            await Task.Delay(TimeSpan.FromMinutes(60));
+            if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "compatibilityCheck"))
+            {
+                await PipeHelper.SendCompatibilityCheckPacket();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(Programm), $"Compatibility check request failed: {ex}");
         }
     }
 }

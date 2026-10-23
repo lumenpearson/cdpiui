@@ -1,6 +1,6 @@
-using CDPIUI.Core.System;
+using CDPIUI.Shared.Basic.Filesystem;
 
-namespace CDPIUI.Tests.Core;
+namespace CDPIUI.Tests.Shared;
 
 public class ArchivePathsTests
 {
