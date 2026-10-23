@@ -69,10 +69,15 @@ namespace CDPIUI.Shared.Pipe
                     continue;
                 }
 
-                Logger?.CreateInfoLog(nameof(PipeServiceBase), $"Received message: {message}");
+                Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Received message: {RedactSecrets(message)}");
             }
             Logger?.CreateInfoLog(nameof(PipeServiceBase), $"{CancellationToken?.IsCancellationRequested}, {PipeStream.IsConnected.ToString()}");
         }
+
+        // The authentication GUID must not end up in log files.
+        private static string RedactSecrets(string message) =>
+            System.Text.RegularExpressions.Regex.Replace(message, "(GUID=)[^&]*", "$1***",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         public async void SendMessage(string message)
         {
@@ -116,7 +121,7 @@ namespace CDPIUI.Shared.Pipe
 
         private async Task<bool> SendStringMessageToPipe(string message)
         {
-            Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Message \"{message}\" added to send queue");
+            Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Message \"{RedactSecrets(message)}\" added to send queue");
 
             if (PipeStream == null || !PipeStream.IsConnected || StreamString == null)
             {
