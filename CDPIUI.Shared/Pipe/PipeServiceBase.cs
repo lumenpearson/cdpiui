@@ -85,8 +85,15 @@ namespace CDPIUI.Shared.Pipe
         }
         public async Task<bool> SendMessageAsync(string message)
         {
+            if (!CanSend(message))
+                return false;
             return await SendStringMessageToPipe(message);
         }
+
+        /// <summary>
+        /// Lets a server hold messages back, for example until the client is authorized.
+        /// </summary>
+        protected virtual bool CanSend(string message) => true;
 
         protected virtual async Task SendConnectionPacket()
         {
