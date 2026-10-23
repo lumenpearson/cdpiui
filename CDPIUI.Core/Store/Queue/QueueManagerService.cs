@@ -11,32 +11,38 @@
 
         public QueueItemModel? CurrentDownloadingItem { get; set; }
 
+        // Every access to Queue and CurrentDownloadingItem changes goes through _queueLock: the
+        // queue is used from the UI thread, download callbacks and the install worker (audit 10.8).
+        // Events are raised outside the lock.
         public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false) // PUBLIC
         {
             RemoveItemFromDownloadFailureList(itemId);
-            if (GetOperationIdFromItemId(itemId) != null) return;
-
-            var opId = Guid.NewGuid().ToString();
-            var qi = new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile, isSignedPack: isSignedPack);
 
             lock (_queueLock)
             {
-                Queue.Enqueue(qi);
-                TryProcessNext();
+                if (GetOperationIdFromItemId(itemId) != null) return;
+
+                var opId = Guid.NewGuid().ToString();
+                Queue.Enqueue(new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile, isSignedPack: isSignedPack));
             }
-            QueueUpdated?.Invoke();
+            TryProcessNext();
         }
 
         public bool RemoveItemFromQueue(string itemId)
         {
-            var items = Queue.ToList();
-            var removed = items.RemoveAll(i => i.ItemId == itemId) > 0;
-            if (removed)
+            bool removed;
+            lock (_queueLock)
             {
-                Queue.Clear();
-                foreach (var i in items) Queue.Enqueue(i);
-                QueueUpdated?.Invoke();
+                var items = Queue.ToList();
+                removed = items.RemoveAll(i => i.ItemId == itemId) > 0;
+                if (removed)
+                {
+                    Queue.Clear();
+                    foreach (var i in items) Queue.Enqueue(i);
+                }
             }
+            if (removed)
+                QueueUpdated?.Invoke();
 
             var currentItem = CurrentDownloadingItem;
             if (currentItem != null && currentItem.ItemId == itemId)
@@ -54,70 +60,63 @@
             return removed;
         }
 
+        /// <summary>
+        /// A copy of the waiting items.
+        /// </summary>
         public Queue<QueueItemModel> GetQueue() 
         {
-            return Queue;
+            lock (_queueLock)
+                return new Queue<QueueItemModel>(Queue);
         }
 
         public string GetCurrentQueueOperationId() 
         {
-            return CurrentDownloadingItem != null ? CurrentDownloadingItem.OperationId : string.Empty;
+            var current = CurrentDownloadingItem;
+            return current != null ? current.OperationId : string.Empty;
         }
 
         public string? GetOperationIdFromItemId(string storeId) 
         {
-            if (CurrentDownloadingItem != null && CurrentDownloadingItem.ItemId == storeId)
+            lock (_queueLock)
             {
-                return CurrentDownloadingItem.OperationId;
+                var current = CurrentDownloadingItem;
+                if (current != null && current.ItemId == storeId)
+                    return current.OperationId;
+                return Queue.FirstOrDefault(item => item.ItemId == storeId)?.OperationId;
             }
-            foreach (var item in Queue)
-            {
-                if (item.ItemId == storeId)
-                    return item.OperationId;
-            }
-            return null;
         }
 
         public string? GetItemIdFromOperationId(string operationId)
         {
-            if (CurrentDownloadingItem != null && CurrentDownloadingItem.OperationId == operationId)
-                return CurrentDownloadingItem.ItemId;
-
-            foreach (var item in Queue)
-            {
-                if (item.OperationId == operationId)
-                    return item.ItemId;
-            }
-            return null;
+            return GetQueueItemFromOperationId(operationId)?.ItemId;
         }
 
         public QueueItemModel? GetQueueItemFromOperationId(string operationId)
         {
-            if (CurrentDownloadingItem != null && CurrentDownloadingItem.OperationId == operationId)
-                return CurrentDownloadingItem;
-
-            foreach (var item in Queue)
+            lock (_queueLock)
             {
-                if (item.OperationId == operationId)
-                    return item;
+                var current = CurrentDownloadingItem;
+                if (current != null && current.OperationId == operationId)
+                    return current;
+                return Queue.FirstOrDefault(item => item.OperationId == operationId);
             }
-            return null;
         }
 
         public void TryProcessNext()
         {
-            QueueUpdated?.Invoke();
-            if (Queue.Count == 0)
+            QueueItemModel? next = null;
+            lock (_queueLock)
             {
-                return;
+                if (CurrentDownloadingItem == null && Queue.Count > 0)
+                {
+                    next = Queue.Dequeue();
+                    CurrentDownloadingItem = next;
+                }
             }
 
-            if (CurrentDownloadingItem == null)
+            QueueUpdated?.Invoke();
+            if (next != null)
             {
-
-                var next = Queue.Dequeue();
-                CurrentDownloadingItem = next;
-
                 ProcessItem?.Invoke(next);
                 QueueUpdated?.Invoke();
             }
