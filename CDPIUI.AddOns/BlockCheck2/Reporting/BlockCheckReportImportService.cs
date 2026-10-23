@@ -181,8 +181,8 @@ public sealed class BlockCheckReportImportService
         {
             throw new InvalidDataException("The BlockCheck2 report contains null collections.");
         }
-        if (report.Targets.Count > 100_000 || report.Probes.Count > 2_000_000 ||
-            report.Profiles.Count > 100_000)
+        if (report.Targets.Count > 20_000 || report.Probes.Count > 200_000 ||
+            report.Profiles.Count > 20_000)
         {
             throw new InvalidDataException("The BlockCheck2 report contains unreasonable item counts.");
         }
@@ -206,7 +206,7 @@ public sealed class BlockCheckReportImportService
                 probe is null ||
                 !targetIds.Contains(probe.TargetId) ||
                 string.IsNullOrWhiteSpace(probe.Kind) ||
-                probe.AttemptCount is < 0 or > 10_000 ||
+                probe.AttemptCount is < 0 or > 1_000 ||
                 probe.SuccessCount < 0 ||
                 probe.SuccessCount > probe.AttemptCount ||
                 probe.HttpStatusCodes is null ||
