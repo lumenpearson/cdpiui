@@ -63,6 +63,7 @@ jobs:
       - name: Build Update and EditHostFile
         shell: pwsh
         run: |
-          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /m
+          # The strong name key is not in the repository.
+          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /p:SignAssembly=false /m
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           msbuild EditHostFile/EditHostFile.csproj /p:Configuration=Release /m
