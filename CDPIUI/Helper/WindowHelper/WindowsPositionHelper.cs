@@ -178,7 +178,12 @@ namespace CDPIUI.Helper.WindowHelper
                 y = 0;
             }
 
-            RECT desiredRect = new RECT { left = x, top = y, right = x + width, bottom = y + height };
+            // The size is stored in DIPs, the position and the work area are physical pixels.
+            double scale = GetScaleFactor(window);
+            int physicalWidth = (int)Math.Round(width * scale);
+            int physicalHeight = (int)Math.Round(height * scale);
+
+            RECT desiredRect = new RECT { left = x, top = y, right = x + physicalWidth, bottom = y + physicalHeight };
             RECT workArea;
             if (!TryGetMonitorWorkArea(desiredRect, out workArea))
             {
@@ -187,17 +192,19 @@ namespace CDPIUI.Helper.WindowHelper
 
             int maxWidth = workArea.right - workArea.left;
             int maxHeight = workArea.bottom - workArea.top;
-            int adjWidth = Math.Min(width, Math.Max(1, maxWidth));
-            int adjHeight = Math.Min(height, Math.Max(1, maxHeight));
+            int adjPhysicalWidth = Math.Min(physicalWidth, Math.Max(1, maxWidth));
+            int adjPhysicalHeight = Math.Min(physicalHeight, Math.Max(1, maxHeight));
 
             int adjX = x;
             if (adjX < workArea.left) adjX = workArea.left;
-            if (adjX + adjWidth > workArea.right) adjX = Math.Max(workArea.left, workArea.right - adjWidth);
+            if (adjX + adjPhysicalWidth > workArea.right) adjX = Math.Max(workArea.left, workArea.right - adjPhysicalWidth);
 
             int adjY = y;
             if (adjY < workArea.top) adjY = workArea.top;
-            if (adjY + adjHeight > workArea.bottom) adjY = Math.Max(workArea.top, workArea.bottom - adjHeight);
+            if (adjY + adjPhysicalHeight > workArea.bottom) adjY = Math.Max(workArea.top, workArea.bottom - adjPhysicalHeight);
 
+            int adjWidth = (int)Math.Round(adjPhysicalWidth / scale);
+            int adjHeight = (int)Math.Round(adjPhysicalHeight / scale);
             SetWindowSize(window, adjWidth, adjHeight);
             SetWindowPosition(window, adjX, adjY);
 
