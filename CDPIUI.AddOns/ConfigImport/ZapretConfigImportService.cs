@@ -1524,11 +1524,21 @@ public sealed partial class ZapretConfigImportService
                 path,
                 line));
 
+        // The folder of the first source file, which is the imported config.
+        private string? _root;
+
         public void AddSourceFile(string path)
         {
             string fullPath = Path.GetFullPath(path);
-            if (_sourceFileSet.Add(fullPath))
-                _sourceFiles.Add(fullPath);
+            _root ??= Path.GetDirectoryName(fullPath);
+            if (!_sourceFileSet.Add(fullPath))
+                return;
+            _sourceFiles.Add(fullPath);
+            if (IsOutsideRoot(_root, fullPath))
+                AddWarning(
+                    "REFERENCED_FILE_OUTSIDE_SOURCE",
+                    $"The config uses a file outside its folder: {fullPath}",
+                    _sourceFiles[0]);
         }
 
         public bool EnterInclude(string path) => _activeIncludes.Add(path);
@@ -1538,8 +1548,27 @@ public sealed partial class ZapretConfigImportService
         public void AddReferencedFile(string path)
         {
             string fullPath = Path.GetFullPath(path);
-            if (_referencedFileSet.Add(fullPath))
-                _referencedFiles.Add(fullPath);
+            if (!_referencedFileSet.Add(fullPath))
+                return;
+            _referencedFiles.Add(fullPath);
+            if (IsOutsideRoot(_root, fullPath))
+                AddWarning(
+                    "REFERENCED_FILE_OUTSIDE_SOURCE",
+                    $"The config uses a file outside its folder: {fullPath}",
+                    _sourceFiles.Count > 0 ? _sourceFiles[0] : null);
+        }
+
+        // A config may name any file on the disk, and the import copies it into the preset, which the
+        // user can later share. A file outside the folder of the imported config is reported, so the
+        // user sees it in the review before saving.
+        private static bool IsOutsideRoot(string? root, string fullPath)
+        {
+            if (string.IsNullOrEmpty(root))
+                return false;
+            string relativePath = Path.GetRelativePath(root, fullPath);
+            return Path.IsPathRooted(relativePath) ||
+                relativePath.Equals("..", StringComparison.Ordinal) ||
+                relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
         }
 
         public void AddGeneratedFile(string sourceRoot, string path, string content)

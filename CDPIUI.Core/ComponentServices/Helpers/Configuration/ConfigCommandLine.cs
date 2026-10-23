@@ -1,4 +1,4 @@
-using System.Text;
+using CDPIUI.Shared.Basic.CommandLine;
 
 namespace CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
@@ -15,47 +15,7 @@ public sealed record ConfigCommandOption(
 /// <summary>Lexical analysis only; does not invoke a shell or execute parameters.</summary>
 public static class ConfigCommandLine
 {
-    public static IReadOnlyList<string> Tokenize(string? commandLine)
-    {
-        List<string> tokens = [];
-        StringBuilder current = new();
-        char quote = '\0';
-        int backslashes = 0;
-        string text = commandLine ?? string.Empty;
-        for (int index = 0; index < text.Length; index++)
-        {
-            char character = text[index];
-            // A quoted folder path ends with a backslash ("C:\dir\"): before whitespace or the
-            // end of the line that quote closes the argument instead of being escaped.
-            bool closesAfterBackslash = quote == '"' &&
-                (index + 1 == text.Length || char.IsWhiteSpace(text[index + 1]));
-            // Only double quotes group on the Windows command line; an apostrophe inside a value
-            // (a Lua argument, a file name) must not join the following arguments.
-            if (character == '"' &&
-                (quote == '\0' || quote == character) && (backslashes % 2 == 0 || closesAfterBackslash))
-            {
-                quote = quote == character ? '\0' : character;
-            }
-            if (char.IsWhiteSpace(character) && quote == '\0')
-            {
-                if (current.Length > 0)
-                {
-                    tokens.Add(current.ToString());
-                    current.Clear();
-                }
-            }
-            else
-            {
-                current.Append(character);
-            }
-            backslashes = character == '\\' ? backslashes + 1 : 0;
-        }
-        if (current.Length > 0)
-        {
-            tokens.Add(current.ToString());
-        }
-        return tokens;
-    }
+    public static IReadOnlyList<string> Tokenize(string? commandLine) => CommandLineTokens.Tokenize(commandLine);
 
     public static IReadOnlyList<ConfigCommandOption> ParseOptions(string? commandText)
     {
@@ -105,15 +65,10 @@ public static class ConfigCommandLine
         return result;
     }
 
-    public static bool TryGetOptionName(string token, out string name, out int equalsIndex)
-    {
-        equalsIndex = token.IndexOf('=');
-        name = equalsIndex >= 0 ? token[..equalsIndex] : token;
-        return IsOption(name);
-    }
+    public static bool TryGetOptionName(string token, out string name, out int equalsIndex) =>
+        CommandLineTokens.TryGetOptionName(token, out name, out equalsIndex);
 
-    // A negative number such as -10000 is a value, not an option.
-    public static bool IsOption(string token) => token.Length > 1 && token[0] == '-' && !char.IsDigit(token[1]);
+    public static bool IsOption(string token) => CommandLineTokens.IsOption(token);
 
     public static string ToSingleLine(string? commandLine) =>
         string.Join(
@@ -121,16 +76,7 @@ public static class ConfigCommandLine
                 Tokenize(commandLine).Select(token => NormalizeLineEndings(token).Replace('\n', ' ')))
             .Trim();
 
-    public static string Unquote(string? value)
-    {
-        string result = (value ?? string.Empty).Trim();
-        if (result.Length >= 2 && ((result[0] == '"' && result[^1] == '"') ||
-            (result[0] == '\'' && result[^1] == '\'')))
-        {
-            result = result[1..^1];
-        }
-        return result.Replace("\\\"", "\"");
-    }
+    public static string Unquote(string? value) => CommandLineTokens.Unquote(value);
 
     public static string Quote(string value, bool force = false) =>
         force || value.Any(char.IsWhiteSpace) || value.Contains('"')

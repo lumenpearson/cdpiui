@@ -1,8 +1,11 @@
-﻿using CDPIUI.Shared.Secrets;
+﻿using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Secrets;
 using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace CDPIUI.TrayIcon.Helper
 {
@@ -59,9 +62,24 @@ namespace CDPIUI.TrayIcon.Helper
             string verifyDirectory = Path.Combine(Path.GetDirectoryName(stagedPackage)!, "verify");
             try
             {
+                // The catalog can only be checked on extracted files, so the archive is limited first:
+                // an unverified package must not fill the disk of the installation volume.
                 using (ZipArchive archive = ZipFile.OpenRead(stagedPackage))
                 {
-                    archive.ExtractToDirectory(verifyDirectory);
+                    ArchivePaths.EnsureWithinLimits(archive.Entries);
+                    Directory.CreateDirectory(verifyDirectory);
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        string destination = ArchivePaths.GetDestinationOrThrow(verifyDirectory, entry.FullName);
+                        ArchivePaths.EnsureNoReparsePoints(verifyDirectory, destination);
+                        if (entry.FullName.EndsWith("/", StringComparison.Ordinal))
+                        {
+                            Directory.CreateDirectory(destination);
+                            continue;
+                        }
+                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                        ArchivePaths.ExtractToFileBounded(entry, destination);
+                    }
                 }
 
                 string layersDirectory = Path.Combine(verifyDirectory, "layers");
@@ -100,6 +118,49 @@ namespace CDPIUI.TrayIcon.Helper
         /// </summary>
         public static bool HasValidSignature(string path)
         {
+            int result = VerifyTrust(path);
+            if (result != 0)
+                Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Signature check of {path} failed: 0x{result:X8}");
+            return result == 0;
+        }
+
+        /// <summary>
+        /// Checks that the file is signed by one of the pinned certificates of the application
+        /// (Secret.TrustedCertificates). Those certificates are self-signed, so a chain to an
+        /// untrusted root is accepted; a changed file or another signer is not.
+        /// </summary>
+        public static bool HasPinnedSignature(string path, IEnumerable<string> trustedThumbprints)
+        {
+            int result = VerifyTrust(path);
+            if (result != 0 && result != CERT_E_UNTRUSTEDROOT && result != CERT_E_CHAINING)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Signature check of {path} failed: 0x{result:X8}");
+                return false;
+            }
+
+            string? thumbprint;
+            try
+            {
+#pragma warning disable SYSLIB0057 // The signature itself was checked by WinVerifyTrust above.
+                using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
+#pragma warning restore SYSLIB0057
+                thumbprint = certificate.Thumbprint;
+            }
+            catch (CryptographicException exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot read the signer of {path}: {exception.Message}");
+                return false;
+            }
+
+            bool pinned = trustedThumbprints.Any(trusted =>
+                string.Equals(new string(trusted.Where(Uri.IsHexDigit).ToArray()), thumbprint, StringComparison.OrdinalIgnoreCase));
+            if (!pinned)
+                Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"{path} is signed by an unknown certificate {thumbprint}");
+            return pinned;
+        }
+
+        private static int VerifyTrust(string path)
+        {
             var fileInfo = new WINTRUST_FILE_INFO
             {
                 cbStruct = (uint)Marshal.SizeOf<WINTRUST_FILE_INFO>(),
@@ -120,10 +181,7 @@ namespace CDPIUI.TrayIcon.Helper
                 };
 
                 Guid action = WINTRUST_ACTION_GENERIC_VERIFY_V2;
-                int result = WinVerifyTrust(IntPtr.Zero, ref action, ref data);
-                if (result != 0)
-                    Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Signature check of {path} failed: 0x{result:X8}");
-                return result == 0;
+                return WinVerifyTrust(IntPtr.Zero, ref action, ref data);
             }
             finally
             {
@@ -137,6 +195,9 @@ namespace CDPIUI.TrayIcon.Helper
         private const uint WTD_REVOKE_NONE = 0;
         private const uint WTD_CHOICE_FILE = 1;
         private const uint WTD_STATEACTION_IGNORE = 0;
+        // The signature and the file hash are valid, but the certificate chain ends in an untrusted root.
+        private const int CERT_E_UNTRUSTEDROOT = unchecked((int)0x800B0109);
+        private const int CERT_E_CHAINING = unchecked((int)0x800B010A);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct WINTRUST_FILE_INFO

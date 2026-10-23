@@ -1,4 +1,5 @@
-﻿using CDPIUI.TrayIcon.Helper.Basic;
+﻿using CDPIUI.Shared.Security;
+using CDPIUI.TrayIcon.Helper.Basic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +46,17 @@ namespace CDPIUI.TrayIcon.Helper
 
         public async Task<bool> StartAsync(string executable, string args, string operationId)
         {
-            if (!TrustedPaths.IsAllowed(executable, "GoodCheck start"))
+            string? unsafeOption = FileWritingOptions.FindOutsideWrite(
+                args, TrustedPaths.AllowedRoots, Path.GetDirectoryName(executable), followArgumentFiles: true);
+            if (unsafeOption != null)
+            {
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessHelper), $"Rejected GoodCheck start: the arguments write a file outside the application directories: {unsafeOption}");
+                HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                return false;
+            }
+
+            using ExecutableLease? lease = await ExecutableTrust.AcquireAsync(executable, "GoodCheck start");
+            if (lease == null)
             {
                 HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
                 return false;
@@ -87,6 +98,11 @@ namespace CDPIUI.TrayIcon.Helper
                     Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_UNABLE_START_PROCESS details => {ex.Message}");
                     HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
                     return false;
+                }
+                finally
+                {
+                    // The started process has mapped its files; the lock is no longer needed.
+                    lease.Dispose();
                 }
 
                 if (!AssignProcessToJobObject(Job, Process.Handle))

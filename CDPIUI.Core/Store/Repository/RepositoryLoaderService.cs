@@ -11,6 +11,7 @@ using CDPIUI.Shared.Secrets;
 using System.Diagnostics;
 using System.IO.Compression;
 using CDPIUI.Core.System;
+using CDPIUI.Shared.Basic.Filesystem;
 
 namespace CDPIUI.Core.Store.Repository
 {
@@ -150,6 +151,7 @@ namespace CDPIUI.Core.Store.Repository
                 Directory.CreateDirectory(newFolder);
                 using (var archive = ZipFile.OpenRead(tempZipPath))
                 {
+                    ArchivePaths.EnsureWithinLimits(archive.Entries);
                     foreach (var entry in archive.Entries)
                     {
                         if (string.IsNullOrEmpty(entry.Name) && entry.FullName.EndsWith("/"))
@@ -163,12 +165,13 @@ namespace CDPIUI.Core.Store.Repository
                         string relativePath = Path.Combine(subParts);
 
                         string destinationPath = ArchivePaths.GetDestinationOrThrow(newFolder, relativePath);
+                        ArchivePaths.EnsureNoReparsePoints(newFolder, destinationPath);
 
                         string? destDir = Path.GetDirectoryName(destinationPath);
                         if (!string.IsNullOrEmpty(destDir))
                             Directory.CreateDirectory(destDir);
 
-                        entry.ExtractToFile(destinationPath, overwrite: true);
+                        ArchivePaths.ExtractToFileBounded(entry, destinationPath);
                     }
                 }
 

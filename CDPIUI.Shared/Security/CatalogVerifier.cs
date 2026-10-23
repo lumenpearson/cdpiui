@@ -31,7 +31,12 @@ namespace CDPIUI.Shared.Security
         /// <param name="catalogFile">Catalog file</param>
         /// <param name="directory">Directory the catalog describes</param>
         /// <param name="trustedThumbprints">SHA-1 thumbprints of the certificates allowed to sign catalogs</param>
-        public static async Task<CatalogVerification> VerifyAsync(string catalogFile, string directory, IEnumerable<string> trustedThumbprints)
+        /// <param name="filesToSkip">File names that are not compared, in addition to catalog.cat</param>
+        public static async Task<CatalogVerification> VerifyAsync(
+            string catalogFile,
+            string directory,
+            IEnumerable<string> trustedThumbprints,
+            IEnumerable<string>? filesToSkip = null)
         {
             if (!File.Exists(catalogFile))
                 return CatalogVerification.NoSignature;
@@ -40,7 +45,9 @@ namespace CDPIUI.Shared.Security
             if (signature != CatalogVerification.Success)
                 return signature;
 
-            return await VerifyFilesAsync(catalogFile, directory) ? CatalogVerification.Success : CatalogVerification.FilesDoNotMatch;
+            return await VerifyFilesAsync(catalogFile, directory, filesToSkip ?? Enumerable.Empty<string>())
+                ? CatalogVerification.Success
+                : CatalogVerification.FilesDoNotMatch;
         }
 
         /// <summary>
@@ -85,10 +92,13 @@ namespace CDPIUI.Shared.Security
             return CatalogVerification.Success;
         }
 
+        private static string EscapeWildcards(string name) =>
+            name.Replace("`", "``").Replace("[", "`[").Replace("]", "`]").Replace("*", "`*").Replace("?", "`?");
+
         private static string NormalizeThumbprint(string thumbprint) =>
             new string(thumbprint.Where(Uri.IsHexDigit).ToArray());
 
-        private static async Task<bool> VerifyFilesAsync(string catalogFile, string directory)
+        private static async Task<bool> VerifyFilesAsync(string catalogFile, string directory, IEnumerable<string> filesToSkip)
         {
             // A full path: the elevated tray would otherwise also look in its own, possibly writable, directory.
             string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -104,9 +114,13 @@ namespace CDPIUI.Shared.Security
             startInfo.ArgumentList.Add("-NonInteractive");
             startInfo.ArgumentList.Add("-Command");
             startInfo.ArgumentList.Add(
-                "(Test-FileCatalog -CatalogFilePath $env:CDPIUI_CATALOG -Path $env:CDPIUI_CATALOG_DIRECTORY -FilesToSkip catalog.cat).ToString()");
+                "(Test-FileCatalog -CatalogFilePath $env:CDPIUI_CATALOG -Path $env:CDPIUI_CATALOG_DIRECTORY -FilesToSkip ($env:CDPIUI_CATALOG_SKIP -split '\\|')).ToString()");
             startInfo.Environment["CDPIUI_CATALOG"] = Path.GetFullPath(catalogFile);
             startInfo.Environment["CDPIUI_CATALOG_DIRECTORY"] = Path.GetFullPath(directory);
+            // A file name cannot contain "|". Wildcard characters in names are escaped, because
+            // -FilesToSkip treats them as patterns.
+            startInfo.Environment["CDPIUI_CATALOG_SKIP"] = string.Join("|",
+                new[] { "catalog.cat" }.Concat(filesToSkip.Select(EscapeWildcards)));
 
             using var process = Process.Start(startInfo);
             if (process == null)

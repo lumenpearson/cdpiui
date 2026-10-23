@@ -99,29 +99,36 @@ namespace CDPIUI.TrayIcon.Forms
 
         private async void OnPowerChange(object s, PowerModeChangedEventArgs e)
         {
-            switch (e.Mode)
+            try
             {
-                case PowerModes.Resume:
-                    // Network adapters come back some seconds after resume; components started
-                    // before that bind to no interface and the connection stays broken (issue #7).
-                    await WaitForNetworkAsync(TimeSpan.FromSeconds(30));
-                    foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
-                    {
-                        if (!task.ProcessManager.IsProcessRunning)
-                            continue;
+                switch (e.Mode)
+                {
+                    case PowerModes.Resume:
+                        // Network adapters come back some seconds after resume; components started
+                        // before that bind to no interface and the connection stays broken (issue #7).
+                        await WaitForNetworkAsync(TimeSpan.FromSeconds(30));
+                        foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
+                        {
+                            if (!task.ProcessManager.IsProcessRunning)
+                                continue;
 
-                        try
-                        {
-                            await TasksHelper.Instance.RestartTask(task.Id);
+                            try
+                            {
+                                await TasksHelper.Instance.RestartTask(task.Id);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot restart {task.Id} after resume: {ex.Message}");
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot restart {task.Id} after resume: {ex.Message}");
-                        }
-                    }
-                    break;
-                case PowerModes.Suspend:
-                    break;
+                        break;
+                    case PowerModes.Suspend:
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot handle power mode change {e.Mode}: {ex}");
             }
         }
 
@@ -364,9 +371,17 @@ namespace CDPIUI.TrayIcon.Forms
             return rect;
         }
 
+        // Called from WndProc, which must not wait for the pipe.
         private static async void MaximizeApp()
         {
-            await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+            try
+            {
+                await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(EmptyForm), $"Cannot open the main window: {ex}");
+            }
         }
 
         private void EmptyForm_Disposed(object? sender, EventArgs e)

@@ -59,8 +59,8 @@ namespace CDPIUI.TrayIcon.Helper
         public event Action<ErrorModel>? ErrorHappens;
         public event Action<string>? OutputReceived;
         public event Action<string>? ProcessNameChanged;
-        [Obsolete("Not supported on server side.")]
-        public event Action<string>? ShowErrorMessageWindow;
+        // The tray shows no error windows; errors go to the GUI through the pipe.
+        event Action<string>? IProcessService.ShowErrorMessageWindow { add { } remove { } }
 
         public void InitProxy(string path)
         {
@@ -82,7 +82,7 @@ namespace CDPIUI.TrayIcon.Helper
             return proxiFyreHelper.processState;
         }
 
-        public async void StartProxy(string _proxyType, string ip, string port)
+        public async Task StartProxy(string _proxyType, string ip, string port)
         {
             _ip = ip;
             _port = port;
@@ -117,7 +117,7 @@ namespace CDPIUI.TrayIcon.Helper
             if (Executable != null && Args != null && !IsProcessInfoChanged)
             {
                 if (useProxy)
-                    StartProxy(proxyType, _ip, _port);
+                    await StartProxy(proxyType, _ip, _port);
 
                 await StartProcess(Executable, Args);
             }

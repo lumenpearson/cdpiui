@@ -25,12 +25,6 @@ namespace CDPIUI.Shared.Secrets
         static string? ProxyKey { get; }
 
         /// <summary>
-        /// Authentication GUID for pipe. 
-        /// If value is empty, pipe may be insecure.
-        /// </summary>
-        static string? AuthGuid { get; set; }
-
-        /// <summary>
         /// Trusted certifications. 
         /// If this value is empty:
         /// SIGNEDPACK files cannot be installed
@@ -51,8 +45,6 @@ namespace CDPIUI.Shared.Secrets
 
         public const string ProxyURL = "";
         public const string ProxyKey = "";
-
-        public static string AuthGuid = "";
 
         public static readonly List<string> TrustedCertificates = [];
     }

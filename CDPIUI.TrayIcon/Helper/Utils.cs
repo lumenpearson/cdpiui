@@ -1,5 +1,6 @@
 ﻿using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe.Models;
+using CDPIUI.Shared.Secrets;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32;
 using System;
@@ -32,7 +33,7 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         // The MSI writes its install folder here (NewSetup/Product.wxs); the GUI uses the same check.
-        private static bool IsInstalledByMsi()
+        public static bool IsInstalledByMsi()
         {
             try
             {
@@ -88,7 +89,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        public static async void StartUpdate(string targetFile)
+        public static async Task StartUpdate(string targetFile)
         {
             if (!TrustedPaths.IsAllowed(targetFile, "application update"))
             {
@@ -111,7 +112,13 @@ namespace CDPIUI.TrayIcon.Helper
 
             if (string.Equals(Path.GetExtension(stagedFile), ".msi", StringComparison.OrdinalIgnoreCase))
             {
-                // Published Setup.msi files are not Authenticode-signed, so there is no signature to check yet.
+                // The release workflow signs Setup.msi with the certificate that signs the catalogs.
+                if (!PackageStaging.HasPinnedSignature(stagedFile, Secret.TrustedCertificates))
+                {
+                    PackageStaging.Release(stagedFile);
+                    NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
+                    return;
+                }
                 RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedFile}\" /qn+");
                 _ = PipeHelper.SendApplicationPacket(ApplicationMessageIds.CloseApplicationUI);
                 NotifyHelper.Instance.Dispose();
@@ -146,7 +153,7 @@ namespace CDPIUI.TrayIcon.Helper
             return scale;
         }
 
-        public static async void GrantAccess(string file, bool conptySignal)
+        public static async Task GrantAccess(string file, bool conptySignal)
         {
             if (!TrustedPaths.IsInStore(file, "access change"))
             {

@@ -21,11 +21,11 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     break;
 
                 case UtilsMessageModel model:
-                    HandleUtilsMessage(model);
+                    await HandleUtilsMessage(model);
                     break;
 
                 case UpdateMessageModel model:
-                    HandleUpdateMessage(model);
+                    await HandleUpdateMessage(model);
                     break;
 
                 case MSIInstallationMessageModel model:
@@ -33,7 +33,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     break;
 
                 case ProxyMessageModel model:
-                    HandleProxyMessage(model);
+                    await HandleProxyMessage(model);
                     break;
 
                 case NotificationsMessageModel model:
@@ -110,7 +110,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        TasksHelper.Instance.SetIsStartArgsChangedProperty(id, true);
+                        await TasksHelper.Instance.SetIsStartArgsChangedProperty(id, true);
                         return;
                     }
 
@@ -267,7 +267,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     }
             }
         }
-        private static void HandleUtilsMessage(UtilsMessageModel model)
+        private static async Task HandleUtilsMessage(UtilsMessageModel model)
         {
             switch (model.MessageType)
             {
@@ -277,13 +277,13 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (path == null)
                             return;
 
-                        Utils.GrantAccess(path, true);
+                        await Utils.GrantAccess(path, true);
                         return;
                     }
             }
         }
 
-        private static void HandleUpdateMessage(UpdateMessageModel model)
+        private static async Task HandleUpdateMessage(UpdateMessageModel model)
         {
             switch (model.MessageType)
             {
@@ -293,7 +293,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (archive == null)
                             return;
 
-                        Utils.StartUpdate(archive);
+                        await Utils.StartUpdate(archive);
                         return;
                     }
 
@@ -334,7 +334,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             }
         }
 
-        private static void HandleProxyMessage(ProxyMessageModel model)
+        private static async Task HandleProxyMessage(ProxyMessageModel model)
         {
             switch (model.MessageType)
             {
@@ -346,7 +346,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (taskId == null || proxyFirePath == null)
                             return;
 
-                        TasksHelper.Instance.InitProxyOnTask(taskId, proxyFirePath);
+                        await TasksHelper.Instance.InitProxyOnTask(taskId, proxyFirePath);
                         return;
                     }
 
@@ -361,7 +361,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                             ip == null || port == null)
                             return;
 
-                        TasksHelper.Instance.EnableProxyOnTask(
+                        await TasksHelper.Instance.EnableProxyOnTask(
                             taskId, proxyType, ip, port);
                         return;
                     }
@@ -372,7 +372,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (taskId == null)
                             return;
 
-                        TasksHelper.Instance.CleanProxyOnTask(taskId);
+                        await TasksHelper.Instance.CleanProxyOnTask(taskId);
                         return;
                     }
             }
