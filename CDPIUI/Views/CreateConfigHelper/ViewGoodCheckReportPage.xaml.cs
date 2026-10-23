@@ -2,7 +2,7 @@ using CDPIUI.AddOns.GoodCheck;
 using CDPIUI.Controls.Default;
 using CDPIUI.Core.JSON;
 using CDPIUI.Core.Proxy;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
@@ -252,7 +252,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                     {
                         Guid guid = Guid.NewGuid();
                         Debug.WriteLine(guid);
-                        list.Add(new(ProxyHelper.ReplaseIp(strategy.Strategy), sitelistName, item.Directory, false, [], guid));
+                        list.Add(new(ProxyHelper.ReplaceIp(strategy.Strategy), sitelistName, item.Directory, false, [], guid));
                     }
                 }
             }

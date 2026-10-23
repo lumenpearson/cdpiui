@@ -148,7 +148,7 @@
     <value>Надстройка "{0}" с уникальным идентификатором "{1}" не установлена. Продолжение невозможно.
 Перейдите в Магазин, чтобы установить последнюю версию "{0}"</value>
   </data>
-  <data name="AppRunnedInTrayToast.Content" xml:space="preserve">
+  <data name="AppRunningInTrayToast.Content" xml:space="preserve">
     <value>Приложение запущено в системном лотке уведомлений</value>
   </data>
   <data name="AppUpdatesToast.Content" xml:space="preserve">
@@ -2603,7 +2603,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   <data name="BBDName" xml:space="preserve">
     <value>Сообщество ByeByeDPI</value>
   </data>
-  <data name="BBDDecription" xml:space="preserve">
+  <data name="BBDDescription" xml:space="preserve">
     <value>Группа обсуждения ByeByeDPI – мобильного клиента ByeDPI</value>
   </data>
   <data name="FlashlightTipsWidgetTitleTextBlock.Text" xml:space="preserve">

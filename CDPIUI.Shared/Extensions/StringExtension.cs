@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CDPIUI.Shared.Extentions
+namespace CDPIUI.Shared.Extensions
 {
-    public static class StringExtention
+    public static class StringExtension
     {
         public static string? SerializeTuples(this List<Tuple<string, string>> list) 
         {

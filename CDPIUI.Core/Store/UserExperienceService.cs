@@ -2,7 +2,7 @@
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.ViewModels;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using System.Linq;
 
 namespace CDPIUI.Core

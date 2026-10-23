@@ -98,14 +98,12 @@ cdpiui/
 │   ├── ComponentsTask/                # Shared component-task infrastructure
 │   ├── ConditionalLaunch/             # Shared ConditionalLaunch implementation
 │   ├── Exceptions/                    # Shared exception types
-│   ├── Extentions/                    # Shared extension methods
-│   │                                  # NOTE: repository currently spells this "Extentions"
+│   ├── Extensions/                    # Shared extension methods
 │   ├── Logger/                        # Shared logging infrastructure
 │   ├── Migration/                     # Data/settings migration functionality
 │   ├── Models/                        # Models shared across projects
 │   ├── Pipe/                          # Inter-process pipe communication
-│   ├── PrettyErrorConvertionService/  # User-friendly error conversion
-│   │                                  # NOTE: repository currently uses "Convertion"
+│   ├── PrettyErrorConversionService/  # User-friendly error conversion
 │   ├── Secrets/                       # Secret/value handling infrastructure
 │   ├── System/                        # Shared system/OS helpers
 │   ├── SharedConstants.cs             # Constants shared across applications

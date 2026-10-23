@@ -6,7 +6,7 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper;
 using CDPIUI.Shared;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
 using CDPIUI.Views.Main.Components;
 using Microsoft.UI.Xaml;
@@ -252,7 +252,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         }
         else if (processManager.IsProcessRunning)
         {
-            return ComponentState.Runned;
+            return ComponentState.Running;
         }
         else
         {
@@ -280,7 +280,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
                 ForegroundStopStatusFontIcon.Visibility = Visibility.Visible;
                 SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStopped"));
                 break;
-            case ComponentState.Runned:
+            case ComponentState.Running:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uF13E";
                 ForegroundStatusFontIcon.FontSize = 18;
@@ -298,13 +298,13 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private async void PreferTaskStateActions()
     {
-        bool isRunned = await ComponentTasksManager.Instance.IsTaskRunned(StoreId);
+        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
 
-        if (isRunned)
+        if (isRunning)
         {
             PlayToolTip.Text = localizer.GetLocalizedString("Stop");
             PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph()? "\uE62E" : "\uF8AE";
-            ShowComponentState(ComponentState.Runned);
+            ShowComponentState(ComponentState.Running);
         }
         else
         {
@@ -313,7 +313,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
             CheckComponentState();
         }
 
-        PlayButton.IsChecked = isRunned;
+        PlayButton.IsChecked = isRunning;
     }
 
     private void SetStatusToolTip(string text)
@@ -341,9 +341,9 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private async void PlayButton_Click(object sender, RoutedEventArgs e)
     {
-        bool isRunned = await ComponentTasksManager.Instance.IsTaskRunned(StoreId);
+        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
 
-        if (!isRunned)
+        if (!isRunning)
         {
             _ = ComponentTasksManager.Instance.CreateAndRunNewTask(StoreId);
         }

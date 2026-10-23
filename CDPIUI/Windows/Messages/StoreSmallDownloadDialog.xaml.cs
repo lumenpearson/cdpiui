@@ -27,7 +27,7 @@ using CDPIUI.Core.Store;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
 using CDPIUI.Core.Store.Repository.Localization;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Core.Store.ViewModels;
 using System.Collections.Specialized;
 

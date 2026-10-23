@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CDPIUI.Shared.PrettyErrorConvertionService
+namespace CDPIUI.Shared.PrettyErrorConversionService
 {
     public class ErrorModel
     {

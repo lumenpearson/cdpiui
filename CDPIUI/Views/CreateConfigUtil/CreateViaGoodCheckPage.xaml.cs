@@ -5,7 +5,7 @@ using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared;
 using CommunityToolkit.WinUI;
 using Microsoft.UI.Dispatching;
@@ -232,7 +232,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             if (StrategiesLists.Count == 0)
             {
                 // The add-on is installed: it has no strategy lists for this component.
-                ShowErrorDialod(localizer.GetLocalizedString("GoodCheckNoStrategyLists"));
+                ShowErrorDialog(localizer.GetLocalizedString("GoodCheckNoStrategyLists"));
                 return;
             }
 
@@ -283,13 +283,13 @@ namespace CDPIUI.Views.CreateConfigUtil
 
             if (!GoodCheckProcessService.IsAddOnInstalled())
             {
-                ShowErrorDialod();
+                ShowErrorDialog();
                 return;
             }
             if (!File.Exists(targetFolder))
             {
                 // Installed, but the files are incomplete: reinstalling fixes it, unlike installing.
-                ShowErrorDialod(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
+                ShowErrorDialog(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
                     HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), targetFolder));
                 return;
             }
@@ -384,7 +384,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             catch (Exception ex)
             {
                 Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessService), $"Cannot set settings. Exception is {ex}");
-                ShowErrorDialod(localizer.GetLocalizedString("GoodCheckComponentDirsSetException"));
+                ShowErrorDialog(localizer.GetLocalizedString("GoodCheckComponentDirsSetException"));
             }
             IniSettingsHelper.Save();
         }
@@ -862,7 +862,7 @@ namespace CDPIUI.Views.CreateConfigUtil
 
         }
 
-        private async void ShowErrorDialod(string message = null)
+        private async void ShowErrorDialog(string message = null)
         {
             ContentDialog dialog = new ContentDialog
             {

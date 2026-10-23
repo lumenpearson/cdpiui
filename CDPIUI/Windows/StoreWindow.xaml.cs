@@ -22,7 +22,7 @@ using WinUIEx;
 using CDPIUI.Core.Store;
 
 using CDPIUI.Shared;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

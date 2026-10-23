@@ -61,7 +61,7 @@ public sealed partial class StoreItemLargeButton : UserControl
 
         AnimateTranslateY(-3, durationMs: 200);
 
-        _bottomRect.Style = (Style)Resources["BackgroudRectangleHoverStyle"];
+        _bottomRect.Style = (Style)Resources["BackgroundRectangleHoverStyle"];
         PART_Button.Translation += shadowVector;
     }
 
@@ -70,7 +70,7 @@ public sealed partial class StoreItemLargeButton : UserControl
         VisualStateManager.GoToState(_button, "Normal", true);
         AnimateTranslateY(0, durationMs: 200);
 
-        _bottomRect.Style = (Style)Resources["BackgroudRectangleDefaultStyle"];
+        _bottomRect.Style = (Style)Resources["BackgroundRectangleDefaultStyle"];
         PART_Button.Translation -= shadowVector;
     }
 

@@ -8,7 +8,7 @@ using CDPIUI.Core.LScript;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -433,10 +433,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         /// </summary>
         /// <param name="item">Target item</param>
         /// <param name="forceRebuild">
-        /// Force rebuild config if component required hidden convertion.<br></br>
+        /// Force rebuild config if component required hidden conversion.<br></br>
         /// If <see cref="false"/>, rebuild called only if user sets 
         /// "ZAPRET2/validateLegacyCacheHashes" as <see cref="true"/><br></br>
-        /// If <paramref name="item"/> target not required convertion this property
+        /// If <paramref name="item"/> target not required conversion this property
         /// ignores.
         /// </param>
         /// <returns>Component startup string for item</returns>

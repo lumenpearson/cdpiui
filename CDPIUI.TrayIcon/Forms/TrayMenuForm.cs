@@ -13,7 +13,7 @@ namespace CDPIUI.TrayIcon.Forms
     {
         private readonly int DefaultWidth;
 
-        public Action? Hided;
+        public Action? Hidden;
 
         public TrayMenuForm()
         {
@@ -78,13 +78,13 @@ namespace CDPIUI.TrayIcon.Forms
             MaximizeButton.Clicked -= MaximizeButton_MouseClick;
             ExitButton.Clicked -= ExitButton_MouseClick;
 
-            DisconnectComponentPanelChildrensHandlers();
+            DisconnectComponentPanelChildrenHandlers();
 
             this.Disposed -= TrayMenuForm_Disposed;
             this.KeyDown -= TrayMenuForm_KeyDown;
         }
 
-        private void DisconnectComponentPanelChildrensHandlers()
+        private void DisconnectComponentPanelChildrenHandlers()
         {
             foreach (Control control in ComponentPanel.Controls.Cast<Control>().ToList())
             {
@@ -151,7 +151,7 @@ namespace CDPIUI.TrayIcon.Forms
             SafeInvoke(() =>
             {
                 ComponentPanel.SuspendLayout();
-                DisconnectComponentPanelChildrensHandlers();
+                DisconnectComponentPanelChildrenHandlers();
                 ComponentPanel.Controls.Clear();
 
                 int targetWidth = ComponentPanel.Width;
@@ -180,7 +180,7 @@ namespace CDPIUI.TrayIcon.Forms
                             Name = task.Id,
                             DisplayText = LocaleHelper.GetLocalizedComponentName(task.Id),
                             ComponentId = task.Id,
-                            IsRunned = task.ProcessManager.IsProcessRunning,
+                            IsRunning = task.ProcessManager.IsProcessRunning,
                             IsSetupComplete = task.IsSetupComplete ?? true,
                             Width = targetWidth,
                             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
@@ -227,7 +227,7 @@ namespace CDPIUI.TrayIcon.Forms
                 {
                     if (controls[0] is ComponentUserControl componentUserControl)
                     {
-                        componentUserControl.IsRunned = taskStateUpdate.Item2;
+                        componentUserControl.IsRunning = taskStateUpdate.Item2;
                     }
                 }
                 else
@@ -316,7 +316,7 @@ namespace CDPIUI.TrayIcon.Forms
             Location = new Point(-2000, -2000);
             Size = new Size(1, 1);
 
-            Hided?.Invoke();
+            Hidden?.Invoke();
         }
         public void ShowWindow(Point location, int vertOffset, int horOffset)
         {

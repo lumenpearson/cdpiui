@@ -2,7 +2,7 @@
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.ViewModels;
 using System;
 using System.Collections.Generic;

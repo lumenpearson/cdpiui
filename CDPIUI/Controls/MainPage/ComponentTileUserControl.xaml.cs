@@ -51,7 +51,7 @@ public enum ComponentState
 {
     SetupRequired,
     Stopped,
-    Runned,
+    Running,
     ExitedWithException,
 }
 
@@ -191,7 +191,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         {
             PreferTaskStateActions();
 
-            TileBackgroungBorder.Background = UIHelper.HexToSolidColorBrushConverter(DatabaseHelper.Instance.GetItemById(StoreId).BackgroudColor);
+            TileBackgroungBorder.Background = UIHelper.HexToSolidColorBrushConverter(DatabaseHelper.Instance.GetItemById(StoreId).BackgroundColor);
 
             bool isAddToAutorun = SettingsManager.Instance.GetValue<bool>(["CONFIGS", StoreId], "usedForAutorun");
             AutorunBadgeGrid.Visibility = isAddToAutorun ? Visibility.Visible : Visibility.Collapsed;
@@ -323,12 +323,12 @@ public sealed partial class ComponentTileUserControl : UserControl
 
     private async void PreferTaskStateActions()
     {
-        bool isRunned = await ComponentTasksManager.Instance.IsTaskRunned(StoreId);
+        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
 
-        if (isRunned)
+        if (isRunning)
         {
             StateToggleButton.DisplayText = localizer.GetLocalizedString("Stop");
-            ShowComponentState(ComponentState.Runned);
+            ShowComponentState(ComponentState.Running);
         }
         else
         {
@@ -336,14 +336,14 @@ public sealed partial class ComponentTileUserControl : UserControl
             CheckComponentState();
         }
 
-        StateToggleButton.Checked = isRunned;
+        StateToggleButton.Checked = isRunning;
     }
 
     private async void ToggleProcessButtonClick()
     {
-        bool isRunned = await ComponentTasksManager.Instance.IsTaskRunned(StoreId);
+        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
 
-        if (!isRunned)
+        if (!isRunning)
         {
             _ = ComponentTasksManager.Instance.CreateAndRunNewTask(StoreId);
         }
@@ -369,7 +369,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         }
         else if (processManager.IsProcessRunning)
         {
-            return ComponentState.Runned;
+            return ComponentState.Running;
         }
         else
         {
@@ -393,7 +393,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                 ForegroundStatusFontIcon.FontSize = 20;
                 SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStopped"));
                 break;
-            case ComponentState.Runned:
+            case ComponentState.Running:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uF13E";
                 ForegroundStatusFontIcon.FontSize = 28;
@@ -545,7 +545,7 @@ public sealed partial class ComponentTileUserControl : UserControl
 
             await InitConfigSettings(StoreId);
 
-            if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunned(StoreId)) await ComponentTasksManager.Instance.RestartTask(StoreId);
+            if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunning(StoreId)) await ComponentTasksManager.Instance.RestartTask(StoreId);
         }
     }
 
@@ -583,7 +583,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(StoreId);
         componentHelper.GetConfigHelper().ChangeVariableValue(sel.FileName, sel.PackId, id, value);
 
-        if (await ComponentTasksManager.Instance.IsTaskRunned(StoreId)) _ = ComponentTasksManager.Instance.RestartTask(StoreId);
+        if (await ComponentTasksManager.Instance.IsTaskRunning(StoreId)) _ = ComponentTasksManager.Instance.RestartTask(StoreId);
     }
 
     private async void AvailableFeaturesButton_Click(object sender, RoutedEventArgs e)

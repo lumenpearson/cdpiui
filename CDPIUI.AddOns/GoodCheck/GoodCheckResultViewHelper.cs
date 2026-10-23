@@ -1,7 +1,7 @@
 ﻿using CDPIUI.Core.Basic;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Data;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using System.Xml.Linq;
 
 namespace CDPIUI.AddOns.GoodCheck

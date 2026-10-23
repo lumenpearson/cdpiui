@@ -304,7 +304,7 @@
                 </Grid>
             </nv:AnimatedHorizontalContentItem>
         </nv:AnimatedHorizontalContentViewer>
-        <ucontrols:UtilityButtonControls x:Name="UtilityButtonContols" Grid.Row="1" HelpUrl="ConfigImport/1AboutConfigImport">
+        <ucontrols:UtilityButtonControls x:Name="UtilityButtons" Grid.Row="1" HelpUrl="ConfigImport/1AboutConfigImport">
             <Button x:Name="CancelButton" l:Uids.Uid="ExitButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="True"/>
             <Button x:Name="NextButton" 
                     l:Uids.Uid="GoForwardButton" 

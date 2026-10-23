@@ -8,7 +8,7 @@ using CDPIUI.Shared;
 using CDPIUI.Shared.Exceptions;
 using CDPIUI.Shared.Exceptions.Catalog;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System.IO.Compression;
 
 namespace CDPIUI.Core.Store.Application
@@ -161,7 +161,7 @@ namespace CDPIUI.Core.Store.Application
                         extractSkipFiletypes: [],
                         extractRootFolder: "CDPIUI/",
                         executableFileName: "",
-                        filetype: Shared.Basic.Filesystem.FileExtentionTypes.archive);
+                        filetype: Shared.Basic.Filesystem.FileExtensionTypes.archive);
 
                     if (!ok)
                         return OperationResultModel<List<string>>.UnSuccessResult();

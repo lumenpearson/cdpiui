@@ -13,7 +13,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace CDPIUI.Shared.PrettyErrorConvertionService
+namespace CDPIUI.Shared.PrettyErrorConversionService
 {
     /// <summary>
     /// Gets pretty errors from exceptions to show in userspace
@@ -226,11 +226,11 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
         /// <summary>
         /// Get pretty error code string
         /// </summary>
-        /// <param name="preffix">Preffix (must be "SAMPLE_PREFFIX" format)</param>
+        /// <param name="prefix">Prefix (must be "SAMPLE_PREFFIX" format)</param>
         /// <param name="ex">Exception</param>
         /// <param name="logger">Logger</param>
         /// <returns>"SAMPLE_PREFFIX_ERROR_400 (0x0)" format string</returns>
-        public virtual string GetPrettyErrorCode(string preffix, Exception ex, ILogger? logger)
+        public virtual string GetPrettyErrorCode(string prefix, Exception ex, ILogger? logger)
         {
             string prettyErrorCode;
 
@@ -242,11 +242,11 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
             if (hr != null)
             {
                 string hrHex = $"0x{hr.Value:X8}";
-                prettyErrorCode = $"{preffix}_{code}{_statusCode} ({hrHex})";
+                prettyErrorCode = $"{prefix}_{code}{_statusCode} ({hrHex})";
             }
             else
             {
-                prettyErrorCode = $"{preffix}_{code}{_statusCode}";
+                prettyErrorCode = $"{prefix}_{code}{_statusCode}";
             }
             return prettyErrorCode;
         }
@@ -254,11 +254,11 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
         /// <summary>
         /// Get pretty error code string from windows hcode
         /// </summary>
-        /// <param name="preffix">Preffix (must be "SAMPLE_PREFFIX" format)</param>
+        /// <param name="prefix">Prefix (must be "SAMPLE_PREFFIX" format)</param>
         /// <param name="hcode">HCode</param>
         /// <param name="logger">Logger</param>
         /// <returns>"SAMPLE_PREFFIX_ERROR_400 (0x0)" format string</returns>
-        public virtual string GetPrettyErrorCode(string preffix, int hcode, ILogger? logger)
+        public virtual string GetPrettyErrorCode(string prefix, int hcode, ILogger? logger)
         {
             string prettyErrorCode;
 
@@ -270,11 +270,11 @@ namespace CDPIUI.Shared.PrettyErrorConvertionService
             if (hr != null)
             {
                 string hrHex = $"0x{hr.Value:X8}";
-                prettyErrorCode = $"{preffix}_{code} ({hrHex})";
+                prettyErrorCode = $"{prefix}_{code} ({hrHex})";
             }
             else
             {
-                prettyErrorCode = $"{preffix}_{code}";
+                prettyErrorCode = $"{prefix}_{code}";
             }
             return prettyErrorCode;
         }

@@ -138,7 +138,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
                 
                 BitmapImage image = new BitmapImage(UIHelper.GetUriFromString(eImageSource));
 
-                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroudColor);
+                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
 
                 LibraryItemModel libraryItemModel = new()
                 {

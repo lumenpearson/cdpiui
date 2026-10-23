@@ -84,7 +84,7 @@
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="TipTitleTextBlock" FontStyle="Italic" Grid.Row="0" MaxLines="1" VerticalAlignment="Center"/>
                 <Grid Grid.Row="1" VerticalAlignment="Center" CornerRadius="5">
-                    <TextBlock x:Name="TipDecriptionTextBlock" TextWrapping="Wrap" VerticalAlignment="Center">
+                    <TextBlock x:Name="TipDescriptionTextBlock" TextWrapping="Wrap" VerticalAlignment="Center">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="TextTransform" X="0"/>
                         </TextBlock.RenderTransform>

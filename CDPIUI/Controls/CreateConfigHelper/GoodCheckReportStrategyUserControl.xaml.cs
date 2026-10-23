@@ -30,7 +30,7 @@ namespace CDPIUI;
 public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 {
     private bool IsPointerOnControl = false;
-    private bool isRunned = false;
+    private bool isRunning = false;
 
 
     private ILocalizer localizer = Localizer.Get();
@@ -161,7 +161,7 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 
     private async void PlayAsync()
     {
-        if (!isRunned)
+        if (!isRunning)
         {
             await ComponentTasksManager.Instance.StopTask(ComponentId);
 
@@ -189,15 +189,15 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
             PlayIconButton.Checked = true;
             PlayToolTip.Content = localizer.GetLocalizedString("StopTest");
             PlayIconButton.Visibility = Visibility.Visible;
-            isRunned = true;
+            isRunning = true;
         }
-        else if (isRunned)
+        else if (isRunning)
         {
             PlayIconButton.Checked = false;
             PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
             if (!IsPointerOnControl)
                 PlayIconButton.Visibility = Visibility.Collapsed;
-            isRunned = false;
+            isRunning = false;
             ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
         }
     }

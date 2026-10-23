@@ -1,7 +1,7 @@
 ﻿using CDPIUI.Core.Basic;
 using CDPIUI.Core.Data;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

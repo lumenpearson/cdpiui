@@ -134,7 +134,7 @@ namespace CDPIUI
             {
                 if (Application.Current is App app)
                 {
-                    app.PrefferRequestedActions(args);
+                    app.PreferRequestedActions(args);
                 }
             }
             catch { }

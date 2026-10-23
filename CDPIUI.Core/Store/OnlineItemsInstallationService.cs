@@ -5,9 +5,9 @@ using CDPIUI.Core.Store.Network.Models;
 using CDPIUI.Core.Store.Queue;
 using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -76,7 +76,7 @@ namespace CDPIUI.Core.Store
                         throw new NullReferenceException(nameof(DownloadWorker));
                     }
 
-                    string extention = Path.GetExtension(FileSystemService.GetFileNameFromUrl(url));
+                    string extension = Path.GetExtension(FileSystemService.GetFileNameFromUrl(url));
                     bool result = 
                         await DownloadWorker.DownloadAndExtractAsync(
                             url, 
@@ -85,7 +85,7 @@ namespace CDPIUI.Core.Store
                             null, 
                             null, 
                             string.Empty, 
-                            extention, 
+                            extension, 
                             false, 
                             filename);
                     if (!result) return false;
@@ -151,7 +151,7 @@ namespace CDPIUI.Core.Store
                         .FailureResult(ErrorModel.OnlyErrorCode(PrettyErrorCode.UNKNOWN));
                 }
 
-                FileExtentionTypes filetype = downloadLinkModel.type.ToEnum(FileExtentionTypes.temp);
+                FileExtensionTypes filetype = downloadLinkModel.type.ToEnum(FileExtensionTypes.temp);
 
                 bool result = await DownloadWorker.DownloadAndExtractAsync(
                     downloadLinkModel.link!,
@@ -204,7 +204,7 @@ namespace CDPIUI.Core.Store
                 case ItemsVersionControlTypes.git_only_last:
                     var onlyLastVesionData =
                         await APIWorker.GetDownloadLinkForVersion(
-                            item.version_control_link, item.filetype, version: version, prefferedFile: item.preffered_to_download_file_name);
+                            item.version_control_link, item.filetype, version: version, preferredFile: item.preffered_to_download_file_name);
 
                     if (onlyLastVesionData.Success && onlyLastVesionData.Result != null)
                     {
@@ -220,7 +220,7 @@ namespace CDPIUI.Core.Store
                 case ItemsVersionControlTypes.git:
                     var data =
                         await APIWorker.GetDownloadLinkForVersion(
-                            item.version_control_link, item.filetype, version: version, prefferedFile: item.preffered_to_download_file_name);
+                            item.version_control_link, item.filetype, version: version, preferredFile: item.preffered_to_download_file_name);
 
                     if (data.Success && data.Result != null)
                     {

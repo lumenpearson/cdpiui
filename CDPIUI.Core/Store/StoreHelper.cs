@@ -8,7 +8,7 @@ using TimeSpan = System.TimeSpan;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.Queue;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared;
 using CDPIUI.Core.LScript;
 using CDPIUI.Core.JSON;
@@ -99,7 +99,7 @@ namespace CDPIUI.Core.Store
             APIWorker.Token = RepositoryLoaderService.GetToken();
         }
 
-        private void RepositoryLoaderService_InternalErrorHappens(Shared.PrettyErrorConvertionService.ErrorModel obj)
+        private void RepositoryLoaderService_InternalErrorHappens(Shared.PrettyErrorConversionService.ErrorModel obj)
         {
             StoreInternalErrorHappens?.Invoke(obj.FriendlyDescription ?? obj.ErrorCode);
         }
@@ -757,7 +757,7 @@ namespace CDPIUI.Core.Store
                 DependentItemIds = _dependencies,
                 RequiredItemIds = requiredItems,
                 Developer = item.developer,
-                BackgroudColor = item.background,
+                BackgroundColor = item.background,
             };
 
 
