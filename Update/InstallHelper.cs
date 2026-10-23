@@ -89,18 +89,26 @@ namespace Update
                     CloseProcessIfRunning("CDPIUI_TrayIcon");
 
                     InstallationStateChanged?.Invoke(InstallState.Unpack);
-                    bool extractedOk = await ExtractZipAsync();
+                    List<string> stagedFiles = await StageAsync();
 
-                    if (FinishStatus == InstallError.None && extractedOk)
+                    bool applied = false;
+                    if (FinishStatus == InstallError.None && stagedFiles != null)
+                    {
+                        InstallationStateChanged?.Invoke(InstallState.Copy);
+                        applied = ApplyStaged(stagedFiles);
+                    }
+
+                    if (applied)
                     {
                         InstallationStateChanged?.Invoke(InstallState.Finalize);
+                        Cleanup();
                         FinishStatus = InstallError.OK;
                         bool launched = LaunchApplication(false);
                         if (launched)
                         {
                             InstallationStateChanged?.Invoke(InstallState.Completed);
                             ProgressChanged?.Invoke(1.0);
-                            Log("Extraction completed successfully and application launched.");
+                            Log("Update applied successfully and application launched.");
                         }
                         else
                         {
@@ -110,25 +118,14 @@ namespace Update
                     }
                     else
                     {
-                        Log("An error occurred during extraction. Attempting downgrade.");
-                        InstallationStateChanged?.Invoke(InstallState.Copy);
-                        bool downgraded = DowngradeProgram();
-
-                        if (downgraded)
+                        Log("Update was not applied. The previous version is kept.");
+                        Cleanup();
+                        FinishStatus = InstallError.OK;
+                        bool launched = LaunchApplication(true);
+                        if (launched)
                         {
-                            Log("Successfully downgraded to previous version.");
-                            FinishStatus = InstallError.OK;
-                            bool launched = LaunchApplication(true);
-                            if (launched)
-                            {
-                                InstallationStateChanged?.Invoke(InstallState.Completed);
-                                ProgressChanged?.Invoke(1.0);
-                                Application.Exit();
-                            }
-                            else
-                            {
-                                InstallationStateChanged?.Invoke(InstallState.Error);
-                            }
+                            InstallationStateChanged?.Invoke(InstallState.Completed);
+                            ProgressChanged?.Invoke(1.0);
                         }
                         else
                         {
@@ -147,6 +144,9 @@ namespace Update
                 }
             });
         }
+
+        private string StagingFolder => Path.Combine(_targetFolder, ".update-staging");
+        private string BackupFolder => Path.Combine(_targetFolder, ".update-backup");
 
         private void CloseProcessIfRunning(string processNameWithoutExt)
         {
@@ -170,66 +170,58 @@ namespace Update
             }
         }
 
-        private async Task<bool> ExtractZipAsync()
+        /// <summary>
+        /// Extracts the update into the staging folder without touching the installed files.
+        /// </summary>
+        /// <returns>Relative paths of the staged files, or null if the update cannot be applied</returns>
+        private async Task<List<string>> StageAsync()
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(_archiveFilePath) || !File.Exists(_archiveFilePath))
                 {
                     FinishStatus = InstallError.FileNotFound;
-                    // ErrorOccurred?.Invoke(FinishStatus, "Zip archive not found.");
-                    return false;
+                    return null;
                 }
 
                 if (!Directory.Exists(_targetFolder))
                     Directory.CreateDirectory(_targetFolder);
 
+                DeleteDirectory(StagingFolder);
+                DeleteDirectory(BackupFolder);
+                Directory.CreateDirectory(StagingFolder);
+
                 using (var zip = ZipFile.OpenRead(_archiveFilePath))
                 {
-                    var relevantEntries = zip.Entries
+                    var fileEntries = zip.Entries
                         .Where(e =>
                         {
                             var name = e.FullName.Replace('\\', '/');
-                            return name.StartsWith(UiRootPrefix, StringComparison.OrdinalIgnoreCase);
+                            return name.StartsWith(UiRootPrefix, StringComparison.OrdinalIgnoreCase) && !name.EndsWith("/");
                         })
                         .ToList();
 
-                    var fileEntries = relevantEntries
-                        .Where(e => !e.FullName.EndsWith("/"))
-                        .ToList();
-
                     int totalFiles = fileEntries.Count;
-                    int extractedFiles = 0;
-
                     if (totalFiles == 0)
                     {
                         Log($"No files found to extract in archive under '{UiRootPrefix}'.");
-
-                        ProgressChanged?.Invoke(1.0);
-                        return false;
+                        FinishStatus = InstallError.ExtractingFile;
+                        return null;
                     }
 
-                    foreach (var entry in relevantEntries)
+                    var staged = new List<string>();
+                    foreach (var entry in fileEntries)
                     {
                         var relativePath = entry.FullName.Replace('\\', '/').Substring(UiRootPrefix.Length);
-                        if (!string.IsNullOrEmpty(relativePath) && !TryGetDestination(relativePath, out _))
+                        string destPath;
+                        string stagedPath;
+                        if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
+                            !TryGetDestination(StagingFolder, relativePath, out stagedPath))
                         {
                             Log($"Archive entry '{entry.FullName}' points outside of the target folder. Update aborted.");
-                            ProgressChanged?.Invoke(1.0);
-                            return false;
+                            FinishStatus = InstallError.ExtractingFile;
+                            return null;
                         }
-                    }
-
-                    foreach (var entry in relevantEntries)
-                    {
-                        var entryName = entry.FullName.Replace('\\', '/');
-                        var relativePath = entryName.Substring(UiRootPrefix.Length);
-                        if (string.IsNullOrEmpty(relativePath))
-                            continue; 
-
-                        string destPath;
-                        TryGetDestination(relativePath, out destPath);
-                        string destDir = Path.GetDirectoryName(destPath);
 
                         var fileName = Path.GetFileName(relativePath);
                         if (_skipFiles.Contains(fileName, StringComparer.OrdinalIgnoreCase) && File.Exists(destPath))
@@ -238,122 +230,135 @@ namespace Update
                             continue;
                         }
 
-                        if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
-                            Directory.CreateDirectory(destDir);
-
-                        if (entry.FullName.EndsWith("/"))
+                        CurrentFileChanged?.Invoke($"Extracting {relativePath}");
+                        Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
+                        using (var stream = entry.Open())
+                        using (var outFile = new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None))
                         {
-                            if (!Directory.Exists(destPath))
-                                Directory.CreateDirectory(destPath);
+                            await stream.CopyToAsync(outFile);
                         }
-                        else
-                        {
-                            try
-                            {
-                                CurrentFileChanged?.Invoke($"Extracting {relativePath}");
-                                using (var stream = entry.Open())
-                                using (var outFile = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                                {
-                                    await stream.CopyToAsync(outFile);
-                                }
-                            }
-                            catch (UnauthorizedAccessException uaEx)
-                            {
-                                Log($"Permission denied when extracting {relativePath}: {uaEx.Message}");
-                                FinishStatus = InstallError.PermissionDenied;
-                                // ErrorOccurred?.Invoke(FinishStatus, $"Permission denied when extracting {relativePath}");
-                                return false;
-                            }
-                            catch (IOException ioEx)
-                            {
-                                Log($"IO error when extracting {relativePath}: {ioEx.Message}");
-                                FinishStatus = InstallError.ExtractingFile;
-                                // ErrorOccurred?.Invoke(FinishStatus, $"IO error when extracting {relativePath}: {ioEx.Message}");
-                                return false;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log($"Error extracting {relativePath}: {ex}");
-                                FinishStatus = InstallError.ExtractingFile;
-                                // ErrorOccurred?.Invoke(FinishStatus, $"Error extracting {relativePath}: {ex.Message}");
-                                return false;
-                            }
 
-                            extractedFiles++;
-                            double progress = (double)extractedFiles / Math.Max(1, totalFiles);
-                            ProgressChanged?.Invoke(progress);
-                        }
-                    } 
+                        staged.Add(relativePath);
+                        ProgressChanged?.Invoke((double)staged.Count / totalFiles);
+                    }
 
-                    ProgressChanged?.Invoke(1.0);
-                } 
-                return true;
+                    return staged;
+                }
+            }
+            catch (UnauthorizedAccessException uaEx)
+            {
+                Log($"Permission denied while extracting the update: {uaEx.Message}");
+                FinishStatus = InstallError.PermissionDenied;
+                return null;
             }
             catch (Exception ex)
             {
                 Log($"Extraction failed: {ex}");
-                FinishStatus = InstallError.UnexpectedError;
-                // ErrorOccurred?.Invoke(FinishStatus, ex.Message);
-                return false;
+                FinishStatus = InstallError.ExtractingFile;
+                return null;
             }
         }
 
-        private bool DowngradeProgram()
+        /// <summary>
+        /// Moves the staged files into place. Replaced files are kept in the backup folder
+        /// and moved back if any file cannot be applied.
+        /// </summary>
+        private bool ApplyStaged(List<string> stagedFiles)
         {
+            // Relative path and whether an installed file was moved to the backup folder.
+            var applied = new List<KeyValuePair<string, bool>>();
             try
             {
-                string oldDirectory = Path.Combine(_targetFolder, ".old");
-                if (!Directory.Exists(oldDirectory))
+                for (int i = 0; i < stagedFiles.Count; i++)
                 {
-                    FinishStatus = InstallError.NoOldVersion;
-                    ErrorOccurred?.Invoke(FinishStatus, "No old version found to downgrade to.");
-                    return false;
+                    string relativePath = stagedFiles[i];
+                    string destPath, stagedPath, backupPath;
+                    TryGetDestination(_targetFolder, relativePath, out destPath);
+                    TryGetDestination(StagingFolder, relativePath, out stagedPath);
+                    TryGetDestination(BackupFolder, relativePath, out backupPath);
+
+                    CurrentFileChanged?.Invoke($"Copying {relativePath}");
+                    Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+
+                    bool backedUp = false;
+                    if (File.Exists(destPath))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                        File.Move(destPath, backupPath);
+                        backedUp = true;
+                    }
+                    applied.Add(new KeyValuePair<string, bool>(relativePath, backedUp));
+
+                    File.Move(stagedPath, destPath);
+                    ProgressChanged?.Invoke((double)(i + 1) / stagedFiles.Count);
                 }
 
-                var allFiles = Directory.GetFiles(oldDirectory, "*", SearchOption.AllDirectories);
-                int total = allFiles.Length;
-                int idx = 0;
-
-                foreach (var src in allFiles)
-                {
-                    var relative = GetRelativePath(oldDirectory, src);
-                    var dest = Path.Combine(_targetFolder, relative);
-                    var destDir = Path.GetDirectoryName(dest);
-                    if (!Directory.Exists(destDir))
-                        Directory.CreateDirectory(destDir);
-
-                    try
-                    {
-                        File.Copy(src, dest, true);
-                        idx++;
-                        ProgressChanged?.Invoke((double)idx / Math.Max(1, total));
-                        CurrentFileChanged?.Invoke($"Downgraded {relative}");
-                    }
-                    catch (UnauthorizedAccessException uaEx)
-                    {
-                        Log($"Permission denied while downgrading {relative}: {uaEx.Message}");
-                        FinishStatus = InstallError.PermissionDenied;
-                        ErrorOccurred?.Invoke(FinishStatus, $"Permission denied while downgrading {relative}");
-                        return false;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Error while downgrading {relative}: {ex}");
-                        FinishStatus = InstallError.UnexpectedError;
-                        ErrorOccurred?.Invoke(FinishStatus, $"Error while downgrading {relative}: {ex.Message}");
-                        return false;
-                    }
-                }
-
-                ProgressChanged?.Invoke(1.0);
                 return true;
             }
             catch (Exception ex)
             {
-                Log($"Downgrade failed: {ex}");
-                FinishStatus = InstallError.UnexpectedError;
-                ErrorOccurred?.Invoke(FinishStatus, ex.Message);
+                Log($"Failed to apply the update: {ex}");
+                FinishStatus = ex is UnauthorizedAccessException ? InstallError.PermissionDenied : InstallError.ExtractingFile;
+
+                InstallationStateChanged?.Invoke(InstallState.Copy);
+                if (!Rollback(applied))
+                {
+                    FinishStatus = InstallError.NoOldVersion;
+                    ErrorOccurred?.Invoke(FinishStatus, ex.Message);
+                }
                 return false;
+            }
+        }
+
+        private bool Rollback(List<KeyValuePair<string, bool>> applied)
+        {
+            bool restored = true;
+            for (int i = applied.Count - 1; i >= 0; i--)
+            {
+                string relativePath = applied[i].Key;
+                string destPath, backupPath;
+                TryGetDestination(_targetFolder, relativePath, out destPath);
+                TryGetDestination(BackupFolder, relativePath, out backupPath);
+                try
+                {
+                    if (File.Exists(destPath))
+                        File.Delete(destPath);
+
+                    if (applied[i].Value)
+                    {
+                        File.Move(backupPath, destPath);
+                    }
+                    CurrentFileChanged?.Invoke($"Restored {relativePath}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to restore {relativePath}: {ex}");
+                    restored = false;
+                }
+            }
+
+            Log(restored ? "Previous version restored." : "Previous version was restored only partially.");
+            return restored;
+        }
+
+        private void Cleanup()
+        {
+            // Keep the backup if a rollback did not finish, so the files can still be recovered by hand.
+            if (FinishStatus != InstallError.NoOldVersion)
+                DeleteDirectory(BackupFolder);
+            DeleteDirectory(StagingFolder);
+        }
+
+        private void DeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                    Directory.Delete(path, true);
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to delete {path}: {ex.Message}");
             }
         }
 
@@ -395,13 +400,13 @@ namespace Update
             }
         }
 
-        private bool TryGetDestination(string relativePath, out string destination)
+        private static bool TryGetDestination(string root, string relativePath, out string destination)
         {
             destination = null;
-            if (Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
+            if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
                 return false;
 
-            string fullRoot = Path.GetFullPath(_targetFolder);
+            string fullRoot = Path.GetFullPath(root);
             if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
                 fullRoot += Path.DirectorySeparatorChar;
 
@@ -423,23 +428,6 @@ namespace Update
             catch
             {
                 // pass
-            }
-        }
-        private string GetRelativePath(string basePath, string fullPath)
-        {
-            if (string.IsNullOrEmpty(basePath)) throw new ArgumentNullException(nameof(basePath));
-            if (string.IsNullOrEmpty(fullPath)) throw new ArgumentNullException(nameof(fullPath));
-
-            Uri baseUri = new Uri(basePath.EndsWith(Path.DirectorySeparatorChar.ToString()) ? basePath : basePath + Path.DirectorySeparatorChar);
-            Uri fullUri = new Uri(fullPath);
-
-            if (baseUri.IsBaseOf(fullUri))
-            {
-                return Uri.UnescapeDataString(baseUri.MakeRelativeUri(fullUri).ToString());
-            }
-            else
-            {
-                throw new InvalidOperationException("The fullPath is not a subpath of basePath.");
             }
         }
     }
