@@ -11,7 +11,7 @@ namespace CDPIUI.TrayIcon.Helper
 {
     public static class AutoStartManager
     {
-        private const string TaskName = "CDPIUI_Autostart";
+        internal const string TaskName = "CDPIUI_Autostart";
 
         public static bool AddToAutorun()
         {
