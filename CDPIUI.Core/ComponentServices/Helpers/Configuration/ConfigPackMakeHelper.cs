@@ -329,7 +329,9 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
                             Autocorrector.FindAutoCorrectPath(
                                 file, 
                                 item, 
-                                LScriptCore.ExecuteScript("$GETCURRENTDIR()", callItemId: item.packId)));
+                                // A file path is expected: the search uses its folder, and the pack
+                                // folder itself gave the parent Store\Items folder.
+                                Path.Combine(LScriptCore.ExecuteScript("$GETCURRENTDIR()", callItemId: item.packId), "init.json")));
                     if (!usedFiles.Contains(pair))
                         usedFiles.Add(pair);
                 }

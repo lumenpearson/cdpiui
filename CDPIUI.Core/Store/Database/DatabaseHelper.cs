@@ -358,15 +358,22 @@ namespace CDPIUI.Core.Store.Database
             connection.Open();
             using var cmd = connection.CreateCommand();
             cmd.CommandText = "SELECT * FROM Items";
-            using var reader = cmd.ExecuteReader();
+
+            // Read under the lock like the other queries; the items are checked after it.
+            List<DatabaseStoreItem> allItems = [];
+            lock (databaseRequestLock)
+            {
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    allItems.Add(CreateItemFromReader(reader));
+            }
 
             var itemsToUpdate = new List<DatabaseStoreItem>();
 
             List<DatabaseStoreItem> RestoreFailureItems = [];
 
-            while (reader.Read())
+            foreach (var item in allItems)
             {
-                var item = CreateItemFromReader(reader);
 
                 // With a separator and ignoring case: "C:\CDPIUI2" is not inside "C:\CDPIUI".
                 string baseWithSeparator = baseDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
