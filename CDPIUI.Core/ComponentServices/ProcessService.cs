@@ -79,9 +79,19 @@ namespace CDPIUI.Core.ComponentServices
 
                 ProcessName = DatabaseHelper.Instance.GetItemById(Id)?.Executable?.FirstCharToUpper() ?? string.Empty;
 
+                if (componentHelper == null)
+                    throw new InvalidOperationException($"Component {Id} is not installed or its executable is missing.");
+
                 var exePath = componentHelper.GetExecutablePath();
                 var workingDirectory = componentHelper.GetDirectory();
-                string args = SetupProxy(componentHelper.GetStartupParams(), Id);
+                string startupParams = componentHelper.GetStartupParams();
+                // GoodbyeDPI started with its defaults and winws exited at once when no preset was
+                // selected or the preset gave an empty line (audit 11.10).
+                if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+                    throw new FileNotFoundException($"The executable of {Id} was not found.", exePath);
+                if (string.IsNullOrWhiteSpace(startupParams))
+                    throw new InvalidOperationException("No preset is selected for this component, or the preset has no startup parameters.");
+                string args = SetupProxy(startupParams, Id);
 
                 var component = HardcodedItemIds.ComponentIds.GetKeyByValue(Id);
                 if (component == Components.NoDPI) args = AppendQuietFlag(args);
