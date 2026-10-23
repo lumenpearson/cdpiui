@@ -1,5 +1,6 @@
 ﻿using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.Database;
 
 namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
@@ -55,9 +56,9 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                Logger.Instance.CreateWarningLog(nameof(Autocorrector), $"Cannot find a replacement for \"{filePath}\": {ex.Message}");
             }
             return string.Empty;
         }

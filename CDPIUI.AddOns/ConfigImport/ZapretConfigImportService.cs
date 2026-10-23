@@ -1,4 +1,5 @@
-﻿using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+﻿using CDPIUI.Core.Basic;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using System.Security.Cryptography;
@@ -544,9 +545,10 @@ public sealed partial class ZapretConfigImportService
         {
             version = options.CurrentVersionResolver?.Invoke(payload.Generation);
         }
-        catch
+        catch (Exception ex)
         {
             // Version lookup is deliberately best-effort. Import must continue.
+            Logger.Instance.CreateWarningLog(nameof(ZapretConfigImportService), $"Cannot resolve the current {payload.Generation} version: {ex.Message}");
         }
         if (string.IsNullOrWhiteSpace(version))
             version = TryGetInstalledVersion(payload.Generation);

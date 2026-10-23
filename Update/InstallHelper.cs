@@ -250,7 +250,7 @@ namespace Update
                                 exitedIds.Add(process.Id);
                             waited = true;
                         }
-                        catch (Exception)
+                        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
                         {
                             // No access to the handle, or the process exited before the wait.
                         }

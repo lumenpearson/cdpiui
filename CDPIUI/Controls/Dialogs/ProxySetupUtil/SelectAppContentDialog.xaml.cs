@@ -156,9 +156,10 @@ public sealed partial class SelectAppContentDialog : ContentDialog
         {
             startFolder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(windowsAppsPath);
         }
-        catch
+        catch (Exception ex)
         {
             // The start folder is optional: without it the picker opens at its default location.
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SelectAppContentDialog), $"Cannot open the start folder: {ex.Message}");
         }
 
         if (startFolder != null)

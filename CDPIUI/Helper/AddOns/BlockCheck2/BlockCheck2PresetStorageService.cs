@@ -435,9 +435,9 @@ public sealed class BlockCheck2PresetStorageService
                     Directory.Delete(root, recursive: true);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(BlockCheck2PresetStorageService), $"Cannot remove \"{root}\": {ex.Message}");
             }
         }
     }

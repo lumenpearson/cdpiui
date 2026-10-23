@@ -183,7 +183,8 @@ namespace CDPIUI.Core.Store.Network
             }
             finally
             {
-                try { if (File.Exists(tempDestination)) File.Delete(tempDestination); } catch { }
+                try { if (File.Exists(tempDestination)) File.Delete(tempDestination); }
+                catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove the temporary file \"{tempDestination}\": {ex.Message}"); }
 
                 // An installer copied from this download is removed again when it failed to install
                 // only; other files may have replaced the files of the installed version and
@@ -194,7 +195,8 @@ namespace CDPIUI.Core.Store.Network
                 {
                     foreach (var file in _extractedFiles)
                     {
-                        try { if (File.Exists(file)) File.Delete(file); } catch { }
+                        try { if (File.Exists(file)) File.Delete(file); }
+                        catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove \"{file}\": {ex.Message}"); }
                     }
                 }
             }

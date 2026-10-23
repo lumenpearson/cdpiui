@@ -70,9 +70,9 @@ namespace CDPIUI.AddOns.GoodCheck
                     strategiesLists.Add(strategiesList);
                 }
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // pass
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckResultViewHelper), $"Unable to list strategy files in \"{targetFolder}\". {ex.Message}");
             }
 
             return strategiesLists;
