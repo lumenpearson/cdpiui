@@ -154,7 +154,7 @@ namespace CDPIUI
                 .Cast<NavigationViewItem>()
                 .FirstOrDefault(
                 (x) => string.Equals(
-                    ((string)x.Tag).Split('\\').Length >= 2 ? ((string)x.Tag).Split('\\')[^1] : string.Empty, 
+                    GetHelpName((string)x.Tag),
                     category, 
                     StringComparison.OrdinalIgnoreCase), 
                 null);
@@ -171,7 +171,7 @@ namespace CDPIUI
                     .Cast<NavigationViewItem>()
                     .FirstOrDefault(
                     (x) => string.Equals(
-                        ((string)x.Tag).Split('\\').Length > 2 ? ((string)x.Tag).Split('\\')[^1].Replace(".md", "") : string.Empty, 
+                        GetHelpName((string)x.Tag),
                         page, 
                         StringComparison.OrdinalIgnoreCase), 
                     null);
@@ -182,6 +182,13 @@ namespace CDPIUI
             }
             return true;
         }
+
+        // A menu item holds the path of an article or a category folder. The name is compared
+        // without ".md", so a root article such as cdpiui://Help/WelcomeToHelp can be opened too.
+        private static string GetHelpName(string tag) =>
+            string.IsNullOrEmpty(tag)
+                ? string.Empty
+                : Path.GetFileNameWithoutExtension(tag.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
         private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
@@ -231,7 +238,11 @@ namespace CDPIUI
                 // Help pages are documents: their links get the same routes as links from a browser.
                 _ = Commands.CommandsHandler.HandleCommandAsync(url);
             }
-            return;
+            else
+            {
+                // Links to component documentation were ignored. Only web links are opened.
+                Helper.UrlOpenHelper.LaunchUrl(url);
+            }
         }
     }
 }

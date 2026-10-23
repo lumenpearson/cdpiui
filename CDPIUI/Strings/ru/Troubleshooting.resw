@@ -157,7 +157,7 @@
     <value>Прокси-сервер</value>
   </data>
   <data name="CheckSmartByte" xml:space="preserve">
-    <value>Службы SmartByte </value>
+    <value>Службы SmartByte</value>
   </data>
   <data name="CheckTimestamps" xml:space="preserve">
     <value>TCP timestamps</value>

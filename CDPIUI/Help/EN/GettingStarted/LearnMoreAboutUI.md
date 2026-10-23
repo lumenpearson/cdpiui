@@ -32,4 +32,4 @@ You can change the application code at any time. You can also examine the securi
 
 ## Fast
 
-The application uses less than 10 KB of RAM when it operates in the background.
+The application uses less than 10 MB of RAM when it operates in the background.

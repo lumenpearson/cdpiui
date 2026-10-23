@@ -15,7 +15,7 @@ namespace CDPIUI.Core.Store.Repository.Localization
             return ApplicationInfo.Instance.Localization switch
             {
                 "ru" => "RU",
-                "en-US" => "EN",
+                "en-us" or "en-US" => "EN",
                 _ => "EN",
             };
         }

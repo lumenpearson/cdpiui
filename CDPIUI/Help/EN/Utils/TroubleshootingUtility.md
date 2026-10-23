@@ -10,7 +10,7 @@ The first page shows a list of problems. Select the problem that you have:
 
 | Problem | What the utility does |
 | ------- | --------------------- |
-| [All configs not work to me] | Starts the basic system check. |
+| [None of the configs work for me] | Starts the basic system check. |
 | [Component constantly crashes with an error] | Opens the help article about component exceptions. |
 | [I cannot open or download items from Store] | Starts the Store check. |
 | [My problem is not on the list] | Opens the page for a problem report. |
