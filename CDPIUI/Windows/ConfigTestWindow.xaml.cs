@@ -339,7 +339,7 @@ namespace CDPIUI
             if (p.EstimatedRemaining.HasValue && p.CompletedPresets > 0 && p.CompletedPresets < p.TotalPresets)
             {
                 var eta = p.EstimatedRemaining.Value;
-                ProgressEtaTextBlock.Text = UnitsParser.ConvertMinutesToPrettyText(eta.Minutes);
+                ProgressEtaTextBlock.Text = UnitsParser.ConvertMinutesToPrettyText(eta.TotalMinutes);
                 
             }
             else

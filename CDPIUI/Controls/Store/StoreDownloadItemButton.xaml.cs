@@ -412,7 +412,7 @@ namespace CDPIUI.Controls.Store
             if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
                 return;
 
-            TimeTextBlock.Text = UnitsParser.ConvertMinutesToPrettyText(time.Minutes);
+            TimeTextBlock.Text = UnitsParser.ConvertMinutesToPrettyText(time.TotalMinutes);
         }
 
         private void PreferItemDownloadingStateActions(string state)

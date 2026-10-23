@@ -128,11 +128,15 @@ namespace CDPIUI.Helper.AddOns
         private readonly object _curlLock = new();
         private readonly List<Process> _activeCurls = new();
 
+        // A failed DNS lookup is an ordinary error, not a certificate problem.
         private static readonly Regex CertRegex = new(
-            "Could not resolve host|certificate|SSL certificate problem|self[- ]?signed|certificate verify failed|unable to get local issuer certificate",
+            "certificate|SSL certificate problem|self[- ]?signed|certificate verify failed|unable to get local issuer certificate",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        // curl on Windows uses schannel, and a TLS handshake reset by DPI ends with exit code 35
+        // and "schannel: failed to receive handshake": that is a failure of the preset, not an
+        // unsupported curl feature, so neither "schannel" nor code 35 alone means unsupported.
         private static readonly Regex UnsupportedRegex = new(
-            "does not support|not supported|unsupported protocol|unsupported option|unsupported feature|Unrecognized option|Unknown option|schannel",
+            "does not support|not supported|unsupported protocol|unsupported option|unsupported feature|Unrecognized option|Unknown option",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex DpiMetricsRegex = new(
             @"^(?<code>\d{3})\s+(?<up>\d+)\s+(?<down>\d+)\s+(?<time>[\d\.]+)$",
@@ -274,7 +278,9 @@ namespace CDPIUI.Helper.AddOns
                 .ThenByDescending(r => r.PingOk)
                 .ToList();
 
-            PresetTestResult best = ranked.FirstOrDefault(r => !r.Failed && r.GetScore(testType) > int.MinValue + 1);
+            // A preset without a single successful check is no recommendation.
+            PresetTestResult best = ranked.FirstOrDefault(r => !r.Failed &&
+                (testType == PresetTestType.Standard ? r.HttpOk > 0 : r.DpiOk > 0));
 
             return new PresetTestRunResult
             {
@@ -551,7 +557,7 @@ namespace CDPIUI.Helper.AddOns
                         StdStatus kind;
                         if (CertRegex.IsMatch(stderr ?? string.Empty))
                             kind = StdStatus.Ssl;
-                        else if (exit == 35 || UnsupportedRegex.IsMatch(stderr ?? string.Empty))
+                        else if (UnsupportedRegex.IsMatch(stderr ?? string.Empty))
                             kind = StdStatus.Unsupported;
                         else if (exit == 0)
                             kind = StdStatus.Ok;
@@ -670,7 +676,7 @@ namespace CDPIUI.Helper.AddOns
                         down = long.Parse(m.Groups["down"].Value);
                         time = double.Parse(m.Groups["time"].Value, System.Globalization.CultureInfo.InvariantCulture);
                     }
-                    else if (exit == 35 || UnsupportedRegex.IsMatch((stderr ?? string.Empty) + " " + text))
+                    else if (UnsupportedRegex.IsMatch((stderr ?? string.Empty) + " " + text))
                     {
                         code = "UNSUP";
                     }
