@@ -119,6 +119,58 @@ public sealed class ConfigShareService
         }
     }
 
+    // Options with which the component writes a file. The tray starts components with
+    // administrator rights, so a shared preset could write anywhere with them (audit 14.4).
+    private static readonly HashSet<string> FileWritingOptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "--debug", "--wf-save", "--hostlist-auto", "--hostlist-auto-debug"
+    };
+
+    /// <summary>
+    /// A shared preset may only write into its own files.
+    /// </summary>
+    internal static void EnsureNoOutsideWrites(string? text, string packageDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+        string root = Path.GetFullPath(packageDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        IReadOnlyList<string> tokens = ConfigCommandLine.Tokenize(text);
+        for (int index = 0; index < tokens.Count; index++)
+        {
+            if (!ConfigCommandLine.TryGetOptionName(tokens[index], out string name, out int equalsIndex) ||
+                !FileWritingOptions.Contains(name))
+                continue;
+
+            string value = equalsIndex >= 0
+                ? tokens[index][(equalsIndex + 1)..]
+                : index + 1 < tokens.Count && !ConfigCommandLine.IsOption(tokens[index + 1]) ? tokens[index + 1] : string.Empty;
+            value = ConfigCommandLine.Unquote(value).Trim();
+            if (name.Equals("--debug", StringComparison.OrdinalIgnoreCase))
+            {
+                // --debug=0|1|syslog|android writes no file; --debug=@file does.
+                if (!value.StartsWith('@'))
+                    continue;
+                value = value[1..];
+            }
+            if (value.Length == 0)
+                continue;
+
+            bool inside;
+            try
+            {
+                inside = Path.IsPathRooted(value) &&
+                    Path.GetFullPath(value).StartsWith(root, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                inside = false;
+            }
+            if (!inside)
+                throw new ConfigShareException("SHARE_UNSAFE_OPTION",
+                    $"The preset writes a file outside of its package with {name}: {value}");
+        }
+    }
+
     public Task<ConfigSharePackage> ReadAsync(string path) => Task.Run(() => Read(path));
 
     public ConfigSharePackage Read(string path)
@@ -170,6 +222,11 @@ public sealed class ConfigShareService
             config.variables ??= [];
             AddParentReferences(references);
             ConfigShareResources.MapConfig(config, text => ReplaceConfigReferences(text, references));
+            ConfigShareResources.MapConfig(config, text =>
+            {
+                EnsureNoOutsideWrites(text, directory);
+                return text;
+            });
             config.packId = directory;
             config.file_name = null;
             foreach (var resource in manifest.Resources.Where(item => item.RewriteReferences))
