@@ -21,6 +21,6 @@
     <Content Include="Resources\EULA.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+    <PackageReference Include="WixToolset.UI.wixext" />
   </ItemGroup>
 </Project>
