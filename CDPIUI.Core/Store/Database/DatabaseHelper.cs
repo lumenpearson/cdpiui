@@ -86,6 +86,25 @@ namespace CDPIUI.Core.Store.Database
             connection.Open();
 
             var cmd = connection.CreateCommand();
+            SetUpsertCommand(cmd, item);
+
+            lock (databaseRequestLock)
+            {
+                try
+                {
+                    cmd.ExecuteNonQuery();
+                    return true;
+                }
+                catch (Exception ex) 
+                {
+                    Logger.Instance.CreateErrorLog(nameof(DatabaseHelper), $"{ex}");
+                    return false;
+                }
+            }
+        }
+
+        private static void SetUpsertCommand(SqliteCommand cmd, DatabaseStoreItem item)
+        {
             cmd.CommandText = @"
                 INSERT OR REPLACE INTO Items (Id, Type, Directory, Executable, UpdateCheckUrl, DownloadUrl, DownloadFileType, VersionControlType, 
                     CurrentVersion, RequiredItemIds, DependentItemIds, Icon, Name, ShortName, Developer, BackgroundColor)
@@ -113,20 +132,48 @@ namespace CDPIUI.Core.Store.Database
             cmd.Parameters.AddWithValue("@ShortName", item.ShortName ?? string.Empty);
             cmd.Parameters.AddWithValue("@Developer", item.Developer ?? string.Empty);
             cmd.Parameters.AddWithValue("@BackgroundColor", item.BackgroundColor ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Saves several items with one connection and one commit. Each item is saved or logged
+        /// on its own, as <see cref="AddOrUpdateItem"/> does.
+        /// </summary>
+        private void AddOrUpdateItems(SqliteConnection connection, IReadOnlyList<DatabaseStoreItem> items)
+        {
+            if (items.Count == 0)
+                return;
 
             lock (databaseRequestLock)
             {
                 try
                 {
-                    cmd.ExecuteNonQuery();
-                    return true;
+                    using var transaction = connection.BeginTransaction();
+                    foreach (var item in items)
+                    {
+                        using var cmd = connection.CreateCommand();
+                        cmd.Transaction = transaction;
+                        SetUpsertCommand(cmd, item);
+                        try
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                        catch (SqliteException ex)
+                        {
+                            // Only this statement is undone; the other items are still saved.
+                            Logger.Instance.CreateErrorLog(nameof(DatabaseHelper), $"{ex}");
+                        }
+                    }
+                    transaction.Commit();
+                    return;
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
-                    Logger.Instance.CreateErrorLog(nameof(DatabaseHelper), $"{ex}");
-                    return false;
+                    Logger.Instance.CreateWarningLog(nameof(DatabaseHelper), $"Cannot save the items together, saving them one by one: {ex.Message}");
                 }
             }
+
+            foreach (var item in items)
+                AddOrUpdateItem(item);
         }
 
         public DatabaseStoreItem? GetItemById(string id)
@@ -401,10 +448,7 @@ namespace CDPIUI.Core.Store.Database
             }
 
 
-            foreach (var item in itemsToUpdate)
-            {
-                AddOrUpdateItem(item);
-            }
+            AddOrUpdateItems(connection, itemsToUpdate);
             if (RestoreFailureItems.Count > 0)
                 return new()
                 {

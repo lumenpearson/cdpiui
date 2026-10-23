@@ -79,9 +79,21 @@ namespace CDPIUI.Core.Store.Repository
             return false;
         }
 
-        public async Task<bool> LoadAllStoreDatabase(bool forseSync, SupportedVersionControls versionControl)
+        private readonly StoreLoadGate<(bool ForseSync, SupportedVersionControls VersionControl)> LoadGate = new();
+
+        public Task<bool> LoadAllStoreDatabase(bool forseSync, SupportedVersionControls versionControl)
         {
             SupportedVersionControls usedVersionControl = versionControl == SupportedVersionControls.None ? VersionControl : versionControl;
+
+            // Several Store buttons ask for the database at the same time on the first launch:
+            // they share one download.
+            return LoadGate.Run(
+                (forseSync, usedVersionControl),
+                () => LoadAllStoreDatabaseCore(forseSync, usedVersionControl));
+        }
+
+        private async Task<bool> LoadAllStoreDatabaseCore(bool forseSync, SupportedVersionControls usedVersionControl)
+        {
             try
             {
                 if (FormattedStoreDatabase != null && !forseSync)

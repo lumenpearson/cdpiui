@@ -9,6 +9,7 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Shared.Extensions;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -81,10 +82,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
                 try
                 {
-                    ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(jsonFile);
-
-                    if (configItem == null ||
-                        !MatchesTarget(configItem, Target, out bool isLegacyZapretConfig))
+                    ConfigItem? configItem = LoadPresetForTarget(jsonFile, Target, out bool isLegacyZapretConfig);
+                    if (configItem == null)
                         continue;
 
                     configItem.IsLegacy = isLegacyZapretConfig;
@@ -131,6 +130,45 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             return [.. array];
         }
 
+        private readonly record struct FileStamp(DateTime LastWriteTimeUtc, long Length);
+
+        private readonly record struct CachedPresetTarget(FileStamp Stamp, string? Target);
+
+        // The target of each preset file, shared by all components. An entry is used only while
+        // the file keeps the same write time and size.
+        private static readonly ConcurrentDictionary<string, CachedPresetTarget> PresetTargetCache =
+            new(StringComparer.Ordinal);
+
+        private static FileStamp GetFileStamp(string path)
+        {
+            FileInfo info = new(path);
+            return new FileStamp(info.LastWriteTimeUtc, info.Length);
+        }
+
+        /// <summary>
+        /// Reads a preset file when it is for <paramref name="target"/>, otherwise returns null.
+        /// Every component reads the same packs, so a file already known to be for another
+        /// component is skipped without parsing it again. A matching file is always parsed anew,
+        /// because callers change the returned item.
+        /// </summary>
+        internal static ConfigItem? LoadPresetForTarget(string jsonFile, string target, out bool isLegacyZapretConfig)
+        {
+            FileStamp stamp = GetFileStamp(jsonFile);
+            if (PresetTargetCache.TryGetValue(jsonFile, out CachedPresetTarget cached) &&
+                cached.Stamp == stamp &&
+                !MatchesTarget(cached.Target, target, out _))
+            {
+                isLegacyZapretConfig = false;
+                return null;
+            }
+
+            ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(jsonFile);
+            if (configItem != null)
+                PresetTargetCache[jsonFile] = new CachedPresetTarget(stamp, configItem.target?.FirstOrDefault());
+
+            return MatchesTarget(configItem, target, out isLegacyZapretConfig) ? configItem : null;
+        }
+
         private static bool MatchesTarget(
             ConfigItem? configItem,
             string target,
@@ -142,7 +180,14 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 return false;
             }
 
-            string? configTarget = configItem.target?.FirstOrDefault();
+            return MatchesTarget(configItem.target?.FirstOrDefault(), target, out isLegacyZapretConfig);
+        }
+
+        private static bool MatchesTarget(
+            string? configTarget,
+            string target,
+            out bool isLegacyZapretConfig)
+        {
             isLegacyZapretConfig =
                 target == HardcodedItemIds.ComponentIds[Components.Zapret2] &&
                 configTarget == HardcodedItemIds.ComponentIds[Components.Zapret];
