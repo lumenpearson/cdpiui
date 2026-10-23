@@ -90,4 +90,23 @@ public class XmlSettingsServiceTests : IDisposable
         Assert.Equal("preset.json", reloaded.GetValue<string>(["CONFIGS", "CSZTBN012"], "configFile"));
         Assert.False(File.Exists(SettingsPath + ".lock"));
     }
+
+    [Fact]
+    public void ListItemsWithSeparatorsRoundTrip()
+    {
+        List<string> items = [@"C:\Lists\a;b.txt", "100%.txt", "%3B literal", ""];
+        new XMLSettingsService(SettingsPath).SetValue<List<string>>("USERCHOISES", "siteLists", items);
+
+        Assert.Equal(items, new XMLSettingsService(SettingsPath).GetValue<List<string>>("USERCHOISES", "siteLists"));
+    }
+
+    [Fact]
+    public void ListsWrittenByOlderVersionsAreRead()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(SettingsPath,
+            "<Settings><Group Name=\"USERCHOISES\"><Setting Key=\"siteLists\" Type=\"List\" Value=\"C:\\x\\100%\\a.txt;b.txt\" /></Group></Settings>");
+
+        Assert.Equal([@"C:\x\100%\a.txt", "b.txt"], new XMLSettingsService(SettingsPath).GetValue<List<string>>("USERCHOISES", "siteLists"));
+    }
 }
