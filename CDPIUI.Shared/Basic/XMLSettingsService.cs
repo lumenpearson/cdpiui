@@ -1,4 +1,4 @@
-using CDPIUI.Shared.Exceptions.Settings;
+﻿using CDPIUI.Shared.Exceptions.Settings;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -103,6 +103,98 @@ namespace CDPIUI.Shared.Basic
             if (document.Root?.Name != "Settings")
                 throw new XmlException("The settings document must have a Settings root element.");
             return document;
+        }
+
+        private static void ApplySetting(XElement root, IEnumerable<string> groupPath, string key, string type, string valueString)
+        {
+            XElement current = root;
+            foreach (var grp in groupPath)
+            {
+                var next = current
+                    .Elements("Group")
+                    .FirstOrDefault(g => (string?)g.Attribute("Name") == grp);
+
+                if (next == null)
+                {
+                    next = new XElement("Group", new XAttribute("Name", grp));
+                    current.Add(next);
+                }
+
+                current = next;
+            }
+
+            var setting = current
+                .Elements("Setting")
+                .FirstOrDefault(s => (string?)s.Attribute("Key") == key);
+
+            if (setting != null)
+            {
+                setting.SetAttributeValue("Type", type);
+                setting.SetAttributeValue("Value", valueString);
+            }
+            else
+            {
+                current.Add(new XElement("Setting",
+                    new XAttribute("Key", key),
+                    new XAttribute("Type", type),
+                    new XAttribute("Value", valueString)));
+            }
+        }
+
+        /// <summary>
+        /// The UI and the tray share the settings file. Each change is applied to the file as it is on disk
+        /// now, so a process with an older copy in memory does not overwrite what the other one saved.
+        /// </summary>
+        private void SaveChange(IEnumerable<string> groupPath, string key, string type, string valueString)
+        {
+            lock (_reloadLock)
+            {
+                using (AcquireFileLock())
+                {
+                    if (!_persistenceUnavailable && File.Exists(SettingsFilePath))
+                    {
+                        try
+                        {
+                            _xDocument = LoadDocument(SettingsFilePath);
+                        }
+                        catch (Exception ex) when (IsReadFailure(ex))
+                        {
+                            // Keep the copy in memory; saving it replaces the unreadable file.
+                        }
+                    }
+
+                    ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
+                    SaveSettings();
+                }
+            }
+        }
+
+        private const int LockAttempts = 40;
+        private const int LockRetryDelayMs = 50;
+
+        // A lock file works for both processes, while a named mutex of the elevated tray would not be
+        // accessible to the UI.
+        private IDisposable? AcquireFileLock()
+        {
+            string lockPath = SettingsFilePath + ".lock";
+            for (int attempt = 1; attempt <= LockAttempts; attempt++)
+            {
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(SettingsFilePath))!);
+                    return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
+                        1, FileOptions.DeleteOnClose);
+                }
+                catch (IOException)
+                {
+                    Thread.Sleep(LockRetryDelayMs);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return null;
+                }
+            }
+            return null;
         }
 
         private const int SaveAttempts = 5;
@@ -382,37 +474,7 @@ namespace CDPIUI.Shared.Basic
                 valueString = value?.ToString() ?? string.Empty;
             }
 
-            lock (_reloadLock)
-            {
-                var groupElement = _xDocument.Root
-                    .Elements("Group")
-                    .FirstOrDefault(g => g.Attribute("Name")?.Value == group);
-
-                if (groupElement == null)
-                {
-                    groupElement = new XElement("Group", new XAttribute("Name", group));
-                    _xDocument.Root.Add(groupElement);
-                }
-
-                var settingElement = groupElement
-                    .Elements("Setting")
-                    .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
-
-                if (settingElement != null)
-                {
-                    settingElement.SetAttributeValue("Value", valueString);
-                    settingElement.SetAttributeValue("Type", type);
-                }
-                else
-                {
-                    groupElement.Add(new XElement("Setting",
-                        new XAttribute("Key", key),
-                        new XAttribute("Type", type),
-                        new XAttribute("Value", valueString)));
-                }
-
-                SaveSettings();
-            }
+            SaveChange([group], key, type, valueString);
             PropertyChanged?.Invoke(group);
         }
 
@@ -460,43 +522,7 @@ namespace CDPIUI.Shared.Basic
                     break;
             }
 
-            lock (_reloadLock)
-            {
-                XElement current = _xDocument.Root;
-                foreach (var grp in groupPath)
-                {
-                    var next = current
-                        .Elements("Group")
-                        .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-
-                    if (next == null)
-                    {
-                        next = new XElement("Group", new XAttribute("Name", grp));
-                        current.Add(next);
-                    }
-
-                    current = next;
-                }
-
-                var setting = current
-                    .Elements("Setting")
-                    .FirstOrDefault(s => (string)s.Attribute("Key") == key);
-
-                if (setting != null)
-                {
-                    setting.SetAttributeValue("Type", type);
-                    setting.SetAttributeValue("Value", valueString);
-                }
-                else
-                {
-                    current.Add(new XElement("Setting",
-                        new XAttribute("Key", key),
-                        new XAttribute("Type", type),
-                        new XAttribute("Value", valueString)));
-                }
-
-                SaveSettings();
-            }
+            SaveChange(groupPath, key, type, valueString);
             EnumPropertyChanged?.Invoke(groupPath);
         }
 
