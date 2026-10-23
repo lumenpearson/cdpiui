@@ -1,4 +1,5 @@
-﻿using CDPIUI.TrayIcon.Helper.Basic;
+﻿using CDPIUI.Shared.Basic.CommandLine;
+using CDPIUI.TrayIcon.Helper.Basic;
 using CDPIUI.TrayIcon.Forms;
 using CDPIUI.TrayIcon.Helper;
 using Microsoft.Toolkit.Uwp.Notifications;
@@ -56,9 +57,13 @@ class Programm
         if (args.Contains("--show-ui") || args.Contains("--after-patching") ||
             args.Contains("--after-failed-update") || migrationRequest != null)
         {
+            // Arguments of a GUI start that had to start the tray first.
+            string guiCommandLine = GuiActivationArguments.TryDecode(args, out var guiArgs)
+                ? GuiActivationArguments.JoinCommandLine(guiArgs)
+                : migrationRequest?.RawArgument ?? string.Empty;
             RunHelper.RunAsDesktopUser(
                 Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
-                migrationRequest?.RawArgument ?? string.Empty);
+                guiCommandLine);
         }
 
         string updateFilePath = Path.Combine(Utils.GetDataDirectory(), "Update.exe");
