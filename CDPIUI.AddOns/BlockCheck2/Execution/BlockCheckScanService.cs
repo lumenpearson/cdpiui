@@ -227,6 +227,11 @@ public sealed class BlockCheckScanService
         List<ProbeResult> results = [];
         int completed = 0;
         bool wasCanceled = false;
+        // When winws2 or its driver cannot start, every strategy fails the same way; the scan
+        // went on through all of them and the synthesis ran with nothing (audit 14.9).
+        const int MaxConsecutiveStartFailures = 5;
+        int consecutiveStartFailures = 0;
+        bool abortedOnStartFailures = false;
         foreach (RouteScanGroup route in routes)
         {
             HashSet<string> successfulPlans = new(StringComparer.Ordinal);
@@ -285,6 +290,7 @@ public sealed class BlockCheckScanService
                     startAttempted = true;
                     await strategyRunner.StartAsync(configuration.CommandLine, cancellationToken)
                         .ConfigureAwait(false);
+                    consecutiveStartFailures = 0;
 
                     foreach (BlockCheckTarget target in route.Targets)
                     {
@@ -375,6 +381,14 @@ public sealed class BlockCheckScanService
                         "SCAN_STRATEGY_FAILED",
                         $"Strategy/route scan failed: {exception.Message}",
                         $"{strategy.Id}:{route.Key}"));
+                    if (attemptsByTarget.Values.All(attempts => attempts.All(a => a.FailureCode == "strategy_start_failed")) &&
+                        ++consecutiveStartFailures >= MaxConsecutiveStartFailures)
+                    {
+                        abortedOnStartFailures = true;
+                        issues.Add(Error(
+                            "SCAN_STRATEGIES_DO_NOT_START",
+                            $"The last {MaxConsecutiveStartFailures} strategies could not be started, so the scan was stopped: {exception.Message}"));
+                    }
                 }
                 finally
                 {
@@ -429,6 +443,11 @@ public sealed class BlockCheckScanService
                     failedChecks,
                     successfulStrategies));
 
+                if (abortedOnStartFailures)
+                {
+                    break;
+                }
+
                 if (options.EnableRouteEarlyStop &&
                     successfulPlans.Count >= options.SuccessfulStrategiesPerRoute)
                 {
@@ -436,7 +455,7 @@ public sealed class BlockCheckScanService
                 }
             }
 
-            if (wasCanceled)
+            if (wasCanceled || abortedOnStartFailures)
             {
                 break;
             }
