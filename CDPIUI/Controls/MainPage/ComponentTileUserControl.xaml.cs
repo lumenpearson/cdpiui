@@ -42,6 +42,7 @@ using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
 using ToolTip = Microsoft.UI.Xaml.Controls.ToolTip;
 using ToolTipService = Microsoft.UI.Xaml.Controls.ToolTipService;
+using CDPIUI.Helper.Items;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -536,6 +537,7 @@ public sealed partial class ComponentTileUserControl : UserControl
 
         _configItems.Clear();
 
+        PackNameLookup packNames = new();
         foreach (ConfigItem item in items)
         {
             ConfigSelectorItem configItem = new()
@@ -543,7 +545,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                 FileName = item.file_name,
                 PackId = item.packId,
                 DisplayName = item.name,
-                PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
+                PackDisplayName = packNames.GetDisplayName(item.packId),
                 IsLegacyConfig = item.IsLegacy
             };
 

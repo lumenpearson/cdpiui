@@ -43,6 +43,9 @@ namespace CDPIUI.Helper.Items
             {
                 List<string> outdatedComponents = [];
                 var components = ComponentItemsLoaderHelper.Instance.GetComponentHelpers();
+                // One read of the database instead of one per preset; ids are compared as the database does.
+                Dictionary<string, DatabaseStoreItem> installedItems = DatabaseHelper.Instance.GetAllInstalledItems()
+                    .ToDictionary(item => item.Id, StringComparer.Ordinal);
 
                 foreach (var component in components)
                 {
@@ -52,8 +55,7 @@ namespace CDPIUI.Helper.Items
                     {
                         if (config.target != null && config.target.Count == 2)
                         {
-                            var databaseItem = DatabaseHelper.Instance.GetItemById(config.target[0]);
-                            if (databaseItem == null) continue;
+                            if (!installedItems.TryGetValue(config.target[0], out var databaseItem)) continue;
 
                             string requiredVersion = config.target[1];
                             string installedVersion = databaseItem.CurrentVersion;

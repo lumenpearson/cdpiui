@@ -10,6 +10,8 @@ using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
@@ -25,11 +27,30 @@ public sealed partial class ViewConfigOutput : UserControl
         typeof(ViewConfigOutput),
         new PropertyMetadata(string.Empty, OnComponentIdChanged));
 
+    // The tray keeps this many characters of output and then drops the older half.
+    private const int SourceOutputLimit = 2 * 1024 * 1024;
+    // Shown text is kept in runs of about this size instead of one run per chunk.
+    private const int RunBlockLength = 16 * 1024;
+    // A line longer than this is shown as finished without waiting for its end.
+    private const int MaxPendingLineLength = 64 * 1024;
+
+    // Shown text of finished lines.
     private readonly StringBuilder outputBuffer = new();
+    // Output text as read from the process service, before path replacement.
+    private readonly StringBuilder sourceBuffer = new();
+    // Finished text of the last run.
+    private readonly StringBuilder blockText = new();
+    private readonly SolidColorBrush outputBrush = new(Colors.LightGray);
     private readonly ILocalizer localizer = Localizer.Get();
     private ProcessService processManager;
     private int attachmentVersion;
     private bool isLoaded;
+    // The last line can still get the rest of a path, so it is replaced again with each chunk.
+    private string pendingLine = string.Empty;
+    private string pendingDisplay = string.Empty;
+    private Run lastRun;
+    private long receivedChunks;
+    private long shownChunks;
 
     public ViewConfigOutput()
     {
@@ -48,7 +69,7 @@ public sealed partial class ViewConfigOutput : UserControl
     }
 
     public bool IsProcessRunning => processManager?.IsProcessRunning ?? false;
-    public string OutputText => outputBuffer.ToString();
+    public string OutputText => outputBuffer.ToString() + pendingDisplay;
 
     public event Action<bool> RunningStateChanged;
 
@@ -91,13 +112,21 @@ public sealed partial class ViewConfigOutput : UserControl
 
     public void RefreshOutput()
     {
+        // Chunks counted before the snapshot is read are already part of it.
+        shownChunks = Volatile.Read(ref receivedChunks);
+        string text = GetSourceOutput();
         ClearOutput();
-        AppendOutput(GetConfiguredOutput());
+        AppendOutput(text);
     }
 
     public void ClearOutput()
     {
         outputBuffer.Clear();
+        sourceBuffer.Clear();
+        blockText.Clear();
+        pendingLine = string.Empty;
+        pendingDisplay = string.Empty;
+        lastRun = null;
         OutputParagraph.Inlines.Clear();
     }
 
@@ -146,7 +175,8 @@ public sealed partial class ViewConfigOutput : UserControl
 
     private void ProcessManager_OutputReceived(string output)
     {
-        QueueRefresh(() => SynchronizeOutput());
+        long chunk = Interlocked.Increment(ref receivedChunks);
+        QueueRefresh(() => AppendReceivedOutput(output, chunk));
     }
 
     private void ProcessManager_OutputReset() => QueueRefresh(() => SynchronizeOutput());
@@ -160,14 +190,40 @@ public sealed partial class ViewConfigOutput : UserControl
         });
     }
 
+    private void AppendReceivedOutput(string output, long chunk)
+    {
+        // The chunk is already shown as part of a later snapshot.
+        if (chunk <= shownChunks)
+        {
+            return;
+        }
+
+        // The event carries the cleaned text only, so the raw view is compared with the buffer.
+        if (!IsCleanOutputMode())
+        {
+            SynchronizeOutput();
+            return;
+        }
+
+        // The tray dropped the older half of its buffer: show what it keeps now.
+        if (sourceBuffer.Length + output.Length > SourceOutputLimit)
+        {
+            RefreshOutput();
+            return;
+        }
+
+        shownChunks = chunk;
+        AppendOutput(output);
+    }
+
     private void SynchronizeOutput()
     {
         // Read the current snapshot: queued output and full-buffer replies may overlap.
-        string text = GetConfiguredOutput();
-        string displayed = OutputText;
-        if (text.StartsWith(displayed, StringComparison.Ordinal))
+        shownChunks = Volatile.Read(ref receivedChunks);
+        string text = GetSourceOutput();
+        if (text.Length >= sourceBuffer.Length && sourceBuffer.Equals(text.AsSpan(0, sourceBuffer.Length)))
         {
-            AppendOutput(text[displayed.Length..]);
+            AppendOutput(text[sourceBuffer.Length..]);
         }
         else
         {
@@ -211,30 +267,64 @@ public sealed partial class ViewConfigOutput : UserControl
             return;
         }
 
-        outputBuffer.Append(text);
-        OutputParagraph.Inlines.Add(new Run
+        sourceBuffer.Append(text);
+        bool prettyPaths = SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "prettyPathView");
+
+        // Paths never span lines, so finished lines are replaced once and only the last line again.
+        string pending = pendingLine + text;
+        int lineEnd = pending.AsSpan().LastIndexOfAny('\r', '\n') + 1;
+        if (lineEnd == 0 && pending.Length > MaxPendingLineLength)
         {
-            Text = text,
-            Foreground = new SolidColorBrush(Colors.LightGray),
-        });
+            lineEnd = pending.Length;
+        }
+
+        if (lastRun != null && blockText.Length >= RunBlockLength)
+        {
+            // The run is full: keep its finished text and continue in a new run.
+            lastRun.Text = blockText.ToString();
+            lastRun = null;
+            blockText.Clear();
+        }
+
+        if (lineEnd > 0)
+        {
+            string finished = PrettifyPaths(pending[..lineEnd], prettyPaths);
+            outputBuffer.Append(finished);
+            blockText.Append(finished);
+        }
+
+        pendingLine = pending[lineEnd..];
+        pendingDisplay = PrettifyPaths(pendingLine, prettyPaths);
+
+        if (lastRun == null)
+        {
+            lastRun = new Run { Foreground = outputBrush };
+            OutputParagraph.Inlines.Add(lastRun);
+        }
+        lastRun.Text = blockText.ToString() + pendingDisplay;
         OutputScrollViewer.ChangeView(null, OutputScrollViewer.ScrollableHeight, null, disableAnimation: true);
     }
 
-    private string GetConfiguredOutput()
+    private string GetSourceOutput()
     {
         if (processManager == null)
         {
             return string.Empty;
         }
 
-        string text = SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "outputMode")
+        return IsCleanOutputMode()
             ? processManager.GetProcessOutput()
             : processManager.GetDefaultProcessOutput();
-
-        return SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "prettyPathView")
-            ? ProcessService.ReplacePath(text)
-            : text;
     }
+
+    private static bool IsCleanOutputMode() => SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "outputMode");
+
+    private static string PrettifyPaths(string text, bool prettyPaths) =>
+        prettyPaths && text.Length > 0 ? DirectoryReplaceRegex().Replace(text, "cdpi-ui://") : text;
+
+    // Same as the path pattern of the process service, but a match stops at a line break.
+    [GeneratedRegex(@"(?:[a-zA-Z]):\\[^/\r\n]*?/")]
+    private static partial Regex DirectoryReplaceRegex();
 
     private void UpdateComponentLabel()
     {

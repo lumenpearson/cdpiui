@@ -31,6 +31,7 @@ using System.Windows.Forms;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
+using CDPIUI.Helper.Items;
 
 
 namespace CDPIUI.Controls.Dialogs.EditConfig;
@@ -103,7 +104,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
         if (items != null)
         {
-
+            PackNameLookup packNames = new();
             foreach (var item in items)
             {
                 ConfigModels.Add(
@@ -112,7 +113,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
                         DisplayName = item.name,
                         FileName = item.file_name,
                         PackId = item.packId,
-                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
+                        PackDisplayName = packNames.GetDisplayName(item.packId),
                         IsLegacyConfig = item.IsLegacy,
                     });
             }

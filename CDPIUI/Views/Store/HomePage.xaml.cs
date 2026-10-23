@@ -1,5 +1,6 @@
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Store;
+using CDPIUI.Core;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
@@ -203,6 +204,10 @@ public sealed partial class HomePage : TemplatePage
     private List<UICategoryData> CreateCategoriesList(List<RepoCategoryModel> values)
     {
         List<UICategoryData> categoryDatas = new List<UICategoryData>();
+        // Ids are compared as the database compares them.
+        HashSet<string> installedIds = DatabaseHelper.Instance.GetAllInstalledItems()
+            .Select(item => item.Id)
+            .ToHashSet(StringComparer.Ordinal);
 
         foreach (RepoCategoryModel category in values)
         {
@@ -215,7 +220,7 @@ public sealed partial class HomePage : TemplatePage
                         UIHelper.CreateLargeButton(
                             storeId:repoCategoryItem.store_id,
                             imageSource:LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: DatabaseHelper.Instance.IsItemInstalled(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             backgroundColor:repoCategoryItem.background,
                             action: StoreItemButton_Click
@@ -228,7 +233,7 @@ public sealed partial class HomePage : TemplatePage
                         UIHelper.CreateSmallButton(
                             storeId:repoCategoryItem.store_id,
                             imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: DatabaseHelper.Instance.IsItemInstalled(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             developer: repoCategoryItem.developer,
                             backgroundColor:repoCategoryItem.background,
@@ -373,7 +378,9 @@ public sealed partial class HomePage : TemplatePage
     {
         try
         {
-            bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
+            // The catalogue is parsed again only when the daily sync is due or nothing is loaded yet.
+            TimeSpan sinceSync = DateTime.UtcNow - SettingsManager.Instance.GetValue<DateTime>("STORE", "lastSyncTime");
+            bool result = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: sinceSync.TotalDays >= 1);
             // bool result = true;
             if (result)
             {

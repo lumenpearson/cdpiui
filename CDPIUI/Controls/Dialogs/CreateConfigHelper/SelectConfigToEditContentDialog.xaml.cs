@@ -25,6 +25,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using CDPIUI.Helper.Items;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -98,7 +99,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
 
             if (items != null)
             {
-
+                PackNameLookup packNames = new();
                 foreach (var item in items)
                 {
                     ConfigModels.Add(
@@ -107,7 +108,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                             DisplayName = item.name,
                             Directory = item.file_name,
                             PackId = item.packId,
-                            PackName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
+                            PackName = packNames.GetDisplayName(item.packId),
                         });
                 }
             }
