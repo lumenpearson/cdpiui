@@ -96,6 +96,15 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <param name="id">Task Id</param>
         public async void AddNewTask(string id)
         {
+            await AddNewTaskAsync(id);
+        }
+
+        /// <summary>
+        /// Add new task to task list
+        /// </summary>
+        /// <param name="id">Task Id</param>
+        public async Task AddNewTaskAsync(string id)
+        {
             var (_, created) = await GetOrAddTask(id);
             if (created)
                 TaskListUpdated?.Invoke();
