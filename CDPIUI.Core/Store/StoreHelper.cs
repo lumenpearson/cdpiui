@@ -334,66 +334,80 @@ namespace CDPIUI.Core.Store
         {
             if (IsNowUpdatesChecked) return;
             IsNowUpdatesChecked = true;
-            UpdatesAvailableList.Clear();
-            UpdateCheckStarted?.Invoke();
-
-            List<DatabaseStoreItem> storeItems = DatabaseHelper.Instance.GetAllInstalledItems();
             bool exceptionHappens = false;
-
-            foreach (var item in storeItems)
+            // The flag must be reset whatever happens, otherwise the Store shows "checking" forever.
+            try
             {
-                if (item.Id == SharedConstants.LocalUserItemsId) continue;
+                UpdatesAvailableList.Clear();
+                UpdateCheckStarted?.Invoke();
 
-                string downloadUrl = item.DownloadUrl;
-                string versionControlType = item.VersionControlType;
-                string directory = item.Directory;
+                List<DatabaseStoreItem> storeItems = DatabaseHelper.Instance.GetAllInstalledItems();
 
-                string repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
-
-                var versionDataCheckResult = await APIWorker.GetLastVersionAndVersionNotes(repoUrl);
-
-                if (versionDataCheckResult.ErrorHappens || !versionDataCheckResult.Success)
+                foreach (var item in storeItems)
                 {
-                    Logger.Instance.CreateWarningLog(
-                        $"{nameof(StoreHelper)}/{nameof(CheckUpdates)}",
-                        $"Cannot check updates for {item.Id}, with version control type {item.VersionControlType}. Uri used to check {repoUrl} " +
-                        $"Exception information: {versionDataCheckResult.Error.ErrorCode}");
-                    exceptionHappens = true;
-                    continue;
-                }
+                    if (item.Id == SharedConstants.LocalUserItemsId || item.VersionControlType == "local") continue;
 
-                var versionData = versionDataCheckResult.Result;
+                    string downloadUrl = item.DownloadUrl;
+                    string versionControlType = item.VersionControlType;
+                    string directory = item.Directory;
 
-                try
-                {
-                    string curV = item.CurrentVersion;
-                    string serV = versionData.ReleaseTag;
+                    string? repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
+                    // Local packs have no update source; that is not an error.
+                    if (string.IsNullOrEmpty(repoUrl))
+                        continue;
 
-                    if (VersionHelper.CompareVersionStrings(curV, serV) == -1)
+                    var versionDataCheckResult = await APIWorker.GetLastVersionAndVersionNotes(repoUrl);
+
+                    if (versionDataCheckResult.ErrorHappens || !versionDataCheckResult.Success)
                     {
-                        UpdatesAvailableList.Add(new()
+                        Logger.Instance.CreateWarningLog(
+                            $"{nameof(StoreHelper)}/{nameof(CheckUpdates)}",
+                            $"Cannot check updates for {item.Id}, with version control type {item.VersionControlType}. Uri used to check {repoUrl} " +
+                            $"Exception information: {versionDataCheckResult.Error.ErrorCode}");
+                        exceptionHappens = true;
+                        continue;
+                    }
+
+                    var versionData = versionDataCheckResult.Result;
+
+                    try
+                    {
+                        string curV = item.CurrentVersion;
+                        string serV = versionData.ReleaseTag;
+
+                        if (VersionHelper.CompareVersionStrings(curV, serV) == -1)
                         {
-                            StoreId = item.Id,
-                            CurrentVersion = item.CurrentVersion,
-                            ServerVersion = versionData.ReleaseTag,
-                            VersionInfo = versionData.ReleaseNotes,
-                        });
+                            UpdatesAvailableList.Add(new()
+                            {
+                                StoreId = item.Id,
+                                CurrentVersion = item.CurrentVersion,
+                                ServerVersion = versionData.ReleaseTag,
+                                VersionInfo = versionData.ReleaseNotes,
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        Logger.Instance.CreateWarningLog(
+                            $"{nameof(StoreHelper)}/{nameof(CheckUpdates)}",
+                            $"Cannot compare versions {item.CurrentVersion}&&{versionData.ReleaseNotes} for {item.Id}");
+                        exceptionHappens = true;
+                        continue;
                     }
                 }
-                catch
-                {
-                    Logger.Instance.CreateWarningLog(
-                        $"{nameof(StoreHelper)}/{nameof(CheckUpdates)}",
-                        $"Cannot compare versions {item.CurrentVersion}&&{versionData.ReleaseNotes} for {item.Id}");
-                    exceptionHappens = true;
-                    continue;
-                }
             }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog($"{nameof(StoreHelper)}/{nameof(CheckUpdates)}", ex.ToString());
+                exceptionHappens = true;
+            }
+            finally
+            {
+                IsNowUpdatesChecked = false;
+                IsExceptonHappensWhileCheckingUpdates = exceptionHappens;
 
-            IsNowUpdatesChecked = false;
-            IsExceptonHappensWhileCheckingUpdates = exceptionHappens;
-
-            UpdateCheckStopped?.Invoke();
+                UpdateCheckStopped?.Invoke();
+            }
         }
 
         private async Task InstallItem(QueueItemModel qi)
@@ -784,34 +798,28 @@ namespace CDPIUI.Core.Store
 
         }
         
+        /// <summary>
+        /// The URL to check for updates of an item: the stored one when it is on the host of the
+        /// Store in use, otherwise the link from the Store catalog (the item was installed from the
+        /// other mirror or has no stored URL). Null when the item has nothing to check, such as a
+        /// local pack.
+        /// </summary>
         private string? GetReadyToUseRepoUrl(string? repoUrl, string? storeId)
         {
-            if (!Uri.TryCreate(repoUrl, UriKind.Absolute, out var repoUri))
+            string? expectedHost = VersionControl switch
+            {
+                SupportedVersionControls.GitHub => "github.com",
+                SupportedVersionControls.GitLab => "gitlab.com",
+                _ => null
+            };
+
+            if (Uri.TryCreate(repoUrl, UriKind.Absolute, out var repoUri) &&
+                (expectedHost == null || repoUri.Host.Equals(expectedHost, StringComparison.OrdinalIgnoreCase)))
             {
                 return repoUrl;
             }
-            string siteName = repoUri.GetLeftPart(UriPartial.Authority);
-            if (!string.IsNullOrEmpty(siteName))
-            {
-                if (VersionControl == SupportedVersionControls.GitHub)
-                {
-                    if (!siteName.Equals("github.com", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        var item = GetItemInfoFromStoreId(storeId);
-                        return item.version_control_link;
-                    }
-                }
-                else if (VersionControl == SupportedVersionControls.GitLab)
-                {
-                    if (!siteName.Equals("gitlab.com", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        var item = GetItemInfoFromStoreId(storeId);
-                        return item.version_control_link;
-                    }
-                }
-            }
 
-            return siteName;
+            return GetItemInfoFromStoreId(storeId)?.version_control_link ?? repoUrl;
         }
 
         
