@@ -210,9 +210,6 @@
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.DataTable.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.HeaderedControls.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.MarkdownTextBlock.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
@@ -800,9 +797,6 @@
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Microsoft.WinUI.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\Microsoft.Xaml.Interactions.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Microsoft.Xaml.Interactivity.dll" KeyPath="yes" />
