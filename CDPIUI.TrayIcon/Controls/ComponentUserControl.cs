@@ -154,19 +154,22 @@ namespace CDPIUI.TrayIcon.Controls
             }
         }
 
-        private async void ComponentWorkButton_Clicked(object? sender, EventArgs e)
+        private void ComponentWorkButton_Clicked(object? sender, EventArgs e)
         {
             try
             {
                 EventHappens?.Invoke();
 
-                if (!await TasksHelper.Instance.IsTaskRunning(ComponentId))
+                // The button shows IsRunning, so the click asks for the other state. The command waits
+                // in the component's queue behind the pipe commands that came first; the UI does not wait.
+                var id = ComponentId;
+                if (!IsRunning)
                 {
-                    _ = TasksHelper.Instance.CreateAndRunNewTask(ComponentId);
+                    ComponentCommandQueue.Post(id, () => TasksHelper.Instance.CreateAndRunNewTask(id), nameof(ComponentUserControl));
                 }
                 else
                 {
-                    await TasksHelper.Instance.StopTask(ComponentId);
+                    ComponentCommandQueue.Post(id, () => TasksHelper.Instance.StopTask(id), nameof(ComponentUserControl));
                 }
             }
             catch (Exception ex)

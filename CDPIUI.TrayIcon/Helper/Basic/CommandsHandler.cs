@@ -4,41 +4,11 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 {
     internal class CommandsHandler
     {
-        // The pipe runs messages concurrently. Commands that start or stop one component, or change
-        // its proxy, run one at a time and in the order they arrived: a stop that ran after the proxy
-        // setup of a restart left the proxy off. Other messages, such as a GoodCheck run that takes
-        // minutes, are not held back.
-        private static readonly Dictionary<string, Task> ComponentQueues = [];
-        private static readonly object ComponentQueuesLock = new();
-
-        // Takes its place in the queue before the first await, so it must be called before any
-        // await of the handler; the pipe runs a handler synchronously up to its first await.
-        private static async Task RunInComponentOrder(string componentId, Func<Task> action)
-        {
-            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task previous;
-            lock (ComponentQueuesLock)
-            {
-                previous = ComponentQueues.GetValueOrDefault(componentId) ?? Task.CompletedTask;
-                ComponentQueues[componentId] = done.Task;
-            }
-
-            try
-            {
-                // Never faults: each command reports its own errors.
-                await previous;
-                await action();
-            }
-            finally
-            {
-                lock (ComponentQueuesLock)
-                {
-                    if (ComponentQueues.TryGetValue(componentId, out var last) && last == done.Task)
-                        ComponentQueues.Remove(componentId);
-                }
-                done.SetResult();
-            }
-        }
+        // The pipe runs messages concurrently. Commands that change one component go through
+        // ComponentCommandQueue, which keeps their arrival order; it must be entered before the
+        // first await of the handler. Other messages, such as a GoodCheck run, are not held back.
+        private static Task RunInComponentOrder(string componentId, Func<Task> action) =>
+            ComponentCommandQueue.Run(componentId, action);
 
         public static async Task HandleCommandAsync(IPipeMessage message)
         {

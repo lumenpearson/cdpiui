@@ -109,12 +109,14 @@ namespace CDPIUI.TrayIcon.Forms
                         await WaitForNetworkAsync(TimeSpan.FromSeconds(30));
                         foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
                         {
-                            if (!task.ProcessManager.IsProcessRunning)
-                                continue;
-
                             try
                             {
-                                await TasksHelper.Instance.RestartTask(task.Id);
+                                // Checked in the queue: a stop that came first must not be undone by the restart.
+                                await ComponentCommandQueue.Run(task.Id, async () =>
+                                {
+                                    if (task.ProcessManager.IsProcessRunning)
+                                        await TasksHelper.Instance.RestartTask(task.Id);
+                                });
                             }
                             catch (Exception ex)
                             {
