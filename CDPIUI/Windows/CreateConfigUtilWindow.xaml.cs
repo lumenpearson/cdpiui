@@ -109,7 +109,7 @@ namespace CDPIUI
                 };
                 if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
                 {
-                    StopActiveSelection();
+                    // Closed stops the selection while this dialog is marked as open.
                     this.Close();
                 }
             }
