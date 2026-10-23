@@ -152,23 +152,40 @@ namespace CDPIUI.Core.System
                                 destinationPath = $"{destinationPath}.bak";
                             }
                             // End of piece of shit
-                            string destLines = File.ReadAllText(destinationPath);
-                            string tmpFile = Path.Combine(destinationDir!, $"__TEMPFILE.txt");
-                            entry.ExtractToFile(tmpFile, overwrite: true);
-
-                            var stream = File.AppendText(destinationPath);
-
-                            using (stream)
+                            // Whole lines are compared: as a substring, "t.co" was dropped because
+                            // the list already had "reddit.com".
+                            var destLines = new HashSet<string>(
+                                File.ReadLines(destinationPath).Select(line => line.Trim()), StringComparer.Ordinal);
+                            bool endsWithNewLine;
+                            using (var existing = File.OpenRead(destinationPath))
                             {
-                                foreach (var line in File.ReadLines(tmpFile))
+                                endsWithNewLine = existing.Length == 0;
+                                if (!endsWithNewLine)
                                 {
-                                    if (!destLines.Contains(line))
-                                    {
-                                        await stream.WriteLineAsync(line);
-                                    }
+                                    existing.Seek(-1, SeekOrigin.End);
+                                    endsWithNewLine = existing.ReadByte() == '\n';
                                 }
                             }
-                            File.Delete(tmpFile);
+
+                            var newLines = new List<string>();
+                            using (var reader = new StreamReader(entry.Open()))
+                            {
+                                string? line;
+                                while ((line = await reader.ReadLineAsync()) != null)
+                                {
+                                    if (line.Trim().Length > 0 && destLines.Add(line.Trim()))
+                                        newLines.Add(line);
+                                }
+                            }
+
+                            if (newLines.Count > 0)
+                            {
+                                using var stream = File.AppendText(destinationPath);
+                                if (!endsWithNewLine)
+                                    await stream.WriteLineAsync();
+                                foreach (string line in newLines)
+                                    await stream.WriteLineAsync(line);
+                            }
 
                             continue;
                         }
