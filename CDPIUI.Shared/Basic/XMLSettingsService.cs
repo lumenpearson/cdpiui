@@ -429,8 +429,18 @@ namespace CDPIUI.Shared.Basic
                 {
                     foreach (var setting in current.Elements("Setting"))
                     {
-                        var result = GetValueFromString<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
-                        dict.Add((string)setting.Attribute("Key"), result);
+                        string key = (string)setting.Attribute("Key");
+                        // "$$~" only marks a group created empty; it is no setting (audit 22.3).
+                        if (key == null || key == "$$~")
+                            continue;
+                        try
+                        {
+                            dict[key] = GetValueFromString<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
+                        }
+                        catch
+                        {
+                            Debug.WriteLine($"Skipping setting '{key}' of another type in group path '{string.Join("/", groupPath)}'.");
+                        }
                     }
                 }
                 return dict;
