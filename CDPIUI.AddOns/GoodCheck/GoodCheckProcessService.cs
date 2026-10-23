@@ -183,6 +183,10 @@ namespace CDPIUI.AddOns.GoodCheck
 
             CurrentOperationId = 0;
 
+            // GetKeyByValue returns default(Components), Zapret, for Zapret2 or NoDPI, and the
+            // check then ran with the wrong component.
+            if (!IsComponentSupported(componentId))
+                throw new NotSupportedException($"GoodCheck does not support the component {componentId}.");
             ComponentName = GoodCheckResultViewHelper.ComponentNormalNames[HardcodedItemIds.ComponentIds.GetKeyByValue(componentId)];
 
             ComponentId = componentId;
@@ -281,9 +285,14 @@ namespace CDPIUI.AddOns.GoodCheck
             _ = StartCheck(CancellationToken);
         }
 
+        public static bool IsComponentSupported(string componentId) =>
+            GoodCheckResultViewHelper.ComponentNormalNames.Keys
+                .Any(component => HardcodedItemIds.ComponentIds.TryGetValue(component, out string? id) && id == componentId);
+
         public void Stop()
         {
-            CancellationTokenSource.Cancel();
+            // Stop before the first Start had no source to cancel.
+            CancellationTokenSource?.Cancel();
             _ = PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Stop);
         }
 
@@ -338,6 +347,15 @@ namespace CDPIUI.AddOns.GoodCheck
                 Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessService), $"ERR_INTERNAL happens: {ex}");
                 ErrorHappens?.Invoke("ERR_INTERNAL");
                 AllComplete?.Invoke(string.Empty);
+            }
+            finally
+            {
+                // A stopped or failed check left its operation shown as running.
+                foreach (var operation in Operations.Where(o => o.OperationType == GoodCheckOperationType.WorkInProgress).ToList())
+                {
+                    operation.OperationType = GoodCheckOperationType.UserInterrupt;
+                    OperationTypeChanged?.Invoke(Tuple.Create(operation.OperationId, GoodCheckOperationType.UserInterrupt));
+                }
             }
         }
 

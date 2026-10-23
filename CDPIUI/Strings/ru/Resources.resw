@@ -6273,4 +6273,7 @@ https://discord.com/app</value>
   <data name="RestartLater" xml:space="preserve">
     <value>Позже</value>
   </data>
+  <data name="GoodCheckNoStrategyLists" xml:space="preserve">
+    <value>У GoodCheck нет списков стратегий для этого компонента. Установите набор стратегий с его поддержкой или переустановите дополнение.</value>
+  </data>
 </root>

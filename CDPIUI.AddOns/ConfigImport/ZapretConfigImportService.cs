@@ -702,10 +702,14 @@ public sealed partial class ZapretConfigImportService
         return false;
     }
 
-    private static bool IsComment(string line) =>
-        line.StartsWith("rem ", StringComparison.OrdinalIgnoreCase) ||
-        line.Equals("rem", StringComparison.OrdinalIgnoreCase) ||
-        line.StartsWith("::", StringComparison.Ordinal);
+    private static bool IsComment(string line)
+    {
+        // "@rem" and "rem<TAB>" are comments too.
+        string command = line.TrimStart('@');
+        return (command.StartsWith("rem", StringComparison.OrdinalIgnoreCase) &&
+                (command.Length == 3 || char.IsWhiteSpace(command[3]))) ||
+               line.StartsWith("::", StringComparison.Ordinal);
+    }
 
     private static void SetVariable(
         IDictionary<string, MutableVariable> variables,
