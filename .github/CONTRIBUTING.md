@@ -14,7 +14,7 @@ CDPI UI has two processes. The two processes send messages to each other through
 | GUI | `CDPIUI`, `CDPIUI.AddOns`, `CDPIUI.Core`, `CDPIUI.Shared` | The signed-in user, without elevation | Shows the windows. Controls the Store, the presets, the add-ons and the settings. |
 | Tray | `CDPIUI.TrayIcon`, `CDPIUI.Shared` | Administrator | Starts and stops the components. Controls the system proxy, the autorun, the notifications, Conditional Launch and the MSI installation. |
 
-Two more tools use .NET Framework 4.7.2:
+Two more tools use .NET 8. Each tool is a framework-dependent single-file executable, as the tray is:
 
 - `Update` applies the application patches.
 - `EditHostFile` changes the hosts file with administrator rights.
@@ -75,7 +75,7 @@ The workflow `.github/workflows/ci.yml` does these checks:
 
 - It builds the libraries, runs the unit tests and checks the NuGet packages for known vulnerabilities (job `libraries`).
 - It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
-- It builds `Update` and `EditHostFile` (job `tools`).
+- It builds `Update` and `EditHostFile` and publishes each tool as a single file (job `tools`).
 
 The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/RELEASES.md](RELEASES.md).
 
@@ -104,11 +104,11 @@ cdpiui/
 ├── CDPIUI.AddOns/              # Internal add-ons. One folder for each add-on.
 ├── CDPIUI.Core/                # Application logic of the GUI: components, presets, Store, LScript, proxy, updates
 ├── CDPIUI.Shared/              # Code for the GUI, Core and the tray: pipe, tasks, logs, settings, errors
-├── CDPIUI.Tests/               # xUnit tests for Shared, Core and AddOns
+├── CDPIUI.Tests/               # xUnit tests for Shared, Core, AddOns, Update and EditHostFile
 ├── CDPIUI.TrayIcon/            # The tray application (WinForms). It operates as administrator.
-├── EditHostFile/               # The hosts file editor (.NET Framework 4.7.2). It operates as administrator.
+├── EditHostFile/               # The hosts file editor (.NET 8, console). It operates as administrator.
 ├── NewSetup/                   # The WiX 6 installer
-├── Update/                     # The patch installer (.NET Framework 4.7.2)
+├── Update/                     # The patch installer (.NET 8, WinForms)
 ├── CDPI.sln
 ├── LICENSE.txt
 ├── README.md                   # The README for users (in Russian)
@@ -126,7 +126,7 @@ cdpiui/
 - Use correct English names.
 - Some names go to the disk or through the pipe. Examples: settings keys, Store JSON fields, preset JSON fields and enum values in files. If you change the C# name, you must keep the stored value. Use `[JsonProperty]`, `[JsonPropertyName]` or a map. If you change a settings key, read the old key too.
 - The pipe sends message types by name (`cdpiui://<Target>/<MessageType>`). If you change the name of a pipe enum member, you change the protocol. The GUI and the tray must then come from the same build. The other side cannot read a message with an unknown name.
-- Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core and AddOns.
+- Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core, AddOns, `Update` and `EditHostFile`.
 
 WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, executable trust in `ExecutableTrust`, package signatures). Do not open files or links through the shell from the tray.
 

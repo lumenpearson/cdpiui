@@ -24,7 +24,8 @@ The release contains this MSI as `Setup.msi`.
 ```
 
 `.github/scripts/build_portable.ps1` makes this folder. It contains the GUI publish output,
-`CDPIUI_TrayIcon.exe`, `Update.exe` and `EditHostFile.exe`.
+`CDPIUI_TrayIcon.exe`, `Update.exe` and `EditHostFile.exe`. These three tools are .NET 8 single-file
+executables. They have no `.config` or `.dll` files of their own in the folder.
 
 CAUTION: Run `build_portable.ps1` with the default `Release` configuration before you build the MSI.
 The source path contains `Release`.
