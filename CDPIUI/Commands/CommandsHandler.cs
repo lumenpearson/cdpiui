@@ -140,7 +140,7 @@ namespace CDPIUI.Commands
                         if (!int.TryParse(model.MessageData?["operationId"], out var id))
                             return;
 
-                        GoodCheckProcessService.Instance.HandleProcessException(error!, id);
+                        GoodCheckProcessService.Instance.OperationWithIdFailed(id, error);
                         return;
                     }
             }

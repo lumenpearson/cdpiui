@@ -367,18 +367,18 @@ namespace CDPIUI.Views.CreateConfigUtil
             {
                 if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]))
                 {
-                    IniSettingsHelper.SetValue<string>("Zapret", "ZapretFolder", Path.Combine(itemsFolder, HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]));
-                    IniSettingsHelper.SetValue<string>("Zapret", "ZapretExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]).Executable + ".exe");
+                    IniSettingsHelper.SetValue<string>("Zapret", "ZapretFolder", GetComponentFolder(Core.Store.Data.Components.Zapret, itemsFolder));
+                    IniSettingsHelper.SetValue<string>("Zapret", "ZapretExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret])?.Executable + ".exe");
                 }
                 if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]))
                 {
-                    IniSettingsHelper.SetValue<string>("GoodbyeDPI", "GoodbyeDPIFolder", Path.Combine(itemsFolder, HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]));
-                    IniSettingsHelper.SetValue<string>("GoodbyeDPI", "GoodbyeDPIExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]).Executable + ".exe");
+                    IniSettingsHelper.SetValue<string>("GoodbyeDPI", "GoodbyeDPIFolder", GetComponentFolder(Core.Store.Data.Components.GoodbyeDPI, itemsFolder));
+                    IniSettingsHelper.SetValue<string>("GoodbyeDPI", "GoodbyeDPIExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])?.Executable + ".exe");
                 }
                 if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]))
                 {
-                    IniSettingsHelper.SetValue<string>("ByeDPI", "ByeDPIFolder", Path.Combine(itemsFolder, HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]));
-                    IniSettingsHelper.SetValue<string>("ByeDPI", "ByeDPIExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]).Executable + ".exe");
+                    IniSettingsHelper.SetValue<string>("ByeDPI", "ByeDPIFolder", GetComponentFolder(Core.Store.Data.Components.ByeDPI, itemsFolder));
+                    IniSettingsHelper.SetValue<string>("ByeDPI", "ByeDPIExecutableName", DatabaseHelper.Instance.GetItemById(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI])?.Executable + ".exe");
                 }
             }
             catch (Exception ex)
@@ -440,6 +440,16 @@ namespace CDPIUI.Views.CreateConfigUtil
             GoodCheckProcessService.Instance.Start();
         }
 
+
+        // The folder recorded in the Store database; the default folder is only the fallback.
+        private static string GetComponentFolder(Core.Store.Data.Components component, string itemsFolder)
+        {
+            string id = HardcodedItemIds.ComponentIds[component];
+            string directory = DatabaseHelper.Instance.GetItemById(id)?.Directory;
+            return !string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory)
+                ? directory
+                : Path.Combine(itemsFolder, id);
+        }
 
         private static void LogGoodCheckError(string error)
         {
