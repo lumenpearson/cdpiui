@@ -42,6 +42,7 @@ class Programm
         ToastNotificationManagerCompat.History.Clear();
 
         PackageStaging.CleanUp();
+        RegeditHelper.RestoreLeftoverSnapshot();
 
         PipeServer.Instance.Init();
         PipeServer.Instance.Start();

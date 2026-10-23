@@ -295,7 +295,11 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 lock (SystemProxyLock)
                 {
-                    _systemProxyBackup ??= RegeditHelper.ReadProxySnapshot();
+                    if (_systemProxyBackup == null)
+                    {
+                        _systemProxyBackup = RegeditHelper.ReadProxySnapshot();
+                        RegeditHelper.SaveSnapshotBackup(_systemProxyBackup);
+                    }
                     RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
                 }
             }
@@ -317,6 +321,7 @@ namespace CDPIUI.TrayIcon.Helper
                     else
                         RegeditHelper.SaveProxySettings(string.Empty, string.Empty, 0);
                     _systemProxyBackup = null;
+                    RegeditHelper.DeleteSnapshotBackup();
                 }
             }
             catch (Exception ex)
