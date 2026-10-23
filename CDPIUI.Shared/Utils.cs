@@ -22,15 +22,15 @@ namespace CDPIUI.Shared
             return false;
         }
 
-        static Random random = new();
+        // Used for secrets such as the TgWsProxy --secret: a shared System.Random is predictable
+        // and not thread safe (audit 22.3).
         public static string GetRandomHexNumber(int digits)
         {
-            byte[] buffer = new byte[digits / 2];
-            random.NextBytes(buffer);
+            byte[] buffer = new byte[(digits + 1) / 2];
+            using (var generator = System.Security.Cryptography.RandomNumberGenerator.Create())
+                generator.GetBytes(buffer);
             string result = String.Concat(buffer.Select(x => x.ToString("X2")).ToArray());
-            if (digits % 2 == 0)
-                return result;
-            return result + random.Next(16).ToString("X");
+            return result.Substring(0, digits);
         }
     }
 }
