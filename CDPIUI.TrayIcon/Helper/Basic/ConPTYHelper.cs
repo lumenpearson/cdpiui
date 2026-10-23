@@ -3,6 +3,7 @@ using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using CDPIUI.Shared.Extensions;
@@ -462,7 +463,8 @@ namespace CDPIUI.TrayIcon.Helper
 
                 if (hr != 0)
                 {
-                    throw new Exception($"Unable to create PseudoConsole, error: {hr}");
+                    // An HRESULT: the error converter maps it like other system errors.
+                    throw new COMException("Unable to create PseudoConsole.", unchecked((int)hr));
                 }
 
                 _pseudoConsoleHandle = pseudoConsoleHandle;
@@ -488,9 +490,11 @@ namespace CDPIUI.TrayIcon.Helper
                 lpAttrList = Marshal.AllocHGlobal(lpSize);
                 if (!InitializeProcThreadAttributeList(lpAttrList, 1, 0, ref lpSize))
                 {
+                    // Read before FreeHGlobal, which can change the last error.
+                    int error = Marshal.GetLastWin32Error();
                     Marshal.FreeHGlobal(lpAttrList);
                     lpAttrList = IntPtr.Zero;
-                    throw new Exception($"Cannot initialize process attributes, error: {Marshal.GetLastWin32Error()}");
+                    throw new Win32Exception(error, "Cannot initialize process attributes.");
                 }
 
                 UpdateProcThreadAttribute(lpAttrList, 0, (IntPtr)PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, _pseudoConsoleHandle, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero);
@@ -513,8 +517,9 @@ namespace CDPIUI.TrayIcon.Helper
 
                 if (!success)
                 {
-                    var error = Marshal.GetLastWin32Error();
-                    throw new Exception($"Cannot start process, error: {error}");
+                    // Win32Exception keeps the error code, so "file not found" or "access denied"
+                    // reach the GUI as such instead of an unknown error.
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot start process.");
                 }
                 lease.Dispose();
 
@@ -867,7 +872,7 @@ namespace CDPIUI.TrayIcon.Helper
 
             if (!CreatePipe(out hReadPipe, out hWritePipe, ref saAttr, 0))
             {
-                throw new Exception("Cannot create PseudoTerminal.");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot create PseudoTerminal.");
             }
         }
 

@@ -61,7 +61,7 @@ namespace CDPIUI.Core.Communication
         {
             if (PipeStream == null)
             {
-                throw new NullReferenceException("Call PipeClient.Instanse.Init first");
+                throw new InvalidOperationException("Call PipeClientService.Instance.Init first.");
             }
             return StartConnectionAsync();
         }

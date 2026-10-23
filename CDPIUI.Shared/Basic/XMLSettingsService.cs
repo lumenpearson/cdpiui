@@ -584,7 +584,7 @@ namespace CDPIUI.Shared.Basic
             if (typeof(T) == typeof(DateTime) && type == nameof(DateTime) && TryParseDateTime(value, out var dtv))
                 return (T)(object)dtv;
 
-            throw new Exception();
+            throw new InvalidCastException($"A setting of type '{type}' cannot be read as {typeof(T).Name}.");
         }
 
         public static string FormatDouble(double value) =>
