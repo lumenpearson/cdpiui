@@ -1,3 +1,6 @@
+# On Windows PowerShell 5.1 (.NET Framework 4.x) ZipFile may store "\" in entry names,
+# which the updater does not read as folders; PowerShell 7 always writes "/".
+#Requires -Version 7.0
 <#
 .SYNOPSIS
 Creates a .cdpipatch from a portable build, in the format ApplicationUpdateService expects:
