@@ -649,6 +649,29 @@ namespace CDPIUI.Core.Store
                 .SuccessResult(Tuple.Create(tag, downloadUrl, item));
         }
 
+        // A local pack names its icon as $DYNAMICIMAGE(icon.png) relative to the pack. Evaluated later
+        // without the pack folder, the path pointed into the repository cache, so the icon of a local
+        // pack is stored as a full path, and only when the file is inside the item folder.
+        private static string? GetIconPath(RepoItemModel item, string itemFolder)
+        {
+            const string prefix = "$DYNAMICIMAGE(";
+            string? icon = item.icon;
+            if (item.filetype != "localPack" || icon == null ||
+                !icon.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || !icon.EndsWith(')'))
+                return icon;
+
+            try
+            {
+                string root = Path.GetFullPath(itemFolder).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                string path = Path.GetFullPath(Path.Combine(itemFolder, icon[prefix.Length..^1]));
+                return path.StartsWith(root, StringComparison.OrdinalIgnoreCase) && File.Exists(path) ? path : icon;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return icon;
+            }
+        }
+
         private static OperationResultModel<EmptyResult> CreateItemDirectory(string itemId, string itemFolder, bool clean)
         {
             if (itemId == SharedConstants.ApplicationStoreId || itemId == SharedConstants.LocalUserItemsId)
@@ -751,7 +774,7 @@ namespace CDPIUI.Core.Store
                 Executable = item.target_executable_file,
                 DownloadUrl = downloadUrl,
                 DownloadFileType = item.filetype,
-                IconPath = item.icon,
+                IconPath = GetIconPath(item, itemFolder),
                 UpdateCheckUrl = item.version_control_link,
                 VersionControlType = item.version_control,
                 DependentItemIds = _dependencies,
@@ -761,10 +784,17 @@ namespace CDPIUI.Core.Store
             };
 
 
+            // Both action lists run with the item folder: install_msi of a "before" action had none
+            // and always failed.
+            Dictionary<string, string> extraArgs = new()
+            {
+                { "CurrentDirectory", itemFolder }
+            };
+
             try
             {
                 if (!await OnlineItemsInstallationService.LaunchBeforeInstallActions(
-                        await LScriptCore.RunScript(item.before_install_actions),
+                        await LScriptCore.RunScript(item.before_install_actions, extraArgs: extraArgs, cancellationToken: cancellationToken),
                         itemFolder))
                     return OperationResultModel<EmptyResult>
                         .UnSuccessResult();
@@ -779,12 +809,10 @@ namespace CDPIUI.Core.Store
                     return OperationResultModel<EmptyResult>
                         .FailureResult(ErrorModel.OnlyErrorCode(HandleException(new IOException($"Cannot save {item.store_id} to the item database."))));
 
-                Dictionary<string, string> extraArgs = new()
-                {
-                    { "CurrentDirectory", itemFolder }
-                };
-
-                await LScriptCore.RunScript(item.after_install_actions, extraArgs: extraArgs, cancellationToken: cancellationToken);
+                // download_easy_designer_annotation_file returns a download request; it was dropped.
+                string? afterDownloads = await LScriptCore.RunScript(item.after_install_actions, extraArgs: extraArgs, cancellationToken: cancellationToken);
+                if (!await OnlineItemsInstallationService.LaunchBeforeInstallActions(afterDownloads, itemFolder))
+                    Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Downloads after the installation of {item.store_id} failed.");
 
                 Logger.Instance.CreateDebugLog(nameof(StoreHelper), $"Adding item {item.name}... COMPLETE");
 
