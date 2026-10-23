@@ -106,7 +106,11 @@ namespace CDPIUI.Core.Store.Network
                 else
                 {
                     if (!string.IsNullOrEmpty(executableFileName))
-                        File.Copy(tempDestination, Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtention ? filetype : FileSystemService.GetFileExtention(enFiletype))), true);
+                    {
+                        string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtention ? filetype : FileSystemService.GetFileExtention(enFiletype)));
+                        File.Copy(tempDestination, copiedPath, true);
+                        _extractedFiles.Add(copiedPath);
+                    }
                     else
                     {
                         string exeName = string.IsNullOrEmpty(filename) ? GetFileNameFromUri(url) : filename;
@@ -115,7 +119,9 @@ namespace CDPIUI.Core.Store.Network
 
                         string extention = !isSupportedFileExtention? filetype : FileSystemService.GetFileExtention(enFiletype);
 
-                        File.Copy(tempDestination, Path.Combine(destinationPath, exeName + extention), true);
+                        string copiedPath = Path.Combine(destinationPath, exeName + extention);
+                        File.Copy(tempDestination, copiedPath, true);
+                        _extractedFiles.Add(copiedPath);
                     }
                 }
 
@@ -167,11 +173,14 @@ namespace CDPIUI.Core.Store.Network
             {
                 try { if (File.Exists(tempDestination)) File.Delete(tempDestination); } catch { }
 
-                if (!success || removeAfterAction)
+                // An installer copied from this download is removed again when it failed to install
+                // (audit 10.9); other files may have replaced the files of the installed version and
+                // stay. Archives of signed packs are checked in a separate folder by ZipService and
+                // never reach the destination unchecked.
+                bool isInstaller = filetype == FileExtentionTypes.msi.ToString() || filetype == FileExtentionTypes.elmsi.ToString();
+                if (removeAfterAction || (!success && isInstaller))
                 {
-                    try { if (File.Exists(destinationPath)) File.Delete(destinationPath); } catch { }
-
-                    foreach (var file in _extractedFiles ?? Enumerable.Empty<string>())
+                    foreach (var file in _extractedFiles)
                     {
                         try { if (File.Exists(file)) File.Delete(file); } catch { }
                     }
