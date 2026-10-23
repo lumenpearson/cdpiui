@@ -29,7 +29,7 @@
 2. Получает мьютекс `Global\CDPIUI_TrayInstance`. Ждёт 10 секунд. Если мьютекс занят другим треем, завершается. Брошенный (abandoned) мьютекс принимается.
 3. Удаляет папку `.staging` (`PackageStaging.CleanUp`).
 4. Восстанавливает резервную копию прокси, которую оставил предыдущий трей (`RegeditHelper.RestoreLeftoverSnapshot`).
-5. Запускает сервер pipe.
+5. Записывает новый ключ pipe в `.session\pipe.key` (`PipeSessionKeyWriter`, см. [Pipe](../CDPIUI.Shared/Pipe/README.ru.md)). Затем запускает сервер pipe.
 6. Если процесс запустило всплывающее уведомление, показывает только значок и обрабатывает уведомление.
 7. Если этого требуют аргументы, запускает GUI от имени пользователя рабочего стола (см. таблицу ниже).
 8. Переименовывает `_Update.exe` в `Update.exe`, если `_Update.exe` существует.
@@ -62,8 +62,8 @@ GUI запускает трей с `--autorun` или `--show-ui`, когда GU
 | `ConditionalLaunch/` | `ConditionalLaunchEngine` (триггеры) и `ConditionalActionExecutor` (действия) |
 | `Controls/` | Собственные элементы управления WinForms для меню трея |
 | `Forms/` | `EmptyForm` (скрытое окно, которому принадлежит значок), `TrayMenuForm` (меню) |
-| `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
-| `Helper/Basic/` | Сервер pipe, обработчик команд, ConPTY, объект задания (job object), помощник запуска, реестр, уведомления, журнал, помощник ошибок, панель задач |
+| `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
+| `Helper/Basic/` | Сервер pipe, ключ pipe (`PipeSessionKeyWriter`), обработчик команд, ConPTY, объект задания (job object), помощник запуска, реестр, уведомления, журнал, помощник ошибок, панель задач |
 | `Helper/Locale/` | `LocaleHelper`: строки трея на английском и русском, названия компонентов |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Значки (встроенные ресурсы) |
@@ -166,8 +166,27 @@ GUI может отправить другую папку в `ReloadTasks`. Тр
 
 1. Путь должен приниматься `TrustedPaths.IsAllowed`.
 2. Трей копирует пакет в `.staging`.
-3. Для пакета `.msi` трей выполняет `msiexec.exe /i "<copy>" /qn+`, закрывает GUI и завершается. У опубликованного `Setup.msi` нет подписи, поэтому проверка подписи не выполняется.
-4. Для пакета ZIP трей проверяет `catalog.cat` каждого слоя с помощью `CatalogVerifier` и `Secret.TrustedCertificates`. Затем выполняет `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
+3. Для пакета `.msi` у копии должна быть подпись Authenticode сертификатом из `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`). Workflow релиза подписывает `Setup.msi` сертификатом каталогов. Этот сертификат самоподписанный. Поэтому трей принимает цепочку до недоверенного корня, но не принимает изменённый файл или другого подписанта. Затем трей выполняет `msiexec.exe /i "<copy>" /qn+`, закрывает GUI и завершается.
+4. Для пакета ZIP трей проверяет ограничения `ArchivePaths` (число записей, общий размер, степень сжатия) и отклоняет ссылки. Затем распаковывает пакет и проверяет `catalog.cat` каждого слоя с помощью `CatalogVerifier` и `Secret.TrustedCertificates`. Затем выполняет `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
+
+<a id="elevated-start-of-a-program"></a>
+## Запуск программы с правами администратора
+
+Трей запускает с правами администратора компоненты (`ConPTYHelper`), получение справки `--help` и GoodCheck. Путь и аргументы присылает GUI. Перед каждым запуском трей выполняет следующие проверки:
+
+1. Путь должен приниматься `TrustedPaths.IsAllowed`.
+2. Параметр, который записывает файл (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`), должен указывать в папки приложения (`FileWritingOptions`). Трей также читает файлы аргументов (`@<file>`) командной строки, не глубже 4 уровней.
+3. `ExecutableTrust.AcquireAsync` открывает на чтение программу и каждый файл `.exe`, `.dll` и `.sys` в её папке. Пока эти дескрипторы открыты, ни один процесс не может изменить, переименовать или удалить эти файлы.
+4. В установке MSI у программы вне папки установки должно быть одно из следующего:
+   - Тот же отпечаток, что и при прошлом одобренном запуске. Отпечаток — это SHA-256 имён и содержимого заблокированных файлов.
+   - Каталог элемента Магазина (`<item>\catalog.cat`) с подписью закреплённого сертификата, который совпадает с файлами кода. Файлы данных (списки и другие файлы) не сравниваются, потому что пользователь может их менять.
+   - Разрешение пользователя. Трей показывает вопрос с путём, SHA-256 и подписантом. Программы пользователя не могут нажать его кнопки, потому что Windows блокирует ввод от процессов с более низким уровнем целостности.
+5. Трей сохраняет одобренные отпечатки в `<installation folder>\.trust\approved.json`. Изменять эту папку могут только администраторы.
+6. Трей освобождает дескрипторы после запуска процесса.
+
+Portable-копия не выполняет шаг 4, потому что пользователь может изменить сам трей.
+
+ВНИМАНИЕ: Не запускайте программу с правами администратора без `ExecutableTrust.AcquireAsync`.
 
 ## Очистка при удалении
 
@@ -179,7 +198,7 @@ GUI может отправить другую папку в `ReloadTasks`. Тр
 4. Останавливает и удаляет службы `WinDivert*`, у которых `ImagePath` относится к приложению.
 5. Удаляет задачу `CDPIUI_Autostart`.
 6. Выполняет `EditHostFile.exe /remove`.
-7. Удаляет `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log` и `.update-manifest` в папке установки.
+7. Удаляет `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log` и `.update-manifest` в папке установки.
 
 Очистка не изменяет настройки и журналы, потому что профиль SYSTEM — это не профиль пользователя.
 
@@ -215,13 +234,15 @@ GUI может отправить другую папку в `ReloadTasks`. Тр
 
 Трей работает с правами администратора, а GUI — нет. Считайте каждое сообщение pipe данными от менее доверенного процесса.
 
-- Принимайте клиентов pipe только после проверки собеседника и авторизации по `AuthGuid` (см. README pipe). Пустой `AuthGuid` не авторизует ни одного клиента. При неудачной авторизации клиент отключается.
+- Принимайте клиентов pipe только после проверки собеседника и авторизации по ключу pipe (см. README pipe). Трей создаёт новый ключ при каждом запуске. Пустой ключ не авторизует ни одного клиента. При неудачной авторизации клиент отключается.
 - Проверяйте каждый путь от GUI с помощью `TrustedPaths` перед тем, как запускать, устанавливать или изменять его:
   - `IsAllowed`: внутри папки трея, `%LOCALAPPDATA%\CDPIUI` пользователя трея или `%LOCALAPPDATA%\CDPIUI` пользователя рабочего стола.
   - `IsInStore`: внутри папки `Store` этих корневых папок. Его использует `GrantAccessRequest`.
   - `TrustedPathValidator` отклоняет путь, в котором ниже корня есть символическая ссылка или точка соединения (junction).
 - Копируйте пакет в `.staging` перед проверкой. Проверяйте и запускайте копию, а не исходный файл.
-- Используйте только подписанные пакеты: Authenticode для установщиков, каталоги с закреплёнными отпечатками для обновлений приложения.
+- Используйте только подписанные пакеты: Authenticode для установщиков, подпись Authenticode с закреплённым отпечатком для `Setup.msi`, каталоги с закреплёнными отпечатками для обновлений приложения.
+- Запускайте программу только через `ExecutableTrust.AcquireAsync` и проверяйте её аргументы с помощью `FileWritingOptions` (см. [Запуск программы с правами администратора](#elevated-start-of-a-program)).
+- Ограничивайте архив с помощью `ArchivePaths` перед распаковкой.
 - Используйте полные пути для системных программ (`msiexec.exe`, `sc.exe`, `powershell.exe`, `explorer.exe`, `notepad.exe`).
 - Запускайте процессы с `UseShellExecute = false` (`RunHelper.Run`).
 - Не используйте `ShellExecute` из трея, чтобы открыть файл или URL. Сопоставления файлов задаёт пользователь, поэтому обработчик может запуститься с правами администратора. Используйте `RunHelper.RunAsDesktopUser`, как это делает `NotifyHelper.OpenFileInDefaultApp` с `explorer.exe`.

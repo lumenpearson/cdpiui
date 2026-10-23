@@ -29,7 +29,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
 3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
-5. It starts the pipe server.
+5. It writes a new pipe key to `.session\pipe.key` (`PipeSessionKeyWriter`, see [Pipe](../CDPIUI.Shared/Pipe/README.md)). Then it starts the pipe server.
 6. If a toast notification started the process, it shows only the icon and handles the toast.
 7. If the arguments request it, it starts the GUI as the desktop user (see the table below).
 8. It renames `_Update.exe` to `Update.exe`, if `_Update.exe` exists.
@@ -62,8 +62,8 @@ The autorun task starts the tray with `--autorun`.
 | `ConditionalLaunch/` | `ConditionalLaunchEngine` (triggers) and `ConditionalActionExecutor` (actions) |
 | `Controls/` | Custom WinForms controls of the tray menu |
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
-| `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
-| `Helper/Basic/` | Pipe server, command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
+| `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
+| `Helper/Basic/` | Pipe server, pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
 | `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
@@ -166,8 +166,26 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
 2. The tray copies the package to `.staging`.
-3. For an `.msi` package, it runs `msiexec.exe /i "<copy>" /qn+`, closes the GUI and exits. The published `Setup.msi` has no signature, so there is no signature check.
-4. For a ZIP package, it verifies the `catalog.cat` of each layer with `CatalogVerifier` and `Secret.TrustedCertificates`. Then it runs `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
+3. For an `.msi` package, the copy must have an Authenticode signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`). The release workflow signs `Setup.msi` with the catalog certificate. This certificate is self-signed. Thus the tray accepts a chain to an untrusted root, but it does not accept a changed file or another signer. Then the tray runs `msiexec.exe /i "<copy>" /qn+`, closes the GUI and exits.
+4. For a ZIP package, the tray checks the limits of `ArchivePaths` (number of entries, total size, compression ratio) and rejects links. Then it extracts the package and verifies the `catalog.cat` of each layer with `CatalogVerifier` and `Secret.TrustedCertificates`. Then it runs `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
+
+## Elevated start of a program
+
+The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck with administrator rights. The GUI sends the path and the arguments. Before each start, the tray does these checks:
+
+1. The path must be accepted by `TrustedPaths.IsAllowed`.
+2. An option that writes a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) must point into the application directories (`FileWritingOptions`). The tray also reads the argument files (`@<file>`) of the command line, to a maximum of 4 levels.
+3. `ExecutableTrust.AcquireAsync` opens the program and each `.exe`, `.dll` and `.sys` file in its folder for reading. While these handles are open, no process can change, rename or delete these files.
+4. In an MSI installation, a program outside the installation folder must have one of these:
+   - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the names and the contents of the locked files.
+   - A Store item catalog (`<item>\catalog.cat`) that has the signature of a pinned certificate and agrees with the code files. Data files (lists and other files) are not compared, because the user can change them.
+   - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level.
+5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.json`. Only administrators can change this folder.
+6. The tray releases the handles after the process starts.
+
+A portable copy does not do step 4, because the user can change the tray itself.
+
+CAUTION: Do not start a program with administrator rights without `ExecutableTrust.AcquireAsync`.
 
 ## Uninstall cleanup
 
@@ -179,7 +197,7 @@ The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM. `U
 4. It stops and deletes the `WinDivert*` services whose `ImagePath` belongs to the application.
 5. It deletes the `CDPIUI_Autostart` task.
 6. It runs `EditHostFile.exe /remove`.
-7. It deletes `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log` and `.update-manifest` in the installation directory.
+7. It deletes `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log` and `.update-manifest` in the installation directory.
 
 The cleanup does not change settings or logs, because the SYSTEM profile is not the user profile.
 
@@ -215,13 +233,15 @@ Notes:
 
 The tray is elevated, and the GUI is not. Treat each pipe message as data from a less trusted process.
 
-- Accept pipe clients only after the peer check and the `AuthGuid` authorization (see the pipe README). An empty `AuthGuid` authorizes no client. A failed authorization disconnects the client.
+- Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new key at each start. An empty key authorizes no client. A failed authorization disconnects the client.
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots. `GrantAccessRequest` uses it.
   - `TrustedPathValidator` rejects a path that has a symbolic link or a junction below the root.
 - Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
-- Use only signed packages: Authenticode for installers, catalogs with pinned thumbprints for application updates.
+- Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.
+- Start a program only through `ExecutableTrust.AcquireAsync`, and check its arguments with `FileWritingOptions` (see [Elevated start of a program](#elevated-start-of-a-program)).
+- Limit an archive with `ArchivePaths` before you extract it.
 - Use full paths for system tools (`msiexec.exe`, `sc.exe`, `powershell.exe`, `explorer.exe`, `notepad.exe`).
 - Start processes with `UseShellExecute = false` (`RunHelper.Run`).
 - Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler can run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.

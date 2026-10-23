@@ -83,6 +83,7 @@ If `DataDirectory` cannot be found, the library uses `%LOCALAPPDATA%\CDPIUI` and
   Debug builds write all levels. Other builds use the setting `DEBUG/logLevel` (default `WARN`).
 - `ErrorsHelper.Convertor` (`CustomErrorConvertor`): converts exceptions to error codes and `ErrorModel`.
   An `HttpRequestException` with a status code gives `UNEXPECTED_STATUS_CODE`.
+- `IniDocument`: reads and changes an INI file (GoodCheck `config.ini`). It keeps comments, blank lines and the order of keys, and changes only the lines of the values that are set.
 
 ## Communication
 
@@ -93,7 +94,7 @@ The GUI is a pipe client. The tray process is the pipe server.
   - If there is no connection, it starts `CDPIUI_TrayIcon.exe` as administrator (`runas`) and stops the GUI process.
     The tray gets `--autorun` or `--show-ui`. It also gets the GUI activation arguments when they are present.
   - It closes the connection and stops the GUI when the server is not the expected `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).
-  - It sends the auth packet with `Secret.AuthGuid`.
+  - It reads the pipe key from `.session\pipe.key` in the application folder for each connection and sends it in the auth packet (see [Pipe](../CDPIUI.Shared/Pipe/README.md)).
   - A change in a settings group `CONFIGS/<componentId>` sends `ProcessIdStartupArgsChanged` and the setup state of the component.
 - `PipeHelper`: static methods that send typed packets (settings, update, notification, ConPTY, MSI, proxy, conditional launch).
 - `CoreCommandsHandler`: handles the packets from the tray (service, ConPTY, settings, MSI, application, conditional launch).
@@ -212,7 +213,7 @@ It uses `CatalogVerifier` from `CDPIUI.Shared` and `Secret.TrustedCertificates`.
 | `Queue/QueueManagerService` | A FIFO queue. It installs one item at a time. It also keeps the list of failed items. |
 | `Repository/RepositoryLoaderService` | Downloads the Store repository (GitHub or GitLab) and reads categories, items and ready kits. |
 | `Database/DatabaseHelper` | The SQLite table `Items` in `storedata.db`. One row for each installed item (`DatabaseStoreItem`). All queries, also `RestorePaths`, read the table under one lock. At start, the GUI calls `RestorePaths`. If the GUI cannot restore an item, it registers the user item or the application item again. For other items, `UnregisterMissingItem` deletes the row when the item folder is missing (`CDPIUI/Helper/Database/DatabaseInitializationService.cs`). |
-| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Release API requests, HTTPS downloads, archive extraction and MSI start. |
+| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Release API requests, HTTPS downloads, archive extraction and MSI start. `RequestWorker` sends a Store token only to GitHub and GitLab hosts. |
 | `MSI/MsiInstallerService`, `MsiInstallerQueueManager` | Send an MSI to the tray for installation and wait for the result (maximum 30 minutes). |
 | `Application/ApplicationUpdateService` | Prepares an application patch (`patch.cdpipatch`) and its required patches. It reads the version of each required patch from its own `requirements.json` and skips versions that are not newer than the installed version or not older than the main patch. It puts the layers in version sequence, the oldest first. See [.github/RELEASES.md](../.github/RELEASES.md#gui-side). |
 | `LocalItemsInstallerHelper` | Reads local pack files and adds them to the queue. |
@@ -261,7 +262,7 @@ For such a pack, the library ignores `ExecutableFile`, `BeforeInstallActions` an
 ## System
 
 - `ZipService` (internal): ZIP extraction with a root folder filter (`$ANY` matches one segment), skip patterns and the catalog check.
-- `ArchivePaths`: rejects archive entries that point outside the target folder.
+- `ZipService` and the Store repository download use `ArchivePaths` from `CDPIUI.Shared`: entry paths must stay in the target folder, the archive must be within the size limits, and links below the target are rejected.
 - `BatchFileEncoding`: reads `.bat` files in UTF-8, UTF-16 or a Cyrillic code page.
 - `ShellHelper`: opens folders and files and starts applications.
 

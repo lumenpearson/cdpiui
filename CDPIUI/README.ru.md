@@ -335,7 +335,7 @@ var result = await dialog.ShowQueuedAsync();
 1. Добавьте элемент `Setting` в нужный `Group` в `Template/Settings/Settings.xml`.
 2. Читайте её через `SettingsManager.Instance.GetValue<T>`.
 
-Часто используемые группы — `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` и `ZAPRET2`. Некоторых ключей, например `WELCOMEWIZARD/Shown`, нет в шаблоне. Читайте такие ключи через `GetValueOrDefault`.
+Часто используемые группы — `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` и `ZAPRET2`. `ADDONS/PRESETTEST/dpiSuiteUrl` заменяет адрес набора тестов DPI для проверки пресета. Значение должно быть абсолютным адресом `https`. Пустое значение означает встроенный адрес. Некоторых ключей, например `WELCOMEWIZARD/Shown`, нет в шаблоне. Читайте такие ключи через `GetValueOrDefault`.
 
 ## Структура папок
 

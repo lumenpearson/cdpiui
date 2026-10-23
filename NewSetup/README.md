@@ -123,7 +123,7 @@ Notes on `UninstallCleanup`:
 4. Stop and delete each `WinDivert*` service whose image is in one of these folders.
 5. Delete the autorun task.
 6. Run `EditHostFile.exe /remove`.
-7. Delete the runtime files that the MSI does not know: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `update.log`, `.update-manifest`.
+7. Delete the runtime files that the MSI does not know: `Logs`, `.update-staging`, `.update-backup`, `.old`, `.staging`, `.trust`, `.session`, `update.log`, `.update-manifest`.
 
 ## Build
 
@@ -136,4 +136,5 @@ dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
 ```
 
 The MSI goes into `NewSetup/bin/`. Its output name is `NewSetup`. The release workflow copies it
-as `Setup.msi`. The MSI has no Authenticode signature (`CDPIUI.TrayIcon/Helper/Utils.cs`).
+as `Setup.msi` and signs it with the catalog certificate. The tray installs an MSI update only
+with this signature (`PackageStaging.HasPinnedSignature`). A local build is not signed.
