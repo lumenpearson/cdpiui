@@ -139,6 +139,7 @@ namespace CDPIUI.Core.Store
                         archive_root_folder = item.archive_root_folder,
                         actions = "keep",
                         target_executable_file = item.target_executable_file,
+                        sha256 = item.sha256,
                     };
                 }
                 else if (downloadLink is DownloadLinkModel m)
@@ -161,7 +162,8 @@ namespace CDPIUI.Core.Store
                     extractRootFolder: downloadLinkModel.archive_root_folder,
                     executableFileName: downloadLinkModel.target_executable_file,
                     filetype: filetype,
-                    removeAfterAction: downloadLinkModel.actions == "remove"
+                    removeAfterAction: downloadLinkModel.actions == "remove",
+                    expectedSha256: downloadLinkModel.sha256
                 );
 
                 if (DownloadWorker.IsRestartNeeded)

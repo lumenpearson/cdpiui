@@ -57,7 +57,8 @@ namespace CDPIUI.Core.Store.Network
             string? executableFileName = "executableFile",
             string filetype = "",
             bool removeAfterAction = false,
-            string filename = ""
+            string filename = "",
+            string? expectedSha256 = null
         )
         {
             LastError = null;
@@ -95,7 +96,17 @@ namespace CDPIUI.Core.Store.Network
                     return false;
                 }
 
-
+                // A catalogue entry with a hash pins the file: a changed release asset or a replaced
+                // download is rejected before anything is extracted or installed.
+                if (!string.IsNullOrWhiteSpace(expectedSha256) && !HasSha256(tempDestination, expectedSha256))
+                {
+                    const string errorCode = "ERR_DOWNLOAD_HASH_MISMATCH";
+                    Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
+                    StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
+                    ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, "Hash mismatch"));
+                    LastError = ErrorModel.OnlyErrorCode(errorCode);
+                    return false;
+                }
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (extractArchive)
@@ -198,10 +209,19 @@ namespace CDPIUI.Core.Store.Network
             string? executableFileName = "executableFile",
             FileExtensionTypes filetype = FileExtensionTypes.temp,
             bool removeAfterAction = false,
-            string filename = ""
+            string filename = "",
+            string? expectedSha256 = null
         )
         {
-            return await DownloadAndExtractAsync(url, destinationPath, extractArchive, extractSkipFiletypes, extractRootFolder, executableFileName, filetype.ToString(), removeAfterAction, filename);
+            return await DownloadAndExtractAsync(url, destinationPath, extractArchive, extractSkipFiletypes, extractRootFolder, executableFileName, filetype.ToString(), removeAfterAction, filename, expectedSha256);
+        }
+
+        internal static bool HasSha256(string file, string expectedSha256)
+        {
+            string expected = new string(expectedSha256.Where(Uri.IsHexDigit).ToArray());
+            using var stream = File.OpenRead(file);
+            string actual = Convert.ToHexString(global::System.Security.Cryptography.SHA256.HashData(stream));
+            return expected.Length == 64 && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
         }
 
         private void ReportDownloadProgress(long totalRead, long totalBytes, TimeSpan elapsed)
