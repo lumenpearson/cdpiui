@@ -1,4 +1,4 @@
-using CDPIUI.Core.Store;
+﻿using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Queue;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Helper.LScript;
@@ -64,19 +64,43 @@ namespace CDPIUI.Views.Store
 
             UpdateCurrentDownloadsList();
             UpdateCurrentDownloadItem();
-            StoreHelper.Instance.QueueUpdated += UpdateCurrentDownloadsList;
-            StoreHelper.Instance.ErrorListUpdated += UpdateCurrentDownloadsList;
-            StoreHelper.Instance.NowProcessItemActions += StoreHelper_NowProcessItemActions;
-            StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
+            ConnectEvents();
+            Loaded += (_, _) => ConnectEvents();
+            Unloaded += (_, _) => DisconnectEvents();
 
-            StoreHelper.Instance.UpdateCheckStarted += StoreHelper_UpdateCheckStarted;
-            StoreHelper.Instance.UpdateCheckStopped += StoreHelper_UpdateCheckStopped;
 
             ActionCommand = new RelayCommand(p => RemoveItem((DownloadItemModel)p));
             UpdateCommand = new RelayCommand(p => UpdateElement((DownloadItemModel)p));
 
             LoadUpdatesList();
             ToggleUpdateMode(StoreHelper.Instance.IsNowUpdatesChecked);
+        }
+
+        // The services are singletons: a page that is not shown must not keep receiving their events.
+        private bool eventsConnected;
+
+        private void ConnectEvents()
+        {
+            if (eventsConnected) return;
+            eventsConnected = true;
+            StoreHelper.Instance.QueueUpdated += UpdateCurrentDownloadsList;
+            StoreHelper.Instance.ErrorListUpdated += UpdateCurrentDownloadsList;
+            StoreHelper.Instance.NowProcessItemActions += StoreHelper_NowProcessItemActions;
+            StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
+            StoreHelper.Instance.UpdateCheckStarted += StoreHelper_UpdateCheckStarted;
+            StoreHelper.Instance.UpdateCheckStopped += StoreHelper_UpdateCheckStopped;
+        }
+
+        private void DisconnectEvents()
+        {
+            if (!eventsConnected) return;
+            eventsConnected = false;
+            StoreHelper.Instance.QueueUpdated -= UpdateCurrentDownloadsList;
+            StoreHelper.Instance.ErrorListUpdated -= UpdateCurrentDownloadsList;
+            StoreHelper.Instance.NowProcessItemActions -= StoreHelper_NowProcessItemActions;
+            StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
+            StoreHelper.Instance.UpdateCheckStarted -= StoreHelper_UpdateCheckStarted;
+            StoreHelper.Instance.UpdateCheckStopped -= StoreHelper_UpdateCheckStopped;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -98,8 +122,6 @@ namespace CDPIUI.Views.Store
         {
             base.OnNavigatedFrom(e);
 
-            StoreHelper.Instance.QueueUpdated -= UpdateCurrentDownloadsList;
-            StoreHelper.Instance.ErrorListUpdated -= UpdateCurrentDownloadsList;
         }
 
         private void AuditSubHeaderVisible()

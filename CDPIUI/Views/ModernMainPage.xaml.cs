@@ -69,8 +69,9 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
         InitializeComponent();
         this.DataContext = this;
 
-        StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
-        StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
+        ConnectEvents();
+        Loaded += (_, _) => ConnectEvents();
+        Unloaded += (_, _) => DisconnectEvents();
 
         this.Loaded += ModernMainPage_Loaded;
 
@@ -84,6 +85,25 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
         {
             QHyperlinkButton.Visibility = Visibility.Collapsed;
         }
+    }
+
+    // The services are singletons: a page that is not shown must not keep receiving their events.
+    private bool eventsConnected;
+
+    private void ConnectEvents()
+    {
+        if (eventsConnected) return;
+        eventsConnected = true;
+        StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
+        StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
+    }
+
+    private void DisconnectEvents()
+    {
+        if (!eventsConnected) return;
+        eventsConnected = false;
+        StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
+        StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
     }
 
     private void Instance_ItemRemoved(string obj)

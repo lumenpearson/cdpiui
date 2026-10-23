@@ -100,14 +100,35 @@ public sealed partial class AboutPage : TemplatePage
                 SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
             }
 
-            ApplicationUpdate.Instance.ErrorHappens += ApplicationUpdateHelper_ErrorHappens;
-            ApplicationUpdate.Instance.CheckForUpdatesCompleted += ApplicationUpdateHelper_CheckForUpdatesCompleted;
-            ApplicationUpdate.Instance.CheckForUpdatesStarted += ApplicationUpdateHelper_CheckForUpdatesStarted;
+            ConnectEvents();
+            Loaded += (_, _) => ConnectEvents();
+            Unloaded += (_, _) => DisconnectEvents();
 
             RepoRun.Text = UrlOpenHelper.MainRepoUrl;
 
             AcknowledgmentsListView.ItemsSource = AcknowledgmentsList;
             RequirementsListView.ItemsSource = RequrementsList;
+        }
+
+        // The services are singletons: a page that is not shown must not keep receiving their events.
+        private bool eventsConnected;
+
+        private void ConnectEvents()
+        {
+            if (eventsConnected) return;
+            eventsConnected = true;
+            ApplicationUpdate.Instance.ErrorHappens += ApplicationUpdateHelper_ErrorHappens;
+            ApplicationUpdate.Instance.CheckForUpdatesCompleted += ApplicationUpdateHelper_CheckForUpdatesCompleted;
+            ApplicationUpdate.Instance.CheckForUpdatesStarted += ApplicationUpdateHelper_CheckForUpdatesStarted;
+        }
+
+        private void DisconnectEvents()
+        {
+            if (!eventsConnected) return;
+            eventsConnected = false;
+            ApplicationUpdate.Instance.ErrorHappens -= ApplicationUpdateHelper_ErrorHappens;
+            ApplicationUpdate.Instance.CheckForUpdatesCompleted -= ApplicationUpdateHelper_CheckForUpdatesCompleted;
+            ApplicationUpdate.Instance.CheckForUpdatesStarted -= ApplicationUpdateHelper_CheckForUpdatesStarted;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)

@@ -70,7 +70,26 @@ public sealed partial class WorkPage : TemplatePage
         DiagnosticResultListView.ItemsSource = DisplayDiagnosticResultsCollection;
         FixResultListView.ItemsSource = FixResults;
 
+        ConnectEvents();
+        Loaded += (_, _) => ConnectEvents();
+        Unloaded += (_, _) => DisconnectEvents();
+    }
+
+    // The services are singletons: a page that is not shown must not keep receiving their events.
+    private bool eventsConnected;
+
+    private void ConnectEvents()
+    {
+        if (eventsConnected) return;
+        eventsConnected = true;
         TroubleshootingService.Instance.CurrentStateChanged += TroubleshootingHelper_BasicDialogStateChanged;
+    }
+
+    private void DisconnectEvents()
+    {
+        if (!eventsConnected) return;
+        eventsConnected = false;
+        TroubleshootingService.Instance.CurrentStateChanged -= TroubleshootingHelper_BasicDialogStateChanged;
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
