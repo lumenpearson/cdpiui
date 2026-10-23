@@ -111,7 +111,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
                         DisplayName = item.name,
                         FileName = item.file_name,
                         PackId = item.packId,
-                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId).ShortName,
+                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
                         IsLegacyConfig = item.IsLegacy,
                     });
             }

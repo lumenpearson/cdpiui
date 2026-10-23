@@ -46,14 +46,7 @@ namespace CDPIUI.Helper
 
         private static Color? TryParseColor(string value)
         {
-            try
-            {
-                return UIHelper.HexToColorConverter(value!);
-            }
-            catch
-            {
-                return null;
-            }
+            return UIHelper.TryParseHexColor(value, out Color color) ? color : null;
         }
 
         private static Color CreateSecondShade(Color color)

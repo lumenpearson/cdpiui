@@ -343,6 +343,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         ResetResultState();
         remainingTimeEstimator.Reset();
         runStopwatch.Restart();
+        CancellationTokenSource? runCancellation = null;
         try
         {
             BlockCheckSessionPreparationResult prepared = preparationService.Prepare(CreateSessionRequest());
@@ -357,7 +358,8 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                 return null;
             }
 
-            cancellation = new CancellationTokenSource();
+            runCancellation = new CancellationTokenSource();
+            cancellation = runCancellation;
             SetState(BlockCheckSessionState.Running);
             Progress<BlockCheckScanProgress> progress = new(UpdateProgress);
             BlockCheckRunResult runResult = await addOnService.RunWithCdpiuiAdaptersAsync(
@@ -374,7 +376,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                     ConnectTimeout = TimeSpan.FromSeconds(connectTimeoutSeconds),
                     RequestTimeout = TimeSpan.FromSeconds(requestTimeoutSeconds),
                 },
-                cancellationToken: cancellation.Token);
+                cancellationToken: runCancellation.Token);
 
             BlockCheckRunResult result = new()
             {
@@ -408,13 +410,15 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             issues = lastReport.Issues;
             NotifyResult();
             CompleteDisplayedProgress();
-            SetState(result.WasCanceled
+            BlockCheckSessionState finalState = result.WasCanceled
                 ? BlockCheckSessionState.Canceled
                 : result.Success
                     ? BlockCheckSessionState.Completed
                     : result.Synthesis?.IsBestEffort == true
                         ? BlockCheckSessionState.CompletedWithWarnings
-                        : BlockCheckSessionState.Failed);
+                        : BlockCheckSessionState.Failed;
+            // The final state allows a new run, so it is set only after the report is saved;
+            // otherwise a second run started meanwhile had its CTS disposed by this one.
             try
             {
                 await reportHistoryService.SaveAsync(lastReport);
@@ -427,6 +431,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                     nameof(BlockCheck2ViewModel),
                     $"Cannot save BlockCheck2 report to history: {exception.Message}");
             }
+            SetState(finalState);
             return result;
         }
         catch (OperationCanceledException)
@@ -448,8 +453,11 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             estimatedOverallRemainingTime = null;
             Notify(nameof(EstimatedRemainingTime));
             Notify(nameof(EstimatedOverallRemainingTime));
-            cancellation?.Dispose();
-            cancellation = null;
+            runCancellation?.Dispose();
+            if (ReferenceEquals(cancellation, runCancellation))
+            {
+                cancellation = null;
+            }
             CleanupGeneratedSiteListsIfUnviewable();
             NotifyActionState();
         }

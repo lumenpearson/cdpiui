@@ -80,7 +80,15 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
         HandleTheme();
         this.ActualThemeChanged += SmallComponentTileUserControl_ActualThemeChanged;
-        // this.Unloaded += SmallComponentTileUserControl_Unloaded;
+        // ComponentTasksManager outlives the tile: the handler is held only while it is loaded.
+        this.Unloaded += (_, _) => ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
+        this.Loaded += (_, _) =>
+        {
+            if (string.IsNullOrEmpty(StoreId)) return;
+            ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
+            ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
+            PreferTaskStateActions();
+        };
     }
 
     #region Properties
@@ -186,10 +194,12 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private void TaskUpdated(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != StoreId) return;
-
-
-        PreferTaskStateActions();
+        // Raised on the pipe thread; StoreId and the controls are UI-thread only.
+        DispatcherQueue?.TryEnqueue(() =>
+        {
+            if (tuple.Item1 != StoreId) return;
+            PreferTaskStateActions();
+        });
     }
 
     #endregion
@@ -197,6 +207,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private void Init()
     {
+        // Init runs on every StoreId change; the handler was added again each time.
+        ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
         ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
 
         ProxyStackPanel.Visibility = HardcodedItemIds.ComponentIds.GetKeyByValue(StoreId) == Components.TgWsProxy

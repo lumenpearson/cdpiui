@@ -189,7 +189,7 @@ namespace CDPIUI.Controls.Store
         {
             try
             {
-                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId).Directory);
+                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
             catch
             {

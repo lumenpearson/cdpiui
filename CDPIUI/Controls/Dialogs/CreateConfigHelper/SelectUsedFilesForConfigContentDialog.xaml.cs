@@ -95,6 +95,16 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
             }
         }
 
+        // ':', '/', '?' and the like in a config name threw or produced nested folders.
+        private static string GetSafeFolderName(string name)
+        {
+            string value = (name ?? string.Empty).Unidecode().Replace(" ", "_");
+            char[] invalid = Path.GetInvalidFileNameChars();
+            value = new string(value.Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c).ToArray()).Trim('.', '_');
+            if (value.Length > 64) value = value[..64];
+            return value.Length == 0 ? "config" : value;
+        }
+
         private void CreateModels()
         {
             
@@ -102,6 +112,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
 
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
             int secondsSinceEpoch = (int)t.TotalSeconds;
+            string folderName = $"{GetSafeFolderName(ConfigName)}_converted_{secondsSinceEpoch}";
 
             foreach (var file in _files)
             {
@@ -112,19 +123,16 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                     convDir = Path.Combine(
                         ConfigurationService.GetItemFolderFromPackId(SharedConstants.LocalUserItemsId),
                         SharedConstants.LocalUserItemSiteListsFolder,
-                        $"{ConfigName.Unidecode().Replace(" ", "_")}_converted_{secondsSinceEpoch}");
+                        folderName);
                 }
                 else
                 {
                     convDir = Path.Combine(
                         ConfigurationService.GetItemFolderFromPackId(SharedConstants.LocalUserItemsId),
                         SharedConstants.LocalUserItemBinsFolder,
-                        $"{ConfigName.Unidecode().Replace(" ", "_")}_converted_{secondsSinceEpoch}");
+                        folderName);
                 }
-                if (!Directory.Exists(convDir))
-                {
-                    Directory.CreateDirectory(convDir);
-                }
+                // The folder is created when a file is copied into it, not before the user confirms.
                 string autoCorrectPath = FindAutoCorrectPath(file);
                 Models.Add(new FileSelectModel()
                 {
@@ -192,7 +200,10 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
                     Debug.WriteLine(model.AutoCorrectFilePath);
 
                     if (!string.Equals(Path.GetFileNameWithoutExtension(model.AutoCorrectFilePath), "autohostlist", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Directory.CreateDirectory(model.ConvertDirectoryPath);
                         File.Copy(model.AutoCorrectFilePath, Path.Combine(model.ConvertDirectoryPath, Path.GetFileName(filepath)), true);
+                    }
 
                     Files.Add(
                         model.FilePath,

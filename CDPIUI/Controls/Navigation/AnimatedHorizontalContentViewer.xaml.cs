@@ -34,9 +34,11 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
         _activePresenter = PrimaryPresenter;
         _inactivePresenter = SecondaryPresenter;
 
-        localizer.LanguageChanged += Localizer_LanguageChanged;
-
+        Items.CollectionChanged += Items_CollectionChanged;
         this.Loaded += AnimatedHorizontalContentViewer_Loaded;
+        // The localizer outlives the control: subscribe only while it is loaded.
+        this.Loaded += (_, _) => localizer.LanguageChanged += Localizer_LanguageChanged;
+        this.Unloaded += (_, _) => localizer.LanguageChanged -= Localizer_LanguageChanged;
     }
 
     private void Localizer_LanguageChanged(object sender, LanguageChangedEventArgs e)
@@ -85,6 +87,8 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
 
     private void UpdateCurrentText(int index)
     {
+        if (index < 0 || index >= Items.Count)
+            return;
         UpdateTextStoryboard.Begin();
         CurrentHeader = Items[index].Header;
         CurrentDescription = Items[index].Description;

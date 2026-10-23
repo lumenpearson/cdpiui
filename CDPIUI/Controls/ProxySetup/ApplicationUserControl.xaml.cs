@@ -97,7 +97,7 @@ namespace CDPIUI
 
         public static readonly DependencyProperty ApplicationTypeProperty =
             DependencyProperty.Register(
-                nameof(ApplicationType), typeof(string), typeof(ApplicationUserControl), new PropertyMetadata(SelectAppContentDialogResult.None)
+                nameof(ApplicationType), typeof(SelectAppContentDialogResult), typeof(ApplicationUserControl), new PropertyMetadata(SelectAppContentDialogResult.None)
             );
 
         private void Button_Click(object sender, RoutedEventArgs e)

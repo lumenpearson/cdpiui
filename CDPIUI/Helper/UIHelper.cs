@@ -85,15 +85,27 @@ namespace CDPIUI.Helper
                                         AutomationNotificationProcessing.ImportantMostRecent, annoucement, activityID);
         }
 
+        /// <summary>
+        /// Parses #RRGGBB or #AARRGGBB. A color from a store manifest is not trusted to be valid.
+        /// </summary>
+        static public bool TryParseHexColor(string hexColor, out Color color)
+        {
+            color = Color.FromArgb(0, 0, 0, 0);
+            string value = hexColor?.Trim().TrimStart('#');
+            if (value == null || (value.Length != 6 && value.Length != 8) ||
+                !uint.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint number))
+            {
+                return false;
+            }
+            byte a = value.Length == 8 ? (byte)(number >> 24) : (byte)255;
+            color = Color.FromArgb(a, (byte)(number >> 16), (byte)(number >> 8), (byte)number);
+            return true;
+        }
+
         static public Color HexToColorConverter(string hexColor)
         {
-            byte r = byte.Parse(hexColor.Substring(1, 2), NumberStyles.HexNumber);
-            byte g = byte.Parse(hexColor.Substring(3, 2), NumberStyles.HexNumber);
-            byte b = byte.Parse(hexColor.Substring(5, 2), NumberStyles.HexNumber);
-
-            Logger.Instance.CreateDebugLog(nameof(UIHelper), $"{hexColor} is converted {r} {g} {b}");
-            Color color = Color.FromArgb(255, r, g, b);
-
+            if (!TryParseHexColor(hexColor, out Color color))
+                Logger.Instance.CreateWarningLog(nameof(UIHelper), $"\"{hexColor}\" is not a color");
             return color;
         }
 
