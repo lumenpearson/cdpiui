@@ -23,7 +23,6 @@ namespace CDPIUI.Core.Store.Application
             string appItemDirectory = Path.Combine(Directories.StoreItemsDirectory, SharedConstants.ApplicationStoreId);
 
             string patchesDirectory = Path.Combine(appItemDirectory, "Patches");
-            string finalDirectory = Path.Combine(appItemDirectory, "CDPIUI");
 
             string patchDirectory = Path.Combine(
                 patchesDirectory,
@@ -61,7 +60,6 @@ namespace CDPIUI.Core.Store.Application
                 FinalizePatch(
                     downloadedPatches,
                     patchDirectory,
-                    finalDirectory,
                     appItemDirectory);
 
                 return OperationResultModel<EmptyResult>.SuccessResult();
@@ -74,7 +72,7 @@ namespace CDPIUI.Core.Store.Application
             {
                 try
                 {
-                    Directory.Delete(patchesDirectory);
+                    Directory.Delete(patchesDirectory, recursive: true);
                 }
                 catch { }
             }
@@ -192,18 +190,28 @@ namespace CDPIUI.Core.Store.Application
                 throw new CatalogInvalid();
         }
 
-        private void FinalizePatch(List<string> patches, string patchDirectory, string finalDirectory, string appItemDirectory)
+        /// <summary>
+        /// Packs the required patches, oldest first, and the main patch as separate layers
+        /// (layers/0/, layers/1/, ...). Each layer keeps its own signed catalog, so the elevated
+        /// tray can check every signature again before Update.exe applies the layers in order.
+        /// </summary>
+        private void FinalizePatch(List<string> patches, string patchDirectory, string appItemDirectory)
         {
-            foreach (string dir in patches)
-            {
-                Directory.Move(dir, finalDirectory);
-            }
-            Directory.Move(Path.Combine(patchDirectory, "CDPIUI"), finalDirectory);
+            var layers = new List<string>(patches) { Path.Combine(patchDirectory, "CDPIUI") };
 
             string finalPatchFile = Path.Combine(appItemDirectory, "patch.cdpipatch");
             if (File.Exists(finalPatchFile))
                 File.Delete(finalPatchFile);
-            ZipFile.CreateFromDirectory(patchDirectory, finalPatchFile);
+
+            using ZipArchive archive = ZipFile.Open(finalPatchFile, ZipArchiveMode.Create);
+            for (int i = 0; i < layers.Count; i++)
+            {
+                foreach (string file in Directory.EnumerateFiles(layers[i], "*", SearchOption.AllDirectories))
+                {
+                    string relativePath = Path.GetRelativePath(layers[i], file).Replace('\\', '/');
+                    archive.CreateEntryFromFile(file, $"layers/{i}/{relativePath}");
+                }
+            }
         }
 
         private static ErrorModel HandleException(Exception ex)

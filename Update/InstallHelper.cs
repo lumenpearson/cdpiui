@@ -56,7 +56,8 @@ namespace Update
         private string _targetFolder;
         private string _targetExecutable;
         private readonly List<string> _skipFiles = new List<string> { "Update.exe", "catalog.cat" };
-        private const string UiRootPrefix = "CDPIUI/"; 
+        private const string UiRootPrefix = "CDPIUI/";
+        private const string LayersPrefix = "layers/";
 
         public Action<InstallState> InstallationStateChanged;
         public Action<double> ProgressChanged;
@@ -262,26 +263,30 @@ namespace Update
 
                 using (var zip = ZipFile.OpenRead(_archiveFilePath))
                 {
-                    var fileEntries = zip.Entries
-                        .Where(e =>
-                        {
-                            var name = e.FullName.Replace('\\', '/');
-                            return name.StartsWith(UiRootPrefix, StringComparison.OrdinalIgnoreCase) && !name.EndsWith("/");
-                        })
+                    // Entries with the path relative to the installation, layer by layer: a later
+                    // layer overwrites the files of an earlier one.
+                    var fileEntries = GetLayerPrefixes(zip)
+                        .SelectMany(prefix => zip.Entries
+                            .Select(e => new { Entry = e, Name = e.FullName.Replace('\\', '/') })
+                            .Where(e => e.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !e.Name.EndsWith("/"))
+                            .Select(e => new { e.Entry, RelativePath = e.Name.Substring(prefix.Length) }))
                         .ToList();
 
                     int totalFiles = fileEntries.Count;
                     if (totalFiles == 0)
                     {
-                        Log($"No files found to extract in archive under '{UiRootPrefix}'.");
+                        Log("No files found to extract in the update archive.");
                         FinishStatus = InstallError.ExtractingFile;
                         return null;
                     }
 
                     var staged = new List<string>();
-                    foreach (var entry in fileEntries)
+                    var stagedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    int extracted = 0;
+                    foreach (var item in fileEntries)
                     {
-                        var relativePath = entry.FullName.Replace('\\', '/').Substring(UiRootPrefix.Length);
+                        var entry = item.Entry;
+                        var relativePath = item.RelativePath;
                         string destPath;
                         string stagedPath;
                         if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
@@ -307,8 +312,9 @@ namespace Update
                             await stream.CopyToAsync(outFile);
                         }
 
-                        staged.Add(relativePath);
-                        ProgressChanged?.Invoke((double)staged.Count / totalFiles);
+                        if (stagedSet.Add(relativePath))
+                            staged.Add(relativePath);
+                        ProgressChanged?.Invoke((double)++extracted / totalFiles);
                     }
 
                     return staged;
@@ -326,6 +332,26 @@ namespace Update
                 FinishStatus = InstallError.ExtractingFile;
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Prefixes of the archive folders to apply, in order: layers/0/, layers/1/, ... in packages
+        /// made by the application, or CDPIUI/ in a single published patch.
+        /// </summary>
+        private static List<string> GetLayerPrefixes(ZipArchive zip)
+        {
+            var layers = zip.Entries
+                .Select(e => e.FullName.Replace('\\', '/'))
+                .Where(name => name.StartsWith(LayersPrefix, StringComparison.OrdinalIgnoreCase))
+                .Select(name => name.Substring(LayersPrefix.Length).Split('/')[0])
+                .Distinct()
+                .Select(index => { int number; return int.TryParse(index, out number) ? number : -1; })
+                .Where(number => number >= 0)
+                .OrderBy(number => number)
+                .Select(number => $"{LayersPrefix}{number}/")
+                .ToList();
+
+            return layers.Count > 0 ? layers : new List<string> { UiRootPrefix };
         }
 
         /// <summary>
