@@ -20,6 +20,13 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
             {
                 throw new ConfigShareException("SHARE_FILE_MISSING", file.Path, exception);
             }
+            // winws creates the --hostlist-auto list while it runs, so before the first run there is
+            // no file and the preset could not be shared (audit 22.2). It is shared as an empty list.
+            if (!File.Exists(source) && IsRuntimeCreated(file.OptionName) &&
+                Directory.Exists(Path.GetDirectoryName(source)))
+            {
+                File.WriteAllText(source, string.Empty);
+            }
             if (!File.Exists(source)) throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
             if (!Files.TryGetValue(source, out var resource))
             {
@@ -43,6 +50,10 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
         }
         MapConfig(config, text => ConfigShareService.ReplaceConfigReferences(text, replacements));
     }
+
+    private static bool IsRuntimeCreated(string? optionName) =>
+        string.Equals(optionName, "--hostlist-auto", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(optionName, "--hostlist-auto-debug", StringComparison.OrdinalIgnoreCase);
 
     private void AddReplacement(string reference, string portable)
     {
