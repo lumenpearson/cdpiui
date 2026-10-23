@@ -91,7 +91,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
                     var result = Regex.Replace(
                         configItem.name!,
-                        @"\$.*?\((.*?)\)",
+                        // Only $NAME(key) is a script: a preset named "Fast $5 (beta)" stays as it is.
+                        @"\$[A-Za-z_]+\((.*?)\)",
                         match =>
                         {
                             var key = match.Groups[1].Value;
@@ -841,8 +842,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             string startupString = GetStartupParameters(filename, packId);
             Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"{startupString}");
 
-            windows = startupString
-                .Split(new[] { "--new" }, StringSplitOptions.RemoveEmptyEntries)
+            // Only the --new option separates profiles, not options such as --newfoo.
+            windows = Regex.Split(startupString, @"(?<!\S)--new(?!\S)")
                 .Select(w => w.Trim())
                 .Where(w => w.Length > 0)
                 .ToList();

@@ -926,8 +926,9 @@ public sealed class Zapret1ToZapret2Converter
         offset = 0;
         path = value;
 
+        // "+N@path" or "@path": an '@' later in the path is part of the file name.
         int atIndex = value.IndexOf('@');
-        if (atIndex >= 0)
+        if (atIndex == 0 || (atIndex > 0 && value[0] == '+' && value[1..atIndex].All(char.IsDigit)))
         {
             string offsetPart = value[..atIndex];
             path = value[(atIndex + 1)..];
