@@ -278,11 +278,11 @@ namespace CDPIUI
 
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Title = "Choose config file";
+                openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseConfigTitle");
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 openFileDialog.FilterIndex = 4;
 
-                openFileDialog.Filter = "JSON configs (*.json)|*.json|BAT config files (*.bat)|*.bat|CMD config files (*.cmd)|*.cmd|All compacible config files (*.bat, *.cmd, *.json)|*.bat;*.cmd;*.json";
+                openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogJsonConfigs")} (*.json)|*.json|{localizer.GetLocalizedString("FileDialogBatConfigs")} (*.bat)|*.bat|{localizer.GetLocalizedString("FileDialogCmdConfigs")} (*.cmd)|*.cmd|{localizer.GetLocalizedString("FileDialogAllConfigs")} (*.bat, *.cmd, *.json)|*.bat;*.cmd;*.json";
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -326,10 +326,10 @@ namespace CDPIUI
             string filePath;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Title = "Choose GoodCheck report file";
+                openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseGoodCheckReportTitle");
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-                openFileDialog.Filter = "XML data files (*.xml)|*.xml";
+                openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogXmlData")} (*.xml)|*.xml";
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)

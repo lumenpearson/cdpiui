@@ -86,7 +86,7 @@ public sealed partial class ViewWindow : TemplateWindow
             OverwritePrompt = true,
             FileName = "PseudoConsoleLog.txt",
             DefaultExt = ".txt",
-            Filter = "TXT Files|*.txt",
+            Filter = $"{localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt",
         };
         if (dialog.ShowDialog() != true)
         {
