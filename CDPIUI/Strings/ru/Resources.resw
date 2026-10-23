@@ -6172,4 +6172,7 @@ https://discord.com/app</value>
   <data name="ConnectToProxyTextBlock.Text" xml:space="preserve">
     <value>Подключить Telegram к прокси</value>
   </data>
+  <data name="ConfigImportArguments" xml:space="preserve">
+    <value>Аргументы</value>
+  </data>
 </root>
