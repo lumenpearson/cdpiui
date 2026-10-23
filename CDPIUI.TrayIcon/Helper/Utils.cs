@@ -64,7 +64,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        public static void StartUpdate(string targetFile)
+        public static async void StartUpdate(string targetFile)
         {
             if (!TrustedPaths.IsAllowed(targetFile, "application update"))
             {
@@ -72,16 +72,36 @@ namespace CDPIUI.TrayIcon.Helper
                 return;
             }
 
-            if (Path.GetExtension(targetFile).ToLower() == ".msi")
+            // The installer runs from a copy the user cannot change, checked where possible.
+            string stagedFile;
+            try
             {
-                RunHelper.Run("msiexec.exe", $"/i \"{targetFile}\" /qn+");
+                stagedFile = PackageStaging.Stage(targetFile);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(Utils), $"Cannot copy the update package: {ex.Message}");
+                NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
+                return;
+            }
+
+            if (Path.GetExtension(stagedFile).ToLower() == ".msi")
+            {
+                // Published Setup.msi files are not Authenticode-signed, so there is no signature to check yet.
+                RunHelper.Run("msiexec.exe", $"/i \"{stagedFile}\" /qn+");
                 _ = PipeHelper.SendApplicationPacket(ApplicationMessageIds.CloseApplicationUI);
                 NotifyHelper.Instance.Dispose();
                 Application.Exit();
             }
             else
             {
-                RunHelper.Run(Path.Combine(GetDataDirectory(), "Update.exe"), $"--directory-to-zip \"{targetFile}\" --destination-directory \"{GetDataDirectory()}\"");
+                if (!await PackageStaging.VerifyUpdatePackageAsync(stagedFile))
+                {
+                    PackageStaging.Release(stagedFile);
+                    NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
+                    return;
+                }
+                RunHelper.Run(Path.Combine(GetDataDirectory(), "Update.exe"), $"--directory-to-zip \"{stagedFile}\" --destination-directory \"{GetDataDirectory()}\"");
             }
         }
 
