@@ -11,6 +11,10 @@ Environment variables (all optional):
   TRUSTED_CERTIFICATES                     SHA-1 thumbprints, separated by spaces, commas or semicolons
   CATALOG_CERTIFICATE                      Base64 PFX that signs the catalogs. If TRUSTED_CERTIFICATES
   CATALOG_CERTIFICATE_PASSWORD             is empty, the thumbprint of this certificate is used.
+  PIPE_AUTH_GUID                           The pipe secret. It must stay the same from build to build:
+                                           a new value changes CDPIUI.Shared.dll and the tray, and every
+                                           patch then contains them. Without it, the value is derived
+                                           from the catalog certificate, or is random as a last choice.
 #>
 param(
     [switch] $Force
@@ -55,6 +59,20 @@ if ($thumbprints.Count -eq 0) {
 
 $list = ($thumbprints | ForEach-Object { ConvertTo-CSharpString $_ }) -join ', '
 
+$authGuid = Get-Env 'PIPE_AUTH_GUID'
+$parsedGuid = [Guid]::Empty
+if ([Guid]::TryParse($authGuid, [ref] $parsedGuid)) {
+    $authGuid = $parsedGuid.ToString()
+} elseif (Get-Env 'CATALOG_CERTIFICATE') {
+    # Stable for the same certificate and not readable from the public certificate data.
+    $hash = [System.Security.Cryptography.SHA256]::HashData(
+        [Text.Encoding]::UTF8.GetBytes('cdpiui-pipe:' + (Get-Env 'CATALOG_CERTIFICATE')))
+    $authGuid = ([Guid]::new([byte[]]$hash[0..15])).ToString()
+} else {
+    Write-Warning "No PIPE_AUTH_GUID: a random pipe secret makes every patch contain CDPIUI.Shared.dll and the tray."
+    $authGuid = [Guid]::NewGuid().ToString()
+}
+
 @"
 using System.Collections.Generic;
 
@@ -66,7 +84,7 @@ namespace CDPIUI.Shared.Secrets
         public static string GitLabToken = $(ConvertTo-CSharpString (Get-Env 'STORE_GITLAB_TOKEN'));
         public const string ProxyURL = $(ConvertTo-CSharpString (Get-Env 'STORE_PROXY_URL'));
         public const string ProxyKey = $(ConvertTo-CSharpString (Get-Env 'STORE_PROXY_KEY'));
-        public static string AuthGuid = "$([Guid]::NewGuid())";
+        public static string AuthGuid = "$authGuid";
         public static readonly List<string> TrustedCertificates = [$list];
     }
 }

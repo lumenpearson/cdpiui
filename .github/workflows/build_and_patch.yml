@@ -45,6 +45,7 @@ jobs:
           STORE_PROXY_URL: ${{ secrets.STORE_PROXY_URL }}
           STORE_PROXY_KEY: ${{ secrets.STORE_PROXY_KEY }}
           TRUSTED_CERTIFICATES: ${{ secrets.TRUSTED_CERTIFICATES }}
+          PIPE_AUTH_GUID: ${{ secrets.PIPE_AUTH_GUID }}
           CATALOG_CERTIFICATE: ${{ secrets.CATALOG_CERTIFICATE_PFX_BASE64 }}
           CATALOG_CERTIFICATE_PASSWORD: ${{ secrets.CATALOG_CERTIFICATE_PASSWORD }}
         run: ./.github/scripts/create_release_secret.ps1 -Force

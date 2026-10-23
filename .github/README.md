@@ -38,6 +38,7 @@ A user starts this workflow manually (`workflow_dispatch`).
 | `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | The Store tokens in `Secret.cs` (`GitHubToken`, `GitLabToken`). |
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). |
 | `TRUSTED_CERTIFICATES` | The SHA-1 thumbprints for `Secret.TrustedCertificates`, separated by spaces, commas or semicolons. |
+| `PIPE_AUTH_GUID` | The pipe secret `Secret.AuthGuid`. Keep the same value for all releases. |
 | `CATALOG_CERTIFICATE_PFX_BASE64` | The PFX file of the catalog signature certificate, in Base64. The patch step writes it to `RUNNER_TEMP\catalog.pfx` and deletes it after the step. |
 | `CATALOG_CERTIFICATE_PASSWORD` | The password of the PFX file. |
 
@@ -125,13 +126,15 @@ The release workflow runs this script. It writes `Secret.cs` from these environm
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | `ProxyURL`, `ProxyKey` |
 | `TRUSTED_CERTIFICATES` | `TrustedCertificates` |
 | `CATALOG_CERTIFICATE`, `CATALOG_CERTIFICATE_PASSWORD` | `TrustedCertificates`, if `TRUSTED_CERTIFICATES` gives no thumbprint |
+| `PIPE_AUTH_GUID` | `AuthGuid` |
 
 Rules:
 
 - The script keeps only thumbprints with 40 hexadecimal characters, in upper case.
 - If `TRUSTED_CERTIFICATES` gives no thumbprint, the script uses the thumbprint of the PFX in `CATALOG_CERTIFICATE`.
 - If there is no thumbprint, the script shows a warning. The build then rejects signed packages and patches.
-- Each build gets a random `AuthGuid`.
+- `AuthGuid` comes from `PIPE_AUTH_GUID`. Without it, the script derives the value from `CATALOG_CERTIFICATE` (SHA-256). Without both, the value is random and the script shows a warning.
+- `AuthGuid` must stay the same from build to build. A new value changes `CDPIUI.Shared.dll` and the tray, and every patch then contains them.
 - If `Secret.cs` exists, the script does not change it. With `-Force`, the script replaces it.
 
 ### `make_patch.ps1`
@@ -187,7 +190,7 @@ installation (`State.IsApplicationBuildAsSingleFile`), the Store puts the patch 
    1. Download the required patch to `required/<index>` in the patch folder. The index is 0 for the first entry, 1 for the next entry, and so on.
    2. Extract the full archive.
    3. Read the version from the `requirements.json` of the required patch. If the file or the version is not valid, the operation fails.
-   4. If the installed version is the same or newer, skip the required patch.
+   4. If the installed version is the same or newer, skip the required patch. Also skip it if its version is the same as or newer than the version of the main patch, because the main patch is always the last layer.
    5. Verify the catalog of the `CDPIUI/` folder of the required patch.
 6. Sort the required patches by version, the oldest first. The sequence in `patch_urls` is not important.
 7. Write a new `patch.cdpipatch` with one layer for each patch (`layers/0/`, `layers/1/`, ...).

@@ -59,6 +59,7 @@ The project does not embed a manifest. Thus `Update.exe` gets the rights of the 
    - If a move fails, the tool restores the applied files from the backup folder in reverse sequence.
    - If the restore is incomplete, the status becomes `NoOldVersion`.
    - In that case, an error message tells the user to install the application again. The tool keeps the backup folder for manual recovery.
+   - The tool does not start the application. The window closes after the user closes the error message.
 5. **Finish the update.**
    - The tool deletes the staging folder and the backup folder.
    - The tool deletes the `<install>\.update-manifest` file, if it exists. Earlier versions of the tool wrote this file.
