@@ -65,7 +65,7 @@ Some notes about these commands:
 - `build_portable.ps1` puts the GUI, the single-file tray, `Update.exe` and `EditHostFile.exe` into `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`.
 - Build the MSI installer after `build_portable.ps1`. The installer uses [WiX Toolset 6](https://wixtoolset.org/).
 - `NewSetup/NewSetupFiles.wxs` must list all files of the release layout. `check_setup_files.ps1` shows the differences.
-- The `build_and_patch.yml` workflow makes the patches (`.cdpipatch`). Refer to [.github/README.md](README.md).
+- The `build_and_patch.yml` workflow makes the patches (`.cdpipatch`). Refer to [.github/RELEASES.md](RELEASES.md).
 
 ### Continuous integration
 
@@ -75,13 +75,13 @@ The workflow `.github/workflows/ci.yml` does these checks:
 - It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
 - It builds `Update` and `EditHostFile` (job `tools`).
 
-The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/README.md](README.md).
+The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/RELEASES.md](RELEASES.md).
 
 ## Project structure
 
 ```text
 cdpiui/
-├── .github/                    # CI workflows and build scripts. Refer to .github/README.md.
+├── .github/                    # CI workflows and build scripts. Refer to .github/RELEASES.md.
 ├── CDPIUI/                     # The GUI (WinUI 3)
 │   ├── Assets/                 # Images
 │   ├── Commands/               # The cdpiui:// links: CommandUriMapper and CommandsHandler
@@ -205,4 +205,4 @@ To add a language, do these steps:
 | Updater | [Update/README.md](../Update/README.md) |
 | Hosts file editor | [EditHostFile/README.md](../EditHostFile/README.md) |
 | Installer | [NewSetup/README.md](../NewSetup/README.md) |
-| CI and releases | [.github/README.md](README.md) |
+| CI and releases | [.github/RELEASES.md](RELEASES.md) |

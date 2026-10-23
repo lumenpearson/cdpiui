@@ -188,7 +188,7 @@ You must create it before you build the solution.
 1. For a local build, run `pwsh .github/scripts/create_secret_stub.ps1`. The script creates `Secret.cs` with empty tokens, an empty `TrustedCertificates` list and a random `AuthGuid`. In a file that exists, the script changes only an empty `AuthGuid`.
 2. Alternatively, create a `public static class Secret` in the `CDPIUI.Shared.Secrets` namespace. Copy only the members of `SecretExample` in `SecretExample.cs`.
 
-The release workflow writes `Secret.cs` with `.github/scripts/create_release_secret.ps1` from repository secrets. See [.github/README.md](../.github/README.md).
+The release workflow writes `Secret.cs` with `.github/scripts/create_release_secret.ps1` from repository secrets. See [.github/RELEASES.md](../.github/RELEASES.md).
 
 `SecretExample.cs` is excluded from the build in `CDPIUI.Shared.csproj`. The `ISecret` interface in it describes the members:
 

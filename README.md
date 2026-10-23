@@ -110,7 +110,7 @@
 | Установка обновлений | [Update/README.md](Update/README.md) |
 | Редактор файла hosts | [EditHostFile/README.md](EditHostFile/README.md) |
 | Установщик MSI | [NewSetup/README.md](NewSetup/README.md) |
-| CI, релизы и патчи | [.github/README.md](.github/README.md) |
+| CI, релизы и патчи | [.github/RELEASES.md](.github/RELEASES.md) |
 | Лицензии сторонних библиотек | [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |
 
 Справка для пользователей встроена в приложение и доступна на русском и английском языках.
