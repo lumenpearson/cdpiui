@@ -60,6 +60,61 @@
 
 Сведения для разработчиков — сборка, устройство приложения и правила внесения изменений — собраны в [CONTRIBUTING.md](.github/CONTRIBUTING.md). У каждого проекта решения есть свой README с подробностями; их список приведён в конце CONTRIBUTING.md.
 
+## Как устроено приложение
+
+**CDPI UI** состоит из двух процессов, которые обмениваются сообщениями через именованный канал (pipe):
+
+| Часть | Учётная запись | Назначение |
+|---|---|---|
+| Главное окно (`CDPIUI.exe`) | Текущий пользователь, без повышения прав | Окна приложения, Магазин, пресеты, дополнения и настройки |
+| Значок в трее (`CDPIUI_TrayIcon.exe`) | Администратор | Запуск и остановка компонентов, системный прокси, автозапуск, уведомления, условный запуск |
+
+Главное окно не запускает компоненты само: оно отправляет запрос трею, а трей запускает компонент и передаёт его состояние и вывод обратно. Трей принимает команды только от главного окна приложения и запускает файлы только из папки установки и папок данных **CDPI UI**.
+
+Ещё две утилиты работают на .NET Framework 4.7.2: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора.
+
+## Сборка из исходного кода
+
+Понадобятся Windows 10 или 11 (x64), Visual Studio 2022 с нагрузками для .NET Desktop и WinUI (или .NET 8 SDK и MSBuild) и PowerShell 7.
+
+1. Создайте файл секретов для локальной сборки: `pwsh .github/scripts/create_secret_stub.ps1`
+2. Соберите `CDPI.sln` для платформы `x64`
+3. Запустите `CDPIUI.TrayIcon` от имени администратора, затем `CDPIUI` от имени обычного пользователя
+
+Полезные команды:
+
+| Задача | Команда |
+|---|---|
+| Модульные тесты | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Сборка portable-версии | `pwsh .github/scripts/build_portable.ps1` |
+| Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
+| Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
+
+Каждый push и pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек и тесты, сборка приложения и `Setup.msi`, сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+
+## Документация
+
+Документация для разработчиков написана на английском языке.
+
+| Раздел | Документ |
+|---|---|
+| Сборка, устройство и правила изменения кода | [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) |
+| Главное окно (WinUI 3) | [CDPIUI/README.md](CDPIUI/README.md) |
+| Общая логика: Магазин, компоненты, настройки | [CDPIUI.Core/README.md](CDPIUI.Core/README.md) |
+| Язык условий LScript | [CDPIUI.Core/LScript/README.md](CDPIUI.Core/LScript/README.md) |
+| Общие типы и безопасность | [CDPIUI.Shared/README.md](CDPIUI.Shared/README.md) |
+| Протокол обмена между окном и треем | [CDPIUI.Shared/Pipe/README.md](CDPIUI.Shared/Pipe/README.md) |
+| Значок в трее | [CDPIUI.TrayIcon/README.md](CDPIUI.TrayIcon/README.md) |
+| Дополнения (BlockCheck2, GoodCheck, импорт и обмен пресетами, диагностика, hosts) | [CDPIUI.AddOns/README.md](CDPIUI.AddOns/README.md) |
+| Модульные тесты | [CDPIUI.Tests/README.md](CDPIUI.Tests/README.md) |
+| Установка обновлений | [Update/README.md](Update/README.md) |
+| Редактор файла hosts | [EditHostFile/README.md](EditHostFile/README.md) |
+| Установщик MSI | [NewSetup/README.md](NewSetup/README.md) |
+| CI, релизы и патчи | [.github/README.md](.github/README.md) |
+| Лицензии сторонних библиотек | [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |
+
+Справка для пользователей встроена в приложение и доступна на русском и английском языках.
+
 ## Благодарности
 
 Особая благодарность создателям компонентов [ValdikSS](https://github.com/ValdikSS), [bol-van](https://github.com/bol-van/), [xvzc](https://github.com/xvzc), [GVCoder09](https://github.com/GVCoder09/), [Flowseal](https://github.com/Flowseal/) и [hufrea](https://github.com/hufrea/)
