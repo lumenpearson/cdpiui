@@ -553,8 +553,9 @@ public sealed partial class MainPage : TemplatePage
             {
                 await ComponentTasksManager.Instance.StopTask(componentId);
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
             }
         }
         CompleteTestSession();

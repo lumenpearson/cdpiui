@@ -70,7 +70,7 @@ namespace CDPIUI.Messages
 
         private void NewIdSeted()
         {
-            SetItemToViewId(Id);
+            _ = SetItemToViewId(Id); // SetItemToViewId catches and logs its own errors.
         }
 
         private void StoreSmallDownloadDialog_Closed(object sender, WindowEventArgs args)
@@ -110,11 +110,18 @@ namespace CDPIUI.Messages
             DescriptionShimmer.Visibility = visibility;
         }
 
-        public async void SetItemToViewId(string id)
+        public async Task SetItemToViewId(string id)
         {
-            StoreId = id;
-            await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: true);
-            LoadItemInfo();
+            try
+            {
+                StoreId = id;
+                await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: true);
+                LoadItemInfo();
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
+            }
         }
 
         private void LoadItemInfo()
@@ -139,7 +146,7 @@ namespace CDPIUI.Messages
 
             if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
             {
-                CancelButton.Content = "OK";
+                CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
 
                 ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
                 DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
@@ -159,7 +166,7 @@ namespace CDPIUI.Messages
 
         private void GetButton_Click(object sender, RoutedEventArgs e)
         {
-            StartDownload();
+            _ = StartDownload(); // StartDownload catches and logs its own errors.
         }
 
         private async void ViewInStoreButton_Click(object sender, RoutedEventArgs e)
@@ -178,14 +185,21 @@ namespace CDPIUI.Messages
             DownloadProgressStackPanel.Visibility = Visibility.Visible;
         }
 
-        private async void StartDownload()
+        private async Task StartDownload()
         {
-            if (!await AskLicense()) return;
+            try
+            {
+                if (!await AskLicense()) return;
 
-            GetReadyUI();
+                GetReadyUI();
 
-            CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
-            StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
+                CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
+                StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
+            }
         }
 
         private async Task<bool> AskLicense()
@@ -335,7 +349,7 @@ namespace CDPIUI.Messages
                 ErrorCodeTextBlock.Text = errorCode;
                 errorHappened = true;
 
-                CancelButton.Content = "OK";
+                CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
             };
             StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
@@ -355,7 +369,7 @@ namespace CDPIUI.Messages
         {
             if (item == null) return;
             DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-            CancelButton.Content = "OK";
+            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
 
             ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemNameComplete"), item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
         }

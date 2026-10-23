@@ -38,7 +38,7 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        RefreshSize();
+        _ = RefreshSize(); // RefreshSize catches and shows its own errors.
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -54,7 +54,7 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
         Frame.Navigate(item.Tag, null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
     }
 
-    private async void RefreshSize()
+    private async Task RefreshSize()
     {
         try
         {
@@ -77,7 +77,7 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
                 await Task.Run(() => Directory.Delete(PreviousVersionsDirectory, recursive: true));
         }
         catch (Exception ex) { ShowError(ex); }
-        finally { RefreshSize(); }
+        finally { await RefreshSize(); }
     }
 
     private void RestoreButton_Click(object sender, RoutedEventArgs e)
@@ -93,6 +93,7 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
                 Verb = "runas"
             });
         }
+        // ERROR_CANCELLED: the user declined the elevation prompt, which is not an error.
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) { }
         catch (Exception ex) { ShowError(ex); }
     }

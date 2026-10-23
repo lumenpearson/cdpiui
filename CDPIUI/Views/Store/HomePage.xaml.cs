@@ -29,6 +29,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -132,7 +133,7 @@ public sealed partial class HomePage : TemplatePage
         // SetupLayout();
 
         StoreHelper.Instance.StoreInternalErrorHappens += StoreHelper_ErrorHappens;
-        UpdateStoreDatabase();
+        _ = UpdateStoreDatabase(); // UpdateStoreDatabase catches and logs its own errors.
 
         StoreScrollViewer.SizeChanged += OnContainerSizeChanged;
 
@@ -368,24 +369,31 @@ public sealed partial class HomePage : TemplatePage
         StoreViewBundles.SetBundles(kits.Select(ReadyKitViewModelFactory.Create));
     }
 
-    private async void UpdateStoreDatabase()
+    private async Task UpdateStoreDatabase()
     {
-        bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
-        // bool result = true;
-        if (result)
+        try
         {
-            List<UICategoryData> categoryDatas = CreateCategoriesList(StoreHelper.Instance.FormattedStoreDatabase);
-            InitializeAndShow(categoryDatas);
+            bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
+            // bool result = true;
+            if (result)
+            {
+                List<UICategoryData> categoryDatas = CreateCategoriesList(StoreHelper.Instance.FormattedStoreDatabase);
+                InitializeAndShow(categoryDatas);
 
-            ErrorScrollViewer.Visibility = Visibility.Collapsed;
-            LoadingGrid.Visibility = Visibility.Collapsed;
-            StoreScrollViewer.Visibility = Visibility.Visible;
-        } 
-        else
+                ErrorScrollViewer.Visibility = Visibility.Collapsed;
+                LoadingGrid.Visibility = Visibility.Collapsed;
+                StoreScrollViewer.Visibility = Visibility.Visible;
+            } 
+            else
+            {
+                ErrorScrollViewer.Visibility = Visibility.Visible;
+                LoadingGrid.Visibility = Visibility.Collapsed;
+                StoreScrollViewer.Visibility = Visibility.Collapsed;
+            }
+        }
+        catch (Exception exception)
         {
-            ErrorScrollViewer.Visibility = Visibility.Visible;
-            LoadingGrid.Visibility = Visibility.Collapsed;
-            StoreScrollViewer.Visibility = Visibility.Collapsed;
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(HomePage), exception.ToString());
         }
     }
 
@@ -504,7 +512,7 @@ public sealed partial class HomePage : TemplatePage
 
     private void AskSupportButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        UrlOpenHelper.LaunchReportUrl();
+        _ = UrlOpenHelper.LaunchReportUrl();
     }
 
     private static void OpenHelp(string page)

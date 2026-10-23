@@ -106,31 +106,38 @@ namespace CDPIUI
             Instanse = null;
         }
 
-        private async void AskForExit(NavigatingCancelEventArgs e)
+        private async Task AskForExit(NavigatingCancelEventArgs e)
         {
-            ContentDialog exitDialog = new ContentDialog()
+            try
             {
-                Title = localizer.GetLocalizedString("Exit"),
-                Content = localizer.GetLocalizedString("ExitAsk"),
-                PrimaryButtonText = localizer.GetLocalizedString("Yes"),
-                CloseButtonText = localizer.GetLocalizedString("No"),
-                XamlRoot = this.Content.XamlRoot,
-                Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
-            };
-            var result = await exitDialog.ShowQueuedAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                ContentFrame.DispatcherQueue.TryEnqueue(() =>
+                ContentDialog exitDialog = new ContentDialog()
                 {
-                    IsOperationExitAskAvailable = false;
-                    if (ContentFrame.CanGoBack)
+                    Title = localizer.GetLocalizedString("Exit"),
+                    Content = localizer.GetLocalizedString("ExitAsk"),
+                    PrimaryButtonText = localizer.GetLocalizedString("Yes"),
+                    CloseButtonText = localizer.GetLocalizedString("No"),
+                    XamlRoot = this.Content.XamlRoot,
+                    Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
+                };
+                var result = await exitDialog.ShowQueuedAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    ContentFrame.DispatcherQueue.TryEnqueue(() =>
                     {
-                        NavigateBackWithParameter(e.Parameter);
-                        return;
-                    }
-                    ContentFrame.Navigate(e.SourcePageType, e.Parameter, new DrillInNavigationTransitionInfo());
-                    
-                });
+                        IsOperationExitAskAvailable = false;
+                        if (ContentFrame.CanGoBack)
+                        {
+                            NavigateBackWithParameter(e.Parameter);
+                            return;
+                        }
+                        ContentFrame.Navigate(e.SourcePageType, e.Parameter, new DrillInNavigationTransitionInfo());
+                        
+                    });
+                }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(CreateConfigHelperWindow), exception.ToString());
             }
         }
 
@@ -160,7 +167,8 @@ namespace CDPIUI
         {
             if (IsOperationExitAskAvailable)
             {
-                AskForExit(e);
+                // AskForExit catches and logs its own errors.
+                _ = AskForExit(e);
                 e.Cancel = true;
                 return;
 
@@ -405,7 +413,7 @@ namespace CDPIUI
 
         private void ReportIssueButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchReportUrl();
+            _ = UrlOpenHelper.LaunchReportUrl();
         }
 
         private void OfflineHelpButton_Click(object sender, RoutedEventArgs e)
@@ -416,7 +424,7 @@ namespace CDPIUI
 
         private void OnlineHelpButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchWikiUrl();
+            _ = UrlOpenHelper.LaunchWikiUrl();
         }
 
         private void Search_Click(object sender, RoutedEventArgs e)

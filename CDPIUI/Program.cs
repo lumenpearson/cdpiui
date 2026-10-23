@@ -138,7 +138,10 @@ namespace CDPIUI
                     _ = app.PreferRequestedActions(args);
                 }
             }
-            catch { }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(Program), exception.ToString());
+            }
         }
 
         private static void ObserveMigrationActivation(AppActivationArguments args)

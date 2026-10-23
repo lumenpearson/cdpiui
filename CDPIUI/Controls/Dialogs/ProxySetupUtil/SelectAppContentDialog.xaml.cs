@@ -158,7 +158,7 @@ public sealed partial class SelectAppContentDialog : ContentDialog
         }
         catch
         {
-
+            // The start folder is optional: without it the picker opens at its default location.
         }
 
         if (startFolder != null)

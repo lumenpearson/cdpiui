@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CDPIUI.Helper
 {
@@ -18,18 +19,27 @@ namespace CDPIUI.Helper
         public const string NTCParty = "https://ntc.party";
         public const string BBD = "https://t.me/byebyedpi_group";
 
+        // The Launch* methods catch and log their own errors, so callers can discard the task.
+
         /// <summary>
         /// Opens a web link. Links come from store manifests and license data, so file:, ms-*
         /// and other schemes that start local programs are refused.
         /// </summary>
-        public static async void LaunchUrl(string uri)
+        public static async Task LaunchUrl(string uri)
         {
-            if (!TryGetWebUri(uri, out Uri webUri))
+            try
             {
-                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), $"Refused to open \"{uri}\"");
-                return;
+                if (!TryGetWebUri(uri, out Uri webUri))
+                {
+                    Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), $"Refused to open \"{uri}\"");
+                    return;
+                }
+                _ = await Windows.System.Launcher.LaunchUriAsync(webUri);
             }
-            _ = await Windows.System.Launcher.LaunchUriAsync(webUri);
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
         }
 
         public static bool TryGetWebUri(string uri, out Uri webUri)
@@ -38,61 +48,117 @@ namespace CDPIUI.Helper
                 (webUri.Scheme == Uri.UriSchemeHttps || webUri.Scheme == Uri.UriSchemeHttp ||
                  webUri.Scheme == Uri.UriSchemeMailto || webUri.Scheme == "tg");
         }
-        public static async void LaunchReportUrl()
+        public static async Task LaunchReportUrl()
         {
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(ReportUrl));
-        }
-        public static async void LaunchMainRepoUrl()
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(MainRepoUrl));
-        }
-        public static async void LaunchWikiUrl()
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(
-                new Uri("https://storik4pro.github.io/cdpiui/"));
-        }
-        public static async void LaunchLicenseUrl()
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(LicenseUrl));
-        }
-        public static async void LaunchDonateUrl()
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(
-                new Uri(DonateUrl));
-        }
-        public static async void LaunchTelegramUrl()
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(TelegramMainUrl));
-        }
-
-        public static async void LaunchTelegramProxyUrl(string ip, string port, string secret)
-        {
-            _ = await Windows.System.Launcher.LaunchUriAsync(
-                new Uri($"tg://proxy?server={ip}&port={port}&secret={secret}"));
-        }
-        public static async void LaunchComponentForumUrl(string componentId)
-        {
-            switch (componentId)
+            try
             {
-                case "CSZTBN012":
-                    _ = await Windows.System.Launcher.LaunchUriAsync(
-                        new Uri("https://ntc.party/c/community-software/zapret-antidpi/20"));
-                    break;
-                case "CSGIVS036":
-                    _ = await Windows.System.Launcher.LaunchUriAsync(
-                        new Uri("https://ntc.party/c/community-software/goodbyedpi/8"));
-                    break;
-                case "CSBIHA024":
-                    _ = await Windows.System.Launcher.LaunchUriAsync(
-                        new Uri("https://ntc.party/c/community-software/byedpi/39"));
-                    break;
-                case "CSSIXC048":
-                    break;
-                case "CSTYFL050":
-                    _ = await Windows.System.Launcher.LaunchUriAsync(
-                        new Uri("https://github.com/Flowseal/tg-ws-proxy/issues/389"));
-                    break;
+                _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(ReportUrl));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchMainRepoUrl()
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(MainRepoUrl));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchWikiUrl()
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(
+                    new Uri("https://storik4pro.github.io/cdpiui/"));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchLicenseUrl()
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(LicenseUrl));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchDonateUrl()
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(
+                    new Uri(DonateUrl));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchTelegramUrl()
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(TelegramMainUrl));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
 
+        public static async Task LaunchTelegramProxyUrl(string ip, string port, string secret)
+        {
+            try
+            {
+                _ = await Windows.System.Launcher.LaunchUriAsync(
+                    new Uri($"tg://proxy?server={ip}&port={port}&secret={secret}"));
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
+            }
+        }
+        public static async Task LaunchComponentForumUrl(string componentId)
+        {
+            try
+            {
+                switch (componentId)
+                {
+                    case "CSZTBN012":
+                        _ = await Windows.System.Launcher.LaunchUriAsync(
+                            new Uri("https://ntc.party/c/community-software/zapret-antidpi/20"));
+                        break;
+                    case "CSGIVS036":
+                        _ = await Windows.System.Launcher.LaunchUriAsync(
+                            new Uri("https://ntc.party/c/community-software/goodbyedpi/8"));
+                        break;
+                    case "CSBIHA024":
+                        _ = await Windows.System.Launcher.LaunchUriAsync(
+                            new Uri("https://ntc.party/c/community-software/byedpi/39"));
+                        break;
+                    case "CSSIXC048":
+                        break;
+                    case "CSTYFL050":
+                        _ = await Windows.System.Launcher.LaunchUriAsync(
+                            new Uri("https://github.com/Flowseal/tg-ws-proxy/issues/389"));
+                        break;
+
+                }
+            }
+            catch (Exception exception)
+            {
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(UrlOpenHelper), exception.ToString());
             }
         }
     }

@@ -103,6 +103,7 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
             busy = false;
             Hide();
         }
+        // The system share was cancelled: this is not an error.
         catch (OperationCanceledException) { }
         catch (Exception exception)
         {

@@ -138,7 +138,7 @@ namespace CDPIUI
                 btn == NextButton &&
                 AnimatedHorizontalContentViewer.SelectedItem == StoreItem && 
                 StoreViewBundles.SelectedItems.Count > 0) 
-                DownloadItems();
+                _ = DownloadItems(); // DownloadItems catches and logs its own errors.
 
             AnimatedHorizontalContentViewer.GoNext();
             CheckNavigation();
@@ -179,13 +179,13 @@ namespace CDPIUI
             */
             else if (sel == ProxyItem)
             {
-                CheckStoreStatus();
+                _ = CheckStoreStatus(); // CheckStoreStatus catches and logs its own errors.
             }
             else if (sel == StoreItem)
             {
                 if (migrationSession == null)
                 {
-                    TryLoadStore();
+                    _ = TryLoadStore(); // TryLoadStore catches and logs its own errors.
                 }
                 else
                 {
@@ -193,82 +193,96 @@ namespace CDPIUI
                         (SkipButton, Visibility.Collapsed),
                         (NextButton, Visibility.Visible));
                     NextButton.IsEnabled = migrationReadyToContinue;
-                    TryStartMigrationFlow();
+                    _ = TryStartMigrationFlow(); // TryStartMigrationFlow catches and logs its own errors.
                 }
             }
         }
 
-        private async void DownloadItems()
+        private async Task DownloadItems()
         {
-            foreach (StoreViewBundleItem kit in StoreViewBundles.SelectedItems.Cast<StoreViewBundleItem>())
+            try
             {
-                var _kit = StoreHelper.Instance.GetReadyKitFromStoreId(kit.KitId);
-                if (_kit == null) continue;
-
-                var _items = (_kit.items ?? [])
-                    .Select(StoreHelper.Instance.GetItemInfoFromStoreId)
-                    .OfType<RepoItemModel>()
-                    .ToList();
-
-                List<RepoItemModel> itemsToInstall = _items
-                    .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id))
-                    .ToList();
-                if (itemsToInstall.Count == 0)
-                    continue;
-
-                List<ItemLicenseModel> licenses = itemsToInstall
-                    .SelectMany(item => item.license ?? [])
-                    .GroupBy(license => $"{license.name}\n{license.url}")
-                    .Select(group => group.First())
-                    .ToList();
-
-                if (licenses.Count > 0)
+                foreach (StoreViewBundleItem kit in StoreViewBundles.SelectedItems.Cast<StoreViewBundleItem>())
                 {
-                    AcceptLicenseContentDialog dialog = new()
+                    var _kit = StoreHelper.Instance.GetReadyKitFromStoreId(kit.KitId);
+                    if (_kit == null) continue;
+
+                    var _items = (_kit.items ?? [])
+                        .Select(StoreHelper.Instance.GetItemInfoFromStoreId)
+                        .OfType<RepoItemModel>()
+                        .ToList();
+
+                    List<RepoItemModel> itemsToInstall = _items
+                        .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id))
+                        .ToList();
+                    if (itemsToInstall.Count == 0)
+                        continue;
+
+                    List<ItemLicenseModel> licenses = itemsToInstall
+                        .SelectMany(item => item.license ?? [])
+                        .GroupBy(license => $"{license.name}\n{license.url}")
+                        .Select(group => group.First())
+                        .ToList();
+
+                    if (licenses.Count > 0)
                     {
-                        Licenses = licenses,
-                        XamlRoot = this.Content.XamlRoot
-                    };
-                    if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-                        return;
-                }
+                        AcceptLicenseContentDialog dialog = new()
+                        {
+                            Licenses = licenses,
+                            XamlRoot = this.Content.XamlRoot
+                        };
+                        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
+                            return;
+                    }
 
-                HashSet<string> pendingIds = itemsToInstall
-                    .Select(item => item.store_id)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                foreach (string itemId in _kit.items ?? [])
-                {
-                    if (pendingIds.Contains(itemId))
-                        StoreHelper.Instance.AddItemToQueue(itemId, string.Empty);
+                    HashSet<string> pendingIds = itemsToInstall
+                        .Select(item => item.store_id)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    foreach (string itemId in _kit.items ?? [])
+                    {
+                        if (pendingIds.Contains(itemId))
+                            StoreHelper.Instance.AddItemToQueue(itemId, string.Empty);
+                    }
                 }
-            }
             
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
+            }
         }
 
-        private async void TryLoadStore()
+        private async Task TryLoadStore()
         {
-            ErrorStackPanel.Visibility =Visibility.Collapsed;
-            StoreViewBundles.Visibility = Visibility.Collapsed;
-
-            UtilityButtonControls.SetButtonVisibilities(
-                (NextButton, Visibility.Collapsed),
-                (SkipButton, Visibility.Visible));
-            UtilityButtonControls.IsLoading = true;
-            UtilityButtonControls.LoadingStateText = localizer.GetLocalizedString("UpdatingStoreDatabase");
-
-            bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
-
-            if (result) result = LoadReadyKits();
-
-            ErrorStackPanel.Visibility = result ? Visibility.Collapsed : Visibility.Visible;
-            StoreViewBundles.Visibility = result ? Visibility.Visible : Visibility.Collapsed;
-
-            if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
+            try
             {
-                UtilityButtonControls.IsLoading = false;
+                ErrorStackPanel.Visibility =Visibility.Collapsed;
+                StoreViewBundles.Visibility = Visibility.Collapsed;
+
                 UtilityButtonControls.SetButtonVisibilities(
                     (NextButton, Visibility.Collapsed),
                     (SkipButton, Visibility.Visible));
+                UtilityButtonControls.IsLoading = true;
+                UtilityButtonControls.LoadingStateText = localizer.GetLocalizedString("UpdatingStoreDatabase");
+
+                bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
+
+                if (result) result = LoadReadyKits();
+
+                ErrorStackPanel.Visibility = result ? Visibility.Collapsed : Visibility.Visible;
+                StoreViewBundles.Visibility = result ? Visibility.Visible : Visibility.Collapsed;
+
+                if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
+                {
+                    UtilityButtonControls.IsLoading = false;
+                    UtilityButtonControls.SetButtonVisibilities(
+                        (NextButton, Visibility.Collapsed),
+                        (SkipButton, Visibility.Visible));
+                }
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
             }
         }
 
@@ -319,7 +333,7 @@ namespace CDPIUI
                 case MigrationSessionState.ReadyForComponents:
                     ShowMigrationStatus("MigrationComponentsTitle", "MigrationComponentsReadyMessage", InfoBarSeverity.Informational);
                     if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
-                        TryStartMigrationFlow();
+                        _ = TryStartMigrationFlow(); // TryStartMigrationFlow catches and logs its own errors.
                     break;
                 case MigrationSessionState.WaitingForLicense:
                     ShowMigrationStatus("MigrationComponentLicenseTitle", "MigrationComponentLicenseMessage", InfoBarSeverity.Warning);
@@ -357,105 +371,112 @@ namespace CDPIUI
                 NextButton.IsEnabled = migrationReadyToContinue;
         }
 
-        private async void TryStartMigrationFlow()
+        private async Task TryStartMigrationFlow()
         {
-            if (migrationSession == null || migrationReadyToContinue || migrationFlowStarted)
-                return;
-            if (migrationSession.Package == null)
+            try
             {
-                if (migrationSession.State == MigrationSessionState.Failed)
-                    ShowMigrationError(
-                        migrationSession.Message ?? Localized("MigrationGenericError"),
-                        migrationSession.ErrorCode ?? "MIGRATION_PREPARATION_FAILED");
-                else
-                    ShowMigrationStatus("MigrationPreparingTitle", "MigrationPreparingMessage", InfoBarSeverity.Informational);
-                return;
-            }
-
-            VerifiedMigrationPackage package = migrationSession.Package;
-            if (MigrationImportService.IsAlreadyCompleted(package))
-            {
-                MigrationSummaryTextBlock.Text = Localized("MigrationAlreadyCompleted");
-                await migrationSession.UpdateAsync(MigrationSessionState.Completed, 100);
-                return;
-            }
-
-            migrationFlowStarted = true;
-            RetryMigrationButton.Visibility = Visibility.Collapsed;
-            MigrationComponentsListView.Visibility = Visibility.Visible;
-            await migrationSession.UpdateAsync(MigrationSessionState.LoadingComponents, 22);
-            bool storeLoaded = await StoreHelper.Instance.LoadAllStoreDatabase();
-            if (!storeLoaded)
-            {
-                await FailMigrationAsync(
-                    Localized("MigrationStoreLoadFailed"),
-                    "MIGRATION_STORE_LOAD_FAILED");
-                return;
-            }
-
-            migrationComponents = package.Components
-                .Select(component => StoreHelper.Instance.GetItemInfoFromStoreId(component.InstallItemId))
-                .OfType<RepoItemModel>()
-                .GroupBy(component => component.store_id, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .ToList();
-            if (migrationComponents.Count != package.Components.Count)
-            {
-                await FailMigrationAsync(
-                    Localized("MigrationComponentMissingFromStore"),
-                    "MIGRATION_COMPONENT_NOT_FOUND");
-                return;
-            }
-            if (migrationComponents.Any(component => !IsItemSupported(component)))
-            {
-                await FailMigrationAsync(
-                    Localized("MigrationComponentUnsupported"),
-                    "MIGRATION_COMPONENT_UNSUPPORTED");
-                return;
-            }
-
-            UpdateMigrationComponentList();
-            List<RepoItemModel> itemsToInstall = migrationComponents
-                .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id!))
-                .ToList();
-            if (itemsToInstall.Count == 0)
-            {
-                await BeginMigrationImportAsync();
-                return;
-            }
-
-            List<ItemLicenseModel> licenses = itemsToInstall
-                .SelectMany(item => item.license ?? [])
-                .GroupBy(license => $"{license.name}\n{license.url}")
-                .Select(group => group.First())
-                .ToList();
-            if (licenses.Count > 0)
-            {
-                await migrationSession.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
-                AcceptLicenseContentDialog dialog = new()
+                if (migrationSession == null || migrationReadyToContinue || migrationFlowStarted)
+                    return;
+                if (migrationSession.Package == null)
                 {
-                    Licenses = licenses,
-                    XamlRoot = Content.XamlRoot
-                };
-                if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-                {
-                    migrationFlowStarted = false;
-                    RetryMigrationButton.Visibility = Visibility.Visible;
-                    MigrationSummaryTextBlock.Text = Localized("MigrationComponentLicenseDeclined");
+                    if (migrationSession.State == MigrationSessionState.Failed)
+                        ShowMigrationError(
+                            migrationSession.Message ?? Localized("MigrationGenericError"),
+                            migrationSession.ErrorCode ?? "MIGRATION_PREPARATION_FAILED");
+                    else
+                        ShowMigrationStatus("MigrationPreparingTitle", "MigrationPreparingMessage", InfoBarSeverity.Informational);
                     return;
                 }
-            }
 
-            ConnectMigrationQueueHandlers();
-            foreach (RepoItemModel item in itemsToInstall)
-            {
-                migrationComponentProgress[item.store_id!] = 0;
-                StoreHelper.Instance.RemoveItemFromQueue(item.store_id!);
-                StoreHelper.Instance.AddItemToQueue(item.store_id!, string.Empty);
+                VerifiedMigrationPackage package = migrationSession.Package;
+                if (MigrationImportService.IsAlreadyCompleted(package))
+                {
+                    MigrationSummaryTextBlock.Text = Localized("MigrationAlreadyCompleted");
+                    await migrationSession.UpdateAsync(MigrationSessionState.Completed, 100);
+                    return;
+                }
+
+                migrationFlowStarted = true;
+                RetryMigrationButton.Visibility = Visibility.Collapsed;
+                MigrationComponentsListView.Visibility = Visibility.Visible;
+                await migrationSession.UpdateAsync(MigrationSessionState.LoadingComponents, 22);
+                bool storeLoaded = await StoreHelper.Instance.LoadAllStoreDatabase();
+                if (!storeLoaded)
+                {
+                    await FailMigrationAsync(
+                        Localized("MigrationStoreLoadFailed"),
+                        "MIGRATION_STORE_LOAD_FAILED");
+                    return;
+                }
+
+                migrationComponents = package.Components
+                    .Select(component => StoreHelper.Instance.GetItemInfoFromStoreId(component.InstallItemId))
+                    .OfType<RepoItemModel>()
+                    .GroupBy(component => component.store_id, StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .ToList();
+                if (migrationComponents.Count != package.Components.Count)
+                {
+                    await FailMigrationAsync(
+                        Localized("MigrationComponentMissingFromStore"),
+                        "MIGRATION_COMPONENT_NOT_FOUND");
+                    return;
+                }
+                if (migrationComponents.Any(component => !IsItemSupported(component)))
+                {
+                    await FailMigrationAsync(
+                        Localized("MigrationComponentUnsupported"),
+                        "MIGRATION_COMPONENT_UNSUPPORTED");
+                    return;
+                }
+
+                UpdateMigrationComponentList();
+                List<RepoItemModel> itemsToInstall = migrationComponents
+                    .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id!))
+                    .ToList();
+                if (itemsToInstall.Count == 0)
+                {
+                    await BeginMigrationImportAsync();
+                    return;
+                }
+
+                List<ItemLicenseModel> licenses = itemsToInstall
+                    .SelectMany(item => item.license ?? [])
+                    .GroupBy(license => $"{license.name}\n{license.url}")
+                    .Select(group => group.First())
+                    .ToList();
+                if (licenses.Count > 0)
+                {
+                    await migrationSession.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
+                    AcceptLicenseContentDialog dialog = new()
+                    {
+                        Licenses = licenses,
+                        XamlRoot = Content.XamlRoot
+                    };
+                    if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
+                    {
+                        migrationFlowStarted = false;
+                        RetryMigrationButton.Visibility = Visibility.Visible;
+                        MigrationSummaryTextBlock.Text = Localized("MigrationComponentLicenseDeclined");
+                        return;
+                    }
+                }
+
+                ConnectMigrationQueueHandlers();
+                foreach (RepoItemModel item in itemsToInstall)
+                {
+                    migrationComponentProgress[item.store_id!] = 0;
+                    StoreHelper.Instance.RemoveItemFromQueue(item.store_id!);
+                    StoreHelper.Instance.AddItemToQueue(item.store_id!, string.Empty);
+                }
+                await migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
+                UpdateMigrationComponentList();
+                UpdateMigrationComponentProgress();
             }
-            await migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
-            UpdateMigrationComponentList();
-            UpdateMigrationComponentProgress();
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
+            }
         }
 
         private bool IsItemSupported(RepoItemModel item)
@@ -728,7 +749,7 @@ namespace CDPIUI
             if (migrationSession.Package == null)
                 await migrationSession.RetryPreparationAsync();
             if (migrationSession.Package != null)
-                TryStartMigrationFlow();
+                await TryStartMigrationFlow();
         }
 
         private void ShowMigrationStatus(
@@ -850,26 +871,33 @@ namespace CDPIUI
 
         private void CheckStoreStatusButton_Click(object sender, RoutedEventArgs e)
         {
-            CheckStoreStatus();
+            _ = CheckStoreStatus(); // CheckStoreStatus catches and logs its own errors.
         }
 
         private void ToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
-            CheckStoreStatus();
+            _ = CheckStoreStatus(); // CheckStoreStatus catches and logs its own errors.
         }
 
-        private async void CheckStoreStatus()
+        private async Task CheckStoreStatus()
         {
-            CheckStoreStatusButton.IsEnabled = false;
-            UtilityButtonControls.IsLoading = true;
-            await Task.Delay(500);
-            bool result = await StoreHelper.Instance.IsServerAvailable();
-            UtilityButtonControls.IsLoading = false;
-            CheckStoreStatusButton.IsEnabled = true;
-            StoreStatusTextBlock.Text = result ? localizer.GetLocalizedString("Available") : localizer.GetLocalizedString("NotAvailable");
-            StoreStatusTextBlock.Foreground = result 
-                ? (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"] 
-                : (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];
+            try
+            {
+                CheckStoreStatusButton.IsEnabled = false;
+                UtilityButtonControls.IsLoading = true;
+                await Task.Delay(500);
+                bool result = await StoreHelper.Instance.IsServerAvailable();
+                UtilityButtonControls.IsLoading = false;
+                CheckStoreStatusButton.IsEnabled = true;
+                StoreStatusTextBlock.Text = result ? localizer.GetLocalizedString("Available") : localizer.GetLocalizedString("NotAvailable");
+                StoreStatusTextBlock.Foreground = result 
+                    ? (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"] 
+                    : (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
+            }
         }
     }
 }

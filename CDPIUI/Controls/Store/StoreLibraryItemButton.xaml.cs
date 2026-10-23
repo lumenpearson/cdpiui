@@ -191,9 +191,9 @@ namespace CDPIUI.Controls.Store
             {
                 ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
-            catch
+            catch (Exception exception)
             {
-
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreLibraryItemButton), exception.ToString());
             }
         }
     }

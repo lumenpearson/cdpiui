@@ -32,7 +32,7 @@ namespace CDPIUI.Commands
         {
             if (parameter is string uri)
             {
-                UrlOpenHelper.LaunchUrl(uri);
+                _ = UrlOpenHelper.LaunchUrl(uri);
             }
         }
         #endregion
