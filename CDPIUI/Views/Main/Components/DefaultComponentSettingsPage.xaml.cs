@@ -23,6 +23,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -75,12 +76,25 @@ namespace CDPIUI.Views.Main.Components
 
         }
 
+        // Several builds can run at once (Task.Run from different events); only the latest
+        // one may fill the list, otherwise the tiles appeared twice (audit 9.5).
+        private int _tilesGeneration;
+
+        private void AddTileIfCurrent(int generation, UIElement tile)
+        {
+            if (generation == Volatile.Read(ref _tilesGeneration))
+                _tiles.Add(tile);
+        }
+
         private void InitSettingsTiles(ConfigSelectorItem sel)
         {
             bool _flag;
+            int generation = Interlocked.Increment(ref _tilesGeneration);
 
             DispatcherQueue.TryEnqueue(() =>
             {
+                if (generation != Volatile.Read(ref _tilesGeneration))
+                    return;
                 _tiles.Clear();
                 HelpfulLinksControl.Visibility = Visibility.Collapsed;
                 SetupAsProxyHelpfulLink.IsVisible = ProxyHelper.ProxyLikeComponents.Contains(ComponentId);
@@ -131,7 +145,7 @@ namespace CDPIUI.Views.Main.Components
                 }
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    _tiles.Add(CreateSettingTile(variablesItem, HandleSettingTileElementClick));
+                    AddTileIfCurrent(generation, CreateSettingTile(variablesItem, HandleSettingTileElementClick));
                 });
             }
 
@@ -180,7 +194,7 @@ namespace CDPIUI.Views.Main.Components
                     _flag = true;
                 }
 
-                DispatcherQueue.TryEnqueue(() => { _tiles.Add(CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
+                DispatcherQueue.TryEnqueue(() => { AddTileIfCurrent(generation, CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
             }
             List<SiteListItem> excludeList = componentHelper.GetConfigHelper().GetExcludedSiteListItems(sel.FileName, sel.PackId, ignoreNull: true);
             if (excludeList.Count > 0)
@@ -227,7 +241,7 @@ namespace CDPIUI.Views.Main.Components
                     _flag = true;
                 }
 
-                DispatcherQueue.TryEnqueue(() => { _tiles.Add(CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
+                DispatcherQueue.TryEnqueue(() => { AddTileIfCurrent(generation, CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
             }
 
             if (commaVariables.Count > 0)
@@ -262,7 +276,7 @@ namespace CDPIUI.Views.Main.Components
 
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    _tiles.Add(CreateSettingTile(commaVariablesWidget, HandleSettingTileElementClick));
+                    AddTileIfCurrent(generation, CreateSettingTile(commaVariablesWidget, HandleSettingTileElementClick));
                 });
             }
 
@@ -304,7 +318,7 @@ namespace CDPIUI.Views.Main.Components
             // TODO: add dynamic help
 
             DispatcherQueue.TryEnqueue(() => { 
-                _tiles.Add(CreateSettingTile(helpTile, HandleSettingTileElementClick));
+                AddTileIfCurrent(generation, CreateSettingTile(helpTile, HandleSettingTileElementClick));
                 HelpfulLinksControl.Visibility = Visibility.Visible;
             });
         }
