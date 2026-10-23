@@ -41,6 +41,16 @@ namespace CDPIUI.TrayIcon.Helper
             }
             else
             {
+                // The UI keeps its settings in the profile of the desktop user, which differs from
+                // the tray profile when the tray was elevated with another administrator account.
+                string? desktopUserFolder = TrustedPaths.GetDesktopUserDataDirectory();
+                if (desktopUserFolder != null)
+                {
+                    string desktopUserFile = Path.Combine(desktopUserFolder, "Settings", "Settings.xml");
+                    if (File.Exists(desktopUserFile))
+                        return desktopUserFile;
+                }
+
                 var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 var targetFolder = Path.Combine(localAppData, "CDPIUI");
                 string localAppDataFile = Path.Combine(targetFolder, "Settings", "Settings.xml");
