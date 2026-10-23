@@ -96,7 +96,7 @@ namespace CDPIUI.Views
                     StoreId = installedComponent.Id,
                     ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(installedComponent.IconPath))),
                     Name = string.IsNullOrEmpty(installedComponent.ShortName) ? installedComponent.Id : installedComponent.ShortName,
-                    ColorHEX = installedComponent.BackgroudColor
+                    ColorHEX = installedComponent.BackgroundColor
                 });
             }
 

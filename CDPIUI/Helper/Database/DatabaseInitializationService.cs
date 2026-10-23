@@ -92,6 +92,7 @@ namespace CDPIUI.Helper.Database
                     nameof(DatabaseHelper), 
                     $"Item {item.Id} is damaged and cannot be restore. Please, reinstall it"
                     );
+                DatabaseHelper.Instance.UnregisterMissingItem(item);
             }
         }
 

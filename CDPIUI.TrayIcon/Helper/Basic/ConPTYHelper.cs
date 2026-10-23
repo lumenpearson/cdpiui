@@ -1,10 +1,10 @@
-﻿using CDPIUI.Shared.PrettyErrorConvertionService;
+﻿using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 
 namespace CDPIUI.TrayIcon.Helper
 {
@@ -35,7 +35,7 @@ namespace CDPIUI.TrayIcon.Helper
         public Action<string>? ProcessExited;
         public Action<string>? OutputAdded;
 
-        private readonly string Preffix = string.Empty;
+        private readonly string Prefix = string.Empty;
 
         private StopActionCallers StopActionCaller = StopActionCallers.Unknown;
 
@@ -80,23 +80,23 @@ namespace CDPIUI.TrayIcon.Helper
         public bool processState { get; private set; } = false;
         private bool CurrentState = false;
         private object _setStateLock = new();
-        private void ChangeProcessState(bool isRunned)
+        private void ChangeProcessState(bool isRunning)
         {
             lock (_setStateLock)
             {
-                if (CurrentState != isRunned)
+                if (CurrentState != isRunning)
                 {
-                    CurrentState = isRunned;
+                    CurrentState = isRunning;
                     processState = CurrentState;
-                    ProcessStateChanged?.Invoke(isRunned);
+                    ProcessStateChanged?.Invoke(isRunning);
                     Debug.WriteLine(processState);
                 }
             }
         }
 
-        public ConPTYHelper(string preffix = "") 
+        public ConPTYHelper(string prefix = "") 
         {
-            Preffix = preffix;
+            Prefix = prefix;
             _outputDefaultBuffer = new StringBuilder();
         }
 
@@ -487,12 +487,12 @@ namespace CDPIUI.TrayIcon.Helper
                         if (found != null && (lastError == PrettyErrorCode.SUCCESS || found != PrettyErrorCode.UNKNOWN))
                             lastError = found.Value;
 
-                        if (!string.IsNullOrEmpty(Preffix) && !string.IsNullOrEmpty(_output))
+                        if (!string.IsNullOrEmpty(Prefix) && !string.IsNullOrEmpty(_output))
                         {
                             string newOutput = string.Empty;
                             foreach (string str in _output.Split("\n"))
                             {
-                                newOutput += $"[{Preffix}] {str}\n";
+                                newOutput += $"[{Prefix}] {str}\n";
                             }
                             _output = newOutput;
                         }
@@ -639,10 +639,10 @@ namespace CDPIUI.TrayIcon.Helper
 
         private void SendStopMessage(string output = "Process will be stopped by user")
         {
-            string preffix = string.IsNullOrEmpty(Preffix) ? "" : $" [{Preffix}]";
-            _outputDefaultBuffer.Append($"\n[PSEUDOCONSOLE]{preffix} {output}");
+            string prefix = string.IsNullOrEmpty(Prefix) ? "" : $" [{Prefix}]";
+            _outputDefaultBuffer.Append($"\n[PSEUDOCONSOLE]{prefix} {output}");
 
-            ProcessExited?.Invoke($"\n[PSEUDOCONSOLE]{preffix} {output}");
+            ProcessExited?.Invoke($"\n[PSEUDOCONSOLE]{prefix} {output}");
         }
 
         private void ShowErrorMessage(PrettyErrorCode errorCode, string _object = "process")

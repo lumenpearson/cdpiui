@@ -1,5 +1,5 @@
 ﻿using CDPIUI.Core;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 
 namespace CDPIUI.Helper.Basic
 {

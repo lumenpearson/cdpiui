@@ -18,7 +18,7 @@ namespace CDPIUI.Core.Proxy
         /// <summary>
         /// Removes the address and port arguments, which the application sets itself
         /// </summary>
-        public static string ReplaseIp(string args)
+        public static string ReplaceIp(string args)
         {
             List<string> tokens = SplitArguments(args);
             string finalArgs = string.Empty;
@@ -102,7 +102,7 @@ namespace CDPIUI.Core.Proxy
             string port, 
             string componentId)
         {
-            string finalArgs = ReplaseIp(args);
+            string finalArgs = ReplaceIp(args);
             if (componentId == "CSSIXC048")
                 finalArgs = $"-addr={ip} -port={port} " + finalArgs;
             else if (componentId == "CSNIG9025")

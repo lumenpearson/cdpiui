@@ -48,6 +48,11 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 
     public void ConnectHandlers()
     {
+        // Also called by MainPage after the constructor did it: remove first, or every
+        // animation step ran twice.
+        SlideOutStoryboard.Completed -= SlideOutStoryboard_Completed;
+        SlideInStoryboard.Completed -= SideInStoryboard_Completed;
+        this.Unloaded -= FlashlightTipsWidgetUserControl_Unloaded;
         SlideOutStoryboard.Completed += SlideOutStoryboard_Completed;
         SlideInStoryboard.Completed += SideInStoryboard_Completed;
         this.Unloaded += FlashlightTipsWidgetUserControl_Unloaded;
@@ -73,8 +78,10 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
             TipTitleTextBlock.Text = localizer.GetLocalizedString("/Flashlight/AreYouKnow");
         }
 
-        _currentIndex = Tips.Count;
-        MoveNext();
+        // The first tip is shown directly: starting from Tips.Count skipped tip 0, and with a
+        // single tip MoveNext did nothing and the widget stayed empty.
+        _currentIndex = 0;
+        TipDescriptionTextBlock.Text = Tips.Count > 0 ? Tips[0] : string.Empty;
     }
 
     private void PreviousTipButton_Click(object sender, RoutedEventArgs e)
@@ -124,7 +131,7 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
     private void SlideOutStoryboard_Completed(object sender, object e)
     {
         _currentIndex = _targetIndex;
-        TipDecriptionTextBlock.Text = Tips[_currentIndex];
+        TipDescriptionTextBlock.Text = Tips[_currentIndex];
 
         TextTransform.X = _slideInFromX;
 

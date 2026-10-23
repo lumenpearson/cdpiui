@@ -55,7 +55,7 @@ namespace CDPIUI.TrayIcon.Helper
 
             _cancellationTokenSource = new();
             _cancellationToken = _cancellationTokenSource.Token;
-            await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Runned, operationId);
+            await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Running, operationId);
             TasksHelper.Instance.ApplyStatusToAllTasks(false);
             // The component buttons are blocked while GoodCheck runs; they stayed blocked when
             // the job could not be created, and the job handle was never closed (audit 12.15).

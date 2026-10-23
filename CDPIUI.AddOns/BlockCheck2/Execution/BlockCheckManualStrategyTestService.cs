@@ -1,7 +1,7 @@
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Synthesis;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 
 namespace CDPIUI.AddOns.BlockCheck2.Execution;
 

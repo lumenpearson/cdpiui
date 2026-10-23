@@ -138,7 +138,7 @@ namespace CDPIUI.TrayIcon.Helper
             return await PipeServer.Instance.SendMessageAsync(model.ToString());
         }
 
-        public static async Task<bool> SendGrantAcessPacket(bool result)
+        public static async Task<bool> SendGrantAccessPacket(bool result)
         {
             UtilsMessageModel model = new()
             {

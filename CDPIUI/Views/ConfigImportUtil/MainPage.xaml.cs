@@ -148,7 +148,7 @@ public sealed partial class MainPage : TemplatePage
             importingDroppedFiles = false;
             if (!isUnloaded)
             {
-                UtilityButtonContols.IsLoading = false;
+                UtilityButtons.IsLoading = false;
                 NextButton.Visibility = Visibility.Visible;
             }
         }
@@ -169,7 +169,7 @@ public sealed partial class MainPage : TemplatePage
         if (filePaths.Length == 0)
             return false;
         
-        UtilityButtonContols.IsLoading = true;
+        UtilityButtons.IsLoading = true;
 
         MainContent.GoTo(ProgressStep);
 
@@ -208,7 +208,7 @@ public sealed partial class MainPage : TemplatePage
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!isUnloaded) UtilityButtonContols.LoadingStateText = text;
+                if (!isUnloaded) UtilityButtons.LoadingStateText = text;
             });
 
             AnalyzedImport analyzed = await Task.Run(() => AnalyzeFile(Path.GetFullPath(filePaths[index]), targets));
@@ -282,7 +282,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void ShowMissingFiles()
     {
-        UtilityButtonContols.IsLoading = false;
+        UtilityButtons.IsLoading = false;
 
         MainContent.GoTo(MissingFilesStep);
 
@@ -324,7 +324,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void ShowCompletion()
     {
-        UtilityButtonContols.IsLoading = false;
+        UtilityButtons.IsLoading = false;
         NextButton.IsEnabled = true;
 
         NextButton.Content = localizer.GetLocalizedString("SaveAll");
@@ -452,7 +452,7 @@ public sealed partial class MainPage : TemplatePage
             item.SetTesting(true);
             await ComponentTasksManager.Instance.CreateAndRunNewTask(activeTestComponentId, arguments);
             ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
-            if (!await ComponentTasksManager.Instance.IsTaskRunned(activeTestComponentId))
+            if (!await ComponentTasksManager.Instance.IsTaskRunning(activeTestComponentId))
                 throw new InvalidOperationException(localizer.GetLocalizedString("ConfigImportTestProcessExited"));
         }
         catch (Exception exception)
@@ -661,7 +661,7 @@ public sealed partial class MainPage : TemplatePage
         {
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
             if (isUnloaded) return;
-            UtilityButtonContols.IsLoading = false;
+            UtilityButtons.IsLoading = false;
             ResultItemsControl.IsEnabled = true;
             NextButton.Visibility = Visibility.Visible;
             if (IsLoaded)
@@ -702,8 +702,8 @@ public sealed partial class MainPage : TemplatePage
             NextButton.Visibility = Visibility.Collapsed;
             ResultItemsControl.IsEnabled = false;
 
-            UtilityButtonContols.IsLoading = true;
-            UtilityButtonContols.LoadingStateText = localizer.GetLocalizedString("Saving");
+            UtilityButtons.IsLoading = true;
+            UtilityButtons.LoadingStateText = localizer.GetLocalizedString("Saving");
 
             List<ConfigImportPresetViewModel> itemsToRemove = [];
             foreach (var item in results.ToList())
@@ -725,7 +725,7 @@ public sealed partial class MainPage : TemplatePage
 
             itemsToRemove.Clear();
 
-            UtilityButtonContols.IsLoading = false;
+            UtilityButtons.IsLoading = false;
             ResultItemsControl.IsEnabled = true;
 
             if (results.Count == 0)

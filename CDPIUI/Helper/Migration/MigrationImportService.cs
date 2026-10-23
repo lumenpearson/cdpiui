@@ -408,7 +408,7 @@ internal sealed class MigrationImportService
                 Name = "Migrated from GoodbyeDPI-UI",
                 ShortName = "Перенесенные из GoodbyeDPI-UI",
                 Developer = "GDPIUI-Updater",
-                BackgroudColor = string.Empty
+                BackgroundColor = string.Empty
             };
             if (!DatabaseHelper.Instance.AddOrUpdateItem(collection))
                 throw new InvalidOperationException("CDPIUI could not register the migrated preset collection.");

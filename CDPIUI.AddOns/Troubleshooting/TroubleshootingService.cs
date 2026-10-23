@@ -150,20 +150,20 @@ namespace CDPIUI.AddOns.Troubleshooting
 
         public static Dictionary<RunBasicDialogStates, DiagnosticStateModel> BasicDiagnosticStateModelPairs = new()
         {
-            { RunBasicDialogStates.CheckBFE, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "ServiceRunned", InCorrectValueDisplayText="ServiceStopped" } },
+            { RunBasicDialogStates.CheckBFE, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "ServiceRunning", InCorrectValueDisplayText="ServiceStopped" } },
             { RunBasicDialogStates.CheckProxy, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "Disabled", InCorrectValueDisplayText="Enabled" } },
             { RunBasicDialogStates.CheckNetsh, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "Exist", InCorrectValueDisplayText="NotExist" } },
             { RunBasicDialogStates.CheckTimestamps, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "Exist", InCorrectValueDisplayText="NotExist" } },
-            { RunBasicDialogStates.CheckAdGuard, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckKiller, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckIntelConnectivityNetwork, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckCheckPointServices, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckSmartByte, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckVPNs, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckDNS, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "ServiceRunned", InCorrectValueDisplayText="ServiceStopped" } },
-            { RunBasicDialogStates.CheckWinDivert, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckAnotherComponents, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
-            { RunBasicDialogStates.CheckAnotherComponentsServices, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunned" } },
+            { RunBasicDialogStates.CheckAdGuard, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckKiller, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckIntelConnectivityNetwork, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckCheckPointServices, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckSmartByte, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckVPNs, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckDNS, new DiagnosticStateModel() { CorrectState = true, CorrectValueDisplayText = "ServiceRunning", InCorrectValueDisplayText="ServiceStopped" } },
+            { RunBasicDialogStates.CheckWinDivert, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckAnotherComponents, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
+            { RunBasicDialogStates.CheckAnotherComponentsServices, new DiagnosticStateModel() { CorrectState = false, CorrectValueDisplayText = "ServiceStopped", InCorrectValueDisplayText="ServiceRunning" } },
         };
 
         public async Task<Dictionary<RunBasicDialogStates, bool>> RunBasicDiagnostic()
@@ -213,15 +213,15 @@ namespace CDPIUI.AddOns.Troubleshooting
             bool isRunningVPN = IsServiceRunning("vpn");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckDNS);
-            bool isUsedDNS = await GetDnsAdress();
+            bool isUsedDNS = await GetDnsAddress();
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckWinDivert);
             bool isWinDivertRunning = IsServiceRunning("windivert");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponentsServices);
-            bool isAnotherServiceComponentRunned = IsServiceExist("GoodbyeDPI") || IsServiceExist("discordfix_zapret") || IsServiceExist("winws1") || IsServiceExist("winws2");
+            bool isAnotherServiceComponentRunning = IsServiceExist("GoodbyeDPI") || IsServiceExist("discordfix_zapret") || IsServiceExist("winws1") || IsServiceExist("winws2");
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponents);
-            bool isAnotherComponentRunned = IsProcessRunning("winws") || IsProcessRunning("goodbyedpi");
+            bool isAnotherComponentRunning = IsProcessRunning("winws") || IsProcessRunning("goodbyedpi");
             await Task.Delay(1000);
 
             completedStates = new()
@@ -238,8 +238,8 @@ namespace CDPIUI.AddOns.Troubleshooting
                 { RunBasicDialogStates.CheckVPNs, isRunningVPN },
                 { RunBasicDialogStates.CheckDNS, isUsedDNS },
                 { RunBasicDialogStates.CheckWinDivert, isWinDivertRunning },
-                { RunBasicDialogStates.CheckAnotherComponents, isAnotherComponentRunned },
-                { RunBasicDialogStates.CheckAnotherComponentsServices, isAnotherServiceComponentRunned },
+                { RunBasicDialogStates.CheckAnotherComponents, isAnotherComponentRunning },
+                { RunBasicDialogStates.CheckAnotherComponentsServices, isAnotherServiceComponentRunning },
             };
 
             await Task.CompletedTask;
@@ -489,7 +489,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             return false;
         }
 
-        private static async Task<bool> GetDnsAdress()
+        private static async Task<bool> GetDnsAddress()
         {
             try
             {

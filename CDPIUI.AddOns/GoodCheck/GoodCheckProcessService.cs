@@ -2,7 +2,7 @@
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Communication;
 using CDPIUI.Core.Data;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using System.Text;
@@ -705,7 +705,7 @@ namespace CDPIUI.AddOns.GoodCheck
             catch { return null; }
         }
 
-        public bool IsRunned()
+        public bool IsRunning()
         {
             return CancellationTokenSource != null && !CancellationTokenSource.IsCancellationRequested;
         }

@@ -19,7 +19,7 @@ using CDPIUI.Helper;
 using CDPIUI.Helper.Migration;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.ViewModels;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using Microsoft.UI.Xaml;

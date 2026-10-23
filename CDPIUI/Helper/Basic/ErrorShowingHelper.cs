@@ -18,7 +18,7 @@ namespace CDPIUI.Helper.Basic
         /// </summary>
         /// <param name="sender">Who called this method</param>
         /// <param name="errorCode">Error code 
-        /// (use <see cref="CDPIUI.Shared.PrettyErrorConvertionService.PrettyErrorCode"/>
+        /// (use <see cref="CDPIUI.Shared.PrettyErrorConversionService.PrettyErrorCode"/>
         /// as <see cref="string"/> instead of custom error)
         /// </param>
         /// <param name="why">Why this happens</param>

@@ -32,7 +32,7 @@ namespace CDPIUI.TrayIcon.Forms
             InitializeComponent();
 
             HideWindow();
-            _iconRetryTimer.Tick += (_, _) => AddIcon(iconName: GetCurrentIcon(), toolTip: GetNowRunnedComponentsString());
+            _iconRetryTimer.Tick += (_, _) => AddIcon(iconName: GetCurrentIcon(), toolTip: GetNowRunningComponentsString());
 
             Application.ApplicationExit += Application_ApplicationExit;
             this.Disposed += EmptyForm_Disposed;
@@ -176,7 +176,7 @@ namespace CDPIUI.TrayIcon.Forms
                 catch (InvalidOperationException) { }
                 return;
             }
-            UpdateIcon(GetCurrentIcon(), GetNowRunnedComponentsString());
+            UpdateIcon(GetCurrentIcon(), GetNowRunningComponentsString());
         }
 
         private void HandleTasksListUpdate()
@@ -184,7 +184,7 @@ namespace CDPIUI.TrayIcon.Forms
             HandleTaskStateUpdate(Tuple.Create(string.Empty, false));
         }
 
-        private static string GetNowRunnedComponentsString()
+        private static string GetNowRunningComponentsString()
         {
             string result = string.Empty;
             int cnt = 0;
@@ -219,14 +219,14 @@ namespace CDPIUI.TrayIcon.Forms
             HideContextMenu();
             TrayMenuForm = new();
             TrayMenuForm.ShowWindow(location, vertOffset, horOffset);
-            TrayMenuForm.Hided += HideContextMenu;
+            TrayMenuForm.Hidden += HideContextMenu;
         }
 
         private void HideContextMenu()
         {
             if (TrayMenuForm != null)
             {
-                TrayMenuForm.Hided -= HideContextMenu;
+                TrayMenuForm.Hidden -= HideContextMenu;
                 TrayMenuForm.Close();
                 TrayMenuForm.Dispose();
 
@@ -286,7 +286,7 @@ namespace CDPIUI.TrayIcon.Forms
         {
             if (IsDisposed || Disposing || _iconAdded) return;
             if (string.IsNullOrEmpty(iconName)) iconName = GetCurrentIcon();
-            toolTip ??= GetNowRunnedComponentsString();
+            toolTip ??= GetNowRunningComponentsString();
 
             NOTIFYICONDATA data = new();
 
@@ -442,7 +442,7 @@ namespace CDPIUI.TrayIcon.Forms
                 {
                     Logger.Instance.CreateDebugLog(nameof(EmptyForm), "TaskbarCreated received; restoring tray icon.");
                     _iconAdded = false;
-                    AddIcon(iconName: GetCurrentIcon(), toolTip: GetNowRunnedComponentsString());
+                    AddIcon(iconName: GetCurrentIcon(), toolTip: GetNowRunningComponentsString());
                 }
             }
 

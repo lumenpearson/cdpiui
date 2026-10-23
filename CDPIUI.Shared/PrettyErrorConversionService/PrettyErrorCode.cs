@@ -1,4 +1,4 @@
-﻿namespace CDPIUI.Shared.PrettyErrorConvertionService
+﻿namespace CDPIUI.Shared.PrettyErrorConversionService
 {
     public enum PrettyErrorCode
     {

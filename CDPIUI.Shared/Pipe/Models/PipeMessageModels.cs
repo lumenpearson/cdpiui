@@ -1,4 +1,4 @@
-﻿using CDPIUI.Shared.Extentions;
+﻿using CDPIUI.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

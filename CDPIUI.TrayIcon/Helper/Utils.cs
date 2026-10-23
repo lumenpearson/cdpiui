@@ -126,7 +126,7 @@ namespace CDPIUI.TrayIcon.Helper
         {
             if (!TrustedPaths.IsInStore(file, "access change"))
             {
-                if (conptySignal) await PipeHelper.SendGrantAcessPacket(false);
+                if (conptySignal) await PipeHelper.SendGrantAccessPacket(false);
                 return;
             }
 
@@ -153,7 +153,7 @@ namespace CDPIUI.TrayIcon.Helper
                         )
                     );
                 dInfo.SetAccessControl(dSecurity);
-                if (conptySignal) await PipeHelper.SendGrantAcessPacket(true);
+                if (conptySignal) await PipeHelper.SendGrantAccessPacket(true);
                 return;
             }
             catch (Exception ex)
@@ -161,7 +161,7 @@ namespace CDPIUI.TrayIcon.Helper
                 Logger.Instance.CreateErrorLog(nameof(Utils), $"Cannot grant access for \"{file}\". Exception message: {ex.Message}");
             }
 
-            if (conptySignal) await PipeHelper.SendGrantAcessPacket(false);
+            if (conptySignal) await PipeHelper.SendGrantAccessPacket(false);
         }
     }
 }

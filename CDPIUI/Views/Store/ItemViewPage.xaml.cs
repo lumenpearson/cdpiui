@@ -12,7 +12,7 @@ using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
 
 using CDPIUI.Shared;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Views.Main.Components;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using CommunityToolkit.WinUI.Animations.Expressions;
@@ -192,8 +192,8 @@ namespace CDPIUI.Views.Store
                         AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > VersionControlType", DisplayValue = link.version_control });
                         AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > VersionControlLink", DisplayValue = link.version_control_link });
 
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PrefferedVersion", DisplayValue = link.preffered_version });
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PrefferedFileName", DisplayValue = link.preffered_to_download_file_name });
+                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PreferredVersion", DisplayValue = link.preffered_version });
+                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PreferredFileName", DisplayValue = link.preffered_to_download_file_name });
 
                         AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > DownloadLink", DisplayValue = link.download_link });
                         AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > ArchiveRootFolder", DisplayValue = link.archive_root_folder });

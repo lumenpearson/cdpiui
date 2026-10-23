@@ -6,7 +6,7 @@ using CDPIUI.Helper;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
 
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;

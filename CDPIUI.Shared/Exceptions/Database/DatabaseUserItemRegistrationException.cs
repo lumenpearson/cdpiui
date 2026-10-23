@@ -1,5 +1,5 @@
 ﻿using CDPIUI.Shared.Exceptions.Interface;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.Text;

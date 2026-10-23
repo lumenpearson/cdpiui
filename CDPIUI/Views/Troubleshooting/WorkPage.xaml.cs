@@ -21,7 +21,7 @@ using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
 using WinUI3Localizer;
 using static CDPIUI.AddOns.Troubleshooting.TroubleshootingService;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using static System.Windows.Forms.AxHost;
 
 // To learn more about WinUI, the WinUI project structure,

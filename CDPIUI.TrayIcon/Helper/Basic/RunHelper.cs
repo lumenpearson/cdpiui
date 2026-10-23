@@ -10,7 +10,7 @@ namespace CDPIUI.TrayIcon.Helper
 {
     public class RunHelper
     {
-        public static bool IsApplicationRunned(string exe)
+        public static bool IsApplicationRunning(string exe)
         {
             string target = exe;
 

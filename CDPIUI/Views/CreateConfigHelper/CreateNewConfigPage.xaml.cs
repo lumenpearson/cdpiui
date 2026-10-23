@@ -742,7 +742,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         return configItem;
     }
 
-    private bool isRunned = false;
+    private bool isRunning = false;
     private string curRunId = string.Empty;
 
     private void Instance_onProcessStateChanged(Tuple<string, bool> tuple)
@@ -758,21 +758,21 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             TestButtonGlyph.Glyph = "\uE71A";
             TestButtonText.Text = localizer.GetLocalizedString("StopTest");
-            isRunned = true;
+            isRunning = true;
         }
         else
         {
             TestButtonGlyph.Glyph = "\uE768";
             TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-            isRunned = false;
+            isRunning = false;
         }
     }
     
     private async void TestButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!isRunned)
+        if (!isRunning)
         {
-            isRunned = true;
+            isRunning = true;
             ComponentTasksManager.Instance.TaskStateUpdated += Instance_onProcessStateChanged;
 
             
@@ -801,7 +801,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     {
         TestButtonGlyph.Glyph = "\uE768";
         TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-        isRunned = false;
+        isRunning = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= Instance_onProcessStateChanged;
         curRunId = string.Empty;
     }
@@ -809,7 +809,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     // The test component kept running after the user left the page.
     private void StopTestRun()
     {
-        if (!isRunned || string.IsNullOrEmpty(curRunId)) return;
+        if (!isRunning || string.IsNullOrEmpty(curRunId)) return;
         string runId = curRunId;
         ResetTestState();
         _ = ComponentTasksManager.Instance.StopTask(runId);

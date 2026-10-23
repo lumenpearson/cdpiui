@@ -348,7 +348,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                         _str = $"-A{ConvertModesToString(item.Modes)} ";
                     }
 
-                    _str += $"-H=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaseIp(item.Args)} ";
+                    _str += $"-H=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
                     startupString += _str;
                 }
             }
@@ -358,7 +358,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                 {
                     string _str = "";
 
-                    _str += $"--blacklist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaseIp(item.Args)} ";
+                    _str += $"--blacklist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
                     startupString += _str;
                 }
             }

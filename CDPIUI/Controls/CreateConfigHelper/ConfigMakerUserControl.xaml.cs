@@ -3017,7 +3017,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
 
         await StopTestAsync();
-        bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunned(ComponentId);
+        bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunning(ComponentId);
         if (componentWasRunning)
         {
             ContentDialog confirmation = new()

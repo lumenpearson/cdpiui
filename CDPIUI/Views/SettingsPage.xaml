@@ -120,7 +120,7 @@
                             <CheckBox l:Uids.Uid="ProcessStateToast" x:Name="ProcessStateToast" Click="ProcessStateToast_Click" />
                         </controls:SettingsCard>
                         <controls:SettingsCard ContentAlignment="Left">
-                            <CheckBox l:Uids.Uid="AppRunnedInTrayToast" x:Name="AppRunnedInTrayToast" Click="AppRunnedInTrayToast_Click" />
+                            <CheckBox l:Uids.Uid="AppRunningInTrayToast" x:Name="AppRunningInTrayToast" Click="AppRunningInTrayToast_Click" />
                         </controls:SettingsCard>
                         <controls:SettingsCard ContentAlignment="Left">
                             <CheckBox l:Uids.Uid="AppUpdatesToast" x:Name="AppUpdatesToast" Click="AppUpdatesToast_Click" />

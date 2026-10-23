@@ -3,7 +3,7 @@ using CDPIUI.Core.Data;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Repository;
 using CDPIUI.Shared;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System.Diagnostics;
 
 namespace CDPIUI.Core.Features

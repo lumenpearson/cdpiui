@@ -171,11 +171,11 @@ namespace CDPIUI
             ContentFrame.Content is BlockCheck2MainPage page && page.ViewModel.IsRunning;
 
         private bool IsSelectionRunning =>
-            GoodCheckProcessService.Instance.IsRunned() || IsBlockCheck2Running;
+            GoodCheckProcessService.Instance.IsRunning() || IsBlockCheck2Running;
 
         private void StopActiveSelection()
         {
-            if (GoodCheckProcessService.Instance.IsRunned())
+            if (GoodCheckProcessService.Instance.IsRunning())
             {
                 GoodCheckProcessService.Instance.Stop();
             }

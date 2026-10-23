@@ -1,5 +1,5 @@
 ﻿using CDPIUI.Shared.ComponentsTask;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.Pipe.Models;
 
 namespace CDPIUI.TrayIcon.Helper
@@ -334,12 +334,12 @@ namespace CDPIUI.TrayIcon.Helper
                 { "output", $"{output}" }
             });
         }
-        private void ChangeProcessState(bool isRunned)
+        private void ChangeProcessState(bool isRunning)
         {
-            ProcessStateChanged?.Invoke(Tuple.Create(Id,isRunned));
+            ProcessStateChanged?.Invoke(Tuple.Create(Id,isRunning));
 
-            Debug.WriteLine($"Process state is {isRunned}");
-            if (isRunned == false)
+            Debug.WriteLine($"Process state is {isRunning}");
+            if (isRunning == false)
             {
                 _ = PipeHelper.SendConPTYPacket(CONPTYMessageIds.MarkProcessIdAsStopped, Id);
                 _ = StopProxy();
@@ -374,10 +374,10 @@ namespace CDPIUI.TrayIcon.Helper
                 { "output", $"{output}" }
             });
         }
-        private void PFChangeProcessState(bool isRunned)
+        private void PFChangeProcessState(bool isRunning)
         {
-            ProcessStateChanged?.Invoke(Tuple.Create(Id, isRunned));
-            if (isRunned == false) _ = conPTYHelper.StopProcess();
+            ProcessStateChanged?.Invoke(Tuple.Create(Id, isRunning));
+            if (isRunning == false) _ = conPTYHelper.StopProcess();
         }
         private void PFShowErrorMessage(Tuple<PrettyErrorCode, string> tuple)
         {

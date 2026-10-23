@@ -62,7 +62,7 @@ namespace CDPIUI.Shared.Pipe.Models
     public enum GoodCheckMessageIds
     {
         // ToClient
-        Runned,
+        Running,
         Died,
         DiedViaError,
         // ToServer

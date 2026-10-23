@@ -1,5 +1,5 @@
 using CDPIUI.Shared.ComponentsTask;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 
 namespace CDPIUI.Tests.Shared;
 

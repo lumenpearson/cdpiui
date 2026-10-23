@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CDPIUI.Shared.Extentions
+namespace CDPIUI.Shared.Extensions
 {
-    public static class EnumExtention
+    public static class EnumExtension
     {
         public static T ToEnum<T>(this string value)
         {

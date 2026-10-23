@@ -2,7 +2,7 @@ using CDPIUI.Commands;
 using CDPIUI.Controls.WindowControls;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Helper;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;

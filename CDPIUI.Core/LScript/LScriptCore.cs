@@ -2,7 +2,7 @@
 using CDPIUI.Core.Communication;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Data;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 

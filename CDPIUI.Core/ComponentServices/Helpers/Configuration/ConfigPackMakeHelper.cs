@@ -6,8 +6,8 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Extensions;
 using System.IO.Compression;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
@@ -51,7 +51,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
 
             Directory.CreateDirectory(tempDir);
 
-            var copyFilesResult = await CopyUsedFilesToDirecrory(configItems, tempDir);
+            var copyFilesResult = await CopyUsedFilesToDirectory(configItems, tempDir);
             if (!(bool)copyFilesResult?.Success!) return copyFilesResult;
 
             var copyConfigsResult = await CopyConfigsToDirectory(configItems, tempDir);
@@ -135,7 +135,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
                 Name = modelTemplate.Name,
                 ShortName = modelTemplate.ShortName,
                 Developer = modelTemplate.Developer,
-                BackgroudColor = ""
+                BackgroundColor = ""
             });
         }
 
@@ -313,7 +313,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
             return OperationResultModel<List<Tuple<string, string>>>.SuccessResult(requirements);
         }
 
-        private static async Task<OperationResultModel<EmptyResult>> CopyUsedFilesToDirecrory(
+        private static async Task<OperationResultModel<EmptyResult>> CopyUsedFilesToDirectory(
             List<ConfigItem> itemsToAdd, 
             string targetDirectory)
         {

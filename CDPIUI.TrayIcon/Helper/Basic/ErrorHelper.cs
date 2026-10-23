@@ -1,5 +1,5 @@
 ﻿using CDPIUI.Shared.Logger;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,19 +29,19 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 
     public class CustomErrorConvertor : ErrorConvertor
     {
-        public override string GetPrettyErrorCode(string preffix, int hcode, ILogger? _ = null)
+        public override string GetPrettyErrorCode(string prefix, int hcode, ILogger? _ = null)
         {
-            return base.GetPrettyErrorCode(preffix, hcode, Logger.Instance);
+            return base.GetPrettyErrorCode(prefix, hcode, Logger.Instance);
         }
 
-        public override string GetPrettyErrorCode(string preffix, Exception ex, ILogger? _ = null)
+        public override string GetPrettyErrorCode(string prefix, Exception ex, ILogger? _ = null)
         {
-            return base.GetPrettyErrorCode(preffix, ex, Logger.Instance);
+            return base.GetPrettyErrorCode(prefix, ex, Logger.Instance);
         }
 
-        public PrettyErrorCode GetLoggedErrorCode(string preffix, Exception ex)
+        public PrettyErrorCode GetLoggedErrorCode(string prefix, Exception ex)
         {
-            GetPrettyErrorCode(preffix, ex);
+            GetPrettyErrorCode(prefix, ex);
             return MapExceptionToCode(ex, out _);
         }
     }

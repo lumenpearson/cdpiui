@@ -3,9 +3,9 @@ using CDPIUI.Core.Store.Network.Models;
 using CDPIUI.Core.Store.Repository;
 using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Secrets;
 using System.Diagnostics;
 using System.Text.Json;
@@ -31,7 +31,7 @@ namespace CDPIUI.Core.Store.Network
             string? repoUrl,
             string? targetFileOrFileType,
             string? version = null, 
-            string? prefferedFile = null
+            string? preferredFile = null
             )
         {
             APILinkModel linkModel = new();
@@ -68,12 +68,12 @@ namespace CDPIUI.Core.Store.Network
                     .Where(a =>
                         string.Equals(a.Name, targetFileOrFileType, StringComparison.OrdinalIgnoreCase)
                         || a.Name.EndsWith(
-                            FileSystemService.GetFileExtention(targetFileOrFileType.ToEnum<FileExtentionTypes>()), 
+                            FileSystemService.GetFileExtension(targetFileOrFileType.ToEnum<FileExtensionTypes>()), 
                             StringComparison.OrdinalIgnoreCase)
                     )
                     .Where(a =>
-                        prefferedFile is null ||
-                        a.Name.Contains(prefferedFile, StringComparison.Ordinal)
+                        preferredFile is null ||
+                        a.Name.Contains(preferredFile, StringComparison.Ordinal)
                     )
                     .ToList();
 

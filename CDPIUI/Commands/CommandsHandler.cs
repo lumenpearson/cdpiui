@@ -121,7 +121,7 @@ namespace CDPIUI.Commands
         {
             switch (model.MessageType)
             {
-                case GoodCheckMessageIds.Runned:
+                case GoodCheckMessageIds.Running:
                     return;
 
                 case GoodCheckMessageIds.Died:

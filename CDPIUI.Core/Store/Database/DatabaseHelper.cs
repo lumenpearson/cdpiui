@@ -1,6 +1,6 @@
 ﻿using CDPIUI.Core.Basic;
 using CDPIUI.Core.Data;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared;
 using Microsoft.Data.Sqlite;
 using System.Data;
@@ -112,7 +112,7 @@ namespace CDPIUI.Core.Store.Database
             cmd.Parameters.AddWithValue("@Name", item.Name ?? string.Empty);
             cmd.Parameters.AddWithValue("@ShortName", item.ShortName ?? string.Empty);
             cmd.Parameters.AddWithValue("@Developer", item.Developer ?? string.Empty);
-            cmd.Parameters.AddWithValue("@BackgroundColor", item.BackgroudColor ?? string.Empty);
+            cmd.Parameters.AddWithValue("@BackgroundColor", item.BackgroundColor ?? string.Empty);
 
             lock (databaseRequestLock)
             {
@@ -195,6 +195,19 @@ namespace CDPIUI.Core.Store.Database
             return items;
         }
 
+        /// <summary>
+        /// Removes the registration of an item whose folder no longer exists. Such entries made
+        /// the item look installed, and Autocorrector and the component pages used missing files.
+        /// </summary>
+        public void UnregisterMissingItem(DatabaseStoreItem item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.Id) ||
+                (!string.IsNullOrEmpty(item.Directory) && Directory.Exists(item.Directory)))
+                return;
+            Logger.Instance.CreateWarningLog(nameof(DatabaseHelper), $"The folder of {item.Id} is missing; its registration is removed.");
+            DeleteItemById(item.Id);
+        }
+
         internal void DeleteItemById(string id)
         {
             using var connection = new SqliteConnection(LocalDatabaseConnectionString);
@@ -249,7 +262,7 @@ namespace CDPIUI.Core.Store.Database
                 Name = GetStringOrNull(reader, "Name"),
                 ShortName = GetStringOrNull(reader, "ShortName"),
                 Developer = GetStringOrNull(reader, "Developer") ?? string.Empty,
-                BackgroudColor = GetStringOrNull(reader, "BackgroundColor") ?? string.Empty,
+                BackgroundColor = GetStringOrNull(reader, "BackgroundColor") ?? string.Empty,
             };
         }
 
@@ -299,7 +312,7 @@ namespace CDPIUI.Core.Store.Database
                 Name = "Storage for custom items of current user",
                 ShortName = "Local data storage",
                 Developer = "Storik4",
-                BackgroudColor = ""
+                BackgroundColor = ""
             };
 
             if (!AddOrUpdateItem(userItem))
@@ -325,7 +338,7 @@ namespace CDPIUI.Core.Store.Database
                 Name = "CDPI UI updates helper item",
                 ShortName = "CDPI UI updates helper item",
                 Developer = "Storik4",
-                BackgroudColor = ""
+                BackgroundColor = ""
             };
 
             if (!AddOrUpdateItem(applicationItem))

@@ -264,12 +264,12 @@ namespace CDPIUI
 
                 if (restartIfRunning)
                 {
-                    if (await ComponentTasksManager.Instance.IsTaskRunned(TestedComponentId))
+                    if (await ComponentTasksManager.Instance.IsTaskRunning(TestedComponentId))
                         await ComponentTasksManager.Instance.RestartTask(TestedComponentId);
                     else
                         _ = ComponentTasksManager.Instance.CreateAndRunNewTask(TestedComponentId);
                 }
-                else if (await ComponentTasksManager.Instance.IsTaskRunned(TestedComponentId))
+                else if (await ComponentTasksManager.Instance.IsTaskRunning(TestedComponentId))
                 {
                     await ComponentTasksManager.Instance.RestartTask(TestedComponentId);
                 }

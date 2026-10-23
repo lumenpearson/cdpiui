@@ -38,13 +38,13 @@ namespace CDPIUI.TrayIcon.Controls
             set => _componentId = value;
         }
 
-        private bool _isRunned = false;
-        public bool IsRunned
+        private bool _isRunning = false;
+        public bool IsRunning
         {
-            get { return _isRunned; }
+            get { return _isRunning; }
             set
             {
-                _isRunned = value;
+                _isRunning = value;
                 StateChangedActions();
             }
         }
@@ -110,8 +110,8 @@ namespace CDPIUI.TrayIcon.Controls
         
         private void StateChangedActions()
         {
-            ComponentWorkButton.IsHighlighted = IsRunned;
-            ComponentWorkButton.Glyph = IsRunned ? "\uF8AE" : "\uF5B0";
+            ComponentWorkButton.IsHighlighted = IsRunning;
+            ComponentWorkButton.Glyph = IsRunning ? "\uF8AE" : "\uF5B0";
         }
 
         private void SetupStateChanged()
@@ -144,7 +144,7 @@ namespace CDPIUI.TrayIcon.Controls
         {
             EventHappens?.Invoke();
 
-            if (!await TasksHelper.Instance.IsTaskRunned(ComponentId))
+            if (!await TasksHelper.Instance.IsTaskRunning(ComponentId))
             {
                 _ = TasksHelper.Instance.CreateAndRunNewTask(ComponentId);
             }

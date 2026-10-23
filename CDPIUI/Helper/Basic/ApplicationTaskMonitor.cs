@@ -58,15 +58,15 @@ namespace CDPIUI.Helper.Basic
             }
         }
         /*
-        public static bool IsComponentProcessRunned()
+        public static bool IsComponentProcessRunning()
         {
             return ProcessManager.Instance.IsProcessRunning;
         }
         */
 
-        public static bool IsGoodCheckRunned()
+        public static bool IsGoodCheckRunning()
         {
-            return GoodCheckProcessService.Instance.IsRunned();
+            return GoodCheckProcessService.Instance.IsRunning();
         }
 
         public static bool IsStoreWorking()

@@ -2,7 +2,7 @@
 using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Pipe.Models;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Migration;
 using System.Diagnostics;
 using System.IO.Pipes;

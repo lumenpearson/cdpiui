@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CDPIUI.Shared.Extentions
+namespace CDPIUI.Shared.Extensions
 {
     public class LogicalComparer : IComparer<INamedModel>
     {
