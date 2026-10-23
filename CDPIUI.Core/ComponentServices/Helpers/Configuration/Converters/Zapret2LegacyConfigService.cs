@@ -105,9 +105,14 @@ public static class Zapret2LegacyConfigService
             string manifestPath = Path.Combine(manifestDirectory, GetManifestFileName(config));
 
             ConvertedConfigManifest? existingManifest = LoadManifest(manifestPath);
-            if (!forceRebuild && !validateHashes && IsCachePresent(existingManifest))
+            // Without file hashing the cache is still bound to the converter version and to the
+            // command line, so a new converter or a changed toggle or variable converts again (audit 11.3).
+            string commandLineHash = ComputeCommandLineHash(expandedLegacyStartupString);
+            if (!forceRebuild && !validateHashes && IsCachePresent(existingManifest) &&
+                existingManifest!.ConverterVersion == ConverterVersion.Value &&
+                existingManifest.CommandLineHash == commandLineHash)
             {
-                return existingManifest!.StartupString;
+                return existingManifest.StartupString;
             }
 
             Dictionary<string, FileMapping> mappings =
@@ -167,6 +172,8 @@ public static class Zapret2LegacyConfigService
                 PackId = config.packId,
                 ConfigFileName = config.file_name,
                 InputHash = inputHash,
+                ConverterVersion = ConverterVersion.Value,
+                CommandLineHash = commandLineHash,
                 StartupString = conversion.StartupString,
                 RequiredCachedFiles = GetRequiredCachedFiles(conversion.ReferencedFiles, mappings),
                 ConvertedAtUtc = DateTime.UtcNow
@@ -285,6 +292,13 @@ public static class Zapret2LegacyConfigService
                 File.Copy(mapping.SourcePath, mapping.DestinationPath, overwrite: true);
             }
         }
+    }
+
+    private static string ComputeCommandLineHash(string expandedLegacyStartupString)
+    {
+        using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        AppendString(hash, expandedLegacyStartupString);
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 
     private static string ComputeInputHash(
@@ -441,6 +455,8 @@ public static class Zapret2LegacyConfigService
         public string PackId { get; set; } = string.Empty;
         public string ConfigFileName { get; set; } = string.Empty;
         public string InputHash { get; set; } = string.Empty;
+        public string ConverterVersion { get; set; } = string.Empty;
+        public string CommandLineHash { get; set; } = string.Empty;
         public string StartupString { get; set; } = string.Empty;
         public List<string>? RequiredCachedFiles { get; set; }
         public DateTime ConvertedAtUtc { get; set; }
