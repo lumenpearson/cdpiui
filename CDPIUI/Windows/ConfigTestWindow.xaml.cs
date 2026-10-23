@@ -203,9 +203,9 @@ namespace CDPIUI
             }
             catch (Exception ex)
             {
+                // RunAsync has already stopped the tested preset and restored the component.
                 AppendLine(new TestLogSegment($"[{localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
                            new TestLogSegment(ex.Message, TestLogColor.Red));
-                try { await processManager.StopProcess(false); } catch { }
             }
             finally
             {
