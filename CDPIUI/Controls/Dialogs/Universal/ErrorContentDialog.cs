@@ -123,7 +123,7 @@ namespace CDPIUI.Controls.Dialogs.Universal
 
             dialog.Content = scrollView;
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
         }
 
         private void ViewMoreHandler(object sender, RoutedEventArgs e)

@@ -107,7 +107,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
                 Content = localizer.GetLocalizedString("ConfigMakerNoComponentsDialogMessage"),
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
             };
-            await unavailableDialog.ShowAsync();
+            await unavailableDialog.ShowQueuedAsync();
             Close();
             return;
         }
@@ -244,7 +244,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         {
             XamlRoot = this.Content.XamlRoot
         };
-        await dialog.ShowAsync();
+        await dialog.ShowQueuedAsync();
 
         if (dialog.SelectedConfigResult == SelectResult.Selected)
         {
@@ -292,7 +292,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
             XamlRoot = this.Content.XamlRoot,
             Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
         };
-        var result = await exitDialog.ShowAsync();
+        var result = await exitDialog.ShowQueuedAsync();
         if (result == ContentDialogResult.Primary)
         {
             return true;
@@ -307,7 +307,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
             XamlRoot = this.Content.XamlRoot,
         };
 
-        await dialog.ShowAsync();
+        await dialog.ShowQueuedAsync();
 
         if (!string.IsNullOrEmpty(dialog.ResultSelectedComponentId))
         {

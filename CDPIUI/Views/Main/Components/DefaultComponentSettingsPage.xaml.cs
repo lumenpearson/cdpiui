@@ -327,7 +327,7 @@ namespace CDPIUI.Views.Main.Components
                         Args = contentDefinition.PrettyViewParams,
                         XamlRoot = this.XamlRoot,
                     };
-                    _ = dialog.ShowAsync();
+                    _ = dialog.ShowQueuedAsync();
                     break;
                 case ActionIds.OpenFolderClicked:
                     ShellHelper.LookupFileInDirectory(contentDefinition.EditFilePath);
@@ -393,7 +393,7 @@ namespace CDPIUI.Views.Main.Components
             {
                 XamlRoot = XamlRoot,
             };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary ||
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary ||
                 string.Equals(dialog.VarValue, variable.value, StringComparison.Ordinal))
             {
                 return;
@@ -449,7 +449,7 @@ namespace CDPIUI.Views.Main.Components
                 FileName = fileName,
                 IsIpSet = isIPSet,
             };
-            await changeListContentDialog.ShowAsync();
+            await changeListContentDialog.ShowQueuedAsync();
 
             if (changeListContentDialog.IsDialogFinishedSuccessfully)
             {
@@ -489,7 +489,7 @@ namespace CDPIUI.Views.Main.Components
                 XamlRoot = this.XamlRoot,
                 FilePath = file
             };
-            await editSitelistAskApplicationContentDialog.ShowAsync();
+            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
             if (editSitelistAskApplicationContentDialog.IsSuccess)
                 SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
         }

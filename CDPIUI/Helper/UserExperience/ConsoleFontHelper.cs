@@ -105,7 +105,7 @@ namespace CDPIUI.Helper.UserExperience
         {
             FontSettingsContentDialog dialog = new() { XamlRoot = xamlRoot };
 
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             {
                 FontFamily = dialog.FontName;
                 FontSize = dialog.FontSize;

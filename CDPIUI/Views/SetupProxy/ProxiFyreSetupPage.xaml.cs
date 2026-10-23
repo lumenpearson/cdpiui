@@ -380,7 +380,7 @@ namespace CDPIUI.Views.SetupProxy
             SelectAppContentDialog dialog = new SelectAppContentDialog(BlackList);
             dialog.XamlRoot = this.XamlRoot;
             dialog.Title = string.Format(localizer.GetLocalizedString("EditApplicationListDialogTitle"), localizer.GetLocalizedString("ApplicationBlackList"));
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             BlackList = dialog._applications.ToList();
             SetDescription();
@@ -391,7 +391,7 @@ namespace CDPIUI.Views.SetupProxy
             SelectAppContentDialog dialog = new SelectAppContentDialog(WhiteList);
             dialog.XamlRoot = this.XamlRoot;
             dialog.Title = string.Format(localizer.GetLocalizedString("EditApplicationListDialogTitle"), localizer.GetLocalizedString("ApplicationWhiteList"));
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             WhiteList = dialog._applications.ToList();
             SetDescription();

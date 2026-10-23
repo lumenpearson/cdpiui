@@ -117,7 +117,7 @@ namespace CDPIUI
                 XamlRoot = this.Content.XamlRoot,
                 Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
             };
-            var result = await exitDialog.ShowAsync();
+            var result = await exitDialog.ShowQueuedAsync();
             if (result == ContentDialogResult.Primary)
             {
                 ContentFrame.DispatcherQueue.TryEnqueue(() =>
@@ -218,7 +218,7 @@ namespace CDPIUI
                         {
                             XamlRoot = this.Content.XamlRoot
                         };
-                        await dialog.ShowAsync();
+                        await dialog.ShowQueuedAsync();
                         if (dialog.SelectedConfigResult == SelectResult.Selected)
                         {
                             configItem = dialog.SelectedConfigItem;
@@ -270,7 +270,7 @@ namespace CDPIUI
         {
             if (!SettingsManager.Instance.GetValue<bool>("AD", "ImportConfigFromFile")) {
                 ImportConfigFromFileDialog dialog = new ImportConfigFromFileDialog() { XamlRoot = this.Content.XamlRoot };
-                await dialog.ShowAsync();
+                await dialog.ShowQueuedAsync();
                 SettingsManager.Instance.SetValue("AD", "ImportConfigFromFile", true);
             }
 
@@ -354,7 +354,7 @@ namespace CDPIUI
             {
                 XamlRoot = this.Content.XamlRoot
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             if (dialog.SelectedResult == SelectResult.Selected)
             {
                 string directory = dialog.SelectedReport;
@@ -510,7 +510,7 @@ namespace CDPIUI
                 XamlRoot = this.Content.XamlRoot,
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             if (!string.IsNullOrEmpty(dialog.Result))
             {

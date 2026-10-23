@@ -75,7 +75,7 @@ namespace CDPIUI.Controls.ComponentSettings
                         {
                             XamlRoot = this.XamlRoot
                         };
-                        await dialog.ShowAsync();
+                        await dialog.ShowQueuedAsync();
                         break;
                     case HelpfulLinkType.SetupProxy:
                         CommandsHandler.HandleCommand($"cdpiui://Tools/Proxy");

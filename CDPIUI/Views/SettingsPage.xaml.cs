@@ -180,7 +180,7 @@ namespace CDPIUI.Views
             {
                 XamlRoot = this.XamlRoot
             };
-            await editSitelistAskApplicationContentDialog.ShowAsync();
+            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
             UpdateTextFileOpenSettings();
         }
 

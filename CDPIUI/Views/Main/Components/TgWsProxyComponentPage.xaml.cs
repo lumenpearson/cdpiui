@@ -276,7 +276,7 @@ namespace CDPIUI.Views.Main.Components
                 Title = localizer.GetLocalizedString("EditDataCenter")
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             if (dialog.Result)
             {
@@ -333,7 +333,7 @@ namespace CDPIUI.Views.Main.Components
                 Title = localizer.GetLocalizedString("AddDataCenter")
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             if (dialog.Result)
             {
                 TelegramDataCenterModels.Add(new()
@@ -453,7 +453,7 @@ namespace CDPIUI.Views.Main.Components
                 XamlRoot = this.XamlRoot,
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
 
             if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.FromTemplate)
             {
@@ -581,7 +581,7 @@ namespace CDPIUI.Views.Main.Components
                         {
                             XamlRoot = this.XamlRoot,
                         };
-                        await dialog.ShowAsync();
+                        await dialog.ShowQueuedAsync();
                         break;
                 }
             }

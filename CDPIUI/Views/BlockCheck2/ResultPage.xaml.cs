@@ -480,7 +480,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
                 CloseButtonText = localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+            if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
@@ -578,7 +578,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
                 CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
                 DefaultButton = ContentDialogButton.Primary,
             };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary || selector.SelectedItem is not string path)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary || selector.SelectedItem is not string path)
             {
                 return;
             }

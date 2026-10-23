@@ -30,7 +30,7 @@ internal static class ConfigShareUI
     {
         await Task.Run(ConfigShareService.CleanupPreviousSystemShares);
         var dialog = new ConfigShareExportContentDialog(selected) { XamlRoot = root };
-        await dialog.ShowAsync();
+        await dialog.ShowQueuedAsync();
     }
 
     internal static async Task OfferComponentInstallAsync(XamlRoot root, ConfigItem config)
@@ -48,7 +48,7 @@ internal static class ConfigShareUI
             PrimaryButtonText = Text("ConfigShareInstallComponent"),
             CloseButtonText = Text("ConfigShareLater")
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary) return;
         if (ConfigShareService.GetMissingComponentId(config) == null) return;
         Logger.Instance.CreateInfoLog(nameof(ConfigShareUI), $"Opening required component installer: {componentId}");
         var app = (App)Application.Current;

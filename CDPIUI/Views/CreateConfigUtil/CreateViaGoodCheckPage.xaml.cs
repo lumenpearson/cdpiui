@@ -868,7 +868,7 @@ namespace CDPIUI.Views.CreateConfigUtil
                 PrimaryButtonText = "OK",
                 XamlRoot = this.XamlRoot,
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             CreateConfigUtilWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
             window.Close();
         }

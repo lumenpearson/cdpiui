@@ -237,7 +237,7 @@ namespace CDPIUI.Views.Store
                     Licenses = licenses,
                     XamlRoot = XamlRoot
                 };
-                if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                     return;
             }
 
@@ -553,7 +553,7 @@ namespace CDPIUI.Views.Store
             {
                 XamlRoot = XamlRoot
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
         }
 
         private void LaunchKitUnsupportedHelp_Click(object sender, RoutedEventArgs e)
@@ -621,7 +621,7 @@ namespace CDPIUI.Views.Store
                     Content = $"{_loadErrorMessage} {_loadErrorCode}",
                     PrimaryButtonText = "OK"
                 };
-                await dialog.ShowAsync();
+                await dialog.ShowQueuedAsync();
 
                 if (Frame.CanGoBack)
                     Frame.GoBack();
