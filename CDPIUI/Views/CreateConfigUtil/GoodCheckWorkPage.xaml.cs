@@ -1,4 +1,4 @@
-using CDPIUI.Core;
+﻿using CDPIUI.Core;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -242,7 +242,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             allSecondsRemaining = etaSecondsCurrent + remainingOpsCount * perOpEstimate;
         }
 
-        string speedText = _speedElementsPerSec > 0 ? $"{_speedElementsPerSec:F3} e/s" : "�";
+        string speedText = _speedElementsPerSec > 0 ? $"{_speedElementsPerSec:F3} e/s" : "—";
         string etaCurrentText = double.IsInfinity(etaSecondsCurrent) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((etaSecondsCurrent / 60.0));
         string allTimeText = double.IsInfinity(allSecondsRemaining) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((allSecondsRemaining / 60.0));
 
