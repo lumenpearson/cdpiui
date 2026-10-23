@@ -1,4 +1,4 @@
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+﻿using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using System.Security.Cryptography;
@@ -1414,34 +1414,8 @@ public sealed partial class ZapretConfigImportService
         }
     }
 
-    private static string[] ReadAllLines(string filePath)
-    {
-        byte[] bytes = File.ReadAllBytes(filePath);
-        Encoding encoding = DetectEncoding(bytes);
-        string text = encoding.GetString(bytes).TrimStart('\uFEFF');
-        return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
-    }
-
-    private static Encoding DetectEncoding(byte[] bytes)
-    {
-        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
-            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
-        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
-            return Encoding.Unicode;
-        if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
-            return Encoding.BigEndianUnicode;
-
-        try
-        {
-            _ = new UTF8Encoding(false, true).GetString(bytes);
-            return new UTF8Encoding(false);
-        }
-        catch (DecoderFallbackException)
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            return Encoding.GetEncoding(1251);
-        }
-    }
+    private static string[] ReadAllLines(string filePath) =>
+        CDPIUI.Core.System.BatchFileEncoding.ReadAllLines(filePath);
 
     private static string NormalizeWhitespace(string input)
     {
