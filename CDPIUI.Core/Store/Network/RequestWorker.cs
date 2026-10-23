@@ -12,14 +12,17 @@ namespace CDPIUI.Core.Store.Network
     {
         private readonly Lazy<HttpClient> directClient;
         private readonly Lazy<HttpClient> proxyClient;
-        private readonly bool ownsClient;
         private int disposed;
+
+        // A client per request leaves a connection pool and sockets behind every time; the workers
+        // created for single requests share these instead.
+        private static readonly Lazy<HttpClient> SharedDirectClient = new(() => new HttpClient(CreateHandler(proxyEnable: false)));
+        private static readonly Lazy<HttpClient> SharedProxyClient = new(() => new HttpClient(CreateHandler(proxyEnable: true)));
 
         public RequestWorker(HttpClient? client = null)
         {
-            directClient = new(() => client ?? new HttpClient(CreateHandler(proxyEnable: false)));
-            proxyClient = new(() => client ?? new HttpClient(CreateHandler(proxyEnable: true)));
-            ownsClient = client == null;
+            directClient = client != null ? new(() => client) : SharedDirectClient;
+            proxyClient = client != null ? new(() => client) : SharedProxyClient;
         }
 
         private static HttpClientHandler CreateHandler(bool proxyEnable)
@@ -143,15 +146,7 @@ namespace CDPIUI.Core.Store.Network
             return builder.Uri;
         }
 
-        public void Dispose()
-        {
-            if (Interlocked.Exchange(ref disposed, 1) == 0 && ownsClient)
-            {
-                if (directClient.IsValueCreated)
-                    directClient.Value.Dispose();
-                if (proxyClient.IsValueCreated)
-                    proxyClient.Value.Dispose();
-            }
-        }
+        // The clients are shared or owned by the caller, so only this worker is marked as disposed.
+        public void Dispose() => Interlocked.Exchange(ref disposed, 1);
     }
 }
