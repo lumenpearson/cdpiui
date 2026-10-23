@@ -971,14 +971,17 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                             if (vars.TryGetValue(remLine[0], out string _value))
                                 values.Add(_value);
 
-                            values.Add(value);
+                            if (!values.Contains(value))
+                                values.Add(value);
 
                             availableVarValues.Add(new()
                             {
                                 Comment = comment,
                                 VarName = remLine[0],
+                                // Index 0 is the value of "set X=..." when it came first; it was
+                                // left out, so "rem set X=b" after "set X=a" lost "a".
                                 CurrentValueIndex = 0,
-                                Values = [value]
+                                Values = values
                             });
                             comment = "";
                         }
