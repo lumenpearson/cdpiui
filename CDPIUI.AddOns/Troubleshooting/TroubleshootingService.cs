@@ -196,7 +196,10 @@ namespace CDPIUI.AddOns.Troubleshooting
             bool isRunningKiller = IsServiceRunning("Killer");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckIntelConnectivityNetwork);
-            bool isRunningIntelConnectivityNetwork = IsServiceRunning("Intel") || IsServiceRunning("Connectivity") || IsServiceRunning("Network");
+            // The Intel(R) Connectivity Network Service only: "Network" alone matched many
+            // Windows services, so the check failed on almost every computer (audit 14.10).
+            bool isRunningIntelConnectivityNetwork = IsServiceRunning(service =>
+                Matches(service, "Intel") && Matches(service, "Connectivity Network"));
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckCheckPointServices);
             bool isCheckPointServiceRunning = IsServiceRunning("TracSrvWrapper") || IsServiceRunning("EPWD");
@@ -206,7 +209,8 @@ namespace CDPIUI.AddOns.Troubleshooting
             bool isSmartByteRunning = IsServiceRunning("SmartByte");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckVPNs);
-            bool isRunningVPN = IsServiceExist("vpn");
+            // Running, not merely installed: the dialog reports it as running.
+            bool isRunningVPN = IsServiceRunning("vpn");
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckDNS);
             bool isUsedDNS = await GetDnsAdress();
@@ -276,8 +280,17 @@ namespace CDPIUI.AddOns.Troubleshooting
                     fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
                     break;
                 case RunBasicDialogStates.CheckWinDivert:
-                    _ = ProcessService.StopService();
-                    fixResultModel.IsFixed = true;
+                    // The tray stops the service on its own time: success is reported only when
+                    // the service is really gone (audit 14.10).
+                    await ProcessService.StopService();
+                    fixResultModel.IsFixed = false;
+                    for (int i = 0; i < 20 && !fixResultModel.IsFixed; i++)
+                    {
+                        await Task.Delay(500);
+                        Services = null;
+                        fixResultModel.IsFixed = !IsServiceRunning("windivert");
+                    }
+                    fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
                     break;
                 default:
                     fixResultModel.IsFixed = false;
@@ -342,22 +355,32 @@ namespace CDPIUI.AddOns.Troubleshooting
             }
         }
 
-        private bool IsServiceRunning(string name)
+        private bool IsServiceRunning(string name) =>
+            IsServiceRunning(service => service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+        // Any matching service that runs: the first match alone could be a stopped one.
+        private bool IsServiceRunning(Func<ServiceController, bool> match)
         {
             try
             {
                 if (!OperatingSystem.IsWindows()) return true;
                 Services ??= ServiceController.GetServices();
 #pragma warning disable CA1416 // Validate platform compatibility
-                ServiceControllerStatus serviceControllerStatus = Services.FirstOrDefault(s => s.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase))?.Status ?? ServiceControllerStatus.Stopped;
+                return Services.Where(match).Any(service =>
+                    service.Status is ServiceControllerStatus.Running or ServiceControllerStatus.StopPending or ServiceControllerStatus.StartPending);
 #pragma warning restore CA1416 // Validate platform compatibility
-                return serviceControllerStatus == ServiceControllerStatus.Running || serviceControllerStatus == ServiceControllerStatus.StopPending || serviceControllerStatus == ServiceControllerStatus.StartPending;
             }
             catch
             {
                 return false;
             }
         }
+
+#pragma warning disable CA1416 // Validate platform compatibility
+        private static bool Matches(ServiceController service, string text) =>
+            service.ServiceName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+            service.DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase);
+#pragma warning restore CA1416 // Validate platform compatibility
 
         private static bool ExistsOnPath(string fileName)
         {
