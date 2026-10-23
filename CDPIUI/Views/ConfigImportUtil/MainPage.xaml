@@ -245,6 +245,22 @@
                                                Grid.Column="2"/>
                                         </Grid>
 
+                                        <StackPanel Spacing="3" Visibility="{Binding ArgumentsVisibility}">
+                                            <TextBlock Text="{Binding ArgumentsHeader}" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="5"
+                                                    Padding="8 5">
+                                                <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                                                    <TextBlock Text="{Binding Arguments}"
+                                                               FontFamily="Consolas"
+                                                               TextWrapping="Wrap"
+                                                               IsTextSelectionEnabled="True"/>
+                                                </ScrollViewer>
+                                            </Border>
+                                        </StackPanel>
+
                                         <Grid Visibility="{Binding IsUnsuitable, Converter={StaticResource BoolToVisibilityConverter}}">
                                             <Border Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" 
                                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

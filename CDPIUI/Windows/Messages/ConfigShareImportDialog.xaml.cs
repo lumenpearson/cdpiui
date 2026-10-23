@@ -89,6 +89,15 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
 
             DeveloperName.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"),  package.Manifest.Developer);
 
+            // The raw startup string, so the user can check what the preset runs before adding it.
+            string arguments = package.Config?.startup_string;
+            if (!string.IsNullOrWhiteSpace(arguments))
+            {
+                ArgumentsHeader.Text = localizer.GetLocalizedString("ConfigImportArguments");
+                PresetArguments.Text = arguments;
+                ArgumentsPanel.Visibility = Visibility.Visible;
+            }
+
             KitName.Text = string.Format(localizer.GetLocalizedString("ConfigShareKitBy"), package.Manifest.Developer);
             var packs = service.GetDestinationPacks().ToList();
             foreach (var pack in packs)
