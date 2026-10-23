@@ -130,6 +130,65 @@ Do not create a window with `new` and `Activate` directly. Use the `App` methods
 `GetPageType` tries to find `CDPIUI.Views.<window name without "Window">.<page>`. For `ModernMainWindow`, it uses `CDPIUI.Views.Main.<page>` and `CDPIUI.Views.<page>`. `HomePage` gives `ModernMainWindow.GetMainPage()`.
 For `StoreWindow`, `HomePage` is `CDPIUI.HomePage`. A page name can contain a sub-namespace, for example `Settings.Memory.MemoryViewLogsDetailsPage`.
 
+## Main window
+
+The project has two main window classes: `ModernMainWindow` and `MainWindow`. The application opens only `ModernMainWindow`.
+`MainWindow` (`Windows/MainWindow.xaml`) is legacy code. It is compiled, but no code path of the application opens it. It is dead code.
+
+### Which window opens
+
+| Request | Code | Result |
+| ------- | ---- | ------ |
+| Start without an argument that opens a window | `App.PipeConnectedActions` calls `OpenStartupWindowAsync` | Startup window (see below) |
+| Redirected activation without a result | `App.PreferRequestedActions` calls `OpenStartupWindowAsync` | Startup window |
+| End of the welcome wizard | `WelcomeWindow.CompleteButton_Click` | `SafeCreateNewWindow<ModernMainWindow>()` |
+| `cdpiui://Main` and all `cdpiui://Main/...` routes | `CommandUriMapper` sends `windowName=MainWindow` | `WindowOpenHelper` changes the name to `ModernMainWindow` |
+| `ShowWindow` messages from the tray with `windowName=MainWindow` | `TrayMenuForm.MaximizeButton_MouseClick`, `EmptyForm.MaximizeApp`, `NotifyHelper` (toast actions `SHOW_MAIN_WINDOW` and `UPDATE:OPEN_DOWNLOAD_PAGE`), `ComponentUserControl.OpenSettingsButton_Clicked`, Conditional Launch (`ConditionalActionExecutor.OpenMainPageAsync`) | `ModernMainWindow` |
+| GUI code that needs the main window | For example `ItemViewPage`, `StoreLibraryItemButton`, `ComponentTileUserControl`, `ConnectTelegramProxyContentDialog` | `SafeCreateNewWindow<ModernMainWindow>()` |
+| `ShowWindow` message with `windowName=LegacyMainWindow` | `WindowOpenHelper` changes the name to `MainWindow` | `MainWindow`. No route and no tray code sends this name. |
+| `App.NavigateToUpdatesPage` | `SafeCreateNewWindow<MainWindow>()` | `MainWindow`. No code calls this method. |
+
+`OpenStartupWindowAsync` selects the startup window in this sequence:
+
+1. If a `WelcomeWindow` is open, it activates that window.
+2. If `WELCOMEWIZARD/Shown` is not `true`, it opens `WelcomeWindow`.
+3. Else it opens `ModernMainWindow`.
+
+`WindowOpenHelper` applies the same rule to the two main window names. If a `WelcomeWindow` is open or `WELCOMEWIZARD/Shown` is not `true`, a request for `ModernMainWindow` or `MainWindow` calls `OpenStartupWindowAsync`. The helper then ignores the `page` and the page parameters of the request.
+
+When the GUI is not connected, the tray starts `CDPIUI.exe` with `--direct:<message>` (`PipeHelper.TrySendMessage` in the tray). The GUI sends the message to `CommandsHandler.HandleCommand` after the pipe connects. Thus a `ShowWindow` message from the tray goes through `WindowOpenHelper` in both cases.
+
+### No setting selects the window
+
+No setting selects `MainWindow` or `ModernMainWindow`. The setting `APPEARANCE/mainPageMarkup` selects only the home page in `ModernMainWindow`:
+
+| `APPEARANCE/mainPageMarkup` | Home page (`ModernMainWindow.GetMainPage()`) |
+| --------------------------- | -------------------------------------------- |
+| `Classic` (default in `Template/Settings/Settings.xml`) | `Views/MainPage` |
+| `Modern` | `Views/ModernMainPage` |
+
+`MainPageMarkupManager` (`ViewModels/MainPageMarkupViewModel.cs`) reads the setting one time, in its constructor. The user changes the value in `WelcomeWindow` and in `Settings.PersonalizePage`. If the stored value is not `Classic` or `Modern`, `CurrentMarkup` is `null`.
+
+### Differences between the two windows
+
+| Function | `ModernMainWindow` | `MainWindow` (legacy) |
+| -------- | ------------------ | --------------------- |
+| Base class | `TemplateWindow` | `WinUIEx.WindowEx` |
+| Page from a link (`page` parameter) | Yes, through `NavigateToPageWithParameter` | No. `WindowOpenHelper` stops because the window is not a `TemplateWindow`. |
+| Request with `id` | Yes | No. `UnsafeCreateNewWindow` casts the new window to `TemplateWindow` and the cast fails. |
+| Home page | `GetMainPage()`: `MainPage` or `ModernMainPage` | Always `Views.MainPage` |
+| Navigation | Top pane: Home (`MAINPAGE`), Utilities, Settings, About | Left pane: Home, Utilities, one item for each installed component (Zapret, ByeDPI, GoodbyeDPI, SpoofDPI), an add item (`AddNewComponent`) with a flyout that opens `StoreWindow`, Settings, About |
+| Restart request after a driver or runtime installation (`CoreEvents.RestartRequired`) | Not handled | Shows a `ContentDialog`. The primary button (`RestartNow`) starts `shutdown.exe /r /t 0`. |
+| Title bar | `TitleBarUserControl` | Own title bar with `PreviewTextBlock` |
+| Minimum size | Not set | 484 × 300 (`WM_GETMINMAXINFO`) |
+| Default size and position (`WindowsPositionHelper`) | `OnlyPositionWizard` (900 × 550, centered) | `ResizeAndPositionMain` (800 × 600, centered) |
+
+The navigation items of `MainWindow` have tags in the old namespace (`CDPI_UI.Views.*`). `Type.GetType` returns `null` for these tags. Thus the legacy navigation does not change the page.
+
+CAUTION: `CoreEvents.RestartRequired` has a subscriber only in `MainWindow`. Because `MainWindow` never opens, the GUI does not show the restart request. `CoreEvents.IsRestartPending` stays `true`.
+
+Do not add new functions to `MainWindow`. Add them to `ModernMainWindow` or to its pages. Links and tray messages must use the name `MainWindow`, because `WindowOpenHelper` changes it to `ModernMainWindow`.
+
 ## The `cdpiui://` link scheme
 
 The files are in `Commands`:
