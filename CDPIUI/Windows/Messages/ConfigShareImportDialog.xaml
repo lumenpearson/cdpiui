@@ -25,6 +25,19 @@
                 <TextBlock x:Name="DeveloperName" TextWrapping="Wrap" />
                 <TextBlock x:Name="SourcePath" TextWrapping="Wrap" MaxLines="3" IsTextSelectionEnabled="True" Margin="0 0 0 20"/>
 
+                <StackPanel x:Name="ArgumentsPanel" Spacing="4" Margin="0 0 0 20" Visibility="Collapsed">
+                    <TextBlock x:Name="ArgumentsHeader" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10 6">
+                        <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="PresetArguments" FontFamily="Consolas" TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
                 <controls:SettingsExpander x:Name="DestinationPanel" IsExpanded="True" >
                     <controls:SettingsExpander.Header>
                         <TextBlock l:Uids.Uid="InstallSettingsTextBlock"/>

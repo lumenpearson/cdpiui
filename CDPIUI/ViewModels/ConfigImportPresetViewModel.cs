@@ -50,6 +50,15 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
 
     public string FileName => Path.GetFileName(Result.SourcePath);
 
+    // Shown as written in the preset, without expanding variables or running scripts,
+    // so the user sees what the component will be started with before testing or saving it.
+    public string Arguments => Result.Config?.startup_string ?? string.Empty;
+
+    public string ArgumentsHeader => localizer.GetLocalizedString("ConfigImportArguments");
+
+    public Visibility ArgumentsVisibility =>
+        string.IsNullOrWhiteSpace(Arguments) ? Visibility.Collapsed : Visibility.Visible;
+
     public IReadOnlyCollection<ConfigImportMissingFileResolution> MissingFileResolutions =>
         missingFileResolutions.Values;
 
