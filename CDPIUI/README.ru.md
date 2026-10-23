@@ -130,6 +130,66 @@
 `GetPageType` пытается найти `CDPIUI.Views.<window name without "Window">.<page>`. Для `ModernMainWindow` он использует `CDPIUI.Views.Main.<page>` и `CDPIUI.Views.<page>`. `HomePage` даёт `ModernMainWindow.GetMainPage()`.
 Для `StoreWindow` страница `HomePage` — это `CDPIUI.HomePage`. Имя страницы может содержать вложенное пространство имён, например `Settings.Memory.MemoryViewLogsDetailsPage`.
 
+<a id="main-window"></a>
+## Главное окно
+
+В проекте есть два класса главного окна: `ModernMainWindow` и `MainWindow`. Приложение открывает только `ModernMainWindow`.
+`MainWindow` (`Windows/MainWindow.xaml`) — устаревший код. Он компилируется, но ни один путь кода приложения его не открывает. Это мёртвый код.
+
+### Какое окно открывается
+
+| Запрос | Код | Результат |
+| ------ | --- | --------- |
+| Запуск без аргумента, который открывает окно | `App.PipeConnectedActions` вызывает `OpenStartupWindowAsync` | Стартовое окно (см. ниже) |
+| Перенаправленная активация без результата | `App.PreferRequestedActions` вызывает `OpenStartupWindowAsync` | Стартовое окно |
+| Завершение мастера приветствия | `WelcomeWindow.CompleteButton_Click` | `SafeCreateNewWindow<ModernMainWindow>()` |
+| `cdpiui://Main` и все маршруты `cdpiui://Main/...` | `CommandUriMapper` передаёт `windowName=MainWindow` | `WindowOpenHelper` заменяет имя на `ModernMainWindow` |
+| Сообщения `ShowWindow` от трея с `windowName=MainWindow` | `TrayMenuForm.MaximizeButton_MouseClick`, `EmptyForm.MaximizeApp`, `NotifyHelper` (действия уведомлений `SHOW_MAIN_WINDOW` и `UPDATE:OPEN_DOWNLOAD_PAGE`), `ComponentUserControl.OpenSettingsButton_Clicked`, условный запуск (`ConditionalActionExecutor.OpenMainPageAsync`) | `ModernMainWindow` |
+| Код GUI, которому нужно главное окно | Например, `ItemViewPage`, `StoreLibraryItemButton`, `ComponentTileUserControl`, `ConnectTelegramProxyContentDialog` | `SafeCreateNewWindow<ModernMainWindow>()` |
+| Сообщение `ShowWindow` с `windowName=LegacyMainWindow` | `WindowOpenHelper` заменяет имя на `MainWindow` | `MainWindow`. Ни маршрут, ни код трея не передают это имя. |
+| `App.NavigateToUpdatesPage` | `SafeCreateNewWindow<MainWindow>()` | `MainWindow`. Никакой код не вызывает этот метод. |
+
+`OpenStartupWindowAsync` выбирает стартовое окно в таком порядке:
+
+1. Если открыто окно `WelcomeWindow`, метод активирует его.
+2. Если `WELCOMEWIZARD/Shown` не равно `true`, метод открывает `WelcomeWindow`.
+3. Иначе метод открывает `ModernMainWindow`.
+
+`WindowOpenHelper` применяет то же правило к обоим именам главного окна. Если открыто `WelcomeWindow` или `WELCOMEWIZARD/Shown` не равно `true`, запрос `ModernMainWindow` или `MainWindow` вызывает `OpenStartupWindowAsync`. Тогда вспомогательный класс игнорирует `page` и параметры страницы из запроса.
+
+Если GUI не подключён, трей запускает `CDPIUI.exe` с `--direct:<message>` (`PipeHelper.TrySendMessage` в трее). После подключения pipe GUI передаёт сообщение в `CommandsHandler.HandleCommand`. Поэтому сообщение `ShowWindow` от трея в обоих случаях проходит через `WindowOpenHelper`.
+
+### Окно не выбирается настройкой
+
+Ни одна настройка не выбирает `MainWindow` или `ModernMainWindow`. Настройка `APPEARANCE/mainPageMarkup` выбирает только домашнюю страницу в `ModernMainWindow`:
+
+| `APPEARANCE/mainPageMarkup` | Домашняя страница (`ModernMainWindow.GetMainPage()`) |
+| --------------------------- | ---------------------------------------------------- |
+| `Classic` (значение по умолчанию в `Template/Settings/Settings.xml`) | `Views/MainPage` |
+| `Modern` | `Views/ModernMainPage` |
+
+`MainPageMarkupManager` (`ViewModels/MainPageMarkupViewModel.cs`) читает настройку один раз, в своём конструкторе. Пользователь меняет значение в `WelcomeWindow` и в `Settings.PersonalizePage`. Если сохранённое значение не равно `Classic` или `Modern`, `CurrentMarkup` равно `null`.
+
+### Различия двух окон
+
+| Функция | `ModernMainWindow` | `MainWindow` (устаревшее) |
+| ------- | ------------------ | ------------------------- |
+| Базовый класс | `TemplateWindow` | `WinUIEx.WindowEx` |
+| Страница из ссылки (параметр `page`) | Да, через `NavigateToPageWithParameter` | Нет. `WindowOpenHelper` останавливается, потому что окно не является `TemplateWindow`. |
+| Запрос с `id` | Да | Нет. `UnsafeCreateNewWindow` приводит новое окно к `TemplateWindow`, и приведение завершается ошибкой. |
+| Домашняя страница | `GetMainPage()`: `MainPage` или `ModernMainPage` | Всегда `Views.MainPage` |
+| Навигация | Верхняя панель: Home (`MAINPAGE`), Utilities, Settings, About | Левая панель: Home, Utilities, по одному пункту для каждого установленного компонента (Zapret, ByeDPI, GoodbyeDPI, SpoofDPI), пункт добавления (`AddNewComponent`) со всплывающим меню, которое открывает `StoreWindow`, Settings, About |
+| Запрос перезагрузки после установки драйвера или среды выполнения (`CoreEvents.RestartRequired`) | Не обрабатывается | Показывает `ContentDialog`. Основная кнопка (`RestartNow`) запускает `shutdown.exe /r /t 0`. |
+| Строка заголовка | `TitleBarUserControl` | Собственная строка заголовка с `PreviewTextBlock` |
+| Минимальный размер | Не задан | 484 × 300 (`WM_GETMINMAXINFO`) |
+| Размер и положение по умолчанию (`WindowsPositionHelper`) | `OnlyPositionWizard` (900 × 550, по центру) | `ResizeAndPositionMain` (800 × 600, по центру) |
+
+Пункты навигации `MainWindow` имеют теги в старом пространстве имён (`CDPI_UI.Views.*`). `Type.GetType` возвращает для этих тегов `null`. Поэтому устаревшая навигация не меняет страницу.
+
+ВНИМАНИЕ: Подписчик события `CoreEvents.RestartRequired` есть только в `MainWindow`. Так как `MainWindow` никогда не открывается, GUI не показывает запрос перезагрузки. `CoreEvents.IsRestartPending` остаётся `true`.
+
+Не добавляйте новые функции в `MainWindow`. Добавляйте их в `ModernMainWindow` или в его страницы. Ссылки и сообщения трея должны использовать имя `MainWindow`, потому что `WindowOpenHelper` заменяет его на `ModernMainWindow`.
+
 ## Схема ссылок `cdpiui://`
 
 Файлы находятся в `Commands`:
