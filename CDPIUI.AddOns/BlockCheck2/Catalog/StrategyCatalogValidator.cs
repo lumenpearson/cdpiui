@@ -323,15 +323,16 @@ public sealed partial class StrategyCatalogValidator
     private static BlockCheckIssue Error(string code, string message, string? subjectId = null) =>
         new(BlockCheckIssueSeverity.Error, code, message, subjectId);
 
-    [GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.CultureInvariant)]
+    // \z instead of $: "$" also matches before a final newline, which let "id\n" through.
+    [GeneratedRegex("^[A-Za-z0-9_.-]+\\z", RegexOptions.CultureInvariant)]
     private static partial Regex SafeIdentifierRegex();
 
-    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*\\z", RegexOptions.CultureInvariant)]
     private static partial Regex SafeArgumentNameRegex();
 
-    [GeneratedRegex("^[A-Za-z0-9_@%#.+,\\-<>=:/\\\\]*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Za-z0-9_@%#.+,\\-<>=:/\\\\]*\\z", RegexOptions.CultureInvariant)]
     private static partial Regex SafeArgumentValueRegex();
 
-    [GeneratedRegex("^(?<left>[ndbsp]-?\\d+)?(?:-|<)(?<right>[ndbsp]-?\\d+)?$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^(?<left>[ndbsp]-?\\d+)?(?:-|<)(?<right>[ndbsp]-?\\d+)?\\z", RegexOptions.CultureInvariant)]
     private static partial Regex RangeRegex();
 }

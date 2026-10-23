@@ -88,7 +88,8 @@ public sealed class BlockCheckReportHistoryService
             try
             {
                 string json = await File.ReadAllTextAsync(filePath, cancellationToken);
-                BlockCheckReport report = serializer.DeserializeJson(json);
+                BlockCheckReport report = serializer.DeserializeJson(json)
+                    ?? throw new InvalidDataException("The report is empty.");
                 FileInfo file = new(filePath);
                 entries.Add(new BlockCheckReportHistoryEntry(
                     filePath,
@@ -98,8 +99,8 @@ public sealed class BlockCheckReportHistoryService
                         ? new DateTimeOffset(file.LastWriteTimeUtc, TimeSpan.Zero)
                         : report.CreatedAtUtc));
             }
-            catch (Exception exception) when (
-                exception is IOException or UnauthorizedAccessException or InvalidDataException)
+            // One empty or damaged file (a JsonException) hid the whole history.
+            catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 Logger.Instance.CreateWarningLog(
                     nameof(BlockCheckReportHistoryService),

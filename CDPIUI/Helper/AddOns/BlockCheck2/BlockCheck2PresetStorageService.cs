@@ -195,7 +195,7 @@ public sealed class BlockCheck2PresetStorageService
             int equalsIndex = token.IndexOf('=');
             string option = equalsIndex >= 0 ? token[..equalsIndex] : token;
             string value = equalsIndex >= 0 ? token[(equalsIndex + 1)..] : string.Empty;
-            bool usesSeparateValue = equalsIndex < 0 && index + 1 < tokens.Count;
+            bool usesSeparateValue = false;
 
             BlockCheck2PresetFileKind? kind = option.Equals("--hostlist", StringComparison.OrdinalIgnoreCase) ||
                                                option.Equals("--hostlist-exclude", StringComparison.OrdinalIgnoreCase)
@@ -211,9 +211,10 @@ public sealed class BlockCheck2PresetStorageService
                 continue;
             }
 
-            if (usesSeparateValue && !tokens[index + 1].StartsWith("-", StringComparison.Ordinal))
+            if (equalsIndex < 0 && index + 1 < tokens.Count && !tokens[index + 1].StartsWith("-", StringComparison.Ordinal))
             {
                 value = tokens[++index];
+                usesSeparateValue = true;
             }
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -229,7 +230,12 @@ public sealed class BlockCheck2PresetStorageService
                 int separatorIndex = unquoted.IndexOf(':');
                 if (separatorIndex < 0)
                 {
+                    // "--blob <value>" lost its value here.
                     output.Add(token);
+                    if (usesSeparateValue)
+                    {
+                        output.Add(value);
+                    }
                     continue;
                 }
                 prefix = unquoted[..(separatorIndex + 1)];
