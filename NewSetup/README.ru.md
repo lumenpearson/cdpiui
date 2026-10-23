@@ -24,7 +24,8 @@ NewSetup — это проект WiX Toolset 6 (`WixToolset.Sdk/6.0.2`). Он с
 ```
 
 Эту папку создаёт `.github/scripts/build_portable.ps1`. Она содержит результат публикации GUI,
-`CDPIUI_TrayIcon.exe`, `Update.exe` и `EditHostFile.exe`.
+`CDPIUI_TrayIcon.exe`, `Update.exe` и `EditHostFile.exe`. Эти три инструмента — однофайловые
+исполняемые файлы .NET 8. Своих файлов `.config` или `.dll` в папке у них нет.
 
 ВНИМАНИЕ: Запустите `build_portable.ps1` с конфигурацией по умолчанию `Release` до сборки MSI.
 Исходный путь содержит `Release`.
