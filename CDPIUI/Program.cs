@@ -70,8 +70,22 @@ namespace CDPIUI
             }
             else
             {
-                isRedirect = true;
-                RedirectActivationTo(args, keyInstance);
+                isRedirect = RedirectActivationTo(args, keyInstance);
+                if (!isRedirect)
+                {
+                    // The main instance did not take the activation, usually because it is
+                    // exiting: try to become the main instance instead of leaving silently.
+                    keyInstance = AppInstance.FindOrRegisterForKey("CDPI_GUIApp");
+                    if (keyInstance.IsCurrent)
+                    {
+                        InitialActivationArguments = args;
+                        keyInstance.Activated += OnActivated;
+                    }
+                    else
+                    {
+                        isRedirect = true;
+                    }
+                }
             }
 
             return isRedirect;
@@ -171,23 +185,38 @@ namespace CDPIUI
 
         // Do the redirection on another thread, and use a non-blocking
         // wait method to wait for the redirection to complete.
-        public static void RedirectActivationTo(AppActivationArguments args,
+        // Returns false when the main instance did not accept the activation in time.
+        public static bool RedirectActivationTo(AppActivationArguments args,
                                                 AppInstance keyInstance)
         {
             redirectEventHandle = CreateEvent(IntPtr.Zero, true, false, null);
             AllowSetForegroundWindow(keyInstance.ProcessId);
+            bool redirected = false;
             Task.Run(() =>
             {
-                keyInstance.RedirectActivationToAsync(args).AsTask().Wait();
-                SetEvent(redirectEventHandle);
+                try
+                {
+                    keyInstance.RedirectActivationToAsync(args).AsTask().Wait();
+                    redirected = true;
+                }
+                catch (Exception)
+                {
+                    // The main instance exited or crashed meanwhile.
+                }
+                finally
+                {
+                    // Without the event the wait below never ends and the process stays without a window.
+                    SetEvent(redirectEventHandle);
+                }
             });
 
             uint CWMO_DEFAULT = 0;
-            uint INFINITE = 0xFFFFFFFF;
+            uint RedirectTimeoutMs = 30000;
             _ = CoWaitForMultipleObjects(
-               CWMO_DEFAULT, INFINITE, 1,
+               CWMO_DEFAULT, RedirectTimeoutMs, 1,
                [redirectEventHandle], out uint handleIndex);
 
+            return Volatile.Read(ref redirected);
         }
     }
 }
