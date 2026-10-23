@@ -228,9 +228,6 @@
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Converters.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Extensions.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
@@ -238,12 +235,6 @@
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Triggers.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.UI.Animations.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.UI.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CoreMessagingXP.dll" KeyPath="yes" />
@@ -488,9 +479,6 @@
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Microsoft.DirectManipulation.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\Microsoft.Extensions.DependencyInjection.Abstractions.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Microsoft.Extensions.Logging.Abstractions.dll" KeyPath="yes" />
@@ -926,6 +914,9 @@
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\System.Diagnostics.EventLog.Messages.dll" KeyPath="yes" />
+      </Component>
+      <Component Directory="INSTALLLOCATION">
+        <File Source="$(var.SourceDir)\System.Security.Cryptography.Pkcs.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\System.ServiceProcess.ServiceController.dll" KeyPath="yes" />

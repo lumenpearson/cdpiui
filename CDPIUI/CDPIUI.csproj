@@ -19,6 +19,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <ExcludedLanguages>en-US;ru-RU</ExcludedLanguages>
+    <!-- The application is translated to these languages only; the installer lists their .mui files. -->
+    <SatelliteResourceLanguages>en-US;ru-RU</SatelliteResourceLanguages>
 	<DebugType>embedded</DebugType>
 	<AssemblyName>CDPIUI</AssemblyName>
 	<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
