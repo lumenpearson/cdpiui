@@ -102,7 +102,6 @@ namespace Update
                     if (applied)
                     {
                         InstallationStateChanged?.Invoke(InstallState.Finalize);
-                        WriteManifest(stagedFiles);
                         Cleanup();
                         FinishStatus = InstallError.OK;
                         bool launched = LaunchApplication(false);
@@ -156,7 +155,10 @@ namespace Update
         private string StagingFolder => Path.Combine(_targetFolder, ".update-staging");
         private string BackupFolder => Path.Combine(_targetFolder, ".update-backup");
         // Files written by the last update, so files dropped from a newer version can be removed.
-        private string ManifestPath => Path.Combine(_targetFolder, ".update-manifest");
+        // A patch holds only the files that changed since the previous build, so a file that is
+        // missing from it is not a removed file. Removing such files (by a manifest of the previous
+        // update) deleted files that an earlier patch had brought and this one did not change.
+        private string ObsoleteManifestPath => Path.Combine(_targetFolder, ".update-manifest");
 
         private static readonly string[] ApplicationProcesses = { "goodbyeDPI", "CDPIUI", "CDPIUI_TrayIcon" };
         private const string TrayShutdownEventName = @"Global\CDPIUI_TrayShutdown";
@@ -394,20 +396,6 @@ namespace Update
                     ProgressChanged?.Invoke((double)(i + 1) / stagedFiles.Count);
                 }
 
-                foreach (string relativePath in GetRemovedFiles(stagedFiles))
-                {
-                    string destPath, backupPath;
-                    if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
-                        !TryGetDestination(BackupFolder, relativePath, out backupPath) ||
-                        !File.Exists(destPath))
-                        continue;
-
-                    CurrentFileChanged?.Invoke($"Removing {relativePath}");
-                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
-                    File.Move(destPath, backupPath);
-                    applied.Add(new KeyValuePair<string, bool>(relativePath, true));
-                }
-
                 return true;
             }
             catch (Exception ex)
@@ -422,30 +410,6 @@ namespace Update
                     ErrorOccurred?.Invoke(FinishStatus, ex.Message);
                 }
                 return false;
-            }
-        }
-
-        private IEnumerable<string> GetRemovedFiles(List<string> stagedFiles)
-        {
-            if (!File.Exists(ManifestPath))
-                return Enumerable.Empty<string>();
-
-            var current = new HashSet<string>(stagedFiles, StringComparer.OrdinalIgnoreCase);
-            return File.ReadAllLines(ManifestPath)
-                .Where(line => !string.IsNullOrWhiteSpace(line) && !current.Contains(line))
-                .Where(line => !_skipFiles.Contains(Path.GetFileName(line), StringComparer.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        private void WriteManifest(List<string> stagedFiles)
-        {
-            try
-            {
-                File.WriteAllLines(ManifestPath, stagedFiles);
-            }
-            catch (Exception ex)
-            {
-                Log($"Cannot write the update manifest: {ex.Message}");
             }
         }
 
@@ -486,6 +450,15 @@ namespace Update
             if (FinishStatus != InstallError.NoOldVersion)
                 DeleteDirectory(BackupFolder);
             DeleteDirectory(StagingFolder);
+            try
+            {
+                if (File.Exists(ObsoleteManifestPath))
+                    File.Delete(ObsoleteManifestPath);
+            }
+            catch (Exception ex)
+            {
+                Log($"Cannot delete the old update manifest: {ex.Message}");
+            }
         }
 
         private void DeleteDirectory(string path)
