@@ -112,6 +112,30 @@ namespace CDPIUI.Shared.Basic.Filesystem
         }
 
         /// <summary>
+        /// Writes text to a temporary file next to the target and swaps it in, so readers never
+        /// see a half-written file and a crash keeps the previous content
+        /// </summary>
+        /// <param name="path">Target file</param>
+        /// <param name="contents">Text to write</param>
+        public static void WriteAllTextAtomic(string path, string contents)
+        {
+            string fullPath = Path.GetFullPath(path);
+            string tempPath = fullPath + ".tmp-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                File.WriteAllText(tempPath, contents);
+                if (File.Exists(fullPath))
+                    File.Replace(tempPath, fullPath, null);
+                else
+                    File.Move(tempPath, fullPath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
+        }
+
+        /// <summary>
         /// Copy file to folder asynchronically
         /// </summary>
         /// <param name="sourcePath">Source file path</param>
