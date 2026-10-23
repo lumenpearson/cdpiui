@@ -11,7 +11,8 @@
     Title="Error Handler"
     xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     xmlns:template="using:CDPIUI.Default"
-    xmlns:wc="using:CDPIUI.Controls.WindowControls">
+    xmlns:wc="using:CDPIUI.Controls.WindowControls"
+    xmlns:l="using:WinUI3Localizer">
 
     <template:TemplateWindow.SystemBackdrop>
         <MicaBackdrop />
@@ -38,26 +39,26 @@
                 <FontIcon Glyph="&#xEB90;" FontSize="80" VerticalAlignment="Top" Margin="0 0 20 0" Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
                 <ScrollViewer Grid.Column="1" Padding="0 0 20 0">
                     <StackPanel Spacing="5">
-                        <TextBlock Text="Something went wrong" Style="{ThemeResource TitleTextBlockStyle}"/>
+                        <TextBlock l:Uids.Uid="CriticalErrorTitle" Text="Something went wrong" Style="{ThemeResource TitleTextBlockStyle}"/>
                         <StackPanel Spacing="1">
-                            <TextBlock Text="Where:"/>
+                            <TextBlock l:Uids.Uid="CriticalErrorWhere" Text="Where:"/>
                             <TextBlock x:Name="WhereTextBlock" Margin="20 0 0 0" Text="UNKNOWN" TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
                         </StackPanel>
                         <StackPanel Spacing="1">
-                            <TextBlock Text="Why:"/>
+                            <TextBlock l:Uids.Uid="CriticalErrorWhy" Text="Why:"/>
                             <TextBlock x:Name="WhyTextBlock" Margin="20 0 0 0" Text="This information not provided." TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
                         </StackPanel>
                         <StackPanel Spacing="1">
-                            <TextBlock Text="Error Code:"/>
+                            <TextBlock l:Uids.Uid="CriticalErrorCode" Text="Error code:"/>
                             <TextBlock x:Name="ErrorCodeTextBlock" Margin="20 0 0 0" Text="ERR_FLASHLIGHT_BUSY" TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
                         </StackPanel>
                         <StackPanel Spacing="1">
-                            <TextBlock Text="Additional information:"/>
+                            <TextBlock l:Uids.Uid="CriticalErrorAdditional" Text="Additional information:"/>
                             <TextBlock x:Name="AdditionalTextBlock" Margin="20 0 0 0" Text="This information not provided." TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
                         </StackPanel>
 
-                        <TextBlock Text="If this error persists, please contact app support and report the issue." FontStyle="Italic" Margin="0 20 0 0"/>
-                        <HyperlinkButton x:Name="OpenLogFolder" Content="View log folder" Padding="0" Click="OpenLogFolder_Click"/>
+                        <TextBlock l:Uids.Uid="CriticalErrorContactSupport" Text="If this error persists, please contact app support and report the issue." FontStyle="Italic" Margin="0 20 0 0"/>
+                        <HyperlinkButton x:Name="OpenLogFolder" l:Uids.Uid="CriticalErrorOpenLogFolder" Content="View log folder" Padding="0" Click="OpenLogFolder_Click"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -65,7 +66,7 @@
                 <Rectangle Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
 
                 <Grid Padding="20">
-                    <Button x:Name="GetHelpButton" ToolTipService.ToolTip="Report problem" Padding="6" Click="GetHelpButton_Click">
+                    <Button x:Name="GetHelpButton" l:Uids.Uid="CriticalErrorReportButton" ToolTipService.ToolTip="Report problem" AutomationProperties.Name="Report problem" Padding="6" Click="GetHelpButton_Click">
                         <Button.Content>
                             <FontIcon Glyph="&#xEBE8;" FontSize="16"/>
                         </Button.Content>
@@ -76,11 +77,11 @@
                                 <Grid>
                                     <StackPanel x:Name="CopyText" Orientation="Horizontal" Spacing="5">
                                         <FontIcon Glyph="&#xE8C8;" FontSize="16"/>
-                                        <TextBlock Text="Copy"/>
+                                        <TextBlock l:Uids.Uid="CriticalErrorCopy" Text="Copy"/>
                                     </StackPanel>
                                     <StackPanel x:Name="CopiedText" Orientation="Horizontal" Spacing="5" Visibility="Collapsed">
                                         <FontIcon Glyph="&#xE73E;" FontSize="16"/>
-                                        <TextBlock Text="Copied"/>
+                                        <TextBlock l:Uids.Uid="CriticalErrorCopied" Text="Copied"/>
                                     </StackPanel>
                                 </Grid>
                             </Button.Content>

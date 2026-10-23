@@ -6178,4 +6178,40 @@ https://discord.com/app</value>
   <data name="Remove" xml:space="preserve">
     <value>Удалить</value>
   </data>
+  <data name="CriticalErrorTitle.Text" xml:space="preserve">
+    <value>Что-то пошло не так</value>
+  </data>
+  <data name="CriticalErrorWhere.Text" xml:space="preserve">
+    <value>Где:</value>
+  </data>
+  <data name="CriticalErrorWhy.Text" xml:space="preserve">
+    <value>Почему:</value>
+  </data>
+  <data name="CriticalErrorCode.Text" xml:space="preserve">
+    <value>Код ошибки:</value>
+  </data>
+  <data name="CriticalErrorAdditional.Text" xml:space="preserve">
+    <value>Дополнительные сведения:</value>
+  </data>
+  <data name="CriticalErrorContactSupport.Text" xml:space="preserve">
+    <value>Если ошибка повторяется, сообщите о ней в поддержку приложения.</value>
+  </data>
+  <data name="CriticalErrorOpenLogFolder.Content" xml:space="preserve">
+    <value>Открыть папку журналов</value>
+  </data>
+  <data name="CriticalErrorReportButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Сообщить о проблеме</value>
+  </data>
+  <data name="CriticalErrorReportButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Сообщить о проблеме</value>
+  </data>
+  <data name="CriticalErrorCopy.Text" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="CriticalErrorCopied.Text" xml:space="preserve">
+    <value>Скопировано</value>
+  </data>
+  <data name="CriticalErrorWindowTitle" xml:space="preserve">
+    <value>Критическая ошибка</value>
+  </data>
 </root>
