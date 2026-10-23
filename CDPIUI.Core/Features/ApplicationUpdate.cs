@@ -106,6 +106,8 @@ namespace CDPIUI.Core.Features
                 ErrorHappened = true;
                 ErrorInfo = _data.Error.ErrorCode;
                 ErrorHappens?.Invoke();
+                // The UI waits for Completed to leave the "checking" state.
+                CheckForUpdatesCompleted?.Invoke();
                 return false;
             }
 
