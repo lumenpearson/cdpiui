@@ -45,9 +45,9 @@ namespace CDPIUI.AddOns.GoodCheck
         {
             List<GoodCheckStrategiesList> strategiesLists = [];
 
+            // The folder recorded in the Store database, as for the GoodCheck executable.
             string targetFolder = 
-                Path.Combine(Directories.StoreItemsDirectory, 
-                HardcodedItemIds.AddOnsIds[Core.Store.Data.AddOns.GoodCheck], 
+                Path.Combine(GoodCheckProcessService.GetAddOnDirectory(), 
                 "StrategiesGoGo", ComponentNormalNames[HardcodedItemIds.ComponentIds.GetKeyByValue(componentId)]
                 );
 
@@ -56,7 +56,9 @@ namespace CDPIUI.AddOns.GoodCheck
 
             try
             {
-                var files = Directory.EnumerateFiles(targetFolder, "*.txt", SearchOption.AllDirectories);
+                // GoodCheck gets only the file name (-s) and looks in this folder, so lists in
+                // subfolders could be selected but not found.
+                var files = Directory.EnumerateFiles(targetFolder, "*.txt", SearchOption.TopDirectoryOnly);
 
                 foreach (var file in files)
                 {

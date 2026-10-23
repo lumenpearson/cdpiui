@@ -9,6 +9,10 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
     internal sealed record Resource(string ArchivePath);
     internal Dictionary<string, Resource> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> emptyResources = new(StringComparer.OrdinalIgnoreCase);
+
+    // A list that the component creates while it runs and that does not exist yet.
+    internal bool IsEmptyResource(string source) => emptyResources.Contains(source);
 
     internal void Collect()
     {
@@ -21,13 +25,11 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
                 throw new ConfigShareException("SHARE_FILE_MISSING", file.Path, exception);
             }
             // winws creates the --hostlist-auto list while it runs, so before the first run there is
-            // no file and the preset could not be shared (audit 22.2). It is shared as an empty list.
-            if (!File.Exists(source) && IsRuntimeCreated(file.OptionName) &&
-                Directory.Exists(Path.GetDirectoryName(source)))
-            {
-                File.WriteAllText(source, string.Empty);
-            }
-            if (!File.Exists(source)) throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
+            // no file and the preset could not be shared (audit 22.2). It is shared as an empty list;
+            // the user's kit is not changed.
+            if (!File.Exists(source) && IsRuntimeCreated(file.OptionName))
+                emptyResources.Add(source);
+            if (!File.Exists(source) && !emptyResources.Contains(source)) throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
             if (!Files.TryGetValue(source, out var resource))
             {
                 if (Files.Count >= 4095) throw new ConfigShareException("SHARE_TOO_LARGE", "Too many resource files.");
