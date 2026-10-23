@@ -46,12 +46,18 @@ jobs:
 
       - uses: microsoft/setup-msbuild@v2
 
-      - name: Create build secrets stub
+      - name: Build portable layout
         shell: pwsh
-        run: ./.github/scripts/create_secret_stub.ps1
+        run: ./.github/scripts/build_portable.ps1
 
-      - name: Build GUI
-        run: msbuild CDPIUI/CDPIUI.csproj /restore /p:Configuration=Release /p:Platform=x64 /m
+      - name: Build Setup.msi
+        run: dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: setup-msi
+          path: NewSetup/bin/**/*.msi
+          retention-days: 7
 
   tools:
     runs-on: windows-latest
@@ -63,7 +69,6 @@ jobs:
       - name: Build Update and EditHostFile
         shell: pwsh
         run: |
-          # The strong name key is not in the repository.
-          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /p:SignAssembly=false /m
+          msbuild Update/Update.csproj /restore /p:RestorePackagesConfig=true "/p:SolutionDir=$pwd\" /p:Configuration=Release /m
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           msbuild EditHostFile/EditHostFile.csproj /p:Configuration=Release /m
