@@ -40,6 +40,8 @@ class Programm
 
         ToastNotificationManagerCompat.History.Clear();
 
+        PackageStaging.CleanUp();
+
         PipeServer.Instance.Init();
         PipeServer.Instance.Start();
 

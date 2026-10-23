@@ -158,20 +158,27 @@ namespace CDPIUI.TrayIcon.Helper
 
         private async Task ProcessMsi(string operationId, string filePath)
         {
+            string? stagedPath = null;
             try
             {
                 if (!TrustedPaths.IsAllowed(filePath, "package installation"))
                     throw new UnauthorizedAccessException("The package is outside the application directories.");
+
+                // Installers from the store (driver and runtime packages) are signed by their vendors.
+                // The copy is checked and run, so the user's copy cannot be swapped after the check.
+                stagedPath = PackageStaging.Stage(filePath);
+                if (!PackageStaging.HasValidSignature(stagedPath))
+                    throw new UnauthorizedAccessException("The package does not have a valid signature.");
 
                 _ = PipeHelper
                     .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Installing);
 
                 lock (_lock)
                 {
-                    if (string.Equals(Path.GetExtension(filePath), ".msi", StringComparison.OrdinalIgnoreCase))
-                        _currentProcess = RunHelper.Run("msiexec.exe", $"/i \"{filePath}\" /passive /norestart");
+                    if (string.Equals(Path.GetExtension(stagedPath), ".msi", StringComparison.OrdinalIgnoreCase))
+                        _currentProcess = RunHelper.Run("msiexec.exe", $"/i \"{stagedPath}\" /passive /norestart");
                     else
-                        _currentProcess = RunHelper.Run(filePath, $"/install /passive /norestart");
+                        _currentProcess = RunHelper.Run(stagedPath, $"/install /passive /norestart");
                 }
 
                 if (_currentProcess == null)
@@ -223,6 +230,8 @@ namespace CDPIUI.TrayIcon.Helper
                     _currentProcess = null;
                     _currentOperationId = null;
                 }
+                if (stagedPath != null)
+                    PackageStaging.Release(stagedPath);
 
                 TryStartNext();
             }
