@@ -114,7 +114,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
                 CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 updatingEditingToggle = true;
                 AllowEditingCheckBox.IsChecked = false;
@@ -143,7 +143,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
                 CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
@@ -196,7 +196,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         };
         nameTextBox.TextChanged += (_, _) =>
             dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(nameTextBox.Text);
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
         {
             return;
         }
@@ -266,7 +266,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             XamlRoot = this.XamlRoot
         };
         BlockCheck2ResultWindow window = ((App)Application.Current).GetCurrentWindowFromType<BlockCheck2ResultWindow>();
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             window?.Close();
         else
         {

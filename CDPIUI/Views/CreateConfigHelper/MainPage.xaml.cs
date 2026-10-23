@@ -62,7 +62,7 @@ namespace CDPIUI.Views.CreateConfigHelper
             { 
                 XamlRoot = this.Content.XamlRoot 
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             if (dialog.SelectedConfigResult == SelectResult.Selected)
             {
                 ConfigItem configItem = dialog.SelectedConfigItem;
@@ -82,7 +82,7 @@ namespace CDPIUI.Views.CreateConfigHelper
             {
                 XamlRoot = this.Content.XamlRoot
             };
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
             if (dialog.SelectedResult == SelectResult.Selected)
             {
                 string directory = dialog.SelectedReport;

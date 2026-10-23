@@ -168,7 +168,7 @@ namespace CDPIUI
                 Args = [this.Args ?? string.Empty]
 
             };
-            _ = dialog.ShowAsync();
+            _ = dialog.ShowQueuedAsync();
         }
 
         private async void EditByeDPIMode()
@@ -177,7 +177,7 @@ namespace CDPIUI
             {
                 XamlRoot = this.XamlRoot,
             };
-            var result = await dialog.ShowAsync();
+            var result = await dialog.ShowQueuedAsync();
             if (result == ContentDialogResult.Primary)
             {
                 Modes = dialog.Result;

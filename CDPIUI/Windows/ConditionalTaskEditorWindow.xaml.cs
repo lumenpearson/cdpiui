@@ -175,7 +175,7 @@ namespace CDPIUI
             {
                 XamlRoot = Content.XamlRoot
             };
-            return await dialog.ShowAsync() == ContentDialogResult.Primary
+            return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary
                 ? dialog.ResultTrigger
                 : null;
         }
@@ -265,7 +265,7 @@ namespace CDPIUI
             {
                 XamlRoot = Content.XamlRoot
             };
-            return await dialog.ShowAsync() == ContentDialogResult.Primary
+            return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary
                 ? dialog.ResultAction
                 : null;
         }

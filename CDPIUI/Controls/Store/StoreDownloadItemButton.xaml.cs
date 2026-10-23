@@ -507,7 +507,7 @@ namespace CDPIUI.Controls.Store
                 Text = Description
             };
 
-            await dialog.ShowAsync();
+            await dialog.ShowQueuedAsync();
         }
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
