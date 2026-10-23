@@ -15,38 +15,57 @@ namespace CDPIUI.Core.Proxy
     {
         public static List<string> Tokens = new() { "-p", "--port", "-i", "--ip", "-addr", "--host" };
 
+        /// <summary>
+        /// Removes the address and port arguments, which the application sets itself
+        /// </summary>
         public static string ReplaseIp(string args)
         {
-            string[] splittedArgs = args.Split(' ');
+            List<string> tokens = SplitArguments(args);
             string finalArgs = string.Empty;
-            for (int i = 0; i < splittedArgs.Length; i++)
+            for (int i = 0; i < tokens.Count; i++)
             {
-                var spA = splittedArgs[i].Split("=");
-                string token = spA[0];
-                string value = spA.Length > 1 ? spA[1] + " " : string.Empty;
-                if (Tokens.Contains(token))
+                string token = tokens[i];
+                int separator = token.IndexOf('=');
+                string name = separator >= 0 ? token[..separator] : token;
+                if (Tokens.Contains(name))
                 {
-                    if (splittedArgs[i].Contains('='))
-                    {
-                        continue;
-                    }
-                    else
-                    {
+                    // "--port 8080" takes the next token as its value, "--port=8080" does not.
+                    if (separator < 0)
                         i++;
-                        continue;
-                    }
-                }
-                if (!string.IsNullOrEmpty(value))
-                {
-                    finalArgs += $"{token}={value}";
-                }
-                else
-                {
-                    finalArgs += $"{token} ";
+                    continue;
                 }
 
+                // The token is kept whole: "--x=a=b" and quoted paths with spaces stay intact.
+                finalArgs += $"{token} ";
             }
             return finalArgs;
+        }
+
+        // Whitespace separates arguments except inside double quotes, as on the command line.
+        private static List<string> SplitArguments(string args)
+        {
+            var tokens = new List<string>();
+            var current = new global::System.Text.StringBuilder();
+            bool quoted = false;
+            foreach (char c in args ?? string.Empty)
+            {
+                if (c == '"')
+                    quoted = !quoted;
+
+                if (char.IsWhiteSpace(c) && !quoted)
+                {
+                    if (current.Length > 0)
+                    {
+                        tokens.Add(current.ToString());
+                        current.Clear();
+                    }
+                    continue;
+                }
+                current.Append(c);
+            }
+            if (current.Length > 0)
+                tokens.Add(current.ToString());
+            return tokens;
         }
 
         public static List<string> ProxyLikeComponents = [
