@@ -15,6 +15,14 @@ public class ConfigCommandLineTests
     }
 
     [Fact]
+    public void QuotedFolderEndingWithBackslashIsClosed()
+    {
+        var tokens = ConfigCommandLine.Tokenize("--lua-init=@\"C:\\dir\\\" --new --wf-udp=443");
+
+        Assert.Equal(["--lua-init=@\"C:\\dir\\\"", "--new", "--wf-udp=443"], tokens);
+    }
+
+    [Fact]
     public void TokenizeEmptyReturnsEmpty()
     {
         Assert.Empty(ConfigCommandLine.Tokenize(null));

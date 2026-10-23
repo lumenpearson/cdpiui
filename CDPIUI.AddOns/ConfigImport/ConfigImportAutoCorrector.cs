@@ -56,8 +56,16 @@ public sealed class ConfigImportAutoCorrector
         {
             string sourceDirectory = Path.GetDirectoryName(sourcePath)!;
             string fileName = Path.GetFileName(missingPath);
+            // A .bat in Downloads made this walk the whole folder tree on the UI thread.
+            var options = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                MaxRecursionDepth = 3,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+            };
             return Directory
-                .EnumerateFiles(sourceDirectory, fileName, SearchOption.AllDirectories)
+                .EnumerateFiles(sourceDirectory, fileName, options)
                 .Select(Path.GetFullPath)
                 .FirstOrDefault(path => !path.Equals(missingPath, StringComparison.OrdinalIgnoreCase));
         }

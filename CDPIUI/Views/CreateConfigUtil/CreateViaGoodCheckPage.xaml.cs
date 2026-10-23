@@ -203,7 +203,6 @@ namespace CDPIUI.Views.CreateConfigUtil
 
             List<SiteListElement> siteLists = await SiteListHelper.GetAllAvailableSiteListTemplatesAsync();
 
-            await Task.Delay(1000); //For testing only
 
             LoadSiteList(siteLists);
 
@@ -232,7 +231,8 @@ namespace CDPIUI.Views.CreateConfigUtil
 
             if (StrategiesLists.Count == 0)
             {
-                ShowErrorDialod();
+                // The add-on is installed: it has no strategy lists for this component.
+                ShowErrorDialod(localizer.GetLocalizedString("GoodCheckNoStrategyLists"));
                 return;
             }
 
@@ -420,6 +420,12 @@ namespace CDPIUI.Views.CreateConfigUtil
                     };
                     listModels.Add(model);
                 }
+            }
+
+            if (!GoodCheckProcessService.IsComponentSupported(ComponentId))
+            {
+                LogGoodCheckError($"ERR_GOODCHECK_UNSUPPORTED_COMPONENT ({ComponentId})");
+                return;
             }
 
             GoodCheckProcessService.Instance.InitGoodCheck(
