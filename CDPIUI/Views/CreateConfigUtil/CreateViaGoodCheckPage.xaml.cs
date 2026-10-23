@@ -429,14 +429,17 @@ namespace CDPIUI.Views.CreateConfigUtil
                 listModels
                 );
 
-            GoodCheckProcessService.Instance.ErrorHappens += (e) =>
-            {
-                Logger.Instance.CreateErrorLog(nameof(CreateViaGoodCheck), $"{e}");
-            };
+            GoodCheckProcessService.Instance.ErrorHappens -= LogGoodCheckError;
+            GoodCheckProcessService.Instance.ErrorHappens += LogGoodCheckError;
 
             GoodCheckProcessService.Instance.Start();
         }
 
+
+        private static void LogGoodCheckError(string error)
+        {
+            Logger.Instance.CreateErrorLog(nameof(CreateViaGoodCheck), error);
+        }
 
         private void GoBackButton_Click(object sender, RoutedEventArgs e)
         {
