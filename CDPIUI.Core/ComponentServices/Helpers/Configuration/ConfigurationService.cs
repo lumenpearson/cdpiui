@@ -389,8 +389,15 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 if (!match.Success)
                     continue;
 
+                // A folder script is left for the expansion of the whole startup string, which
+                // quotes a path with spaces; expanded here, the path stayed unquoted (issue #2).
+                string value = match.Groups[2].Value;
+                string trimmed = value.TrimStart();
                 result[match.Groups[1].Value] =
-                    LScriptCore.ExecuteScript(match.Groups[2].Value, callItemId: id, jparams: jparams);
+                    trimmed.StartsWith("$GETCURRENTDIR", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("$GETSRDIR", StringComparison.OrdinalIgnoreCase)
+                        ? value
+                        : LScriptCore.ExecuteScript(value, callItemId: id, jparams: jparams);
             }
 
             return result;

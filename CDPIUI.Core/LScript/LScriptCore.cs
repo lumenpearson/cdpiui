@@ -11,8 +11,11 @@ namespace CDPIUI.Core.LScript
     public class LScriptCore
     {
 
-        public const string ScriptGetArgsRegex = @"\$.*?\((.*?)\)";
-        public const string Pattern = @"\$(STATICIMAGE|DYNAMICIMAGE|LOADDYNAMIC|GETCURRENTDIR|LOCALCONDITION|GETSRDIR)(?:\((.*?)\))?";
+        // The argument takes balanced parentheses: "$LOCALCONDITION(a==true ? $GETCURRENTDIR()/x $SEPARATOR y)"
+        // ended at the first ")" before, and the condition was cut.
+        private const string BalancedArgument = @"((?>[^()]+|\((?<depth>)|\)(?<-depth>))*(?(depth)(?!)))";
+        public const string ScriptGetArgsRegex = @"\$[A-Za-z_0-9]*\(" + BalancedArgument + @"\)";
+        public const string Pattern = @"\$(STATICIMAGE|DYNAMICIMAGE|LOADDYNAMIC|GETCURRENTDIR|LOCALCONDITION|GETSRDIR)(?:\(" + BalancedArgument + @"\))?";
 
         public const string ConditionPattern = "{0}==true ? {1} : {2}";
 
@@ -177,7 +180,9 @@ namespace CDPIUI.Core.LScript
                                 break;
 
                             case "LOCALCONDITION":
-                                replacement = LocalCondition(scriptData, jparams);
+                                // The chosen branch can hold scripts of its own, such as $GETCURRENTDIR().
+                                replacement = ExecuteScriptUnsafe(
+                                    LocalCondition(scriptData, jparams), scriptArgs, callItemId, jparams, quotePaths);
                                 break;
 
                             case "GETSRDIR":
@@ -274,7 +279,7 @@ namespace CDPIUI.Core.LScript
             var varName = parts[0].Trim();
             var literal = parts[1].Trim();
 
-            if (!jparams.TryGetValue(varName, out var varBool))
+            if (jparams == null || !jparams.TryGetValue(varName, out var varBool))
             {
                 Logger.Instance.CreateWarningLog(nameof(LScriptCore), $"Param {varName} not exist");
                 return string.Empty;
@@ -311,7 +316,7 @@ namespace CDPIUI.Core.LScript
                 conditionString = conditionString.Replace("$SEPARATOR", "$");
             }
             else
-                cPos = conditionString.IndexOf(':');
+                cPos = FindTernaryColon(conditionString, qPos);
 
             if (qPos < 0 || cPos < 0 || cPos < qPos)
             {
