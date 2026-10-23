@@ -90,7 +90,9 @@ namespace CDPIUI.Shared.Security
 
         private static async Task<bool> VerifyFilesAsync(string catalogFile, string directory)
         {
-            var startInfo = new ProcessStartInfo("powershell.exe")
+            // A full path: the elevated tray would otherwise also look in its own, possibly writable, directory.
+            string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+            var startInfo = new ProcessStartInfo(powershell)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
