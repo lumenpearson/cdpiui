@@ -109,10 +109,8 @@ namespace CDPIUI.Core.Features
                 return false;
             }
 
-            Version serverVersion = new(_data.Result.ReleaseTag!);
-            Version currentVersion = new(ApplicationInfo.Version);
-
-            if (serverVersion > currentVersion)
+            // Release tags such as v1.2 or 1.3-preview do not parse as System.Version.
+            if (Store.VersionHelper.CompareVersionStrings(ApplicationInfo.Version, _data.Result.ReleaseTag) < 0)
             {
                 ServerVersion = _data.Result.ReleaseTag!;
                 IsUpdateAvailable = true;
