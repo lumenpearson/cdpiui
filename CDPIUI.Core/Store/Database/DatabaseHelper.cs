@@ -93,24 +93,26 @@ namespace CDPIUI.Core.Store.Database
                     @RequiredItemIds, @DependentItemIds, @Icon, @Name, @ShortName, @Developer, @BackgroundColor)";
             cmd.CommandType = CommandType.Text;
 
+            // Microsoft.Data.Sqlite rejects a null parameter value: an item without developer,
+            // icon or version was not saved although its installation was reported as done.
             cmd.Parameters.AddWithValue("@Id", item.Id);
-            cmd.Parameters.AddWithValue("@Type", item.Type);
-            cmd.Parameters.AddWithValue("@Directory", item.Directory);
+            cmd.Parameters.AddWithValue("@Type", item.Type ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Directory", item.Directory ?? string.Empty);
             cmd.Parameters.AddWithValue("@Executable", item.Executable == null? DBNull.Value : item.Executable);
             cmd.Parameters.AddWithValue("@UpdateCheckUrl", item.UpdateCheckUrl == null ? DBNull.Value : item.UpdateCheckUrl);
             cmd.Parameters.AddWithValue("@DownloadUrl", item.DownloadUrl == null ? DBNull.Value : item.DownloadUrl);
             cmd.Parameters.AddWithValue("@DownloadFileType", item.DownloadFileType == null ? DBNull.Value : item.DownloadFileType);
-            cmd.Parameters.AddWithValue("@VersionControlType", item.VersionControlType);
-            cmd.Parameters.AddWithValue("@CurrentVersion", item.CurrentVersion);
+            cmd.Parameters.AddWithValue("@VersionControlType", item.VersionControlType ?? string.Empty);
+            cmd.Parameters.AddWithValue("@CurrentVersion", item.CurrentVersion ?? string.Empty);
             cmd.Parameters.AddWithValue("@RequiredItemIds",
                 (object)item.RequiredItemIds?.SerializeTuples() ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@DependentItemIds",
                 (object)item.DependentItemIds?.SerializeTuples() ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@Icon", item.IconPath);
-            cmd.Parameters.AddWithValue("@Name", item.Name);
-            cmd.Parameters.AddWithValue("@ShortName", item.ShortName);
-            cmd.Parameters.AddWithValue("@Developer", item.Developer);
-            cmd.Parameters.AddWithValue("@BackgroundColor", item.BackgroudColor);
+            cmd.Parameters.AddWithValue("@Icon", item.IconPath ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Name", item.Name ?? string.Empty);
+            cmd.Parameters.AddWithValue("@ShortName", item.ShortName ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Developer", item.Developer ?? string.Empty);
+            cmd.Parameters.AddWithValue("@BackgroundColor", item.BackgroudColor ?? string.Empty);
 
             lock (databaseRequestLock)
             {
