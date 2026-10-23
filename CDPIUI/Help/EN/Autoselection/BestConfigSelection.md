@@ -56,6 +56,6 @@ When the selection is complete, examine the results. Make sure that the recommen
 
 ### What do I do if no preset operates?
 
-- Open the [Troubleshooting] utility on the [Utilities] page of the main window. Select [All configs not work to me]. Wait until the check is complete. Do the recommended steps and do the test again.
+- Open the [Troubleshooting] utility on the [Utilities] page of the main window. Select [None of the configs work for me]. Wait until the check is complete. Do the recommended steps and do the test again.
 - Download new preset sets from the Store.
 - Speak to the technical support.

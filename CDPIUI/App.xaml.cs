@@ -592,14 +592,16 @@ namespace CDPIUI
             }
         }
 
+        // Every overload waits for the localizer: windows opened by a link or a file during the
+        // start were built before their texts were available.
         public async Task<Window> UnsafeCreateNewWindow(Type windowType, bool activate = true, string id = "")
         {
+            await _localizerReady;
+
             var findWindows = OpenWindows.Where(w => windowType.IsInstanceOfType(w)).ToList();
-            int findWindowCount = findWindows.Count;
 
-            var activeFindWindow = findWindows.FirstOrDefault(w => w.DispatcherQueue != null);
-
-            foreach (TemplateWindow _win in findWindows)
+            // Only template windows have an id; a cast of every window threw for other types.
+            foreach (TemplateWindow _win in findWindows.OfType<TemplateWindow>())
             {
                 if (!string.IsNullOrEmpty(_win.Id) && string.Equals(
                     _win.Id,
@@ -623,6 +625,8 @@ namespace CDPIUI
 
         public async Task<TWindow> UnsafeCreateNewWindow<TWindow>(bool activate = true, string id = "") where TWindow : TemplateWindow, new()
         {
+            await _localizerReady;
+
             var findWindows = OpenWindows.OfType<TWindow>().ToList();
             int findWindowCount = findWindows.Count;
 
@@ -651,6 +655,8 @@ namespace CDPIUI
         }
         public async Task<Window> SafeCreateNewWindow(Type windowType, bool activate = true)
         {
+            await _localizerReady;
+
             var findWindows = OpenWindows.Where(w => windowType.IsInstanceOfType(w)).ToList();
             int findWindowCount = findWindows.Count;
 
