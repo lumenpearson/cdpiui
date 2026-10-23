@@ -600,7 +600,8 @@ namespace CDPIUI.Views.Store
             };
             if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
             {
-                StoreHelper.Instance.RemoveItem(_storeId);
+                // The old files must be gone before the new ones are written.
+                await StoreHelper.Instance.RemoveItemAsync(_storeId);
                 InstallingItemActions();
             }
         }
