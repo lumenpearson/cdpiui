@@ -168,9 +168,9 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             return;
         }
         SiteListProgressText.Text = text;
-        SetSiteListProgressText(localizer.GetLocalizedString("Preparing"));
-        SetCorrectCountText(localizer.GetLocalizedString("Preparing"));
-        SetIncorrectCountText(localizer.GetLocalizedString("Preparing"));
+        SetSiteListProgressText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetCorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetIncorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
     }
     private void SetSiteListProgressText(string text)
     {

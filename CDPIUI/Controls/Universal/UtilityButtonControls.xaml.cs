@@ -514,7 +514,7 @@ namespace CDPIUI.Controls.Universal
 
         public static readonly DependencyProperty LoadingStateTextProperty =
             DependencyProperty.Register(
-                nameof(LoadingStateText), typeof(string), typeof(UtilityButtonControls), new PropertyMetadata(localizer.GetLocalizedString("WorkingOnItTextBlock"))
+                nameof(LoadingStateText), typeof(string), typeof(UtilityButtonControls), new PropertyMetadata(localizer.GetLocalizedString("WorkingOnIt"))
             );
 
 
