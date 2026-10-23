@@ -2,7 +2,7 @@
 
 # CDPIUI.Tests
 
-`CDPIUI.Tests` содержит тесты xUnit для `CDPIUI.Shared`, `CDPIUI.Core` и `CDPIUI.AddOns`. Целевая платформа — `net8.0`.
+`CDPIUI.Tests` содержит тесты xUnit для `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` и `EditHostFile`. Целевая платформа — `net8.0-windows`, потому что `Update` и `EditHostFile` используют `net8.0-windows`. Проект задаёт `DisableTransitiveFrameworkReferences`: тестам не нужна среда Windows Desktop от `Update`, и они работают также в Linux.
 
 ## Запуск тестов
 
@@ -48,6 +48,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 | `Shared` | `ConditionalTaskFileServiceTests` | Сохранение и загрузка файлов `.cdpitask` |
 | `Shared` | `ErrorConvertorTests` | Преобразование кодов ошибок |
 | `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
+| `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина, файл ключа pipe |
 | `Shared` | `GuiActivationArgumentsTests` | Кодирование и декодирование `--gui-args:` и кавычки в командной строке |
 | `Shared` | `OutputCleanupHelperTests` | Удаление escape-последовательностей из вывода консоли |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |
@@ -55,6 +56,8 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |
 | `Shared` | `XmlSettingsServiceTests` | Настройки XML, значения в разных региональных стандартах |
+| `Tools` | `EditHostFileTests` | `EditHostFile`: определение кодировки, переносы строк, добавление, удаление и восстановление блока CDPI UI, резервная копия |
+| `Tools` | `UpdateInstallHelperTests` | `Update`: проверка путей, порядок слоёв, пропускаемые файлы (`catalog.cat`, `Update.exe`), применение и откат |
 
 ## Тестовые данные
 
@@ -68,7 +71,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 
 ## Добавление теста
 
-1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`.
+1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`. Тесты `Update` и `EditHostFile` помещайте в `Tools`.
 2. Используйте пространство имён `CDPIUI.Tests.<Folder>`.
 3. Пометьте каждый тест атрибутом `[Fact]` или `[Theory]`. Проект импортирует `Xunit` глобально.
 4. Если тест записывает файлы, используйте новый каталог в `Path.GetTempPath()`.
@@ -82,4 +85,4 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true
 
 Тесты не покрывают проект GUI `CDPIUI` (WinUI 3). Тестовый проект не ссылается на него. Окна, страницы, `CommandUriMapper`, `WindowOpenHelper`, парсер справки и локализация требуют ручной проверки.
 
-Тесты также не покрывают `CDPIUI.TrayIcon`, `EditHostFile`, `Update` и `NewSetup`.
+Тесты также не покрывают `CDPIUI.TrayIcon` и `NewSetup`. Для `Update` окно, остановка приложения и запуск трея требуют ручной проверки.

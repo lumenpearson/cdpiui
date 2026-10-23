@@ -180,7 +180,9 @@ The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck 
    - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the names and the contents of the locked files.
    - A Store item catalog (`<item>\catalog.cat`) that has the signature of a pinned certificate and agrees with the code files. Data files (lists and other files) are not compared, because the user can change them.
    - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level.
-5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.json`. Only administrators can change this folder.
+5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.txt`, one line per program: the fingerprint, a tab and the path. Only administrators can change this folder.
+
+`ExecutableLease` (the locks and the fingerprint) and `ExecutableApprovals` (the approval file and the Store item folder) are in `CDPIUI.Shared/Security`, so `CDPIUI.Tests` can test them. `ExecutableTrust` in the tray decides and asks the user.
 6. The tray releases the handles after the process starts.
 
 A portable copy does not do steps 3 and 4, because the user can change the tray itself.

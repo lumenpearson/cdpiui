@@ -2,7 +2,7 @@
 
 # CDPIUI.Tests
 
-`CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core` and `CDPIUI.AddOns`. The target framework is `net8.0`.
+`CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` and `EditHostFile`. The target framework is `net8.0-windows`, because `Update` and `EditHostFile` target `net8.0-windows`. The project sets `DisableTransitiveFrameworkReferences`: the tests do not need the Windows Desktop runtime of `Update`, and they also run on Linux.
 
 ## Run the tests
 
@@ -48,6 +48,7 @@ The tests do not need the tray, the GUI, administrator rights or a network conne
 | `Shared` | `ConditionalTaskFileServiceTests` | Save and load of `.cdpitask` files |
 | `Shared` | `ErrorConvertorTests` | Error code conversion |
 | `Shared` | `FileWritingOptionsTests` | Options in component arguments that write files outside the permitted folders |
+| `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder, the pipe key file |
 | `Shared` | `GuiActivationArgumentsTests` | `--gui-args:` encode, decode and command-line quotes |
 | `Shared` | `OutputCleanupHelperTests` | Removal of escape sequences from console output |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Pipe message round trip |
@@ -55,6 +56,8 @@ The tests do not need the tray, the GUI, administrator rights or a network conne
 | `Shared` | `TasksManageServiceTests` | Task creation and stop with concurrent calls |
 | `Shared` | `TrustedPathValidatorTests` | Trusted path checks |
 | `Shared` | `XmlSettingsServiceTests` | XML settings, values in different cultures |
+| `Tools` | `EditHostFileTests` | `EditHostFile`: encoding detection, line breaks, add, remove and recover of the CDPI UI block, backup |
+| `Tools` | `UpdateInstallHelperTests` | `Update`: path checks, layer sequence, skipped files (`catalog.cat`, `Update.exe`), apply and rollback |
 
 ## Test data
 
@@ -68,7 +71,7 @@ To read a test file, use `Path.Combine(AppContext.BaseDirectory, "TestData", "<f
 
 ## Add a test
 
-1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`.
+1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`. Put the tests of `Update` and `EditHostFile` in `Tools`.
 2. Use the namespace `CDPIUI.Tests.<Folder>`.
 3. Mark each test with `[Fact]` or `[Theory]`. The project imports `Xunit` globally.
 4. If the test writes files, use a new directory in `Path.GetTempPath()`.
@@ -82,4 +85,4 @@ Do not use the real application data directory or the installed settings in a te
 
 The tests do not cover the `CDPIUI` GUI project (WinUI 3). The test project does not reference it. Windows, pages, `CommandUriMapper`, `WindowOpenHelper`, the help parser and the localization need a manual check.
 
-The tests also do not cover `CDPIUI.TrayIcon`, `EditHostFile`, `Update` and `NewSetup`.
+The tests also do not cover `CDPIUI.TrayIcon` and `NewSetup`. For `Update`, the window, the stop of the application and the start of the tray need a manual check.
