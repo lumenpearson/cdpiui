@@ -68,6 +68,19 @@ namespace CDPIUI.Core.Proxy
             return tokens;
         }
 
+        /// <summary>
+        /// Whether a proxy component listening on <paramref name="ip"/> is reachable only from this computer.
+        /// Any other address, including 0.0.0.0, opens the proxy to the network without authentication.
+        /// </summary>
+        public static bool IsLoopbackAddress(string? ip)
+        {
+            string value = (ip ?? "").Trim().Trim('[', ']');
+            if (string.Equals(value, "localhost", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return global::System.Net.IPAddress.TryParse(value, out var address)
+                && global::System.Net.IPAddress.IsLoopback(address);
+        }
+
         public static List<string> ProxyLikeComponents = [
             HardcodedItemIds.ComponentIds[Components.ByeDPI],
             HardcodedItemIds.ComponentIds[Components.NoDPI],

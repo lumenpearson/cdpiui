@@ -129,8 +129,11 @@ namespace CDPIUI.Views.SetupProxy
             // TODO: Open help link
         }
 
-        private void GoForwardButton_Click(object sender, RoutedEventArgs e)
+        private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
         {
+            // With the component's own settings the address is not taken from here.
+            if (UseConfigSettings.IsChecked != true && !await global::CDPIUI.Helper.Basic.ProxyAddressWarning.ConfirmAsync(XamlRoot, IPValue.Text))
+                return;
             if (SaveSettings())
                 Navigate<ProxySetupCompletePage>();
         }
