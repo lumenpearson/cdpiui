@@ -260,7 +260,7 @@ namespace CDPIUI.Commands
         /// Converts a cdpiui:// link to a command. Links from outside the application (browser,
         /// other programs, help pages) may only use <see cref="Routes"/>; the internal pipe message
         /// form is accepted only with <paramref name="allowPipeMessages"/>, for links built by the
-        /// application itself. Otherwise any web page could forge tray responses (audit 9.1).
+        /// application itself. Otherwise any web page could forge tray responses.
         /// </summary>
         public static IPipeMessage? ConvertBack(string commandUri, bool allowPipeMessages = false)
         {

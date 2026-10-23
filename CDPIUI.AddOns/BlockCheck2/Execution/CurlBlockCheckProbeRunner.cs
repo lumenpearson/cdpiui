@@ -293,7 +293,7 @@ public sealed class CurlBlockCheckProbeRunner : IBlockCheckProbeRunner, IBlockCh
     /// <summary>
     /// Plain HTTP can be answered by the provider: 400 for a broken request, 451 for a blocked
     /// site, or a redirect to its own block page. Any such status counted as a success, so the
-    /// route was dropped as needing no bypass (audit 14.8).
+    /// route was dropped as needing no bypass.
     /// </summary>
     private static bool IsProviderStub(int statusCode, string redirectUrl, string targetHost)
     {

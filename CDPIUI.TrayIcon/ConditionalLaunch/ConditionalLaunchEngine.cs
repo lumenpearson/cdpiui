@@ -485,7 +485,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
         }
 
         // After a buffer overflow the watcher stops raising events for good: it is created
-        // again and the tasks are reloaded, so later changes are not missed (audit 12.11).
+        // again and the tasks are reloaded, so later changes are not missed.
         private void TaskWatcherError(object sender, ErrorEventArgs e)
         {
             Logger.Instance.CreateWarningLog(nameof(ConditionalLaunchEngine), $"Task folder watcher failed: {e.GetException()?.Message}");
@@ -542,7 +542,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
         }
 
         // By value: "Control, Alt" and "Alt, Control" are the same hot key and were registered
-        // twice, the second time failing (audit 12.11).
+        // twice, the second time failing.
         private static string GetHotKeyIdentity(ConditionalTrigger trigger)
         {
             return TryGetHotKey(trigger, out var modifiers, out var virtualKey)

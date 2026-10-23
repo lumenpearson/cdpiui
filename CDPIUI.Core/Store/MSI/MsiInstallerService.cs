@@ -37,7 +37,7 @@ namespace CDPIUI.Core.Store.MSI
             _tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // The task finished only with an answer of the tray: a lost answer or a hanging
-            // msiexec kept the Store busy forever, and a cancellation left msiexec running (audit 10.11).
+            // msiexec kept the Store busy forever, and a cancellation left msiexec running.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(InstallTimeout);
             using (cts.Token.Register(() => _tcs.TrySetCanceled()))

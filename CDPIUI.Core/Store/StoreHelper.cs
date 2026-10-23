@@ -239,7 +239,7 @@ namespace CDPIUI.Core.Store
             }
             catch (Exception ex)
             {
-                // The exception was swallowed and the item stayed in GETR/WORK with no error shown (audit 22.2).
+                // The exception was swallowed and the item stayed in GETR/WORK with no error shown.
                 Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Installation of {qi.ItemId} failed: {ex}");
                 qi.Status = "END";
                 qi.DownloadStage = qi.Status;
@@ -443,7 +443,7 @@ namespace CDPIUI.Core.Store
                 try
                 {
                     // A failed update keeps the installed version; only a failed first
-                    // installation is cleaned up (audit 10.2).
+                    // installation is cleaned up.
                     if (!wasInstalled)
                         await RemoveItemAsync(qi.ItemId);
                 }

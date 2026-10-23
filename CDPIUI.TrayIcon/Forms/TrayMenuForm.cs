@@ -203,7 +203,7 @@ namespace CDPIUI.TrayIcon.Forms
         }
 
         // Task events come from other threads; the form can be destroyed between the
-        // IsHandleCreated check and Invoke, and the exception ended the tray (audit 12.3).
+        // IsHandleCreated check and Invoke, and the exception ended the tray.
         private void SafeInvoke(Action action)
         {
             try

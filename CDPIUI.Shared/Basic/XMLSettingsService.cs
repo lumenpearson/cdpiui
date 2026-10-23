@@ -430,7 +430,7 @@ namespace CDPIUI.Shared.Basic
                     foreach (var setting in current.Elements("Setting"))
                     {
                         string key = (string)setting.Attribute("Key");
-                        // "$$~" only marks a group created empty; it is no setting (audit 22.3).
+                        // "$$~" only marks a group created empty; it is no setting.
                         if (key == null || key == "$$~")
                             continue;
                         try

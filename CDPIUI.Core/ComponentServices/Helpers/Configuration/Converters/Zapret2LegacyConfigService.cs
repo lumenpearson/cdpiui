@@ -106,7 +106,7 @@ public static class Zapret2LegacyConfigService
 
             ConvertedConfigManifest? existingManifest = LoadManifest(manifestPath);
             // Without file hashing the cache is still bound to the converter version and to the
-            // command line, so a new converter or a changed toggle or variable converts again (audit 11.3).
+            // command line, so a new converter or a changed toggle or variable converts again.
             string commandLineHash = ComputeCommandLineHash(expandedLegacyStartupString);
             if (!forceRebuild && !validateHashes && IsCachePresent(existingManifest) &&
                 existingManifest!.ConverterVersion == ConverterVersion.Value &&

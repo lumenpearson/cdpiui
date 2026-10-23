@@ -162,7 +162,7 @@ public sealed partial class PersonalizePage : TemplatePage
         var accentColor = sender.GetColorValue(UIColorType.Accent);
 
         // UISettings raises the event on a background thread; a brush made there throws
-        // COMException (audit 9.6).
+        // COMException.
         DispatcherQueue.TryEnqueue(() => SystemColorBorder.Background = new SolidColorBrush(accentColor));
     }
 

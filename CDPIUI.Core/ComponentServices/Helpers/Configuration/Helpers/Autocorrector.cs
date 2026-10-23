@@ -44,7 +44,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
                     return Path.Combine(Path.GetDirectoryName(configPath)!, filePath);
                 }
 
-                // One item whose folder is gone must not end the search for all others (audit 11.8).
+                // One item whose folder is gone must not end the search for all others.
                 foreach (string type in new[] { "configlist", "component", "addon" })
                 {
                     foreach (var item in DatabaseHelper.Instance.GetItemsByType(type))

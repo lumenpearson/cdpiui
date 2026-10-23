@@ -42,7 +42,7 @@ class Programm
         }
 
         // One tray per machine: the pipe name is global, and a second tray renamed _Update.exe,
-        // started the GUI and registered hot keys before it failed on the pipe (audit 12.9).
+        // started the GUI and registered hot keys before it failed on the pipe.
         if (!TryAcquireSingleInstance())
         {
             Logger.Instance.CreateWarningLog("Startup", "Another tray is already running; exiting.");

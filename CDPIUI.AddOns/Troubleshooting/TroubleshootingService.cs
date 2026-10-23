@@ -197,7 +197,7 @@ namespace CDPIUI.AddOns.Troubleshooting
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckIntelConnectivityNetwork);
             // The Intel(R) Connectivity Network Service only: "Network" alone matched many
-            // Windows services, so the check failed on almost every computer (audit 14.10).
+            // Windows services, so the check failed on almost every computer.
             bool isRunningIntelConnectivityNetwork = IsServiceRunning(service =>
                 Matches(service, "Intel") && Matches(service, "Connectivity Network"));
 
@@ -281,7 +281,7 @@ namespace CDPIUI.AddOns.Troubleshooting
                     break;
                 case RunBasicDialogStates.CheckWinDivert:
                     // The tray stops the service on its own time: success is reported only when
-                    // the service is really gone (audit 14.10).
+                    // the service is really gone.
                     await ProcessService.StopService();
                     fixResultModel.IsFixed = false;
                     for (int i = 0; i < 20 && !fixResultModel.IsFixed; i++)
@@ -510,7 +510,7 @@ namespace CDPIUI.AddOns.Troubleshooting
         #region StoreFixServices
         private TaskCompletionSource<bool>? _tcs;
         private bool opResult;
-        // The answer of the tray can be lost; without a time limit the fix waited forever (audit 14.11).
+        // The answer of the tray can be lost; without a time limit the fix waited forever.
         private static readonly TimeSpan GrantAccessTimeout = TimeSpan.FromSeconds(30);
 
         private async Task<bool> GrantAccess(string file, CancellationToken ct = default)
