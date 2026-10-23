@@ -186,4 +186,7 @@
   <data name="RequestsTextBlock.Text" xml:space="preserve">
     <value>Запросы</value>
   </data>
+  <data name="DohResolversHeader.Text" xml:space="preserve">
+    <value>DoH резолверы</value>
+  </data>
 </root>

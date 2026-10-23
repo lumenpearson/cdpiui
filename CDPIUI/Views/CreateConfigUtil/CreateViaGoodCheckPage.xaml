@@ -265,7 +265,7 @@
                                     <TextBox x:Name="GoogleCacheMappingURLs" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="DoH резолверы"/>
+                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/DohResolversHeader" Text="DoH resolvers"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/UseDOH">
                                 <controls:SettingsCard.Content>
                                     <ToggleSwitch x:Name="UseDoH" />

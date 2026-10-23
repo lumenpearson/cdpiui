@@ -49,7 +49,11 @@ namespace CDPIUI
             InitializeComponent();
             ((App)Application.Current).ShowWindowModalAsync(this);
 
-            WindowTitle = "Critical exception handler";
+            // The window may report a failure of the localizer itself, so English is kept as a fallback.
+            string localizedTitle = null;
+            try { localizedTitle = WinUI3Localizer.Localizer.Get().GetLocalizedString("CriticalErrorWindowTitle"); }
+            catch { }
+            WindowTitle = string.IsNullOrEmpty(localizedTitle) ? "Critical error" : localizedTitle;
             IconUri = @"Assets/Icons/Error.ico";
             this.CustomTitleBarUserControl = TitleBarUserControl;
 
