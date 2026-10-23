@@ -169,6 +169,8 @@ namespace CDPIUI.Shared.Basic.Filesystem
                 uint clusterSize = sectorsPerCluster * bytesPerSector;
                 uint hosize;
                 uint losize = GetCompressedFileSizeW(filePath, out hosize);
+                // INVALID_FILE_SIZE with an error set is a failure, not a 4 GB file.
+                if (losize == 0xFFFFFFFF && Marshal.GetLastWin32Error() != 0) throw new Win32Exception();
                 long size;
                 size = (long)hosize << 32 | losize;
                 return ((size + clusterSize - 1) / clusterSize) * clusterSize;
@@ -176,6 +178,12 @@ namespace CDPIUI.Shared.Basic.Filesystem
             catch (Exception ex)
             {
                 logger?.CreateWarningLog(nameof(FileSystemService), $"Unable to calculate size for \"{filePath}\". {ex.Message}");
+                try
+                {
+                    var info = new FileInfo(filePath);
+                    if (info.Exists) fileSize = info.Length;
+                }
+                catch (Exception) { }
             }
             return fileSize;
         }
@@ -352,7 +360,7 @@ namespace CDPIUI.Shared.Basic.Filesystem
         }
 
         #region WINAPI
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32.dll", SetLastError = true)]
         static extern uint GetCompressedFileSizeW([In, MarshalAs(UnmanagedType.LPWStr)] string lpFileName,
             [Out, MarshalAs(UnmanagedType.U4)] out uint lpFileSizeHigh);
 

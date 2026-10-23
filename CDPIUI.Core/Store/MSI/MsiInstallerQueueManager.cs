@@ -27,35 +27,41 @@ namespace CDPIUI.Core.Store.MSI
             public MsiInstallerService? MsiInstallerHelper { get; set; }
         }
 
-        private List<MsiInstallerModel> installerModels = [];
+        // Responses come from the pipe thread while the store adds and removes operations.
+        private readonly List<MsiInstallerModel> installerModels = [];
+        private readonly object modelsLock = new();
 
         public void SendMsiInstallMessage(string operationId, string filename, MsiInstallerService installerHelper)
         {
-            installerModels.Add(new MsiInstallerModel
+            lock (modelsLock)
             {
-                OperationId = operationId,
-                MsiInstallerHelper = installerHelper
-            });
+                installerModels.Add(new MsiInstallerModel
+                {
+                    OperationId = operationId,
+                    MsiInstallerHelper = installerHelper
+                });
+            }
             _ = PipeHelper.SendMSIPacket(MSIInstallationMessageIds.Begin, operationId, filename);
         }
 
         public void RemoveMsiInstallerModel(string operationId, bool notify = true)
         {
-            MsiInstallerModel msiInstallerModel = installerModels.FirstOrDefault(i => i.OperationId == operationId);
-            if (msiInstallerModel != null)
+            bool removed;
+            lock (modelsLock)
             {
-                installerModels.Remove(msiInstallerModel);
-                if (notify) _ = PipeHelper.SendMSIPacket(MSIInstallationMessageIds.Kill, operationId);
+                removed = installerModels.RemoveAll(i => i.OperationId == operationId) > 0;
             }
+            if (removed && notify) _ = PipeHelper.SendMSIPacket(MSIInstallationMessageIds.Kill, operationId);
         }
 
         public void GetMsiInstallerMessage(string operationId, MsiState message)
         {
-            MsiInstallerModel msiInstallerModel = installerModels.FirstOrDefault(i => i.OperationId == operationId);
-            if (msiInstallerModel != null)
+            MsiInstallerModel? msiInstallerModel;
+            lock (modelsLock)
             {
-                msiInstallerModel.MsiInstallerHelper.OnResponse(message);
+                msiInstallerModel = installerModels.FirstOrDefault(i => i.OperationId == operationId);
             }
+            msiInstallerModel?.MsiInstallerHelper?.OnResponse(message);
         }
     }
 }

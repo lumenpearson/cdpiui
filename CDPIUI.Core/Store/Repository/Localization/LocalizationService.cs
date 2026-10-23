@@ -26,7 +26,23 @@ namespace CDPIUI.Core.Store.Repository.Localization
         public string? LocalizationName;
         public Dictionary<string, string>? LocalizationDict;
 
-        public Dictionary<string, string> StoreLocalizationPaths = [];
+        private Dictionary<string, string> storeLocalizationPaths = [];
+        private readonly object cacheLock = new();
+
+        // Set after every repository sync: the cached strings were kept from the previous one.
+        public Dictionary<string, string> StoreLocalizationPaths
+        {
+            get => storeLocalizationPaths;
+            set
+            {
+                lock (cacheLock)
+                {
+                    storeLocalizationPaths = value ?? [];
+                    LocalizationName = null;
+                    LocalizationDict = null;
+                }
+            }
+        }
 
         public string GetLocalizedStoreItemName(string name, string langCode)
         {
@@ -39,30 +55,33 @@ namespace CDPIUI.Core.Store.Repository.Localization
 
             try
             {
-                if (LocalizationName != langCode)
+                lock (cacheLock)
                 {
-                    string locFilePath;
-                    if (!StoreLocalizationPaths.TryGetValue(langCode, out string value))
+                    if (LocalizationName != langCode || LocalizationDict == null)
                     {
-                        locFilePath = Path.Combine(localRepoFolder, StoreLocalizationPaths["EN"]);
-                    }
-                    else
-                    {
-                        locFilePath = Path.Combine(localRepoFolder, value);
-                    }
+                        string locFilePath;
+                        if (!StoreLocalizationPaths.TryGetValue(langCode, out string value))
+                        {
+                            locFilePath = Path.Combine(localRepoFolder, StoreLocalizationPaths["EN"]);
+                        }
+                        else
+                        {
+                            locFilePath = Path.Combine(localRepoFolder, value);
+                        }
 
-                    using (StreamReader r = new StreamReader(locFilePath))
-                    {
-                        string json = r.ReadToEnd();
-                        Dictionary<string, string> localizationDict = JSONConvertor.DeserializeObject<Dictionary<string, string>>(json);
+                        using (StreamReader r = new StreamReader(locFilePath))
+                        {
+                            string json = r.ReadToEnd();
+                            Dictionary<string, string> localizationDict = JSONConvertor.DeserializeObject<Dictionary<string, string>>(json);
 
-                        LocalizationName = langCode;
-                        LocalizationDict = localizationDict;
+                            LocalizationName = langCode;
+                            LocalizationDict = localizationDict;
+                        }
+
                     }
-
+                    if (LocalizationDict != null && LocalizationDict.TryGetValue(name, out string? localized))
+                        localizedString = localized;
                 }
-                localizedString = LocalizationDict[name];
-
             }
             catch (Exception ex)
             {

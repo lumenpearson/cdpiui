@@ -6261,4 +6261,16 @@ https://discord.com/app</value>
   <data name="ItemShareButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Поделиться</value>
   </data>
+  <data name="RestartRequiredTitle" xml:space="preserve">
+    <value>Нужна перезагрузка</value>
+  </data>
+  <data name="RestartRequiredMessage" xml:space="preserve">
+    <value>Установленный пакет запросил перезагрузку системы. Компоненты, которые его используют, могут не работать до перезагрузки компьютера.</value>
+  </data>
+  <data name="RestartNow" xml:space="preserve">
+    <value>Перезагрузить</value>
+  </data>
+  <data name="RestartLater" xml:space="preserve">
+    <value>Позже</value>
+  </data>
 </root>

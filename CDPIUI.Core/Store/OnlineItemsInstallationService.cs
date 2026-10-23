@@ -178,7 +178,7 @@ namespace CDPIUI.Core.Store
             }
 
             if (restartFlag)
-                Logger.Instance.CreateDebugLog(nameof(StoreHelper), "Restart requested");
+                CoreEvents.Instance.InvokeRestartRequired(id);
 
             return OperationResultModel<ILinkModel>.SuccessResult(new APILinkModel()
             {

@@ -189,11 +189,24 @@ namespace CDPIUI.Core.Store.Network
         {
             if (string.IsNullOrEmpty(Token)) throw new ArgumentNullException(nameof(Token));
             var uri = new Uri(repoUrl);
-            var parts = uri.AbsolutePath.Trim('/').Split('/');
+            var parts = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // GitLab projects may sit in nested groups ("group/subgroup/project"), and its pages
+            // continue after "/-/".
+            if (VersionControl == SupportedVersionControls.GitLab)
+            {
+                int dash = Array.IndexOf(parts, "-");
+                if (dash >= 0) parts = parts[..dash];
+            }
+            else if (parts.Length > 2)
+            {
+                parts = parts[..2];
+            }
             if (parts.Length < 2)
-                throw new ArgumentException("Invalid GitHub repository URL.", nameof(repoUrl));
-            var owner = parts[0];
-            var repo = parts[1];
+                throw new ArgumentException("Invalid repository URL.", nameof(repoUrl));
+            var owner = string.Join("/", parts[..^1]);
+            var repo = parts[^1];
+            if (repo.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+                repo = repo[..^4];
 
 
             string apiUrl = GetApiUrlForVersion(owner, repo, version, VersionControl);
@@ -213,6 +226,14 @@ namespace CDPIUI.Core.Store.Network
             // The version comes from item metadata; escaped, "../" cannot move the request to another API endpoint.
             if (!string.IsNullOrEmpty(version))
                 version = Uri.EscapeDataString(version);
+            if (versionControl == SupportedVersionControls.GitLab)
+            {
+                // The project id is the whole path with every '/' encoded.
+                string project = Uri.EscapeDataString($"{owner}/{repo}");
+                return string.IsNullOrEmpty(version)
+                    ? $"https://gitlab.com/api/v4/projects/{project}/releases/permalink/latest"
+                    : $"https://gitlab.com/api/v4/projects/{project}/releases/{version}";
+            }
             owner = Uri.EscapeDataString(owner);
             repo = Uri.EscapeDataString(repo);
             if (versionControl == SupportedVersionControls.GitHub)
@@ -220,12 +241,6 @@ namespace CDPIUI.Core.Store.Network
                 url = string.IsNullOrEmpty(version)
                     ? $"https://api.github.com/repos/{owner}/{repo}/releases/latest"
                     : $"https://api.github.com/repos/{owner}/{repo}/releases/tags/{version}";
-            }
-            else if (versionControl == SupportedVersionControls.GitLab)
-            {
-                url = string.IsNullOrEmpty(version)
-                    ? $"https://gitlab.com/api/v4/projects/{owner}%2F{repo}/releases/permalink/latest"
-                    : $"https://gitlab.com/api/v4/projects/{owner}%2F{repo}/releases/{version}";
             }
             return url;
         }
