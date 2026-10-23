@@ -26,7 +26,7 @@ public sealed class CurlCapabilities
 public sealed class CurlBlockCheckProbeRunner : IBlockCheckProbeRunner, IBlockCheckProbePreflight
 {
     private const string WriteOutMarker = "__CDPIUI_BLOCKCHECK2__";
-    private const string WriteOutFormat = WriteOutMarker + "%{http_code}|%{time_starttransfer}";
+    private const string WriteOutFormat = WriteOutMarker + "%{http_code}|%{time_starttransfer}|%{redirect_url}";
 
     private readonly CurlBlockCheckProbeRunnerOptions _options;
     private readonly ICommandExecutor _executor;
@@ -183,10 +183,10 @@ public sealed class CurlBlockCheckProbeRunner : IBlockCheckProbeRunner, IBlockCh
             };
         }
 
-        (int statusCode, double timeToFirstByteMs) = ParseWriteOut(result.StandardOutput);
+        (int statusCode, double timeToFirstByteMs, string redirectUrl) = ParseWriteOut(result.StandardOutput);
         bool success = result.ExitCode == 0 &&
             statusCode > 0 &&
-            !(target.Protocol == BlockCheckProtocol.Http && statusCode == 400);
+            !(target.Protocol == BlockCheckProtocol.Http && IsProviderStub(statusCode, redirectUrl, target.Host));
         string diagnostic = FirstUsefulLine(result.StandardError);
         if (!success && diagnostic.Length == 0 &&
             !result.StandardOutput.Contains(WriteOutMarker, StringComparison.Ordinal))
@@ -290,24 +290,47 @@ public sealed class CurlBlockCheckProbeRunner : IBlockCheckProbeRunner, IBlockCh
                !error.Contains("unsupported option", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static (int StatusCode, double TimeToFirstByteMs) ParseWriteOut(string output)
+    /// <summary>
+    /// Plain HTTP can be answered by the provider: 400 for a broken request, 451 for a blocked
+    /// site, or a redirect to its own block page. Any such status counted as a success, so the
+    /// route was dropped as needing no bypass (audit 14.8).
+    /// </summary>
+    private static bool IsProviderStub(int statusCode, string redirectUrl, string targetHost)
+    {
+        if (statusCode is 400 or 451)
+            return true;
+        if (statusCode is >= 300 and < 400 &&
+            Uri.TryCreate(redirectUrl, UriKind.Absolute, out Uri? redirect))
+        {
+            string host = BlockCheckTarget.NormalizeHost(targetHost);
+            string redirectHost = BlockCheckTarget.NormalizeHost(redirect.Host);
+            // The site moving to HTTPS or to a subdomain of itself is normal.
+            bool sameSite = redirectHost.Equals(host, StringComparison.OrdinalIgnoreCase) ||
+                redirectHost.EndsWith("." + host, StringComparison.OrdinalIgnoreCase) ||
+                host.EndsWith("." + redirectHost, StringComparison.OrdinalIgnoreCase);
+            return !sameSite;
+        }
+        return false;
+    }
+
+    private static (int StatusCode, double TimeToFirstByteMs, string RedirectUrl) ParseWriteOut(string output)
     {
         int marker = output.LastIndexOf(WriteOutMarker, StringComparison.Ordinal);
         if (marker < 0)
         {
-            return (0, -1);
+            return (0, -1, string.Empty);
         }
 
         string[] values = output[(marker + WriteOutMarker.Length)..]
             .Trim()
-            .Split('|', 2);
+            .Split('|', 3);
         int.TryParse(values.ElementAtOrDefault(0), NumberStyles.None, CultureInfo.InvariantCulture, out int status);
         bool hasTiming = double.TryParse(
             values.ElementAtOrDefault(1),
             NumberStyles.Float,
             CultureInfo.InvariantCulture,
             out double seconds);
-        return (status, hasTiming ? seconds * 1000d : -1);
+        return (status, hasTiming ? seconds * 1000d : -1, values.ElementAtOrDefault(2) ?? string.Empty);
     }
 
     private static string GetFailureCode(

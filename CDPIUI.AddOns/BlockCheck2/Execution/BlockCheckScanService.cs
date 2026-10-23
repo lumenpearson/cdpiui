@@ -173,7 +173,8 @@ public sealed class BlockCheckScanService
                 BlockCheckIssueSeverity.Warning,
                 "DNS_TARGETS_IGNORED",
                 $"Ignored {ignoredTargetIds.Count} target(s) for {ignoredHosts.Length} host(s) because " +
-                $"the selected DNS resolver returned no address: {preview}."));
+                $"the selected DNS resolver returned no address: {preview}. This is often DNS blocking, " +
+                "which no DPI bypass strategy fixes: use encrypted DNS (DoH) for these hosts."));
         }
 
         if (activeTargets.Length == 0)
