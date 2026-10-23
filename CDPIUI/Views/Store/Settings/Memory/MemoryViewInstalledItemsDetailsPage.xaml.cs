@@ -17,6 +17,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -126,6 +127,10 @@ namespace CDPIUI.Views.Store.Settings.Memory
             {
                 LibraryItems.Clear();
                 List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
+                List<LibraryItemModel> models = [];
+                List<Task<long>> sizeTasks = [];
+                // Folder sizes are read a few at a time instead of one after another.
+                using SemaphoreSlim sizeGate = new(4);
 
                 foreach (DatabaseStoreItem item in databaseStoreItems)
                 {
@@ -151,9 +156,18 @@ namespace CDPIUI.Views.Store.Settings.Memory
                         Category = category,
                         ImageSource = image,
                         CardBackgroundBrush = solidColorBrush,
-                        Size = await FileSystemService.GetDirectorySize(item.Directory)
                     };
-                    LibraryItems.Add(libraryItemModel);
+                    models.Add(libraryItemModel);
+                    sizeTasks.Add(GetDirectorySizeAsync(item.Directory, sizeGate));
+                }
+
+                long[] sizes = await Task.WhenAll(sizeTasks);
+                // Another reload may have filled the list while the sizes were read.
+                LibraryItems.Clear();
+                for (int i = 0; i < models.Count; i++)
+                {
+                    models[i].Size = sizes[i];
+                    LibraryItems.Add(models[i]);
                 }
                 LibraryItems.Sort();
                 // _libraryItems.Reverse();
@@ -166,6 +180,19 @@ namespace CDPIUI.Views.Store.Settings.Memory
         }
 
 
+
+        private static async Task<long> GetDirectorySizeAsync(string directory, SemaphoreSlim gate)
+        {
+            await gate.WaitAsync();
+            try
+            {
+                return await FileSystemService.GetDirectorySize(directory);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
 
         private void StoreHelper_ItemActionsStopped(string obj)
         {

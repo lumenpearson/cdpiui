@@ -30,6 +30,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
         private System.Threading.Timer? _processTimer;
         private System.Threading.Timer? _reloadTimer;
         private int _isPolling;
+        // Without process triggers the process list is not read at all.
+        private volatile bool _hasProcessTriggers;
         private const int FirstHotKeyId = 0x4300;
         private int _nextHotKeyId = FirstHotKeyId;
         private bool _disposed;
@@ -138,6 +140,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
 
                 _loadedTasks = loadedTasks.ToList();
                 _tasks = _loadedTasks.Where(task => task.IsEnabled).ToList();
+                _hasProcessTriggers = EnumerateProcessTriggers().Any(binding =>
+                    !string.IsNullOrWhiteSpace(binding.Trigger.GetParameter("processName")));
                 RegisterHotKeys();
 
                 var fileCount = Directory.EnumerateFiles(
@@ -261,6 +265,9 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
 
         private void PollProcesses()
         {
+            if (!_hasProcessTriggers)
+                return;
+
             if (Interlocked.Exchange(ref _isPolling, 1) != 0)
                 return;
 
@@ -591,6 +598,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 _processStates.Clear();
                 _loadedTasks.Clear();
                 _tasks.Clear();
+                _hasProcessTriggers = false;
 
                 if (_watcher != null)
                 {

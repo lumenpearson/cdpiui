@@ -105,6 +105,10 @@ namespace CDPIUI.Views.Store
             }
 
             CategoryTitleTextBlock.Text = StoreHelper.Instance.GetLocalizedStoreItemName(category.name, StoreLocalizationHelper.GetStoreLikeLocale());
+            // Ids are compared as the database compares them.
+            HashSet<string> installedIds = DatabaseHelper.Instance.GetAllInstalledItems()
+                .Select(item => item.Id)
+                .ToHashSet(StringComparer.Ordinal);
 
             foreach (RepoItemModel repoCategoryItem in category.items)
             {
@@ -112,7 +116,7 @@ namespace CDPIUI.Views.Store
                     UIHelper.CreateLargeButton(
                         storeId: repoCategoryItem.store_id,
                         imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                        price: DatabaseHelper.Instance.IsItemInstalled(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                        price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                         title: repoCategoryItem.short_name,
                         backgroundColor: repoCategoryItem.background,
                         action: StoreItemButton_Click,
