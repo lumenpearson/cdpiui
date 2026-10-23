@@ -82,16 +82,18 @@ namespace CDPIUI.Core.Store
                 }
                 LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
 
-                if (localItemInitModel.Icon.StartsWith("$DYNAMICIMAGE"))
+                if (localItemInitModel.Icon?.StartsWith("$DYNAMICIMAGE") == true)
                 {
                     string iconUrl = LScriptCore.ExecuteScript(localItemInitModel.Icon, scriptArgs: tempDestination);
-                    if (File.Exists(iconUrl))
+                    // Only an image of the pack itself: an absolute path in Icon copied any local file
+                    // before the user had confirmed anything.
+                    if (File.Exists(iconUrl) && IsPackImage(tempDestination, iconUrl))
                     {
                         string newIconUrl = Path.Combine(TempDirectory, $"{tempFolderName}_ICONDATA", Path.GetFileName(iconUrl));
 
-                        if (!Directory.Exists(newIconUrl)) Directory.CreateDirectory(Path.GetDirectoryName(newIconUrl));
+                        Directory.CreateDirectory(Path.GetDirectoryName(newIconUrl)!);
 
-                        File.Copy(iconUrl, newIconUrl);
+                        File.Copy(iconUrl, newIconUrl, overwrite: true);
                         localItemInitModel.ReadyToUseIcon = newIconUrl;
                     }
                 }
@@ -180,6 +182,16 @@ namespace CDPIUI.Core.Store
         private string HandleError(Exception ex)
         {
             return ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_LOCAL_ITEM_INSTALLING", ex);
+        }
+
+        private static readonly string[] PackImageExtensions = [".png", ".jpg", ".jpeg", ".ico", ".bmp", ".gif"];
+
+        private static bool IsPackImage(string packDirectory, string file)
+        {
+            string root = Path.GetFullPath(packDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string fullPath = Path.GetFullPath(file);
+            return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) &&
+                PackImageExtensions.Contains(Path.GetExtension(fullPath), StringComparer.OrdinalIgnoreCase);
         }
     }
 }
