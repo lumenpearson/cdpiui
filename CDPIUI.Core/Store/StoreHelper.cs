@@ -398,6 +398,7 @@ namespace CDPIUI.Core.Store
 
         private async Task InstallItem(QueueItemModel qi)
         {
+            bool wasInstalled = DatabaseHelper.Instance.IsItemInstalled(qi.ItemId);
             var result = await InstallItemWorker(qi);
 
             if (cancellationToken?.IsCancellationRequested == true)
@@ -420,7 +421,10 @@ namespace CDPIUI.Core.Store
 
                 try
                 {
-                    await RemoveItemAsync(qi.ItemId);
+                    // A failed update keeps the installed version; only a failed first
+                    // installation is cleaned up (audit 10.2).
+                    if (!wasInstalled)
+                        await RemoveItemAsync(qi.ItemId);
                 }
                 catch (Exception ex)
                 {
@@ -652,8 +656,35 @@ namespace CDPIUI.Core.Store
             {
                 if (itemId != SharedConstants.ApplicationStoreId)
                 {
-                    if (Directory.Exists(itemFolder)) Directory.Delete(itemFolder, recursive: true);
-                    Directory.Move(packFilePath, itemFolder);
+                    // The installed version is replaced only by a pack that can be installed.
+                    if (!File.Exists(Path.Combine(packFilePath, "init.json")))
+                        return OperationResultModel<EmptyResult>
+                            .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
+
+                    string? previous = null;
+                    if (Directory.Exists(itemFolder))
+                    {
+                        previous = $"{itemFolder}.previous-{Guid.NewGuid():N}";
+                        Directory.Move(itemFolder, previous);
+                    }
+                    try
+                    {
+                        Directory.Move(packFilePath, itemFolder);
+                    }
+                    catch
+                    {
+                        if (previous != null && !Directory.Exists(itemFolder))
+                            Directory.Move(previous, itemFolder);
+                        throw;
+                    }
+                    if (previous != null)
+                    {
+                        try { Directory.Delete(previous, recursive: true); }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot delete the previous version \"{previous}\": {ex.Message}");
+                        }
+                    }
                 }
                 else
                 {
