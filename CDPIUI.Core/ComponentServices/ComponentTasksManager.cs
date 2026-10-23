@@ -1,4 +1,5 @@
-﻿using CDPIUI.Core.Communication;
+﻿using CDPIUI.Core.Basic;
+using CDPIUI.Core.Communication;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
@@ -26,22 +27,40 @@ namespace CDPIUI.Core.ComponentServices
 
         private ComponentTasksManager()
         {
-            UpdateTaskList();
+            _ = UpdateTaskList();
 
             ComponentItemsLoaderHelper.Instance.InitRequested += SendTasksData;
             StoreHelper.Instance.ItemActionsStopped += (id) => RequestComponentItemsInit();
             StoreHelper.Instance.ItemRemoved += (id) => RequestComponentItemsInit();
         }
 
-        public void UpdateTaskList()
+        /// <summary>
+        /// Rebuilds the task list from the installed components, for example after a component
+        /// was installed or updated, and starts again the components that were running.
+        /// </summary>
+        public async Task UpdateTaskList()
         {
-            var _tasks = Tasks;
-            _ = StopAllTasks();
-            foreach (var item in DatabaseHelper.Instance.GetItemsByType("component"))
+            try
             {
-                AddNewTask(item.Id!);
-                if (_tasks.FirstOrDefault(x => x.Id == item.Id)?.ProcessManager?.IsProcessRunning ?? false)
-                    _ = CreateAndRunNewTask(item.Id!);
+                // Taken before stopping: StopAllTasks clears the running state.
+                var runningIds = (await GetTasksSnapshot())
+                    .Where(x => x.ProcessManager?.IsProcessRunning ?? false)
+                    .Select(x => x.Id)
+                    .ToHashSet();
+
+                await StopAllTasks();
+
+                foreach (var item in DatabaseHelper.Instance.GetItemsByType("component"))
+                {
+                    if (runningIds.Contains(item.Id))
+                        await CreateAndRunNewTask(item.Id!);
+                    else
+                        await AddNewTaskAsync(item.Id!);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ComponentTasksManager), $"Cannot update the task list: {ex}");
             }
         }
 

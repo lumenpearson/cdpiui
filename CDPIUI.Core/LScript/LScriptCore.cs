@@ -343,7 +343,7 @@ namespace CDPIUI.Core.LScript
                 switch (scriptName)
                 {
                     case "finish_component_setup":
-                        FinishComponentSetup(scriptArgs);
+                        await FinishComponentSetup(scriptArgs);
                         break;
                     case "download_easy_designer_annotation_file":
                         if (scriptArgs.Length < 1)
@@ -369,13 +369,13 @@ namespace CDPIUI.Core.LScript
             return string.Format(ConditionPattern, varName, onValue, offValue);
         }
 
-        private static void FinishComponentSetup(string[] args)
+        private static async Task FinishComponentSetup(string[] args)
         {
             if (args.Length < 1)
                 return;
             string componentName = args[0];
 
-            ComponentTasksManager.Instance.UpdateTaskList();
+            await ComponentTasksManager.Instance.UpdateTaskList();
 
             if (componentName == "byedpi" || componentName == "spoofdpi" || componentName == "nodpi")
             {
