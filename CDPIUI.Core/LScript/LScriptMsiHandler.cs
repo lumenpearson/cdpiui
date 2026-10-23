@@ -8,7 +8,7 @@ namespace CDPIUI.Core.LScript
 {
     public class LScriptMsiHandler()
     {
-        public static async void InstallMsi(
+        public static async Task InstallMsi(
             string[] scriptArgs, Dictionary<string, string>? extraArgs, CancellationToken cancellationToken)
         {
             string itemDirectory = extraArgs?.GetValueOrDefault("CurrentDirectory", string.Empty) ?? string.Empty;
