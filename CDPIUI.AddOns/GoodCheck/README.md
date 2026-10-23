@@ -98,7 +98,7 @@ The service passes only the file names of the site list and the strategy list.
 
 A start error gives `DiedViaError` with `ERR_UNABLE_START_PROCESS` or `ERR_WIN32_EXCEPTION`. The message `Stop` kills the process. When the pipe disconnects, the tray also stops GoodCheck.
 
-In the GUI, `CDPIUI/Commands/CommandsHandler.cs` sends `Died` to `OperationWithIdDied` and `DiedViaError` to `HandleProcessException`.
+In the GUI, `CDPIUI/Commands/CommandsHandler.cs` sends `Died` to `OperationWithIdDied` and `DiedViaError` to `OperationWithIdFailed`. `OperationWithIdFailed` marks the operation as failed and stops the log monitor of the operation.
 
 ## Log monitor
 
@@ -189,7 +189,7 @@ GoodCheck `config.ini` (UTF-8):
 | `Advanced` | `ResolverNativeTimeout`, `ResolverNativeRetries`, `InternalTimeoutMs`, `AutomaticConnectivityTest`, `ConnectivityTestURL`, `SkipCertVerify`, `GoogleCacheMappingURLs` |
 | `Resolvers` | `UseDoH`, `DoHResolvers` |
 | `Fakes` | `FakeSNI`, `FakeHexStreamTCP`, `FakeHexStreamUDP`, `FakeHexBytesTCP`, `FakeHexBytesUDP`, `PayloadTCP`, `PayloadUDP` |
-| `Zapret`, `GoodbyeDPI`, `ByeDPI` | The folder and the executable name of each installed component |
+| `Zapret`, `GoodbyeDPI`, `ByeDPI` | The folder and the executable name of each installed component. The folder comes from the Store database. |
 
 If `config.ini` is missing, the page tells the user to install the add-on again.
 
@@ -215,7 +215,7 @@ If `config.ini` is missing, the page tells the user to install the add-on again.
 
 - Only one GoodCheck run can operate, because `GoodCheckProcessService` is a singleton and the tray has one process slot.
 - The tray stops all components before GoodCheck starts.
-- The service passes only file names with `-c` and `-s`. GoodCheck must find the files from its own folder.
+- The service passes only file names with `-c` and `-s`. GoodCheck must find the files from its own folder. For this reason, the page shows only the strategy lists in the top level of `StrategiesGoGo/<component>`, not in its subfolders.
 - In `AllAsOne` mode, only the strategy list of the first site list is used.
 - The correct and incorrect counters use a fixed threshold of 65%.
 - The add-on has no tests in `CDPIUI.Tests`.
