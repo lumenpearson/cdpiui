@@ -265,8 +265,11 @@ namespace CDPIUI.Core.Store
 
         public void RemoveItem(string itemId)
         {
-            _ = ProcessService.StopService();
-            _ = ComponentTasksManager.Instance.StopTask(itemId);
+            _ = RemoveItemAsync(itemId);
+        }
+
+        public async Task RemoveItemAsync(string itemId)
+        {
             var item = DatabaseHelper.Instance.GetItemById(itemId);
 
             if (item == null ||
@@ -274,19 +277,57 @@ namespace CDPIUI.Core.Store
                 item.Id == SharedConstants.LocalUserItemsId)
                 return;
 
-            try
-            {
-                // The directory comes from the item database; never delete anything outside the item folders.
-                if (Path.Exists(item.Directory) && StoreItemIds.IsItemFolder(item.Directory))
-                {
-                    Directory.Delete(item.Directory, recursive: true);
-                }
+            // The component has to exit before its files can be deleted (issue #37).
+            await StopComponentForFileChanges(item);
 
+            // The directory comes from the item database; never delete anything outside the item folders.
+            if (Path.Exists(item.Directory) && StoreItemIds.IsItemFolder(item.Directory))
+            {
+                for (int attempt = 1; ; attempt++)
+                {
+                    try
+                    {
+                        Directory.Delete(item.Directory, recursive: true);
+                        break;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        if (attempt == 5)
+                        {
+                            Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Cannot delete \"{item.Directory}\": {ex.Message}");
+                            break;
+                        }
+                        await Task.Delay(500 * attempt);
+                    }
+                }
             }
-            catch { }
             DatabaseHelper.Instance.DeleteItemById(itemId);
 
             ItemRemoved?.Invoke(itemId);
+        }
+
+        /// <summary>
+        /// Stops the component before its files are replaced or deleted, together with the
+        /// driver service it may hold open. Returns whether the component was running.
+        /// </summary>
+        private static async Task<bool> StopComponentForFileChanges(DatabaseStoreItem item)
+        {
+            if (item.Type != "component")
+                return false;
+
+            bool wasRunning = false;
+            try
+            {
+                var task = await ComponentTasksManager.Instance.GetTaskFromId(item.Id!);
+                wasRunning = task?.ProcessManager?.IsProcessRunning ?? false;
+                await ComponentTasksManager.Instance.StopTask(item.Id!);
+                await ProcessService.StopService();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot stop {item.Id}: {ex.Message}");
+            }
+            return wasRunning;
         }
 
         public async Task CheckUpdates()
@@ -379,9 +420,12 @@ namespace CDPIUI.Core.Store
 
                 try
                 {
-                    RemoveItem(qi.ItemId);
+                    await RemoveItemAsync(qi.ItemId);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot clean up {qi.ItemId} after a failed installation: {ex.Message}");
+                }
             }
         }
 
@@ -398,9 +442,13 @@ namespace CDPIUI.Core.Store
                     .FailureResult(ErrorModel.OnlyErrorCode(HandleException(new InvalidDataException($"Invalid store item id: {id}"))));
 
             List<Tuple<string, string>> requiredItems = [];
+            bool restartAfterUpdate = false;
             if (DatabaseHelper.Instance.IsItemInstalled(id))
             {
-                requiredItems = DatabaseHelper.Instance.GetItemById(id).RequiredItemIds;
+                DatabaseStoreItem installedItem = DatabaseHelper.Instance.GetItemById(id);
+                requiredItems = installedItem.RequiredItemIds;
+                // Running executables cannot be overwritten (issue #37).
+                restartAfterUpdate = await StopComponentForFileChanges(installedItem);
             }
 
             string itemFolder = Path.Combine(Directories.StoreItemsDirectory, qi.ItemId);
@@ -458,7 +506,10 @@ namespace CDPIUI.Core.Store
                 return gettingPatchReadyResult;
             }
 
-            return await AddItemToDatabase(tag, downloadUrl, itemFolder, item, requiredItems);
+            var addResult = await AddItemToDatabase(tag, downloadUrl, itemFolder, item, requiredItems);
+            if (restartAfterUpdate)
+                await ComponentTasksManager.Instance.CreateAndRunNewTask(id);
+            return addResult;
         }
 
         private async Task<OperationResultModel<Tuple<string, string, RepoItemModel>>> DownloadItemOnline(string itemId, QueueItemModel qi)
