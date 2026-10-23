@@ -179,10 +179,14 @@ public sealed partial class ComponentTileUserControl : UserControl
 
     private void TaskUpdated(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != StoreId) return;
-        
-
-        _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
+        // Can be raised on a thread pool thread (BlockCheck2 and preset tests stop and start
+        // tasks there). Reading StoreId off the UI thread threw and the handlers after this
+        // one did not get the event.
+        DispatcherQueue?.TryEnqueue(() =>
+        {
+            if (tuple.Item1 != StoreId) return;
+            _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
+        });
     }
 
     private async Task Init()

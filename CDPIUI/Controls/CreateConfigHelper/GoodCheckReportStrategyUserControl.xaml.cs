@@ -75,6 +75,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
         PlayCommand = new RelayCommand(p => Play());
         SetFlagCommand = new RelayCommand(p => SetFlag());
         SetVisible(false);
+        // The task manager outlives the report; a control unloaded during a test stayed in memory.
+        Unloaded += (_, _) => ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
 
         FlagToolTip.Content = localizer.GetLocalizedString("SetFlag");
         PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
@@ -189,6 +191,12 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     }
 
     private void ProcessManager_onProcessStateChanged(Tuple<string, bool> tuple)
+    {
+        // Can be raised on a thread pool thread; ComponentId and the button are UI-thread only.
+        DispatcherQueue?.TryEnqueue(() => ApplyProcessState(tuple));
+    }
+
+    private void ApplyProcessState(Tuple<string, bool> tuple)
     {
         if (tuple.Item1 != ComponentId) return;
         if (tuple.Item2)

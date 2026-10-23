@@ -122,8 +122,15 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             _connectedPage = null;
     }
 
+    // GoodCheck raises its events on thread pool threads; the speed fields are read by
+    // CalcSpeed and the taskbar progress belongs to the window, both on the UI thread.
     private void OnCurrentSiteListChanged(string name)
     {
+        if (!_uiDispatcher.HasThreadAccess)
+        {
+            _uiDispatcher.TryEnqueue(() => OnCurrentSiteListChanged(name));
+            return;
+        }
         CurrentSiteListText(name);
 
         _lastProgressTime = DateTime.MinValue;
@@ -134,6 +141,11 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private void OnProgressChanged(Tuple<string, string, string> tuple)
     {
+        if (!_uiDispatcher.HasThreadAccess)
+        {
+            _uiDispatcher.TryEnqueue(() => OnProgressChanged(tuple));
+            return;
+        }
         int.TryParse(tuple.Item1, out int current);
         int.TryParse(tuple.Item2, out int all);
         string strategy = tuple.Item3;
