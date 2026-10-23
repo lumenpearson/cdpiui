@@ -16,12 +16,13 @@ Also:
 Recommended Visual Studio version – 2022.
 
 Here is few steps after NuGet restore you must to do:
-- Create `Secret.cs` in `/CDPIUI.Shared/Secrets/`. Create static class Secret. [Ref](https://github.com/Storik4pro/cdpiui/blob/dev/CDPIUI.Shared/Secrets/SecretExample.cs)
-  For a local build without Store access run `pwsh .github/scripts/create_secret_stub.ps1`: it creates a `public static class Secret` with empty values (the file is ignored by git).
+- Create `CDPIUI.Shared/Secrets/Secret.cs` with a `public static class Secret` in the `CDPIUI.Shared.Secrets` namespace. The members are described by the `ISecret` interface in [SecretExample.cs](../CDPIUI.Shared/Secrets/SecretExample.cs); copy only the members, not the interface, which already exists there.
+  For a local build without Store access run `pwsh .github/scripts/create_secret_stub.ps1`: it creates the class with empty values (the file is ignored by git).
 - Run unit tests with `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj`.
-- Project using CommunityToolkit.Labs. Connect it from Azure, to restore experimental packages. [Ref](https://marketplace.visualstudio.com/items?itemName=ISWIX-LLC.IsWiX)
+- The GUI uses experimental CommunityToolkit.Labs packages. `CDPIUI/nuget.config` adds their [Azure feed](https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json) next to nuget.org, so a normal restore finds them.
+- `pwsh .github/scripts/build_portable.ps1` builds the x64 release layout (GUI, tray, `Update.exe`, `EditHostFile.exe`) into `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`. It needs msbuild from Visual Studio 2022.
 
-> Project uses IsWix for MSI-installer building. [Ref](https://marketplace.visualstudio.com/items?itemName=ISWIX-LLC.IsWiX)
+> The MSI installer is built with [WiX Toolset 6](https://wixtoolset.org/) (`WixToolset.Sdk`): `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` after `build_portable.ps1`. The file list in `NewSetup/NewSetupFiles.wxs` must match the publish folder.
 
 ## Add/edit something
 
@@ -32,7 +33,7 @@ Here is few steps after NuGet restore you must to do:
 - Create resource files with `.resw` extension in `CDPIUI/Strings/<loc_code>`. `<loc_code>` must follow format like `en-us` or `ru`. You must set "Build Action" as "Content" and set "Copy if never" flag.
 - Create `.md` file for localize ELUA `CDPIUI/ELUA/<loc_code>`. `<loc_code>` must follow Store-like format like `EN` or `RU`.
 - Create `.md` files for localize WIKI `CDPIUI/Help/<loc_code>` `<loc_code>` must follow Store-like format like `EN` or `RU`.
-- To localize Store visit [Store repo](https://github.com/Sotrik4pro/CDPIUI-Store).
+- To localize Store visit [Store repo](https://github.com/Storik4pro/cdpiui-store).
 - Add key `<loc_code>` to all `.resw` files with localized localization name for existed localizations.
 - In `CDPIUI.Helper.UserExperience` add key to `Languages` ObservableCollection
 - In `CDPIUI.App` add pair in `InitializeLocalizer`
