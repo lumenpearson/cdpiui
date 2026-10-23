@@ -93,6 +93,12 @@ namespace CDPIUI.Core.Communication
                     {
                         startupString = $"--show-ui {migrationRequest!.RawArgument}";
                     }
+                    else if (Shared.Basic.CommandLine.GuiActivationArguments.Encode(
+                        Environment.GetCommandLineArgs().Skip(1)) is string guiArgs)
+                    {
+                        // The tray starts the GUI again with these, so the opened file or link is not lost.
+                        startupString = $"--show-ui {guiArgs}";
+                    }
                     var psi = new ProcessStartInfo(Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe"), startupString)
                     {
                         UseShellExecute = true,
