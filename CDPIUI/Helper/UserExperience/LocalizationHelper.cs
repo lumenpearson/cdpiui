@@ -73,13 +73,16 @@ namespace CDPIUI.Helper.UserExperience
             localizer.LanguageChanged += Localizer_LanguageChanged;
         }
 
+        // Falls back to the first language: an unknown id left CurrentLanguage null and the
+        // next access to CurrentLanguage.Id threw.
         private LanguageSelectModel FindLanguage(string id)
         {
             return Languages.FirstOrDefault(
                 language => string.Equals(
                     language.Id,
                     id,
-                    StringComparison.OrdinalIgnoreCase));
+                    StringComparison.OrdinalIgnoreCase))
+                ?? Languages.First();
         }
 
         private void Localizer_LanguageChanged(

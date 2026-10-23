@@ -314,7 +314,7 @@ internal sealed class MigrationImportService
 
     /// <summary>
     /// Replaces <paramref name="source"/> only where it is a whole path, so that rewriting
-    /// "list.txt" leaves "blacklist.txt" and "lists\\list.txt.bak" alone.
+    /// "list.txt" leaves "blacklist.txt" and "lists\list.txt.bak" alone.
     /// </summary>
     private static string ReplacePathIgnoreCase(string input, string source, string destination)
     {
