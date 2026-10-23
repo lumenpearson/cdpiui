@@ -364,6 +364,9 @@ namespace CDPIUI.Helper.AddOns
             Line(log, new TestLogSegment(new string('=', 60), TestLogColor.Gray));
             Tagged(log, "PT_Warn", TestLogColor.Yellow, S("PT_MayTakeTime"));
 
+            // The test restarts the component with every preset; afterwards it runs again with the
+            // user's own preset if it was running before the test.
+            bool wasRunning = processManager.IsProcessRunning;
             try
             {
                 int index = 0;
@@ -431,8 +434,6 @@ namespace CDPIUI.Helper.AddOns
             {
                 wasCancelled = true;
                 CancelAllCurls();
-                // Do not leave the component running with the preset that was being tested.
-                try { await processManager.StopProcess(false); } catch { }
             }
             finally
             {
@@ -441,6 +442,14 @@ namespace CDPIUI.Helper.AddOns
                 {
                     try { File.Delete(payloadFile); } catch { }
                 }
+                // Whatever ended the test, the component must not keep running with a tested preset.
+                try
+                {
+                    await processManager.StopProcess(false);
+                    if (wasRunning)
+                        await processManager.StartProcess();
+                }
+                catch { }
             }
 
             return BuildRunResult(results, testType, wasCancelled);
