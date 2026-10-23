@@ -162,7 +162,7 @@
         <File Source="$(var.SourceDir)\Assets\Wide310x150Logo.scale-200.png" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CDPIUI_TrayIcon.exe" KeyPath="yes" />
+        <File Id="TrayIconExe" Source="$(var.SourceDir)\CDPIUI_TrayIcon.exe" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CDPIUI.AddOns.dll" KeyPath="yes" />

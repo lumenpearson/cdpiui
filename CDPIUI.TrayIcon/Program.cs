@@ -19,6 +19,12 @@ class Programm
     [STAThread]
     static void Main(string[] args)
     {
+        if (args.Contains(UninstallHelper.CleanupArgument))
+        {
+            UninstallHelper.Cleanup();
+            return;
+        }
+
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             Logger.Instance.CreateDebugLog("Startup",
                 $"Unhandled exception; terminating={e.IsTerminating}: {e.ExceptionObject}");
@@ -106,6 +112,7 @@ class Programm
             _trayForm = new EmptyForm();
 
             _trayForm.AddIcon(notify: true);
+            UninstallHelper.ListenForShutdown(_trayForm, Application.Exit);
             try
             {
                 ConditionalLaunchEngine.Instance.Start(_trayForm);
