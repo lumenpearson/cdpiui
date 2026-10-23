@@ -16,6 +16,21 @@ using CDPIUI.TrayIcon.ConditionalLaunch;
 
 class Programm
 {
+    private static Mutex? _singleInstanceMutex;
+
+    private static bool TryAcquireSingleInstance()
+    {
+        _singleInstanceMutex = new Mutex(false, @"Global\CDPIUI_TrayInstance");
+        try
+        {
+            return _singleInstanceMutex.WaitOne(TimeSpan.FromSeconds(10));
+        }
+        catch (AbandonedMutexException)
+        {
+            // The previous tray ended without releasing it, for example during an update.
+            return true;
+        }
+    }
 
     [STAThread]
     static void Main(string[] args)
@@ -23,6 +38,14 @@ class Programm
         if (args.Contains(UninstallHelper.CleanupArgument))
         {
             UninstallHelper.Cleanup();
+            return;
+        }
+
+        // One tray per machine: the pipe name is global, and a second tray renamed _Update.exe,
+        // started the GUI and registered hot keys before it failed on the pipe (audit 12.9).
+        if (!TryAcquireSingleInstance())
+        {
+            Logger.Instance.CreateWarningLog("Startup", "Another tray is already running; exiting.");
             return;
         }
 
