@@ -5,7 +5,9 @@ namespace CDPIUI.Core.ComponentServices.Helpers
     public class ComponentItemsLoaderHelper
     {
 
-        private List<ComponentHelper> Components = [];
+        // Replaced as a whole, never changed in place: Init runs on the startup path and after every
+        // Store change while other threads look components up (audit 11.9).
+        private volatile List<ComponentHelper> Components = [];
 
         public Action? InitRequested;
 
@@ -30,36 +32,34 @@ namespace CDPIUI.Core.ComponentServices.Helpers
 
         public void Init(bool forse = true)
         {
-            if (!forse && Components.Count != 0) return;
-            Components.Clear();
+            List<ComponentHelper> current = Components;
+            if (!forse && current.Count != 0) return;
+
             List<DatabaseStoreItem> configItems = 
                 DatabaseHelper.Instance.GetItemsByType("component");
 
+            List<ComponentHelper> components = [];
             foreach (DatabaseStoreItem item in configItems)
             {
                 if (!Path.Exists(item.Directory) || 
-                    !File.Exists(Path.Combine(item.Directory, item.Executable + ".exe")))
+                    !File.Exists(Path.Combine(item.Directory!, item.Executable + ".exe")))
                     continue;
 
-                ComponentHelper componentHelper = new(item.Id!);
-                Components.Add(componentHelper);
+                // New helpers: an installed or updated pack changes the preset lists they cache.
+                components.Add(new ComponentHelper(item.Id!));
             }
+            Components = components;
             InitRequested?.Invoke();
         }
 
         public List<ComponentHelper> GetComponentHelpers()
         {
-            return Components;
+            return [.. Components];
         }
 
         public ComponentHelper? GetComponentHelperFromId(string id)
         {
-            foreach (ComponentHelper componentHelper in Components)
-            {
-                if (componentHelper.Id == id)
-                    return componentHelper;
-            }
-            return null;
+            return Components.FirstOrDefault(componentHelper => componentHelper.Id == id);
         }
     }
 }
