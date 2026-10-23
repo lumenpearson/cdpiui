@@ -492,12 +492,27 @@ namespace CDPIUI
         }
 
 
-        public async void GetReadyFeatures()
+        // Windows read their strings from the localizer, so they are created only after it is built.
+        private Task _localizerReady = Task.CompletedTask;
+
+        public void GetReadyFeatures()
         {
-            DatabaseInitializationService.QuickRestore();
-            await InitializeLocalizer();
-            ApplicationInfo.Instance.SetLocalization(Localizer.Get().GetCurrentLanguage());
-            FileAssociationService.EnsureRegistered();
+            _localizerReady = GetReadyFeaturesAsync();
+        }
+
+        private async Task GetReadyFeaturesAsync()
+        {
+            try
+            {
+                DatabaseInitializationService.QuickRestore();
+                await InitializeLocalizer();
+                ApplicationInfo.Instance.SetLocalization(Localizer.Get().GetCurrentLanguage());
+                FileAssociationService.EnsureRegistered();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(App), $"Cannot prepare the application: {ex}");
+            }
         }
 
         public bool CheckWindow<TWindow>() where TWindow : Window
@@ -664,6 +679,8 @@ namespace CDPIUI
 
         public async Task<TWindow> SafeCreateNewWindow<TWindow>(bool activate = true) where TWindow : Window, new()
         {
+            await _localizerReady;
+
             var findWindows = OpenWindows.OfType<TWindow>().ToList();
             int findWindowCount = findWindows.Count;
 
@@ -999,7 +1016,10 @@ namespace CDPIUI
 
             string lang = SettingsManager.Instance.GetValue<string>("SYSTEM", "language");
             var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-            if (lang == "NaN")
+            // An unknown or damaged value would leave every text empty (issue #8).
+            if (string.IsNullOrWhiteSpace(lang) || lang == "NaN" ||
+                lang.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                !Directory.Exists(Path.Combine(stringsFolderPath, lang)))
             {
                 lang = culture switch
                 {
