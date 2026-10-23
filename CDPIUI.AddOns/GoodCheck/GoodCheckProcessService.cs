@@ -32,6 +32,8 @@ namespace CDPIUI.AddOns.GoodCheck
         public string ErrorCode { get; set; } = "";
         public CancellationTokenSource? CancellationTokenSource { get; set; }
         public CancellationToken CancellationToken { get; set; }
+        /// <summary>The tray reported that the GoodCheck process ended.</summary>
+        public bool ProcessExited { get; set; }
     }
     public enum GoodCheckOperationType
     {
@@ -344,6 +346,11 @@ namespace CDPIUI.AddOns.GoodCheck
 
                 GoodCheckOperationModel model = GetOperationById(CurrentOperationId);
 
+                if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
+                {
+                    // The process ended by itself: the result comes from its complete log.
+                    return result;
+                }
                 if (cancellationToken.IsCancellationRequested || model.CancellationToken.IsCancellationRequested || CancellationToken.IsCancellationRequested)
                 {
                     _ = PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Stop);
@@ -435,12 +442,32 @@ namespace CDPIUI.AddOns.GoodCheck
             FileStream fs = null;
 
             GoodCheckOperationModel model = GetOperationById(CurrentOperationId);
+            // Only the log of this run: an older log could end with "All Done".
+            DateTime runStartUtc = DateTime.UtcNow.AddSeconds(-2);
+
+            // Returns true or false when the line decides the result, otherwise null.
+            bool? CheckLines(string text)
+            {
+                foreach (var line in text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+                {
+                    AddOutput(line);
+
+                    if (line.IndexOf(errorFlag, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        HandleProcessException("ERR_GOODCHECK_EXCEPTION", CurrentOperationId);
+                        return false;
+                    }
+                    if (line.IndexOf(successFlag, StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+                return null;
+            }
 
             try
             {
                 while (!cancellationToken.IsCancellationRequested && !model.CancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
                 {
-                    string newest = GetNewestLogFile(logsDirectory, logPattern);
+                    string newest = GetNewestLogFile(logsDirectory, logPattern, runStartUtc);
 
                     if (string.IsNullOrEmpty(newest))
                     {
@@ -453,12 +480,11 @@ namespace CDPIUI.AddOns.GoodCheck
                         reader?.Dispose();
                         fs?.Dispose();
 
+                        // A log of this run is read from its start: reading from the end lost
+                        // everything written before the file was found (audit 14.3).
                         currentLogFile = newest;
                         fs = new FileStream(currentLogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                         reader = new StreamReader(fs);
-
-                        currentPosition = fs.Length;
-                        fs.Seek(currentPosition, SeekOrigin.Begin);
                     }
 
                     string newText = await reader.ReadToEndAsync().ConfigureAwait(false);
@@ -466,27 +492,25 @@ namespace CDPIUI.AddOns.GoodCheck
                     if (!string.IsNullOrEmpty(newText))
                     {
                         currentPosition = fs.Position;
-                        string[] lines = newText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                        foreach (var line in lines)
-                        {
-                            AddOutput(line);
-
-                            if (line.IndexOf(errorFlag, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                HandleProcessException("ERR_GOODCHECK_EXCEPTION", CurrentOperationId);
-                                return false;
-                            }
-                            if (line.IndexOf(successFlag, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                return true;
-                            }
-                        }
+                        bool? decided = CheckLines(newText);
+                        if (decided != null)
+                            return decided.Value;
                     }
 
                     await Task.Delay(500, cancellationToken).ConfigureAwait(false);
                 }
 
-
+                if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
+                {
+                    // The process ended: read what it wrote last, and a run without "All Done",
+                    // such as a failed connectivity check, is no success.
+                    string rest = reader != null ? await reader.ReadToEndAsync().ConfigureAwait(false) : string.Empty;
+                    bool? decided = string.IsNullOrEmpty(rest) ? null : CheckLines(rest);
+                    if (decided != null)
+                        return decided.Value;
+                    HandleProcessException("ERR_GOODCHECK_EXITED_EARLY", CurrentOperationId);
+                    return false;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -509,13 +533,15 @@ namespace CDPIUI.AddOns.GoodCheck
             return false;
         }
 
-        private string? GetNewestLogFile(string directory, string pattern)
+        private string? GetNewestLogFile(string directory, string pattern, DateTime notBeforeUtc)
         {
             try
             {
                 if (!Directory.Exists(directory)) return null;
-                var files = Directory.GetFiles(directory, pattern);
-                if (files == null || files.Length == 0) return null;
+                var files = Directory.GetFiles(directory, pattern)
+                    .Where(f => File.GetCreationTimeUtc(f) >= notBeforeUtc)
+                    .ToArray();
+                if (files.Length == 0) return null;
 
                 return files.OrderByDescending(f => File.GetLastWriteTimeUtc(f)).FirstOrDefault();
             }
@@ -535,12 +561,11 @@ namespace CDPIUI.AddOns.GoodCheck
 
         public void OperationWithIdDied(int id)
         {
+            // Ended by itself: the log monitor decides whether it was a success. Marking it as one
+            // here turned an early failure into a success with an empty report (audit 14.3).
             GoodCheckOperationModel model = GetOperationById(id);
-            model.OperationType = GoodCheckOperationType.SuccessFinish;
-            model.CancellationTokenSource.Cancel();
-            // model.CancellationTokenSource.Dispose();
-
-            OperationTypeChanged?.Invoke(Tuple.Create(id, GoodCheckOperationType.SuccessFinish));
+            model.ProcessExited = true;
+            model.CancellationTokenSource?.Cancel();
         }
 
         public void RemoveFromQueueOrStopOperation(int id)
