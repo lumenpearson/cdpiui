@@ -33,7 +33,9 @@ namespace Update
 
             this.FormClosing += Form_FormClosing;
 
-            InstallHelper.Instance.StartInstall();
+            // Started in the constructor, the installation reported progress before the handle
+            // existed: InvokeRequired was false and the controls were changed from the worker.
+            this.Shown += (sender, e) => InstallHelper.Instance.StartInstall();
         }
 
         private void ProgressChanged(double progress)
