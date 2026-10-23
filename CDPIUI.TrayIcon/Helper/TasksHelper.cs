@@ -74,11 +74,13 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
 
-        List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012"];
+        // GoodbyeDPI, Zapret and Zapret2 use the WinDivert driver; Zapret2 was missing, so the
+        // service could be deleted under a running winws2 (audit 12.13).
+        List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
 
         public async Task StopService()
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
                 if (serviceUsedComponentsIds.Contains(task.Id))
                 {
