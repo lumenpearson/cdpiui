@@ -1,35 +1,35 @@
-﻿# What is CDPI UI?
+# What is CDPI UI?
 
-CDPI UI is a new version of the popular graphical interface formerly known as GoodbyeDPI-UI. The new version has been updated with numerous bug fixes, improved stability, and improved performance.
+CDPI UI is a new version of the graphical interface that had the name GoodbyeDPI-UI. The new version has many bug fixes, better stability and better performance.
 
-The main goal of CDPI UI is to make access to utilities like Zapret and ByeDPI easier and more convenient for modern users.
+The main goal of CDPI UI is easy access to utilities such as Zapret and ByeDPI.
 
-## Simple, yet powerful
+## Simple, but powerful
 
-CDPI UI doesn't limit the capabilities of components in any way. If you're comfortable configuring components like Zapret or ByeDPI yourself, go for it!
+CDPI UI does not limit the functions of the components. If you can configure Zapret or ByeDPI yourself, you can do it in CDPI UI.
 
-The preset creation wizard makes creating new presets a breeze. Eye-pleasing flag highlighting and the ability to create variables for easy integration with the UI are designed specifically for advanced users.
+The preset creation wizard makes the creation of new presets easy. The flag highlight and the variables for integration with the UI are for advanced users.
 
 ## Standalone
 
-The launch settings auto-selection mechanism has become even more stable. The new interface allows you to combine several working strategies for
-multiple website lists into a single, unified one, without having to search for a new strategy online.
-Offline help allows you to get support even without an internet connection.
+The auto-selection of launch settings is more stable. The new interface can combine working strategies for some site lists into one strategy. You do not need to find a new strategy on the internet.
+
+The offline help gives support without an internet connection.
 
 ## Customizable
 
-The component store lets you choose only the components and presets you need. Nothing extra.
+In the component store, you select only the components and presets that you need.
 
-## Free forever
+## Free
 
-No subscriptions—all functionality is always available without restrictions. Technical support is also completely free.
+There are no subscriptions. All functions are always available without limits. Technical support is also free.
 
-Any paid support for the developer is optional, without pushy banners.
+A payment to the developer is optional. The application does not show intrusive banners.
 
-## Open-Source
+## Open source
 
-You can change the app's code at any time or verify its security on the official GitHib repository.
+You can change the application code at any time. You can also examine the security of the code in the official GitHub repository.
 
 ## Fast
 
-The app uses less than 10 KB of RAM when running in the background.
+The application uses less than 10 KB of RAM when it operates in the background.

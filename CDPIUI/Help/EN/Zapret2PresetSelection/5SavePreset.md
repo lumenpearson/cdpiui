@@ -1,31 +1,38 @@
-# Testing and saving the config
+# Test and save the preset
 
-The review page shows the completed config text and its related files. The text is read-only by default to prevent accidental changes.
+The review page shows the full preset text and its related files. By default, you cannot edit the text. This prevents accidental changes.
 
-### Test the config before saving
+### Test the preset before the save
 
-1. Make sure [Used files] does not contain missing TXT lists or libraries.
-2. Start the config temporarily.
-3. Open the required sites in your normal browser or test the required application.
-4. Test more than the main page: check sign-in, images, video, and other important features.
-5. Stop the temporary process after testing.
+1. Make sure that [Used files] has no missing TXT lists or libraries.
+2. Start the preset temporarily.
+3. Open the necessary sites in your usual browser, or test the necessary application.
+4. Test more than the main page. Check the sign-in, images, video and other important functions.
+5. Stop the temporary process after the test.
 
-If a file has a warning, select [Replace] and choose the current file. This can happen when you open a report from another computer or after moving a custom list.
+A file can have a warning. This can occur when you open a report from a different computer or after you move a custom list. Then do these steps:
+
+1. Select [Replace].
+2. Select the current file.
 
 ### Save to CDPIUI
 
-Select [Save as new config], enter a clear name, and confirm. CDPIUI adds the config to [Configs] and copies the required custom lists and external files into application storage. Your original files are not changed.
+1. Select [Save as new config].
+2. Enter a clear name.
+3. Confirm the save.
 
-If the save button is unavailable, check the name, the Zapret2 installation, and warnings about missing files.
+CDPIUI adds the preset to [Configs]. It copies the necessary custom lists and external files into the application storage. CDPIUI does not change your original files.
+
+If the save button is not available, examine the name, the Zapret2 installation and the warnings about missing files.
 
 ### Reports and history
 
-The scan result automatically appears under [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports). From there, you can open a report, show its file in the folder, or remove it from history.
+The scan result automatically shows in [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports). There, you can open a report, show its file in the folder or remove it from the history.
 
 ### For advanced users
 
-- A **JSON report** preserves complete structured results and is best for reopening the scan, manual assembly, or diagnostics.
-- A **text report** is easier to read but contains less information.
-- **Allow editing** enables expert mode. Use it only if you understand Zapret2 parameters. If you return to the builder, direct text changes are removed because they cannot be converted back into the selected sites and strategies without losing information.
+- A **JSON report** keeps the full structured results. Use it to open the scan again, for manual assembly or for diagnostics.
+- A **text report** is easier to read. It contains less information.
+- **Allow editing** enables the expert mode. Use it only if you know the Zapret2 parameters. If you go back to the builder, the application removes your direct text changes. It cannot convert them back into the selected sites and strategies.
 
-If the saved config does not work as expected, see [If the result is not suitable](cdpiui://Help/Zapret2PresetSelection/6TroubleshootingPresetSelection/).
+If the saved preset does not operate correctly, see [If the result is not applicable](cdpiui://Help/Zapret2PresetSelection/6TroubleshootingPresetSelection/).

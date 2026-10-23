@@ -1,34 +1,34 @@
-# Selecting a config for Zapret2
+# Preset selection for Zapret2
 
-This utility helps create a Zapret2 config for the sites you need. A config is a saved set of settings that the component can use later.
+This utility helps you make a Zapret2 preset for the sites that you need. A preset is a saved set of settings that the component uses at launch. Some buttons in this utility use the word "config". A config is the same as a preset.
 
-The utility automatically:
+The utility automatically does these steps:
 
-1. Checks whether the selected sites work without Zapret2.
-2. Tests different strategies — alternative Zapret2 settings.
-3. Chooses the most reliable options and combines them into one config.
-4. Tests the complete config and, when possible, replaces conflicting options.
-5. Saves a report so you can return to the result later.
+1. It checks if the selected sites operate without Zapret2.
+2. It tests different strategies. A strategy is a set of Zapret2 settings.
+3. It selects the most reliable strategies and combines them into one preset.
+4. It tests the full preset. If possible, it replaces the strategies that cause conflicts.
+5. It saves a report. You can open the result again later.
 
 [Start a new scan](cdpiui://Tools/AutoConfig/Zapret2/)
 
 [Show previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports)
 
-### When this utility is useful
+### When is this utility useful?
 
-- The sites you need do not work with your installed configs.
-- You want one config for several sites or site lists.
-- You want to test different settings automatically instead of trying each one yourself.
+- The necessary sites do not operate with your installed presets.
+- You want one preset for more than one site or site list.
+- You want an automatic test of different settings. You do not want to try each setting manually.
 
-The Zapret2 component must be installed in CDPIUI before you can start a scan.
+You must install the Zapret2 component in CDPIUI before you start a scan.
 
-### Important details
+### Important information
 
-- Only the addresses you add are tested. If a service uses separate addresses for images, video, sign-in, or its API, you may need to add those addresses as well.
-- A successful automated check does not guarantee that the entire page or application will work. Always test the config in your normal browser or application afterward.
-- CDPIUI temporarily stops active network components during the scan. Internet access on this computer may be unavailable until the scan finishes or is canceled.
-- A stopped or partially successful scan will usually still provide a report with the results collected so far.
+- The utility tests only the addresses that you add. A service can use separate addresses for images, video, sign-in or its API. Then you possibly must add these addresses too.
+- A successful automatic check does not guarantee that the full page or application operates. After the scan, always test the preset in your usual browser or application.
+- During the scan, CDPIUI stops the active network components. The internet connection on this computer can be unavailable until the scan stops.
+- A stopped scan or a partially successful scan usually gives a report with the results that it collected.
 
-If the automatically suggested config does not work for you, follow [Build a config manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).
+If the recommended preset does not operate, read [Build a preset manually](cdpiui://Help/Zapret2ManualPresetBuilding/1ManualPresetOverview/).
 
-Next: [prepare for a scan](cdpiui://Help/Zapret2PresetSelection/2ChooseSitesAndMode/).
+Next: [Prepare for a scan](cdpiui://Help/Zapret2PresetSelection/2ChooseSitesAndMode/).

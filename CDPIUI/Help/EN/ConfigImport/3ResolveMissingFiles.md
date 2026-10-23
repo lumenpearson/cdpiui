@@ -1,19 +1,23 @@
 # Missing files
 
-Some presets use separate site lists, BIN files, or LUA libraries. If the wizard cannot find a resource at the expected path, it asks you to choose a solution. Every missing file must be resolved before the preset can be saved.
+Some presets use separate site lists, BIN files or LUA libraries. If the wizard cannot find a resource at the expected path, it asks you to select a solution. You must resolve each missing file before you can save the preset.
 
 ### Available actions
 
-- **Apply AutoCorrect** uses a file that CDPIUI found in another suitable folder. Check the suggested path before applying it.
-- **Choose manually** lets you select an existing file. Prefer a resource from the same preset package with the expected extension.
-- **Create empty** saves an empty file in place of the missing resource.
+| Action | Result |
+| ------ | ------ |
+| **Apply AutoCorrect** | The wizard uses a file that CDPIUI found in a different applicable folder. Examine the recommended path before you apply it. |
+| **Choose manually** | You select an existing file. Use a resource from the same preset package with the expected extension. |
+| **Create empty** | The wizard saves an empty file in place of the missing resource. |
 
-Use an empty file only when the resource is genuinely optional. For example, some user lists or log files can start empty. Do not replace a required LUA library or BIN file with an empty placeholder unless the preset author explicitly says it is optional.
+Use an empty file only when the resource is optional. For example, some user lists or log files can be empty at the start.
 
-For files whose names contain `user` or `debug`, the wizard may immediately suggest an empty file. This is a suggestion, not a guarantee of compatibility.
+CAUTION: Do not replace a necessary LUA library or BIN file with an empty file. Do this only if the preset author tells you that the file is optional.
 
-If every unresolved file has an AutoCorrect suggestion, selecting **Continue** applies those suggestions automatically. If at least one file has no suggestion, choose an action for it first.
+For files with `user` or `debug` in the name, the wizard can recommend an empty file immediately. This is a recommendation. It does not guarantee compatibility.
 
-Required resources are copied to separate CDPIUI storage when the preset is saved. The original files remain in place and are not deleted.
+If each unresolved file has an AutoCorrect recommendation, **Continue** applies these recommendations automatically. If a file has no recommendation, select an action for it first.
 
-Next: [review, test, and save](cdpiui://Help/ConfigImport/4ReviewTestAndSave/).
+When you save the preset, CDPIUI copies the necessary resources into its own storage. The original files stay in their location. CDPIUI does not delete them.
+
+Next: [Review, test and save](cdpiui://Help/ConfigImport/4ReviewTestAndSave/).

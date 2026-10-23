@@ -1,47 +1,47 @@
-﻿# Preferred version control
+# Preferred version control
 
-Starting with version 0.3.0.0, the Store has the ability to change the preferred server for receiving item and app updates.
+From version 0.3.0.0, you can change the preferred server for item updates and application updates in the Store.
 
-### What is this used for?
+### What is this for?
 
-The app constantly contacts the server to obtain the following information:
+The application regularly connects to the server to get this information:
 
-- Availability of app updates.
-- Availability of updates for individual items downloaded from the Store.
+- The availability of application updates.
+- The availability of updates for items from the Store.
 - The latest version of the Store database.
 
-**[!] Please note.** You can completely disable checking for updates. To do this, go to [Settings] and uncheck the corresponding boxes in the [Notifications] group.
+**Note.** You can fully disable the update check. Open [Settings] and clear the related check boxes in the [Notifications] group.
 
 The Store also uses the server to download new items to your device.
 
-### What does changing the preferred server affect?
+### What does a change of the preferred server do?
 
-Changing the preferred server forces the app to check for and download updates from a different server. However, some items may still be located on external servers, regardless of the app settings.
+The application checks for updates and downloads updates from a different server. Some items can be on external servers. The application settings do not change this.
 
-### Should I change the preferred server?
+### When must I change the preferred server?
 
-You should change your preferred server if:
+Change the preferred server in these conditions:
 
-- The download speed from the current server is extremely slow.
-- The app cannot access the current server. For example: updating the Store database failed with an SSL error; checking for app updates failed with an `UNEXPECTED_STATUS_CODE` error, etc.
-- When trying to download an item, you repeatedly encounter network-related errors (`HTTP_REQUEST_EXCEPTION`, etc.) **DO NOT CONFUSE** those related to write operations (`IO_GENERIC`, etc.)
+- The download speed from the current server is very slow.
+- The application cannot connect to the current server. For example, the Store database update fails with an SSL error. Or the check for application updates fails with an `UNEXPECTED_STATUS_CODE` error.
+- Network errors (`HTTP_REQUEST_EXCEPTION` and similar) occur each time you download an item. Do not change the server for write errors (`IO_GENERIC` and similar).
 
-If you are not experiencing any issues with either the Store or app updates, then you should not change your preferred server. *"If it works, don't touch it!"*
+If the Store and the application updates operate correctly, do not change the preferred server. *"If it works, do not touch it!"*
 
-### How do I change my preferred server?
+### How do I change the preferred server?
 
-To change your preferred server, follow these simple steps:
+1. Open the Component Store. Use the [Utilities] page of the main window.
+2. Open the [Settings] page of the Store.
+3. Set [Preferred version control] to the necessary value.
+4. Restart the application. The change starts to operate only after the restart.
 
-- Open the Component Store (you can do this through the [Utilities] page in the main application window).
-- Go to the [Settings] page of the Store.
-- Switch the [Preferred version control] setting to the desired option.
-- Restart the app: changes will take effect only after restarting.
+### Which version controls are available?
 
-### What version controls are available for the Store?
+At this time, the Store has repositories on public GitHub and GitLab servers. The number of servers can change in the future.
 
-Currently, the Store has a repository on public GitHub and GitLab servers. The number of available servers may change in the future.
+| Version control | Description |
+| --------------- | ----------- |
+| **GitHub** | The default repository. It links to the original repositories on GitHub. Some users cannot connect to it. |
+| **GitLab** | The backup repository. It links to backup copies of the original repositories on GitLab. The application developer keeps the backup copies. The authors of the items do not control them. |
 
-- **GitHub** Default repository. Links to the original repositories located on GitHub. May be unavailable to some users.
-- **GitLab** Backup repository. Links to backups of the original repositories on GitLab. Backups are maintained by the app developer and are not directly related to the authors of the elements.
-
-Up-to-date information on available servers and their addresses can be found in the app developer's official Telegram channel.
+The official Telegram channel of the application developer has the latest information about the servers and their addresses.

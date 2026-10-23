@@ -1,7 +1,7 @@
-﻿# Welcome to Help!
+# Welcome to Help
 
-Here you can find tips on setting up the app, troubleshooting common problems, and descriptions of some of the app's features.
+Help gives tips about the application settings. It also tells you how to solve frequent problems and how some application functions operate.
 
-Remember that the program is designed for experienced PC and Windows users. The tips provided in the Help assume you already know the basics of PC use and don't need detailed step-by-step guides.
+The application is for experienced users of a PC and of Windows. The tips in Help do not give detailed instructions for basic PC operations.
 
-To get started, select the Help section you're interested in from the left menu and study it carefully.
+To start, select a Help section in the menu on the left side.

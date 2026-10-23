@@ -1,26 +1,30 @@
-# Building a config manually
+# Build a preset manually
 
-The manual builder lets you choose strategies from a scan report yourself. Use it when the automatically suggested config does not work in a browser, the scan produced only a partial result, or you want to replace one strategy.
+With the manual builder, you select strategies from a scan report yourself. Use it in these conditions:
 
-The builder does not scan the complete catalog again. It uses the results already collected during the scan, but it can retest an individual strategy.
+- The recommended preset does not operate in a browser.
+- The scan gave only a partial result.
+- You want to replace one strategy.
 
-### When to use the manual builder
+The builder does not scan the full catalog again. It uses the results from the scan. But it can test one strategy again.
 
-- The report contains successful strategies, but the complete automatic config does not work.
-- Different sites in one list need different options.
-- The automatic choice is unstable or uses a strategy you do not want.
-- You want to keep only options that you have tested manually.
+### When must I use the manual builder?
 
-If no strategy passed for the required site, manual assembly cannot make one work. [Run another scan](cdpiui://Tools/AutoConfig/Zapret2/) with a different mode or site list instead.
+- The report has successful strategies, but the full automatic preset does not operate.
+- Different sites in one list need different strategies.
+- The automatic strategy is not stable, or you do not want to use it.
+- You want to keep only the strategies that you tested manually.
+
+If no strategy passed for the necessary site, the manual builder cannot help. [Do a new scan](cdpiui://Tools/AutoConfig/Zapret2/) with a different mode or site list.
 
 ### Open the builder
 
-1. Open the result of the completed scan or select it under [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports).
+1. Open the result of the completed scan. Or select it in [Previous scans](cdpiui://Tools/AutoConfig/Zapret2/Reports).
 2. In [How do you want to continue?], select [Manual builder].
-3. If that dialog is already closed, open [Preset builder] at the top of the result window.
+3. If this dialog is closed, open [Preset builder] at the top of the result window.
 
-The builder initially contains the automatically selected strategies. You can use them as a starting point, change them, or select [Remove all] to start with an empty config.
+At the start, the builder contains the automatically selected strategies. You can use them as a base or change them. To start with an empty preset, select [Remove all].
 
-Every strategy you add should be tested on the site and connection type where you plan to use it.
+Test each strategy that you add. Use the site and the connection type for which you will use the strategy.
 
-Next: [choose strategies](cdpiui://Help/Zapret2ManualPresetBuilding/2ChooseManualStrategies/).
+Next: [Select strategies](cdpiui://Help/Zapret2ManualPresetBuilding/2ChooseManualStrategies/).

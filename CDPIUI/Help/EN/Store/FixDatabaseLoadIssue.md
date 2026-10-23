@@ -1,27 +1,25 @@
-﻿# Fixing the Store Database Loading Error
+# Fix the Store database load error
 
-### Before You Begin
+### Before you start
 
-Make sure you're connected to the internet and that your service provider isn't blocking connections using whitelists.
-Otherwise, this guide won't be able to help you.
+Make sure that you have an internet connection. Make sure that your provider does not block connections with whitelists. If your provider uses whitelists, this guide cannot help you.
 
-Also:
+Look at the error code at the bottom of the Store [Home] page. This code contains useful information about the problem.
 
-- Look at the error code at the bottom of the Store [Home] page. This code contains useful information that may help solve your problem.
+### Possible fixes
 
-### Possible Solutions
-
-- **Clear the Store cache.** Go to the [Settings/Memory Usage/Store Cache] page and clear it. If this section isn't listed in [Memory Usage], skip this step.
-- **Change the version control tool.** For more information, see the [Preferred version control](https://storik4pro.github.io/en-US/cdpiui/wiki/Store/PreferedVersionControl/) help section.
-- **Make sure the application has write access to its directory.** You can do this through the [Folder Info/Security] menu in Windows Explorer.
+- **Clear the Store cache.** Open the [Settings/Memory Usage/Store Cache] page and clear the cache. If [Memory Usage] does not show this section, skip this step.
+- **Change the version control.** For more information, see [Preferred version control](cdpiui://Help/Store/PreferedVersionControl/).
+- **Make sure that the application has write access to its directory.** Use the [Properties/Security] tab of the folder in Windows Explorer.
 - **Restart your PC.**
-- **Reset your firewall settings.** Contact the official support team of your firewall provider for assistance with this step.
-- **Add the application to your antivirus's exceptions list.**
+- **Reset your firewall settings.** For help with this step, speak to the official support of your firewall provider.
+- **Add the application to the exception list of your antivirus.**
 
-### If all else fails
+### If the problem continues
 
-- Check the developer's official social media channels. They contain the most up-to-date information on available version control tools.
-- There may have been an error on the application's side. Please report it to the application's technical support team, attaching the necessary logs and describing the problem in detail (this is important!). You can find the technical support address on the [About] page of the app's main window.
+- Read the official social media channels of the developer. They have the latest information about the available version controls.
+- An error in the application possibly occurred. Send a report to the technical support of the application. Attach the necessary logs and give a detailed description of the problem. This is important. The [About] page of the main window shows the technical support address.
 
-Also, keep in mind that the app allows you to install components, add-ons, and presets locally. Repositories with supported packages are available at [gitlab.com/cdpi-ui-components-store](https://gitlab.com/cdpi-ui-components-store).
-For help with local installation, see [Adding an item from a local package](https://storik4pro.github.io/en-US/cdpiui/wiki/Store/AddLocalItem/)
+The application can also install components, add-ons and presets from local packages. The repositories with supported packages are at [gitlab.com/cdpi-ui-components-store](https://gitlab.com/cdpi-ui-components-store).
+
+For help with a local installation, see [Add an item from a local package](cdpiui://Help/Store/AddLocalItem/).

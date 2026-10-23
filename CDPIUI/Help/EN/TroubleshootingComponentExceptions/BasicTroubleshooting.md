@@ -1,15 +1,16 @@
-﻿# Troubleshooting component exceptions
+# Troubleshoot component exceptions
 
-### Before You Begin
-First, check the error code. It is usually displayed at the top of the [Pseudo Console] window in the "This component has terminated with an error: \<Exception Code\>" menu.
+### Before you start
 
-|Exception Code  | Description                                  | Possible Fixes                 |
-|----------------|----------------------------------------------|--------------------------------|
-|PARAMETER_ERROR | The flag passed to the component is not supported | Update the component being used to the latest version.<br>Make sure a preset is selected for the component and that it is not empty.<br>If you created a preset manually, please review the component's official documentation. Some of the specified flags may not be supported on your platform.|
-|FILTER_OPEN_ERROR| Failed to start the WinDivert filter. | Reinstall the component<br>Make sure the component preset contains the correct port information<br>Make sure nothing is blocking traffic management on your PC. |
-|HOSTLIST_LOAD_ERROR<br>FILE_READ_ERROR| Failed to load site list| Reinstall the preset set<br>Make sure all site lists/IP addresses used in the preset exist in the preset folder |
-|PORT_FILTER_ERROR| WinDivert could not determine the port to run on| Make sure the component preset contains the correct port information|
-|COMPONENT_INSTALL_ERROR| The component was installed incorrectly | Reinstall the component|
-|INVALID_VALUE_ERROR| The flag value passed is invalid| Update the component being used to the latest version<br>If you created the preset manually, please review the component's official documentation. Some of the specified flags and their values ​​may not be supported on your platform.|
-|ALREADY_RUNNING_WARN| An instance of WinDivert is already running on this PC.| Stop the WinDivert service.<br>Remove or disable all existing bypass tools except this application.|
-|ACCESS_DENIED | Unable to access file.|Verify that the application, component executable, and WinDivert service have read and write permissions in the installation directory.|
+Find the exception code. The code is usually at the top of the [Pseudo Console] window, in the message "This component has terminated with an error: \<Exception Code\>".
+
+| Exception code | Description | Possible fixes |
+| -------------- | ----------- | -------------- |
+| PARAMETER_ERROR | The component does not support the flag. | Update the component to the latest version.<br>Make sure that the component has a selected preset and that the preset is not empty.<br>If you made the preset manually, read the official documentation of the component. Your platform possibly does not support some of the flags. |
+| FILTER_OPEN_ERROR | The WinDivert filter did not start. | Install the component again.<br>Make sure that the component preset has the correct port data.<br>Make sure that no software blocks the traffic control on your PC. |
+| HOSTLIST_LOAD_ERROR<br>FILE_READ_ERROR | The site list did not load. | Install the preset set again.<br>Make sure that all site lists and IP lists of the preset are in the preset set folder. |
+| PORT_FILTER_ERROR | WinDivert cannot find the port. | Make sure that the component preset has the correct port data. |
+| COMPONENT_INSTALL_ERROR | The component installation is not correct. | Install the component again. |
+| INVALID_VALUE_ERROR | The flag value is not valid. | Update the component to the latest version.<br>If you made the preset manually, read the official documentation of the component. Your platform possibly does not support some of the flags or values. |
+| ALREADY_RUNNING_WARN | An instance of WinDivert already operates on this PC. | Stop the WinDivert service.<br>Remove or disable all other bypass tools. |
+| ACCESS_DENIED | The component cannot open a file. | Make sure that the application, the component executable file and the WinDivert service have read access and write access to the installation directory. |

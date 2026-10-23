@@ -1,29 +1,32 @@
 # Import presets from files
 
-This utility helps bring presets from other applications or saved files into CDPIUI. It recognizes launch arguments, finds related lists and libraries, and lets you test and save the result.
+This utility moves presets from other applications or from saved files into CDPIUI. It finds the launch arguments and the related lists and libraries. Then you can test and save the result.
 
 [Open the import utility](cdpiui://Tools/ImportConfig)
 
 ### Which files are supported?
 
-- `.bat` and `.cmd` component launch scripts;
-- `.txt` files containing launch arguments;
-- `.json` presets in a supported CDPIUI format.
+- `.bat` and `.cmd` launch scripts of components;
+- `.txt` files with launch arguments;
+- `.json` presets in a supported CDPIUI format;
+- `.cdpiconfig` presets that were shared from CDPIUI with their resources.
 
-You can select several files at once. The wizard creates a separate result card for each file.
+You can select more than one file. The wizard makes a separate result card for each file.
 
-An ordinary JSON document, a report from another utility, or an unknown application's settings file is not a CDPIUI config and may not be imported.
+A usual JSON document is not a CDPIUI preset. A report from a different utility or a settings file of an unknown application is also not a preset. The import of these files can fail.
 
-### What should I prepare?
+### What must I prepare?
 
-- Install the component for which the config was created. Components that are not installed cannot be selected or tested.
-- Keep the BAT, CMD, or TXT file together with its list, BIN, and LUA folders. The wizard will try to find and copy these dependencies.
-- Keep a backup of the original package when possible.
+- Install the component for which the preset was made. You cannot select or test a component that is not installed.
+- Keep the BAT, CMD or TXT file together with its list, BIN and LUA folders. The wizard tries to find and copy these dependencies.
+- If possible, keep a backup copy of the original package.
 
 ### Is the analysis safe?
 
-During analysis, CDPIUI only reads the selected files. It does not run the source BAT or CMD script, execute its commands, or modify or delete the original files.
+During the analysis, CDPIUI only reads the selected files. It does not run the BAT or CMD script or its commands. It does not change or delete the original files.
 
-The test button on the result page is different: it starts the selected installed component with the imported arguments. Use it only with files from a source you trust.
+The test button on the result page is different. It starts the selected installed component with the imported arguments.
 
-Next: [choose and prepare files](cdpiui://Help/ConfigImport/2ChooseImportFiles/).
+WARNING: Use the test button only with files from a source that you trust.
+
+Next: [Select and prepare files](cdpiui://Help/ConfigImport/2ChooseImportFiles/).

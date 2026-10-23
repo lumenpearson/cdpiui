@@ -1,37 +1,41 @@
-# Errors and limitations
+# Errors and limits
 
-If a card has the **Warnings** or **Failed** status, select the status. The details show a problem code and, when available, the source line number.
+If a card has the **Warnings** or **Failed** status, select the status. The details show a problem code. If possible, they also show the line number in the source file.
 
-### Common situations
+### Frequent problems
 
 **The JSON file is not supported**
 
-The utility accepts CDPIUI JSON presets in a supported format. An arbitrary JSON document, a Zapret2 scan report, or settings from another application cannot be imported merely because it uses the `.json` extension. Find an exported preset or use a BAT, CMD, or TXT file containing launch arguments.
+The utility accepts CDPIUI JSON presets in a supported format. The utility cannot import a JSON document only because it has the `.json` extension. For example, it cannot import a Zapret2 scan report or settings from a different application. Find an exported preset. Or use a BAT, CMD or TXT file with launch arguments.
 
-**The component could not be detected or selected**
+**The wizard cannot find or select the component**
 
-Install the required component from the CDPIUI Store first. A component is available to the wizard only when its folder and executable exist on this computer.
+First, install the necessary component from the CDPIUI Store. The wizard can use a component only if its folder and executable file are on this computer.
 
-**The preset is not suitable for the selected component**
+**The preset is not applicable to the selected component**
 
-Select the component named by the preset author. Similar purpose does not mean that two components support the same arguments.
+Select the component that the preset author specifies. Two components with a similar purpose do not always support the same arguments.
 
 **A referenced file is missing**
 
-Return to the original preset archive or folder and locate the required list, BIN, or LUA file. Select it manually. Create an empty file only for a genuinely optional resource.
+Go back to the original preset archive or folder. Find the necessary list, BIN file or LUA file. Select it manually. Make an empty file only for an optional resource.
 
-**No component launch was found, or several launches were found**
+**The wizard found no component launch or more than one launch**
 
-The wizard could not extract one unambiguous set of arguments. Try another file from the package, remove extra launch alternatives from a copy of the BAT or CMD file, or save the required arguments in a separate TXT file.
+The wizard cannot get one clear set of arguments. Do one of these steps:
 
-**The test exits immediately, or the saved preset does not work**
+- Try a different file from the package.
+- Make a copy of the BAT or CMD file and remove the unnecessary launch options from the copy.
+- Save the necessary arguments in a separate TXT file.
 
-Check the selected component, warnings, and missing-file decisions. Make sure you imported the working launch variant. Some presets contain additional values that must be configured in the component settings.
+**The test stops immediately, or the saved preset does not operate**
+
+Examine the selected component, the warnings and your decisions for the missing files. Make sure that you imported the working launch option. Some presets have more values that you must set in the component settings.
 
 ### For advanced users
 
-Static analysis can process only known structures. Complex `if`, `for`, and `goto` logic, computed variables, nonstandard include files, wrapper launches, and arbitrary resource generation may be recognized only partially. Source BAT and CMD commands are not executed during analysis, so the result of such a script may require manual correction.
+The static analysis can examine only known structures. Complex `if`, `for` and `goto` logic can be identified only partially. This also applies to calculated variables, nonstandard include files, wrapper launches and dynamic resource creation. The analysis does not run the BAT and CMD commands. Thus, you possibly must correct the result of such a script manually.
 
-Back to the beginning: [Import presets from files](cdpiui://Help/ConfigImport/1AboutConfigImport/).
+Back to the start: [Import presets from files](cdpiui://Help/ConfigImport/1AboutConfigImport/).
 
 [Start a new import](cdpiui://Tools/ImportConfig)

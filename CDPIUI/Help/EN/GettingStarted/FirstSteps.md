@@ -1,22 +1,32 @@
-﻿# First Steps
+# First steps
 
-This guide will help you learn the basics of using CDPI UI and customize it.
+This guide shows the basic operation of CDPI UI and the initial settings.
 
-- **Download the first component from the Store.** Go to the Store to download the component you need. At the time of writing, ready-made presets only exist for Zapret.
-ByeDPI requires selecting a preset using GoodCheck (GoodCheck can be found in the "Add-ons" section of the Store).
+### Download the first component
 
-- **Prepare the downloaded component for use.** Go to the settings page for the installed component and select the preset you want to use. (The component will automatically restart after changing the preset if it was previously running.) Also, keep in mind that some applications and services require restarting to obtain reliable information about their availability.
+1. Open the Store.
+2. Download the component that you need.
 
-- **Configure component autostart.** Configuring autostart requires a few simple steps. First, enable the GUI autostart by using the toggle switch
-[Open application when PC starts] on the [Settings] page in the main window. Next, go to the settings for the installed component and check [Start automatically] to ON.
+At this time, ready-made presets are available only for Zapret. ByeDPI needs a preset from a GoodCheck selection. GoodCheck is in the "Add-ons" section of the Store.
 
-Congratulations! The application setup has been successfully completed.
+### Prepare the component
 
-If some services become unavailable in the future:
+1. Open the settings page of the installed component.
+2. Select the preset that you want to use.
 
-- **Check for updates.** Go to the [Downloads] page in the Store and check for items that need updating. Update them if necessary.
+If the component operates, it restarts automatically after you change the preset. Some applications and services must restart before they show correct availability.
 
-- **Select a preset.** Go through the list of presets again – maybe one of them will work.
+### Set the autostart of the component
 
-- **Use GoodCheck selection.** Find a working preset using GoodCheck – go to the [Utilities] page and start the selection by clicking [Automatic preset creation utility].
-To select, you must have the "GoodCheck" add-on installed.
+1. Open the [Settings] page in the main window.
+2. Set the [Open application when PC starts] switch to ON.
+3. Open the settings of the installed component.
+4. Set [Start automatically] to ON.
+
+The setup of the application is complete.
+
+### If some services become unavailable
+
+- **Check for updates.** Open the [Downloads] page in the Store. Update the items that have updates.
+- **Select a different preset.** Try the presets in the list again. One of them can operate.
+- **Use the GoodCheck selection.** Open the [Utilities] page. Select [Automatic preset creation utility]. The "GoodCheck" add-on must be installed.
