@@ -198,7 +198,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 ConfigLocaleHelpers.Clear();
                 List<DatabaseStoreItem> configItems =
                     string.IsNullOrEmpty(itemId) ? 
-                    DatabaseHelper.Instance.GetItemsByType("configlist") : [DatabaseHelper.Instance.GetItemById(itemId)];
+                    DatabaseHelper.Instance.GetItemsByType("configlist") :
+                    DatabaseHelper.Instance.GetItemById(itemId) is { } configItem ? [configItem] : [];
 
                 List<DatabaseStoreItem> itemsToCheck = new List<DatabaseStoreItem>();
 
@@ -990,9 +991,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     if (line.Contains("winws.exe"))
                     {
                         string ver = DatabaseHelper.Instance
-                            .IsItemInstalled(HardcodedItemIds.ComponentIds[Components.Zapret]) ?
-                            DatabaseHelper.Instance
-                            .GetItemById(HardcodedItemIds.ComponentIds[Components.Zapret]).CurrentVersion : 
+                            .GetItemById(HardcodedItemIds.ComponentIds[Components.Zapret])?.CurrentVersion ??
                             "%CURRENT%";
                         target = [HardcodedItemIds.ComponentIds[Components.Zapret], ver];
                     }

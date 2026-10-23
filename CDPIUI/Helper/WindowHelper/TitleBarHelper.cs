@@ -30,6 +30,7 @@ namespace CDPIUI.Helper.WindowHelper
             }
             catch (Exception ex)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TitleBarHelper), ex.ToString());
                 return Windows.UI.Color.FromArgb(255, 0, 0, 0);
             }
             

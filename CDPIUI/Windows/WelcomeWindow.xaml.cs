@@ -229,7 +229,7 @@ namespace CDPIUI
                         AcceptLicenseContentDialog dialog = new()
                         {
                             Licenses = licenses,
-                            XamlRoot = this.Content.XamlRoot
+                            XamlRoot = ContentRoot.XamlRoot
                         };
                         if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                             return;
@@ -451,7 +451,7 @@ namespace CDPIUI
                     AcceptLicenseContentDialog dialog = new()
                     {
                         Licenses = licenses,
-                        XamlRoot = Content.XamlRoot
+                        XamlRoot = ContentRoot.XamlRoot
                     };
                     if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                     {

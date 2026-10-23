@@ -360,8 +360,6 @@ namespace CDPIUI.Default
                 TaskbarProgress.SetValue(currentLoadingValue, maxLoadingValue);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
         #region WINAPI
 
 

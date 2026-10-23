@@ -31,7 +31,6 @@ namespace CDPIUI.Core.Store
 
         private ApplicationUpdateService? ApplicationUpdateService;
 
-        private const string ScriptGetArgsRegex = @"\$.*?\((.*?)\)";
 
         
 
