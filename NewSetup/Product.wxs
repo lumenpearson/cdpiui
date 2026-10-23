@@ -31,7 +31,16 @@
     </StandardDirectory>
     <Feature Id="NewSetup" Title="CDPI UI" Description="Installs all the files needed for CDPI UI" Level="1" AllowAdvertise="no" ConfigurableDirectory="INSTALLLOCATION">
       <ComponentGroupRef Id="NewSetupFiles" />
+      <ComponentRef Id="InstallLocationPermissions" />
     </Feature>
+    <!-- The elevated tray runs files from this directory. A custom location such as C:\CDPI UI would inherit
+         write access for all users from its parent, so it gets the same rights as Program Files:
+         full control for SYSTEM and Administrators, read and execute for Users. -->
+    <Component Id="InstallLocationPermissions" Directory="INSTALLLOCATION" Guid="{AC0B143D-91DD-4B7A-8709-0ECBDFC99C3D}">
+      <CreateFolder>
+        <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)" />
+      </CreateFolder>
+    </Component>
     <CustomAction Id="LaunchApp" Directory="INSTALLLOCATION" ExeCommand="[SystemFolder]cmd.exe /C start CDPIUI.exe" Return="asyncNoWait" />
     <!-- Closes the tray so it stops the components and restores the proxy settings, then ends the remaining
          application processes and removes the WinDivert driver and the autorun task created by the application. -->
