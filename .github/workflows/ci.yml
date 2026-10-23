@@ -36,6 +36,24 @@ jobs:
       - name: Test
         run: dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release
 
+      # Direct and transitive packages with a known vulnerability of moderate or higher severity fail the job.
+      - name: Check packages for known vulnerabilities
+        shell: pwsh
+        run: |
+          $projects = @(
+            @('CDPIUI.Shared/CDPIUI.Shared.csproj', ''),
+            @('CDPIUI.Core/CDPIUI.Core.csproj', '-p:Platform=x64'),
+            @('CDPIUI.AddOns/CDPIUI.AddOns.csproj', ''),
+            @('CDPIUI.TrayIcon/CDPIUI.TrayIcon.csproj', '-p:Platform=x64'),
+            @('CDPIUI/CDPIUI.csproj', '-p:Platform=x64'),
+            @('CDPIUI.Tests/CDPIUI.Tests.csproj', '')
+          )
+          foreach ($project in $projects) {
+            $extra = @($project[1] | Where-Object { $_ })
+            dotnet restore $project[0] @extra --force -p:NuGetAuditMode=all -p:NuGetAuditLevel=moderate "-p:WarningsAsErrors=NU1902%3BNU1903%3BNU1904"
+            if ($LASTEXITCODE -ne 0) { throw "Vulnerable packages in $($project[0])" }
+          }
+
   gui:
     runs-on: windows-latest
     # The WinUI project needs the CommunityToolkit Labs feed and the Windows App SDK
