@@ -281,13 +281,24 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             string folder = GetItemFolderFromPackId(packId);
             string fileName = Path.Combine(folder, filename);
 
-            item.name = item.not_converted_name;
+            // The file keeps the name as written by its author ($LOADDYNAMIC... keys), while the cached
+            // item keeps showing the localized name.
+            string? displayName = item.name;
+            string jsonString;
+            try
+            {
+                item.name = item.not_converted_name ?? item.name;
+                jsonString = JSONConvertor.SerializeObject(item);
+            }
+            finally
+            {
+                item.name = displayName;
+            }
 
-            string jsonString = JSONConvertor.SerializeObject(item);
             Logger.Instance.CreateDebugLog(nameof(ConfigurationService), jsonString);
             try
             {
-                File.WriteAllText(fileName, jsonString);
+                CDPIUI.Shared.Basic.Filesystem.FileSystemService.WriteAllTextAtomic(fileName, jsonString);
             }
             catch (Exception ex)
             {
