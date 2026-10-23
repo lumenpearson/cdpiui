@@ -43,10 +43,30 @@ namespace CDPIUI.Views
             LoadComponents();
             ShowComponentSettingsClickCommand = new RelayCommand(p => ShowComponentSettings(p));
 
-            StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
-            StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
+            ConnectEvents();
+            Loaded += (_, _) => ConnectEvents();
+            Unloaded += (_, _) => DisconnectEvents();
 
             IsBackwardAnimationToPageAvailable = true;
+        }
+
+        // The services are singletons: a page that is not shown must not keep receiving their events.
+        private bool eventsConnected;
+
+        private void ConnectEvents()
+        {
+            if (eventsConnected) return;
+            eventsConnected = true;
+            StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
+            StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
+        }
+
+        private void DisconnectEvents()
+        {
+            if (!eventsConnected) return;
+            eventsConnected = false;
+            StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
+            StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
         }
 
         private void Instance_ItemRemoved(string obj)

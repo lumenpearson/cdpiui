@@ -329,6 +329,7 @@ namespace CDPIUI.Controls.Store
             StoreHelper.Instance.ItemTimeRemainingChanged -= StoreHelper_ItemTimeRemainingChanged;
             StoreHelper.Instance.ItemDownloadSpeedChanged -= StoreHelper_ItemDownloadSpeedChanged;
             StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
+            StoreHelper.Instance.ItemInstallingErrorHappens -= StoreHelper_ItemInstallingErrorHappens;
         }
 
         private void StoreHelper_ItemInstallingErrorHappens(Tuple<string, ErrorModel> obj)
