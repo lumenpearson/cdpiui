@@ -18,6 +18,20 @@ public class VersionHelperTests
     public void EqualVersionsCompareAsZero()
     {
         Assert.Equal(0, VersionHelper.CompareVersionStrings("1.2.3", "1.2.3"));
+        Assert.Equal(0, VersionHelper.CompareVersionStrings("1.0", "1.0.0"));
+        Assert.Equal(0, VersionHelper.CompareVersionStrings("1.0.0.0", "1.0"));
+    }
+
+    [Theory]
+    [InlineData("1.0.0-rc1", "1.0.0")]
+    [InlineData("1.0.0rc1", "1.0.0")]
+    [InlineData("1.0.0-rc1", "1.0.0-rc2")]
+    [InlineData("release-70.5", "release-70.6")]
+    [InlineData("zapret 69", "zapret 70")]
+    public void PrereleaseAndTaggedVersionsAreOrdered(string oldVersion, string newVersion)
+    {
+        Assert.True(VersionHelper.CompareVersionStrings(oldVersion, newVersion) < 0);
+        Assert.True(VersionHelper.CompareVersionStrings(newVersion, oldVersion) > 0);
     }
 
     [Theory]

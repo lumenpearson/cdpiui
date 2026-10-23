@@ -62,6 +62,9 @@ namespace CDPIUI.Core
             }
 
             if (!DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value) &&
+                // GetKeyByValue gives default(Components), which is Zapret, for an id that is no
+                // component, so GoodCheck was suggested on the page of every item.
+                HardcodedItemIds.ComponentIds.ContainsValue(storeId) &&
                 HardcodedItemIds.GoodCheckSupportedComponents.Contains(HardcodedItemIds.ComponentIds.GetKeyByValue(storeId)))
             {
                 items.Add(Store.GetItemInfoFromStoreId(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value));

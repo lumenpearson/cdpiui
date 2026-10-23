@@ -28,8 +28,9 @@ namespace CDPIUI.Core.Store
             if (oldVersion.StartsWith('v')) oldVersion = oldVersion[1..];
             if (newVersion.StartsWith('v')) newVersion = newVersion[1..];
 
-            if (oldVersion.Contains("rc")) oldVersion = oldVersion.Replace("rc", "-rc");
-            if (newVersion.Contains("rc")) newVersion = newVersion.Replace("rc", "-rc");
+            // "1.0.0rc1" -> "1.0.0-rc1"; "1.0.0-rc1" stays (it became "1.0.0--rc1").
+            oldVersion = ReleaseCandidateRegex().Replace(oldVersion, "-rc");
+            newVersion = ReleaseCandidateRegex().Replace(newVersion, "-rc");
 
             if (Semver.SemVersion.TryParse(oldVersion, out var oldSemVersion) && Semver.SemVersion.TryParse(newVersion, out var newSemVersion))
             {
@@ -37,9 +38,7 @@ namespace CDPIUI.Core.Store
             }
             else if (Version.TryParse(oldVersion, out var oldVerVersion) && Version.TryParse(newVersion, out var newVerVersion))
             {
-                if (oldVerVersion < newVerVersion) return -1;
-                else if (oldVerVersion > newVerVersion) return 1;
-                else return 0;
+                return Normalize(oldVerVersion).CompareTo(Normalize(newVerVersion));
             }
 
             if (DateTime.TryParseExact(oldVersion, "ddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime oldData) &&
@@ -48,9 +47,31 @@ namespace CDPIUI.Core.Store
                 return DateTime.Compare(oldData, newData);
             }
 
+            // Tags such as "release-70.6" or "zapret 70.6": compare the version numbers they contain.
+            Match oldNumber = VersionNumberRegex().Match(oldVersion);
+            Match newNumber = VersionNumberRegex().Match(newVersion);
+            if (oldNumber.Success && newNumber.Success &&
+                Version.TryParse(PadSingleNumber(oldNumber.Value), out var oldFallback) &&
+                Version.TryParse(PadSingleNumber(newNumber.Value), out var newFallback))
+            {
+                return Normalize(oldFallback).CompareTo(Normalize(newFallback));
+            }
+
             Logger.Instance.CreateErrorLog(nameof(VersionHelper), $"Cannot compare {oldVersion} and {newVersion}.");
             return 0;
         }
+
+        // Version treats missing parts as -1, so 1.0 was less than 1.0.0.
+        private static Version Normalize(Version version) =>
+            new(version.Major, version.Minor, Math.Max(version.Build, 0), Math.Max(version.Revision, 0));
+
+        private static string PadSingleNumber(string number) => number.Contains('.') ? number : number + ".0";
+
+        [GeneratedRegex(@"(?<=\d)\.?rc", RegexOptions.IgnoreCase)]
+        private static partial Regex ReleaseCandidateRegex();
+
+        [GeneratedRegex(@"\d+(?:\.\d+){0,3}")]
+        private static partial Regex VersionNumberRegex();
 
         public static bool IsVersionInRange(string? version, string? minVersion, string? maxVersion)
         {
