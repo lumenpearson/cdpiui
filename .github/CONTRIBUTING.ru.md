@@ -44,7 +44,9 @@ GUI не запускает компоненты. GUI отправляет за�
    - Git игнорирует этот файл. Не добавляйте его в репозиторий.
 2. Восстановите пакеты NuGet.
    - GUI использует пакеты CommunityToolkit Labs.
-   - `CDPIUI/nuget.config` добавляет [фид Labs](https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json) и nuget.org. Обычное восстановление находит все пакеты.
+   - `nuget.config` в корне репозитория добавляет [фид Labs](https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json) и nuget.org. Обычное восстановление находит все пакеты.
+   - Каждый пакет берётся только из одного фида (`packageSourceMapping` в `nuget.config`). Когда добавляете пакет Labs, проверьте, в каком фиде он опубликован, и добавьте шаблон, если его нет в фиде Labs.
+   - Версии пакетов находятся в `Directory.Packages.props`. Проект указывает пакет без версии. Чтобы добавить или обновить пакет, измените его версию там.
 3. Соберите `CDPI.sln` для платформы `x64`. Приложение не поддерживает другие платформы.
 4. Запустите `CDPIUI.TrayIcon` от имени администратора.
 5. Запустите GUI (`CDPIUI`) от имени обычного пользователя.

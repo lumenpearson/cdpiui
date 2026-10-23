@@ -420,6 +420,6 @@ var result = await dialog.ShowQueuedAsync();
 | `Views` | Страницы, по окнам |
 | `Windows` | Окна (пространство имён `CDPIUI`), `Windows/Default/TemplateWindow.cs`, `Windows/Messages` (диалоговые окна), `Windows/Service` (`PrepareWindow`, `CriticalErrorHandlerWindow`) |
 
-В корне находятся `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest`, `nuget.config` и `RemoveLanguageFolders.targets`.
+В корне находятся `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest` и `RemoveLanguageFolders.targets`. Фиды NuGet описаны в `nuget.config` в корне репозитория.
 
 Проект `CDPIUI.Tests` не тестирует этот проект. См. `CDPIUI.Tests/README.ru.md`.
