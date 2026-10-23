@@ -23,7 +23,9 @@ public static class ConfigCommandLine
         int backslashes = 0;
         foreach (char character in commandLine ?? string.Empty)
         {
-            if ((character is '"' or '\'') &&
+            // Only double quotes group on the Windows command line; an apostrophe inside a value
+            // (a Lua argument, a file name) must not join the following arguments.
+            if (character == '"' &&
                 (quote == '\0' || quote == character) && backslashes % 2 == 0)
             {
                 quote = quote == character ? '\0' : character;
