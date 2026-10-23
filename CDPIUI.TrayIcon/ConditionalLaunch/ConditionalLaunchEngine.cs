@@ -97,7 +97,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             IReadOnlyList<ConditionalTask> loadedTasks;
             try
             {
-                loadedTasks = ConditionalTaskFileService.LoadDirectory(directory);
+                loadedTasks = ConditionalTaskFileService.LoadDirectory(directory, (path, error) =>
+                    Logger.Instance.CreateWarningLog(
+                        nameof(ConditionalLaunchEngine),
+                        $"Skipped conditional task file \"{path}\": {error.Message}"));
             }
             catch (Exception ex)
             {
