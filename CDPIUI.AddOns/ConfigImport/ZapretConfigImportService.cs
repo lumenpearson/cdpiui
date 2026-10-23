@@ -643,24 +643,35 @@ public sealed partial class ZapretConfigImportService
         return true;
     }
 
-    private static string TrimShellTail(string input)
+    /// <summary>
+    /// Cuts the command at the first unescaped redirection, pipe or command separator and removes
+    /// the caret escapes outside quotes, as cmd does ("^&" becomes "&", "^^" becomes "^").
+    /// </summary>
+    internal static string TrimShellTail(string input)
     {
+        var result = new StringBuilder(input.Length);
         bool quoted = false;
         for (int index = 0; index < input.Length; index++)
         {
             char current = input[index];
             if (current == '"')
                 quoted = !quoted;
-            if (quoted)
-                continue;
 
-            if (current is '>' or '<' or '|')
-                return input[..index];
-            if (current == '&' && (index == 0 || input[index - 1] != '^'))
-                return input[..index];
+            if (!quoted)
+            {
+                if (current == '^' && index + 1 < input.Length)
+                {
+                    result.Append(input[++index]);
+                    continue;
+                }
+                if (current is '>' or '<' or '|' or '&')
+                    break;
+            }
+
+            result.Append(current);
         }
 
-        return input;
+        return result.ToString();
     }
 
     private static bool TryParseSet(string line, out string name, out string value)
@@ -952,13 +963,14 @@ public sealed partial class ZapretConfigImportService
             return value;
 
         string directory = Path.GetDirectoryName(batchFile)! + Path.DirectorySeparatorChar;
+        // "%%" is a literal percent sign; it is kept out of the variable expansion below.
+        const string PercentPlaceholder = "\u0000";
         string result = value
+            .Replace("%%", PercentPlaceholder, StringComparison.Ordinal)
             .Replace("$GETCURRENTDIR()/", directory, StringComparison.OrdinalIgnoreCase)
-            .Replace("$GETCURRENTDIR()\\", directory, StringComparison.OrdinalIgnoreCase)
-            .Replace("%~dp0", directory, StringComparison.OrdinalIgnoreCase)
-            .Replace("%~f0", batchFile, StringComparison.OrdinalIgnoreCase)
-            .Replace("%~n0", Path.GetFileNameWithoutExtension(batchFile), StringComparison.OrdinalIgnoreCase)
-            .Replace("%0", batchFile, StringComparison.OrdinalIgnoreCase);
+            .Replace("$GETCURRENTDIR()\\", directory, StringComparison.OrdinalIgnoreCase);
+        result = BatchFileModifierRegex().Replace(result, match => ExpandFileModifiers(match.Groups["modifiers"].Value, batchFile));
+        result = result.Replace("%0", batchFile, StringComparison.OrdinalIgnoreCase);
 
         string Replace(Match match)
         {
@@ -971,7 +983,32 @@ public sealed partial class ZapretConfigImportService
 
         result = BatchVariableRegex().Replace(result, Replace);
         result = DelayedVariableRegex().Replace(result, Replace);
-        return result;
+        return depth == 0 ? result.Replace(PercentPlaceholder, "%", StringComparison.Ordinal) : result;
+    }
+
+    /// <summary>
+    /// Expands the %~...0 modifiers of the batch file path: f (full path), d (drive), p (directory),
+    /// n (name) and x (extension), combined as cmd does
+    /// </summary>
+    internal static string ExpandFileModifiers(string modifiers, string batchFile)
+    {
+        string fullPath = Path.GetFullPath(batchFile);
+        modifiers = modifiers.ToLowerInvariant();
+        if (modifiers.Contains('f') && !modifiers.Any(c => c is 'd' or 'p' or 'n' or 'x'))
+            return fullPath;
+
+        string directory = Path.GetDirectoryName(fullPath) ?? string.Empty;
+        string root = Path.GetPathRoot(fullPath) ?? string.Empty;
+        string drive = root.TrimEnd('\\', '/');
+        string path = directory[root.Length..];
+        path = path.Length == 0 ? "\\" : "\\" + path.TrimStart('\\') + "\\";
+
+        var result = new StringBuilder();
+        if (modifiers.Contains('d')) result.Append(drive);
+        if (modifiers.Contains('p')) result.Append(path);
+        if (modifiers.Contains('n')) result.Append(Path.GetFileNameWithoutExtension(fullPath));
+        if (modifiers.Contains('x')) result.Append(Path.GetExtension(fullPath));
+        return result.ToString();
     }
 
     private static bool TryGetCalledScript(
@@ -1665,6 +1702,9 @@ public sealed partial class ZapretConfigImportService
 
     [GeneratedRegex(@"%(?<name>[A-Za-z0-9_~]+)%", RegexOptions.IgnoreCase)]
     private static partial Regex BatchVariableRegex();
+
+    [GeneratedRegex(@"%~(?<modifiers>[fdpnxs]+)0", RegexOptions.IgnoreCase)]
+    private static partial Regex BatchFileModifierRegex();
 
     [GeneratedRegex(@"!(?<name>[A-Za-z0-9_]+)!", RegexOptions.IgnoreCase)]
     private static partial Regex DelayedVariableRegex();
