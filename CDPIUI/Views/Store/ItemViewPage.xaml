@@ -143,7 +143,7 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10, 0, 0, 0">
-                                    <Button l:Uids.Uid="StopActionButton" x:Name="StopActionButton" Background="Transparent" BorderBrush="Transparent" 
+                                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="StopActionButton" x:Name="StopActionButton" Background="Transparent" BorderBrush="Transparent" 
                                             Padding="6" VerticalAlignment="Center" Click="StopActionButton_Click">
                                         <Button.Content>
                                             <FontIcon Glyph="&#xE978;" FontSize="16" />
@@ -187,7 +187,7 @@
                             </Grid>
                         </Grid>
                     </Grid>
-                    <Button l:Uids.Uid="ViewMoreActionsButton"
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ViewMoreActionsButton"
                             x:Name="ItemMoreButton" Background="Transparent" 
                             BorderBrush="Transparent" Padding="6" VerticalAlignment="Center"
                             Visibility="Collapsed">
@@ -242,7 +242,7 @@
                             </Flyout>
                         </Button.Flyout>
                     </Button>
-                    <Button x:Name="ItemShareButton" Background="Transparent" 
+                    <Button x:Name="ItemShareButton" l:Uids.Uid="ItemShareButton" AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Background="Transparent" 
                             BorderBrush="Transparent" Padding="6" VerticalAlignment="Center"
                             Visibility="Collapsed">
                         <Button.Content>

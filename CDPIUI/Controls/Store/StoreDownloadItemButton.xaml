@@ -80,7 +80,7 @@
                         <TextBlock Text="{x:Bind ServerVersion, Mode=OneWay}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                        <Button x:Name="CancelButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}" Click="CancelButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="CancelButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}" Click="CancelButton_Click">
                             <FontIcon Glyph="{x:Bind ActionGlyph, Mode=OneWay}" FontSize="16"/>
                         </Button>
                         <Grid x:Name="UpdateGrid">

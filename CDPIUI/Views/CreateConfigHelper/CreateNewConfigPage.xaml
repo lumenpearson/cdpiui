@@ -157,7 +157,7 @@
                 </Grid>
             </Grid>
             <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0 25 0 0">
-                <Button x:Name="ExpandButton"  Padding="6"  CornerRadius="0" 
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ExpandButton"  Padding="6"  CornerRadius="0" 
                     Background="{ThemeResource ControlAltFillColorSecondaryBrush}" BorderThickness="0" Click="ExpandButton_Click">
                     <ToolTipService.ToolTip>
                         <ToolTip x:Name="ExpandToolTip"/>
@@ -258,7 +258,7 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button l:Uids.Uid="ViewMoreActionsButton" x:Name="ViewMoreButton" Padding="6" Height="33" Width="33">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ViewMoreActionsButton" x:Name="ViewMoreButton" Padding="6" Height="33" Width="33">
                         <FontIcon Glyph="&#xE712;" FontSize="16"/>
                         <Button.Flyout>
                             <MenuFlyout Placement="TopEdgeAlignedLeft">

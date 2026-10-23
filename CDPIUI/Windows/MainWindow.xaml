@@ -42,7 +42,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <Button x:Name="BackButton" 
+            <Button x:Name="BackButton" l:Uids.Uid="FrameGoBackButton" AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" 
                     Background="Transparent"
                     BorderBrush="Transparent"
                     Width="30"

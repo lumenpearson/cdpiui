@@ -55,7 +55,7 @@
                                 </Rectangle>
                                 <Image x:Name="PackImage"  Source="{x:Bind ImageSource, Mode=OneWay}" Margin="10"/>
                             </Grid>
-                            <Button x:Name="EditImageButton" l:Uids.Uid="EditImageButton" Padding="6" Background="{ThemeResource LayerOnMicaBaseAltFillColorTertiary}" 
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="EditImageButton" l:Uids.Uid="EditImageButton" Padding="6" Background="{ThemeResource LayerOnMicaBaseAltFillColorTertiary}" 
                                     VerticalAlignment="Bottom" HorizontalAlignment="Right" BorderThickness="0" CornerRadius="0" Click="EditImageButton_Click">
                                 <FontIcon Glyph="&#xE70F;" FontSize="16"/>
                             </Button>
@@ -84,7 +84,7 @@
                                     <ColumnDefinition Width="auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="IdTextBox" TextChanged="DistributeTextBox_TextChanged"/>
-                                <Button x:Name="GenerateNewId" l:Uids.Uid="GenerateNewIdButton" Grid.Column="2" Padding="6" VerticalAlignment="Stretch" Width="34" Click="GenerateNewId_Click">
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="GenerateNewId" l:Uids.Uid="GenerateNewIdButton" Grid.Column="2" Padding="6" VerticalAlignment="Stretch" Width="34" Click="GenerateNewId_Click">
                                     <FontIcon Glyph="&#xE845;" FontSize="16"/>
                                 </Button>
                             </Grid>
@@ -115,7 +115,7 @@
 
                 <Button x:Name="CancelButton" l:Uids.Uid="CancelButton" MinWidth="150" Click="CancelButton_Click"/>
 
-                <Button x:Name="HelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Grid.Column="2" VerticalAlignment="Stretch" Width="34" Click="HelpButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="HelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Grid.Column="2" VerticalAlignment="Stretch" Width="34" Click="HelpButton_Click">
                     <FontIcon Glyph="&#xE9CE;" FontSize="16"/>
                 </Button>
 

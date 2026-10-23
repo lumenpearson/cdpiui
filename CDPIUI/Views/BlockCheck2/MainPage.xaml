@@ -210,7 +210,7 @@
                                                 <ComboBoxItem l:Uids.Uid="BlockCheck2WholeListModeItem" />
                                                 <ComboBoxItem l:Uids.Uid="BlockCheck2EachSiteModeItem" />
                                             </ComboBox>
-                                            <Button
+                                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                                                 Grid.Column="2"
                                                 Padding="7"
                                                 Tag="{x:Bind}"
@@ -218,7 +218,7 @@
                                                 l:Uids.Uid="BlockCheck2EditSiteListButton">
                                                 <FontIcon FontSize="16" Glyph="&#xE70F;" />
                                             </Button>
-                                            <Button
+                                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                                                 Grid.Column="3"
                                                 Padding="7"
                                                 Tag="{x:Bind}"

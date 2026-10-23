@@ -49,7 +49,7 @@
                     </Grid.RowDefinitions>
                     <def:PanelTitleUserControl l:Uids.Uid="ConfigMakerPresetFilesHeader" Click="CloseTreeViewButton_Click">
                         <def:PanelTitleUserControl.AdditionalContent>
-                            <Button
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                                 l:Uids.Uid="ConfigMakerAddPresetFileButton"
                                 Padding="6"
                                 CornerRadius="0"
@@ -108,13 +108,13 @@
                                                 <TextBlock l:Uids.Uid="ConfigMakerPresetFileReplaceText" VerticalAlignment="Center" Style="{ThemeResource CaptionTextBlockStyle}" />
                                             </StackPanel>
                                         </Button>
-                                        <Button l:Uids.Uid="ConfigMakerPresetFileOpenButton" Padding="6" Click="OpenPresetFileItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.ExistingActionsVisibility}">
+                                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerPresetFileOpenButton" Padding="6" Click="OpenPresetFileItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.ExistingActionsVisibility}">
                                             <FontIcon Glyph="&#xE70F;" FontSize="14"  />
                                         </Button>
-                                        <Button l:Uids.Uid="ConfigMakerPresetFileShowInFolderButton" Padding="6" Click="ShowPresetFileInFolderItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.ExistingActionsVisibility}">
+                                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerPresetFileShowInFolderButton" Padding="6" Click="ShowPresetFileInFolderItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.ExistingActionsVisibility}">
                                             <FontIcon Glyph="&#xED25;" FontSize="14" />
                                         </Button>
-                                        <Button l:Uids.Uid="ConfigMakerPresetFileRemoveButton" Padding="6" Click="RemovePresetFileItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.RemoveVisibility}">
+                                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerPresetFileRemoveButton" Padding="6" Click="RemovePresetFileItem_Click" Tag="{Binding Tag, ElementName=PresetFileActionsPanel}" Background="Transparent" BorderThickness="0" Visibility="{Binding Content.RemoveVisibility}">
                                             <FontIcon Glyph="&#xE711;" FontSize="14" />
                                         </Button>
 
@@ -271,7 +271,7 @@
                                     <ColumnDefinition Width="Auto" MinWidth="30" />
                                 </Grid.ColumnDefinitions>
 
-                                <Button Grid.Column="0" Padding="7,3" Background="Transparent" BorderThickness="0" Click="SearchButton_Click" CornerRadius="0" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Grid.Column="0" Padding="7,3" Background="Transparent" BorderThickness="0" Click="SearchButton_Click" CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
                                     <Button.KeyboardAccelerators>
@@ -282,7 +282,7 @@
                                         <ToolTip l:Uids.Uid="ConfigMakerSearchToolTip" />
                                     </ToolTipService.ToolTip>
                                 </Button>
-                                <Button x:Name="ReplaceEditorButton" Grid.Column="1" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ReplaceButton_Click" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ReplaceEditorButton" Grid.Column="1" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ReplaceButton_Click" 
                                         CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
@@ -295,7 +295,7 @@
                                     </ToolTipService.ToolTip>
                                 </Button>
                                 <universal:ContentSeparator Grid.Column="2"  Height="18"/>
-                                <Button l:Uids.Uid="ConfigMakerZoomOut"  Grid.Column="3" Padding="7,3" Background="Transparent" BorderThickness="0" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerZoomOut"  Grid.Column="3" Padding="7,3" Background="Transparent" BorderThickness="0" 
                                         Click="ZoomOutButton_Click"
                                         CornerRadius="0" 
                                         VerticalAlignment="Stretch"
@@ -315,7 +315,7 @@
                                     VerticalAlignment="Stretch"
                                     HorizontalAlignment="Stretch">
                                 </Button>
-                                <Button l:Uids.Uid="ConfigMakerZoomIn" Grid.Column="5" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ZoomInButton_Click" CornerRadius="0" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerZoomIn" Grid.Column="5" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ZoomInButton_Click" CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
                                     <FontIcon Glyph="&#xE8A3;" FontSize="13" />
@@ -323,7 +323,7 @@
 
                                 <universal:ContentSeparator Grid.Column="6"  Height="18"/>
 
-                                <Button Grid.Column="7" Padding="7,3" Background="Transparent" BorderThickness="0" CornerRadius="0" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Grid.Column="7" Padding="7,3" Background="Transparent" BorderThickness="0" CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
                                     <FontIcon Glyph="&#xE790;" FontSize="13" />

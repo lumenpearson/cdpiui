@@ -50,7 +50,7 @@
                                     <TextBlock Grid.Column="2" x:Name="SelectedFileText"/>
                                 </Grid>
                             </Button>
-                            <Button l:Uids.Uid="RemoveFileButton" x:Name="RemoveFileButton" Click="RemoveFileButton_Click" Grid.Column="2" Padding="6" Height="32" Width="32">
+                            <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="RemoveFileButton" x:Name="RemoveFileButton" Click="RemoveFileButton_Click" Grid.Column="2" Padding="6" Height="32" Width="32">
                                 <FontIcon Glyph="&#xE711;" FontSize="16"/>
                             </Button>
                         </Grid>

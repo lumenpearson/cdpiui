@@ -89,7 +89,7 @@
             <Rectangle Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
 
             <Grid Padding="20">
-                <Button x:Name="GetHelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="GetHelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
                     <Button.Content>
                         <FontIcon Glyph="&#xE897;" FontSize="16"/>
                     </Button.Content>

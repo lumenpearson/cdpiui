@@ -86,7 +86,7 @@
 
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="NewTaskButton"
                             Padding="6"
                             l:Uids.Uid="CL_NewTaskButton"
@@ -96,14 +96,14 @@
                             </Button.KeyboardAccelerators>
                             <FontIcon FontSize="16" Glyph="&#xE710;" />
                         </Button>
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="EditButton"
                             Padding="6"
                             l:Uids.Uid="CL_EditTaskButton"
                             Click="EditButton_Click">
                             <FontIcon FontSize="16" Glyph="&#xE70F;" />
                         </Button>
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="DeleteButton"
                             Padding="6"
                             l:Uids.Uid="CL_DeleteButton"
@@ -113,7 +113,7 @@
                             </Button.KeyboardAccelerators>
                             <FontIcon FontSize="16" Glyph="&#xE74D;" />
                         </Button>
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="RunButton"
                             Padding="6"
                             l:Uids.Uid="CL_RunTaskButton"
@@ -132,20 +132,20 @@
                         Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             Padding="6"
                             l:Uids.Uid="CL_ImportButton"
                             Click="ImportButton_Click">
                             <FontIcon FontSize="16" Glyph="&#xE8E5;" />
                         </Button>
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="ExportButton"
                             Padding="6"
                             l:Uids.Uid="CL_ExportButton"
                             Click="ExportButton_Click">
                             <FontIcon FontSize="16" Glyph="&#xE74E;" />
                         </Button>
-                        <Button
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="ReloadButton"
                             Padding="6"
                             l:Uids.Uid="CL_ReloadButton"
@@ -163,7 +163,7 @@
                         VerticalAlignment="Center"
                         Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                    <Button Padding="6" l:Uids.Uid="CL_HelpButton">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Padding="6" l:Uids.Uid="CL_HelpButton">
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedLeft">
                                 <MenuFlyoutItem

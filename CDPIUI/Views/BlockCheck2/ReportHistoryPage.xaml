@@ -91,14 +91,14 @@
                             </controls:SettingsCard.ActionIcon>
                             <controls:SettingsCard.Content>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <Button
+                                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                                         l:Uids.Uid="BlockCheck2HistoryShowFileButton"
                                         Tag="{x:Bind}"
                                         Click="ShowFileButton_Click"
                                         Padding="6">
                                         <FontIcon Glyph="&#xE8B7;" FontSize="16" />
                                     </Button>
-                                    <Button
+                                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                                         l:Uids.Uid="BlockCheck2HistoryDeleteButton"
                                         Tag="{x:Bind}"
                                         Click="DeleteButton_Click"

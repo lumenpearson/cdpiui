@@ -120,7 +120,7 @@
                 </MenuBar>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
 
-                    <Button l:Uids.Uid="PseidoconsoleCopyOutputButton"
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="PseidoconsoleCopyOutputButton"
                             x:Name="CopyButton" Margin="0 ,3 ,5, 0" Padding="5, 0"
                             Height="28" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent"
                             Click="CopyButton_Click">

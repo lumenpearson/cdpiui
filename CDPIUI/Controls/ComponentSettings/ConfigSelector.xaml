@@ -45,7 +45,7 @@
             </DataTemplate>
         </ComboBox.ItemTemplate>
     </ComboBox>
-        <Button x:Name="ShareButton" Grid.Column="1" Visibility="Collapsed" Width="47" Height="47"
+        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ShareButton" Grid.Column="1" Visibility="Collapsed" Width="47" Height="47"
                 VerticalAlignment="Center" Click="ShareButton_Click" l:Uids.Uid="ShareButton">
             <FontIcon Glyph="&#xE72D;" FontSize="16" />
         </Button>

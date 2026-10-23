@@ -666,7 +666,7 @@
   <data name="Stop" xml:space="preserve">
     <value>Остановить</value>
   </data>
-  <data name="StopActionButton.ToolTipService.Tooltip" xml:space="preserve">
+  <data name="StopActionButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Остановить загрузку</value>
   </data>
   <data name="StopButton.Content" xml:space="preserve">
@@ -1660,7 +1660,7 @@
   <data name="ExclusiveGroupTextBlock.Text" xml:space="preserve">
     <value>Взаимоисключающая группа</value>
   </data>
-  <data name="RemoveFileButton.ToolTipService.Tooltip" xml:space="preserve">
+  <data name="RemoveFileButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Удалить файл</value>
   </data>
   <data name="SelectFileText.Text" xml:space="preserve">
@@ -1978,7 +1978,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   <data name="SelectConfigKitToEditContentDialog.SecondaryButtonText" xml:space="preserve">
     <value>Отмена</value>
   </data>
-  <data name="FrameGoBackButton.ToolTipService.ToolTIp" xml:space="preserve">
+  <data name="FrameGoBackButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Назад</value>
   </data>
   <data name="CancelTextBlock.Text" xml:space="preserve">
@@ -6240,5 +6240,14 @@ https://discord.com/app</value>
   </data>
   <data name="FileDialogXmlData" xml:space="preserve">
     <value>Файлы данных XML</value>
+  </data>
+  <data name="AddWidgetToHomePageMenuItem.Text" xml:space="preserve">
+    <value>Добавить виджет на главную</value>
+  </data>
+  <data name="SettingTileMoreActionsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Другие действия</value>
+  </data>
+  <data name="ItemShareButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Поделиться</value>
   </data>
 </root>
