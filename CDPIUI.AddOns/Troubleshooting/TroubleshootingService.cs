@@ -510,23 +510,28 @@ namespace CDPIUI.AddOns.Troubleshooting
         #region StoreFixServices
         private TaskCompletionSource<bool>? _tcs;
         private bool opResult;
+        // The answer of the tray can be lost; without a time limit the fix waited forever (audit 14.11).
+        private static readonly TimeSpan GrantAccessTimeout = TimeSpan.FromSeconds(30);
+
         private async Task<bool> GrantAccess(string file, CancellationToken ct = default)
         {
-            _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _tcs = tcs;
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            using (cts.Token.Register(() => _tcs.TrySetCanceled()))
+            cts.CancelAfter(GrantAccessTimeout);
+            using (cts.Token.Register(() => tcs.TrySetResult(false)))
             {
                 await PipeHelper.SendGrantAccessPacket(file);
-                await _tcs.Task.ConfigureAwait(false);
-                return _tcs.Task.Result;
+                return await tcs.Task.ConfigureAwait(false);
             }
         }
 
         public void OnGrantAccessCompleted(bool state)
         {
             opResult = state;
-            _tcs.TrySetResult(state);
+            // An answer without a request is ignored.
+            _tcs?.TrySetResult(state);
         }
 
         private static bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)
