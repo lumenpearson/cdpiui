@@ -58,7 +58,7 @@ namespace CDPIUI.Controls.Dialogs.CreateConfigHelper
 
         private void InitDialog()
         {
-            string targetFolder = Path.Combine(Directories.StoreItemsDirectory, HardcodedItemIds.AddOnsIds[Core.Store.Data.AddOns.GoodCheck], "Reports");
+            string targetFolder = Path.Combine(CDPIUI.AddOns.GoodCheck.GoodCheckProcessService.GetAddOnDirectory(), "Reports");
 
             ReportModels.Clear();
             GetReportFiles(targetFolder);
