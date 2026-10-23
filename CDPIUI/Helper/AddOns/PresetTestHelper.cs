@@ -269,7 +269,7 @@ namespace CDPIUI.Helper.AddOns
                             p.Kill(entireProcessTree: true);
                     }
                     // The process can exit between the check and Kill: nothing is left to stop.
-                    catch { }
+                    catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Cannot stop curl: {ex.Message}"); }
                 }
                 _activeCurls.Clear();
             }
@@ -922,7 +922,7 @@ namespace CDPIUI.Helper.AddOns
                 {
                     if (string.IsNullOrWhiteSpace(dir)) continue;
                     // A PATH entry can be malformed: skip it and check the next one.
-                    try { if (File.Exists(Path.Combine(dir.Trim(), "curl.exe"))) return true; } catch { }
+                    try { if (File.Exists(Path.Combine(dir.Trim(), "curl.exe"))) return true; } catch (ArgumentException) { }
                 }
             }
             catch (Exception ex)
@@ -964,7 +964,8 @@ namespace CDPIUI.Helper.AddOns
                 using (ct.Register(() =>
                 {
                     // The process can exit between the check and Kill: nothing is left to stop.
-                    try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+                    try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                    catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Cannot stop curl: {ex.Message}"); }
                 }))
                 {
                     try
@@ -974,7 +975,8 @@ namespace CDPIUI.Helper.AddOns
                     catch (OperationCanceledException)
                     {
                         // The process can exit between the check and Kill: nothing is left to stop.
-                        try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+                        try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                        catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Cannot stop curl: {ex.Message}"); }
                         throw;
                     }
                 }
@@ -1011,7 +1013,7 @@ namespace CDPIUI.Helper.AddOns
             }
             catch (OperationCanceledException) { throw; }
             // An unknown or unreachable host throws PingException: that is a failed ping, not an error.
-            catch { }
+            catch (PingException) { }
             return (false, -1);
         }
 

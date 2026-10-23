@@ -206,9 +206,10 @@ namespace CDPIUI
                     await keyInstance.RedirectActivationToAsync(args).AsTask().ConfigureAwait(false);
                     redirected = true;
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
                     // The main instance exited or crashed meanwhile.
+                    CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(Program), exception.ToString());
                 }
                 finally
                 {

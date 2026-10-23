@@ -76,9 +76,9 @@ namespace CDPIUI.Controls.Dialogs.ConditionalLaunch
                         item.ShortName ?? item.Id!,
                         item.Id!)));
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConditionalActionContentDialog), $"Cannot load installed config kits: {ex.Message}");
             }
 
             if (!string.IsNullOrWhiteSpace(existingKitId) &&

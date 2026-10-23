@@ -1934,9 +1934,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     TryApplyPresetFileReplacement(file, suggestion, showStatus: false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // A silent import leaves unresolved references unchanged.
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), $"Cannot resolve \"{missingPath}\": {ex.Message}");
             }
         }
     }

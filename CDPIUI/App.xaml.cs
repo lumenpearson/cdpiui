@@ -736,7 +736,8 @@ namespace CDPIUI
                 try { ReleaseModal(window, isClosing: true); }
                 catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(App), exception.ToString()); }
                 // List.Remove does not throw for a missing item; the guard only keeps the cleanup going.
-                try { OpenWindows.Remove(window); } catch { }
+                try { OpenWindows.Remove(window); }
+                catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(App), exception.ToString()); }
                 if (migrationWindowClosed)
                     Program.CompleteMigrationActivation();
                 disabledOwners.Remove(window);
@@ -914,9 +915,10 @@ namespace CDPIUI
                     {
                         return rootElement;
                     }
-                } catch
+                } catch (Exception ex)
                 {
                     // The window can be closing and refuse access to its content; try the next one.
+                    Logger.Instance.CreateWarningLog(nameof(App), $"Cannot read the content of a window: {ex.Message}");
                 }
             }
             throw new Exception($"Unable to get root frame");

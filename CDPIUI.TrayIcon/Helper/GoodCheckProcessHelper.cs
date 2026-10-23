@@ -147,9 +147,13 @@ namespace CDPIUI.TrayIcon.Helper
                 _cancellationTokenSource.Cancel();
                 _cancellationTokenSource.Dispose();
             } 
-            catch
+            catch (ObjectDisposedException)
             {
-                // pass
+                // Stop was already called; the token source is disposed.
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessHelper), $"Cannot cancel the GoodCheck run: {ex.Message}");
             }
         }
         
@@ -165,9 +169,9 @@ namespace CDPIUI.TrayIcon.Helper
                     proc.Dispose();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessHelper), $"Cannot stop the GoodCheck process: {ex.Message}");
             }
         }
 

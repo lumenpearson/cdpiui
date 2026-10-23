@@ -273,7 +273,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                     {
                         runningProcessNames.Add(process.ProcessName);
                     }
-                    catch
+                    catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
                     {
                         // The process exited after the list was taken; it is not running.
                     }
