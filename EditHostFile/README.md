@@ -14,6 +14,14 @@ administrator rights (`EditHostFile/app.manifest`). `EditHostFile/Program.cs` co
 
 The tool uses only the first argument that it finds, in this sequence: `/remove`, `/add`, `/recover`.
 
+## Missing hosts file
+
+If the hosts file does not exist, the tool reads it as an empty file:
+
+- `/add` writes an empty `hosts.bak`. Then it creates the hosts file with the block. The new file uses UTF-8 without BOM and `\r\n` line breaks.
+- `/remove` finds no block. The tool does not create the file.
+- `/recover` finds no block. The tool deletes `hosts.bak`, if it exists.
+
 ## Managed block
 
 The block is the embedded resource `EditHostFile/Data/hosts`. Its first line starts with

@@ -10,7 +10,7 @@ CDPI UI has two processes. The two processes send messages to each other through
 | Part | Projects | User account | Function |
 |---|---|---|---|
 | GUI | `CDPIUI`, `CDPIUI.AddOns`, `CDPIUI.Core`, `CDPIUI.Shared` | The signed-in user, without elevation | Shows the windows. Controls the Store, the presets, the add-ons and the settings. |
-| Tray | `CDPIUI.TrayIcon`, `CDPIUI.Shared` | Administrator | Starts and stops the components. Controls the system proxy, the autorun, the notifications, ConditionalLaunch and the MSI installation. |
+| Tray | `CDPIUI.TrayIcon`, `CDPIUI.Shared` | Administrator | Starts and stops the components. Controls the system proxy, the autorun, the notifications, Conditional Launch and the MSI installation. |
 
 Two more tools use .NET Framework 4.7.2:
 
@@ -37,7 +37,8 @@ Do these steps:
    - The class must be `public static class Secret` in the namespace `CDPIUI.Shared.Secrets`.
    - The class must have the members of the `ISecret` interface in [SecretExample.cs](../CDPIUI.Shared/Secrets/SecretExample.cs).
    - Copy only the members. Do not copy the interface, because it is already in that file.
-   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty values.
+   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty tokens and a random `AuthGuid`.
+   - `AuthGuid` must not be empty. With an empty `AuthGuid`, the tray authorizes no pipe client, and the GUI cannot connect.
    - Git ignores this file. Do not add it to the repository.
 2. Restore the NuGet packages.
    - The GUI uses CommunityToolkit Labs packages.
@@ -70,13 +71,11 @@ Some notes about these commands:
 
 The workflow `.github/workflows/ci.yml` does these checks:
 
-- It builds the libraries and runs the unit tests.
-- It builds the GUI and the release layout.
-- It compares the installer file list with the release layout.
-- It builds `Setup.msi`.
-- It builds `Update` and `EditHostFile`.
+- It builds the libraries and runs the unit tests (job `libraries`).
+- It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
+- It builds `Update` and `EditHostFile` (job `tools`).
 
-All checks must pass before you ask for a review.
+The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/README.md](README.md).
 
 ## Project structure
 
@@ -86,7 +85,7 @@ cdpiui/
 ├── CDPIUI/                     # The GUI (WinUI 3)
 │   ├── Assets/                 # Images
 │   ├── Commands/               # The cdpiui:// links: CommandUriMapper and CommandsHandler
-│   ├── ConditionalLaunch/      # Translated lists of ConditionalLaunch triggers and actions
+│   ├── ConditionalLaunch/      # Translated lists of Conditional Launch triggers and actions
 │   ├── Controls/               # User controls. Controls/Dialogs contains the content dialogs.
 │   ├── Converters/             # XAML value converters
 │   ├── ELUA/                   # The license agreement. One Markdown file for each language (EN, RU).
@@ -162,7 +161,7 @@ The application has external add-ons and internal add-ons. Both types need some 
 
 ### Add a component
 
-Components, presets ("config kits") and subscriptions are Store items.
+Components, preset packs and subscriptions are Store items.
 
 - To ask for a new item, use the developer channels. The application Telegram channel has the links.
 - To add an item yourself, use the [Store repository](https://github.com/Storik4pro/cdpiui-store).
@@ -172,11 +171,11 @@ A new component also needs application code:
 1. Add the component ID to `CDPIUI.Core/Store/Data/HardcodedItemIds.cs`.
 2. Add the component name to `ComponentNames` in `CDPIUI.TrayIcon/Helper/Locale/LocaleHelper.cs`. Component names are only in English.
 
-A new preset kit or a new subscription does not need code.
+A new preset pack or a new subscription does not need code.
 
 ## Translations
 
-The English UI uses the word "Config" for a ready settings file of a component. The Russian UI uses the word "Пресет".
+The developer documents use the term "preset" for a ready settings file of a component. The English UI uses the word "Config" for a preset. The Russian UI uses the word "Пресет".
 
 To add a language, do these steps:
 
