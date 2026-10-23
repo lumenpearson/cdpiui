@@ -139,8 +139,10 @@ namespace CDPIUI.Views.SetupProxy
             // TODO: Open help link
         }
 
-        private void GoForwardButton_Click(object sender, RoutedEventArgs e)
+        private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!await global::CDPIUI.Helper.Basic.ProxyAddressWarning.ConfirmAsync(XamlRoot, IPValue.Text))
+                return;
             if (SaveSettings())
                 Navigate<ProxySetupCompletePage>();
         }

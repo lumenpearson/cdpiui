@@ -13,4 +13,20 @@ public class ProxyHelperTests
     {
         Assert.Equal(expected, ProxyHelper.ReplaseIp(args));
     }
+
+    [Theory]
+    [InlineData("127.0.0.1", true)]
+    [InlineData("127.0.0.2", true)]
+    [InlineData("::1", true)]
+    [InlineData("[::1]", true)]
+    [InlineData("localhost", true)]
+    [InlineData("0.0.0.0", false)]
+    [InlineData("192.168.1.10", false)]
+    [InlineData("::", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void OnlyLoopbackAddressesAreLocal(string? ip, bool expected)
+    {
+        Assert.Equal(expected, ProxyHelper.IsLoopbackAddress(ip));
+    }
 }

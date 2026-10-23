@@ -134,8 +134,10 @@ public sealed partial class SetupProxyForSystem : TemplatePage
         return false;
     }
 
-    private void GoForwardButton_Click(object sender, RoutedEventArgs e)
+    private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
     {
+        if (!await global::CDPIUI.Helper.Basic.ProxyAddressWarning.ConfirmAsync(XamlRoot, IPValue.Text))
+            return;
         if (SaveSettings())
             Navigate<ProxySetupCompletePage>();
     }
