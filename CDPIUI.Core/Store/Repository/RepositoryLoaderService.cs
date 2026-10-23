@@ -188,6 +188,19 @@ namespace CDPIUI.Core.Store.Repository
             }
         }
 
+        private static T? TryLoad<T>(string path) where T : class
+        {
+            try
+            {
+                return JSONConvertor.LoadJson<T>(path);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Skipping \"{path}\": {ex.Message}");
+                return null;
+            }
+        }
+
         public RepoItemModel? GetItemInfoFromStoreId(string? storeId)
         {
             if (storeId == SharedConstants.LocalUserItemsId)
@@ -304,9 +317,11 @@ namespace CDPIUI.Core.Store.Repository
                         continue;
                     }
 
-                    RepoCategoryInitializationModel repoCategoryInit = JSONConvertor.LoadJson<RepoCategoryInitializationModel>(categoryInitPath);
+                    // One damaged file skips its category or item instead of the whole catalog.
+                    RepoCategoryInitializationModel? repoCategoryInit = TryLoad<RepoCategoryInitializationModel>(categoryInitPath);
 
-                    if (!SupportedCategoryTypes.Contains(repoCategoryInit.type))
+                    if (repoCategoryInit?.items == null || repoCategoryInit.items_directories == null ||
+                        !SupportedCategoryTypes.Contains(repoCategoryInit.type))
                     {
                         Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the category: {categoryName}, {categoryPath}");
                         continue;
@@ -340,7 +355,9 @@ namespace CDPIUI.Core.Store.Repository
                             continue;
                         }
 
-                        RepoItemModel repoCategoryItemInit = JSONConvertor.LoadJson<RepoItemModel>(categoryItemInitPath);
+                        RepoItemModel? repoCategoryItemInit = TryLoad<RepoItemModel>(categoryItemInitPath);
+                        if (repoCategoryItemInit == null)
+                            continue;
 
                         repoCategoryItemInit.category_id = repoCategoryInit.store_id;
 
