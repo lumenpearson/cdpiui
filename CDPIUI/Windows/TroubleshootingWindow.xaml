@@ -26,7 +26,7 @@
             x:Name="TitleBarUserControl"
             Height="48">
             <wc:TitleBarUserControl.ControlsContent>
-                <Button x:Name="BackButton" 
+                <Button x:Name="BackButton" l:Uids.Uid="FrameGoBackButton" AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" 
                 Background="Transparent"
                 BorderBrush="Transparent"
                 Width="30"

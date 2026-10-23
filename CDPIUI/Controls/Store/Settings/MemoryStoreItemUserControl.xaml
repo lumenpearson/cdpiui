@@ -57,7 +57,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
                         <TextBlock x:Name="SizeTextBlock" VerticalAlignment="Center"/>
-                        <Button l:Uids.Uid="ViewMoreActionsButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" Height="50">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ViewMoreActionsButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" Height="50">
                             <FontIcon Glyph="&#xE712;" FontSize="16"/>
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">

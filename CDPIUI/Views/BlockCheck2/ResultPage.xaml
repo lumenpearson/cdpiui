@@ -580,10 +580,10 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="MoveAssignmentUpButton" l:Uids.Uid="MoveUpButton" Padding="7 8 7 7" Click="MoveAssignmentUpButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentUpButton" l:Uids.Uid="MoveUpButton" Padding="7 8 7 7" Click="MoveAssignmentUpButton_Click">
                             <FontIcon FontSize="14" Glyph="&#xE74A;" />
                         </Button>
-                        <Button x:Name="MoveAssignmentDownButton" l:Uids.Uid="MoveDownButton" Grid.Column="1" Padding="7 8 7 7" Click="MoveAssignmentDownButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentDownButton" l:Uids.Uid="MoveDownButton" Grid.Column="1" Padding="7 8 7 7" Click="MoveAssignmentDownButton_Click">
                             <FontIcon FontSize="14" Glyph="&#xE74B;" />
                         </Button>
                         <Button x:Name="RemoveAssignmentButton" Grid.Column="2" Padding="7,5" Click="RemoveAssignmentButton_Click">

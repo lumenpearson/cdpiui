@@ -51,7 +51,7 @@
                 </Grid.ColumnDefinitions>
 
                 
-                <Button 
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" 
                     x:Name="BackButton" 
                     l:Uids.Uid="FrameGoBackButton"
                     Grid.Column="0"

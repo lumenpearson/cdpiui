@@ -40,11 +40,11 @@
                     </Button>
                     <TextBlock x:Name="DescriptionTextBlock" Text="{x:Bind Description}" TextWrapping="Wrap" Visibility="Collapsed"/>
                 </Grid>
-                <Button x:Name="MoreActionsButton" HorizontalAlignment="Right" VerticalAlignment="Top" Padding="6" Margin="0 20 20 0" Visibility="Collapsed">
+                <Button x:Name="MoreActionsButton" l:Uids.Uid="SettingTileMoreActionsButton" AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" HorizontalAlignment="Right" VerticalAlignment="Top" Padding="6" Margin="0 20 20 0" Visibility="Collapsed">
                     <FontIcon Glyph="&#xE712;" FontSize="16"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem x:Name="AddWidgetToHomePageMenuItem" Text="Add widget to home page" Click="AddWidgetToHomePageMenuItem_Click">
+                            <MenuFlyoutItem x:Name="AddWidgetToHomePageMenuItem" l:Uids.Uid="AddWidgetToHomePageMenuItem" Text="Add widget to home page" Click="AddWidgetToHomePageMenuItem_Click">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon x:Name="AddWidgetFontIcon" Glyph="&#xE718;" />
                                 </MenuFlyoutItem.Icon>

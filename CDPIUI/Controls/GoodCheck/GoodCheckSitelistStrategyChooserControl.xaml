@@ -24,7 +24,7 @@
             </StackPanel>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="10">
                 <ComboBox x:Name="StrategyChooseCombobox" Width="317" DisplayMemberPath="Name" SelectionChanged="StrategyChooseCombobox_SelectionChanged"/>
-                <Button l:Uids.Uid="EditSiteListButton" x:Name="EditButton" Padding="6" Click="EditButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="EditSiteListButton" x:Name="EditButton" Padding="6" Click="EditButton_Click">
                     <Button.Content>
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon Glyph="&#xE70F;" FontSize="16"/>

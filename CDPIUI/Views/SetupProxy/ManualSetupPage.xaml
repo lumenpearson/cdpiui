@@ -44,7 +44,7 @@
                             <TextBlock l:Uids.Uid="PortTextBlock"/>
                             <TextBox x:Name="PortValue" HorizontalAlignment="Stretch" IsEnabled="{Binding IsChecked, ElementName=UseConfigSettings, Converter={StaticResource inverseBoolConverter}}"/>
                         </StackPanel>
-                        <Button x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
                                 Grid.Column="3" Padding="6" 
                                 VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                 Height="32" Width="32"
@@ -62,7 +62,7 @@
             <Rectangle Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
 
             <Grid Padding="20">
-                <Button x:Name="GetHelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="GetHelpButton" l:Uids.Uid="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
                     <Button.Content>
                         <FontIcon Glyph="&#xE897;" FontSize="16"/>
                     </Button.Content>
