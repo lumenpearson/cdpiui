@@ -59,7 +59,7 @@ namespace CDPIUI.Core.Store.Repository
             {
                 string zipUrl = GetStoreUrl(versionControl);
 
-                string tempZipPath = Path.Combine(Path.GetTempPath(), "store_repo.tmp");
+                string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
                 using var requestWorker = new RequestWorker();
                 await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
                     token: versionControl == SupportedVersionControls.GitHub ? GitHubApiToken : GitLabApiToken,
@@ -97,7 +97,8 @@ namespace CDPIUI.Core.Store.Repository
                     string zipUrl = GetStoreUrl(usedVersionControl);
 
                     Debug.WriteLine(zipUrl);
-                    string tempZipPath = Path.Combine(Path.GetTempPath(), "store_repo.tmp");
+                    // A fixed name in the shared temp folder could be prepared by another process.
+                    string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
                     using var requestWorker = new RequestWorker();
                     await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
                         token: usedVersionControl == SupportedVersionControls.GitHub ? GitHubApiToken : GitLabApiToken,

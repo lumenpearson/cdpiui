@@ -276,7 +276,8 @@ namespace CDPIUI.Core.Store
 
             try
             {
-                if (Path.Exists(item.Directory))
+                // The directory comes from the item database; never delete anything outside the item folders.
+                if (Path.Exists(item.Directory) && StoreItemIds.IsItemFolder(item.Directory))
                 {
                     Directory.Delete(item.Directory, recursive: true);
                 }
@@ -391,6 +392,10 @@ namespace CDPIUI.Core.Store
             string packFilePath = qi.PackFilePath;
             NowProcessItemActions?.Invoke(id);
             
+
+            if (!StoreItemIds.IsValid(id))
+                return OperationResultModel<EmptyResult>
+                    .FailureResult(ErrorModel.OnlyErrorCode(HandleException(new InvalidDataException($"Invalid store item id: {id}"))));
 
             List<Tuple<string, string>> requiredItems = [];
             if (DatabaseHelper.Instance.IsItemInstalled(id))

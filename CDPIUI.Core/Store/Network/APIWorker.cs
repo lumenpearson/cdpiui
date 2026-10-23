@@ -210,6 +210,11 @@ namespace CDPIUI.Core.Store.Network
         private static string GetApiUrlForVersion(string owner, string repo, string? version, SupportedVersionControls versionControl)
         {
             string url = string.Empty;
+            // The version comes from item metadata; escaped, "../" cannot move the request to another API endpoint.
+            if (!string.IsNullOrEmpty(version))
+                version = Uri.EscapeDataString(version);
+            owner = Uri.EscapeDataString(owner);
+            repo = Uri.EscapeDataString(repo);
             if (versionControl == SupportedVersionControls.GitHub)
             {
                 url = string.IsNullOrEmpty(version)

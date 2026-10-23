@@ -100,6 +100,10 @@ namespace CDPIUI.Core.Store
                 {
                     throw new AccessViolationException("StoreId is protected by security policy");
                 }
+                if (!StoreItemIds.IsValid(localItemInitModel.StoreId))
+                {
+                    throw new InvalidDataException("StoreId is not a valid identifier");
+                }
 
                 Directory.Delete(tempDestination, recursive: true);
 
@@ -134,6 +138,12 @@ namespace CDPIUI.Core.Store
                     return;
                 }
                 LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
+                if (!StoreItemIds.IsValid(localItemInitModel.StoreId) ||
+                    localItemInitModel.StoreId == SharedConstants.ApplicationStoreId ||
+                    localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
+                {
+                    throw new InvalidDataException("StoreId is not allowed for a local pack");
+                }
 
                 if (cancellationToken.IsCancellationRequested) return;
                 StoreHelper.Instance.AddItemToQueue(localItemInitModel.StoreId!, packFile: tempDestination, isSignedPack: isCatalogCheckRequired);
