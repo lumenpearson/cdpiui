@@ -86,7 +86,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
             string? directory;
             lock (_sync)
             {
-                if (!string.IsNullOrWhiteSpace(tasksDirectory))
+                // The directory comes from the UI; the elevated tray only creates and watches one in the
+                // application directories.
+                if (!string.IsNullOrWhiteSpace(tasksDirectory) &&
+                    TrustedPaths.IsAllowed(tasksDirectory, "conditional tasks directory"))
                     ConfigureTasksDirectory(tasksDirectory);
                 directory = _tasksDirectory;
             }
