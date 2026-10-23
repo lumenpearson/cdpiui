@@ -100,9 +100,10 @@ namespace CDPIUI.Core.Store.Network
         private static HttpRequestMessage CreateRequest(
             string url, string? token, string authenticationScheme, bool useStoreUserAgent, bool proxyEnable)
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var sourceUri) ||
-                (sourceUri.Scheme != Uri.UriSchemeHttp && sourceUri.Scheme != Uri.UriSchemeHttps))
-                throw new ArgumentException("The source URL must be an absolute HTTP or HTTPS URL.", nameof(url));
+            // Downloads carry components and installers without signatures of their own, so plain HTTP
+            // would let anyone on the way replace them.
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var sourceUri) || sourceUri.Scheme != Uri.UriSchemeHttps)
+                throw new ArgumentException("The source URL must be an absolute HTTPS URL.", nameof(url));
 
             var request = new HttpRequestMessage(HttpMethod.Get, proxyEnable ? CreateProxyUri(url) : sourceUri);
             try
