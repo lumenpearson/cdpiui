@@ -1,35 +1,52 @@
-﻿# Adding an item from a local package
+# Add an item from a local package
 
-Starting with version 0.3.0.0, the Store supports manual installation and updating of items.
+From version 0.3.0.0, the Store can install and update items from local packages.
 
 ### Why is this necessary?
 
-Local installation of items and updates can be useful if:
+A local installation of items and updates is useful in these conditions:
 
-- For some reason, the app can't access the Store server to download and update items.
-- You want to install an older version of an item that isn't available through the Store.
-- The item you want to install isn't currently available in the Store.
-- You want to deploy the app locally as quickly as possible, bypassing the Store.
+- The application cannot connect to the Store server to download and update items.
+- You want to install an old version of an item. The Store does not have this version.
+- The Store does not have the item at this time.
+- You want a fast local installation of the application without the Store.
 
 ### Is it safe?
 
-Even though all packages undergo mandatory certification and the app verifies the integrity of the package signature, you shouldn't let your guard down.
-Even a signed package can contain malware.
+All packages have a mandatory certification. The application also verifies the integrity of the package signature. But a signed package can also contain malware.
 
-Only install a package if you are completely confident in its security and trust the provider.
+WARNING: Install a package only if you are sure that it is safe and you trust the provider.
 
-### What types of packages are there?
+### Which package types are available?
 
-- **CDPISIGNEDPACK** — a standard, signed package. It can contain an add-on, component, or preset set.
-- **CDPICONFIGPACK** — a package designed for distributing preset sets. It is unsigned. It can only contain a preset set and has limitations on the supported file types when unpacking.
-- **CDPIPATCH** — an application update package. It is signed. Contains the files necessary for updating the application.
+| Package type | Signature | Contents |
+| ------------ | --------- | -------- |
+| **CDPISIGNEDPACK** | Signed | A standard package. It can contain an add-on, a component or a preset set. |
+| **CDPICONFIGPACK** | Not signed | A package for preset sets. It can contain only a preset set. The supported file types for unpacking are limited. |
+| **CDPIPATCH** | Signed | An application update package. It contains the files for the application update. |
 
-### How to install a local package?
+### How do I install a local package?
 
-You can install an item from a local package in several ways.
+Use one of these procedures.
+
+**Procedure 1**
 
 1. Drag the package onto the application shortcut.
-2. Right-click the package file and select [Open with]. Then specify the path to the application executable file, `CDPIUI.exe`.
-3. Open the Store and go to the [Settings] page. Select [Add item from a local package]. Agree to the risks.
 
-After performing one of the above steps, a dialog will open prompting you to install the item. Select [Install] and wait for the installation to complete.
+**Procedure 2**
+
+1. Right-click the package file.
+2. Select [Open with].
+3. Select the application executable file, `CDPIUI.exe`.
+
+**Procedure 3**
+
+1. Open the Store.
+2. Open the [Settings] page.
+3. Select [Add item from a local package].
+4. Accept the risks.
+
+A dialog opens and asks you to install the item.
+
+1. Select [Install].
+2. Wait until the installation is complete.

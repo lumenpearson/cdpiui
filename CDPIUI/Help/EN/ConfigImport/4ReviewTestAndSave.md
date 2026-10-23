@@ -1,39 +1,43 @@
-# Review, test, and save
+# Review, test and save
 
-On the **Import complete** page, every selected file has its own card. Review the card before saving it.
+On the **Import complete** page, each selected file has a card. Examine the card before you save it.
 
 ### Name and component
 
-- Change the name if the source file name is not clear enough. The preset appears under this name in the component settings.
-- Make sure the correct component is selected. Only installed components appear in the list.
-- If a yellow compatibility warning appears, select the component for which the preset was created. Ignore the warning only when you know the arguments are compatible.
+- If the source file name is not clear, change the name. The component settings show the preset with this name.
+- Make sure that the correct component is selected. The list shows only installed components.
+- If a yellow compatibility warning shows, select the component for which the preset was made. Ignore the warning only if you know that the arguments are compatible.
 
 ### Status and details
 
-- **Ready** means the wizard found no issue that blocks saving.
-- **Warnings** means saving is available, but the result requires attention.
-- **Failed** means an error blocks testing and saving.
+| Status | Meaning |
+| ------ | ------- |
+| **Ready** | The wizard found no problem that prevents the save. |
+| **Warnings** | You can save the preset, but you must examine the result. |
+| **Failed** | An error prevents the test and the save. |
 
-Select the status to see details and the problem code. A warning does not necessarily mean the preset is broken, while **Ready** does not replace a real test of the required sites.
+To see the details and the problem code, select the status. A warning does not always mean that the preset is defective. The **Ready** status does not replace a real test of the necessary sites.
 
 ### Test the preset
 
-The button with the triangle starts the selected component with the imported arguments. Check the required sites, then select the button again to stop the test.
+1. Select the button with the triangle. The selected component starts with the imported arguments.
+2. Check the necessary sites.
+3. Select the button again to stop the test.
 
-An already running instance of that component is stopped before the test. The previous preset is not restored automatically afterward; start it again from the regular component settings if needed.
+Before the test, the application stops a running instance of this component. After the test, the application does not restore the previous preset. If necessary, start it again in the usual component settings.
 
-The test starts the real executable of the installed component and is not a sandbox.
+CAUTION: The test starts the real executable file of the installed component. The test is not a sandbox.
 
 ### Save the preset
 
 - The disk button saves one card.
-- **Save all** saves every ready card in sequence.
-- Successfully saved cards disappear from the list. Cards with errors remain so that you can open their details.
+- **Save all** saves all ready cards in sequence.
+- The list removes the cards that were saved. The cards with errors stay in the list. You can open their details.
 
-After saving, select the new preset in the corresponding component settings. If it contains additional switches or values, configure them before normal use.
+After the save, select the new preset in the settings of the related component. If the preset has more switches or values, set them before usual operation.
 
 ### For advanced users
 
-When Zapret2 is selected for a Zapret Legacy preset, the wizard can convert the final `winws` arguments to `winws2`. Reverse conversion from Zapret2 to Zapret Legacy is not supported. No specialized conversion is performed for other mismatched components.
+If you select Zapret2 for a Zapret Legacy preset, the wizard can convert the final `winws` arguments to `winws2`. The wizard cannot convert Zapret2 arguments to Zapret Legacy. The wizard does not convert arguments for other component pairs.
 
-If something went wrong: [errors and limitations](cdpiui://Help/ConfigImport/5ConfigImportTroubleshooting/).
+If a problem occurs, see [Errors and limits](cdpiui://Help/ConfigImport/5ConfigImportTroubleshooting/).

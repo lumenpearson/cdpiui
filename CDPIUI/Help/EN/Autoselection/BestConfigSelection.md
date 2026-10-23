@@ -1,49 +1,61 @@
-﻿# Select the best preset
+# Select the best preset
 
-Allows you to select the best preset for a component from already loaded/created presets.
+This tool selects the best preset for a component. It uses the presets that you downloaded or made.
 
-To open this tool, go to the [Automatic Selection Tools] utility on the [Utilities] page of the main application window and select [Select the best preset automatically].
+To open this tool:
 
-### Getting to Know the Utility Window
+1. Open the [Utilities] page of the main window.
+2. Open the [Automatic Selection Tools] utility.
+3. Select [Select the best preset automatically].
+
+### The utility window
 
 The window has three areas:
-- **Select Settings.** Here you must specify the selection settings before running the test.
-- **Results.** The results of the selection after completion will be shown here.
-- **Debug Output.** The progress of the current selection will be shown here.
 
-### Test Settings
+- **Select Settings.** Here you set the selection settings before the test.
+- **Results.** Here you see the selection results after the test.
+- **Debug Output.** Here you see the progress of the current selection.
 
-Before starting the selection, make sure the following parameters are specified correctly:
-- **Component.** Make sure the correct component is selected.
-- **Test Type.** Select the test type. "Standard" takes less time but does not check for some types of blockages. "DPI Check" takes longer (each request is frozen to accurately detect blocking).
-- **Which presets to test.** Select the list of presets to test. If you're unsure, leave "All presets" selected.
+### Test settings
 
-Also, configure the list of sites to test. You can open it by clicking [List of sites to test] at the bottom of the selection settings area.
+Before you start the selection, make sure that these parameters are correct:
 
-The list has the following format:
+- **Component.** Make sure that you selected the correct component.
+- **Test Type.** Select the test type. "Standard" is faster, but it does not find some types of blocks. "DPI Check" is slower. It freezes each request to find a block accurately.
+- **Which presets to test.** Select the list of presets for the test. If you are not sure, keep "All presets".
+
+Also set the list of sites for the test. To open the list, click [List of sites to test] at the bottom of the selection settings area.
+
+The list has this format:
+
 ```
 SITE_NAME = Site_URL
 ```
-There are two acceptable URL formats:
-- **Standard.** URL starts with `https://`. Ping and HTTPS connection checks are performed.
-- **Ping only.** URL starts with `PING:`. Only ping is performed.
 
-Name – This is the site's display name in the log file and during the selection process. It doesn't affect the selection itself and can be any name, although it is not recommended to use characters other than the English alphabet.
+The URL can have one of two formats:
 
-### Starting the test
+- **Standard.** The URL starts with `https://`. The test does a ping and an HTTPS connection check.
+- **Ping only.** The URL starts with `PING:`. The test does only a ping.
 
-Once you've completed the setup, you can begin the selection process. To do this, click the [Start test] button and wait for it to complete. The selection process can take anywhere from a few minutes to an hour, depending on your provider and the number of presets being tested.
+The name is the display name of the site in the log file and during the selection. It does not change the selection. You can use any name. Use only English letters in the name.
 
-You can continue using your computer during the selection process, but applications using the network may generate errors.
+### Start the test
 
-You can end the selection process early by clicking [Stop test]. Information about the presets already tested will be displayed in the results window.
+1. Click [Start test].
+2. Wait until the test is complete.
 
-### Viewing results
+The selection can take from some minutes to one hour. The time depends on your provider and on the number of presets in the test.
 
-Once the selection process is complete, review the results. Check whether the suggested preset is suitable for you and apply it.
+You can use your computer during the selection. Applications that use the network can show errors.
 
-### What should I do if none of the presets work?
+To stop the selection before it is complete, click [Stop test]. The results window shows the data for the presets that the test examined.
 
-- Open the [Troubleshooting] utility from the [Utilities] page of the main application window. Select "None of the presets allow me to access the websites I need" and wait for the test to complete. Follow the recommended steps and repeat the test.
-- Download new preset sets from the Store. 
-- - Contact support.
+### Results
+
+When the selection is complete, examine the results. Make sure that the recommended preset is applicable to you. Then apply it.
+
+### What do I do if no preset operates?
+
+- Open the [Troubleshooting] utility on the [Utilities] page of the main window. Select [All configs not work to me]. Wait until the check is complete. Do the recommended steps and do the test again.
+- Download new preset sets from the Store.
+- Speak to the technical support.

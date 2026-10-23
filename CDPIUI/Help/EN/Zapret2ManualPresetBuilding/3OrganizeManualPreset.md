@@ -1,42 +1,46 @@
-# Scopes, order, and warnings
+# Scopes, sequence and warnings
 
-Under [Preset builder], each row shows its scope, connection type, and selected strategy. The preview below is rebuilt after every change.
+In [Preset builder], each row shows its scope, connection type and selected strategy. The preview below the list updates after each change.
 
 ### Manage the list
 
-- Use the arrow buttons to move the selected row up or down.
-- [Remove] deletes the selected strategy.
-- [Remove all] clears the manual config.
+- To move the selected row up or down, use the arrow buttons.
+- To delete the selected strategy, select [Remove].
+- To clear the manual preset, select [Remove all].
 
-If one strategy is added to a scope, it becomes the primary option. If several compatible strategies are added to the same scope, the first is primary and the following strategies are fallbacks. The order of rows within one scope is therefore important.
+If a scope has one strategy, this strategy is the primary strategy. If a scope has more than one compatible strategy, the first strategy is primary. The next strategies are fallbacks. Thus, the sequence of rows in one scope is important.
 
-Do not add fallbacks simply to increase their number. Each one should be verified for its entire scope.
+Do not add fallbacks only to have more strategies. Verify each fallback for its full scope.
 
-### Site and list scopes
+### Site scope and list scope
 
-A strategy for one site is more specific than a strategy for an entire list. If scopes overlap, the builder places the more specific profile before the general one and displays a warning so you can review the result.
+A strategy for one site is more specific than a strategy for a full list. If scopes overlap, the builder puts the more specific profile before the general profile. It also shows a warning. Examine the result.
 
-[Accept order] only confirms that you reviewed the generated order. It does not move rows, change a strategy, or confirm that the strategy works. The warning may appear again after the builder changes.
+[Accept order] only confirms that you examined the sequence. It does not move rows or change a strategy. It does not confirm that the strategy operates. The warning can show again after a change in the builder.
 
-### Understand the warnings
+### Warnings
 
-- **No test data** — retest the strategy for the selected scope.
-- **Threshold not passed** — the strategy did not produce a sufficiently reliable result.
-- **Partial scope coverage** — some sites or connection types failed. Choose another strategy or narrow the scope to one site.
-- **Overlapping scopes** — check which profile will be applied first.
-- **Strategies cannot be combined** — keep one strategy in this scope or choose a compatible alternative.
+| Warning | Meaning and action |
+| ------- | ------------------ |
+| **No test data** | Test the strategy again for the selected scope. |
+| **Threshold not passed** | The result of the strategy is not sufficiently reliable. |
+| **Partial scope coverage** | Some sites or connection types failed. Select a different strategy, or make the scope smaller (one site). |
+| **Overlapping scopes** | Examine which profile the component applies first. |
+| **Strategies cannot be combined** | Keep one strategy in this scope, or select a compatible strategy. |
 
-An error may prevent the builder from creating usable config text. A warning does not block you, but it still requires a manual check.
+An error can prevent the builder from making a usable preset text. A warning does not stop you, but you must examine it manually.
 
 ### For advanced users
 
-The window may show these technical codes:
+The window can show these technical codes:
 
-- `MANUAL_STRATEGY_UNTESTED` — the strategy has no results for the selected scope;
-- `MANUAL_STRATEGY_UNPROVEN` — the strategy did not reach the required threshold;
-- `MANUAL_SCOPE_PARTIAL` — only part of the scope passed;
-- `MANUAL_SCOPE_OVERLAP` — two scopes contain the same connections;
-- `MANUAL_CIRCULAR_UNSUPPORTED` — the selected options cannot be combined as primary and fallback strategies;
-- `MANUAL_STRATEGY_INAPPLICABLE` — the strategy does not support every connection in the selected scope.
+| Code | Meaning |
+| ---- | ------- |
+| `MANUAL_STRATEGY_UNTESTED` | The strategy has no results for the selected scope. |
+| `MANUAL_STRATEGY_UNPROVEN` | The strategy did not reach the necessary threshold. |
+| `MANUAL_SCOPE_PARTIAL` | Only a part of the scope passed. |
+| `MANUAL_SCOPE_OVERLAP` | Two scopes contain the same connections. |
+| `MANUAL_CIRCULAR_UNSUPPORTED` | The selected strategies cannot operate together as primary and fallback strategies. |
+| `MANUAL_STRATEGY_INAPPLICABLE` | The strategy does not support all connections in the selected scope. |
 
-Next: [test and finish the manual config](cdpiui://Help/Zapret2ManualPresetBuilding/4FinishManualPreset/).
+Next: [Test and complete the manual preset](cdpiui://Help/Zapret2ManualPresetBuilding/4FinishManualPreset/).

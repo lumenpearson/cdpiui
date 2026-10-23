@@ -1,21 +1,21 @@
-﻿# Welcome to the Component Store
+# Welcome to the Component Store
 
 ### What is the Store?
 
-The Store is a convenient interface for quick access to official repositories of components, add-ons, and presets.
+The Store is an interface for quick access to the official repositories of components, add-ons and presets.
 
 ### Is it paid?
 
-No, the Store does not charge for access to free software hosted on GitHub/GitLab.
+No. The Store does not ask for payment for free software on GitHub and GitLab.
 
-### Is it possible to automatically update installed components?
+### Can the Store update the installed components automatically?
 
-No, the Store follows the "If it works, don't touch it!" rule. No components are automatically updated until you choose to update them.
+No. The Store uses the rule *"If it works, do not touch it!"*. The Store does not update an item until you start the update.
 
-However, the Store regularly checks for updates and notifies you if a new version of the app and/or installed components is available.
+The Store regularly checks for updates. It tells you when a new version of the application or of an installed component is available.
 
-You can disable this behavior in the [Notifications] section of the [Settings] page of the main application window.
+To disable these notifications, use the [Notifications] section on the [Settings] page of the main window.
 
-### Can I add my own component to the Store?
+### Can I add my component to the Store?
 
-Of course! The Store is open to everyone. For more details, please contact the app developer via the official Telegram channel.
+Yes. The Store is open to all developers. For more information, speak to the application developer in the official Telegram channel.

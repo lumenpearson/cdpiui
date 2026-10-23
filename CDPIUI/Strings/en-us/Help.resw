@@ -188,6 +188,9 @@ Unfortunately we can't find page your looking for. Please, make sure program has
   <data name="EditHostsFileUtility" xml:space="preserve">
     <value>Hosts file utility</value>
   </data>
+  <data name="TroubleshootingUtility" xml:space="preserve">
+    <value>Troubleshooting utility</value>
+  </data>
   <data name="Autoselection" xml:space="preserve">
     <value>Autoselection utilities </value>
   </data>
