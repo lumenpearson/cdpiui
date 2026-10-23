@@ -538,12 +538,6 @@ namespace CDPIUI
             }
         }
 
-        public async void CreateEmptyWindow()
-        {
-            Window window = await SafeCreateNewWindow<ViewWindow>();
-            window.Hide();
-        }
-
         public void CloseWindow<TWindow>() where TWindow : Window
         {
             foreach (var viewWindow in OpenWindows.OfType<TWindow>().ToList())

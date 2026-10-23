@@ -41,7 +41,7 @@ namespace CDPIUI.Default
             set
             {
                 WindowTitleProperty = value;
-                DispatcherQueue.TryEnqueue(() =>
+                DispatcherQueue?.TryEnqueue(() =>
                 {
                     if (WindowTitle != null)
                     {
@@ -187,14 +187,14 @@ namespace CDPIUI.Default
                 switch (mode)
                 {
                     case TitleBarModes.System:
-                        DispatcherQueue.TryEnqueue(() =>
+                        DispatcherQueue?.TryEnqueue(() =>
                         {
                             if (CustomTitleBarUserControl != null) CustomTitleBarUserControl.Visibility = Visibility.Collapsed;
                         });
                         ExtendsContentIntoTitleBar = false;
                         break;
                     case TitleBarModes.Custom:
-                        DispatcherQueue.TryEnqueue(() =>
+                        DispatcherQueue?.TryEnqueue(() =>
                         {
                             if (CustomTitleBarUserControl != null) CustomTitleBarUserControl.Visibility = Visibility.Visible;
                         });
@@ -205,7 +205,7 @@ namespace CDPIUI.Default
 
         private void InitializeTitleBar()
         {
-            DispatcherQueue.TryEnqueue(() =>
+            DispatcherQueue?.TryEnqueue(() =>
             {
                 if (CustomTitleBarUserControlProperty == null) return;
 
@@ -306,7 +306,7 @@ namespace CDPIUI.Default
 
         private void UpdateWindowIcon()
         {
-            DispatcherQueue.TryEnqueue(() =>
+            DispatcherQueue?.TryEnqueue(() =>
             {
                 if (CustomTitleBarUserControl != null) CustomTitleBarUserControl.IconSource = new BitmapImage(new Uri($"ms-appx:///{IconUri}"));
             });
