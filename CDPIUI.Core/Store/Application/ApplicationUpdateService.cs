@@ -141,8 +141,7 @@ namespace CDPIUI.Core.Store.Application
                     {
                         string[] reversedParts = parts.Reverse().ToArray();
                         Logger.Instance.CreateInfoLog(nameof(ApplicationUpdateService), $"Version {reversedParts[1]}");
-                        Version patchVer = new(reversedParts[1]);
-                        if (currentVersion >= patchVer)
+                        if (VersionHelper.CompareVersionStrings(currentVersion.ToString(), reversedParts[1]) >= 0)
                             continue;
                     }
                     else
