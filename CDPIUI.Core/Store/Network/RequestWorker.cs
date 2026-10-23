@@ -77,6 +77,7 @@ namespace CDPIUI.Core.Store.Network
             response.EnsureSuccessStatusCode();
 
             long totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            EnsureFreeSpace(destinationPath, totalBytes);
             using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
@@ -84,10 +85,25 @@ namespace CDPIUI.Core.Store.Network
             long totalRead = 0;
             var stopwatch = Stopwatch.StartNew();
             var lastUpdate = stopwatch.Elapsed;
-            int read;
 
-            while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+            // HttpClient.Timeout ends with the response headers: a connection that stops sending
+            // the body would wait forever, so every read gets its own deadline (audit 10.10).
+            using var stallCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            while (true)
             {
+                stallCts.CancelAfter(ReadStallTimeout);
+                int read;
+                try
+                {
+                    read = await contentStream.ReadAsync(buffer.AsMemory(0, buffer.Length), stallCts.Token);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException($"The download stopped: no data for {ReadStallTimeout.TotalSeconds} seconds.");
+                }
+                if (read == 0)
+                    break;
+
                 await fileStream.WriteAsync(buffer, 0, read, cancellationToken);
                 totalRead += read;
 
@@ -97,6 +113,27 @@ namespace CDPIUI.Core.Store.Network
                     progress?.Invoke(totalRead, totalBytes, now);
                     lastUpdate = now;
                 }
+            }
+        }
+
+        private static readonly TimeSpan ReadStallTimeout = TimeSpan.FromSeconds(60);
+
+        private static void EnsureFreeSpace(string destinationPath, long requiredBytes)
+        {
+            if (requiredBytes <= 0)
+                return;
+            try
+            {
+                string? root = Path.GetPathRoot(Path.GetFullPath(destinationPath));
+                if (string.IsNullOrEmpty(root))
+                    return;
+                var drive = new DriveInfo(root);
+                if (drive.IsReady && drive.AvailableFreeSpace < requiredBytes)
+                    throw new IOException($"Not enough free space on {root}: {requiredBytes} bytes are needed, {drive.AvailableFreeSpace} are free.");
+            }
+            catch (ArgumentException)
+            {
+                // A network path or another root DriveInfo does not support: no check.
             }
         }
 
