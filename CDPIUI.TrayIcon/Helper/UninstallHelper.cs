@@ -170,7 +170,7 @@ namespace CDPIUI.TrayIcon.Helper
         // Files the application creates next to the installed ones; the package does not know them,
         // so the installation directory would otherwise stay behind.
         private static readonly string[] RuntimeDirectories = ["Logs", ".update-staging", ".update-backup", ".old"];
-        private static readonly string[] RuntimeFiles = ["update.log"];
+        private static readonly string[] RuntimeFiles = ["update.log", ".update-manifest"];
 
         private static void RemoveRuntimeFiles(string installDirectory)
         {
