@@ -23,7 +23,7 @@ Only the elevated tray starts `Update.exe`. The sequence is as follows:
 Update.exe --directory-to-zip "<staged .cdpipatch>" --destination-directory "<install folder>"
 ```
 
-The [CI and release documentation](../.github/README.md#how-the-application-applies-a-patch)
+The [CI and release documentation](../.github/RELEASES.md#how-the-application-applies-a-patch)
 gives the full check procedure.
 
 Notes on the arguments (`Update/Program.cs`):
