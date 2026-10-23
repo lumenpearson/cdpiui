@@ -220,35 +220,34 @@ namespace CDPIUI.Core.Store.Database
             if (GetItemById(id) == null) return false; return true;
         }
 
+        // A NULL in an optional column of one row made GetString throw and broke the list of all
+        // installed items.
+        private static string? GetStringOrNull(SqliteDataReader reader, string column)
+        {
+            int ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+        }
+
         private static DatabaseStoreItem CreateItemFromReader(SqliteDataReader reader)
         {
             return new DatabaseStoreItem
             {
                 Id = reader.GetString(reader.GetOrdinal("Id")),
-                Type = reader.GetString(reader.GetOrdinal("Type")),
-                Directory = reader.GetString(reader.GetOrdinal("Directory")),
-                Executable = reader.IsDBNull(reader.GetOrdinal("Executable"))
-                                ? null : reader.GetString(reader.GetOrdinal("Executable")),
-                UpdateCheckUrl = reader.IsDBNull(reader.GetOrdinal("UpdateCheckUrl"))
-                                ? null : reader.GetString(reader.GetOrdinal("UpdateCheckUrl")),
-                DownloadUrl = reader.IsDBNull(reader.GetOrdinal("DownloadUrl"))
-                                ? null : reader.GetString(reader.GetOrdinal("DownloadUrl")),
-                DownloadFileType = reader.IsDBNull(reader.GetOrdinal("DownloadFileType"))
-                                ? null : reader.GetString(reader.GetOrdinal("DownloadFileType")),
-                VersionControlType = reader.GetString(reader.GetOrdinal("VersionControlType")),
-                CurrentVersion = reader.GetString(reader.GetOrdinal("CurrentVersion")),
-                RequiredItemIds = reader.IsDBNull(reader.GetOrdinal("RequiredItemIds"))
-                                ? null : reader.GetString(reader.GetOrdinal("RequiredItemIds")).DeserializeTuples(),
-                DependentItemIds = reader.IsDBNull(reader.GetOrdinal("DependentItemIds"))
-                                ? null : reader.GetString(reader.GetOrdinal("DependentItemIds")).DeserializeTuples(),
-                IconPath = reader.GetString(reader.GetOrdinal("Icon")),
-                Name = reader.GetString(reader.GetOrdinal("Name")),
-                ShortName = reader.IsDBNull(reader.GetOrdinal("ShortName"))
-                                ? null : reader.GetString(reader.GetOrdinal("ShortName")),
-                Developer = reader.IsDBNull(reader.GetOrdinal("Developer"))
-                                ? string.Empty : reader.GetString(reader.GetOrdinal("Developer")),
-                BackgroudColor = reader.IsDBNull(reader.GetOrdinal("BackgroundColor"))
-                                ? string.Empty : reader.GetString(reader.GetOrdinal("BackgroundColor")),
+                Type = GetStringOrNull(reader, "Type"),
+                Directory = GetStringOrNull(reader, "Directory"),
+                Executable = GetStringOrNull(reader, "Executable"),
+                UpdateCheckUrl = GetStringOrNull(reader, "UpdateCheckUrl"),
+                DownloadUrl = GetStringOrNull(reader, "DownloadUrl"),
+                DownloadFileType = GetStringOrNull(reader, "DownloadFileType"),
+                VersionControlType = GetStringOrNull(reader, "VersionControlType"),
+                CurrentVersion = GetStringOrNull(reader, "CurrentVersion"),
+                RequiredItemIds = GetStringOrNull(reader, "RequiredItemIds")?.DeserializeTuples(),
+                DependentItemIds = GetStringOrNull(reader, "DependentItemIds")?.DeserializeTuples(),
+                IconPath = GetStringOrNull(reader, "Icon"),
+                Name = GetStringOrNull(reader, "Name"),
+                ShortName = GetStringOrNull(reader, "ShortName"),
+                Developer = GetStringOrNull(reader, "Developer") ?? string.Empty,
+                BackgroudColor = GetStringOrNull(reader, "BackgroundColor") ?? string.Empty,
             };
         }
 
@@ -354,9 +353,16 @@ namespace CDPIUI.Core.Store.Database
             {
                 var item = CreateItemFromReader(reader);
 
-                if (!item.Directory.StartsWith(baseDir) || !Directory.Exists(item.Directory))
+                // With a separator and ignoring case: "C:\CDPIUI2" is not inside "C:\CDPIUI".
+                string baseWithSeparator = baseDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                bool isInsideBase = !string.IsNullOrEmpty(item.Directory) &&
+                    (string.Equals(item.Directory.TrimEnd(Path.DirectorySeparatorChar), baseDir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) ||
+                     item.Directory.StartsWith(baseWithSeparator, StringComparison.OrdinalIgnoreCase));
+                if (!isInsideBase || !Directory.Exists(item.Directory))
                 {
-                    string folderName = Path.GetFileName(item.Directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                    string folderName = string.IsNullOrEmpty(item.Directory)
+                        ? item.Id
+                        : Path.GetFileName(item.Directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                     string newPath = Path.Combine(Directories.StoreItemsDirectory, folderName);
 
                     if (Directory.Exists(newPath))
