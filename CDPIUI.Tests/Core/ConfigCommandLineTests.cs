@@ -1,4 +1,4 @@
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+﻿using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
 namespace CDPIUI.Tests.Core;
 
@@ -19,5 +19,12 @@ public class ConfigCommandLineTests
     {
         Assert.Empty(ConfigCommandLine.Tokenize(null));
         Assert.Empty(ConfigCommandLine.Tokenize("   "));
+    }
+
+    [Fact]
+    public void ApostropheDoesNotGroupArguments()
+    {
+        Assert.Equal(["--hostlist=O'Brien.txt", "--wf-tcp=443"],
+            CDPIUI.Core.ComponentServices.Helpers.Configuration.ConfigCommandLine.Tokenize("--hostlist=O'Brien.txt --wf-tcp=443"));
     }
 }
