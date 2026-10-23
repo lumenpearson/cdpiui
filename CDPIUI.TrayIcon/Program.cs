@@ -26,6 +26,11 @@ class Programm
             return;
         }
 
+        // An exception in a UI event handler is logged instead of ending the tray, which owns
+        // the running components and the system proxy.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, e) =>
+            Logger.Instance.CreateErrorLog("Tray", $"Unhandled UI exception: {e.Exception}");
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             Logger.Instance.CreateDebugLog("Startup",
                 $"Unhandled exception; terminating={e.IsTerminating}: {e.ExceptionObject}");
