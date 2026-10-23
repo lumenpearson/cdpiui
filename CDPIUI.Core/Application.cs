@@ -33,7 +33,10 @@ namespace CDPIUI.Core
 
 
 
-        public static string Version => GetVersion();
+        // Read once: it was read from disk for every HTTP request.
+        private static readonly Lazy<string> _version = new(GetVersion);
+
+        public static string Version => _version.Value;
 
         private static string GetVersion()
         {
