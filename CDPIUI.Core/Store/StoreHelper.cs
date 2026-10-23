@@ -527,7 +527,19 @@ namespace CDPIUI.Core.Store
                     return OperationResultModel<Tuple<string, string?, RepoItemModel>>
                         .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
-                LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
+                LocalItemInitModel? localItemInitModel;
+                try
+                {
+                    localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Cannot read \"{initFilePath}\": {ex.Message}");
+                    localItemInitModel = null;
+                }
+                if (localItemInitModel == null)
+                    return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                        .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
                 item = new()
                 {
