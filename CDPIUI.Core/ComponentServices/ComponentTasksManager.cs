@@ -138,9 +138,11 @@ namespace CDPIUI.Core.ComponentServices
 
         public async Task RunAllPreferredActions()
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
-                await task.ProcessManager?.RunActionsIfAutorunSelected();
+                // "await x?.M()" awaits null and throws when ProcessManager is null.
+                if (task.ProcessManager != null)
+                    await task.ProcessManager.RunActionsIfAutorunSelected();
             }
 
         }
