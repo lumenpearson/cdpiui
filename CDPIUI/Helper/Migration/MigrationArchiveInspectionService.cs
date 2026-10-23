@@ -60,7 +60,7 @@ internal sealed class MigrationArchiveInspectionService
             .FindAll(group => group.Section == "COMPONENTS");
 
         IReadOnlyList<MigrationComponentRequirement> components = data.Presets
-            .FindAll(item => componentSettings.Find(setting => setting.Key.Equals(item.Component, StringComparison.CurrentCultureIgnoreCase))?.Value == "True")
+            .FindAll(item => componentSettings.Find(setting => setting.Key.Equals(item.Component, StringComparison.OrdinalIgnoreCase))?.Value == "True")
             .Select(GoodbyeDpiComponentMapper.Map)
             .GroupBy(item => item.InstallItemId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())

@@ -473,7 +473,7 @@ namespace CDPIUI.Shared.Basic
             else if (value is bool)
             {
                 type = "bool";
-                valueString = value.ToString().ToLower();
+                valueString = value.ToString().ToLowerInvariant();
             }
             else if (value is string)
             {
@@ -526,7 +526,7 @@ namespace CDPIUI.Shared.Basic
                     break;
                 case bool b:
                     type = "bool";
-                    valueString = b.ToString().ToLower();
+                    valueString = b.ToString().ToLowerInvariant();
                     break;
                 case string s:
                     type = "string";

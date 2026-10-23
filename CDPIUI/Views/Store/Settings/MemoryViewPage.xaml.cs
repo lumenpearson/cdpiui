@@ -99,11 +99,11 @@ namespace CDPIUI.Views.Store.Settings
             DriveInfo appDirDriveInfo = new(appDir);
             DriveInfo dataDirDriveInfo = new(dataDir);
 
-            if (appDirDriveInfo.VolumeLabel == dataDirDriveInfo.VolumeLabel) MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.VolumeLabel });
+            if (appDirDriveInfo.Name == dataDirDriveInfo.Name) MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
             else
             {
-                MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.VolumeLabel });
-                MemoryDisks.Add(new() { DiskLetter = dataDirDriveInfo.VolumeLabel });
+                MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
+                MemoryDisks.Add(new() { DiskLetter = dataDirDriveInfo.Name });
             }
         }
 

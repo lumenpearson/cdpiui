@@ -69,8 +69,9 @@ public sealed partial class StoreItemLinkButton : UserControl
             nameof(ActionIcon), typeof(string), typeof(StoreItemLinkButton), new PropertyMetadata("\uE8A7")
         );
 
-    private async void Button_Click(object sender, RoutedEventArgs e)
+    private void Button_Click(object sender, RoutedEventArgs e)
     {
-        _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(Url));
+        // The link comes from the store manifest: only web links are opened.
+        global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(Url);
     }
 }

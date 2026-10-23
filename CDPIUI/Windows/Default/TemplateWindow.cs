@@ -166,7 +166,6 @@ namespace CDPIUI.Default
             TitleBarMode = (TitleBarModes)SettingsManager.Instance.GetValue<int>("APPEARANCE", "titleBarMode");
 
             Activated += DefaultWindow_Activated;
-            Closed += DefaultWindow_Closed;
 
             if (((App)Application.Current).CurrentTheme == ElementTheme.Dark)
             {
@@ -227,13 +226,9 @@ namespace CDPIUI.Default
             NativeWindowHelper.ForceDisableMaximize(this);
         }
 
-        private void DefaultWindow_Closed(object sender, WindowEventArgs args)
-        {
-            if (args.Handled) return;
-            Closed -= DefaultWindow_Closed;
-            Activated -= DefaultWindow_Activated;
-            if (CustomTitleBarUserControl?.ImageAera != null) CustomTitleBarUserControl.ImageAera.PointerPressed -= TitleIcon_PointerPressed;
-        }
+        // The handlers belong to the window and its own controls, so they need no removal on
+        // Closed. Removed in the base Closed, which runs before a derived window cancels closing
+        // (args.Handled), they left a window that stayed open without them.
 
         private void DefaultWindow_Activated(object sender, WindowActivatedEventArgs args)
         {

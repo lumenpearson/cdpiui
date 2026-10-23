@@ -207,7 +207,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         {
             StrategyEvidence.Add(item);
             BlockCheck2SiteStrategyGroup? group = StrategyGroups.FirstOrDefault(candidate =>
-                string.Equals(candidate.SiteUrl, item.SiteUrl, StringComparison.CurrentCultureIgnoreCase));
+                string.Equals(candidate.SiteUrl, item.SiteUrl, StringComparison.OrdinalIgnoreCase));
             if (group == null)
             {
                 group = new BlockCheck2SiteStrategyGroup(item.SiteUrl);

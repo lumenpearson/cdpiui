@@ -387,8 +387,8 @@ namespace CDPIUI.Views.Store
                 TimeSpan time = data.Item2;
 
 
-                if (time.Minutes > 0)
-                    CurrentStatusTipTextBlock.Text = string.Format(localizer.GetLocalizedString("/UIHelper/LeftMinutes"), time.Minutes);
+                if (time.TotalMinutes >= 1)
+                    CurrentStatusTipTextBlock.Text = string.Format(localizer.GetLocalizedString("/UIHelper/LeftMinutes"), (int)time.TotalMinutes);
                 else
                     CurrentStatusTipTextBlock.Text = localizer.GetLocalizedString("/UIHelper/LeftSmall");
             });

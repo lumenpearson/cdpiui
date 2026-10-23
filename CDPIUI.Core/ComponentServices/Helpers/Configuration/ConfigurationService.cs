@@ -1040,7 +1040,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 return null;
 
 
-            if (Path.GetExtension(filepath).Equals(".json", StringComparison.CurrentCultureIgnoreCase))
+            if (Path.GetExtension(filepath).Equals(".json", StringComparison.OrdinalIgnoreCase))
             {
                 OldConfigItem oldConfig = JSONConvertor.LoadJson<OldConfigItem>(filepath);
                 if (oldConfig != null && oldConfig.custom_parameters != null)
@@ -1058,8 +1058,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 }
                 return Tuple.Create(JSONConvertor.LoadJson<ConfigItem>(filepath), true);
             }
-            else if (Path.GetExtension(filepath).Equals(".bat", StringComparison.CurrentCultureIgnoreCase) ||
-                     Path.GetExtension(filepath).Equals(".cmd", StringComparison.CurrentCultureIgnoreCase))
+            else if (Path.GetExtension(filepath).Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
+                     Path.GetExtension(filepath).Equals(".cmd", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {

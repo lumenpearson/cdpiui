@@ -151,8 +151,8 @@ namespace CDPIUI
                 _badges.Add(new()
                 {
                     Mode = mode,
-                    DisplayName = mode.ToString().ToUpper(),
-                    DisplayTip = localizer.GetLocalizedString($"/Flashlight/{mode.ToString().ToUpper()}"),
+                    DisplayName = mode.ToString().ToUpperInvariant(),
+                    DisplayTip = localizer.GetLocalizedString($"/Flashlight/{mode.ToString().ToUpperInvariant()}"),
                 });
             }
         }

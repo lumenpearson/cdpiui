@@ -47,7 +47,7 @@ namespace CDPIUI.Controls.Dialogs.ConditionalLaunch
 
             _existingAction = action;
             if (action != null)
-                ActionTypeComboBox.SelectedItem = _definitions.First(item => item.Type == action.Type);
+                ActionTypeComboBox.SelectedItem = _definitions.FirstOrDefault(item => item.Type == action.Type) ?? _definitions.FirstOrDefault();
         }
 
         private void LoadInstalledComponents(string? existingComponentId)
