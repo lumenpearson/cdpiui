@@ -148,6 +148,8 @@ class Programm
         public TrayApplicationContext(bool runStartupActions = false)
         {
             _trayForm = new EmptyForm();
+            // The first form installs the UI context of this thread.
+            Utils.UiContext = SynchronizationContext.Current;
 
             _trayForm.AddIcon(notify: true);
             UninstallHelper.ListenForShutdown(_trayForm, Application.Exit);

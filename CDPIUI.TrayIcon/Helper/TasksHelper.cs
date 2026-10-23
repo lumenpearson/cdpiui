@@ -54,7 +54,8 @@ namespace CDPIUI.TrayIcon.Helper
         {
             var existTask = await GetTaskFromId(id);
 
-            foreach (var task in Tasks)
+            // The snapshot: the loop awaits, and tasks may be added meanwhile.
+            foreach (var task in await GetTasksSnapshot())
             {
                 if (existTask != task && (bool)(task.ProcessManager?.IsProxyEnabled() ?? false))
                 {

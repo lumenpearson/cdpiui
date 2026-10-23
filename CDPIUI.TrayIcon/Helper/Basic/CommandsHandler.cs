@@ -4,6 +4,42 @@ namespace CDPIUI.TrayIcon.Helper.Basic
 {
     internal class CommandsHandler
     {
+        // The pipe runs messages concurrently. Commands that start or stop one component, or change
+        // its proxy, run one at a time and in the order they arrived: a stop that ran after the proxy
+        // setup of a restart left the proxy off. Other messages, such as a GoodCheck run that takes
+        // minutes, are not held back.
+        private static readonly Dictionary<string, Task> ComponentQueues = [];
+        private static readonly object ComponentQueuesLock = new();
+
+        // Takes its place in the queue before the first await, so it must be called before any
+        // await of the handler; the pipe runs a handler synchronously up to its first await.
+        private static async Task RunInComponentOrder(string componentId, Func<Task> action)
+        {
+            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task previous;
+            lock (ComponentQueuesLock)
+            {
+                previous = ComponentQueues.GetValueOrDefault(componentId) ?? Task.CompletedTask;
+                ComponentQueues[componentId] = done.Task;
+            }
+
+            try
+            {
+                // Never faults: each command reports its own errors.
+                await previous;
+                await action();
+            }
+            finally
+            {
+                lock (ComponentQueuesLock)
+                {
+                    if (ComponentQueues.TryGetValue(componentId, out var last) && last == done.Task)
+                        ComponentQueues.Remove(componentId);
+                }
+                done.SetResult();
+            }
+        }
+
         public static async Task HandleCommandAsync(IPipeMessage message)
         {
             switch (message)
@@ -63,7 +99,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null || executable == null || args == null)
                             return;
 
-                        await TasksHelper.Instance.CreateAndRunNewTask(id, executable, args);
+                        await RunInComponentOrder(id, () => TasksHelper.Instance.CreateAndRunNewTask(id, executable, args));
                         return;
                     }
 
@@ -77,7 +113,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        await TasksHelper.Instance.StopTask(id);
+                        await RunInComponentOrder(id, () => TasksHelper.Instance.StopTask(id));
                         return;
                     }
 
@@ -87,7 +123,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        await TasksHelper.Instance.RestartTask(id);
+                        await RunInComponentOrder(id, () => TasksHelper.Instance.RestartTask(id));
                         return;
                     }
 
@@ -110,7 +146,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        await TasksHelper.Instance.SetIsStartArgsChangedProperty(id, true);
+                        await RunInComponentOrder(id, () => TasksHelper.Instance.SetIsStartArgsChangedProperty(id, true));
                         return;
                     }
 
@@ -262,7 +298,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (id == null)
                             return;
 
-                        await TasksHelper.Instance.StopAndRemoveTaskAsync(id);
+                        await RunInComponentOrder(id, () => TasksHelper.Instance.StopAndRemoveTaskAsync(id));
                         return;
                     }
             }
@@ -346,7 +382,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (taskId == null || proxyFirePath == null)
                             return;
 
-                        await TasksHelper.Instance.InitProxyOnTask(taskId, proxyFirePath);
+                        await RunInComponentOrder(taskId, () => TasksHelper.Instance.InitProxyOnTask(taskId, proxyFirePath));
                         return;
                     }
 
@@ -361,8 +397,8 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                             ip == null || port == null)
                             return;
 
-                        await TasksHelper.Instance.EnableProxyOnTask(
-                            taskId, proxyType, ip, port);
+                        await RunInComponentOrder(taskId, () => TasksHelper.Instance.EnableProxyOnTask(
+                            taskId, proxyType, ip, port));
                         return;
                     }
 
@@ -372,7 +408,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (taskId == null)
                             return;
 
-                        await TasksHelper.Instance.CleanProxyOnTask(taskId);
+                        await RunInComponentOrder(taskId, () => TasksHelper.Instance.CleanProxyOnTask(taskId));
                         return;
                     }
             }
@@ -424,7 +460,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         "");
 
                     NotifyHelper.Instance.Dispose();
-                    Application.Exit();
+                    Utils.ExitApplication();
                     return;
             }
         }

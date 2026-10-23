@@ -168,8 +168,17 @@ namespace CDPIUI.Shared.Basic
         {
             lock (_reloadLock)
             {
-                using (AcquireFileLock())
+                using (AcquireFileLock(out bool lockTimedOut))
                 {
+                    if (lockTimedOut)
+                    {
+                        // Writing without the lock could overwrite what the other process saves at
+                        // this moment. The change stays in memory only, as after a failed write.
+                        ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
+                        Trace.WriteLine($"[XMLSettingsService] The settings file stayed locked; {key} was not saved.");
+                        return;
+                    }
+
                     if (!_persistenceUnavailable && File.Exists(SettingsFilePath))
                     {
                         try
@@ -193,8 +202,9 @@ namespace CDPIUI.Shared.Basic
 
         // A lock file works for both processes, while a named mutex of the elevated tray would not be
         // accessible to the UI.
-        private IDisposable? AcquireFileLock()
+        private IDisposable? AcquireFileLock(out bool timedOut)
         {
+            timedOut = false;
             string lockPath = SettingsFilePath + ".lock";
             for (int attempt = 1; attempt <= LockAttempts; attempt++)
             {
@@ -213,6 +223,7 @@ namespace CDPIUI.Shared.Basic
                     return null;
                 }
             }
+            timedOut = true;
             return null;
         }
 

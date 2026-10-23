@@ -30,11 +30,12 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        private static CancellationTokenSource _cancellationTokenSource = new();
-        private static CancellationToken _cancellationToken = _cancellationTokenSource.Token;
+        // One run at a time: a second start replaced the process, the job and the token source of
+        // the running one.
+        private readonly SemaphoreSlim _runLock = new(1, 1);
+        private CancellationTokenSource? _cancellationTokenSource;
 
         private Process? Process;
-        private nint Job;
 
         public GoodCheckProcessHelper() 
         { 
@@ -45,6 +46,24 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         public async Task<bool> StartAsync(string executable, string args, string operationId)
+        {
+            if (!await _runLock.WaitAsync(0))
+            {
+                Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessHelper), "Rejected GoodCheck start: another GoodCheck run is in progress.");
+                HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+                return false;
+            }
+            try
+            {
+                return await RunAsync(executable, args, operationId);
+            }
+            finally
+            {
+                _runLock.Release();
+            }
+        }
+
+        private async Task<bool> RunAsync(string executable, string args, string operationId)
         {
             string? unsafeOption = FileWritingOptions.FindOutsideWrite(
                 args, TrustedPaths.AllowedRoots, Path.GetDirectoryName(executable), followArgumentFiles: true);
@@ -64,8 +83,10 @@ namespace CDPIUI.TrayIcon.Helper
 
             await TasksHelper.Instance.StopAllTasks();
 
-            _cancellationTokenSource = new();
-            _cancellationToken = _cancellationTokenSource.Token;
+            var cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = cancellationTokenSource;
+            Process? process = null;
+            nint job = IntPtr.Zero;
             await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Running, operationId);
             await TasksHelper.Instance.ApplyStatusToAllTasks(false);
             // The component buttons are blocked while GoodCheck runs; they stayed blocked when
@@ -81,13 +102,14 @@ namespace CDPIUI.TrayIcon.Helper
                     WorkingDirectory = Path.GetDirectoryName(executable),
                 };
 
-                Job = CreateKillOnCloseJob();
+                job = CreateKillOnCloseJob();
 
-                Process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                Process = process;
 
                 try
                 {
-                    if (!Process.Start())
+                    if (!process.Start())
                     {
                         HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
                         return false;
@@ -105,9 +127,9 @@ namespace CDPIUI.TrayIcon.Helper
                     lease.Dispose();
                 }
 
-                if (!AssignProcessToJobObject(Job, Process.Handle))
+                if (!AssignProcessToJobObject(job, process.Handle))
                 {
-                    TryKillProcess(Process);
+                    TryKillProcess(process);
                     HandleProcessException("ERR_WIN32_EXCEPTION", operationId);
                     Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessHelper), $"ERR_WIN32_EXCEPTION details => {Marshal.GetLastWin32Error()}");
                     return false;
@@ -115,10 +137,10 @@ namespace CDPIUI.TrayIcon.Helper
 
                 var completedTask = await Task.WhenAny(Task.Run(() =>
                 {
-                    Process.WaitForExit();
-                }, _cancellationToken)).ConfigureAwait(false);
+                    process.WaitForExit();
+                }, cancellationTokenSource.Token)).ConfigureAwait(false);
 
-                TryKillProcess(Process);
+                TryKillProcess(process);
                 await PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Died, operationId);
                 return true;
             }
@@ -130,26 +152,30 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
-                if (Job != IntPtr.Zero)
+                if (job != IntPtr.Zero)
                 {
-                    CloseHandle(Job);
-                    Job = IntPtr.Zero;
+                    CloseHandle(job);
                 }
+                Process = null;
+                process?.Dispose();
+                _cancellationTokenSource = null;
+                cancellationTokenSource.Dispose();
                 await TasksHelper.Instance.ApplyStatusToAllTasks(true);
             }
         }
 
+        // The run that owns the process and the token source disposes them when it ends.
         public void Stop()
         {
-            if (Process != null) TryKillProcess(Process);
+            var process = Process;
+            if (process != null) TryKillProcess(process);
             try
             {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource?.Cancel();
             } 
             catch (ObjectDisposedException)
             {
-                // Stop was already called; the token source is disposed.
+                // The run has just ended and disposed its token source.
             }
             catch (Exception ex)
             {
@@ -165,8 +191,6 @@ namespace CDPIUI.TrayIcon.Helper
                 if (!proc.HasExited)
                 {
                     proc.Kill(entireProcessTree: true);
-                    proc.Close();
-                    proc.Dispose();
                 }
             }
             catch (Exception ex)

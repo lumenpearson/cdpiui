@@ -150,8 +150,10 @@ namespace CDPIUI.TrayIcon.Forms
         private string GetCurrentIcon()
         {
             int rt = 0;
+            // Tasks are added from pool threads while the icon is updated.
+            var tasks = TasksHelper.Instance.GetTasksSnapshotSync();
 
-            foreach (var task in TasksHelper.Instance.Tasks)
+            foreach (var task in tasks)
             {
                 if (task.ProcessManager.IsProcessRunning)
                 {
@@ -163,7 +165,7 @@ namespace CDPIUI.TrayIcon.Forms
             {
                 return "trayLogoStopped";
             }
-            else if (rt == TasksHelper.Instance.Tasks.Count)
+            else if (rt == tasks.Count)
             {
                 return "trayLogoStarted";
             }
@@ -198,7 +200,7 @@ namespace CDPIUI.TrayIcon.Forms
         {
             string result = string.Empty;
             int cnt = 0;
-            foreach (var task in TasksHelper.Instance.Tasks)
+            foreach (var task in TasksHelper.Instance.GetTasksSnapshotSync())
             {
                 if (task.ProcessManager.IsProcessRunning)
                 {

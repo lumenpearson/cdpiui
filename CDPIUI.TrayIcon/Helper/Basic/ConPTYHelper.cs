@@ -30,6 +30,8 @@ namespace CDPIUI.TrayIcon.Helper
         private IntPtr _hOutputRead = IntPtr.Zero;
 
         private readonly StringBuilder _outputDefaultBuffer;
+        // The reader thread writes the buffer while pipe commands read it.
+        private readonly object _outputLock = new();
 
         public Action<bool>? ProcessStateChanged;
         public Action<Tuple<PrettyErrorCode, string>>? ErrorHappens;
@@ -355,19 +357,25 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
-                StopActionCaller = StopActionCallers.Unknown;
                 await _processLock.WaitAsync();
+                bool workerStarted = false;
                 try
                 {
-                    _outputDefaultBuffer.Clear();
+                    StopActionCaller = StopActionCallers.Unknown;
+                    lock (_outputLock) _outputDefaultBuffer.Clear();
 
-                    _cancellationTokenSource = new CancellationTokenSource();
-                    var token = _cancellationTokenSource.Token;
+                    var cancellationTokenSource = new CancellationTokenSource();
+                    var previousSource = _cancellationTokenSource;
+                    _cancellationTokenSource = cancellationTokenSource;
+                    previousSource?.Dispose();
 
                     processState = true;
                     ChangeProcessState(true);
 
-                    _ = Task.Run(() => RunProcessWithConPTY(exePath, args, workingDirectory ?? "", token));
+                    // The worker takes over the lock and keeps it until the process ends, so no
+                    // stop or other start can come between this start and the worker.
+                    _ = Task.Run(() => RunProcessWithConPTY(exePath, args, workingDirectory ?? "", cancellationTokenSource));
+                    workerStarted = true;
                 }
                 catch (Exception ex)
                 {
@@ -379,7 +387,8 @@ namespace CDPIUI.TrayIcon.Helper
                 }
                 finally
                 {
-                    _processLock.Release();
+                    if (!workerStarted)
+                        _processLock.Release();
                 }
             }
             catch (Exception ex)
@@ -388,15 +397,15 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
+        // Started by RunProcess, which holds _processLock for it; the lock is released here.
         // Catches and logs its own errors, so a caller can start it without waiting for it.
-        public async Task RunProcessWithConPTY(string exePath, string args, string workingDirectory, CancellationToken token, bool disableKillAfterError=false)
+        private async Task RunProcessWithConPTY(string exePath, string args, string workingDirectory, CancellationTokenSource cancellationTokenSource)
         {
             try
             {
-                await _processLock.WaitAsync();
                 try
                 {
-                    await RunProcessWithConPTYCoreAsync(exePath, args, workingDirectory, token);
+                    await RunProcessWithConPTYCoreAsync(exePath, args, workingDirectory, cancellationTokenSource);
                 }
                 finally
                 {
@@ -411,8 +420,9 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         // The caller holds _processLock.
-        private async Task RunProcessWithConPTYCoreAsync(string exePath, string args, string workingDirectory, CancellationToken token)
+        private async Task RunProcessWithConPTYCoreAsync(string exePath, string args, string workingDirectory, CancellationTokenSource cancellationTokenSource)
         {
+            CancellationToken token = cancellationTokenSource.Token;
             IntPtr pseudoConsoleHandle = IntPtr.Zero;
             IntPtr hInputRead = IntPtr.Zero;
             IntPtr hInputWrite = IntPtr.Zero;
@@ -516,7 +526,7 @@ namespace CDPIUI.TrayIcon.Helper
                 var safeOutputReadHandle = new SafeFileHandle(_hOutputRead, ownsHandle: true);
                 _hOutputRead = IntPtr.Zero;
 
-                _ = Task.Run(() => CheckProcessState(pi, token));
+                _ = Task.Run(() => CheckProcessState(pi, cancellationTokenSource));
 
                 using (var reader = new FileStream(safeOutputReadHandle, FileAccess.Read))
                 {
@@ -551,12 +561,15 @@ namespace CDPIUI.TrayIcon.Helper
                             _output = newOutput;
                         }
 
-                        if (_outputDefaultBuffer.Length > 5000)
+                        lock (_outputLock)
                         {
-                            _outputDefaultBuffer.Clear();
-                        }
+                            if (_outputDefaultBuffer.Length > 5000)
+                            {
+                                _outputDefaultBuffer.Clear();
+                            }
 
-                        _outputDefaultBuffer.Append(_output);
+                            _outputDefaultBuffer.Append(_output);
+                        }
 
                         OutputAdded?.Invoke(_output);
                     }
@@ -623,17 +636,30 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
-        private async Task CheckProcessState(PROCESS_INFORMATION pi, CancellationToken token)
+        // Cancels the source of its own run: the field may already hold the source of a newer run.
+        private async Task CheckProcessState(PROCESS_INFORMATION pi, CancellationTokenSource cancellationTokenSource)
         {
-            while (!token.IsCancellationRequested)
+            while (!cancellationTokenSource.IsCancellationRequested)
             {
                 if (!ProcessAliveCheck(pi))
                 {
-                    _cancellationTokenSource.Cancel();
+                    TryCancel(cancellationTokenSource);
                     break;
                 }
             }
             await Task.CompletedTask;
+        }
+
+        private static void TryCancel(CancellationTokenSource? cancellationTokenSource)
+        {
+            try
+            {
+                cancellationTokenSource?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // A newer run replaced and disposed it; that run ended this process already.
+            }
         }
 
         private static bool ProcessAliveCheck(PROCESS_INFORMATION pi)
@@ -646,18 +672,22 @@ namespace CDPIUI.TrayIcon.Helper
                 case WAIT_TIMEOUT:
                     return true;
                 default:
-                    break;
+                    // WAIT_FAILED: the handle is closed. Reporting it as alive spun the check
+                    // loop without any wait.
+                    return false;
             }
-            return true;
         }
 
         public async Task StopProcess(bool output = true)
         {
             StopActionCaller = StopActionCallers.User;
-            _cancellationTokenSource?.Cancel();
+            TryCancel(_cancellationTokenSource);
 
-            await _processLock.WaitAsync();
-            
+            // The worker holds the lock until its process ends. A start that took the lock before
+            // this stop is stopped as well, because the stop came after it.
+            while (!await _processLock.WaitAsync(100))
+                TryCancel(_cancellationTokenSource);
+
             try
             {
                 // The handle belongs to RunProcessWithConPTY, which closes it; here the process is
@@ -687,13 +717,16 @@ namespace CDPIUI.TrayIcon.Helper
                 processState = false;
                 ChangeProcessState(processState);
             }
-            _processLock.Release();
+            finally
+            {
+                _processLock.Release();
+            }
         }
 
         private void SendStopMessage(string output = "Process will be stopped by user")
         {
             string prefix = string.IsNullOrEmpty(Prefix) ? "" : $" [{Prefix}]";
-            _outputDefaultBuffer.Append($"\n[PSEUDOCONSOLE]{prefix} {output}");
+            lock (_outputLock) _outputDefaultBuffer.Append($"\n[PSEUDOCONSOLE]{prefix} {output}");
 
             ProcessExited?.Invoke($"\n[PSEUDOCONSOLE]{prefix} {output}");
         }
@@ -706,7 +739,7 @@ namespace CDPIUI.TrayIcon.Helper
 
         public string GetDefaultOutput()
         {
-            return _outputDefaultBuffer.ToString();
+            lock (_outputLock) return _outputDefaultBuffer.ToString();
         }
 
         #region WinAPI Definitions

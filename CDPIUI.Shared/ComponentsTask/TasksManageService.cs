@@ -235,26 +235,30 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <returns></returns>
         public async Task StopAndRemoveTaskAsync(string id)
         {
-            var existTask = await GetTaskFromId(id);
-
+            TaskModel<T>? existTask;
+            // Found and removed in one lock hold; the stop runs after it, so other task
+            // operations do not wait for the process to exit.
             await _taskOperationLock.WaitAsync();
             try
             {
-
+                existTask = Tasks.FirstOrDefault(t => t.Id == id);
                 if (existTask != null)
-                {
-                    await existTask.ProcessManager.StopProcess();
                     Tasks.Remove(existTask);
+            }
+            finally { _taskOperationLock.Release(); }
 
-                    TaskListUpdated?.Invoke();
-                }
+            if (existTask == null)
+                return;
+
+            try
+            {
+                await existTask.ProcessManager.StopProcess();
             }
             catch (Exception ex)
             {
                 Trace.WriteLine($"[TasksManageService] Cannot stop and remove the task {id}: {ex}");
             }
-            finally { _taskOperationLock.Release(); }
-
+            TaskListUpdated?.Invoke();
         }
 
         /// <summary>
@@ -297,6 +301,23 @@ namespace CDPIUI.Shared.ComponentsTask
         public async Task<List<TaskModel<T>>> GetTasksSnapshot()
         {
             await _taskOperationLock.WaitAsync();
+            try
+            {
+                return [.. Tasks];
+            }
+            finally
+            {
+                _taskOperationLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Get a copy of the tasks list without awaiting, for callers that cannot await, such as UI code
+        /// </summary>
+        /// <remarks>Blocks while another task operation holds the lock; those operations do not wait on anything under it.</remarks>
+        public List<TaskModel<T>> GetTasksSnapshotSync()
+        {
+            _taskOperationLock.Wait();
             try
             {
                 return [.. Tasks];
