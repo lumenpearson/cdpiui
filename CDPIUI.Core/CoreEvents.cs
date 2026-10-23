@@ -43,5 +43,22 @@ namespace CDPIUI.Core
             LastCriticalError = model;
             CriticalCoreExceptionHappens?.Invoke(LastCriticalError);
         }
+
+        /// <summary>
+        /// Set when an installed package (a driver or runtime MSI) asked for a system restart
+        /// and the user has not been told yet.
+        /// </summary>
+        public bool IsRestartPending { get; private set; }
+
+        public event Action<string>? RestartRequired;
+
+        public void InvokeRestartRequired(string itemId)
+        {
+            Logger.Instance.CreateInfoLog(nameof(CoreEvents), $"{itemId} requested a system restart");
+            IsRestartPending = true;
+            RestartRequired?.Invoke(itemId);
+        }
+
+        public void AcknowledgeRestart() => IsRestartPending = false;
     }
 }

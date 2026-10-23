@@ -6258,4 +6258,16 @@ By enabling this setting, you acknowledge that you have read this information.</
   <data name="ItemShareButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Share</value>
   </data>
+  <data name="RestartRequiredTitle" xml:space="preserve">
+    <value>Restart required</value>
+  </data>
+  <data name="RestartRequiredMessage" xml:space="preserve">
+    <value>An installed package asked for a system restart. Components that use it may not work until you restart the computer.</value>
+  </data>
+  <data name="RestartNow" xml:space="preserve">
+    <value>Restart now</value>
+  </data>
+  <data name="RestartLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
 </root>
