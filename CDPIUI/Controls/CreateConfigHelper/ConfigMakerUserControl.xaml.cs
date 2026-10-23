@@ -1140,7 +1140,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string extension = Path.GetExtension(missingPath);
         using System.Windows.Forms.OpenFileDialog dialog = new()
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementButton.Content"),
+            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
                 ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"

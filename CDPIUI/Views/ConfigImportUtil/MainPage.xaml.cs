@@ -488,7 +488,7 @@ public sealed partial class MainPage : TemplatePage
         string extension = Path.GetExtension(item.MissingPath);
         using var dialog = new System.Windows.Forms.OpenFileDialog
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementButton.Content"),
+            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
                 ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"

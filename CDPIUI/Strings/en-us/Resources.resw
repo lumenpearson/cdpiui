@@ -702,7 +702,7 @@ Please, install lates version of "{0}" in Store</value>
     <value>Unfortunately, the Store is currently unavailable. You can still browse your library, but functionality may be limited.</value>
   </data>
   <data name="StoreUpdatesToast.Content" xml:space="preserve">
-    <value>Updates are available for Store items your installed</value>
+    <value>Updates are available for Store items you installed</value>
   </data>
   <data name="ConditionalLaunchActionToast.Content" xml:space="preserve">
     <value>Task execution by Conditional Launch</value>
@@ -1437,7 +1437,7 @@ Make sure you select startup config for this component</value>
     <value>Something isn't work as planned? Tell about it developers</value>
   </data>
   <data name="AutorunCheckBox.Content" xml:space="preserve">
-    <value>Startup automatically </value>
+    <value>Start automatically</value>
   </data>
   <data name="AutorunBadgeGrid.ToolTipService.ToolTip" xml:space="preserve">
     <value>This component starting up with your PC</value>
@@ -3676,7 +3676,7 @@ Here is error code in case you need it: ERR_FLASHLIGHT_BUSY</value>
   <data name="ConfigImportUseSuggestedFileButton.Content" xml:space="preserve">
     <value>Apply</value>
   </data>
-  <data name="ConfigImportChooseReplacementButton.Content" xml:space="preserve">
+  <data name="ConfigImportChooseReplacementTextBlock.Text" xml:space="preserve">
     <value>Choose file</value>
   </data>
   <data name="ConfigImportUseEmptyFileButton.Content" xml:space="preserve">
@@ -3939,7 +3939,7 @@ https://example.org/path</value>
     <value>Selection stopped by user.</value>
   </data>
   <data name="BlockCheck2FailedTitle" xml:space="preserve">
-    <value>Selection run into a problem</value>
+    <value>Selection ran into a problem</value>
   </data>
   <data name="BlockCheck2UnknownFailure" xml:space="preserve">
     <value>No error details are available.</value>
@@ -5576,9 +5576,9 @@ https://discord.com/app</value>
     <value>Selection is complete</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Description" xml:space="preserve">
-    <value>The config selection for Zapret 2 is complete. You can access the results of this selection at any time via the [Recent Selections] menu on the main page of this wizard.
+    <value>The config selection for Zapret 2 is complete. You can access the results of this selection at any time via [Scan reports] on the main page of this wizard.
 
-Click [Show Results] to view the results.</value>
+Click [View result] to view the results.</value>
   </data>
   <data name="BlockCheck2TestAllStrategiesCard.Header" xml:space="preserve">
     <value>Continue after finding the best strategies</value>

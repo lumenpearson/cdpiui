@@ -173,7 +173,7 @@
     <value>Начать новый подбор</value>
   </data>
   <data name="Calculating" xml:space="preserve">
-    <value>Расчет...</value>
+    <value>Расчёт...</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
@@ -332,7 +332,7 @@
     <value>Файл</value>
   </data>
   <data name="FileSaveErrorMessage" xml:space="preserve">
-    <value>Файл "{0}" не может быть сохранен. {1}</value>
+    <value>Файл "{0}" не может быть сохранён. {1}</value>
   </data>
   <data name="Finishing" xml:space="preserve">
     <value>Завершение</value>
@@ -410,7 +410,7 @@
     <value>Завершить текущий процесс</value>
   </data>
   <data name="GoodCheckSelectionComplete.Text" xml:space="preserve">
-    <value>Подбор завершен</value>
+    <value>Подбор завершён</value>
   </data>
   <data name="GoodCheckSelectionCompleteTip.Text" xml:space="preserve">
     <value>Нажмите на кнопку "Далее", чтобы перейти к просмотру результата.</value>
@@ -542,7 +542,7 @@
     <value>Создать пресет вручную</value>
   </data>
   <data name="OpenLogsFolderTextBlock.Text" xml:space="preserve">
-    <value>Открыть расположение отчета</value>
+    <value>Открыть расположение отчёта</value>
   </data>
   <data name="OriginalModeMenuItem.Text" xml:space="preserve">
     <value>Оригинальный</value>
@@ -824,10 +824,10 @@
     <value>Начать новый подбор</value>
   </data>
   <data name="RecentSelectionsMenuItem.Text" xml:space="preserve">
-    <value>Открыть и просмотреть отчет предыдущего подбора</value>
+    <value>Открыть и просмотреть отчёт предыдущего подбора</value>
   </data>
   <data name="XmlReportMenuItem.Text" xml:space="preserve">
-    <value>Открыть .XML файл отчета...</value>
+    <value>Открыть .XML файл отчёта...</value>
   </data>
   <data name="StoreMenuBarItem.Title" xml:space="preserve">
     <value>Магазин</value>
@@ -906,7 +906,7 @@
   </data>
   <data name="ExceptionSystemProxySet" xml:space="preserve">
     <value>Программа не может сохранить настройки прокси из-за неожиданного исключения.
-Пожалуйста, убедитесь в правильности введенных данных, наличии у программы прав на чтение/запись раздела "{0}" реестра и проверьте вашу систему на наличие ошибок утилитой `sfc`
+Пожалуйста, убедитесь в правильности введённых данных, наличии у программы прав на чтение/запись раздела "{0}" реестра и проверьте вашу систему на наличие ошибок утилитой `sfc`
 Дополнительная информация об ошибке:
 {1}</value>
   </data>
@@ -920,7 +920,7 @@
   </data>
   <data name="ExceptionProxySet" xml:space="preserve">
     <value>Программа не может сохранить настройки прокси из-за неожиданного исключения.
-Пожалуйста, убедитесь в правильности введенных данных.
+Пожалуйста, убедитесь в правильности введённых данных.
 Дополнительная информация об ошибке:
 {0}</value>
   </data>
@@ -1265,10 +1265,10 @@
     <value>Просмотр</value>
   </data>
   <data name="Report" xml:space="preserve">
-    <value>Отчет</value>
+    <value>Отчёт</value>
   </data>
   <data name="ViewGoodCheckReportTextBlock.Text" xml:space="preserve">
-    <value>Просмотр отчета GoodCheck</value>
+    <value>Просмотр отчёта GoodCheck</value>
   </data>
   <data name="HideTipTextBlock.Text" xml:space="preserve">
     <value>Спрятать подсказку</value>
@@ -1564,7 +1564,7 @@
     <value>Фон редактора</value>
   </data>
   <data name="DefaultBackgroundMenuItem.Text" xml:space="preserve">
-    <value>Идеально черный</value>
+    <value>Идеально чёрный</value>
   </data>
   <data name="MicaBackgroundMenuItem.Text" xml:space="preserve">
     <value>Классическое размытие мика</value>
@@ -1718,7 +1718,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Нет</value>
   </data>
   <data name="LocalItemInstallingWarningContentDialog.SecondaryButtonText" xml:space="preserve">
-    <value>Все равно продолжить</value>
+    <value>Всё равно продолжить</value>
   </data>
   <data name="ItemLocalInstallingWarningTextBlock.Text" xml:space="preserve">
     <value>Разработчик не несет ответственности за вред, который может нанести элемент установленный из неизвестного источника.
@@ -1896,7 +1896,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Это действие удалит ВСЕ ваши настройки. Продолжить в любом случае?</value>
   </data>
   <data name="ContinueAnywayButton.Content" xml:space="preserve">
-    <value>Все равно продолжить</value>
+    <value>Всё равно продолжить</value>
   </data>
   <data name="LocalDrive" xml:space="preserve">
     <value>Локальный диск</value>
@@ -2216,7 +2216,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Подходящие элементы не найдены среди установленных из Магазина. Попробуйте установить новые поддерживаемые элементы или выберите ручной способ.</value>
   </data>
   <data name="YouDontAddAnyFilesYet.Text" xml:space="preserve">
-    <value>Вы еще не добавляли собственные файлы. Чтобы добавить новый файл нажмите на кнопку ниже.</value>
+    <value>Вы ещё не добавляли собственные файлы. Чтобы добавить новый файл нажмите на кнопку ниже.</value>
   </data>
   <data name="RevertChangeSiteList" xml:space="preserve">
     <value>Восстановить оригинальный файл</value>
@@ -2478,10 +2478,10 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Статус замены:</value>
   </data>
   <data name="HostsFileStatusEnabled" xml:space="preserve">
-    <value>Файл hosts был изменен</value>
+    <value>Файл hosts был изменён</value>
   </data>
   <data name="HostsFileStatusDisabled" xml:space="preserve">
-    <value>Файл hosts не изменен</value>
+    <value>Файл hosts не изменён</value>
   </data>
   <data name="HostsFileAreAllreadyEdited" xml:space="preserve">
     <value>Невозможно добавить адреса в файл hosts – адреса уже добавлены.</value>
@@ -3598,7 +3598,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Идет работа над этим</value>
   </data>
   <data name="ConfigImportCompletedStepTitle.Text" xml:space="preserve">
-    <value>Импорт завершен</value>
+    <value>Импорт завершён</value>
   </data>
   <data name="ConfigImportResultNameLabel.Text" xml:space="preserve">
     <value>Название пресета</value>
@@ -3678,7 +3678,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   <data name="ConfigImportUseSuggestedFileButton.Content" xml:space="preserve">
     <value>Применить</value>
   </data>
-  <data name="ConfigImportChooseReplacementButton.Content" xml:space="preserve">
+  <data name="ConfigImportChooseReplacementTextBlock.Text" xml:space="preserve">
     <value>Выбрать файл</value>
   </data>
   <data name="ConfigImportUseEmptyFileButton.Content" xml:space="preserve">
@@ -4181,7 +4181,7 @@ https://example.org/path</value>
     <value>Дизайн главной, как в GoodbyeDPI-UI. Компоненты расположены вертикально. На странице отображается минимальное кол-во контента</value>
   </data>
   <data name="ModernMarkupDescription" xml:space="preserve">
-    <value>Современный вид главной. Компоненты расположены горизонтально в плитках, размер которых может быть изменен. Плитки содержат ссылки на возможности компонентов и быстрые настройки пресетов</value>
+    <value>Современный вид главной. Компоненты расположены горизонтально в плитках, размер которых может быть изменён. Плитки содержат ссылки на возможности компонентов и быстрые настройки пресетов</value>
   </data>
   <data name="BlockCheck2HttpOnlyInfoBar.Title" xml:space="preserve">
     <value>Проверяется только HTTP</value>
@@ -5575,12 +5575,12 @@ https://discord.com/app</value>
 https://discord.com/app</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Header" xml:space="preserve">
-    <value>Подбор завершен</value>
+    <value>Подбор завершён</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Description" xml:space="preserve">
-    <value>Подбор пресета для Zapret 2 завершен. Вы можете получить доступ к результатам этого подбора в любой момент через меню [Недавние подборы] на главной этого мастера.
+    <value>Подбор пресета для Zapret 2 завершён. Результаты этого подбора доступны в любой момент в разделе [Недавние подборы] на главной странице этого мастера.
 
-Нажмите [Показать результаты], чтобы перейти к просмотру результатов.</value>
+Нажмите [Просмотреть результат], чтобы перейти к просмотру результатов.</value>
   </data>
   <data name="BlockCheck2TestAllStrategiesCard.Header" xml:space="preserve">
     <value>Не завершать после нахождения лучших стратегий</value>
@@ -5676,7 +5676,7 @@ https://discord.com/app</value>
     <value>Одно значение на строку</value>
   </data>
   <data name="ConfigMakerVariableOnValueTextBox.Header" xml:space="preserve">
-    <value>Значение во включенном состоянии</value>
+    <value>Значение во включённом состоянии</value>
   </data>
   <data name="ConfigMakerVariableOffValueTextBox.Header" xml:space="preserve">
     <value>Значение в выключенном состоянии</value>
