@@ -180,15 +180,21 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             {
                 if (messageModel.MessageType == ServiceMessageIds.RequestAuth)
                 {
-                    if (messageModel.MessageData != null && messageModel.MessageData["GUID"] == Secret.AuthGuid)
+                    // An empty secret (a build without Secret.cs values) must not let any client in.
+                    if (!string.IsNullOrEmpty(Secret.AuthGuid) &&
+                        messageModel.MessageData != null && messageModel.MessageData["GUID"] == Secret.AuthGuid)
                     {
                         IsAuthorized = true;
                         _ = SendMessageAsync(ServiceMessageModel.AuthSuccessful().ToString());
                     }
                     else
                     {
+                        // A client with a wrong GUID could retry until the authorization timeout.
                         IsAuthorized = false;
-                        _ = SendMessageAsync(ServiceMessageModel.AuthFailure().ToString());
+                        await SendMessageAsync(ServiceMessageModel.AuthFailure().ToString());
+                        Logger?.CreateWarningLog(nameof(PipeServer), "Authorization failed; disconnecting the client.");
+                        try { (PipeStream as NamedPipeServerStream)?.Disconnect(); } catch (Exception) { }
+                        return;
                     }
                 }
             }
