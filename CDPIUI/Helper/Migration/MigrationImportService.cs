@@ -289,7 +289,7 @@ internal sealed class MigrationImportService
                 {
                     text = ReplaceOrdinalIgnoreCase(text, $"\"{candidate}\"", destination);
                     text = ReplaceOrdinalIgnoreCase(text, $"'{candidate}'", destination);
-                    text = ReplaceOrdinalIgnoreCase(text, candidate, destination);
+                    text = ReplacePathIgnoreCase(text, candidate, destination);
                 }
             }
             value.Value = text;
@@ -307,6 +307,22 @@ internal sealed class MigrationImportService
         return Regex.Replace(
             input,
             Regex.Escape(source),
+            _ => destination,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
+    }
+
+    /// <summary>
+    /// Replaces <paramref name="source"/> only where it is a whole path, so that rewriting
+    /// "list.txt" leaves "blacklist.txt" and "lists\\list.txt.bak" alone.
+    /// </summary>
+    private static string ReplacePathIgnoreCase(string input, string source, string destination)
+    {
+        if (string.IsNullOrEmpty(source))
+            return input;
+        return Regex.Replace(
+            input,
+            $@"(?<![\w.\\/:-]){Regex.Escape(source)}(?![\w.\\/-])",
             _ => destination,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
             TimeSpan.FromSeconds(1));
@@ -436,6 +452,12 @@ internal sealed class MigrationImportService
                 switch (semanticKey)
                 {
                     case "ui.theme":
+                        // A theme already chosen in CDPI UI wins over the old one; "Dark" is the
+                        // value of a new settings file (Template/Settings/Settings.xml).
+                        string currentTheme = SettingsManager.Instance.GetValue<string>("APPEARANCE", "Theme") ?? string.Empty;
+                        if (!currentTheme.Equals("Dark", StringComparison.OrdinalIgnoreCase) &&
+                            !currentTheme.Equals("Default", StringComparison.OrdinalIgnoreCase))
+                            break;
                         string theme = (setting.Value ?? string.Empty).Trim().ToLowerInvariant() switch
                         {
                             "dark" or "1" => "Dark",
@@ -460,12 +482,10 @@ internal sealed class MigrationImportService
                         }
                         break;
                     case "startup.autostart":
-                        if (TryParseBoolean(setting.Value, out bool autostart))
+                        // Only adds: an autorun the user set up in CDPI UI is not removed by the import.
+                        if (TryParseBoolean(setting.Value, out bool autostart) && autostart)
                         {
-                            if (autostart)
-                                ApplicationAutorunManager.AddToAutorun();
-                            else
-                                ApplicationAutorunManager.RemoveFromAutorun();
+                            ApplicationAutorunManager.AddToAutorun();
                             applied++;
                         }
                         break;
