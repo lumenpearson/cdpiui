@@ -131,42 +131,44 @@ namespace CDPIUI.Core.Store.Application
                 return OperationResultModel<List<string>>
                     .FailureResult(HandleException(PrettyErrorCode.SERVER_UNREACHABLE));
 
-            var patches = new List<string>();
+            // The version of a required patch comes from its own requirements.json, not from the
+            // shape of its URL (GitLab links were skipped), and the layers are applied by version,
+            // oldest first, whatever the order of patch_urls. Every folder has its own index: a
+            // name from the current second was shared by patches downloaded in the same second.
+            var patches = new List<(Version Version, string Layer)>();
             try
             {
-                foreach (string requirement in requirements.patch_urls)
+                int index = 0;
+                foreach (string requirement in requirements.patch_urls ?? [])
                 {
-                    string[] parts = requirement.TrimStart('/').Split('/');
-                    if (parts.Length > 2)
-                    {
-                        string[] reversedParts = parts.Reverse().ToArray();
-                        Logger.Instance.CreateInfoLog(nameof(ApplicationUpdateService), $"Version {reversedParts[1]}");
-                        if (VersionHelper.CompareVersionStrings(currentVersion.ToString(), reversedParts[1]) >= 0)
-                            continue;
-                    }
-                    else
-                    {
-                        continue; // TODO: Fix requiriments search for GitLab
-                    }
+                    if (string.IsNullOrWhiteSpace(requirement))
+                        continue;
 
-                    TimeSpan epochTime = DateTime.UtcNow - new DateTime(1970, 1, 1);
-                    int secondsSinceEpoch = (int)epochTime.TotalSeconds;
-                    string downloadDir = Path.Combine(patchDirectory, secondsSinceEpoch.ToString());
-                    patches.Add(downloadDir);
+                    string downloadDir = Path.Combine(patchDirectory, "required", (index++).ToString());
 
                     bool ok = await downloadWorker.DownloadAndExtractAsync(
                         requirement,
                         downloadDir,
                         extractArchive: true,
                         extractSkipFiletypes: [],
-                        extractRootFolder: "CDPIUI/",
+                        extractRootFolder: "/",
                         executableFileName: "",
                         filetype: Shared.Basic.Filesystem.FileExtensionTypes.archive);
 
                     if (!ok)
                         return OperationResultModel<List<string>>.UnSuccessResult();
 
-                    await ValidateCatalog(downloadDir);
+                    var requiredResult = LoadPatchRequirements(downloadDir);
+                    if (!requiredResult.Success || !Version.TryParse(requiredResult.Result!.version, out Version? requiredVersion))
+                        throw new UnknownFileFormatException();
+
+                    Logger.Instance.CreateInfoLog(nameof(ApplicationUpdateService), $"Required patch {requiredVersion}");
+                    if (currentVersion >= requiredVersion)
+                        continue;
+
+                    string layer = Path.Combine(downloadDir, "CDPIUI");
+                    await ValidateCatalog(layer);
+                    patches.Add((requiredVersion, layer));
                 }
             }
             catch (Exception ex)
@@ -174,8 +176,8 @@ namespace CDPIUI.Core.Store.Application
                 return OperationResultModel<List<string>>.FailureResult(HandleException(ex));
             }
 
-            patches.Reverse();
-            return OperationResultModel<List<string>>.SuccessResult(patches);
+            return OperationResultModel<List<string>>.SuccessResult(
+                patches.OrderBy(patch => patch.Version).Select(patch => patch.Layer).ToList());
         }
 
         private static async Task ValidateCatalog(string dir)

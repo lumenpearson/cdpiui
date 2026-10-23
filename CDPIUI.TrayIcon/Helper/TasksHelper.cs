@@ -21,18 +21,22 @@ namespace CDPIUI.TrayIcon.Helper
 
         public TasksHelper() { }
 
-        public void SendAllTasksOutput()
+        // The snapshot: tasks may be added or removed while the messages are sent.
+        public async Task SendTasksOutput(string? id = null)
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
-                task.ProcessManager.SendDefaultProcessOutput();
+                if (string.IsNullOrEmpty(id) || task.Id == id)
+                    task.ProcessManager.SendDefaultProcessOutput();
             }
         }
 
-        public void SendAllTasksState()
+        public async Task SendTasksState(string? id = null)
         {
-            foreach (var task in Tasks)
+            foreach (var task in await GetTasksSnapshot())
             {
+                if (!string.IsNullOrEmpty(id) && task.Id != id)
+                    continue;
                 task.ProcessManager.SendState();
                 task.ProcessManager.SendNowSelectedComponentName();
             }

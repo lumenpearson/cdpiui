@@ -306,7 +306,10 @@ namespace Update
                         }
 
                         var fileName = Path.GetFileName(relativePath);
-                        if (_skipFiles.Contains(fileName, StringComparer.OrdinalIgnoreCase) && File.Exists(destPath))
+                        // The catalog of a patch lists only the files of that patch. Copied into the
+                        // application folder, it no longer matched the folder after the next patch.
+                        bool isCatalog = string.Equals(fileName, "catalog.cat", StringComparison.OrdinalIgnoreCase);
+                        if (isCatalog || (_skipFiles.Contains(fileName, StringComparer.OrdinalIgnoreCase) && File.Exists(destPath)))
                         {
                             Log($"Skipping {relativePath}");
                             continue;
