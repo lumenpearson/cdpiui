@@ -105,9 +105,14 @@ namespace CDPIUI.TrayIcon.Helper
             await Task.CompletedTask;
         }
 
+        // 1 while the system proxy set by this component is on.
+        private int _systemProxyStarted;
+
+        // Runs for the stop command and again for the exit events of the process: only the first
+        // call after StartProxy restores the system proxy.
         public async Task StopProxy()
         {
-            if (proxyType == "AllSystem")
+            if (Interlocked.Exchange(ref _systemProxyStarted, 0) == 1)
                 StopSystemProxy();
 
             if (proxiFyreHelper.processState)
@@ -289,6 +294,7 @@ namespace CDPIUI.TrayIcon.Helper
                         RegeditHelper.SaveSnapshotBackup(_systemProxyBackup);
                     }
                     RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
+                    Interlocked.Exchange(ref _systemProxyStarted, 1);
                 }
             }
             catch (Exception ex)
@@ -304,10 +310,11 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 lock (SystemProxyLock)
                 {
-                    if (_systemProxyBackup != null)
-                        RegeditHelper.RestoreProxySnapshot(_systemProxyBackup);
-                    else
-                        RegeditHelper.SaveProxySettings(string.Empty, string.Empty, 0);
+                    // Without a backup the settings were already restored; clearing them here
+                    // wiped the user's own proxy.
+                    if (_systemProxyBackup == null)
+                        return;
+                    RegeditHelper.RestoreProxySnapshot(_systemProxyBackup);
                     _systemProxyBackup = null;
                     RegeditHelper.DeleteSnapshotBackup();
                 }

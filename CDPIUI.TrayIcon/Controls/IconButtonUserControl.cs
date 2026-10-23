@@ -140,7 +140,10 @@ namespace CDPIUI.TrayIcon.Controls
 
         private void SetFont()
         {
-            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", IconGlyph.Font.SizeInPoints);
+            // The replaced font was created by the designer for this label alone.
+            var oldFont = IconGlyph.Font;
+            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
+            oldFont.Dispose();
         }
 
         private void IconButtonUserControl_MouseClick(object? sender, MouseEventArgs e)

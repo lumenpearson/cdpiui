@@ -62,6 +62,8 @@ namespace CDPIUI.Shared.Pipe
                         continue;
                     }
 
+                    // Not awaited: a handler can run for minutes. It runs on this thread up to its
+                    // first await, so a handler can keep the order of arrival there.
                     _ = RunStringMessageActions(message);
                 }
                 catch (EndOfStreamException)
@@ -93,8 +95,6 @@ namespace CDPIUI.Shared.Pipe
         }
         public async Task<bool> SendMessageAsync(string message)
         {
-            if (!CanSend(message))
-                return false;
             return await SendStringMessageToPipe(message);
         }
 
@@ -139,17 +139,24 @@ namespace CDPIUI.Shared.Pipe
         {
             Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Message \"{RedactSecrets(message)}\" added to send queue");
 
-            if (PipeStream == null || !PipeStream.IsConnected || StreamString == null)
-            {
-                Logger?.CreateInfoLog(nameof(PipeServiceBase), "Cannot send any message. Connect PIPE first!");
-                return false;
-            }
-
             await SendLock.WaitAsync();
 
             try
             {
-                await StreamString.WriteStringAsync(message, default);
+                // Checked under the lock: the client can change while the message waits, and the
+                // listener clears the streams when the client leaves.
+                if (!CanSend(message))
+                    return false;
+
+                var pipeStream = PipeStream;
+                var streamString = StreamString;
+                if (pipeStream == null || !pipeStream.IsConnected || streamString == null)
+                {
+                    Logger?.CreateInfoLog(nameof(PipeServiceBase), "Cannot send any message. Connect PIPE first!");
+                    return false;
+                }
+
+                await streamString.WriteStringAsync(message, default);
                 return true;
             }
             catch (Exception ex)
