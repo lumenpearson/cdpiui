@@ -174,6 +174,11 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             }
         }
 
+        // Compared in constant time, so the time of a wrong answer tells nothing about the secret.
+        private static bool SecretEquals(string? value, string secret) =>
+            value != null && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(value), System.Text.Encoding.UTF8.GetBytes(secret));
+
         protected override async Task RunMessageActions(IPipeMessage message)
         {
             if (message is ServiceMessageModel messageModel)
@@ -182,7 +187,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                 {
                     // An empty secret (a build without Secret.cs values) must not let any client in.
                     if (!string.IsNullOrEmpty(Secret.AuthGuid) &&
-                        messageModel.MessageData != null && messageModel.MessageData["GUID"] == Secret.AuthGuid)
+                        messageModel.MessageData != null && SecretEquals(messageModel.MessageData["GUID"], Secret.AuthGuid))
                     {
                         IsAuthorized = true;
                         _ = SendMessageAsync(ServiceMessageModel.AuthSuccessful().ToString());
