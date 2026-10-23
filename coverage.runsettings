@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!-- OpenCover holds the cyclomatic complexity used for CRAP scores. -->
+          <Format>cobertura,opencover</Format>
+
+          <!-- Leave out the test assembly and the test framework. -->
+          <Exclude>[*.Tests]*,[xunit.*]*</Exclude>
+
+          <!-- Leave out generated code and explicit exclusions. -->
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/obj/**/*,**/*.g.cs,**/*.g.i.cs,**/*.designer.cs,**/*.Designer.cs</ExcludeByFile>
+
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>false</UseSourceLink>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

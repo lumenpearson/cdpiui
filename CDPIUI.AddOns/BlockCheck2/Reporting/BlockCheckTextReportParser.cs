@@ -32,10 +32,13 @@ internal static partial class BlockCheckTextReportParser
             : ParseBool(canceledHeader, "Canceled");
         bool bestEffort = ParseBool(Header(lines, "Best effort"), "Best effort");
 
-        List<BlockCheckReportTarget> targets = ParseTargets(lines);
-        Dictionary<string, BlockCheckReportTarget> targetByDisplay = targets.ToDictionary(
-            target => DisplayKey(TargetUrl(target), TargetConnection(target)),
-            StringComparer.OrdinalIgnoreCase);
+        // URL paths are case-sensitive: "/A" and "/a" are two targets, and ignoring case made
+        // the import fail. Targets with the same text, such as "example.com" and
+        // "example.com:443", cannot be told apart here and are kept once.
+        Dictionary<string, BlockCheckReportTarget> targetByDisplay = new(StringComparer.Ordinal);
+        List<BlockCheckReportTarget> targets = ParseTargets(lines)
+            .Where(target => targetByDisplay.TryAdd(DisplayKey(TargetUrl(target), TargetConnection(target)), target))
+            .ToList();
         List<TemporaryProfile> temporaryProfiles = ParseProfiles(lines);
         List<BlockCheckReportProfile> profiles = temporaryProfiles
             .Select(profile => profile.ToReportProfile(targets))
