@@ -182,14 +182,11 @@ namespace CDPIUI.Views.SetupProxy
                 string readyToCompareIpAddr = GetProxyIpString(
                     SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress"), SettingsManager.Instance.GetValue<string>("PROXY", "port"));
 
-                ProxiFyreSettings settings = JSONConvertor.LoadJson<ProxiFyreSettings>(settingsFile);
-                ProxiFyreProxyGroup proxyGroup = settings.proxies.FirstOrDefault(x => x.socks5ProxyEndpoint == readyToCompareIpAddr);
-                if (proxyGroup is null && settings.proxies.Count > 0)
-                {
-                    proxyGroup = settings.proxies.First();
-                }
+                ProxiFyreSettings? settings = TryLoadSettings(settingsFile);
+                ProxiFyreProxyGroup? proxyGroup = settings?.proxies?.FirstOrDefault(x => x.socks5ProxyEndpoint == readyToCompareIpAddr)
+                    ?? settings?.proxies?.FirstOrDefault();
 
-                foreach (string app in proxyGroup.appNames)
+                foreach (string app in proxyGroup?.appNames ?? [])
                 {
                     WhiteList.Add(new()
                     {
@@ -227,6 +224,19 @@ namespace CDPIUI.Views.SetupProxy
             SetDescription();
         }
 
+        private static ProxiFyreSettings? TryLoadSettings(string settingsFile)
+        {
+            try
+            {
+                return JSONConvertor.LoadJson<ProxiFyreSettings>(settingsFile);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(ProxiFyreSetupPage), $"Cannot read \"{settingsFile}\": {ex.Message}");
+                return null;
+            }
+        }
+
         private bool SaveSettings()
         {
             string dir = Path.Combine(Directories.StoreItemsDirectory, AddOnId);
@@ -243,8 +253,10 @@ namespace CDPIUI.Views.SetupProxy
             }
             else
             {
-                settings = JSONConvertor.LoadJson<ProxiFyreSettings>(settingsFile);
+                // A damaged app-config.json is replaced instead of failing the setup.
+                settings = TryLoadSettings(settingsFile) ?? new();
             }
+            settings.proxies ??= [];
 
             string readyToCompareIpAddr = GetProxyIpString(IPValue.Text, PortValue.Text);
 

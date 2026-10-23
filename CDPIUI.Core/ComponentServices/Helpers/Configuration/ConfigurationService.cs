@@ -47,7 +47,19 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             if (!File.Exists(initFile))
                 return configItems;
 
-            ConfigInitItem configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
+            // A damaged pack must not hide the presets of the other packs (issue #61).
+            ConfigInitItem? configInitItem;
+            try
+            {
+                configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
+                return configItems;
+            }
+            if (configInitItem == null)
+                return configItems;
 
             string[] jsonFiles = Directory.GetFiles(directory, "*.json");
 
@@ -318,8 +330,17 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             if (!File.Exists(initFile))
                 return string.Empty;
 
-            ConfigInitItem configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
-            string _preFilepath = configInitItem.localized_strings_directory?.GetValueOrDefault("EN", null) ?? string.Empty;
+            ConfigInitItem? configInitItem;
+            try
+            {
+                configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
+                return string.Empty;
+            }
+            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN", null) ?? string.Empty;
             return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
         }
 

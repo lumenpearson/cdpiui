@@ -293,7 +293,6 @@ namespace CDPIUI.Shared.Basic
         /// <param name="xElement">Custom <see cref="XElement"/> if settings must be loaded from another file</param>
         /// <param name="raiseExceptionIfNotExits">Throw <see cref="SettingNotFoundException"/> if <paramref name="key"/> not found in file</param>
         /// <returns>Value if key exsits, otherwise default</returns>
-        /// <exception cref="SettingTypeNotSupported"></exception>
         /// <exception cref="SettingNotFoundException"></exception>
         public T? GetValue<T>(string group, string key, XElement? xElement = null, bool raiseExceptionIfNotExits = false)
         {
@@ -325,7 +324,10 @@ namespace CDPIUI.Shared.Basic
                 }
                 catch
                 {
-                    throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group '{group}'.");
+                    // A value of another type, for example after a manual edit, must not crash
+                    // the caller: hardly any of them expects an exception here (issue #61).
+                    Debug.WriteLine($"Type mismatch or unsupported type for setting '{key}' in group '{group}'.");
+                    return GetDefaultValueForKey<T>(group, key);
                 }
             }
         }
@@ -339,7 +341,6 @@ namespace CDPIUI.Shared.Basic
         /// <param name="xElement">Custom <see cref="XElement"/> if settings must be loaded from another file</param>
         /// <param name="raiseExceptionIfNotExits">Throw <see cref="SettingNotFoundException"/> if <paramref name="key"/> not found in file</param>
         /// <returns>Value if key exsits, otherwise default</returns>
-        /// <exception cref="SettingTypeNotSupported"></exception>
         /// <exception cref="SettingNotFoundException"></exception>
         public T? GetValue<T>(IEnumerable<string> groupPath, string key, XElement? xElement = null, bool raiseExceptionIfNotExits = false)
         {
@@ -385,7 +386,8 @@ namespace CDPIUI.Shared.Basic
                 }
                 catch
                 {
-                    throw new SettingTypeNotSupported($"Type mismatch or unsupported type for setting '{key}' in group path '{string.Join("/", groupPath)}'.");
+                    Debug.WriteLine($"Type mismatch or unsupported type for setting '{key}' in group path '{string.Join("/", groupPath)}'.");
+                    return GetDefaultValueForKey<T>(groupPath, key);
                 }
             }
         }

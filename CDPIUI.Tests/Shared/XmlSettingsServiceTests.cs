@@ -48,6 +48,16 @@ public class XmlSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ValueOfAnotherTypeReturnsDefault()
+    {
+        new XMLSettingsService(SettingsPath).SetValue("SYSTEM", "someNumber", "not a number");
+
+        var settings = new XMLSettingsService(SettingsPath);
+        Assert.Equal(0, settings.GetValue<int>("SYSTEM", "someNumber"));
+        Assert.Equal(0, settings.GetValue<int>(["SYSTEM"], "someNumber"));
+    }
+
+    [Fact]
     public void DateTimeWithGroupPathIsReadable()
     {
         var value = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
