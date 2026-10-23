@@ -724,9 +724,11 @@ namespace CDPIUI.Core.Store
         {
             List<Tuple<string, string>> _dependencies = [];
 
+            // A one-element entry in init.json threw here and failed the installation silently.
             foreach (string[] dependency in item.dependencies ?? [])
             {
-                _dependencies.Add(Tuple.Create(dependency[0], dependency[1]));
+                if (dependency is { Length: >= 2 })
+                    _dependencies.Add(Tuple.Create(dependency[0], dependency[1]));
             }
 
             DatabaseStoreItem databaseStoreItem = new()
@@ -764,7 +766,9 @@ namespace CDPIUI.Core.Store
                 // TODO: add RequiredItemIds to new installed item from store (foreach)
 
                 Logger.Instance.CreateDebugLog(nameof(StoreHelper), $"Adding item {item.name} to database...");
-                DatabaseHelper.Instance.AddOrUpdateItem(databaseStoreItem);
+                if (!DatabaseHelper.Instance.AddOrUpdateItem(databaseStoreItem))
+                    return OperationResultModel<EmptyResult>
+                        .FailureResult(ErrorModel.OnlyErrorCode(HandleException(new IOException($"Cannot save {item.store_id} to the item database."))));
 
                 Dictionary<string, string> extraArgs = new()
                 {
@@ -792,8 +796,14 @@ namespace CDPIUI.Core.Store
                     continue;
 
                 DatabaseStoreItem dependencyItem = DatabaseHelper.Instance.GetItemById(dependency[0]);
-                dependencyItem?.RequiredItemIds?.Add(Tuple.Create(id, dependency[1]));
-                if (dependencyItem != null) DatabaseHelper.Instance.AddOrUpdateItem(dependencyItem);
+                if (dependencyItem == null)
+                    continue;
+                // A reinstall added the same entry again every time.
+                dependencyItem.RequiredItemIds ??= [];
+                if (dependencyItem.RequiredItemIds.Any(r => r.Item1 == id))
+                    continue;
+                dependencyItem.RequiredItemIds.Add(Tuple.Create(id, dependency[1]));
+                DatabaseHelper.Instance.AddOrUpdateItem(dependencyItem);
             }
 
         }
