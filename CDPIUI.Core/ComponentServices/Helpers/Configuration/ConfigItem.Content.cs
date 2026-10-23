@@ -115,12 +115,13 @@ public partial class ConfigItem
         }
         string result = text ?? string.Empty;
         HashSet<string> visited = new(StringComparer.Ordinal);
-        for (int depth = 0; depth < 16 && visited.Add(result); depth++)
+        for (int depth = 0; depth < global::CDPIUI.Core.ComponentServices.Configuration.ConfigurationService.MaxVariablePasses && visited.Add(result); depth++)
         {
-            string expanded = Regex.Replace(result, "%([A-Za-z0-9_]+)%",
+            string expanded = Regex.Replace(result, "%([A-Za-z0-9_.\\-]+)%",
                 match => values.TryGetValue(match.Groups[1].Value, out string? value) ? value : match.Value,
                 RegexOptions.CultureInvariant);
-            if (expanded == result)
+            // %A%=%A%%A% grows four times per pass: stop before it takes all memory.
+            if (expanded == result || expanded.Length > global::CDPIUI.Core.ComponentServices.Configuration.ConfigurationService.MaxExpandedLength)
             {
                 break;
             }

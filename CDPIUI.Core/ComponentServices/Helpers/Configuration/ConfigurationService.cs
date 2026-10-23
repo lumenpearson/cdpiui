@@ -73,7 +73,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
             foreach (string jsonFile in jsonFiles)
             {
-                if (Path.GetFileName(jsonFile).StartsWith("init"))
+                // Only the pack description: presets such as "initial-*.json" were skipped too.
+                if (Path.GetFileName(jsonFile).Equals("init.json", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 try
@@ -368,7 +369,9 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             List<string> variables, 
             Dictionary<string, bool> jparams)
         {
-            Dictionary<string, string> result = [];
+            // Same rules as ConfigItem.ExpandVariables in the UI: names ignore case, and a name
+            // declared twice takes the last value instead of failing the start (audit 11.4).
+            Dictionary<string, string> result = new(StringComparer.OrdinalIgnoreCase);
             string regexString = @"%(.*?)%=(.*?)$";
 
             if (variables == null || jparams == null)
@@ -383,13 +386,18 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 if (!match.Success)
                     continue;
 
-                result.Add(
-                    match.Groups[1].Value, 
-                    LScriptCore.ExecuteScript(match.Groups[2].Value, callItemId: id, jparams: jparams));
+                result[match.Groups[1].Value] =
+                    LScriptCore.ExecuteScript(match.Groups[2].Value, callItemId: id, jparams: jparams);
             }
 
             return result;
         }
+
+        internal const int MaxVariablePasses = 16;
+        internal const int MaxExpandedLength = 64 * 1024;
+
+        [GeneratedRegex("%(?<name>[A-Za-z0-9_.\\-]+)%", RegexOptions.CultureInvariant)]
+        private static partial Regex VariableReferenceRegex();
 
         public static string ReplaceVariables(string input, IDictionary<string, string> readyToUseVars)
         {
@@ -398,32 +406,22 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 return input;
             }
 
-            var pattern = new Regex("%(?<name>[A-Za-z0-9_]+)%", RegexOptions.Compiled);
+            var vars = new Dictionary<string, string>(readyToUseVars, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var variable in readyToUseVars)
+            string evaluator(Match match) =>
+                vars.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Value;
+
+            // Variables may refer to other variables, as in the editor preview, which expands
+            // them the same way; the length limit stops definitions such as %A%=%A%%A%.
+            string result = input;
+            for (int pass = 0; pass < MaxVariablePasses; pass++)
             {
-                Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"{variable.Key}, {variable.Value}");
+                string expanded = VariableReferenceRegex().Replace(result, evaluator);
+                if (expanded == result || expanded.Length > MaxExpandedLength)
+                    break;
+                result = expanded;
             }
-            Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Check {input}");
-
-            string evaluator(Match match)
-            {
-                string value = "";
-                Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Check {value}");
-
-                var varName = match.Groups["name"].Value;
-                if (readyToUseVars.TryGetValue(varName, out value))
-                {
-                    Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Check {varName} >>> {value}");
-                    return value;
-                }
-
-                Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Check {varName} >>> {value}");
-
-                return match.Value;
-            }
-
-            return pattern.Replace(input, new MatchEvaluator(evaluator));
+            return result;
         }
 
         /// <summary>
