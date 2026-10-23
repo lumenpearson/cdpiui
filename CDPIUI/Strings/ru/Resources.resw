@@ -6175,4 +6175,7 @@ https://discord.com/app</value>
   <data name="ConfigImportArguments" xml:space="preserve">
     <value>Аргументы</value>
   </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
 </root>

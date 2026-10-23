@@ -57,7 +57,7 @@ namespace CDPIUI.Helper.Parsers
                 if (hours < 1.5)
                     return localizer.GetLocalizedString("/UIHelper/Hour");
                 else if (hours >= 1.5 && hours <= 2.5)
-                    return localizer.GetLocalizedString("/UIHelper/TwoHour");
+                    return localizer.GetLocalizedString("/UIHelper/TwoHours");
                 else
                     return localizer.GetLocalizedString("/UIHelper/MoreThanThreeHours");
             }
