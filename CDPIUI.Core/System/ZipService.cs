@@ -138,7 +138,7 @@ namespace CDPIUI.Core.System
                     // "*.ext" skips by extension; any other value skips paths that contain it.
                     if (filesToSkip.Any(skip => skip.StartsWith("*.")
                             ? relativePath.EndsWith(skip.Substring(1), StringComparison.OrdinalIgnoreCase)
-                            : relativePath.Contains(skip)))
+                            : relativePath.Contains(skip, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
                     var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);

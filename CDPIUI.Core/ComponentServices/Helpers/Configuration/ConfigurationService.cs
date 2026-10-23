@@ -89,8 +89,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
                     configItem.IsLegacy = isLegacyZapretConfig;
 
+                    // A preset without a name keeps its file name; Regex.Replace threw and the
+                    // preset was left out of the list.
                     var result = Regex.Replace(
-                        configItem.name!,
+                        configItem.name ?? Path.GetFileNameWithoutExtension(jsonFile),
                         // Only $NAME(key) is a script: a preset named "Fast $5 (beta)" stays as it is.
                         @"\$[A-Za-z_]+\((.*?)\)",
                         match =>

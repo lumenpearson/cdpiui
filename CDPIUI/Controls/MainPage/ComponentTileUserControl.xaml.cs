@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core;
@@ -188,7 +189,7 @@ public sealed partial class ComponentTileUserControl : UserControl
     {
         try
         {
-            TitleTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.ShortName ?? StoreId;
+            TitleTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.ShortName.NullIfEmpty() ?? StoreId;
 
             if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
             {
@@ -538,7 +539,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                 FileName = item.file_name,
                 PackId = item.packId,
                 DisplayName = item.name,
-                PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
                 IsLegacyConfig = item.IsLegacy
             };
 

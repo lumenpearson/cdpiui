@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.Default;
@@ -76,7 +77,7 @@ public sealed partial class MainPage : TemplatePage
         components.Clear();
         foreach (DatabaseStoreItem item in DatabaseHelper.Instance.GetItemsByType("component")
                      .Where(IsImportTarget)
-                     .OrderBy(item => item.ShortName ?? item.Name, StringComparer.CurrentCultureIgnoreCase))
+                     .OrderBy(item => item.ShortName.NullIfEmpty() ?? item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             item.ShortName = string.IsNullOrWhiteSpace(item.ShortName) ? item.Name : item.ShortName;
             components.Add(item);
@@ -633,10 +634,11 @@ public sealed partial class MainPage : TemplatePage
                 item.Result.SharedPackage.Dispose();
     }
 
+    // The database stores an empty string, not null, for a missing name.
     private static ConfigImportTarget CreateTarget(DatabaseStoreItem item) => new(
         item.Id!,
-        item.ShortName ?? item.Name ?? item.Id!,
-        item.Executable!,
+        !string.IsNullOrEmpty(item.ShortName) ? item.ShortName : !string.IsNullOrEmpty(item.Name) ? item.Name : item.Id!,
+        item.Executable ?? string.Empty,
         item.CurrentVersion,
         item.Directory);
 

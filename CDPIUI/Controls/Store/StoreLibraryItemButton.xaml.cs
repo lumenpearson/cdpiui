@@ -114,6 +114,9 @@ namespace CDPIUI.Controls.Store
         private void CheckAvailiableActions()
         {
             DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+            // The item is being removed; the library reloads without it.
+            if (databaseStoreItem == null)
+                return;
 
             BigActionButton.IsEnabled = true;
             ActionButton.IsEnabled = true;
@@ -150,6 +153,8 @@ namespace CDPIUI.Controls.Store
         private async void ActionButton_Click(object sender, RoutedEventArgs e)
         {
             DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+            if (databaseStoreItem == null)
+                return;
             if (databaseStoreItem.Type == "component")
             {
                 ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
@@ -183,6 +188,8 @@ namespace CDPIUI.Controls.Store
             ProgressBar.Visibility = Visibility.Visible;
             DeleteButton.IsEnabled = false;
             ReinstallButton.IsEnabled = false;
+            ActionButton.IsEnabled = false;
+            BigActionButton.IsEnabled = false;
         }
 
         private void ShowFolderButton_Click(object sender, RoutedEventArgs e)

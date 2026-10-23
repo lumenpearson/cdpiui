@@ -5,6 +5,7 @@ using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
+using CDPIUI.Shared.Extensions;
 
 using System;
 using System.Collections.Generic;
@@ -73,7 +74,9 @@ namespace CDPIUI.Helper.Items
                     await PipeHelper.SendNotificationPacket(Shared.Pipe.Models.NotificationsMessageIds.CompatibilityCheckAssistant,
                         new()
                         {
-                            { "componentName", HardcodedItemIds.ComponentIds.FirstOrDefault(x => x.Value == component).Key.ToString() }
+                            { "componentName", HardcodedItemIds.ComponentIds.TryGetKeyByValue(component, out var knownComponent)
+                                ? knownComponent.ToString()
+                                : DatabaseHelper.Instance.GetItemById(component)?.ShortName is { Length: > 0 } shortName ? shortName : component }
                         });
                 }
             }

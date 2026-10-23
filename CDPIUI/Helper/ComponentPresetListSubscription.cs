@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers;
@@ -54,7 +55,7 @@ internal sealed class ComponentPresetListSubscription : IDisposable
                 .Select(item => new ConfigSelectorItem
                 {
                     FileName = item.file_name, PackId = item.packId, DisplayName = item.name,
-                    PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                    PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName.NullIfEmpty() ?? item.packId,
                     IsLegacyConfig = item.IsLegacy
                 }).ToArray() ?? Array.Empty<ConfigSelectorItem>());
             if (!disposed && request == version && ReferenceEquals(source, helper)) apply(items);

@@ -592,11 +592,13 @@ namespace CDPIUI
                     MigrationProgressBar.Value = overall;
                     _ = migrationSession.UpdateAsync(MigrationSessionState.Importing, overall);
                 });
+                // Read before Task.Run: closing the window or a new session replaces the source.
+                CancellationToken migrationToken = migrationCancellation.Token;
                 MigrationImportResult result = await Task.Run(() =>
                     new MigrationImportService().Import(
                         migrationSession.Package,
                         importProgress,
-                        migrationCancellation.Token));
+                        migrationToken));
 
                 try
                 {

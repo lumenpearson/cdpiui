@@ -107,7 +107,7 @@ namespace CDPIUI.Controls.CreateConfigHelper
             set { 
                 SetValue(TargetComponentIdProperty, value);
                 ComponentNameTextBlock.Text = 
-                    DatabaseHelper.Instance.GetItemById(TargetComponentId)?.ShortName ?? 
+                    DatabaseHelper.Instance.GetItemById(TargetComponentId)?.ShortName.NullIfEmpty() ?? 
                     HardcodedItemIds.ComponentIds.GetKeyByValue(TargetComponentId).ToString();
             }
         }

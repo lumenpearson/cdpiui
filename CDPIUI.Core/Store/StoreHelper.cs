@@ -164,9 +164,15 @@ namespace CDPIUI.Core.Store
         #endregion
 
         #region Localization
-        public string GetLocalizedStoreItemName(string name, string langCode)
+        private static readonly Dictionary<string, string> NoLocalizationPaths = [];
+
+        public string GetLocalizedStoreItemName(string? name, string langCode)
         {
-            LocalizationService.StoreLocalizationPaths = RepositoryLoaderService.StoreLocalizationPaths?? [];
+            // The setter clears the cached strings, so it runs only after a repository sync
+            // replaced the paths; before, every item name re-read the localization file.
+            var paths = RepositoryLoaderService.StoreLocalizationPaths ?? NoLocalizationPaths;
+            if (!ReferenceEquals(LocalizationService.StoreLocalizationPaths, paths))
+                LocalizationService.StoreLocalizationPaths = paths;
             return LocalizationService.GetLocalizedStoreItemName(name, langCode);
         }
         #endregion

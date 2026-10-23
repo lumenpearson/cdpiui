@@ -999,17 +999,19 @@ public sealed partial class ConfigImportService
             GeneratedFiles = [],
         };
 
+    // The database stores an empty string, not null, for a missing name.
     private static ConfigImportTarget CreateTarget(DatabaseStoreItem item) => new(
         item.Id!,
-        item.ShortName ?? item.Name ?? item.Id!,
-        item.Executable!,
+        !string.IsNullOrEmpty(item.ShortName) ? item.ShortName : !string.IsNullOrEmpty(item.Name) ? item.Name : item.Id!,
+        item.Executable ?? string.Empty,
         item.CurrentVersion,
         item.Directory);
 
     private ConfigImportTarget GetConfigImportTarget(string filePath, string requestedTarget)
     {
         var components = DatabaseHelper.Instance.GetItemsByType("component");
-        List<ConfigImportTarget> targets = [.. components.Select(CreateTarget)];
+        // A component without an executable cannot run an imported config, as in the target list.
+        List<ConfigImportTarget> targets = [.. components.Where(item => !string.IsNullOrWhiteSpace(item.Executable)).Select(CreateTarget)];
 
         var matches = FindMatchingTargets(filePath, targets);
         return matches.FirstOrDefault()

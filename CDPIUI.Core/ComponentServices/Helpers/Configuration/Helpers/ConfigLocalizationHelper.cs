@@ -28,7 +28,8 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
                     
                         InitLocaleHelper(localeHelper, locPaths, directory, langCode);
                 }
-                localizedString = localeHelper.keyValuePairs[name];
+                if (localeHelper.keyValuePairs != null && localeHelper.keyValuePairs.TryGetValue(name, out string? value))
+                    localizedString = value;
 
             }
             catch (Exception ex)
@@ -70,6 +71,10 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
             }
             catch (Exception ex)
             {
+                // The language is marked as loaded even without strings: every name lookup
+                // opened the file again and failed again.
+                localeHelper.LocaleName = langCode;
+                localeHelper.keyValuePairs = null;
                 Debug.WriteLine($"Cannot init locale, error is {ex}");
             }
         }
