@@ -221,7 +221,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponentsServices);
             bool isAnotherServiceComponentRunning = IsServiceExist("GoodbyeDPI") || IsServiceExist("discordfix_zapret") || IsServiceExist("winws1") || IsServiceExist("winws2");
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponents);
-            bool isAnotherComponentRunning = IsProcessRunning("winws") || IsProcessRunning("goodbyedpi");
+            bool isAnotherComponentRunning = IsProcessRunning("winws") || IsProcessRunning("winws2") || IsProcessRunning("goodbyedpi");
             await Task.Delay(1000);
 
             completedStates = new()

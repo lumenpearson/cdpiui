@@ -623,6 +623,19 @@ namespace CDPIUI.AddOns.GoodCheck
             ErrorHappens?.Invoke(errorCode);
         }
 
+        /// <summary>
+        /// The tray could not start GoodCheck or it ended with an error. The log monitor waited for
+        /// a process that never ran until the user cancelled; it stops now.
+        /// </summary>
+        public void OperationWithIdFailed(int id, string errorCode)
+        {
+            HandleProcessException(string.IsNullOrEmpty(errorCode) ? "ERR_UNKNOWN" : errorCode, id);
+            GoodCheckOperationModel model = GetOperationById(id);
+            if (model == null) return;
+            model.ProcessExited = true;
+            model.CancellationTokenSource?.Cancel();
+        }
+
         public void OperationWithIdDied(int id)
         {
             // Ended by itself: the log monitor decides whether it was a success. Marking it as one

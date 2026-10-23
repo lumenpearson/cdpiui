@@ -195,7 +195,8 @@ public sealed partial class ConfigImportService
         string text;
         try
         {
-            text = File.ReadAllText(filePath);
+            // The same encoding detection as the Zapret importer: a .bat in cp866 or cp1251 lost its Cyrillic text.
+            text = CDPIUI.Core.System.BatchFileEncoding.ReadAllText(filePath);
         }
         catch
         {
@@ -840,7 +841,7 @@ public sealed partial class ConfigImportService
 
     private static IReadOnlyList<LogicalLine> ReadLogicalLines(string filePath)
     {
-        string[] physicalLines = File.ReadAllLines(filePath, Encoding.UTF8);
+        string[] physicalLines = CDPIUI.Core.System.BatchFileEncoding.ReadAllLines(filePath);
         var result = new List<LogicalLine>();
         var current = new StringBuilder();
         int currentLine = 1;
@@ -894,11 +895,15 @@ public sealed partial class ConfigImportService
         return TryParseSet(match.Success ? match.Groups["set"].Value : string.Empty, out name, out value);
     }
 
-    private static bool IsComment(string line) =>
-        line.StartsWith("::", StringComparison.Ordinal) ||
-        line.StartsWith("rem ", StringComparison.OrdinalIgnoreCase) ||
-        line.Equals("rem", StringComparison.OrdinalIgnoreCase) ||
-        line.StartsWith('#');
+    private static bool IsComment(string line)
+    {
+        // "@rem" and "rem<TAB>" are comments too, as in the Zapret importer.
+        string command = line.TrimStart('@');
+        return line.StartsWith("::", StringComparison.Ordinal) ||
+               (command.StartsWith("rem", StringComparison.OrdinalIgnoreCase) &&
+                (command.Length == 3 || char.IsWhiteSpace(command[3]))) ||
+               line.StartsWith('#');
+    }
 
     private static void SetVariable(
         IDictionary<string, MutableVariable> variables,

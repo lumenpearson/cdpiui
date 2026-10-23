@@ -1695,7 +1695,8 @@ public sealed partial class ZapretConfigImportService
     private static partial Regex Winws1OptionRegex();
 
     [GeneratedRegex(
-        """(?ix)(?<exe>winws2?)(?:\.exe)?(?=["\s]|$)""")]
+        // A left boundary: "mywinws.exe" is not a winws launch.
+        """(?ix)(?<![\w.-])(?<exe>winws2?)(?:\.exe)?(?=["\s]|$)""")]
     private static partial Regex WinwsExecutableRegex();
 
     [GeneratedRegex("""(?i)^\s*@?set\s+(?<quoted>")?(?<name>[^="]+)=(?<value>.*)$""")]

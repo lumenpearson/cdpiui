@@ -79,6 +79,15 @@ public sealed class ConfigShareService
             componentDirectory ??= DatabaseHelper.Instance.GetItemById(config.target[0])?.Directory;
             var collector = new ConfigShareResources(config, packDirectory, componentDirectory);
             collector.Collect();
+            // The same check as the import: a preset that writes outside its files exported fine,
+            // and every receiver then got an archive that cannot be opened.
+            ConfigShareResources.MapConfig(config, text =>
+            {
+                EnsureNoOutsideWrites(
+                    text?.Replace(ReferencePrefix, directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase),
+                    directory);
+                return text;
+            });
             config.name = config.not_converted_name = name.Trim();
             config.jparams ??= [];
             config.variables ??= [];
@@ -92,7 +101,7 @@ public sealed class ConfigShareService
             {
                 foreach (var resource in collector.Files)
                 {
-                    byte[] bytes = ReadBoundedFile(resource.Key);
+                    byte[] bytes = collector.IsEmptyResource(resource.Key) ? [] : ReadBoundedFile(resource.Key);
                     total += bytes.LongLength;
                     if (total > MaxTotalBytes || manifest.Resources.Count >= MaxEntries - 1)
                         throw new ConfigShareException("SHARE_TOO_LARGE", "The preset exceeds the package size or file count limit.");
