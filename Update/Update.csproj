@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <RootNamespace>Update</RootNamespace>
     <AssemblyName>Update</AssemblyName>
     <Platforms>x64</Platforms>

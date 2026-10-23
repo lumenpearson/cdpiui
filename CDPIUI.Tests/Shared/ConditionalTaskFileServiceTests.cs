@@ -6,7 +6,11 @@ public sealed class ConditionalTaskFileServiceTests : IDisposable
 {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-tasks-" + Guid.NewGuid().ToString("N"));
 
-    public void Dispose() => Directory.Delete(directory, true);
+    public void Dispose()
+    {
+        if (Directory.Exists(directory))
+            Directory.Delete(directory, true);
+    }
 
     private static ConditionalTask CreateTask(string name) => new()
     {
@@ -54,5 +58,32 @@ public sealed class ConditionalTaskFileServiceTests : IDisposable
 
         Assert.Empty(tasks);
         Assert.Single(errors);
+    }
+
+    [Fact]
+    public void NullActionIsRejected()
+    {
+        ConditionalTask task = CreateTask("Task");
+        task.Actions.Add(null!);
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Validate(task));
+    }
+
+    [Fact]
+    public void NullActionParameterIsRejected()
+    {
+        ConditionalTask task = CreateTask("Task");
+        task.Actions[0].Parameters.Add(null!);
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Validate(task));
+    }
+
+    [Fact]
+    public void NullTriggerParameterIsRejected()
+    {
+        ConditionalTask task = CreateTask("Task");
+        task.Triggers[0].Parameters.Add(null!);
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Validate(task));
     }
 }

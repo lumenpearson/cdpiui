@@ -74,13 +74,17 @@ namespace CDPIUI.Core.Store
                 await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
                 string initFilePath = Path.Combine(tempDestination, "init.json");
 
-                if (!File.Exists(initFilePath)) 
+                // An empty init.json or "null" is not a pack either.
+                LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
+                    ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
+                    : null;
+                if (localItemInitModel == null)
                 {
+                    TryDeleteDirectory(tempDestination);
                     string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
                     (onError ?? ErrorHappens)?.Invoke(error);
                     return null;
                 }
-                LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
 
                 if (localItemInitModel.Icon?.StartsWith("$DYNAMICIMAGE") == true)
                 {
@@ -133,13 +137,17 @@ namespace CDPIUI.Core.Store
                 await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
                 string initFilePath = Path.Combine(tempDestination, "init.json");
 
-                if (!File.Exists(initFilePath))
+                // An empty init.json or "null" is not a pack either.
+                LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
+                    ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
+                    : null;
+                if (localItemInitModel == null)
                 {
+                    TryDeleteDirectory(tempDestination);
                     string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
                     (onError ?? ErrorHappens)?.Invoke(error);
                     return;
                 }
-                LocalItemInitModel localItemInitModel = JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath);
                 if (!StoreItemIds.IsValid(localItemInitModel.StoreId) ||
                     localItemInitModel.StoreId == SharedConstants.ApplicationStoreId ||
                     localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
@@ -156,6 +164,19 @@ namespace CDPIUI.Core.Store
                 string error = HandleError(ex);
                 (onError ?? ErrorHappens)?.Invoke(error);
                 return;
+            }
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                    Directory.Delete(path, recursive: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Instance.CreateWarningLog(nameof(LocalItemsInstallerHelper), $"Cannot delete \"{path}\": {ex.Message}");
             }
         }
 
