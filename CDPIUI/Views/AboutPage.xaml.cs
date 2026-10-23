@@ -149,7 +149,7 @@ public sealed partial class AboutPage : TemplatePage
 
         private void ApplicationUpdateHelper_ErrorHappens()
         {
-            _ = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() =>
+            _ = DispatcherQueue?.TryEnqueue(() =>
             {
                 SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
                 SetBadgeStatus(BadgeStatus.Error);
@@ -159,7 +159,7 @@ public sealed partial class AboutPage : TemplatePage
 
         private void ApplicationUpdateHelper_CheckForUpdatesStarted()
         {
-            _ = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() =>
+            _ = DispatcherQueue?.TryEnqueue(() =>
             {
                 SetUpdateButtonStatus(UpdateButtonStatus.Work);
                 SetBadgeStatus(BadgeStatus.Work);
