@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # BlockCheck2 for Zapret2
 
 ## 1. Purpose and scope
@@ -155,7 +157,7 @@ The mode sets the recommended number of requests. The user can then set an integ
 - the check of each candidate of the ready preset;
 - the maximum duration estimate.
 
-The option "Do not stop after the best result" disables the early stop in the quick and medium tiers. The full mode tests the complete applicable catalog without this option. The option does not extend the selected tier. For example, the medium mode with this option does not test the Exhaustive strategies.
+The option "Continue after finding the best strategies" disables the early stop in the quick and medium tiers. The full mode tests the complete applicable catalog without this option. The option does not extend the selected tier. For example, the medium mode with this option does not test the Exhaustive strategies.
 
 ## 7. `BLOCKCHECK` settings
 
@@ -437,7 +439,7 @@ With the early stop, the estimate assumes that one strategy of five is successfu
 
 ### 17.2. During the run
 
-The ETA of the current stage uses an exponential moving average with `alpha = 0.2`. The UI also estimates the total remaining time. During the baseline, the add-on does not have enough data. Thus the UI shows "Calculating the remaining time…" and not an invented number.
+The ETA of the current stage uses an exponential moving average with `alpha = 0.2`. The UI also estimates the total remaining time. During the baseline, the add-on does not have enough data. Thus the UI shows "Calculating after the first completed strategies…" and not an invented number.
 
 The counters of successes, errors, completed requests and found strategies change after each attempt.
 
@@ -571,7 +573,7 @@ Status bar
 
 - "Selection result";
 - "Preset builder";
-- "Diagnostic data".
+- "Diagnostic information".
 
 ### 22.1. Selection result
 

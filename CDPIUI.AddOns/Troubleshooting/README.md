@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # Troubleshooting add-on
 
 ## Purpose

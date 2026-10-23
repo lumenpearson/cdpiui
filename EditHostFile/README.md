@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # EditHostFile
 
 `EditHostFile.exe` is a .NET Framework 4.7.2 console tool. It adds or removes the CDPI UI block

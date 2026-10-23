@@ -1,3 +1,5 @@
+**English** | [Русский](CONTRIBUTING.ru.md)
+
 # Contributing to CDPI UI
 
 This document tells you how the application operates, how to build it and how to change it.

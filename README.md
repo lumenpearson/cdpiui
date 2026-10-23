@@ -58,7 +58,7 @@
 
 ## Вклад
 
-Сведения для разработчиков — сборка, устройство приложения и правила внесения изменений — собраны в [CONTRIBUTING.md](.github/CONTRIBUTING.md). У каждого проекта решения есть свой README с подробностями; их список приведён в конце CONTRIBUTING.md.
+Сведения для разработчиков — сборка, устройство приложения и правила внесения изменений — собраны в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md). У каждого проекта решения есть свой README с подробностями; их список приведён в конце CONTRIBUTING.ru.md.
 
 ## Как устроено приложение
 
@@ -90,28 +90,28 @@
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
 
-Каждый push и pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек и тесты, сборка приложения и `Setup.msi`, сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+Каждый push и pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек и тесты, сборка приложения и `Setup.msi`, сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
 
 ## Документация
 
-Документация для разработчиков написана на английском языке.
+Документация для разработчиков есть на русском и английском языках. В начале каждого документа есть ссылка на версию на другом языке.
 
 | Раздел | Документ |
 |---|---|
-| Сборка, устройство и правила изменения кода | [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) |
-| Главное окно (WinUI 3) | [CDPIUI/README.md](CDPIUI/README.md) |
-| Общая логика: Магазин, компоненты, настройки | [CDPIUI.Core/README.md](CDPIUI.Core/README.md) |
-| Язык условий LScript | [CDPIUI.Core/LScript/README.md](CDPIUI.Core/LScript/README.md) |
-| Общие типы и безопасность | [CDPIUI.Shared/README.md](CDPIUI.Shared/README.md) |
-| Протокол обмена между окном и треем | [CDPIUI.Shared/Pipe/README.md](CDPIUI.Shared/Pipe/README.md) |
-| Значок в трее | [CDPIUI.TrayIcon/README.md](CDPIUI.TrayIcon/README.md) |
-| Дополнения (BlockCheck2, GoodCheck, импорт и обмен пресетами, диагностика, hosts) | [CDPIUI.AddOns/README.md](CDPIUI.AddOns/README.md) |
-| Модульные тесты | [CDPIUI.Tests/README.md](CDPIUI.Tests/README.md) |
-| Установка обновлений | [Update/README.md](Update/README.md) |
-| Редактор файла hosts | [EditHostFile/README.md](EditHostFile/README.md) |
-| Установщик MSI | [NewSetup/README.md](NewSetup/README.md) |
-| CI, релизы и патчи | [.github/RELEASES.md](.github/RELEASES.md) |
-| Лицензии сторонних библиотек | [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |
+| Сборка, устройство и правила изменения кода | [.github/CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md) |
+| Главное окно (WinUI 3) | [CDPIUI/README.ru.md](CDPIUI/README.ru.md) |
+| Общая логика: Магазин, компоненты, настройки | [CDPIUI.Core/README.ru.md](CDPIUI.Core/README.ru.md) |
+| Язык условий LScript | [CDPIUI.Core/LScript/README.ru.md](CDPIUI.Core/LScript/README.ru.md) |
+| Общие типы и безопасность | [CDPIUI.Shared/README.ru.md](CDPIUI.Shared/README.ru.md) |
+| Протокол обмена между окном и треем | [CDPIUI.Shared/Pipe/README.ru.md](CDPIUI.Shared/Pipe/README.ru.md) |
+| Значок в трее | [CDPIUI.TrayIcon/README.ru.md](CDPIUI.TrayIcon/README.ru.md) |
+| Дополнения (BlockCheck2, GoodCheck, импорт и обмен пресетами, диагностика, hosts) | [CDPIUI.AddOns/README.ru.md](CDPIUI.AddOns/README.ru.md) |
+| Модульные тесты | [CDPIUI.Tests/README.ru.md](CDPIUI.Tests/README.ru.md) |
+| Установка обновлений | [Update/README.ru.md](Update/README.ru.md) |
+| Редактор файла hosts | [EditHostFile/README.ru.md](EditHostFile/README.ru.md) |
+| Установщик MSI | [NewSetup/README.ru.md](NewSetup/README.ru.md) |
+| CI, релизы и патчи | [.github/RELEASES.ru.md](.github/RELEASES.ru.md) |
+| Лицензии сторонних библиотек | [THIRD-PARTY-NOTICES.ru.md](THIRD-PARTY-NOTICES.ru.md) |
 
 Справка для пользователей встроена в приложение и доступна на русском и английском языках.
 

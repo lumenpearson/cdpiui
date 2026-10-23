@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # Pipe protocol
 
 The GUI (`CDPIUI.exe`) and the tray (`CDPIUI_TrayIcon.exe`) use one named pipe to send messages.

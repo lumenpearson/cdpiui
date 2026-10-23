@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # CDPIUI.TrayIcon
 
 `CDPIUI.TrayIcon` is the background process of CDPI UI (`CDPIUI_TrayIcon.exe`).

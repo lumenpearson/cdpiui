@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # ConfigShare
 
 A `.cdpiconfig` file is a ZIP archive with one preset and the resources that the preset uses. `ConfigShareService` exports, checks, extracts and installs these archives. `ConfigImportService` and `ConfigImportInstaller` send this format to `ConfigShareService`.

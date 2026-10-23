@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # CDPIUI.Shared
 
 `CDPIUI.Shared` is a `netstandard2.1` library (C# 12, nullable enabled).

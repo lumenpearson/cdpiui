@@ -1,3 +1,5 @@
+**English** | [Русский](THIRD-PARTY-NOTICES.ru.md)
+
 # Third-party notices
 
 CDPI UI is licensed under the Apache License 2.0 (see `LICENSE`). The installer and the portable

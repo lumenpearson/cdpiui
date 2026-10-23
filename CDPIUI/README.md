@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # CDPIUI
 
 `CDPIUI` is the WinUI 3 GUI project (.NET 8, Windows App SDK). It shows the windows of the application.
