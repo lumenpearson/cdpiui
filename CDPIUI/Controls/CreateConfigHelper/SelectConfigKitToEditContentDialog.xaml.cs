@@ -51,7 +51,7 @@ namespace CDPIUI.Controls.CreateConfigHelper
                     StoreId = item.Id,
                     Name = item.ShortName,
                     Developer = item.Developer,
-                    ColorHEX = item.BackgroudColor,
+                    ColorHEX = item.BackgroundColor,
                     ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs:item.Directory)))
                 });
             }

@@ -6,7 +6,7 @@ namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Converters;
 
 /// <summary>
 /// Converts an already expanded winws/nfqws1 command line to a winws2 command line.
-/// Converts only command line - config files convertion isn't supported
+/// Converts only command line - config files conversion isn't supported
 /// </summary>
 public sealed class Zapret1ToZapret2Converter
 {

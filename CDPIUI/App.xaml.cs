@@ -184,7 +184,7 @@ namespace CDPIUI
             ComponentTasksManager.Instance.RequestComponentItemsInit();
 
             bool isFileProcessed = false;
-            bool isActionPreffered = false;
+            bool isActionPreferred = false;
             bool isMigrationProcessed = false;
 
             try
@@ -207,21 +207,21 @@ namespace CDPIUI
                 if (Program.InitialActivationArguments?.Kind is ExtendedActivationKind.Protocol &&
                     Program.InitialActivationArguments.Data is IProtocolActivatedEventArgs initialProtocolArgs)
                 {
-                    isActionPreffered = await CommandsHandler.HandleCommandAsync(
+                    isActionPreferred = await CommandsHandler.HandleCommandAsync(
                         initialProtocolArgs.Uri.ToString());
                 }
 
                 if (!isFileProcessed)
                     isFileProcessed = await ProcessFiles(arguments);
 
-                string protocolArg = isActionPreffered
+                string protocolArg = isActionPreferred
                     ? null
                     : arguments.FirstOrDefault(x => x.StartsWith("----ms-protocol:"));
 
                 if (protocolArg != null)
                 {
                     string value = protocolArg["----ms-protocol:".Length..];
-                    isActionPreffered = await CommandsHandler.HandleCommandAsync(value);
+                    isActionPreferred = await CommandsHandler.HandleCommandAsync(value);
                 }
 
                 string directArgs = arguments.FirstOrDefault(x => x.StartsWith("--direct:"));
@@ -229,12 +229,12 @@ namespace CDPIUI
                 if (directArgs != null)
                 {
                     string value = directArgs["--direct:".Length..];
-                    isActionPreffered = await CoreCommandsHandler.HandleCommandAsync(
+                    isActionPreferred = await CoreCommandsHandler.HandleCommandAsync(
                         PipeModelConvertor.ConvertBack(value));
 
-                    if (!isActionPreffered)
+                    if (!isActionPreferred)
                     {
-                        isActionPreffered = CommandsHandler.HandleCommand(value);
+                        isActionPreferred = CommandsHandler.HandleCommand(value);
                     }
                 }
             }
@@ -245,7 +245,7 @@ namespace CDPIUI
                     $"Cannot process startup activation: {ex}");
             }
 
-            if (!isFileProcessed && !isActionPreffered && !isMigrationProcessed &&
+            if (!isFileProcessed && !isActionPreferred && !isMigrationProcessed &&
                 !Program.IsMigrationActivationPending)
                 await OpenStartupWindowAsync();
 
@@ -356,7 +356,7 @@ namespace CDPIUI
             PipeClientService.Instance.Start();
         }
 
-        public async void PrefferRequestedActions(AppActivationArguments appActivationArguments)
+        public async void PreferRequestedActions(AppActivationArguments appActivationArguments)
         {
             bool result = false;
             try
@@ -812,7 +812,7 @@ namespace CDPIUI
             }
             if (OpenWindows.Count != 0 ||
                 ApplicationTaskMonitor.IsStoreWorking() ||
-                ApplicationTaskMonitor.IsGoodCheckRunned())
+                ApplicationTaskMonitor.IsGoodCheckRunning())
             {
                 return;
             }

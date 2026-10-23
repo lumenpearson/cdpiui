@@ -504,7 +504,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
         }
 
         await StopTestAsync();
-        bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunned(HardcodedItemIds.ComponentIds[Components.Zapret2]);
+        bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunning(HardcodedItemIds.ComponentIds[Components.Zapret2]);
         if (componentWasRunning)
         {
             ContentDialog confirmation = new()

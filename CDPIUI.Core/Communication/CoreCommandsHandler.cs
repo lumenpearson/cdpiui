@@ -1,7 +1,7 @@
 ﻿using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.MSI;
 using CDPIUI.Shared.Pipe.Models;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using System.Diagnostics;
 using static CDPIUI.Core.Store.MSI.MsiInstallerService;
 using CDPIUI.Core.ComponentServices;
@@ -270,7 +270,7 @@ namespace CDPIUI.Core.Communication
                     case ConditionalActionType.StartComponent:
                         {
                             var componentId = RequireParameter(model, "componentId");
-                            if (!await ComponentTasksManager.Instance.IsTaskRunned(componentId))
+                            if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
                             {
                                 await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
                                 var task = await ComponentTasksManager.Instance.GetTaskFromId(componentId);
@@ -287,7 +287,7 @@ namespace CDPIUI.Core.Communication
                     case ConditionalActionType.ToggleComponent:
                         {
                             var componentId = RequireParameter(model, "componentId");
-                            if (!await ComponentTasksManager.Instance.IsTaskRunned(componentId))
+                            if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
                             {
                                 await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
                                 var task = await ComponentTasksManager.Instance.GetTaskFromId(componentId);

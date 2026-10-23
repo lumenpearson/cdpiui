@@ -199,7 +199,7 @@ namespace CDPIUI.Views.Main.Components
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                AdvancedLoggingToogleSwitch.IsOn = false;
+                AdvancedLoggingToggleSwitch.IsOn = false;
                 foreach (var item in lst)
                 {
                     if (!item.IsChecked && item.Type == "string") continue;
@@ -224,7 +224,7 @@ namespace CDPIUI.Views.Main.Components
                             LogSizeTextBox.Text = item.Value;
                             break;
                         case "--verbose":
-                            AdvancedLoggingToogleSwitch.IsOn = item.IsChecked;
+                            AdvancedLoggingToggleSwitch.IsOn = item.IsChecked;
                             break;
                         case "--dc-ip":
                             var matchResult = FindSupportedString().Match(item.Value);
@@ -404,7 +404,7 @@ namespace CDPIUI.Views.Main.Components
                 SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configFile", sel.FileName);
                 SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configId", sel.PackId);
 
-                if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunned(ComponentId)) await ComponentTasksManager.Instance.RestartTask(ComponentId);
+                if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunning(ComponentId)) await ComponentTasksManager.Instance.RestartTask(ComponentId);
 
                 _ = Task.Run(() => InitSettings(sel));
             }
@@ -504,7 +504,7 @@ namespace CDPIUI.Views.Main.Components
             SetValueToGraphicDesignerItemsList("--buf-kb", BufferSizeTextBox.Text, lst);
             SetValueToGraphicDesignerItemsList("--pool-size", WebSocketSizeTextBox.Text, lst);
             SetValueToGraphicDesignerItemsList("--log-max-mb", LogSizeTextBox.Text, lst);
-            SetValueToGraphicDesignerItemsList("--verbose", string.Empty, lst, AdvancedLoggingToogleSwitch.IsOn);
+            SetValueToGraphicDesignerItemsList("--verbose", string.Empty, lst, AdvancedLoggingToggleSwitch.IsOn);
 
             lst.RemoveAll(x => x.DisplayName == "--dc-ip");
 

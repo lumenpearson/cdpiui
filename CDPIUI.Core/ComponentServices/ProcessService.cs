@@ -1,10 +1,10 @@
 ﻿using CDPIUI.Core.Basic;
 using CDPIUI.Core.Communication;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Shared.ComponentsTask;
 using CDPIUI.Shared.Exceptions.Database;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;

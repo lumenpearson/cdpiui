@@ -1,7 +1,7 @@
 ﻿using CDPIUI.Commands;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Default;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;

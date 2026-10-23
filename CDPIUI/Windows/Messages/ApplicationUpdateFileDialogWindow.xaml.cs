@@ -3,7 +3,7 @@ using CDPIUI.Core.Features;
 using CDPIUI.Core.Store;
 using CDPIUI.Default;
 using CDPIUI.Shared;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;

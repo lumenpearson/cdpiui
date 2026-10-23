@@ -3,8 +3,8 @@ using CDPIUI.Core.Data;
 using CDPIUI.Core.System;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Exceptions;
-using CDPIUI.Shared.PrettyErrorConvertionService;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -65,11 +65,11 @@ namespace CDPIUI.Core.Store.Network
             bool success = false;
             List<string> _extractedFiles = [];
 
-            var enFiletype = filetype.ToEnum<FileExtentionTypes>(FileExtentionTypes.none);
-            bool isSupportedFileExtention = enFiletype != FileExtentionTypes.none;
+            var enFiletype = filetype.ToEnum<FileExtensionTypes>(FileExtensionTypes.none);
+            bool isSupportedFileExtension = enFiletype != FileExtensionTypes.none;
 
 
-            string tempFileName = FileSystemService.GetNewTempFileName(nameof(DownloadWorker), FileSystemService.GetFileExtention(FileExtentionTypes.temp));
+            string tempFileName = FileSystemService.GetNewTempFileName(nameof(DownloadWorker), FileSystemService.GetFileExtension(FileExtensionTypes.temp));
             string tempDestination = Path.Combine(TempDirectory, tempFileName);
 
             try
@@ -101,13 +101,13 @@ namespace CDPIUI.Core.Store.Network
                 if (extractArchive)
                 {
                     StageChanged?.Invoke(Tuple.Create(OperationId, "Extracting"));
-                    await ZipService.ExtractZip(tempDestination, extractRootFolder, destinationPath, extractSkipFiletypes, isCatalogCheckRequired: filetype == FileExtentionTypes.signedZip.ToString());
+                    await ZipService.ExtractZip(tempDestination, extractRootFolder, destinationPath, extractSkipFiletypes, isCatalogCheckRequired: filetype == FileExtensionTypes.signedZip.ToString());
                 }
                 else
                 {
                     if (!string.IsNullOrEmpty(executableFileName))
                     {
-                        string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtention ? filetype : FileSystemService.GetFileExtention(enFiletype)));
+                        string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
                         File.Copy(tempDestination, copiedPath, true);
                         _extractedFiles.Add(copiedPath);
                     }
@@ -117,21 +117,21 @@ namespace CDPIUI.Core.Store.Network
                         if (string.IsNullOrEmpty(exeName))
                             throw new IOException();
 
-                        string extention = !isSupportedFileExtention? filetype : FileSystemService.GetFileExtention(enFiletype);
+                        string extension = !isSupportedFileExtension? filetype : FileSystemService.GetFileExtension(enFiletype);
 
-                        string copiedPath = Path.Combine(destinationPath, exeName + extention);
+                        string copiedPath = Path.Combine(destinationPath, exeName + extension);
                         File.Copy(tempDestination, copiedPath, true);
                         _extractedFiles.Add(copiedPath);
                     }
                 }
 
-                if (filetype == FileExtentionTypes.msi.ToString() || filetype == FileExtentionTypes.elmsi.ToString())
+                if (filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString())
                 {
                     StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
                     string installerExeName = GetFileNameFromUri(url);
                     installerExeName = string.IsNullOrEmpty(installerExeName) ? "installer" : installerExeName;
 
-                    string msiPath = Path.Combine(destinationPath, installerExeName + (!isSupportedFileExtention ? filetype : FileSystemService.GetFileExtention(enFiletype)));
+                    string msiPath = Path.Combine(destinationPath, installerExeName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
                     msiGUID = Guid.NewGuid().ToString();
                     MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
                     msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
@@ -177,7 +177,7 @@ namespace CDPIUI.Core.Store.Network
                 // (audit 10.9); other files may have replaced the files of the installed version and
                 // stay. Archives of signed packs are checked in a separate folder by ZipService and
                 // never reach the destination unchecked.
-                bool isInstaller = filetype == FileExtentionTypes.msi.ToString() || filetype == FileExtentionTypes.elmsi.ToString();
+                bool isInstaller = filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString();
                 if (removeAfterAction || (!success && isInstaller))
                 {
                     foreach (var file in _extractedFiles)
@@ -196,7 +196,7 @@ namespace CDPIUI.Core.Store.Network
             IEnumerable<string>? extractSkipFiletypes = null,
             string? extractRootFolder = null,
             string? executableFileName = "executableFile",
-            FileExtentionTypes filetype = FileExtentionTypes.temp,
+            FileExtensionTypes filetype = FileExtensionTypes.temp,
             bool removeAfterAction = false,
             string filename = ""
         )

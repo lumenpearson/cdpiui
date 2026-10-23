@@ -43,14 +43,14 @@ namespace CDPIUI.Shared.Logger
                 // A sender such as "StoreHelper/CheckUpdates" named a missing folder, and the log was lost.
                 foreach (char invalid in Path.GetInvalidFileNameChars())
                     fileName = fileName.Replace(invalid, '_');
-                string logFilePath = Path.Combine(logFileDir, $"{fileName}{LoggerResources.LogsFileExtention}");
+                string logFilePath = Path.Combine(logFileDir, $"{fileName}{LoggerResources.LogsFileExtension}");
 
                 if (!Directory.Exists(logFileDir)) Directory.CreateDirectory(logFileDir);
 
                 var info = new FileInfo(logFilePath);
                 if (info.Exists && info.Length > MaxLogFileSize)
                 {
-                    File.Copy(logFilePath, Path.ChangeExtension(logFilePath, ".old" + LoggerResources.LogsFileExtention), true);
+                    File.Copy(logFilePath, Path.ChangeExtension(logFilePath, ".old" + LoggerResources.LogsFileExtension), true);
                     File.WriteAllText(logFilePath, string.Empty);
                     info.Refresh();
                 }

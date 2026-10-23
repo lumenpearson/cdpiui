@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using WinUI3Localizer;
 
 // To learn more about WinUI, the WinUI project structure,

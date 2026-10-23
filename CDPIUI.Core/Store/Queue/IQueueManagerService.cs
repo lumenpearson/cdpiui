@@ -27,7 +27,7 @@ namespace CDPIUI.Core.Store.Queue
         /// <summary>
         /// Get current operation id
         /// </summary>
-        /// <returns>Operation id. null if no operation runned</returns>
+        /// <returns>Operation id. null if no operation running</returns>
         string GetCurrentQueueOperationId();
 
         /// <summary>

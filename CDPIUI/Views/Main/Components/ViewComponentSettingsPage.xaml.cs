@@ -207,7 +207,7 @@ namespace CDPIUI.Views.Main.Components
             ComponentTileUserControl.CardTitle = componentName;
 
             ComponentTileUserControl.CardImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(databaseStoreItem?.IconPath)));
-            ComponentTileUserControl.CardBackgroundColor = databaseStoreItem?.BackgroudColor ?? "#000000";
+            ComponentTileUserControl.CardBackgroundColor = databaseStoreItem?.BackgroundColor ?? "#000000";
         }
 
         

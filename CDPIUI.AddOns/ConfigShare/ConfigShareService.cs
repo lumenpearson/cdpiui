@@ -328,7 +328,7 @@ public sealed class ConfigShareService
                 Id = packId, Type = "configlist", Directory = packDirectory, Name = newPackName!.Trim(),
                 ShortName = newPackName.Trim(), Developer = package.Manifest.Developer,
                 VersionControlType = "local", CurrentVersion = "1.0", IconPath = "$STATICIMAGE(Store/empty.png)",
-                BackgroudColor = "",
+                BackgroundColor = "",
                 RequiredItemIds = [Tuple.Create(config.target![0], config.target.ElementAtOrDefault(1) ?? "0.0")], DependentItemIds = []
             })) throw new ConfigShareException("SHARE_DATABASE_FAILED", "Cannot register the new kit.");
             Log($"Installed shared preset in {packId}/{filename}.");

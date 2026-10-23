@@ -12,9 +12,9 @@ namespace CDPIUI.Shared.Logger
         public static string LogsFolder = "Logs";
 
         /// <summary>
-        /// WriteMessageToTextWriter file extention with dot (.log)
+        /// WriteMessageToTextWriter file extension with dot (.log)
         /// </summary>
-        public static string LogsFileExtention = ".log";
+        public static string LogsFileExtension = ".log";
 
         /// <summary>
         /// LoggerBase first initialization message

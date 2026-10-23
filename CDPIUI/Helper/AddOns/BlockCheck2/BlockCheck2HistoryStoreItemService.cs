@@ -88,7 +88,7 @@ public static class BlockCheck2HistoryStoreItemService
                 Name = DisplayName,
                 ShortName = DisplayName,
                 Developer = "CDPIUI",
-                BackgroudColor = string.Empty,
+                BackgroundColor = string.Empty,
             };
 
             if (!DatabaseHelper.Instance.AddOrUpdateItem(historyItem))

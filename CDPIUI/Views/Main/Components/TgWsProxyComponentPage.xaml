@@ -153,7 +153,7 @@
                                     </controls:SettingsCard>
 
                                     <controls:SettingsCard l:Uids.Uid="AdvancedLoggingSettingsExpander">
-                                        <ToggleSwitch x:Name="AdvancedLoggingToogleSwitch"/>
+                                        <ToggleSwitch x:Name="AdvancedLoggingToggleSwitch"/>
                                     </controls:SettingsCard>
 
                                     <controls:SettingsCard l:Uids.Uid="LogSizeSettingsCard">

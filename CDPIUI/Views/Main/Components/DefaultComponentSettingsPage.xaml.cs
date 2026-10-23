@@ -14,7 +14,7 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.System;
 using CDPIUI.Helper;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.Models;
 using CDPIUI.Views.CreateConfigUtil;
 using Microsoft.UI.Dispatching;
@@ -326,7 +326,7 @@ namespace CDPIUI.Views.Main.Components
         // Waiting for the task list on the UI thread with .Result could deadlock.
         private async Task RestartComponentIfRunning()
         {
-            if (await ComponentTasksManager.Instance.IsTaskRunned(ComponentId))
+            if (await ComponentTasksManager.Instance.IsTaskRunning(ComponentId))
                 await ComponentTasksManager.Instance.RestartTask(ComponentId);
         }
 
@@ -422,7 +422,7 @@ namespace CDPIUI.Views.Main.Components
             ShowAnim = false;
             var selectedConfig = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
             _ = Task.Run(() => InitSettingsTiles(selectedConfig));
-            if (await ComponentTasksManager.Instance.IsTaskRunned(ComponentId))
+            if (await ComponentTasksManager.Instance.IsTaskRunning(ComponentId))
                 _ = ComponentTasksManager.Instance.RestartTask(ComponentId);
         }
 
@@ -599,7 +599,7 @@ namespace CDPIUI.Views.Main.Components
                     }
                 }
 
-                if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunned(ComponentId)) await ComponentTasksManager.Instance.RestartTask(ComponentId);
+                if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunning(ComponentId)) await ComponentTasksManager.Instance.RestartTask(ComponentId);
 
                 _ = Task.Run(() => InitSettingsTiles(sel));
             }

@@ -1,5 +1,5 @@
 ﻿using CDPIUI.Shared.Logger;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -58,14 +58,14 @@ namespace CDPIUI.Core.Basic
             return base.MapExceptionToCode(ex, out rawHResult, out statusCode);
         }
 
-        public override string GetPrettyErrorCode(string preffix, int hcode, ILogger? _ = null)
+        public override string GetPrettyErrorCode(string prefix, int hcode, ILogger? _ = null)
         {
-            return base.GetPrettyErrorCode(preffix, hcode, Logger.Instance);
+            return base.GetPrettyErrorCode(prefix, hcode, Logger.Instance);
         }
 
-        public override string GetPrettyErrorCode(string preffix, Exception ex, ILogger? _ = null)
+        public override string GetPrettyErrorCode(string prefix, Exception ex, ILogger? _ = null)
         {
-            return base.GetPrettyErrorCode(preffix, ex, Logger.Instance);
+            return base.GetPrettyErrorCode(prefix, ex, Logger.Instance);
         }
 
         public override ErrorModel GetErrorModel(string @object, Exception ex, ILogger? _ = null)

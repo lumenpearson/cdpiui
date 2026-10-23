@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace CDPIUI.Shared.Basic.Filesystem
 {
-    public enum FileExtentionTypes
+    public enum FileExtensionTypes
     {
         none,
         archive,
@@ -31,39 +31,39 @@ namespace CDPIUI.Shared.Basic.Filesystem
     public class FileSystemService
     {
         /// <summary>
-        /// File extentions by <see cref="FileExtentionTypes"/> without dots
+        /// File extensions by <see cref="FileExtensionTypes"/> without dots
         /// </summary>
-        public static Dictionary<FileExtentionTypes, string> FileExtentions = new()
+        public static Dictionary<FileExtensionTypes, string> FileExtensions = new()
         {
-            { FileExtentionTypes.none, "" },
-            { FileExtentionTypes.archive, "zip" },
-            { FileExtentionTypes.configPack, "cdpiconfigpack" },
-            { FileExtentionTypes.signedZip, "cdpisignedpack" },
-            { FileExtentionTypes.WIN32application, "exe" },
-            { FileExtentionTypes.CDPIUIUpdateItem, "cdpipatch" },
-            { FileExtentionTypes.msi, "msi" },
-            { FileExtentionTypes.UPDmsi, "msi" },
-            { FileExtentionTypes.elmsi, "exe" },
-            { FileExtentionTypes.lst, "lst" },
-            { FileExtentionTypes.raw, "txt" },
-            { FileExtentionTypes.temp, "cdpitempfile" },
+            { FileExtensionTypes.none, "" },
+            { FileExtensionTypes.archive, "zip" },
+            { FileExtensionTypes.configPack, "cdpiconfigpack" },
+            { FileExtensionTypes.signedZip, "cdpisignedpack" },
+            { FileExtensionTypes.WIN32application, "exe" },
+            { FileExtensionTypes.CDPIUIUpdateItem, "cdpipatch" },
+            { FileExtensionTypes.msi, "msi" },
+            { FileExtensionTypes.UPDmsi, "msi" },
+            { FileExtensionTypes.elmsi, "exe" },
+            { FileExtensionTypes.lst, "lst" },
+            { FileExtensionTypes.raw, "txt" },
+            { FileExtensionTypes.temp, "cdpitempfile" },
         };
 
         /// <summary>
-        /// Get file extention with dot
+        /// Get file extension with dot
         /// </summary>
         /// <param name="type">Type</param>
-        /// <returns>.extention</returns>
-        public static string GetFileExtention(FileExtentionTypes type)
+        /// <returns>.extension</returns>
+        public static string GetFileExtension(FileExtensionTypes type)
         {
-            return $".{FileExtentions.FirstOrDefault(x => x.Key == type).Value}";
+            return $".{FileExtensions.FirstOrDefault(x => x.Key == type).Value}";
         }
 
         /// <summary>
         /// Archive-like compressed file types
         /// </summary>
-        public static List<FileExtentionTypes> CompressedFileTypes =
-            [FileExtentionTypes.signedZip, FileExtentionTypes.archive, FileExtentionTypes.configPack];
+        public static List<FileExtensionTypes> CompressedFileTypes =
+            [FileExtensionTypes.signedZip, FileExtensionTypes.archive, FileExtensionTypes.configPack];
 
         
         private readonly static Uri SomeBaseUri = new("https://canbeanything");
@@ -72,7 +72,7 @@ namespace CDPIUI.Shared.Basic.Filesystem
         /// https://stackoverflow.com/a/40361205
         /// </summary>
         /// <param name="url">URL</param>
-        /// <returns>File name with extention if url correct, otherwise <see cref="string.Empty"/></returns>
+        /// <returns>File name with extension if url correct, otherwise <see cref="string.Empty"/></returns>
         public static string GetFileNameFromUrl(string url)
         {
             Uri uri;
@@ -94,21 +94,21 @@ namespace CDPIUI.Shared.Basic.Filesystem
         /// <summary>
         /// Get unique temp file/folder name. Format 
         /// <code>
-        /// secondsSinceEpoch_suffix_random(.extention)
+        /// secondsSinceEpoch_suffix_random(.extension)
         /// </code>
         /// </summary>
         /// <param name="suffix">Suffix of file</param>
-        /// <param name="extention">Extention. Leave emty for no extention</param>
+        /// <param name="extension">Extension. Leave emty for no extension</param>
         /// <returns>Temp file/folder name</returns>
-        public static string GetNewTempFileName(string suffix, string? extention = null)
+        public static string GetNewTempFileName(string suffix, string? extension = null)
         {
             TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
             int secondsSinceEpoch = (int)t.TotalSeconds;
             // Seconds alone repeat when two names are requested within the same second.
             string unique = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-            if (string.IsNullOrEmpty(extention)) return $"{secondsSinceEpoch}_{suffix}_{unique}";
-            return $"{secondsSinceEpoch}_{suffix}_{unique}.{extention!.TrimStart('.')}";
+            if (string.IsNullOrEmpty(extension)) return $"{secondsSinceEpoch}_{suffix}_{unique}";
+            return $"{secondsSinceEpoch}_{suffix}_{unique}.{extension!.TrimStart('.')}";
         }
 
         /// <summary>

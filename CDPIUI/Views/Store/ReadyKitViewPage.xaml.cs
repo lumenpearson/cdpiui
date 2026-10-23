@@ -10,7 +10,7 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Helper;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
-using CDPIUI.Shared.PrettyErrorConvertionService;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

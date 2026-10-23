@@ -17,6 +17,6 @@
         public string? Name { get; set; }
         public string? ShortName { get; set; }
         public string? Developer {  get; set; }
-        public string? BackgroudColor { get; set; }
+        public string? BackgroundColor { get; set; }
     }
 }

@@ -96,7 +96,7 @@ namespace CDPIUI.Views.Store
 
                 BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));
 
-                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroudColor);
+                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
 
                 LibraryItemModel libraryItemModel = new()
                 {

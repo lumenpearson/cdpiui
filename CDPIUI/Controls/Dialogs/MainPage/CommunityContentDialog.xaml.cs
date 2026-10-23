@@ -54,7 +54,7 @@ public sealed partial class CommunityContentDialog : ContentDialog
         Models.Clear();
         Models.Add(CreateNewModel("TelegramMainUrlName", "TelegramMainUrlDescription", UrlOpenHelper.TelegramMainUrl));
         Models.Add(CreateNewModel("NTCPartyName", "NTCPartyDescription", UrlOpenHelper.NTCParty));
-        Models.Add(CreateNewModel("BBDName", "BBDDecription", UrlOpenHelper.BBD));
+        Models.Add(CreateNewModel("BBDName", "BBDDescription", UrlOpenHelper.BBD));
 
         Models.Add(CreateNewModel("TelegramMemeUrlName", "TelegramMemeUrlDescription", UrlOpenHelper.TelegramMemeUrl));
         Models.Add(CreateNewModel("TelegramLUrlName", "TelegramLUrlDescription", UrlOpenHelper.TelegramLUrl));

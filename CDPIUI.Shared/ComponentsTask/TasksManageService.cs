@@ -1,4 +1,4 @@
-﻿using CDPIUI.Shared.PrettyErrorConvertionService;
+﻿using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -273,11 +273,11 @@ namespace CDPIUI.Shared.ComponentsTask
         }
 
         /// <summary>
-        /// Is task wuth <see cref="string"/> Id runned
+        /// Is task wuth <see cref="string"/> Id running
         /// </summary>
         /// <param name="id">Task Id</param>
-        /// <returns>true if runned, otherwise false</returns>
-        public async Task<bool> IsTaskRunned(string id)
+        /// <returns>true if running, otherwise false</returns>
+        public async Task<bool> IsTaskRunning(string id)
         {
             var task = await GetTaskFromId(id);
             if (task == null) return false;

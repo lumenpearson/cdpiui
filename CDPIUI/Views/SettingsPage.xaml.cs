@@ -32,7 +32,7 @@ using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
 using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Controls.Default;
 using CDPIUI.Helper.Basic;
 using CDPIUI.Helper.UserExperience;
@@ -77,7 +77,7 @@ namespace CDPIUI.Views
 
             ComponentErrorWindowSetting.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true);
             ProcessStateToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState");
-            AppRunnedInTrayToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide");
+            AppRunningInTrayToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide");
             AppUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "appUpdates");
             StoreUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "storeUpdates");
             ConditionalLaunchActionToast.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>(
@@ -135,9 +135,9 @@ namespace CDPIUI.Views
             _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
         }
 
-        private void AppRunnedInTrayToast_Click(object sender, RoutedEventArgs e)
+        private void AppRunningInTrayToast_Click(object sender, RoutedEventArgs e)
         {
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "trayHide", AppRunnedInTrayToast.IsChecked);
+            SettingsManager.Instance.SetValue("NOTIFICATIONS", "trayHide", AppRunningInTrayToast.IsChecked);
             _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
 
         }

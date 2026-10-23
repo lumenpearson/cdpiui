@@ -1,7 +1,7 @@
 using CDPIUI.Core;
 
 using CDPIUI.Core.System;
-using CDPIUI.Shared.Extentions;
+using CDPIUI.Shared.Extensions;
 
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml;
