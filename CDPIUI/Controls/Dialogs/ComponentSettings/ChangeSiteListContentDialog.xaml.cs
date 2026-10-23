@@ -1,4 +1,4 @@
-using CDPIUI.Core;
+﻿using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.Parsers;
@@ -105,7 +105,7 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings
                         SiteListModels.Add(new()
                         {
                             Title = Path.GetFileName(file),
-                            Developer = $"{item.ShortName} � {item.Developer}",
+                            Developer = $"{item.ShortName} – {item.Developer}",
                             FileName = file,
                             Size = UnitsParser.FormatSize(FileSystemService.GetFileSize(file, Logger.Instance))
                         });
