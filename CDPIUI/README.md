@@ -72,9 +72,9 @@ The application closes in `ExitIfIdle` when no window is open and no Store or Go
 ### Localizer readiness
 
 The windows read their strings from the localizer in their constructors. Thus a window must not be created before the localizer is built.
-`SafeCreateNewWindow<TWindow>` waits for `_localizerReady` before it creates a window.
+All overloads of `SafeCreateNewWindow` and `UnsafeCreateNewWindow` wait for `_localizerReady` before they create a window.
 
-CAUTION: The other window methods do not wait for `_localizerReady`. Use `SafeCreateNewWindow<TWindow>` for windows that can open during startup.
+CAUTION: Do not create a window with `new` during startup. Use the `App` window methods, because they wait for the localizer.
 
 ## Windows
 
@@ -290,7 +290,7 @@ CAUTION: Add each article to `Help/EN` and to `Help/RU` with the same path and f
 - A subfolder is a category. The files in the subfolder are the articles of the category. Deeper folders are not read.
 - The menu name is the `/Help/<file or folder name without extension>` string from `Help.resw`. If the string is missing, the menu shows the file or folder name.
 - The category icon comes from `HelpParser.HelpIconGlyphsPairs`. A category without an entry has no icon.
-- The sequence is the sequence from `Directory.GetFiles`. A number prefix, for example `1AboutConfigImport.md`, keeps the articles in the correct sequence.
+- `HelpParser` sorts the files and the folders by name (ordinal, not case-sensitive). The root files come before the categories. A number prefix, for example `1AboutConfigImport.md`, keeps the articles in the correct sequence.
 
 To add an article:
 
@@ -306,12 +306,12 @@ Example: the article `Help/EN/Utils/TroubleshootingUtility.md` has the key `Trou
 The help route is `cdpiui://Help/<Category>/<Article>/`. The article name is the file name without `.md`. The comparison is not case-sensitive. `cdpiui://Help/<Category>/` selects the category.
 `OfflineHelpWindow.NavigateToPage` uses only the first two path segments.
 
-A root file cannot be opened by route, because the route name is compared with the file name with `.md`. `cdpiui://Help/` opens the window with `WelcomeToHelp.md`.
+The window compares the route segments with the file or folder name without `.md`. Thus a root article opens with `cdpiui://Help/<Article>/`, for example `cdpiui://Help/WelcomeToHelp/`. `cdpiui://Help/` opens the window with `WelcomeToHelp.md`.
 
 In an article, link to a different article with a `cdpiui://Help/...` link. Links to other public routes are also possible, for example `cdpiui://Tools/ImportConfig`.
 `MarkdownTextBlock_OnLinkClicked` sends `cdpiui://` links to `CommandsHandler.HandleCommandAsync`. Thus only public routes operate in help pages.
 
-CAUTION: The help window does not open `http` and `https` links. Use web links only as reference text.
+The help window sends all other links to `UrlOpenHelper.LaunchUrl`. This method opens only `http`, `https`, `mailto` and `tg` links. It writes a warning to the log for other links.
 
 Code opens help with `CommandsHandler.HandleCommand("cdpiui://Help/<Category>/<Article>/")`, with the `HelpUrl` property of `UtilityButtonControls`, or with `$INTERNAL_HELP(<Category>/<Article>)` in `Flashlight.resw`.
 

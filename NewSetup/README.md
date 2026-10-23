@@ -7,7 +7,7 @@ The release contains this MSI as `Setup.msi`.
 
 | File | Content |
 |------|---------|
-| `NewSetup.wixproj` | SDK project for x64 only. Contains the WiX extensions (UI, NetFx, Iis), the dialog bitmaps and the license. Suppresses ICE64. |
+| `NewSetup.wixproj` | SDK project for x64 only. Contains the WiX UI extension (`WixToolset.UI.wixext`), the dialog bitmaps and the license. Suppresses ICE64. |
 | `Product.wxs` | The package, the upgrade rule, the installation folder, its permissions, the `InstallLocation` registry value and the custom actions. |
 | `NewSetupFiles.wxs` | `ComponentGroup NewSetupFiles`: one component for each installed file. Also contains the shortcuts. |
 | `UI.wxs` | The `WixUI_FeatureTree` dialog set. |
@@ -55,7 +55,7 @@ When the publish output changes, do these steps:
 ## Package and upgrades
 
 - The package `Version` is the file version of `CDPIUI.exe` (`!(bind.FileVersion.CdpiUiExe)`).
-- `NewSetup.wixproj` defines the `MSIProductVersion` property, but the package does not use it.
+- `NewSetup.wixproj` defines no version property. Only the file version of `CDPIUI.exe` sets the package version.
 - The `UpgradeCode` is `{AB14590E-0D10-416F-9A0E-07E63074B603}`.
 - Each build gets a new product code. Thus each installation is a major upgrade of the previous one.
 - `MajorUpgrade` prevents downgrades with the message "A newer version of [ProductName] is already installed."
