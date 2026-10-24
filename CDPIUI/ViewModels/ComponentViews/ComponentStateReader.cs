@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using CDPIUI.Controls.MainPage;
 using CDPIUI.Core.ComponentServices;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// Reads the state of the process task of a component for the component tiles.

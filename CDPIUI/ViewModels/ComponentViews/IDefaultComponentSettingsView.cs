@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using static CDPIUI.Helper.UIHelper;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// The setting tiles, dialogs and windows the component settings page shows for its view model.

@@ -8,7 +8,7 @@ using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Shared;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 public sealed partial class TgWsProxyComponentViewModel
 {

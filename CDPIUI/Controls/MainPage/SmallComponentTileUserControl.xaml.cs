@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Helper;
-using CDPIUI.ViewModels.Components;
+using CDPIUI.ViewModels.ComponentViews;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;

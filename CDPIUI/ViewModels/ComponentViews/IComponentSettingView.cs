@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// The dependency properties and notifications of a component setting control that its

@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Input;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// State of one setting of the graphic config designer: which editor the setting type

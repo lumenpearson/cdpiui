@@ -5,7 +5,7 @@ using System.Windows.Input;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Core;
 using CDPIUI.Core.System;
-using CDPIUI.ViewModels.Components;
+using CDPIUI.ViewModels.ComponentViews;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using UserControl = Microsoft.UI.Xaml.Controls.UserControl;

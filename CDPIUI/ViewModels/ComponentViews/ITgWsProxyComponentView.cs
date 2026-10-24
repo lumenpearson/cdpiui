@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// The dialogs and windows the tg-ws-proxy settings page opens for its view model.

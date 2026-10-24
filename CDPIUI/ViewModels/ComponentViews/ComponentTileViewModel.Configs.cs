@@ -11,7 +11,7 @@ using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Helper.Items;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 public sealed partial class ComponentTileViewModel
 {

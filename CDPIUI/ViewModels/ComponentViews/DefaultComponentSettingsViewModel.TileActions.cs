@@ -16,7 +16,7 @@ using CDPIUI.Core.System;
 using CDPIUI.Shared.Models;
 using static CDPIUI.Helper.UIHelper;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 public sealed partial class DefaultComponentSettingsViewModel
 {
