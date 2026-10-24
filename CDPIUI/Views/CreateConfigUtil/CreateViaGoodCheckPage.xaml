@@ -134,7 +134,7 @@
                         </StackPanel>
                     </ScrollViewer>
                     
-                    <StackPanel x:Name="SelectedSitelistTip" VerticalAlignment="Center" Grid.Row="1">
+                    <StackPanel x:Name="SelectedSitelistTip" VerticalAlignment="Center" Grid.Row="1" Visibility="{x:Bind ViewModel.IsSelectedSiteListTipVisible, Mode=OneWay}">
                         <TextBlock l:Uids.Uid="GoodCheckEmptySiteListsTip1" HorizontalAlignment="Center" />
                         <TextBlock l:Uids.Uid="GoodCheckEmptySiteListsTip2" HorizontalAlignment="Center" />
                     </StackPanel>
@@ -157,15 +157,19 @@
                         </Paragraph>
                     </RichTextBlock>
 
-                    <CheckBox l:Uids.Uid="GoodCheckSelectSeparatelly" x:Name="ChangeModeComboBox" Click="ChangeModeComboBox_Click"/>
+                    <CheckBox l:Uids.Uid="GoodCheckSelectSeparatelly" x:Name="ChangeModeComboBox"
+                              IsChecked="{x:Bind ViewModel.IsSeparateMode, Mode=TwoWay}"
+                              IsEnabled="{x:Bind ViewModel.IsChangeModeEnabled, Mode=OneWay}"/>
                 </StackPanel>
-                <StackPanel x:Name="AllListsOneStrategyPanel">
+                <StackPanel x:Name="AllListsOneStrategyPanel" Visibility="{x:Bind ViewModel.IsAllListsOneStrategy, Mode=OneWay}">
                     <controls:SettingsCard l:Uids.Uid="GoodCheckStrategyListChooseSettingCard">
-                        <ComboBox x:Name="StrategiesListCombobox" Width="350" DisplayMemberPath="Name" SelectionChanged="StrategiesListCombobox_SelectionChanged"/>
+                        <ComboBox x:Name="StrategiesListCombobox" Width="350" DisplayMemberPath="Name"
+                                  ItemsSource="{x:Bind ViewModel.StrategiesLists, Mode=OneWay}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedStrategiesList, Mode=TwoWay}"/>
                     </controls:SettingsCard>
                 </StackPanel>
                 <ScrollViewer x:Name="OneListOneStrategyScrollViewer" LayoutUpdated="OneListOneStrategyScrollViewer_LayoutUpdated">
-                    <StackPanel x:Name="OneListOneStrategyStackPanel" Visibility="Collapsed" Spacing="5">
+                    <StackPanel x:Name="OneListOneStrategyStackPanel" Visibility="{x:Bind ViewModel.IsSeparateMode, Mode=OneWay}" Spacing="5">
                         <StackPanel.ChildrenTransitions>
                             <TransitionCollection>
                                 <EntranceThemeTransition IsStaggeringEnabled="False" />
@@ -193,17 +197,19 @@
                         <TextBlock l:Uids.Uid="BasicTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                         <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/TimeOut">
                             <controls:SettingsCard.Content>
-                                <TextBox x:Name="ConnectionTimeout" MaxWidth="100"/>
+                                <TextBox x:Name="ConnectionTimeout" Text="{x:Bind ViewModel.ConnectionTimeout, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="100"/>
                             </controls:SettingsCard.Content>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/TestCount">
                             <controls:SettingsCard.Content>
-                                <TextBox x:Name="PValue" MaxWidth="100"/>
+                                <TextBox x:Name="PValue" Text="{x:Bind ViewModel.PassesValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="100"/>
                             </controls:SettingsCard.Content>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/Resolver">
                             <controls:SettingsCard.Content>
-                                <ComboBox x:Name="ResolverComboBox" SelectedIndex="0" SelectionChanged="ResolverComboBox_SelectionChanged" DisplayMemberPath="DisplayName"/>
+                                <ComboBox x:Name="ResolverComboBox" DisplayMemberPath="DisplayName"
+                                          ItemsSource="{x:Bind ViewModel.ResolverItems}"
+                                          SelectedIndex="{x:Bind ViewModel.ResolverIndex, Mode=TwoWay}"/>
                             </controls:SettingsCard.Content>
                         </controls:SettingsCard>
 
@@ -223,58 +229,58 @@
                             <StackPanel x:Name="NativeSettings" Spacing="5">
                                 <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/ResolverTimeout">
                                     <controls:SettingsCard.Content>
-                                        <TextBox x:Name="ResolverNativeTimeout" MaxWidth="100"/>
+                                        <TextBox x:Name="ResolverNativeTimeout" Text="{x:Bind ViewModel.ResolverNativeTimeout, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="100"/>
                                     </controls:SettingsCard.Content>
                                 </controls:SettingsCard>
                                 <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/ResolverRetryCount">
                                     <controls:SettingsCard.Content>
-                                        <TextBox x:Name="ResolverNativeRetries" MaxWidth="100"/>
+                                        <TextBox x:Name="ResolverNativeRetries" Text="{x:Bind ViewModel.ResolverNativeRetries, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="100"/>
                                     </controls:SettingsCard.Content>
                                 </controls:SettingsCard>
                             </StackPanel>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/InternalTimeout">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="InternalTimeoutMs" MaxWidth="100"/>
+                                    <TextBox x:Name="InternalTimeoutMs" Text="{x:Bind ViewModel.InternalTimeoutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="100"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/AutomaticConnectivityTestTextBlock">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticConnectivityTest" />
+                                    <ToggleSwitch x:Name="AutomaticConnectivityTest" IsOn="{x:Bind ViewModel.AutomaticConnectivityTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/ConnectivityTestURLs" Visibility="{Binding IsOn, ElementName=AutomaticConnectivityTest, Converter={StaticResource BoolToVis}}">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="ConnectivityTestURL" MaxWidth="350"/>
+                                    <TextBox x:Name="ConnectivityTestURL" Text="{x:Bind ViewModel.ConnectivityTestUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/SkipCertVerifys">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="SkipCertVerify" />
+                                    <ToggleSwitch x:Name="SkipCertVerify" IsOn="{x:Bind ViewModel.SkipCertVerify, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
                             <TextBlock l:Uids.Uid="/GoodCheckAdditionalSettings/AddressTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/GGC">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticGoogleCacheTest" />
+                                    <ToggleSwitch x:Name="AutomaticGoogleCacheTest" IsOn="{x:Bind ViewModel.AutomaticGoogleCacheTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/GGCAddr" Visibility="{Binding IsOn, ElementName=AutomaticGoogleCacheTest, Converter={StaticResource BoolToVis}}">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="GoogleCacheMappingURLs" MaxWidth="350"/>
+                                    <TextBox x:Name="GoogleCacheMappingURLs" Text="{x:Bind ViewModel.GoogleCacheMappingUrls, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/DohResolversHeader" Text="DoH resolvers"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/UseDOH">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="UseDoH" />
+                                    <ToggleSwitch x:Name="UseDoH" IsOn="{x:Bind ViewModel.UseDoH, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/DOHResolvers"
                                                Visibility="{Binding IsOn, ElementName=UseDoH, Converter={StaticResource BoolToVis}}">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="DoHResolvers" MaxWidth="350"/>
+                                    <TextBox x:Name="DoHResolvers" Text="{x:Bind ViewModel.DoHResolvers, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
@@ -282,37 +288,37 @@
 
                             <controls:SettingsCard Header="FAKE SNI">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="FakeSNI" MaxWidth="350"/>
+                                    <TextBox x:Name="FakeSNI" Text="{x:Bind ViewModel.FakeSni, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="FAKE Hex Stream TCP">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="FakeHexStreamTCP" MaxWidth="350"/>
+                                    <TextBox x:Name="FakeHexStreamTCP" Text="{x:Bind ViewModel.FakeHexStreamTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="FAKE Hex Stream UDP">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="FakeHexStreamUDP" MaxWidth="350"/>
+                                    <TextBox x:Name="FakeHexStreamUDP" Text="{x:Bind ViewModel.FakeHexStreamUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="FAKE Hex Bytes TCP">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="FakeHexBytesTCP" MaxWidth="350"/>
+                                    <TextBox x:Name="FakeHexBytesTCP" Text="{x:Bind ViewModel.FakeHexBytesTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="FAKE Hex Bytes UDP">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="FakeHexBytesUDP" MaxWidth="350"/>
+                                    <TextBox x:Name="FakeHexBytesUDP" Text="{x:Bind ViewModel.FakeHexBytesUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/Bin" Header="PayloadTCP" >
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="PayloadTCP" MaxWidth="350"/>
+                                    <TextBox x:Name="PayloadTCP" Text="{x:Bind ViewModel.PayloadTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/Bin" Header="PayloadUDP">
                                 <controls:SettingsCard.Content>
-                                    <TextBox x:Name="PayloadUDP" MaxWidth="350"/>
+                                    <TextBox x:Name="PayloadUDP" Text="{x:Bind ViewModel.PayloadUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                         </StackPanel>
@@ -322,10 +328,10 @@
             
         </Grid>
 
-        <Grid x:Name="LoadingStateGrid" Grid.Row="1" Visibility="Collapsed">
+        <Grid x:Name="LoadingStateGrid" Grid.Row="1" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}">
             <StackPanel>
-                <TextBlock l:Uids.Uid="WorkingOnItTextBlock" x:Name="LoadingHeader" Margin="20 0 0 5"/>
-                <ProgressBar x:Name="LoadingProgressBar" IsIndeterminate="True" VerticalAlignment="Top" CornerRadius="0"/>
+                <TextBlock x:Name="LoadingHeader" Text="{x:Bind ViewModel.LoadingHeader, Mode=OneWay}" Margin="20 0 0 5"/>
+                <ProgressBar x:Name="LoadingProgressBar" IsIndeterminate="{x:Bind ViewModel.IsLoadingIndeterminate, Mode=OneWay}" VerticalAlignment="Top" CornerRadius="0"/>
             </StackPanel>
         </Grid>
         <Grid x:Name="ActionButtonsGrid" Grid.Row="2">
@@ -338,9 +344,9 @@
                     </Button.Content>
                 </Button>
                 <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Right">
-                    <Button l:Uids.Uid="CancelButton" x:Name="CancelButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="False"/>
-                    <Button l:Uids.Uid="GoBackButton" x:Name="GoBackButton" MinWidth="150" Click="GoBackButton_Click"/>
-                    <Button l:Uids.Uid="GoForwardButton" x:Name="GoForwardButton" Style="{StaticResource AccentButtonStyle}" MinWidth="150" Click="GoForwardButton_Click"/>
+                    <Button l:Uids.Uid="CancelButton" x:Name="CancelButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="{x:Bind ViewModel.IsCancellationAvailable, Mode=OneWay}" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}"/>
+                    <Button l:Uids.Uid="GoBackButton" x:Name="GoBackButton" MinWidth="150" Click="GoBackButton_Click" Visibility="{x:Bind ViewModel.IsNotLoading, Mode=OneWay}"/>
+                    <Button l:Uids.Uid="GoForwardButton" x:Name="GoForwardButton" Style="{StaticResource AccentButtonStyle}" MinWidth="150" Click="GoForwardButton_Click" IsEnabled="{x:Bind ViewModel.CanGoForward, Mode=OneWay}" Visibility="{x:Bind ViewModel.IsNotLoading, Mode=OneWay}"/>
                 </StackPanel>
             </Grid>
         </Grid>
