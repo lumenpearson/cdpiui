@@ -41,6 +41,91 @@ public sealed class ConfigMakerPresetStorageService
         bool overwrite)
     {
         string normalizedName = ConfigMakerPresetStorageNaming.NormalizeDisplayName(presetName);
+        ConfigMakerPresetSaveResult? failure = PrepareTarget(
+            normalizedName,
+            document,
+            overwrite,
+            out SaveTarget target);
+        if (failure != null)
+        {
+            return failure;
+        }
+        ConfigMakerPresetResourceCopier copier = new(
+            target.ComponentDirectory,
+            target.PresetDirectory,
+            target.StorageId);
+
+        try
+        {
+            Dictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
+            List<ConfigMakerResourceMetadata> storedResources = [];
+            failure = StoreResources(
+                document,
+                normalizedName,
+                target,
+                copier,
+                replacements,
+                storedResources);
+            if (failure != null)
+            {
+                copier.Cleanup();
+                return failure;
+            }
+
+            ConfigItem config = CreateStoredConfig(
+                document,
+                target.PackId,
+                normalizedName,
+                replacements,
+                storedResources);
+            ConfigUsedFile? missingFile = FindMissingFile(
+                config,
+                target.ComponentDirectory,
+                target.PresetDirectory);
+            if (missingFile != null)
+            {
+                copier.Cleanup();
+                return ConfigMakerPresetSaveResult.Failed("FILE_MISSING", missingFile.ExpandedPath);
+            }
+
+            string errorCode = await ConfigurationService.SaveConfigItem(
+                target.ConfigFileName,
+                target.PackId,
+                config);
+            if (!string.IsNullOrWhiteSpace(errorCode))
+            {
+                copier.Cleanup();
+                return ConfigMakerPresetSaveResult.Failed("SAVE_FAILED", errorCode);
+            }
+
+            TrySaveVariableDescriptions(document, target.PackId);
+            TryReloadConfigs(document.ComponentId);
+
+            return new ConfigMakerPresetSaveResult
+            {
+                Success = true,
+                PackId = target.PackId,
+                ConfigFileName = target.ConfigFileName,
+                CopiedFileCount = copier.CopiedFileCount,
+                StoredResources = storedResources,
+            };
+        }
+        catch (Exception exception)
+        {
+            copier.Cleanup();
+            return ConfigMakerPresetSaveResult.Failed("UNEXPECTED", exception.Message);
+        }
+    }
+
+    // Checks the input and the destination and creates the destination directories.
+    // Returns the failure, or null when the preset can be saved to the returned target.
+    private static ConfigMakerPresetSaveResult? PrepareTarget(
+        string normalizedName,
+        ConfigMakerPresetDocument document,
+        bool overwrite,
+        out SaveTarget target)
+    {
+        target = default;
         ConfigMakerPresetSaveResult? invalidInput = ValidateInput(normalizedName, document);
         if (invalidInput != null)
         {
@@ -74,89 +159,56 @@ public sealed class ConfigMakerPresetStorageService
         {
             configFileName = $"{storageId}.json";
         }
-        ConfigMakerPresetResourceCopier copier = new(
+        target = new SaveTarget(
+            destinationPackId,
+            configFileName,
             componentDirectory,
             destinationPresetDirectory,
+            sourcePresetDirectory,
             storageId);
+        return null;
+    }
 
-        try
+    // Stores every resource of the preset and records the reference each one gets.
+    // Returns the failure, or null when all resources are stored.
+    private static ConfigMakerPresetSaveResult? StoreResources(
+        ConfigMakerPresetDocument document,
+        string normalizedName,
+        SaveTarget target,
+        ConfigMakerPresetResourceCopier copier,
+        Dictionary<string, string> replacements,
+        List<ConfigMakerResourceMetadata> storedResources)
+    {
+        ConfigItem sourceConfig = document.ToConfigItem(
+            document.PackId ?? target.PackId,
+            normalizedName);
+
+        foreach (ConfigMakerPresetResource resource in document.Resources)
         {
-            Dictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
-            List<ConfigMakerResourceMetadata> storedResources = [];
-            ConfigItem sourceConfig = document.ToConfigItem(
-                document.PackId ?? destinationPackId,
-                normalizedName);
-
-            foreach (ConfigMakerPresetResource resource in document.Resources)
+            string? sourcePath = ConfigMakerPresetPaths.ResolveResourcePath(
+                resource.Path,
+                target.ComponentDirectory,
+                target.SourcePresetDirectory,
+                sourceConfig);
+            if (sourcePath == null)
             {
-                string? sourcePath = ConfigMakerPresetPaths.ResolveResourcePath(
-                    resource.Path,
-                    componentDirectory,
-                    sourcePresetDirectory,
-                    sourceConfig);
-                if (sourcePath == null)
-                {
-                    copier.Cleanup();
-                    return ConfigMakerPresetSaveResult.Failed("FILE_MISSING", resource.Path);
-                }
-
-                string storedReference = copier.Store(
-                    resource,
-                    sourcePath,
-                    out bool keepComponentReference);
-                replacements[resource.Alias] = storedReference;
-                storedResources.Add(new ConfigMakerResourceMetadata
-                {
-                    alias = resource.Alias,
-                    path = storedReference,
-                    kind = resource.Kind.ToString(),
-                    isBuiltIn = keepComponentReference,
-                });
+                return ConfigMakerPresetSaveResult.Failed("FILE_MISSING", resource.Path);
             }
 
-            ConfigItem config = CreateStoredConfig(
-                document,
-                destinationPackId,
-                normalizedName,
-                replacements,
-                storedResources);
-            ConfigUsedFile? missingFile = FindMissingFile(
-                config,
-                componentDirectory,
-                destinationPresetDirectory);
-            if (missingFile != null)
+            string storedReference = copier.Store(
+                resource,
+                sourcePath,
+                out bool keepComponentReference);
+            replacements[resource.Alias] = storedReference;
+            storedResources.Add(new ConfigMakerResourceMetadata
             {
-                copier.Cleanup();
-                return ConfigMakerPresetSaveResult.Failed("FILE_MISSING", missingFile.ExpandedPath);
-            }
-
-            string errorCode = await ConfigurationService.SaveConfigItem(
-                configFileName,
-                destinationPackId,
-                config);
-            if (!string.IsNullOrWhiteSpace(errorCode))
-            {
-                copier.Cleanup();
-                return ConfigMakerPresetSaveResult.Failed("SAVE_FAILED", errorCode);
-            }
-
-            TrySaveVariableDescriptions(document, destinationPackId);
-            TryReloadConfigs(document.ComponentId);
-
-            return new ConfigMakerPresetSaveResult
-            {
-                Success = true,
-                PackId = destinationPackId,
-                ConfigFileName = configFileName,
-                CopiedFileCount = copier.CopiedFileCount,
-                StoredResources = storedResources,
-            };
+                alias = resource.Alias,
+                path = storedReference,
+                kind = resource.Kind.ToString(),
+                isBuiltIn = keepComponentReference,
+            });
         }
-        catch (Exception exception)
-        {
-            copier.Cleanup();
-            return ConfigMakerPresetSaveResult.Failed("UNEXPECTED", exception.Message);
-        }
+        return null;
     }
 
     public static string CreateResolvedCommandForTest(ConfigMakerPresetDocument document)
@@ -360,4 +412,12 @@ public sealed class ConfigMakerPresetStorageService
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), $"Cannot save variable descriptions: {ex.Message}");
         }
     }
+
+    private readonly record struct SaveTarget(
+        string PackId,
+        string ConfigFileName,
+        string ComponentDirectory,
+        string PresetDirectory,
+        string SourcePresetDirectory,
+        string StorageId);
 }
