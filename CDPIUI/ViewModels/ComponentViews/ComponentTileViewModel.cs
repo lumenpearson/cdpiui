@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -61,7 +60,6 @@ public sealed partial class ComponentTileViewModel : ObservableObject
         LinkedFeaturesGlyph = SharedUtils.IsOsSupportedNewGlyph() ? "" : "";
 
         ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
-        ConfigItems.CollectionChanged += ConfigItems_CollectionChanged;
     }
 
     public ICommand ToggleProcessCommand { get; }
@@ -178,7 +176,6 @@ public sealed partial class ComponentTileViewModel : ObservableObject
     /// <summary>Stops listening to the task manager and the configuration list.</summary>
     public void Detach()
     {
-        ConfigItems.CollectionChanged -= ConfigItems_CollectionChanged;
         ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
 
         ComponentHelper componentHelper =
@@ -346,11 +343,6 @@ public sealed partial class ComponentTileViewModel : ObservableObject
         }
     }
 
-    private void ConfigItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-    {
-        ApplySavedSelection();
-    }
-
     private void ApplySavedSelection()
     {
         var savedFile = SettingsManager.Instance.GetValue<string>(["CONFIGS", _storeId], "configFile");
@@ -360,7 +352,12 @@ public sealed partial class ComponentTileViewModel : ObservableObject
             return;
 
         var match = ConfigItems.FirstOrDefault(ci => ci.FileName == savedFile && ci.PackId == savedPackId);
-        if (match != null)
-            SelectedConfig = match;
+        if (match == null)
+            return;
+
+        // Raise even when the value is the same: the combo box only takes the selection
+        // once the item is in its list.
+        if (!SetProperty(ref _selectedConfig, match, nameof(SelectedConfig)))
+            OnPropertyChanged(nameof(SelectedConfig));
     }
 }
