@@ -76,7 +76,7 @@
                         <ColumnDefinition Width="*" MaxWidth="300"/>
                     </Grid.ColumnDefinitions>
                     <Image x:Name="ItemImage" 
-                           Source="/Assets/Store/empty.png" 
+                           Source="{x:Bind ViewModel.ItemIcon, Mode=OneWay}" 
                            Width="90" Height="90"/>
                     <Grid Grid.Column="1" Margin="25, 0, 0, 0">
                         <Grid.RowDefinitions>
@@ -86,43 +86,43 @@
                         </Grid.RowDefinitions>
                         <TextBlock x:Name="ItemName" 
                                    MaxLines="2" TextWrapping="Wrap" 
-                                   Text="Item Name" 
+                                   Text="{x:Bind ViewModel.ItemName, Mode=OneWay}" 
                                    Style="{ThemeResource TitleTextBlockStyle}"/>
                         <TextBlock x:Name="ItemDeveloper"
                                    Margin="0, 5, 0, 5"
                                    Grid.Row="1"
                                    MaxLines="1" TextWrapping="NoWrap"
-                                   Text="Item Developer"
+                                   Text="{x:Bind ViewModel.Developer, Mode=OneWay}"
                                    Style="{ThemeResource BodyTextBlockStyle}"
                                    Foreground="{ThemeResource AccentTextFillColorTertiaryBrush}"
                                    IsTextSelectionEnabled="True"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="2" Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="3">
                                 <TextBlock x:Name="StarCount"
-                                       Text="NaN" VerticalAlignment="Center" />
+                                       Text="{x:Bind ViewModel.Stars, Mode=OneWay}" VerticalAlignment="Center" />
                                 <FontIcon Glyph="&#xE735;" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource ControlStrongStrokeColorDefaultBrush}"/>
                             </StackPanel>
                             <Rectangle VerticalAlignment="Stretch" Width="1" Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
-                            <HyperlinkButton x:Name="ItemCategoryButton" Content="Item Category" Padding="4, 0" Click="ItemCategoryButton_Click"/>
+                            <HyperlinkButton x:Name="ItemCategoryButton" Content="{x:Bind ViewModel.CategoryName, Mode=OneWay}" Padding="4, 0" Click="ItemCategoryButton_Click"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
-                <TextBlock x:Name="SmallDescriptionText" Text="Item Small Description Text" MaxLines="3" 
+                <TextBlock x:Name="SmallDescriptionText" Text="{x:Bind ViewModel.SmallDescription, Mode=OneWay}" MaxLines="3" 
                            Width="400" TextWrapping="Wrap" HorizontalAlignment="Left" 
                            TextTrimming="CharacterEllipsis"
                            ToolTipService.ToolTip="{Binding Text, ElementName=SmallDescriptionText}"/>
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button x:Name="ItemActionButton" Style="{StaticResource AccentButtonStyle}" MinWidth="180" Height="55" Visibility="Visible"
-                            Click="ItemActionButton_Click" IsEnabled="True" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Padding="0">
+                    <Button x:Name="ItemActionButton" Style="{StaticResource AccentButtonStyle}" MinWidth="180" Height="55" Visibility="{x:Bind ViewModel.IsActionVisible, Mode=OneWay}"
+                            Click="ItemActionButton_Click" IsEnabled="{x:Bind ViewModel.IsActionEnabled, Mode=OneWay}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Padding="0">
                         <Button.Content>
                             <Grid>
-                                <TextBlock x:Name="ItemActionButtonText" Text="Item Action Button Text" Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="NoWrap" Visibility="Visible"
+                                <TextBlock x:Name="ItemActionButtonText" Text="{x:Bind ViewModel.ActionText, Mode=OneWay}" Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="NoWrap" Visibility="Visible"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </Button.Content>
                     </Button>
                     <Grid x:Name="DownloadStatusGrid" CornerRadius="4" MinWidth="180" Height="55"
-                          Visibility="Collapsed">
+                          Visibility="{x:Bind ViewModel.IsDownloadStatusVisible, Mode=OneWay}">
                         <Rectangle Fill="{ThemeResource ControlFillColorDefaultBrush}"/>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
@@ -135,16 +135,16 @@
                                     <ColumnDefinition Width="auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
-                                    <TextBlock x:Name="CurrentStatusTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock x:Name="CurrentStatusTextBlock" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="CurrentStatusSpeedTextBlock" Text="" Margin="0, 0, 5, 0"
-                                                   Visibility="Collapsed"/>
+                                        <TextBlock x:Name="CurrentStatusSpeedTextBlock" Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}" Margin="0, 0, 5, 0"
+                                                   Visibility="{x:Bind ViewModel.IsSpeedVisible, Mode=OneWay}"/>
                                         <TextBlock l:Uids.Uid="WorkingOnItTextBlock" x:Name="CurrentStatusTipTextBlock"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10, 0, 0, 0">
                                     <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="StopActionButton" x:Name="StopActionButton" Background="Transparent" BorderBrush="Transparent" 
-                                            Padding="6" VerticalAlignment="Center" Click="StopActionButton_Click">
+                                            Padding="6" VerticalAlignment="Center" IsEnabled="{x:Bind ViewModel.IsStopEnabled, Mode=OneWay}" Click="StopActionButton_Click">
                                         <Button.Content>
                                             <FontIcon Glyph="&#xE978;" FontSize="16" />
                                         </Button.Content>
@@ -152,11 +152,11 @@
                                 </StackPanel>
                             </Grid>
                             <ProgressBar x:Name="StatusProgressbar" Grid.Row="1" HorizontalAlignment="Stretch" 
-                                         IsIndeterminate="True" CornerRadius="0" Background="Transparent"/>
+                                         IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}" Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}" CornerRadius="0" Background="Transparent"/>
                         </Grid>
                     </Grid>
                     <Grid x:Name="ErrorStatusGrid" CornerRadius="4" MinWidth="180" Height="55"
-                          Visibility="Collapsed">
+                          Visibility="{x:Bind ViewModel.IsErrorStatusVisible, Mode=OneWay}">
                         <Rectangle Fill="{ThemeResource ControlFillColorDefaultBrush}"/>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
@@ -175,7 +175,7 @@
                                             Margin="0, 0, 0, 5">
                                     <StackPanel Orientation="Horizontal" Spacing="3">
                                         <TextBlock l:Uids.Uid="ExceptionHappensTextBlock" x:Name="ErrorTitleTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                                        <TextBlock x:Name="ErrorNameTextBlock" Text="ERR_FLASHLIGHT_BISY" Margin="0, 0, 5, 0"
+                                        <TextBlock x:Name="ErrorNameTextBlock" Text="{x:Bind ViewModel.ErrorName, Mode=OneWay}" Margin="0, 0, 5, 0"
                                                    IsTextSelectionEnabled="True"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="3">
@@ -190,13 +190,13 @@
                     <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ViewMoreActionsButton"
                             x:Name="ItemMoreButton" Background="Transparent" 
                             BorderBrush="Transparent" Padding="6" VerticalAlignment="Center"
-                            Visibility="Collapsed">
+                            Visibility="{x:Bind ViewModel.IsMoreVisible, Mode=OneWay}">
                         <Button.Content>
                             <FontIcon Glyph="&#xE712;" FontSize="16" />
                         </Button.Content>
                         <Button.Flyout>
                             <MenuFlyout>
-                                <MenuFlyoutItem l:Uids.Uid="DeleteButton" x:Name="DeleteButton"  Click="DeleteButton_Click">
+                                <MenuFlyoutItem l:Uids.Uid="DeleteButton" x:Name="DeleteButton" Command="{x:Bind ViewModel.DeleteCommand}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE74D;" />
                                     </MenuFlyoutItem.Icon>
@@ -210,7 +210,7 @@
                                 </MenuFlyoutItem>
                                 <MenuFlyoutItem l:Uids.Uid="StoreShowItemFolder"
                                                 x:Name="ShowFolderButton" 
-                                                Click="ShowFolderButton_Click">
+                                                Command="{x:Bind ViewModel.ShowFolderCommand}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE838;" />
                                     </MenuFlyoutItem.Icon>
@@ -226,7 +226,7 @@
                                 <StackPanel>
                                     <TextBlock l:Uids.Uid="ItemAdvancedInfoFlyoutTitleTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
-                                    <ListView x:Name="AdvancedInfoListView">
+                                    <ListView x:Name="AdvancedInfoListView" ItemsSource="{x:Bind ViewModel.AdditionalInfo}">
                                         <ListView.ItemTemplate>
                                             <DataTemplate x:DataType="models:AdditionalItemInfoModel">
                                                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -251,7 +251,7 @@
                     </Button>
                 </StackPanel>
 
-                <Grid x:Name="ItemUnsupportedWarningGrid" Visibility="Collapsed">
+                <Grid x:Name="ItemUnsupportedWarningGrid" Visibility="{x:Bind ViewModel.IsUnsupportedWarningVisible, Mode=OneWay}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto"/>
                         <ColumnDefinition Width="10"/>
@@ -260,13 +260,13 @@
                     <FontIcon Glyph="&#xE814;" />
                     <StackPanel Grid.Column="2">
                         <TextBlock Grid.Column="2" l:Uids.Uid="ItemUnsupportedWarningTextBlock" TextWrapping="Wrap"/>
-                        <HyperlinkButton Padding="0" x:Name="LaunchItemUnsupportedHelp" Click="LaunchItemUnsupportedHelp_Click">
+                        <HyperlinkButton Padding="0" x:Name="LaunchItemUnsupportedHelp" Command="{x:Bind ViewModel.LaunchUnsupportedHelpCommand}">
                             <TextBlock l:Uids.Uid="GetHelpTextBlock"/>
                         </HyperlinkButton>
                     </StackPanel>
                 </Grid>
                 
-                <Grid x:Name="ItemWarningAera">
+                <Grid x:Name="ItemWarningAera" Visibility="{x:Bind ViewModel.IsWarningVisible, Mode=OneWay}">
                     <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="10"/>
                     <Grid CornerRadius="10">
                         <Grid.RowDefinitions>
@@ -282,7 +282,7 @@
                         <Rectangle Grid.Row="1" Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
                         <Rectangle Fill="{ThemeResource SystemFillColorCautionBackgroundBrush}" Grid.Row="2"/>
                         <StackPanel Margin="20" Grid.Row="2" Spacing="5">
-                            <controls:MarkdownTextBlock x:Name="ItemWarningText" Text="" 
+                            <controls:MarkdownTextBlock x:Name="ItemWarningText" Text="{x:Bind ViewModel.WarningText, Mode=OneWay}" 
                                                         Config="{x:Bind MarkdownConfig, Mode=OneTime}"
                                                         UseAutoLinks="True"
                                                         UseEmphasisExtras="True"
@@ -310,7 +310,7 @@
                         <controls:MarkdownTextBlock 
                             Grid.Row="2" Margin="20" x:Name="ItemFullDescriptionText" 
                             Config="{x:Bind MarkdownConfig, Mode=OneTime}"
-                            Text="Item Full Description Text"
+                            Text="{x:Bind ViewModel.FullDescription, Mode=OneWay}"
                             UseAutoLinks="True"
                             UseEmphasisExtras="True"
                             UseListExtras="True"
@@ -318,7 +318,7 @@
                             UseTaskLists="True"/>
                     </Grid>
                 </Grid>
-                <Grid CornerRadius="10" x:Name="LinksGrid">
+                <Grid CornerRadius="10" x:Name="LinksGrid" Visibility="{x:Bind ViewModel.IsLinksVisible, Mode=OneWay}">
                     <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="10"/>
                     <Grid>
                         <Grid.RowDefinitions>
