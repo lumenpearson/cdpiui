@@ -22,6 +22,10 @@ internal static class AdditionalItemInfoBuilder
             {
                 foreach (var link in item.files_to_download)
                 {
+                    // A null entry in the repository JSON emptied the whole list.
+                    if (link == null)
+                        continue;
+
                     i++;
                     models.Add(new() { DisplayName = $"#{i} > Type", DisplayValue = link.type });
 

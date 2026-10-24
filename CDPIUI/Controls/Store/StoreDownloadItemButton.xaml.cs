@@ -58,7 +58,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
 
     public StoreDownloadItemButton()
     {
-        ViewModel = new StoreDownloadItemButtonViewModel(ExecuteClickCommand);
+        ViewModel = new StoreDownloadItemButtonViewModel(ExecuteClickCommand, DispatcherQueue);
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
 
         InitializeComponent();

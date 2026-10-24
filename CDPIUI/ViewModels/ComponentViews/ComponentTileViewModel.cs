@@ -37,7 +37,7 @@ public sealed partial class ComponentTileViewModel : ObservableObject
     private string _stateToggleText = string.Empty;
     private bool _isRunning;
     private string _statusBrushKey = "SystemFillColorSuccessBrush";
-    private string _statusGlyph = "";
+    private string _statusGlyph = "\uF13E";
     private double _statusGlyphFontSize = 18;
     private string _statusToolTip;
     private bool _isConfigContentVisible = true;
@@ -57,7 +57,7 @@ public sealed partial class ComponentTileViewModel : ObservableObject
 
         ViewOutputText = _localizer.GetLocalizedString("ViewOutputIconButton");
         SettingsText = _localizer.GetLocalizedString("SettingsIconButton");
-        LinkedFeaturesGlyph = SharedUtils.IsOsSupportedNewGlyph() ? "" : "";
+        LinkedFeaturesGlyph = SharedUtils.IsOsSupportedNewGlyph() ? "\uF4A5" : "\uE8B0";
 
         ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
     }
@@ -349,15 +349,32 @@ public sealed partial class ComponentTileViewModel : ObservableObject
         var savedPackId = SettingsManager.Instance.GetValue<string>(["CONFIGS", _storeId], "configId");
 
         if (string.IsNullOrEmpty(savedFile) || string.IsNullOrEmpty(savedPackId))
+        {
+            ClearConfigSettings();
             return;
+        }
 
         var match = ConfigItems.FirstOrDefault(ci => ci.FileName == savedFile && ci.PackId == savedPackId);
         if (match == null)
+        {
+            // The saved preset is gone (deleted or renamed): drop its quick settings.
+            ClearConfigSettings();
             return;
+        }
 
         // Raise even when the value is the same: the combo box only takes the selection
         // once the item is in its list.
         if (!SetProperty(ref _selectedConfig, match, nameof(SelectedConfig)))
             OnPropertyChanged(nameof(SelectedConfig));
+    }
+
+    /// <summary>Shows the empty quick settings state, as InitConfigSettings does before loading.</summary>
+    private void ClearConfigSettings()
+    {
+        // Forget the stale selection too, so a late quick setting toggle or settings load
+        // does not act on a preset that is no longer in the list.
+        SelectedConfig = null;
+        ConfigSettings.Clear();
+        IsConfigSettingsLoadFailureVisible = true;
     }
 }

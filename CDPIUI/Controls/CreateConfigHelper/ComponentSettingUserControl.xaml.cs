@@ -92,6 +92,12 @@ public sealed partial class ComponentSettingUserControl : UserControl, IComponen
     // controls before the commands were set.
     private bool _isLoaded;
 
+    // Set while a check state set by the host (IsSettingChecked) is pushed into the
+    // controls: the Checked, Unchecked and Toggled events raised by that are not user
+    // toggles. Containers recycled by a list and ComponentSettingsExclusiveGroupUserControl
+    // set the state again after Loaded, so _isLoaded alone does not cover them.
+    private bool _isApplyingCheckedState;
+
     public ComponentSettingUserControl()
     {
         ViewModel = new ComponentSettingViewModel(this);
@@ -181,7 +187,20 @@ public sealed partial class ComponentSettingUserControl : UserControl, IComponen
         set
         {
             SetValue(IsSettingCheckedProperty, value);
+            ApplyCheckedState(value);
+        }
+    }
+
+    private void ApplyCheckedState(bool value)
+    {
+        _isApplyingCheckedState = true;
+        try
+        {
             ViewModel.ShowChecked(value);
+        }
+        finally
+        {
+            _isApplyingCheckedState = false;
         }
     }
 
@@ -209,28 +228,42 @@ public sealed partial class ComponentSettingUserControl : UserControl, IComponen
         ToggledParameter = null;
     }
 
-    private void ToggleChecked()
+    private void ToggleChecked(bool fromCheckBox, bool isChecked)
     {
-        if (!_isLoaded)
+        if (!_isLoaded || _isApplyingCheckedState)
             return;
 
-        bool isChecked = ViewModel.UsesCheckBox ? (bool)MainCheckBox.IsChecked : MainToggleSwitch.IsOn;
+        // Only the visible control holds the check state; the hidden one just follows the
+        // bound value, and its events are not user toggles.
+        if (fromCheckBox != ViewModel.UsesCheckBox)
+            return;
+
+        // The state is already shown: the event comes from the bound value reaching the
+        // control (it can be raised after the setter returned), not from a click.
+        if (isChecked == ViewModel.IsChecked)
+            return;
+
+        // Remember the user's choice so the other control follows it and a later
+        // programmatic push of the same value is recognised as such.
+        SetValue(IsSettingCheckedProperty, isChecked);
+        ApplyCheckedState(isChecked);
+
         NotifyToggled(isChecked);
     }
 
     private void MainCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        ToggleChecked();
+        ToggleChecked(fromCheckBox: true, MainCheckBox.IsChecked == true);
     }
 
     private void MainCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
-        ToggleChecked();
+        ToggleChecked(fromCheckBox: true, MainCheckBox.IsChecked == true);
     }
 
     private void MainToggleSwitch_Toggled(object sender, RoutedEventArgs e)
     {
-        ToggleChecked();
+        ToggleChecked(fromCheckBox: false, ((ToggleSwitch)sender).IsOn);
     }
 
     private void TextBox_TextChanged(object sender, TextChangedEventArgs e)

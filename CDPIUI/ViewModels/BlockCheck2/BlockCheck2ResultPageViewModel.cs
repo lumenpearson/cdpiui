@@ -36,7 +36,7 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
     private bool _isManualTestEnabled = true;
     private bool? _isManualTestChecked = false;
     private string _manualTestLabel = string.Empty;
-    private string _manualTestGlyph = "";
+    private string _manualTestGlyph = "\uE768";
     private bool _isAddForSiteEnabled = true;
     private bool _isAddForListEnabled = true;
     private bool _isReviewPresetEnabled = true;
@@ -312,8 +312,8 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
             ? Text("StopTest")
             : Text("PresetTestConfirmButton");
         ManualTestGlyph = IsManualTestChecked == true
-            ? ""
-            : "";
+            ? "\uE769"
+            : "\uE768";
 
         IsAddForSiteEnabled = selected && !_strategyTestRunning;
         IsAddForListEnabled = selected &&

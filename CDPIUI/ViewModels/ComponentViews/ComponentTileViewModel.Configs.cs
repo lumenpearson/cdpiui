@@ -58,9 +58,16 @@ public sealed partial class ComponentTileViewModel
         if (item == null)
             return;
 
+        // The switch also raises Toggled when its bound IsOn is applied (the container is
+        // created or the list is refilled); only a real change rewrites the config.
+        if (item.Value == value)
+            return;
+
         var sel = _selectedConfig;
         if (sel == null)
             return;
+
+        item.Value = value;
 
         ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(_storeId);
         componentHelper.GetConfigHelper().ChangeVariableValue(sel.FileName, sel.PackId, id, value);
