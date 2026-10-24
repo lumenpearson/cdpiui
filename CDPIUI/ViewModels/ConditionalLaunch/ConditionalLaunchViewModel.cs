@@ -214,19 +214,22 @@ public sealed partial class ConditionalLaunchViewModel : ObservableObject, IDisp
 
     private void ToggleSelectedTaskEnabled()
     {
-        if (_selectedTask == null)
+        // LoadTasks below replaces the selection (it can be cleared), so the catch block
+        // must restore the task that was changed, not the current selection.
+        var task = _selectedTask;
+        if (task == null)
             return;
 
-        var taskId = _selectedTask.Id;
-        var taskName = _selectedTask.Name;
-        var isEnabled = !_selectedTask.IsEnabled;
+        var taskId = task.Id;
+        var taskName = task.Name;
+        var isEnabled = !task.IsEnabled;
         try
         {
-            _selectedTask.IsEnabled = isEnabled;
+            task.IsEnabled = isEnabled;
             ConditionalTaskFileService.Save(
-                _selectedTask,
+                task,
                 _tasksDirectory,
-                _selectedTask.FilePath);
+                task.FilePath);
             LoadTasks(taskId);
             NotifyTaskEngine();
             _view.ShowStatus(
@@ -237,7 +240,7 @@ public sealed partial class ConditionalLaunchViewModel : ObservableObject, IDisp
         }
         catch (Exception ex)
         {
-            _selectedTask.IsEnabled = !isEnabled;
+            task.IsEnabled = !isEnabled;
             _view.ShowStatus(
                 string.Format(Text("CL_CannotChangeTaskStateFormat"), ex.Message),
                 InfoBarSeverity.Error);
@@ -246,14 +249,15 @@ public sealed partial class ConditionalLaunchViewModel : ObservableObject, IDisp
 
     private async Task RunSelectedTaskAsync()
     {
-        if (_selectedTask == null)
+        var task = _selectedTask;
+        if (task == null)
             return;
 
         try
         {
-            await PipeHelper.SendConditionalTaskExecutePacket(_selectedTask.Id);
+            await PipeHelper.SendConditionalTaskExecutePacket(task.Id);
             _view.ShowStatus(
-                string.Format(Text("CL_TaskExecutionRequestedFormat"), _selectedTask.Name),
+                string.Format(Text("CL_TaskExecutionRequestedFormat"), task.Name),
                 InfoBarSeverity.Success);
         }
         catch (Exception ex)

@@ -21,7 +21,7 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 
     public StoreSmallDownloadDialog()
     {
-        ViewModel = new StoreSmallDownloadDialogViewModel(AcceptLicensesAsync);
+        ViewModel = new StoreSmallDownloadDialogViewModel(AcceptLicensesAsync, DispatcherQueue);
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
 
         InitializeComponent();

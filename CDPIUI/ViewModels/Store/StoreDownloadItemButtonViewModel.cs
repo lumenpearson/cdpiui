@@ -3,22 +3,25 @@ using System.Linq;
 using CDPIUI.Core.Store;
 using CDPIUI.Helper.Parsers;
 using CDPIUI.Shared.PrettyErrorConversionService;
+using Microsoft.UI.Dispatching;
 using WinUI3Localizer;
 
 namespace CDPIUI.ViewModels.Store;
 
 /// <summary>
 /// State of one row of the Store downloads list: the queue stage, progress, speed, time and
-/// error of the item, and the layout of a download row or an update row. The Store events are
-/// handled on the thread that raises them, as the control did before.
+/// error of the item, and the layout of a download row or an update row. The Store events can
+/// be raised on a worker thread (the MSI install stages); their changes are applied on the UI
+/// thread of the control.
 /// </summary>
 public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
 {
-    public const string CancelGlyph = "";
-    public const string RetryGlyph = "";
+    public const string CancelGlyph = "\uE894";
+    public const string RetryGlyph = "\uE777";
 
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly Action _executeClickCommand;
+    private readonly DispatcherQueue _dispatcherQueue;
 
     private string _statusText;
     private string _speedText = string.Empty;
@@ -37,9 +40,11 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
     private bool _isVersionVisible;
 
     /// <param name="executeClickCommand">Runs the click command of the control.</param>
-    public StoreDownloadItemButtonViewModel(Action executeClickCommand)
+    /// <param name="dispatcherQueue">The dispatcher queue of the control.</param>
+    public StoreDownloadItemButtonViewModel(Action executeClickCommand, DispatcherQueue dispatcherQueue)
     {
         _executeClickCommand = executeClickCommand;
+        _dispatcherQueue = dispatcherQueue;
         _statusText = _localizer.GetLocalizedString("QueueWaiting");
         _tooltip = _localizer.GetLocalizedString("Cancel");
         CancelCommand = new RelayCommand(Cancel);
@@ -236,7 +241,7 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
         if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
             return;
 
-        ApplyError(errorCode);
+        RunOnUIThread(() => ApplyError(errorCode));
     }
 
     private void ClearError()
@@ -276,7 +281,7 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
     private void StoreHelper_ItemActionsStopped(string obj)
     {
         if (obj == StoreId)
-            Disconnect();
+            RunOnUIThread(Disconnect);
     }
 
     private void StoreHelper_ItemDownloadSpeedChanged(Tuple<string, double> obj)
@@ -287,7 +292,7 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
         if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
             return;
 
-        SpeedText = $"{UnitsParser.FormatSpeed(speed)}, ";
+        RunOnUIThread(() => SpeedText = $"{UnitsParser.FormatSpeed(speed)}, ");
     }
 
     private void StoreHelper_ItemDownloadProgressChanged(Tuple<string, double> obj)
@@ -298,8 +303,11 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
         if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
             return;
 
-        IsProgressIndeterminate = false;
-        ProgressValue = progress;
+        RunOnUIThread(() =>
+        {
+            IsProgressIndeterminate = false;
+            ProgressValue = progress;
+        });
     }
 
     private void StoreHelper_ItemTimeRemainingChanged(Tuple<string, TimeSpan> obj)
@@ -310,7 +318,7 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
         if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
             return;
 
-        TimeText = UnitsParser.ConvertMinutesToPrettyText(time.TotalMinutes);
+        RunOnUIThread(() => TimeText = UnitsParser.ConvertMinutesToPrettyText(time.TotalMinutes));
     }
 
     private void StoreHelper_ItemDownloadStageChanged(Tuple<string, string> obj)
@@ -321,7 +329,15 @@ public sealed partial class StoreDownloadItemButtonViewModel : ObservableObject
         if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
             return;
 
-        ApplyStage(stage);
+        RunOnUIThread(() => ApplyStage(stage));
+    }
+
+    private void RunOnUIThread(Action action)
+    {
+        if (_dispatcherQueue == null || _dispatcherQueue.HasThreadAccess)
+            action();
+        else
+            _dispatcherQueue.TryEnqueue(() => action());
     }
 
     private void ApplyStage(string state)

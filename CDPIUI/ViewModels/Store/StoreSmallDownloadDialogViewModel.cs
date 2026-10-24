@@ -9,6 +9,7 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
 using CDPIUI.Shared.PrettyErrorConversionService;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI3Localizer;
@@ -17,8 +18,8 @@ namespace CDPIUI.ViewModels.Store;
 
 /// <summary>
 /// State of the small window that installs one Store item: the item card, the queue
-/// progress of the item and its result. The Store events are handled on the thread that
-/// raises them, as the window did before.
+/// progress of the item and its result. The Store events can be raised on a worker thread
+/// (the MSI install stages); their changes are applied on the UI thread of the window.
 /// </summary>
 public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
 {
@@ -26,6 +27,7 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
 
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly Func<List<ItemLicenseModel>, Task<bool>> _acceptLicensesAsync;
+    private readonly DispatcherQueue _dispatcherQueue;
 
     private string _storeId = string.Empty;
     private RepoItemModel _item;
@@ -57,9 +59,11 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
     private string _cancelButtonText;
 
     /// <param name="acceptLicensesAsync">Shows the licenses; returns <see langword="true"/> when the user accepts them.</param>
-    public StoreSmallDownloadDialogViewModel(Func<List<ItemLicenseModel>, Task<bool>> acceptLicensesAsync)
+    /// <param name="dispatcherQueue">The dispatcher queue of the window.</param>
+    public StoreSmallDownloadDialogViewModel(Func<List<ItemLicenseModel>, Task<bool>> acceptLicensesAsync, DispatcherQueue dispatcherQueue)
     {
         _acceptLicensesAsync = acceptLicensesAsync;
+        _dispatcherQueue = dispatcherQueue;
     }
 
     public string StoreId => _storeId;
@@ -364,11 +368,14 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
             if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != _storeId)
                 return;
 
-            ShowDownloadState();
+            RunOnUIThread(() =>
+            {
+                ShowDownloadState();
 
-            IsSpeedVisible = false;
+                IsSpeedVisible = false;
 
-            ApplyStage(stage);
+                ApplyStage(stage);
+            });
         };
         StoreHelper.Instance.ItemDownloadStageChanged += _itemDownloadStageChangedHandler;
 
@@ -380,8 +387,11 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
             if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != _storeId)
                 return;
 
-            IsProgressIndeterminate = false;
-            ProgressValue = progress;
+            RunOnUIThread(() =>
+            {
+                IsProgressIndeterminate = false;
+                ProgressValue = progress;
+            });
         };
         StoreHelper.Instance.ItemDownloadProgressChanged += _itemDownloadProgressChangedHandler;
 
@@ -403,7 +413,7 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
             if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != _storeId)
                 return;
 
-            SpeedText = $"{UnitsParser.FormatSpeed(speed)}";
+            RunOnUIThread(() => SpeedText = $"{UnitsParser.FormatSpeed(speed)}");
         };
 
         StoreHelper.Instance.ItemDownloadSpeedChanged += _itemDownloadSpeedChangedHandler;
@@ -416,14 +426,17 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
             if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != _storeId)
                 return;
 
-            IsDescriptionVisible = false;
-            IsDownloadProgressVisible = false;
-            IsErrorVisible = true;
+            RunOnUIThread(() =>
+            {
+                IsDescriptionVisible = false;
+                IsDownloadProgressVisible = false;
+                IsErrorVisible = true;
 
-            ErrorCode = errorCode;
-            _errorHappened = true;
+                ErrorCode = errorCode;
+                _errorHappened = true;
 
-            CancelButtonText = _localizer.GetLocalizedString("OkButtonText");
+                CancelButtonText = _localizer.GetLocalizedString("OkButtonText");
+            });
         };
         StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
@@ -431,11 +444,24 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
         // another item finished.
         _itemActionsStoppedHandler = (id) =>
         {
-            if (id != _storeId || _errorHappened)
+            if (id != _storeId)
                 return;
-            ShowItemAfterInstallActions();
+            // Checked on the UI thread: the error handler sets the flag there.
+            RunOnUIThread(() =>
+            {
+                if (!_errorHappened)
+                    ShowItemAfterInstallActions();
+            });
         };
         StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
+    }
+
+    private void RunOnUIThread(Action action)
+    {
+        if (_dispatcherQueue == null || _dispatcherQueue.HasThreadAccess)
+            action();
+        else
+            _dispatcherQueue.TryEnqueue(() => action());
     }
 
     private void ShowItemAfterInstallActions()

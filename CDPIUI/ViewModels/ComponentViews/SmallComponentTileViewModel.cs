@@ -34,12 +34,12 @@ public sealed partial class SmallComponentTileViewModel : ObservableObject
     private bool _isProxyButtonVisible = true;
     private bool? _isAutorunChecked = false;
     private string _playToolTip = string.Empty;
-    private string _playGlyph = "";
+    private string _playGlyph = "\uE768";
     private bool _isRunning;
     private string _statusBrushKey = "SystemFillColorSuccessBrush";
     private double _runningGlyphFontSize = 10;
     private bool _isRunningGlyphVisible = true;
-    private string _stopGlyph = "";
+    private string _stopGlyph = "\uE7E8";
     private bool _isStopGlyphVisible = true;
     private string _statusToolTip;
 
@@ -236,10 +236,10 @@ public sealed partial class SmallComponentTileViewModel : ObservableObject
         switch (componentState)
         {
             case ComponentState.SetupRequired:
-                ShowStoppedState("SystemFillColorSolidNeutralBrush", "", "ComponentStatusSetupRequired");
+                ShowStoppedState("SystemFillColorSolidNeutralBrush", "\uE713", "ComponentStatusSetupRequired");
                 break;
             case ComponentState.Stopped:
-                ShowStoppedState("SystemFillColorCriticalBrush", "", "ComponentStatusStopped");
+                ShowStoppedState("SystemFillColorCriticalBrush", "\uE7E8", "ComponentStatusStopped");
                 break;
             case ComponentState.Running:
                 StatusBrushKey = "SystemFillColorSuccessBrush";
@@ -247,7 +247,7 @@ public sealed partial class SmallComponentTileViewModel : ObservableObject
                 StatusToolTip = _localizer.GetLocalizedString("ComponentStatusStarted");
                 break;
             case ComponentState.ExitedWithException:
-                ShowStoppedState("SystemFillColorCautionBrush", "", "ComponentStatusExceptionHappens");
+                ShowStoppedState("SystemFillColorCautionBrush", "\uEDAE", "ComponentStatusExceptionHappens");
                 break;
         }
     }
@@ -270,13 +270,13 @@ public sealed partial class SmallComponentTileViewModel : ObservableObject
             if (isRunning)
             {
                 PlayToolTip = _localizer.GetLocalizedString("Stop");
-                PlayGlyph = SharedUtils.IsOsSupportedNewGlyph() ? "" : "";
+                PlayGlyph = SharedUtils.IsOsSupportedNewGlyph() ? "\uE62E" : "\uF8AE";
                 ShowComponentState(ComponentState.Running);
             }
             else
             {
                 PlayToolTip = _localizer.GetLocalizedString("Start");
-                PlayGlyph = "";
+                PlayGlyph = "\uF5B0";
                 _ = CheckComponentStateAsync(); // CheckComponentStateAsync catches and logs its own errors.
             }
 

@@ -275,7 +275,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage, ICreateNewConfig
             ShowInfoPanel.Begin();
             HideInfoPanel.Stop();
             InfoPanelDefinition.Width = new GridLength(350);
-            ShowButtonFontIcon.Glyph = "";
+            ShowButtonFontIcon.Glyph = "\uE76C";
             ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
         }
         else
@@ -283,7 +283,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage, ICreateNewConfig
             ShowInfoPanel.Stop();
             HideInfoPanel.Begin();
             InfoPanelDefinition.Width = new GridLength(0);
-            ShowButtonFontIcon.Glyph = "";
+            ShowButtonFontIcon.Glyph = "\uE76B";
             ExpandToolTip.Content = _localizer.GetLocalizedString("ShowConfigSettings");
         }
         _isOpened = !_isOpened;

@@ -151,7 +151,13 @@ public sealed partial class EditConfigKitViewModel : ObservableObject
 
     private void ToggleLoadingMode(bool loadingMode, string text = "")
     {
-        _dispatcherQueue.TryEnqueue(() => IsSaveEnabled = !loadingMode);
+        // Applied at once on the UI thread: a queued change ran after a later direct one and
+        // left the save buttons disabled. LoadConfigItems runs on a worker thread and still
+        // queues it, after the configs it adds.
+        if (_dispatcherQueue.HasThreadAccess)
+            IsSaveEnabled = !loadingMode;
+        else
+            _dispatcherQueue.TryEnqueue(() => IsSaveEnabled = !loadingMode);
         _view.SetStatus(loadingMode, text);
     }
 
@@ -212,22 +218,31 @@ public sealed partial class EditConfigKitViewModel : ObservableObject
     public async Task SaveKitAsync()
     {
         ToggleLoadingMode(true, _localizer.GetLocalizedString("SavingConfigKit"));
-        List<ConfigItem> items = [];
-        items.AddRange(_configHelper.GetConfigItems());
-        for (int i = 0; i < items.Count; i++)
+        try
         {
-            ConfigItem configItem = items[i];
-            var item = Configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
-            string errorCode = item == null
-                ? _configHelper.RemoveConfig(configItem.file_name, configItem.packId, true)
-                : await ConfigurationService.SaveConfigItem(configItem.file_name, configItem.packId, configItem);
-            if (!string.IsNullOrEmpty(errorCode))
+            List<ConfigItem> items = [];
+            items.AddRange(_configHelper.GetConfigItems());
+            for (int i = 0; i < items.Count; i++)
             {
-                // Not awaited: the buttons are enabled while the message is shown. ShowErrorAsync logs its own errors.
-                _ = _view.ShowErrorAsync(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
-                IsSaveEnabled = true;
-                return;
+                ConfigItem configItem = items[i];
+                var item = Configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
+                string errorCode = item == null
+                    ? _configHelper.RemoveConfig(configItem.file_name, configItem.packId, true)
+                    : await ConfigurationService.SaveConfigItem(configItem.file_name, configItem.packId, configItem);
+                if (!string.IsNullOrEmpty(errorCode))
+                {
+                    // Not awaited: the buttons are enabled while the message is shown. ShowErrorAsync logs its own errors.
+                    _ = _view.ShowErrorAsync(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
+                    ToggleLoadingMode(false);
+                    return;
+                }
             }
+        }
+        catch
+        {
+            // The page logs the exception; the buttons must not stay disabled.
+            ToggleLoadingMode(false);
+            throw;
         }
 
         ToggleLoadingMode(false);

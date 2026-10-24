@@ -321,7 +321,6 @@
             LoadingStateText="{x:Bind ViewModel.LoadingStateText, Mode=OneWay}">
             <Button x:Name="CancelButton" l:Uids.Uid="ExitButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="True"/>
             <Button x:Name="NextButton" 
-                    l:Uids.Uid="GoForwardButton" 
                     Content="{x:Bind ViewModel.NextButtonText, Mode=OneWay}"
                     Visibility="{x:Bind ViewModel.IsNextVisible, Mode=OneWay}"
                     MinWidth="150"
