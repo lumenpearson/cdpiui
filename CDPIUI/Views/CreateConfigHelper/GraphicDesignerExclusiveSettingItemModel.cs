@@ -19,7 +19,7 @@ public partial class GraphicDesignerExclusiveSettingItemModel : INotifyPropertyC
     }
     public ObservableCollection<GraphicDesignerSettingItemModel> Items { get; set; }
 
-    public string _value = "";
+    private string _value = "";
     public string Value
     {
         get => _value;
