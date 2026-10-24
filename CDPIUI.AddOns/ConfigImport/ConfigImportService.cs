@@ -1,11 +1,11 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Converters;
 using CDPIUI.Core.JSON;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CDPIUI.AddOns.ConfigImport;
 
@@ -977,7 +977,8 @@ public sealed partial class ConfigImportService
 
     private static string? TryGetFullPath(string path)
     {
-        try { return Path.GetFullPath(path); }
+        try
+        { return Path.GetFullPath(path); }
         catch { return null; }
     }
 
@@ -1035,19 +1036,31 @@ public sealed partial class ConfigImportService
                 : CreateTarget(component);
             return new ConfigImportResult
             {
-                SharedPackage = package, Config = package.Config, Target = target, SourcePath = Path.GetFullPath(path),
-                Issues = [], SourceFiles = [path],
+                SharedPackage = package,
+                Config = package.Config,
+                Target = target,
+                SourcePath = Path.GetFullPath(path),
+                Issues = [],
+                SourceFiles = [path],
                 ReferencedFiles = package.Manifest.Resources.Select(resource => Path.Combine(package.DirectoryPath, resource.Path)).ToList(),
-                MissingReferencedFiles = [], MissingFileResolutions = [], GeneratedFiles = []
+                MissingReferencedFiles = [],
+                MissingFileResolutions = [],
+                GeneratedFiles = []
             };
         }
         catch (ConfigShare.ConfigShareException exception)
         {
             return new ConfigImportResult
             {
-                Target = target, SourcePath = path, Config = null,
+                Target = target,
+                SourcePath = path,
+                Config = null,
                 Issues = [new(ConfigImportIssueSeverity.Error, exception.Code, exception.Message, path)],
-                SourceFiles = [path], ReferencedFiles = [], MissingReferencedFiles = [], MissingFileResolutions = [], GeneratedFiles = []
+                SourceFiles = [path],
+                ReferencedFiles = [],
+                MissingReferencedFiles = [],
+                MissingFileResolutions = [],
+                GeneratedFiles = []
             };
         }
     }

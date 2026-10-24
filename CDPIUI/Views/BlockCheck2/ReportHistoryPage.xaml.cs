@@ -1,3 +1,8 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.Default;
@@ -5,11 +10,6 @@ using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
-using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.BlockCheck2;
@@ -238,7 +238,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
     {
-        
+
         if (Frame?.CanGoBack == true)
         {
             Frame.GoBack();

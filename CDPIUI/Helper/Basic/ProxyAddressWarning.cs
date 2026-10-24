@@ -1,7 +1,7 @@
+using System.Threading.Tasks;
 using CDPIUI.Core.Proxy;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Helper.Basic;

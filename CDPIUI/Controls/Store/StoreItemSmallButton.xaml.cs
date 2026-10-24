@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -9,12 +15,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -49,7 +49,7 @@ public sealed partial class StoreItemSmallButton : UserControl
 
         this.SizeChanged += (s, e) =>
         {
-            PART_Button.Width = e.NewSize.Width-15;
+            PART_Button.Width = e.NewSize.Width - 15;
             PART_Button.Height = e.NewSize.Height;
         };
 
@@ -153,9 +153,9 @@ public sealed partial class StoreItemSmallButton : UserControl
 
     public static readonly DependencyProperty CardBackgroundProperty =
         DependencyProperty.Register(
-            nameof(CardBackgroundBrush), 
-            typeof(Brush), 
-            typeof(StoreItemSmallButton), 
+            nameof(CardBackgroundBrush),
+            typeof(Brush),
+            typeof(StoreItemSmallButton),
             new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
         );
     public double PreferredWidth

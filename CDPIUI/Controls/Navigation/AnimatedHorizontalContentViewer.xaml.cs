@@ -1,12 +1,12 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Reflection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Reflection;
 using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Navigation;
@@ -167,7 +167,7 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
             return;
         }
 
-        
+
 
         var direction = newIndex > _selectedIndex ? 1d : -1d;
         _selectedIndex = newIndex;

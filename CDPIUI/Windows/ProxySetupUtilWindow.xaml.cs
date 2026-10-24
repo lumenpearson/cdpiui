@@ -1,5 +1,11 @@
-using CDPIUI.Default;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Core;
+using CDPIUI.Default;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -9,12 +15,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinRT.Interop;
@@ -24,23 +24,22 @@ using WinUIEx;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI
+namespace CDPIUI;
+
+public sealed partial class ProxySetupUtilWindow : TemplateWindow
 {
-    public sealed partial class ProxySetupUtilWindow : TemplateWindow
+    private ILocalizer localizer = Localizer.Get();
+    public ProxySetupUtilWindow()
     {
-        private ILocalizer localizer = Localizer.Get();
-        public ProxySetupUtilWindow()
-        {
-            InitializeComponent();
+        InitializeComponent();
 
-            WindowTitle = localizer.GetLocalizedString("ProxyWindowTitle");
-            IconUri = @"Assets/Icons/Proxy.ico";
-            this.CustomTitleBarUserControl = TitleBarUserControl;
-            DisableResizeFeature();
+        WindowTitle = localizer.GetLocalizedString("ProxyWindowTitle");
+        IconUri = @"Assets/Icons/Proxy.ico";
+        this.CustomTitleBarUserControl = TitleBarUserControl;
+        DisableResizeFeature();
 
-            MainFrame = ContentFrame;
+        MainFrame = ContentFrame;
 
-            ContentFrame.Navigate(typeof(Views.SetupProxy.MainPage));
-        }
+        ContentFrame.Navigate(typeof(Views.SetupProxy.MainPage));
     }
 }

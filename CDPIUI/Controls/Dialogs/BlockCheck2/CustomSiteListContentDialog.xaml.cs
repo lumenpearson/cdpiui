@@ -1,10 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Dialogs.BlockCheck2;

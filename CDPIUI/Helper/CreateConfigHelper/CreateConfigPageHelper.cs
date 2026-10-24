@@ -1,112 +1,113 @@
-﻿using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Store.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.Store.Database;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace CDPIUI.Helper.CreateConfigHelper
+namespace CDPIUI.Helper.CreateConfigHelper;
+
+public partial class CreateConfigPageHelper
 {
-    public partial class CreateConfigPageHelper
+    private const string UserCreatedConfigMeta = "UC:v1.0";
+
+    public static ConfigItem CreateConfigItem(
+        string packId,
+        string name,
+        string componentId,
+        Dictionary<string, bool> jparams,
+        List<string> vars,
+        Dictionary<string, string> commaVars,
+        List<AvailableVarValues> availableCommaVarValues,
+        string startupString)
     {
-        private const string UserCreatedConfigMeta = "UC:v1.0";
-
-        public static ConfigItem CreateConfigItem(
-            string packId, 
-            string name, 
-            string componentId, 
-            Dictionary<string, bool> jparams, 
-            List<string> vars,
-            Dictionary<string, string> commaVars,
-            List<AvailableVarValues> availableCommaVarValues,
-            string startupString)
+        ConfigItem configItem = new()
         {
-            ConfigItem configItem = new()
-            {
-                meta = UserCreatedConfigMeta,
-                packId = packId,
-                not_converted_name = name,
-                target = [componentId, DatabaseHelper.Instance.GetItemById(componentId)?.CurrentVersion?? "%CURRENT%"],
-                jparams = jparams,
-                variables = vars,
-                commaVars = commaVars,
-                availableCommaVarsValues = availableCommaVarValues,
-                startup_string = startupString
-            };
+            meta = UserCreatedConfigMeta,
+            packId = packId,
+            not_converted_name = name,
+            target = [componentId, DatabaseHelper.Instance.GetItemById(componentId)?.CurrentVersion ?? "%CURRENT%"],
+            jparams = jparams,
+            variables = vars,
+            commaVars = commaVars,
+            availableCommaVarsValues = availableCommaVarValues,
+            startup_string = startupString
+        };
 
-            return configItem;
-        }
-
-        public static bool IsNameCorrect(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input))
-                return false;
-
-            bool flag = true;
-
-            foreach (char c in input)
-            {
-                if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')))
-                {
-                    flag = false;
-                    break;
-                }
-            }
-            return flag;
-        }
-
-        public class PrettyLookTextResultModel
-        {
-            public string ListDirectory = string.Empty;
-            public string BinDirectory = string.Empty;
-            public string ResultText;
-        }
-
-        public static PrettyLookTextResultModel ApplyPrettyFilesReplacement(string input)
-        {
-            PrettyLookTextResultModel model = new();
-            try
-            {
-                model.ListDirectory = ListDirectoryReplaceRegex().Match(input).Groups[1].Value;
-                model.BinDirectory = BinDirectoryReplaceRegex().Match(input).Groups[1].Value;
-
-                // Replace("") throws: when one of the directories was not found, the other
-                // shortcut was not applied either.
-                string text = input;
-                if (!string.IsNullOrEmpty(model.ListDirectory)) text = text.Replace(model.ListDirectory, "list://");
-                if (!string.IsNullOrEmpty(model.BinDirectory)) text = text.Replace(model.BinDirectory, "bin://");
-                model.ResultText = text;
-            }
-            catch
-            {
-                model.ResultText = input;
-            }
-
-            return model;
-        }
-        public static string GetNormalText(string input, string listDirectory, string binDirectory)
-        {
-            string text = input
-                .Replace("list://", listDirectory ?? string.Empty)
-                .Replace("bin://", binDirectory ?? string.Empty);
-            return text.Replace("\n", " ");
-        }
-
-        public static string ApplyWrappingToString(string input)
-        {
-            string result = input.Replace(" --new", "\n--new");
-            result = result.Replace(" -A", "\n-A");
-            result = result.Replace(" --auto", "\n--auto");
-            return result;
-        }
-
-        [GeneratedRegex(@"""(\$GETCURRENTDIR\(\)/List.*?\\).*?""\s")]
-        private static partial Regex ListDirectoryReplaceRegex();
-
-        [GeneratedRegex(@"""(\$GETCURRENTDIR\(\)/Bin.*?\\).*?""\s")]
-        private static partial Regex BinDirectoryReplaceRegex();
+        return configItem;
     }
+
+    public static bool IsNameCorrect(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        bool flag = true;
+
+        foreach (char c in input)
+        {
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')))
+            {
+                flag = false;
+                break;
+            }
+        }
+        return flag;
+    }
+
+    public class PrettyLookTextResultModel
+    {
+        public string ListDirectory = string.Empty;
+        public string BinDirectory = string.Empty;
+        public string ResultText;
+    }
+
+    public static PrettyLookTextResultModel ApplyPrettyFilesReplacement(string input)
+    {
+        PrettyLookTextResultModel model = new();
+        try
+        {
+            model.ListDirectory = ListDirectoryReplaceRegex().Match(input).Groups[1].Value;
+            model.BinDirectory = BinDirectoryReplaceRegex().Match(input).Groups[1].Value;
+
+            // Replace("") throws: when one of the directories was not found, the other
+            // shortcut was not applied either.
+            string text = input;
+            if (!string.IsNullOrEmpty(model.ListDirectory))
+                text = text.Replace(model.ListDirectory, "list://");
+            if (!string.IsNullOrEmpty(model.BinDirectory))
+                text = text.Replace(model.BinDirectory, "bin://");
+            model.ResultText = text;
+        }
+        catch
+        {
+            model.ResultText = input;
+        }
+
+        return model;
+    }
+    public static string GetNormalText(string input, string listDirectory, string binDirectory)
+    {
+        string text = input
+            .Replace("list://", listDirectory ?? string.Empty)
+            .Replace("bin://", binDirectory ?? string.Empty);
+        return text.Replace("\n", " ");
+    }
+
+    public static string ApplyWrappingToString(string input)
+    {
+        string result = input.Replace(" --new", "\n--new");
+        result = result.Replace(" -A", "\n-A");
+        result = result.Replace(" --auto", "\n--auto");
+        return result;
+    }
+
+    [GeneratedRegex(@"""(\$GETCURRENTDIR\(\)/List.*?\\).*?""\s")]
+    private static partial Regex ListDirectoryReplaceRegex();
+
+    [GeneratedRegex(@"""(\$GETCURRENTDIR\(\)/Bin.*?\\).*?""\s")]
+    private static partial Regex BinDirectoryReplaceRegex();
 }

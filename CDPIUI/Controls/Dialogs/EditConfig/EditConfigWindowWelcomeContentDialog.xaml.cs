@@ -1,4 +1,11 @@
-using CDPIUI.Shared.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
@@ -10,7 +17,9 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper;
 using CDPIUI.Helper.AddOns.ConfigImport;
+using CDPIUI.Helper.Items;
 using CDPIUI.Helper.LScript;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,18 +29,9 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
-using CDPIUI.Helper.Items;
 
 
 namespace CDPIUI.Controls.Dialogs.EditConfig;
@@ -73,8 +73,10 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
     private void EditConfigWindowWelcomeContentDialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args)
     {
-        if (Result is EditConfigWelcomeWindowResult.None) args.Cancel = true;
-        else this.Closing -= EditConfigWindowWelcomeContentDialog_Closing;
+        if (Result is EditConfigWelcomeWindowResult.None)
+            args.Cancel = true;
+        else
+            this.Closing -= EditConfigWindowWelcomeContentDialog_Closing;
     }
 
     private void InitDialog()
@@ -171,14 +173,15 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         LoadingStackPanel.Visibility = Visibility.Visible;
         SomethingWentWrongStackPanel.Visibility = Visibility.Collapsed;
         var result = ConfigImportHelper.ImportConfigFromFile((ComponentChooseComboBox.SelectedItem as ViewComponentModel)?.StoreId);
-        if (result.Success && result.Result.IsSuccessful) CloseWithResult(EditConfigWelcomeWindowResult.ImportConfigFromFile, result.Result.Config);
+        if (result.Success && result.Result.IsSuccessful)
+            CloseWithResult(EditConfigWelcomeWindowResult.ImportConfigFromFile, result.Result.Config);
         else if (result.Success)
         {
             SomethingWentWrongStackPanel.Visibility = Visibility.Visible;
         }
         LoadingStackPanel.Visibility = Visibility.Collapsed;
     }
-    
+
     private void EditButton_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigsListView.SelectedItem is ConfigSelectorItem model)
@@ -206,8 +209,10 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
     private void ToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is LargeToggleButton btn && btn == EditConfigKitButton)  EditConfigButton.IsChecked = false;
-        if (sender is LargeToggleButton btn1 && btn1 == EditConfigButton) EditConfigKitButton.IsChecked = false;
+        if (sender is LargeToggleButton btn && btn == EditConfigKitButton)
+            EditConfigButton.IsChecked = false;
+        if (sender is LargeToggleButton btn1 && btn1 == EditConfigButton)
+            EditConfigKitButton.IsChecked = false;
 
         EmptyGrid.Visibility = ((EditConfigButton.IsChecked ?? false) || (EditConfigKitButton.IsChecked ?? false)) ? Visibility.Collapsed : Visibility.Visible;
     }

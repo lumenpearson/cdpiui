@@ -1,3 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper;
 using CDPIUI.Helper.LScript;
@@ -10,74 +17,66 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Controls.CreateConfigHelper
+namespace CDPIUI.Controls.CreateConfigHelper;
+
+public sealed partial class SelectConfigKitToEditContentDialog : ContentDialog
 {
-    public sealed partial class SelectConfigKitToEditContentDialog : ContentDialog
+    public string Result { get; private set; } = string.Empty;
+
+    private readonly ObservableCollection<ViewStoreItemModel> ConfigKits = [];
+    public SelectConfigKitToEditContentDialog()
     {
-        public string Result { get; private set; } = string.Empty;
+        InitializeComponent();
 
-        private readonly ObservableCollection<ViewStoreItemModel> ConfigKits = [];
-        public SelectConfigKitToEditContentDialog()
+        ConfigKitListView.ItemsSource = ConfigKits;
+
+        _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
+    }
+
+    private async Task LoadConfigKits()
+    {
+        try
         {
-            InitializeComponent();
+            ConfigKits.Clear();
+            List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
-            ConfigKitListView.ItemsSource = ConfigKits;
-
-            _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
-        }
-
-        private async Task LoadConfigKits()
-        {
-            try
+            foreach (DatabaseStoreItem item in items)
             {
-                ConfigKits.Clear();
-                List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
-
-                foreach (DatabaseStoreItem item in items)
+                ConfigKits.Add(new()
                 {
-                    ConfigKits.Add(new()
-                    {
-                        StoreId = item.Id,
-                        Name = item.ShortName,
-                        Developer = item.Developer,
-                        ColorHEX = item.BackgroundColor,
-                        ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs:item.Directory)))
-                    });
-                }
-
-                await Task.CompletedTask;
+                    StoreId = item.Id,
+                    Name = item.ShortName,
+                    Developer = item.Developer,
+                    ColorHEX = item.BackgroundColor,
+                    ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs: item.Directory)))
+                });
             }
-            catch (Exception exception)
-            {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SelectConfigKitToEditContentDialog), exception.ToString());
-            }
-        }
 
-        private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
         {
-            Result = string.Empty;
-            this.Hide();
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SelectConfigKitToEditContentDialog), exception.ToString());
         }
+    }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            string id = ((Button)sender).Tag.ToString();
+    private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        Result = string.Empty;
+        this.Hide();
+    }
 
-            Result = id;
-            this.Hide();
-        }
+    private void Button_Click(object sender, RoutedEventArgs e)
+    {
+        string id = ((Button)sender).Tag.ToString();
+
+        Result = id;
+        this.Hide();
     }
 }

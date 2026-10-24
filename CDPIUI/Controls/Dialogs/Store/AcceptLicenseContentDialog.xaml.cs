@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Core.System;
 using CDPIUI.Helper.LScript;
-
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -9,12 +14,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using static CDPIUI.Core.Store.StoreHelper;
@@ -22,34 +21,33 @@ using static CDPIUI.Core.Store.StoreHelper;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Controls.Dialogs.Store
+namespace CDPIUI.Controls.Dialogs.Store;
+
+public sealed partial class AcceptLicenseContentDialog : ContentDialog
 {
-    public sealed partial class AcceptLicenseContentDialog : ContentDialog
+    public List<ItemLicenseModel> Licenses = [];
+
+    public AcceptLicenseContentDialog()
     {
-        public List<ItemLicenseModel> Licenses = [];
+        InitializeComponent();
+        this.DataContext = this;
 
-        public AcceptLicenseContentDialog()
+
+    }
+
+    private void HyperlinkButton_Click(object sender, RoutedEventArgs e)
+    {
+        HyperlinkButton _sender = sender as HyperlinkButton;
+        string url = _sender.Tag.ToString();
+
+        if (url.StartsWith("$OPENINBROWSER"))
         {
-            InitializeComponent();
-            this.DataContext = this;
-
-
+            _ = global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(LScriptLangHelper.GetArgumentsFromScript(url));
         }
-
-        private void HyperlinkButton_Click(object sender, RoutedEventArgs e)
+        else
         {
-            HyperlinkButton _sender = sender as HyperlinkButton;
-            string url = _sender.Tag.ToString();
-
-            if (url.StartsWith("$OPENINBROWSER"))
-            {
-                _ = global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(LScriptLangHelper.GetArgumentsFromScript(url));
-            }
-            else
-            {
-                string _url = LScriptLangHelper.ExecuteScriptUnsafe(url);
-                ShellHelper.OpenFileInDefaultApp(_url);
-            }
+            string _url = LScriptLangHelper.ExecuteScriptUnsafe(url);
+            ShellHelper.OpenFileInDefaultApp(_url);
         }
     }
 }

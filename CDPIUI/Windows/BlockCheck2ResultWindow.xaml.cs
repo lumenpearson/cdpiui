@@ -1,3 +1,7 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using System.Windows.Controls.Primitives;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.Universal;
@@ -10,10 +14,6 @@ using CDPIUI.Views.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows.Controls.Primitives;
 using Windows.ApplicationModel.DataTransfer;
 using WinUI3Localizer;
 using RoutedEventArgs = Microsoft.UI.Xaml.RoutedEventArgs;
@@ -214,7 +214,8 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
             StatusBarItems.Add(RunPresetName());
             StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTargetCount"), viewModel?.TargetCount.ToString() ?? "%~"));
             StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatStrategies"), viewModel.StrategyEvidenceCount));
-            if (!string.IsNullOrEmpty(viewModel?.CreatedAtLocalText)) StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTime"), viewModel.CreatedAtLocalText));
+            if (!string.IsNullOrEmpty(viewModel?.CreatedAtLocalText))
+                StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTime"), viewModel.CreatedAtLocalText));
             StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatSelected"), viewModel.ManualAssignmentCount));
 
         }

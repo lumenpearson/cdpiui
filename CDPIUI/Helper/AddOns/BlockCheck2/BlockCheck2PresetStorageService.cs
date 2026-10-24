@@ -1,17 +1,17 @@
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.ComponentServices.Configuration;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Data;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Helper.CreateConfigHelper;
-using CDPIUI.Shared;
-using CDPIUI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CDPIUI.Core.ComponentServices.Configuration;
+using CDPIUI.Core.ComponentServices.Helpers;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.Data;
+using CDPIUI.Core.Store.Data;
+using CDPIUI.Helper.CreateConfigHelper;
+using CDPIUI.Shared;
+using CDPIUI.ViewModels;
 using Unidecode.NET;
 
 namespace CDPIUI.Helper.AddOns.BlockCheck2;

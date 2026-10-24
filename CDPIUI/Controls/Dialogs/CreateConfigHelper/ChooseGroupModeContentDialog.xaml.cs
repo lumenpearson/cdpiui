@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,12 +12,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -78,10 +78,10 @@ public sealed partial class ChooseGroupModeContentDialog : ContentDialog
 
         foreach (var mode in modes)
         {
-            ModeTokenView.SelectRange(new ItemIndexRange(_modes.IndexOf(_modes.FirstOrDefault(x=> x.Mode == mode)), 1));
+            ModeTokenView.SelectRange(new ItemIndexRange(_modes.IndexOf(_modes.FirstOrDefault(x => x.Mode == mode)), 1));
         }
 
-        
+
 
         this.Closing += ChooseGroupModeContentDialog_Closing;
     }

@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.Controls.Default;
@@ -11,12 +17,6 @@ using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using WinUI3Localizer;
@@ -516,7 +516,7 @@ public sealed partial class MainPage : TemplatePage
             UpdateNavigationButtons();
             return;
         }
-        
+
         if (MainContent.SelectedItem == AdvancedStep)
         {
             preparationPreview = await ViewModel.BuildPreparationPreviewAsync();
@@ -593,7 +593,7 @@ public sealed partial class MainPage : TemplatePage
         bool testsAllStrategies = ViewModel.TestAllStrategies ||
                                   ViewModel.SelectedRunPreset == BlockCheckRunPreset.Exhaustive;
         ReviewModeTextBlock.Text = testsAllStrategies
-            ? $"{modeName}. {Text("BlockCheck2ReviewAllStrategies")}" 
+            ? $"{modeName}. {Text("BlockCheck2ReviewAllStrategies")}"
             : modeName;
         ReviewRequestsTextBlock.Text = string.Format(
             Text("BlockCheck2ReviewRequestsFormat"),
@@ -805,7 +805,7 @@ public sealed partial class MainPage : TemplatePage
 
         CancelButton.IsEnabled = ViewModel.CanCancel;
         NextButton.IsEnabled = onSiteLists
-            ? ViewModel.HasTargetSources 
+            ? ViewModel.HasTargetSources
             : onAdvanced
                 ? ViewModel.AdvancedOptionsValid && ViewModel.CanContinueFromTargets
                 : onMode || (onReview && ViewModel.CanStart);

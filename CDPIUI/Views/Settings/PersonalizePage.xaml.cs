@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Core;
@@ -13,14 +21,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
@@ -37,7 +37,7 @@ public sealed partial class PersonalizePage : TemplatePage
 
     private ILocalizer localizer = Localizer.Get();
 
-    
+
     private ObservableCollection<GridColumnsCountModel> gridColumnModels = [];
     private ObservableCollection<ColorViewModel> Colors = [];
 
@@ -61,7 +61,7 @@ public sealed partial class PersonalizePage : TemplatePage
 
         CreateColors();
         InitSettings();
-        
+
         SystemColorBorder.Background = new SolidColorBrush(UISettings.GetColorValue(UIColorType.Accent));
         UISettings.ColorValuesChanged += HandleAccentChanged;
 
@@ -99,7 +99,7 @@ public sealed partial class PersonalizePage : TemplatePage
 
     private void CreateThemes()
     {
-        
+
     }
 
     private void CreateGridColimnVariants()
@@ -173,7 +173,7 @@ public sealed partial class PersonalizePage : TemplatePage
 
         SelectFontSettingsCard.Description = string.Format(localizer.GetLocalizedString("FontSizeDescription"), family, size);
     }
-    
+
 
     #region Basic
 
@@ -241,7 +241,7 @@ public sealed partial class PersonalizePage : TemplatePage
         SettingsManager.Instance.SetValue<int>("APPEARANCE", "mainGridColumnsCount", ((GridColumnsCountModel)MainGridColumnSelector.SelectedItem).Count);
     }
 
-    
+
 
     private void ColorsGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

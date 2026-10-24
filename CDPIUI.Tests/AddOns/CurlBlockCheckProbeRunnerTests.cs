@@ -22,14 +22,14 @@ public class CurlBlockCheckProbeRunnerTests
     private static BlockCheckTarget Target(
         BlockCheckProtocol protocol, string host = "example.com", int? port = null,
         BlockCheckIpVersion ip = BlockCheckIpVersion.IPv4) => new()
-    {
-        Id = "t1",
-        Host = host,
-        Path = "/path?q=1",
-        Protocol = protocol,
-        IpVersion = ip,
-        CustomPort = port,
-    };
+        {
+            Id = "t1",
+            Host = host,
+            Path = "/path?q=1",
+            Protocol = protocol,
+            IpVersion = ip,
+            CustomPort = port,
+        };
 
     private static Task<ProbeAttempt> Probe(
         CommandExecutionResult result, BlockCheckProtocol protocol = BlockCheckProtocol.Tls12, string host = "example.com") =>

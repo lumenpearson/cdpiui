@@ -1,7 +1,3 @@
-﻿using CDPIUI.Core;
-using CDPIUI.Helper.Items;
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,110 +6,113 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CDPIUI.Core;
+using CDPIUI.Helper.Items;
+using CDPIUI.ViewModels;
+using Microsoft.UI.Xaml.Controls;
 using Windows.Globalization;
 using WinUI3Localizer;
 
-namespace CDPIUI.Helper.UserExperience
+namespace CDPIUI.Helper.UserExperience;
+
+internal sealed class LocalizationHelper : INotifyPropertyChanged
 {
-    internal sealed class LocalizationHelper : INotifyPropertyChanged
+    private static LocalizationHelper _instance;
+    private static readonly object _lock = new();
+    public static LocalizationHelper Instance
     {
-        private static LocalizationHelper _instance;
-        private static readonly object _lock = new();
-        public static LocalizationHelper Instance
+        get
         {
-            get
+            lock (_lock)
             {
-                lock (_lock)
-                {
-                    _instance ??= new LocalizationHelper();
-                    return _instance;
-                }
+                _instance ??= new LocalizationHelper();
+                return _instance;
             }
         }
+    }
 
-        private readonly ILocalizer localizer;
-        private LanguageSelectModel currentLanguage;
+    private readonly ILocalizer localizer;
+    private LanguageSelectModel currentLanguage;
 
-        public ObservableCollection<LanguageSelectModel> Languages { get; } = [];
+    public ObservableCollection<LanguageSelectModel> Languages { get; } = [];
 
-        public LanguageSelectModel CurrentLanguage
+    public LanguageSelectModel CurrentLanguage
+    {
+        get => currentLanguage;
+        private set
         {
-            get => currentLanguage;
-            private set
-            {
-                if (ReferenceEquals(currentLanguage, value))
-                    return;
-
-                currentLanguage = value;
-                PropertyChanged?.Invoke(
-                    this,
-                    new PropertyChangedEventArgs(nameof(CurrentLanguage)));
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private LocalizationHelper()
-        {
-            localizer = Localizer.Get();
-
-            Languages.Add(new()
-            {
-                Id = "en-us",
-                DisplayName = localizer.GetLocalizedString("en-us")
-            });
-
-            Languages.Add(new()
-            {
-                Id = "ru",
-                DisplayName = localizer.GetLocalizedString("ru")
-            });
-
-            CurrentLanguage = FindLanguage(localizer.GetCurrentLanguage());
-            localizer.LanguageChanged += Localizer_LanguageChanged;
-        }
-
-        // Falls back to the first language: an unknown id left CurrentLanguage null and the
-        // next access to CurrentLanguage.Id threw.
-        private LanguageSelectModel FindLanguage(string id)
-        {
-            return Languages.FirstOrDefault(
-                language => string.Equals(
-                    language.Id,
-                    id,
-                    StringComparison.OrdinalIgnoreCase))
-                ?? Languages.First();
-        }
-
-        private void Localizer_LanguageChanged(
-            object sender,
-            LanguageChangedEventArgs e)
-        {
-            CurrentLanguage = FindLanguage(e.CurrentLanguage);
-
-            ApplicationInfo.Instance.SetLocalization(CurrentLanguage.Id);
-        }
-
-        public async Task SaveLanguageSettings(string id)
-        {
-            if (string.Equals(
-                id,
-                localizer.GetCurrentLanguage(),
-                StringComparison.OrdinalIgnoreCase))
-            {
+            if (ReferenceEquals(currentLanguage, value))
                 return;
-            }
 
-            await localizer.SetLanguage(id);
-            SettingsManager.Instance.SetValue<string>("SYSTEM", "language", id);
+            currentLanguage = value;
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(nameof(CurrentLanguage)));
         }
+    }
 
-        public async void HandleCollectionLanguageChanged(
-            object sender,
-            SelectionChangedEventArgs e)
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    private LocalizationHelper()
+    {
+        localizer = Localizer.Get();
+
+        Languages.Add(new()
         {
-            if (e.AddedItems.FirstOrDefault() is LanguageSelectModel language)
-                await SaveLanguageSettings(language.Id);
+            Id = "en-us",
+            DisplayName = localizer.GetLocalizedString("en-us")
+        });
+
+        Languages.Add(new()
+        {
+            Id = "ru",
+            DisplayName = localizer.GetLocalizedString("ru")
+        });
+
+        CurrentLanguage = FindLanguage(localizer.GetCurrentLanguage());
+        localizer.LanguageChanged += Localizer_LanguageChanged;
+    }
+
+    // Falls back to the first language: an unknown id left CurrentLanguage null and the
+    // next access to CurrentLanguage.Id threw.
+    private LanguageSelectModel FindLanguage(string id)
+    {
+        return Languages.FirstOrDefault(
+            language => string.Equals(
+                language.Id,
+                id,
+                StringComparison.OrdinalIgnoreCase))
+            ?? Languages.First();
+    }
+
+    private void Localizer_LanguageChanged(
+        object sender,
+        LanguageChangedEventArgs e)
+    {
+        CurrentLanguage = FindLanguage(e.CurrentLanguage);
+
+        ApplicationInfo.Instance.SetLocalization(CurrentLanguage.Id);
+    }
+
+    public async Task SaveLanguageSettings(string id)
+    {
+        if (string.Equals(
+            id,
+            localizer.GetCurrentLanguage(),
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return;
         }
+
+        await localizer.SetLanguage(id);
+        SettingsManager.Instance.SetValue<string>("SYSTEM", "language", id);
+    }
+
+    public async void HandleCollectionLanguageChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.FirstOrDefault() is LanguageSelectModel language)
+            await SaveLanguageSettings(language.Id);
     }
 }

@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using CDPIUI.AddOns.HostsFileEditor;
+using CDPIUI.Controls.Default;
+using CDPIUI.Controls.Dialogs.Universal;
+using CDPIUI.Core;
+using CDPIUI.Core.Basic;
+using CDPIUI.Helper.AddOns;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -12,15 +17,10 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 using Windows.UI;
-using CDPIUI.Core;
 using WinUI3Localizer;
-using CDPIUI.Controls.Dialogs.Universal;
-using System.Diagnostics;
-using CDPIUI.Core.Basic;
-using CDPIUI.AddOns.HostsFileEditor;
-using CDPIUI.Helper.AddOns;
-using CDPIUI.Controls.Default;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -45,7 +45,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void SetState()
     {
-        bool isFileChanged = SettingsManager.Instance.GetValueOrDefault<bool>("HOSTS", "isFileEdited", defaultValue:false);
+        bool isFileChanged = SettingsManager.Instance.GetValueOrDefault<bool>("HOSTS", "isFileEdited", defaultValue: false);
         bool isBackupAvailable = SettingsManager.Instance.GetValueOrDefault<bool>("HOSTS", "isBackupAvailable", defaultValue: false);
 
         StatusFontIcon.Glyph = isFileChanged ? "\uEC61" : "\uEB90";
@@ -95,20 +95,23 @@ public sealed partial class MainPage : TemplatePage
 
         Color pointerOverColor = BlendWithWhite(baseColor, blendFactor);
 
-        if (isDarkTheme) SettingsCardBorderBrushPointerOverSolidColorBrush.Color = pointerOverColor;
-        else SettingsCardBorderBrushPointerOverSolidColorBrush.Color = (Color)((App)Application.Current).Resources["CardStrokeColorDefault"];
+        if (isDarkTheme)
+            SettingsCardBorderBrushPointerOverSolidColorBrush.Color = pointerOverColor;
+        else
+            SettingsCardBorderBrushPointerOverSolidColorBrush.Color = (Color)((App)Application.Current).Resources["CardStrokeColorDefault"];
         SettingsCardBackgroundPointerOver.Color = pointerOverColor;
     }
 
     private Color BlendWithWhite(Color baseColor, float factor)
     {
-        if (baseColor.A == 0) baseColor = Color.FromArgb(255, 232, 17, 35);
+        if (baseColor.A == 0)
+            baseColor = Color.FromArgb(255, 232, 17, 35);
 
         byte r = (byte)Math.Clamp(baseColor.R + (255 - baseColor.R) * factor, 0, 255);
         byte g = (byte)Math.Clamp(baseColor.G + (255 - baseColor.G) * factor, 0, 255);
         byte b = (byte)Math.Clamp(baseColor.B + (255 - baseColor.B) * factor, 0, 255);
 
-        return Color.FromArgb(255, r, g, b); 
+        return Color.FromArgb(255, r, g, b);
     }
 
     private void GetHelpButton_Click(object sender, RoutedEventArgs e)
@@ -212,6 +215,6 @@ public sealed partial class MainPage : TemplatePage
     private void OpenHostsFileSettingsCard_Click(object sender, RoutedEventArgs e)
     {
         HostsFileEditHelper.EditHostsFile(this.XamlRoot);
-        
+
     }
 }

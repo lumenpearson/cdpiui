@@ -1,18 +1,18 @@
-using CDPIUI.Shared.Extensions;
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using CDPIUI.Core;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Store.Database;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
-using System;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 using WinUI3Localizer;
@@ -181,7 +181,8 @@ public sealed partial class ViewConfigOutput : UserControl
         int version = attachmentVersion;
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (isLoaded && version == attachmentVersion) action();
+            if (isLoaded && version == attachmentVersion)
+                action();
         });
     }
 

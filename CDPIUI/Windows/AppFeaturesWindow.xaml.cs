@@ -1,10 +1,10 @@
+using System;
+using System.Collections.ObjectModel;
 using CDPIUI.Controls.Navigation;
 using CDPIUI.Default;
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Collections.ObjectModel;
 using WinUI3Localizer;
 
 namespace CDPIUI;

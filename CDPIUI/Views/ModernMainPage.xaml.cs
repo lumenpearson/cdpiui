@@ -1,6 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.Q;
 using CDPIUI.Core;
-
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.LScript;
@@ -11,23 +21,12 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Popups;
 using Windows.UI.StartScreen;
 using WinRT.Interop;
 using WinUI3Localizer;
-using CDPIUI.Controls.Default;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -50,7 +49,8 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
     public ObservableCollection<ComponentTileModel> TileModels = [];
 
     private double ElementWidthProperty = 210;
-    public double ElementWidth {
+    public double ElementWidth
+    {
         get
         {
             return ElementWidthProperty;
@@ -92,7 +92,8 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
 
     private void ConnectEvents()
     {
-        if (eventsConnected) return;
+        if (eventsConnected)
+            return;
         eventsConnected = true;
         StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
@@ -100,7 +101,8 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected) return;
+        if (!eventsConnected)
+            return;
         eventsConnected = false;
         StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
@@ -138,7 +140,7 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
     {
         MainGridView.ItemsSource = TileModels;
         CreateTiles();
-        
+
     }
 
     private int MaxColumns()
@@ -151,7 +153,7 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
     private void CalcWidth(int columns, int elCount)
     {
         double pageWidth = ContentGrid.ActualWidth;
-        
+
         if (columns < 0)
         {
             if (elCount == 1)
@@ -186,7 +188,7 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
         }
     }
 
-    
+
 
     private async void QHyperlinkButton_Click(object sender, RoutedEventArgs e)
     {
@@ -210,7 +212,8 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
     {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        if (EqualityComparer<T>.Default.Equals(field, value))
+            return false;
         field = value;
         OnPropertyChanged(propertyName);
         return true;

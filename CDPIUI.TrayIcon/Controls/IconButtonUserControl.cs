@@ -1,5 +1,3 @@
-﻿using CDPIUI.Shared;
-using CDPIUI.TrayIcon.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,183 +8,193 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CDPIUI.Shared;
+using CDPIUI.TrayIcon.Helper;
 using Windows.UI.ViewManagement;
 
-namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls;
+
+public partial class IconButtonUserControl : UserControl
 {
-    public partial class IconButtonUserControl : UserControl
+    private Color AccentColor = GetAccentColor();
+
+    private string _glyph = string.Empty;
+    public string Glyph
     {
-        private Color AccentColor = GetAccentColor();
-
-        private string _glyph = string.Empty;
-        public string Glyph
+        get
         {
-            get
-            {
-                return _glyph;
-            }
-            set
-            {
-                _glyph = value;
-                IconGlyph.Text = value;
-            }
+            return _glyph;
         }
-
-        private ToolTip? _toolTip;
-        public ToolTip? ToolTip
+        set
         {
-            get { return _toolTip; }
-            set
-            {
-                _toolTip = value;
-
-            }
+            _glyph = value;
+            IconGlyph.Text = value;
         }
+    }
 
-        private string? _toolTipMessage;
-        public string? ToolTipMessage
+    private ToolTip? _toolTip;
+    public ToolTip? ToolTip
+    {
+        get { return _toolTip; }
+        set
         {
-            get { return _toolTipMessage; }
-            set
-            {
-                _toolTipMessage = value;
+            _toolTip = value;
 
-            }
         }
+    }
 
-        private bool _isHighlighted;
-        public bool IsHighlighted
+    private string? _toolTipMessage;
+    public string? ToolTipMessage
+    {
+        get { return _toolTipMessage; }
+        set
         {
-            get { return _isHighlighted; }
-            set
-            {
-                _isHighlighted = value;
-                if (_isHighlighted) IconGlyph.ForeColor = AccentColor;
-                else IconGlyph.ForeColor = Color.White;
-            }
+            _toolTipMessage = value;
+
         }
+    }
 
-        private bool _enabled = true;
-        public new bool Enabled
+    private bool _isHighlighted;
+    public bool IsHighlighted
+    {
+        get { return _isHighlighted; }
+        set
         {
-            get { return _enabled; }
-            set
+            _isHighlighted = value;
+            if (_isHighlighted)
+                IconGlyph.ForeColor = AccentColor;
+            else
+                IconGlyph.ForeColor = Color.White;
+        }
+    }
+
+    private bool _enabled = true;
+    public new bool Enabled
+    {
+        get { return _enabled; }
+        set
+        {
+            _enabled = value;
+            if (_enabled)
             {
-                _enabled = value;
-                if (_enabled)
-                {
-                    this.BackColor = Color.FromArgb(0, 50, 50, 50);
-                    if (!IsHighlighted) IconGlyph.ForeColor = Color.White;
-                }
-                else
-                {
-                    this.BackColor = Color.FromArgb(50, 50, 50);
-                    if (!IsHighlighted) IconGlyph.ForeColor = Color.FromArgb(113, 113, 113);
-                }
+                this.BackColor = Color.FromArgb(0, 50, 50, 50);
+                if (!IsHighlighted)
+                    IconGlyph.ForeColor = Color.White;
+            }
+            else
+            {
+                this.BackColor = Color.FromArgb(50, 50, 50);
+                if (!IsHighlighted)
+                    IconGlyph.ForeColor = Color.FromArgb(113, 113, 113);
             }
         }
+    }
 
-        public event EventHandler? Clicked;
+    public event EventHandler? Clicked;
 
-        public IconButtonUserControl()
+    public IconButtonUserControl()
+    {
+        InitializeComponent();
+
+        ConnectHandlers();
+        SetFont();
+    }
+
+    #region HandlersManagement
+
+    private void ConnectHandlers()
+    {
+        this.MouseEnter += IconButtonUserControl_MouseEnter;
+        this.MouseLeave += IconButtonUserControl_MouseLeave;
+
+        this.MouseClick += IconButtonUserControl_MouseClick;
+
+
+        foreach (Control control in Controls)
         {
-            InitializeComponent();
+            control.MouseEnter += new EventHandler(this.IconButtonUserControl_MouseEnter);
+            control.MouseLeave += new EventHandler(this.IconButtonUserControl_MouseLeave);
 
-            ConnectHandlers();
-            SetFont();
+            control.MouseClick += this.IconButtonUserControl_MouseClick;
         }
 
-        #region HandlersManagement
+        this.Disposed += IconButtonUserControl_Disposed;
+    }
 
-        private void ConnectHandlers()
+    private void DisconnectHandlers()
+    {
+        this.MouseEnter -= IconButtonUserControl_MouseEnter;
+        this.MouseLeave -= IconButtonUserControl_MouseLeave;
+
+        this.MouseClick -= IconButtonUserControl_MouseClick;
+
+
+        foreach (Control control in Controls)
         {
-            this.MouseEnter += IconButtonUserControl_MouseEnter;
-            this.MouseLeave += IconButtonUserControl_MouseLeave;
+            control.MouseEnter -= new EventHandler(this.IconButtonUserControl_MouseEnter);
+            control.MouseLeave -= new EventHandler(this.IconButtonUserControl_MouseLeave);
 
-            this.MouseClick += IconButtonUserControl_MouseClick;
-
-
-            foreach (Control control in Controls)
-            {
-                control.MouseEnter += new EventHandler(this.IconButtonUserControl_MouseEnter);
-                control.MouseLeave += new EventHandler(this.IconButtonUserControl_MouseLeave);
-
-                control.MouseClick += this.IconButtonUserControl_MouseClick;
-            }
-
-            this.Disposed += IconButtonUserControl_Disposed;
+            control.MouseClick -= this.IconButtonUserControl_MouseClick;
         }
 
-        private void DisconnectHandlers()
-        {
-            this.MouseEnter -= IconButtonUserControl_MouseEnter;
-            this.MouseLeave -= IconButtonUserControl_MouseLeave;
+        this.Disposed -= IconButtonUserControl_Disposed;
+    }
 
-            this.MouseClick -= IconButtonUserControl_MouseClick;
+    #endregion
 
+    private void SetFont()
+    {
+        // The replaced font was created by the designer for this label alone.
+        var oldFont = IconGlyph.Font;
+        IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
+        oldFont.Dispose();
+    }
 
-            foreach (Control control in Controls)
-            {
-                control.MouseEnter -= new EventHandler(this.IconButtonUserControl_MouseEnter);
-                control.MouseLeave -= new EventHandler(this.IconButtonUserControl_MouseLeave);
+    private void IconButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
+    {
+        // Enabled only changed the colors: a disabled button, such as start for a component
+        // without a preset, still started it.
+        if (!Enabled)
+            return;
+        Clicked?.Invoke(this, e);
+    }
 
-                control.MouseClick -= this.IconButtonUserControl_MouseClick;
-            }
+    private void IconButtonUserControl_MouseLeave(object? sender, EventArgs e)
+    {
+        if (!Enabled)
+            return;
+        if (!IsHighlighted)
+            IconGlyph.ForeColor = Color.White;
+        this.BackColor = Color.FromArgb(0, 50, 50, 50);
 
-            this.Disposed -= IconButtonUserControl_Disposed;
-        }
+        ToolTip?.Hide(this);
+    }
 
-        #endregion
+    private void IconButtonUserControl_MouseEnter(object? sender, EventArgs e)
+    {
+        if (!Enabled)
+            return;
+        if (!IsHighlighted)
+            IconGlyph.ForeColor = AccentColor;
+        this.BackColor = Color.FromArgb(50, 50, 50);
 
-        private void SetFont()
-        {
-            // The replaced font was created by the designer for this label alone.
-            var oldFont = IconGlyph.Font;
-            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
-            oldFont.Dispose();
-        }
+        Point pnt = PointToClient(PointToScreen(Point.Empty));
 
-        private void IconButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
-        {
-            // Enabled only changed the colors: a disabled button, such as start for a component
-            // without a preset, still started it.
-            if (!Enabled) return;
-            Clicked?.Invoke(this, e);
-        }
+        pnt.Y -= 20;
 
-        private void IconButtonUserControl_MouseLeave(object? sender, EventArgs e)
-        {
-            if (!Enabled) return;
-            if (!IsHighlighted) IconGlyph.ForeColor = Color.White;
-            this.BackColor = Color.FromArgb(0, 50, 50, 50);
+        ToolTip?.Show(ToolTipMessage, this, pnt);
 
-            ToolTip?.Hide(this);
-        }
+    }
 
-        private void IconButtonUserControl_MouseEnter(object? sender, EventArgs e)
-        {
-            if (!Enabled) return;
-            if (!IsHighlighted) IconGlyph.ForeColor = AccentColor;
-            this.BackColor = Color.FromArgb(50, 50, 50);
+    private static Windows.UI.ViewManagement.UISettings uiSettings = new Windows.UI.ViewManagement.UISettings();
+    private static System.Drawing.Color GetAccentColor()
+    {
+        Windows.UI.Color c = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent);
+        return Color.FromArgb(c.A, c.R, c.G, c.B);
+    }
 
-            Point pnt = PointToClient(PointToScreen(Point.Empty));
-
-            pnt.Y -= 20;
-
-            ToolTip?.Show(ToolTipMessage, this, pnt);
-
-        }
-
-        private static Windows.UI.ViewManagement.UISettings uiSettings = new Windows.UI.ViewManagement.UISettings();
-        private static System.Drawing.Color GetAccentColor()
-        {
-            Windows.UI.Color c = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent);
-            return Color.FromArgb(c.A, c.R, c.G, c.B);
-        }
-
-        private void IconButtonUserControl_Disposed(object? sender, EventArgs e)
-        {
-            DisconnectHandlers();
-        }
+    private void IconButtonUserControl_Disposed(object? sender, EventArgs e)
+    {
+        DisconnectHandlers();
     }
 }

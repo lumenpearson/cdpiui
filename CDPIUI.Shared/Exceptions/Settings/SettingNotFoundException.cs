@@ -1,21 +1,20 @@
-﻿using CDPIUI.Shared.Exceptions.Interface;
-using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using CDPIUI.Shared.Exceptions.Interface;
+using CDPIUI.Shared.PrettyErrorConversionService;
 
-namespace CDPIUI.Shared.Exceptions.Settings
+namespace CDPIUI.Shared.Exceptions.Settings;
+
+public class SettingNotFoundException : Exception, ICustomException
 {
-    public class SettingNotFoundException : Exception, ICustomException
-    {
-        public SettingNotFoundException() : base() { }
-        public SettingNotFoundException(string message) : base(message) { }
-        public SettingNotFoundException(string message, Exception inner) : base(message, inner) { }
+    public SettingNotFoundException() : base() { }
+    public SettingNotFoundException(string message) : base(message) { }
+    public SettingNotFoundException(string message, Exception inner) : base(message, inner) { }
 
-        protected SettingNotFoundException(System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context)
-        { }
+    protected SettingNotFoundException(System.Runtime.Serialization.SerializationInfo info,
+        System.Runtime.Serialization.StreamingContext context)
+    { }
 
-        public PrettyErrorCode PrettyErrorCode { get => PrettyErrorCode.SETTING_NOT_FOUND; }
-    }
+    public PrettyErrorCode PrettyErrorCode { get => PrettyErrorCode.SETTING_NOT_FOUND; }
 }

@@ -1,5 +1,3 @@
-﻿using CDPIUI.Shared;
-using CDPIUI.TrayIcon.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,185 +8,187 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CDPIUI.Shared;
+using CDPIUI.TrayIcon.Helper;
 using Windows.UI.Core;
 
-namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls;
+
+public partial class ModernButtonUserControl : UserControl
 {
-    public partial class ModernButtonUserControl : UserControl
+    private string _text = string.Empty;
+    public string DisplayText
     {
-        private string _text = string.Empty;
-        public string DisplayText
+        get
         {
-            get
-            {
-                return _text;
-            }
-            set
-            {
-                _text = value;
-                MainTextBox.Text = value;
-            }
+            return _text;
         }
-
-        private bool _bold = false;
-        public bool Bold
+        set
         {
-            get { return _bold; }
-            set
-            {
-                _bold = value;
-                // The replaced font was created for this label alone, by the designer or here.
-                var oldFont = MainTextBox.Font;
-                MainTextBox.Font = new Font(oldFont, _bold? FontStyle.Bold : FontStyle.Regular);
-                oldFont.Dispose();
-            }
+            _text = value;
+            MainTextBox.Text = value;
         }
+    }
 
-        private string _glyph = string.Empty;
-        public string Glyph
+    private bool _bold = false;
+    public bool Bold
+    {
+        get { return _bold; }
+        set
         {
-            get
-            {
-                return _glyph;
-            }
-            set
-            {
-                _glyph = value;
-                IconGlyph.Text = value;
-                ChangeVisibility();
-            }
-        }
-
-        private Image? _image;
-        public Image? DisplayImage
-        {
-            get
-            {
-                return _image;
-            }
-            set
-            {
-                _image = value;
-                MainPictureBox.Image = value;
-                ChangeVisibility();
-            }
-        }
-
-        public EventHandler? Clicked;
-
-
-        public ModernButtonUserControl()
-        {
-            InitializeComponent();
-
-            this.BackColor = Color.FromArgb(0, 45, 45, 45);
-            this.ForeColor = Color.White;
-
-            ConnectHandlers();
-
-            SetFont();
-        }
-
-        #region HandlersManagement
-
-        private void ConnectHandlers()
-        {
-            this.MouseEnter += ModernButtonUserControl_MouseEnter;
-            this.MouseLeave += ModernButtonUserControl_MouseLeave;
-
-            this.MouseClick += ModernButtonUserControl_MouseClick;
-
-
-            foreach (Control control in Controls)
-            {
-                control.MouseEnter += new EventHandler(this.ModernButtonUserControl_MouseEnter);
-                control.MouseLeave += new EventHandler(this.ModernButtonUserControl_MouseLeave);
-
-                control.MouseClick += this.ModernButtonUserControl_MouseClick;
-            }
-
-            this.Disposed += ModernButtonUserControl_Disposed; ;
-        }
-
-
-        private void DisconnectHandlers()
-        {
-            this.MouseEnter -= ModernButtonUserControl_MouseEnter;
-            this.MouseLeave -= ModernButtonUserControl_MouseLeave;
-
-            this.MouseClick -= ModernButtonUserControl_MouseClick;
-
-
-            foreach (Control control in Controls)
-            {
-                control.MouseEnter -= new EventHandler(this.ModernButtonUserControl_MouseEnter);
-                control.MouseLeave -= new EventHandler(this.ModernButtonUserControl_MouseLeave);
-
-                control.MouseClick -= this.ModernButtonUserControl_MouseClick;
-            }
-
-            this.Disposed -= ModernButtonUserControl_Disposed;
-        }
-
-        #endregion
-
-        private void SetFont()
-        {
-            // The replaced font was created by the designer for this label alone.
-            var oldFont = IconGlyph.Font;
-            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
+            _bold = value;
+            // The replaced font was created for this label alone, by the designer or here.
+            var oldFont = MainTextBox.Font;
+            MainTextBox.Font = new Font(oldFont, _bold ? FontStyle.Bold : FontStyle.Regular);
             oldFont.Dispose();
         }
+    }
 
-        private void ModernButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
+    private string _glyph = string.Empty;
+    public string Glyph
+    {
+        get
         {
-            Clicked?.Invoke(this, e);
+            return _glyph;
+        }
+        set
+        {
+            _glyph = value;
+            IconGlyph.Text = value;
+            ChangeVisibility();
+        }
+    }
+
+    private Image? _image;
+    public Image? DisplayImage
+    {
+        get
+        {
+            return _image;
+        }
+        set
+        {
+            _image = value;
+            MainPictureBox.Image = value;
+            ChangeVisibility();
+        }
+    }
+
+    public EventHandler? Clicked;
+
+
+    public ModernButtonUserControl()
+    {
+        InitializeComponent();
+
+        this.BackColor = Color.FromArgb(0, 45, 45, 45);
+        this.ForeColor = Color.White;
+
+        ConnectHandlers();
+
+        SetFont();
+    }
+
+    #region HandlersManagement
+
+    private void ConnectHandlers()
+    {
+        this.MouseEnter += ModernButtonUserControl_MouseEnter;
+        this.MouseLeave += ModernButtonUserControl_MouseLeave;
+
+        this.MouseClick += ModernButtonUserControl_MouseClick;
+
+
+        foreach (Control control in Controls)
+        {
+            control.MouseEnter += new EventHandler(this.ModernButtonUserControl_MouseEnter);
+            control.MouseLeave += new EventHandler(this.ModernButtonUserControl_MouseLeave);
+
+            control.MouseClick += this.ModernButtonUserControl_MouseClick;
         }
 
-        private void ChangeVisibility()
+        this.Disposed += ModernButtonUserControl_Disposed;
+        ;
+    }
+
+
+    private void DisconnectHandlers()
+    {
+        this.MouseEnter -= ModernButtonUserControl_MouseEnter;
+        this.MouseLeave -= ModernButtonUserControl_MouseLeave;
+
+        this.MouseClick -= ModernButtonUserControl_MouseClick;
+
+
+        foreach (Control control in Controls)
         {
-            if (string.IsNullOrEmpty(IconGlyph.Text))
-            {
-                IconGlyph.Visible = false;
-                MainPictureBox.Visible = true;
-            }
-            else
-            {
-                IconGlyph.Visible = true;
-                MainPictureBox.Visible = false;
-            }
+            control.MouseEnter -= new EventHandler(this.ModernButtonUserControl_MouseEnter);
+            control.MouseLeave -= new EventHandler(this.ModernButtonUserControl_MouseLeave);
+
+            control.MouseClick -= this.ModernButtonUserControl_MouseClick;
         }
 
-        protected override void OnMouseClick(MouseEventArgs e)
+        this.Disposed -= ModernButtonUserControl_Disposed;
+    }
+
+    #endregion
+
+    private void SetFont()
+    {
+        // The replaced font was created by the designer for this label alone.
+        var oldFont = IconGlyph.Font;
+        IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
+        oldFont.Dispose();
+    }
+
+    private void ModernButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
+    {
+        Clicked?.Invoke(this, e);
+    }
+
+    private void ChangeVisibility()
+    {
+        if (string.IsNullOrEmpty(IconGlyph.Text))
         {
-            base.OnMouseClick(e);
+            IconGlyph.Visible = false;
+            MainPictureBox.Visible = true;
         }
-
-        private void ModernButtonUserControl_MouseLeave(object? sender, EventArgs e)
+        else
         {
-            this.BackColor = Color.FromArgb(0, 45, 45, 45);
+            IconGlyph.Visible = true;
+            MainPictureBox.Visible = false;
         }
+    }
 
-        private void ModernButtonUserControl_MouseEnter(object? sender, EventArgs e)
-        {
-            this.BackColor = Color.FromArgb(50, 50, 50);
-        }
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        base.OnMouseClick(e);
+    }
 
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
+    private void ModernButtonUserControl_MouseLeave(object? sender, EventArgs e)
+    {
+        this.BackColor = Color.FromArgb(0, 45, 45, 45);
+    }
 
-        }
+    private void ModernButtonUserControl_MouseEnter(object? sender, EventArgs e)
+    {
+        this.BackColor = Color.FromArgb(50, 50, 50);
+    }
 
-        private void MainTextBox_Click(object sender, EventArgs e)
-        {
+    private void pictureBox1_Click(object sender, EventArgs e)
+    {
 
-        }
+    }
+
+    private void MainTextBox_Click(object sender, EventArgs e)
+    {
+
+    }
 
 
-        private void ModernButtonUserControl_Disposed(object? sender, EventArgs e)
-        {
-            DisconnectHandlers();
-        }
+    private void ModernButtonUserControl_Disposed(object? sender, EventArgs e)
+    {
+        DisconnectHandlers();
     }
 }
 

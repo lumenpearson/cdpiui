@@ -1,3 +1,8 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core;
@@ -8,11 +13,6 @@ using CDPIUI.Core.JSON;
 using CDPIUI.Helper.AddOns.ConfigShare;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CDPIUI.Controls.Dialogs.ConfigShare;
 
@@ -45,21 +45,24 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
 
     private void PresetFields_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (initialized) UpdateButtons();
+        if (initialized)
+            UpdateButtons();
     }
 
     private void Dialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args) => args.Cancel = busy;
 
     private async Task ExportAsync(bool share)
     {
-        if (busy) return;
+        if (busy)
+            return;
         busy = true;
         UpdateButtons();
         PresetNameBox.IsEnabled = DeveloperNameBox.IsEnabled = false;
         ExportProgress.Visibility = ExportStatus.Visibility = Visibility.Visible;
         ExportError.IsOpen = false;
 
-        if (!string.IsNullOrEmpty(DeveloperNameBox.Text)) SettingsManager.Instance.SetValue("CONFIGKIT", "lastUsedDevName", DeveloperNameBox.Text);
+        if (!string.IsNullOrEmpty(DeveloperNameBox.Text))
+            SettingsManager.Instance.SetValue("CONFIGKIT", "lastUsedDevName", DeveloperNameBox.Text);
 
         try
         {
@@ -84,9 +87,11 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
                 {
                     FileName = ConfigShareService.SafeFileName(PresetNameBox.Text) + ConfigShareService.Extension,
                     DefaultExt = ConfigShareService.Extension,
-                    Filter = $"{ConfigShareUI.Text("ConfigShareFileType")}|*{ConfigShareService.Extension}", OverwritePrompt = true
+                    Filter = $"{ConfigShareUI.Text("ConfigShareFileType")}|*{ConfigShareService.Extension}",
+                    OverwritePrompt = true
                 };
-                if (picker.ShowDialog() != true) return;
+                if (picker.ShowDialog() != true)
+                    return;
                 await Task.Run(() =>
                 {
                     string destination = Path.GetFullPath(picker.FileName);

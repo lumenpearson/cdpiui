@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,13 +8,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls;
+
+public partial class ModernSeparatorUserControl : UserControl
 {
-    public partial class ModernSeparatorUserControl : UserControl
+    public ModernSeparatorUserControl()
     {
-        public ModernSeparatorUserControl()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

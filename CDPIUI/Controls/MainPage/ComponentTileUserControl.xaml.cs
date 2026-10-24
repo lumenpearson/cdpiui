@@ -1,27 +1,3 @@
-using CDPIUI.Shared.Extensions;
-using CDPIUI.Controls.Dialogs.ComponentSettings;
-using CDPIUI.Controls.ComponentSettings;
-using CDPIUI.Core;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Helper;
-
-using CDPIUI.Shared;
-using CDPIUI.ViewModels;
-using CDPIUI.Views.Main.Components;
-using CDPIUI.Views.CreateConfigUtil;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,13 +12,36 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CDPIUI.Controls.ComponentSettings;
+using CDPIUI.Controls.Dialogs.ComponentSettings;
+using CDPIUI.Core;
+using CDPIUI.Core.ComponentServices;
+using CDPIUI.Core.ComponentServices.Helpers;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.Store.Data;
+using CDPIUI.Core.Store.Database;
+using CDPIUI.Helper;
+using CDPIUI.Helper.Items;
+using CDPIUI.Shared;
+using CDPIUI.Shared.Extensions;
+using CDPIUI.ViewModels;
+using CDPIUI.Views.CreateConfigUtil;
+using CDPIUI.Views.Main.Components;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
 using ToolTip = Microsoft.UI.Xaml.Controls.ToolTip;
 using ToolTipService = Microsoft.UI.Xaml.Controls.ToolTipService;
-using CDPIUI.Helper.Items;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -78,9 +77,9 @@ public sealed partial class ComponentTileUserControl : UserControl
     private ObservableCollection<FeaturesViewModel> AvailableFeaturesList = [];
     private int configLoadVersion;
 
-    
 
-    
+
+
 
 
     public ComponentTileUserControl()
@@ -126,7 +125,8 @@ public sealed partial class ComponentTileUserControl : UserControl
         ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
                 StoreId);
-        if (componentHelper is null) return;
+        if (componentHelper is null)
+            return;
 
         componentHelper.ConfigListUpdated -= LoadConfigItems;
     }
@@ -150,11 +150,13 @@ public sealed partial class ComponentTileUserControl : UserControl
     public string StoreId
     {
         get { return (string)GetValue(StoreIdProperty); }
-        set {
-            if (string.Equals(value, GetValue(StoreIdProperty))) return;
+        set
+        {
+            if (string.Equals(value, GetValue(StoreIdProperty)))
+                return;
             Debug.WriteLine($"Init for {value}, {GetValue(StoreIdProperty)}");
             SetValue(StoreIdProperty, value);
-            
+
             _ = Init(); // Init catches and logs its own errors.
         }
     }
@@ -167,7 +169,8 @@ public sealed partial class ComponentTileUserControl : UserControl
     public string ImageUrl
     {
         get { return (string)GetValue(ImageUrlProperty); }
-        set { 
+        set
+        {
             SetValue(ImageUrlProperty, value);
             MainImage.Source = new BitmapImage(new Uri(value));
         }
@@ -185,7 +188,8 @@ public sealed partial class ComponentTileUserControl : UserControl
         // one did not get the event.
         DispatcherQueue?.TryEnqueue(() =>
         {
-            if (tuple.Item1 != StoreId) return;
+            if (tuple.Item1 != StoreId)
+                return;
             _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
         });
     }
@@ -227,7 +231,8 @@ public sealed partial class ComponentTileUserControl : UserControl
         ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
                 storeId);
-        if (componentHelper is null) return;
+        if (componentHelper is null)
+            return;
 
         await InitConfigSettings(storeId);
         await Task.CompletedTask;
@@ -282,7 +287,8 @@ public sealed partial class ComponentTileUserControl : UserControl
         ComponentHelper componentHelper =
                 ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
                     storeId);
-        if (componentHelper is null) return;
+        if (componentHelper is null)
+            return;
 
         List<VariableItem> variables = componentHelper.GetConfigHelper().GetVariables(sel.FileName, sel.PackId);
         List<string> toggleLists = componentHelper.GetConfigHelper().GetToggleLists(sel.FileName, sel.PackId);
@@ -306,7 +312,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         {
             if (ConfigSettingsList.Count > 0)
             {
-                 ConfigSettingsLoadFailureTextBlock.Visibility = Visibility.Collapsed;
+                ConfigSettingsLoadFailureTextBlock.Visibility = Visibility.Collapsed;
             }
         });
     }
@@ -315,12 +321,14 @@ public sealed partial class ComponentTileUserControl : UserControl
     {
         AvailableFeaturesList.Clear();
         FeaturesData.AvailableFeaturesForComponent.TryGetValue(StoreId, out var availableFeatures);
-        if (availableFeatures == null) return;
+        if (availableFeatures == null)
+            return;
 
         foreach (var feature in availableFeatures)
         {
             FeaturesData.AvailableComponentFeatureImages.TryGetValue(feature, out var imageSource);
-            if (imageSource == null) continue;
+            if (imageSource == null)
+                continue;
 
             AvailableFeaturesList.Add(new()
             {
@@ -397,7 +405,8 @@ public sealed partial class ComponentTileUserControl : UserControl
     private async Task<ComponentState> GetComponentState()
     {
         ProcessService processManager = await GetProcessManager();
-        if (processManager == null) return ComponentState.SetupRequired;
+        if (processManager == null)
+            return ComponentState.SetupRequired;
 
         if (processManager.IsErrorHappens)
         {
@@ -468,11 +477,11 @@ public sealed partial class ComponentTileUserControl : UserControl
         try
         {
             var window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
-            window.NavView_Navigate(typeof(ViewComponentSettingsPage), 
+            window.NavView_Navigate(typeof(ViewComponentSettingsPage),
                 new NameValueCollection()
                     {
                         { "componentId", StoreId }
-                    }, 
+                    },
                     new DrillInNavigationTransitionInfo());
         }
         catch (Exception exception)
@@ -492,7 +501,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         {
             int loadVersion = Interlocked.Increment(ref configLoadVersion);
 
-            ComponentItemsLoaderHelper.Instance.Init(forse:false);
+            ComponentItemsLoaderHelper.Instance.Init(forse: false);
 
             ComponentHelper componentHelper =
                 ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
@@ -603,7 +612,8 @@ public sealed partial class ComponentTileUserControl : UserControl
 
             await InitConfigSettings(StoreId);
 
-            if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunning(StoreId)) await ComponentTasksManager.Instance.RestartTask(StoreId);
+            if ((oldCfg != sel.FileName || oldId != sel.PackId) && await ComponentTasksManager.Instance.IsTaskRunning(StoreId))
+                await ComponentTasksManager.Instance.RestartTask(StoreId);
         }
     }
 
@@ -633,15 +643,18 @@ public sealed partial class ComponentTileUserControl : UserControl
         string id = (string)(sender as ToggleSwitch).Tag;
 
         var item = ConfigSettingsList.FirstOrDefault((x) => x.Id == id);
-        if (item == null) return;
+        if (item == null)
+            return;
 
         var sel = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-        if (sel == null) return;
+        if (sel == null)
+            return;
 
         ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(StoreId);
         componentHelper.GetConfigHelper().ChangeVariableValue(sel.FileName, sel.PackId, id, value);
 
-        if (await ComponentTasksManager.Instance.IsTaskRunning(StoreId)) _ = ComponentTasksManager.Instance.RestartTask(StoreId);
+        if (await ComponentTasksManager.Instance.IsTaskRunning(StoreId))
+            _ = ComponentTasksManager.Instance.RestartTask(StoreId);
     }
 
     private async void AvailableFeaturesButton_Click(object sender, RoutedEventArgs e)
@@ -664,7 +677,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                 window.NavigateSubPage(typeof(Views.Store.CategoryViewPage),
                     new NameValueCollection() {
                         { "categoryId", "C002CS" }
-                    }, 
+                    },
                     new SuppressNavigationTransitionInfo());
                 break;
             case AvailableComponentFeatures.VisitForum:

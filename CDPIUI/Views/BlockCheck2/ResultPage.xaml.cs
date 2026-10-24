@@ -1,11 +1,17 @@
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Universal;
-using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Basic;
+using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.AddOns.BlockCheck2;
@@ -17,12 +23,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Win32;
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using WinUI3Localizer;
 
@@ -429,7 +429,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
         isManualTestRunning = false;
         isStartingTest = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
-        
+
 
         if (!string.IsNullOrWhiteSpace(HardcodedItemIds.ComponentIds[Components.Zapret2]))
         {
@@ -502,7 +502,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             ShowActionMessage(
                 InfoBarSeverity.Warning,
                 Text("ManualTesting"),
-                result.ErrorHappens? result.Error.ErrorCode : Text("ConfigMakerEmptyArgumentsMessage"));
+                result.ErrorHappens ? result.Error.ErrorCode : Text("ConfigMakerEmptyArgumentsMessage"));
             return;
         }
 
@@ -868,7 +868,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     private void RaiseMenuStateChanged() =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 
-    
+
 
     private BlockCheck2StrategyEvidenceItem? SelectedStrategy =>
         StrategyListView.SelectedItem as BlockCheck2StrategyEvidenceItem;
@@ -897,7 +897,8 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             return;
         }
         var result = ViewModel.GetFullStrategyArguments(item);
-        if (result.Success) Copy(result.Result ?? string.Empty);
+        if (result.Success)
+            Copy(result.Result ?? string.Empty);
     }
 
     private void Copy(string text)

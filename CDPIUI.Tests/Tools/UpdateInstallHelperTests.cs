@@ -19,7 +19,8 @@ public class UpdateInstallHelperTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_root, true); }
+        try
+        { Directory.Delete(_root, true); }
         catch (IOException) { /* A file can stay locked for a moment; the folder is in the temp directory. */ }
     }
 

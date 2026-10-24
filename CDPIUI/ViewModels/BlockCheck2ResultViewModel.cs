@@ -1,9 +1,3 @@
-using CDPIUI.AddOns.BlockCheck2.Models;
-using CDPIUI.AddOns.BlockCheck2.Execution;
-using CDPIUI.AddOns.BlockCheck2.Presentation;
-using CDPIUI.AddOns.BlockCheck2.Reporting;
-using CDPIUI.AddOns.BlockCheck2.Synthesis;
-using CDPIUI.Helper.AddOns.BlockCheck2;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,6 +8,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.AddOns.BlockCheck2.Execution;
+using CDPIUI.AddOns.BlockCheck2.Models;
+using CDPIUI.AddOns.BlockCheck2.Presentation;
+using CDPIUI.AddOns.BlockCheck2.Reporting;
+using CDPIUI.AddOns.BlockCheck2.Synthesis;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using CDPIUI.Shared.Models;
 
 namespace CDPIUI.ViewModels;
@@ -143,7 +143,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         Load(value.Report);
         session = value;
         BlockCheckManualPresetOptions options = ManualOptions(value);
-        
+
         allStrategyEvidence = manualPresetService.BuildEvidence(
                 value.Catalog,
                 value.Targets,
@@ -308,7 +308,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
             {
                 Attempts = Math.Max(1, session.RunOptions.Scan.AttemptsPerTarget),
             });
-    } 
+    }
 
     public async Task<BlockCheckManualStrategyTestResult> TestStrategyAsync(
         BlockCheck2StrategyEvidenceItem item,

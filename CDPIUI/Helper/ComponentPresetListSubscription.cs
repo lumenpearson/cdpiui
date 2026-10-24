@@ -1,12 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Helper.Items;
 using Microsoft.UI.Dispatching;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CDPIUI.Helper;
 
@@ -31,20 +31,24 @@ internal sealed class ComponentPresetListSubscription : IDisposable
 
     private void Rebind() => dispatcher.TryEnqueue(() =>
     {
-        if (disposed) return;
+        if (disposed)
+            return;
         var current = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(componentId);
         if (!ReferenceEquals(current, helper))
         {
-            if (helper != null) helper.ConfigListUpdated -= Refresh;
+            if (helper != null)
+                helper.ConfigListUpdated -= Refresh;
             helper = current;
-            if (helper != null) helper.ConfigListUpdated += Refresh;
+            if (helper != null)
+                helper.ConfigListUpdated += Refresh;
         }
         Refresh();
     });
 
     public void Refresh() => dispatcher.TryEnqueue(async () =>
     {
-        if (disposed) return;
+        if (disposed)
+            return;
         int request = ++version;
         var source = helper;
         try
@@ -54,11 +58,14 @@ internal sealed class ComponentPresetListSubscription : IDisposable
                 .Where(item => !item.MarkAsRemoved)
                 .Select(item => new ConfigSelectorItem
                 {
-                    FileName = item.file_name, PackId = item.packId, DisplayName = item.name,
+                    FileName = item.file_name,
+                    PackId = item.packId,
+                    DisplayName = item.name,
                     PackDisplayName = packNames.GetDisplayName(item.packId),
                     IsLegacyConfig = item.IsLegacy
                 }).ToArray() ?? Array.Empty<ConfigSelectorItem>());
-            if (!disposed && request == version && ReferenceEquals(source, helper)) apply(items);
+            if (!disposed && request == version && ReferenceEquals(source, helper))
+                apply(items);
         }
         catch (Exception exception)
         {
@@ -71,7 +78,8 @@ internal sealed class ComponentPresetListSubscription : IDisposable
         disposed = true;
         ++version;
         ComponentItemsLoaderHelper.Instance.InitRequested -= Rebind;
-        if (helper != null) helper.ConfigListUpdated -= Refresh;
+        if (helper != null)
+            helper.ConfigListUpdated -= Refresh;
         helper = null;
     }
 }

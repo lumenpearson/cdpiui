@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using CDPIUI.Commands;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.EditConfig;
@@ -9,9 +12,6 @@ using CDPIUI.Helper.UserExperience;
 using CDPIUI.Helper.WindowHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI;
@@ -22,7 +22,8 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
     {
         try
         {
-            if (configItem?.target == null || configItem.target.Count == 0) return;
+            if (configItem?.target == null || configItem.target.Count == 0)
+                return;
             var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
             window.componentSelectionRequested = true;
             App.ActivateWindow(window);
@@ -42,7 +43,8 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
         window.componentSelectionRequested = true;
         App.ActivateWindow(window);
-        if (!await window.IsExitAvailable()) return;
+        if (!await window.IsExitAvailable())
+            return;
         await window.ConfigMaker.SetComponentAsync(componentId);
         await window.ConfigMaker.NewDocumentAsync();
     }
@@ -111,7 +113,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         componentSelectionRequested = true;
         IReadOnlyList<ConfigMakerComponentInfo> components =
             ConfigMakerComponentCatalog.GetAvailableComponents();
-        
+
         if (components.Count == 0)
         {
             ContentDialog unavailableDialog = new()
@@ -129,7 +131,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         await ShowWelcomeDialog();
     }
 
-    
+
 
     private bool closeConfirmed;
     private bool isExitDialogOpened;
@@ -184,7 +186,8 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     private async void NewMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (await IsExitAvailable()) await ConfigMaker.NewDocumentAsync();
+        if (await IsExitAvailable())
+            await ConfigMaker.NewDocumentAsync();
     }
 
     private async void SaveToApplicationMenuItem_Click(object sender, RoutedEventArgs e) =>
@@ -226,18 +229,19 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
     private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         var result = ConfigImportHelper.ImportConfigFromFile();
-        if (result.Success && result.Result.IsSuccessful && await IsExitAvailable()) await OpenConfigFile(result.Result.Config);
+        if (result.Success && result.Result.IsSuccessful && await IsExitAvailable())
+            await OpenConfigFile(result.Result.Config);
         if (result.Success)
         {
             foreach (var item in result.Result.Issues)
             {
                 NotificationControl.Show(
-                    item.Severity == AddOns.ConfigImport.ConfigImportIssueSeverity.Warning ? InfoBarSeverity.Warning : InfoBarSeverity.Error, 
-                    item.Code, 
+                    item.Severity == AddOns.ConfigImport.ConfigImportIssueSeverity.Warning ? InfoBarSeverity.Warning : InfoBarSeverity.Error,
+                    item.Code,
                     ConfigImportIssueText.GetMessage(item));
             }
         }
-        
+
     }
 
     private void FontMenuItem_Click(object sender, RoutedEventArgs e)
@@ -247,7 +251,8 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     public async Task OpenConfigFile(ConfigItem configItem)
     {
-        if (configItem?.target == null || configItem.target.Count == 0) return;
+        if (configItem?.target == null || configItem.target.Count == 0)
+            return;
         await ConfigMaker.SetComponentAsync(configItem.target[0]);
         await ConfigMaker.LoadConfigItem(configItem, applyAutoCorrectorSilently: true);
         ConfigMaker.FormatCommand();
@@ -288,9 +293,10 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
     {
         if (HasUnsavedChanges())
         {
-            
+
             var result = await ShowAskExitDialog();
-            if (result) await ConfigMaker.LoadConfigItem(new ConfigItem());
+            if (result)
+                await ConfigMaker.LoadConfigItem(new ConfigItem());
             return result;
         }
         return true;
@@ -347,5 +353,5 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         }
     }
 
-    
+
 }

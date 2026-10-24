@@ -1,7 +1,7 @@
-using CDPIUI.Shared.Pipe;
-using CDPIUI.Shared.Pipe.Models;
 using System.Collections.Concurrent;
 using System.Text;
+using CDPIUI.Shared.Pipe;
+using CDPIUI.Shared.Pipe.Models;
 
 namespace CDPIUI.Core.Communication;
 

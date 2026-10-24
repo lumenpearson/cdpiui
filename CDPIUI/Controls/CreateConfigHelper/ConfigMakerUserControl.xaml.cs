@@ -1,4 +1,12 @@
-using CDPIUI.Shared.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
@@ -16,21 +24,13 @@ using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.UserExperience;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using TextControlBoxNS;
 using Unidecode.NET;
 using Windows.ApplicationModel.DataTransfer;
@@ -3009,7 +3009,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     SettingsManager.Instance.GetValueOrDefault("CONFIGKIT", "lastUsedDevName", defaultValue: Environment.UserName));
                 await FileSystemService.CopyFileAsync(package.ArchivePath, filePath);
             }
-            else await File.WriteAllTextAsync(filePath, exportText);
+            else
+                await File.WriteAllTextAsync(filePath, exportText);
 
             ShowEditorMessage(
                 localizer.GetLocalizedString("ConfigMakerTextSavedMessage"),
@@ -3023,7 +3024,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     exception.Message),
                 InfoBarSeverity.Error);
         }
-        
+
     }
 
     public void FormatCommand()
@@ -3382,7 +3383,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     private void ReplaceButton_Click(object sender, RoutedEventArgs e) =>
         EditorSearchControl.ShowReplace(CommandEditor);
 
-    
+
 
     private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => ChangeZoom(-5);
 
@@ -3514,68 +3515,68 @@ public sealed partial class ConfigMakerUserControl : UserControl
         updatingLayoutBounds = true;
         try
         {
-        const double editorMinWidth = 360;
-        const double commandMinWidth = 340;
-        const double editorMinHeight = 180;
-        const double bottomMinHeight = 110;
+            const double editorMinWidth = 360;
+            const double commandMinWidth = 340;
+            const double editorMinHeight = 180;
+            const double bottomMinHeight = 110;
 
-        double filesWidth = 0;
-        if (IsPresetFilesPanelVisible)
-        {
-            double maximumFilesWidth = Math.Max(
-                150,
-                RootGrid.ActualWidth - editorMinWidth -
-                (IsCommandPanelVisible ? commandMinWidth + VerticalSizerColumn.Width.Value : 0) -
-                PresetFilesSizerColumn.Width.Value);
-            PresetFilesPanel.MaxWidth = Math.Max(
-                PresetFilesPanel.MinWidth,
-                Math.Min(RootGrid.ActualWidth * 0.45, maximumFilesWidth));
-            PresetFilesPanel.Width = Math.Clamp(
-                PresetFilesPanel.Width,
-                PresetFilesPanel.MinWidth,
-                PresetFilesPanel.MaxWidth);
-            filesWidth = PresetFilesPanel.Width + PresetFilesSizerColumn.Width.Value;
-        }
+            double filesWidth = 0;
+            if (IsPresetFilesPanelVisible)
+            {
+                double maximumFilesWidth = Math.Max(
+                    150,
+                    RootGrid.ActualWidth - editorMinWidth -
+                    (IsCommandPanelVisible ? commandMinWidth + VerticalSizerColumn.Width.Value : 0) -
+                    PresetFilesSizerColumn.Width.Value);
+                PresetFilesPanel.MaxWidth = Math.Max(
+                    PresetFilesPanel.MinWidth,
+                    Math.Min(RootGrid.ActualWidth * 0.45, maximumFilesWidth));
+                PresetFilesPanel.Width = Math.Clamp(
+                    PresetFilesPanel.Width,
+                    PresetFilesPanel.MinWidth,
+                    PresetFilesPanel.MaxWidth);
+                filesWidth = PresetFilesPanel.Width + PresetFilesSizerColumn.Width.Value;
+            }
 
-        double availableMainWidth = Math.Max(editorMinWidth, RootGrid.ActualWidth - filesWidth);
+            double availableMainWidth = Math.Max(editorMinWidth, RootGrid.ActualWidth - filesWidth);
 
-        if (IsCommandPanelVisible)
-        {
-            double maxEditorWidth = Math.Max(
-                editorMinWidth,
-                availableMainWidth - commandMinWidth - VerticalSizerColumn.Width.Value);
-            EditorWorkspace.MaxWidth = maxEditorWidth;
-            double requestedWidth = layoutInitialized
-                ? EditorWorkspace.Width
-                : Math.Min(savedEditorWidth, maxEditorWidth);
-            EditorWorkspace.Width = maxEditorWidth;
-        }
-        else
-        {
-            EditorWorkspace.MaxWidth = availableMainWidth;
-            EditorWorkspace.Width = availableMainWidth;
-        }
+            if (IsCommandPanelVisible)
+            {
+                double maxEditorWidth = Math.Max(
+                    editorMinWidth,
+                    availableMainWidth - commandMinWidth - VerticalSizerColumn.Width.Value);
+                EditorWorkspace.MaxWidth = maxEditorWidth;
+                double requestedWidth = layoutInitialized
+                    ? EditorWorkspace.Width
+                    : Math.Min(savedEditorWidth, maxEditorWidth);
+                EditorWorkspace.Width = maxEditorWidth;
+            }
+            else
+            {
+                EditorWorkspace.MaxWidth = availableMainWidth;
+                EditorWorkspace.Width = availableMainWidth;
+            }
 
-        double availableMainHeight = Math.Max(editorMinHeight, RootGrid.ActualHeight);
+            double availableMainHeight = Math.Max(editorMinHeight, RootGrid.ActualHeight);
 
-        if (IsBottomPanelVisible)
-        {
-            double maxEditorHeight = Math.Max(
-                editorMinHeight,
-                availableMainHeight - bottomMinHeight - HorizontalSizerRow.Height.Value);
-            EditorPanel.MaxHeight = maxEditorHeight;
-            double requestedHeight = layoutInitialized
-                ? EditorPanel.Height
-                : Math.Min(savedEditorHeight, maxEditorHeight);
-            EditorPanel.Height = Math.Clamp(requestedHeight, editorMinHeight, maxEditorHeight);
-        }
-        else
-        {
-            EditorPanel.MaxHeight = availableMainHeight;
-            EditorPanel.Height = availableMainHeight;
-        }
+            if (IsBottomPanelVisible)
+            {
+                double maxEditorHeight = Math.Max(
+                    editorMinHeight,
+                    availableMainHeight - bottomMinHeight - HorizontalSizerRow.Height.Value);
+                EditorPanel.MaxHeight = maxEditorHeight;
+                double requestedHeight = layoutInitialized
+                    ? EditorPanel.Height
+                    : Math.Min(savedEditorHeight, maxEditorHeight);
+                EditorPanel.Height = Math.Clamp(requestedHeight, editorMinHeight, maxEditorHeight);
+            }
+            else
+            {
+                EditorPanel.MaxHeight = availableMainHeight;
+                EditorPanel.Height = availableMainHeight;
+            }
 
-        layoutInitialized = true;
+            layoutInitialized = true;
         }
         finally
         {
@@ -3622,7 +3623,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void CloseTreeViewButton_Click(object sender, RoutedEventArgs e)
     {
-       SetPresetFilesPanelVisible(false);
+        SetPresetFilesPanelVisible(false);
     }
 
     private void CloseCommandsViewButton_Click(object sender, RoutedEventArgs e)

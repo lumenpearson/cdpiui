@@ -1,3 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Core;
 using CDPIUI.Core.ComponentServices;
@@ -17,16 +27,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -84,7 +84,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         this.Unloaded += (_, _) => ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
         this.Loaded += (_, _) =>
         {
-            if (string.IsNullOrEmpty(StoreId)) return;
+            if (string.IsNullOrEmpty(StoreId))
+                return;
             ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
             ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
             _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
@@ -96,7 +97,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
     public bool IsOpened
     {
         get { return (bool)GetValue(IsOpenedProperty); }
-        set { 
+        set
+        {
             SetValue(IsOpenedProperty, value);
             SetToolTip();
         }
@@ -159,7 +161,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
     public string CardBackgroundColor
     {
         get { return (string)GetValue(CardBackgroundProperty); }
-        set { 
+        set
+        {
             SetValue(CardBackgroundProperty, value);
             MainBrush.Color = UIHelper.HexToColorConverter(value);
         }
@@ -181,7 +184,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private void SmallComponentTileUserControl_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        
+
     }
 
     private void SmallComponentTileUserControl_Unloaded(object sender, RoutedEventArgs e)
@@ -197,7 +200,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         // Raised on the pipe thread; StoreId and the controls are UI-thread only.
         DispatcherQueue?.TryEnqueue(() =>
         {
-            if (tuple.Item1 != StoreId) return;
+            if (tuple.Item1 != StoreId)
+                return;
             _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
         });
     }
@@ -212,7 +216,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
 
         ProxyStackPanel.Visibility = HardcodedItemIds.ComponentIds.GetKeyByValue(StoreId) == Components.TgWsProxy
-            ? Visibility.Visible 
+            ? Visibility.Visible
             : Visibility.Collapsed;
 
         if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
@@ -252,7 +256,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
     private async Task<ComponentState> GetComponentState()
     {
         ProcessService processManager = await GetProcessManager();
-        if (processManager == null) return ComponentState.SetupRequired;
+        if (processManager == null)
+            return ComponentState.SetupRequired;
 
         if (processManager.IsErrorHappens)
         {
@@ -313,7 +318,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
             if (isRunning)
             {
                 PlayToolTip.Text = localizer.GetLocalizedString("Stop");
-                PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph()? "\uE62E" : "\uF8AE";
+                PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph() ? "\uE62E" : "\uF8AE";
                 ShowComponentState(ComponentState.Running);
             }
             else
@@ -385,7 +390,8 @@ public sealed partial class SmallComponentTileUserControl : UserControl
     private void AutorunCheckBox_Click(object sender, RoutedEventArgs e)
     {
         SettingsManager.Instance.SetValue<bool>(["CONFIGS", StoreId], "usedForAutorun", (bool)AutorunCheckBox.IsChecked);
-        if ((bool)AutorunCheckBox.IsChecked) ApplicationAutorunManager.AddToAutorun();
+        if ((bool)AutorunCheckBox.IsChecked)
+            ApplicationAutorunManager.AddToAutorun();
     }
 
     private async void ProxyButton_Click(object sender, RoutedEventArgs e)

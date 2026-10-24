@@ -1,3 +1,6 @@
+using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Controls.Universal;
@@ -9,9 +12,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.ComponentModel;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.BlockCheck2;
@@ -257,7 +257,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             UpdateState();
         }
 
-        
+
     }
 
     private async Task ShowDialog()
@@ -358,5 +358,5 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
 
     private string Text(string key) => localizer.GetLocalizedString(key);
 
-    
+
 }

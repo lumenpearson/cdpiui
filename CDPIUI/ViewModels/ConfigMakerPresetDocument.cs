@@ -1,7 +1,5 @@
 #nullable enable
 
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Helper.LScript;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,6 +8,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Helper.LScript;
 
 namespace CDPIUI.ViewModels;
 

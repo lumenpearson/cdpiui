@@ -1,4 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.Core.Store.Repository.Localization;
+using CDPIUI.Core.System;
 using CDPIUI.Default;
+using CDPIUI.Helper.Parsers;
+using CDPIUI.Shared.Basic.Filesystem;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -7,242 +18,234 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
 using WinUIEx;
 using static System.Net.Mime.MediaTypeNames;
-using CDPIUI.Helper.Parsers;
-
-using CDPIUI.Core.Store.Repository.Localization;
-using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Core.System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI
+namespace CDPIUI;
+
+/// <summary>
+/// An empty window that can be used on its own or navigated to within a Frame.
+/// </summary>
+
+public class HelpNavigationViewItem
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    
-    public class HelpNavigationViewItem
+    public string Id { get; set; }
+    public string Title { get; set; }
+    public string Path { get; set; }
+    public string IconGlyph { get; set; }
+    public ObservableCollection<HelpNavigationViewItem> Items { get; set; }
+}
+
+public sealed partial class OfflineHelpWindow : TemplateWindow
+{
+    private MarkdownConfig _config;
+
+    public MarkdownConfig MarkdownConfig
     {
-        public string Id { get; set; }
-        public string Title { get; set; }
-        public string Path { get; set; }
-        public string IconGlyph { get; set; }
-        public ObservableCollection<HelpNavigationViewItem> Items { get; set; }
+        get => _config;
+        set => _config = value;
     }
 
-    public sealed partial class OfflineHelpWindow : TemplateWindow
+    private ILocalizer localizer = Localizer.Get();
+
+    public OfflineHelpWindow()
     {
-        private MarkdownConfig _config;
+        InitializeComponent();
 
-        public MarkdownConfig MarkdownConfig
+        WindowTitle = localizer.GetLocalizedString("OfflineHelpWindowTitle");
+        IconUri = @"Assets/Icons/Help.ico";
+        this.CustomTitleBarUserControl = TitleBarUserControl;
+
+        if (this.TitleBarMode == TitleBarModes.Custom)
         {
-            get => _config;
-            set => _config = value;
+            MainGrid.Resources["NavigationViewContentMargin"] = new Thickness(0, 43, 0, 0);
+            MainGrid.Resources["NavigationViewMinimalContentMargin"] = new Thickness(0, 43, 0, 0);
+        }
+        else
+        {
+            MainGrid.Resources["NavigationViewContentMargin"] = new Thickness(0);
+            MainGrid.Resources["NavigationViewMinimalContentMargin"] = new Thickness(0);
         }
 
-        private ILocalizer localizer = Localizer.Get();
+        MarkdownConfig = new MarkdownConfig();
 
-        public OfflineHelpWindow()
+        InitHelp();
+    }
+
+    private void InitHelp()
+    {
+        HelpNavigationView.MenuItems.Clear();
+        var items = HelpParser.GetHelpItemsForLanguage(StoreLocalizationHelper.GetStoreLikeLocale());
+
+        if (items == null)
         {
-            InitializeComponent();
-
-            WindowTitle = localizer.GetLocalizedString("OfflineHelpWindowTitle");
-            IconUri = @"Assets/Icons/Help.ico";
-            this.CustomTitleBarUserControl = TitleBarUserControl;
-
-            if (this.TitleBarMode == TitleBarModes.Custom)
-            {
-                MainGrid.Resources["NavigationViewContentMargin"] = new Thickness(0, 43, 0, 0);
-                MainGrid.Resources["NavigationViewMinimalContentMargin"] = new Thickness(0, 43, 0, 0);
-            }
-            else
-            {
-                MainGrid.Resources["NavigationViewContentMargin"] = new Thickness(0);
-                MainGrid.Resources["NavigationViewMinimalContentMargin"] = new Thickness(0);
-            }
-
-                MarkdownConfig = new MarkdownConfig();
-
-            InitHelp();
+            return; // TODO: error message
         }
 
-        private void InitHelp()
+        NavigationViewItem mainItem = new();
+
+        foreach (var item in items)
         {
-            HelpNavigationView.MenuItems.Clear();
-            var items = HelpParser.GetHelpItemsForLanguage(StoreLocalizationHelper.GetStoreLikeLocale());
-
-            if (items == null)
+            var homeItem = new NavigationViewItem()
             {
-                return; // TODO: error message
-            }
+                Content = item.DisplayName,
+                Tag = item.Path,
+            };
 
-            NavigationViewItem mainItem = new();
 
-            foreach (var item in items)
+            if (!string.IsNullOrEmpty(item.IconGlyph))
             {
-                var homeItem = new NavigationViewItem()
+                homeItem.Icon = new FontIcon()
                 {
-                    Content = item.DisplayName,
-                    Tag = item.Path,
+                    Glyph = item.IconGlyph,
                 };
-                
-                
-                if (!string.IsNullOrEmpty(item.IconGlyph))
-                {
-                    homeItem.Icon = new FontIcon()
-                    {
-                        Glyph = item.IconGlyph,
-                    };
-                }
-
-                foreach (var subItem in item.Items)
-                {
-                    homeItem.MenuItems.Add(new NavigationViewItem()
-                    {
-                        Content = subItem.DisplayName,
-                        Tag = subItem.Path,
-                    });
-                    Debug.WriteLine(subItem.Path);
-                }
-
-                if (item.Id == "WelcomeToHelp")
-                {
-                    mainItem = homeItem;
-                }
-
-                HelpNavigationView.MenuItems.Add(homeItem);
             }
 
-            HelpNavigationView.SelectedItem = mainItem;
+            foreach (var subItem in item.Items)
+            {
+                homeItem.MenuItems.Add(new NavigationViewItem()
+                {
+                    Content = subItem.DisplayName,
+                    Tag = subItem.Path,
+                });
+                Debug.WriteLine(subItem.Path);
+            }
+
+            if (item.Id == "WelcomeToHelp")
+            {
+                mainItem = homeItem;
+            }
+
+            HelpNavigationView.MenuItems.Add(homeItem);
         }
 
-        public void NavigateToPage(string uri)
+        HelpNavigationView.SelectedItem = mainItem;
+    }
+
+    public void NavigateToPage(string uri)
+    {
+        if (!TryNavigateToPage(uri))
         {
-            if (!TryNavigateToPage(uri))
-            {
-                HelpNavigationView.SelectedItem = null;
-                MarkdownTextBlock.Text = string.Format(localizer.GetLocalizedString("/Help/NotFoundTemplate"), uri);
-            }
+            HelpNavigationView.SelectedItem = null;
+            MarkdownTextBlock.Text = string.Format(localizer.GetLocalizedString("/Help/NotFoundTemplate"), uri);
+        }
+    }
+
+    private bool TryNavigateToPage(string uri)
+    {
+        string[] uriParts = uri.Split('/');
+        if (uriParts.Length < 2)
+            return false;
+
+        string category = uriParts[1];
+        string page = string.Empty;
+        if (uriParts.Length >= 3)
+        {
+            page = uriParts[2];
         }
 
-        private bool TryNavigateToPage(string uri)
+        var item = HelpNavigationView.MenuItems
+            .Cast<NavigationViewItem>()
+            .FirstOrDefault(
+            (x) => string.Equals(
+                GetHelpName((string)x.Tag),
+                category,
+                StringComparison.OrdinalIgnoreCase),
+            null);
+
+        if (item == null)
+            return false;
+
+        if (string.IsNullOrEmpty(page))
         {
-            string[] uriParts = uri.Split('/');
-            if (uriParts.Length < 2) return false;
-
-            string category = uriParts[1];
-            string page = string.Empty;
-            if (uriParts.Length >= 3)
-            {
-                page = uriParts[2];
-            }
-
-            var item = HelpNavigationView.MenuItems
+            HelpNavigationView.SelectedItem = item;
+        }
+        else
+        {
+            var subItem = item.MenuItems
                 .Cast<NavigationViewItem>()
                 .FirstOrDefault(
                 (x) => string.Equals(
                     GetHelpName((string)x.Tag),
-                    category, 
-                    StringComparison.OrdinalIgnoreCase), 
+                    page,
+                    StringComparison.OrdinalIgnoreCase),
                 null);
 
-            if (item == null) return false;
+            if (subItem == null)
+                return false;
 
-            if (string.IsNullOrEmpty(page))
-            {
-                HelpNavigationView.SelectedItem = item;
-            }
-            else
-            {
-                var subItem = item.MenuItems
-                    .Cast<NavigationViewItem>()
-                    .FirstOrDefault(
-                    (x) => string.Equals(
-                        GetHelpName((string)x.Tag),
-                        page, 
-                        StringComparison.OrdinalIgnoreCase), 
-                    null);
-
-                if (subItem == null) return false;
-
-                HelpNavigationView.SelectedItem = subItem;
-            }
-            return true;
+            HelpNavigationView.SelectedItem = subItem;
         }
+        return true;
+    }
 
-        // A menu item holds the path of an article or a category folder. The name is compared
-        // without ".md", so a root article such as cdpiui://Help/WelcomeToHelp can be opened too.
-        private static string GetHelpName(string tag) =>
-            string.IsNullOrEmpty(tag)
-                ? string.Empty
-                : Path.GetFileNameWithoutExtension(tag.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+    // A menu item holds the path of an article or a category folder. The name is compared
+    // without ".md", so a root article such as cdpiui://Help/WelcomeToHelp can be opened too.
+    private static string GetHelpName(string tag) =>
+        string.IsNullOrEmpty(tag)
+            ? string.Empty
+            : Path.GetFileNameWithoutExtension(tag.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-        private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        AnimatedIcon.SetState(this.SearchAnimatedIcon, "PointerOver");
+    }
+
+    private void BackButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        AnimatedIcon.SetState(this.SearchAnimatedIcon, "Normal");
+    }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        /*
+        if (ContentFrame.CanGoBack)
         {
-            AnimatedIcon.SetState(this.SearchAnimatedIcon, "PointerOver");
+            ContentFrame.GoBack();
         }
+        */
+    }
 
-        private void BackButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    private void HelpNavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        var selectedItem = HelpNavigationView.SelectedItem;
+        if (selectedItem == null)
+            return;
+
+        string tag = (string)((NavigationViewItem)selectedItem).Tag;
+        if (string.IsNullOrEmpty(tag))
+            return;
+
+        if (Path.Exists(tag) && File.Exists(tag))
         {
-            AnimatedIcon.SetState(this.SearchAnimatedIcon, "Normal");
+            MarkdownTextBlock.Text = ShellHelper.LoadAllTextFromFile(tag);
         }
-
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        else if (tag == "AboutHelp")
         {
-            /*
-            if (ContentFrame.CanGoBack)
-            {
-                ContentFrame.GoBack();
-            }
-            */
+            MarkdownTextBlock.Text = localizer.GetLocalizedString("/Help/AboutTemplate");
         }
+    }
 
-        private void HelpNavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void MarkdownTextBlock_OnLinkClicked(object sender, LinkClickedEventArgs e)
+    {
+        string url = e.Uri.OriginalString;
+        Debug.WriteLine(Uri.IsWellFormedUriString(url, UriKind.Absolute).ToString());
+
+        if (url.StartsWith("cdpiui://", StringComparison.OrdinalIgnoreCase))
         {
-            var selectedItem = HelpNavigationView.SelectedItem;
-            if (selectedItem == null) return;
-
-            string tag = (string)((NavigationViewItem)selectedItem).Tag;
-            if (string.IsNullOrEmpty(tag)) return;
-
-            if (Path.Exists(tag) && File.Exists(tag))
-            {
-                MarkdownTextBlock.Text = ShellHelper.LoadAllTextFromFile(tag);
-            }
-            else if (tag == "AboutHelp")
-            {
-                MarkdownTextBlock.Text = localizer.GetLocalizedString("/Help/AboutTemplate");
-            }
+            // Help pages are documents: their links get the same routes as links from a browser.
+            _ = Commands.CommandsHandler.HandleCommandAsync(url);
         }
-
-        private void MarkdownTextBlock_OnLinkClicked(object sender, LinkClickedEventArgs e)
+        else
         {
-            string url = e.Uri.OriginalString;
-            Debug.WriteLine(Uri.IsWellFormedUriString(url, UriKind.Absolute).ToString());
-            
-            if (url.StartsWith("cdpiui://", StringComparison.OrdinalIgnoreCase))
-            {
-                // Help pages are documents: their links get the same routes as links from a browser.
-                _ = Commands.CommandsHandler.HandleCommandAsync(url);
-            }
-            else
-            {
-                // Links to component documentation were ignored. Only web links are opened.
-                _ = Helper.UrlOpenHelper.LaunchUrl(url);
-            }
+            // Links to component documentation were ignored. Only web links are opened.
+            _ = Helper.UrlOpenHelper.LaunchUrl(url);
         }
     }
 }

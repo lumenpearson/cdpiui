@@ -1,18 +1,18 @@
-﻿using CDPIUI.Shared.Basic.CommandLine;
-using CDPIUI.TrayIcon.Helper.Basic;
-using CDPIUI.TrayIcon.Forms;
-using CDPIUI.TrayIcon.Helper;
-using Microsoft.Toolkit.Uwp.Notifications;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
 using System.Windows.Forms;
+using CDPIUI.Shared.Basic.CommandLine;
+using CDPIUI.Shared.Migration;
+using CDPIUI.Shared.Pipe.Models;
+using CDPIUI.TrayIcon.ConditionalLaunch;
+using CDPIUI.TrayIcon.Forms;
+using CDPIUI.TrayIcon.Helper;
+using CDPIUI.TrayIcon.Helper.Basic;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.Foundation.Collections;
 using Application = System.Windows.Forms.Application;
-using CDPIUI.Shared.Pipe.Models;
-using CDPIUI.Shared.Migration;
-using CDPIUI.TrayIcon.ConditionalLaunch;
 
 class Programm
 {
@@ -115,8 +115,8 @@ class Programm
             }
         }
 
-        
-        
+
+
 
         if (args.Contains("--after-failed-update"))
         {
@@ -132,7 +132,7 @@ class Programm
         _ = CheckProgramUpdates();
         _ = BeginCompatibilityCheck();
 
-        
+
 
         using var context = new TrayApplicationContext(args.Contains("--autorun"));
         Application.Run(context);
@@ -181,7 +181,8 @@ class Programm
 
         protected override void ExitThreadCore()
         {
-            if (!_disposed) _startupCancellation.Cancel();
+            if (!_disposed)
+                _startupCancellation.Cancel();
             base.ExitThreadCore();
         }
 
@@ -216,7 +217,8 @@ class Programm
             {
                 _ = NotifyHelper.HandleToastActionFromBackground(action);
             }
-            else { }
+            else
+            { }
 
             ValueSet userInput = toastArgs.UserInput;
         }

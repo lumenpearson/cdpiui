@@ -1,10 +1,10 @@
-﻿using CDPIUI.Core.Basic;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Core.Store.Database;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using CDPIUI.Core.Basic;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.Store.Data;
+using CDPIUI.Core.Store.Database;
 
 namespace CDPIUI.AddOns.ConfigImport;
 
@@ -1010,10 +1010,14 @@ public sealed partial class ZapretConfigImportService
         path = path.Length == 0 ? "\\" : "\\" + path.TrimStart('\\') + "\\";
 
         var result = new StringBuilder();
-        if (modifiers.Contains('d')) result.Append(drive);
-        if (modifiers.Contains('p')) result.Append(path);
-        if (modifiers.Contains('n')) result.Append(Path.GetFileNameWithoutExtension(fullPath));
-        if (modifiers.Contains('x')) result.Append(Path.GetExtension(fullPath));
+        if (modifiers.Contains('d'))
+            result.Append(drive);
+        if (modifiers.Contains('p'))
+            result.Append(path);
+        if (modifiers.Contains('n'))
+            result.Append(Path.GetFileNameWithoutExtension(fullPath));
+        if (modifiers.Contains('x'))
+            result.Append(Path.GetExtension(fullPath));
         return result.ToString();
     }
 
