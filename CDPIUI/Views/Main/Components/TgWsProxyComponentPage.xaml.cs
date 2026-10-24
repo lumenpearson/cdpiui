@@ -4,7 +4,7 @@ using CDPIUI.Controls.Default;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.ViewModels.Components;
+using CDPIUI.ViewModels.ComponentViews;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;

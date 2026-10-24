@@ -19,7 +19,7 @@ using CDPIUI.Views.Main.Components;
 using Microsoft.UI.Dispatching;
 using WinUI3Localizer;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// State of the tg-ws-proxy settings page: the selected configuration, the proxy and

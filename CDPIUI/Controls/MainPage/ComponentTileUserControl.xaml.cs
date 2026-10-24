@@ -6,7 +6,7 @@ using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Helper;
 using CDPIUI.ViewModels;
-using CDPIUI.ViewModels.Components;
+using CDPIUI.ViewModels.ComponentViews;
 using CDPIUI.Views.CreateConfigUtil;
 using CDPIUI.Views.Main.Components;
 using Microsoft.UI.Xaml;

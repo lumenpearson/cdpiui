@@ -16,7 +16,7 @@ using CDPIUI.Shared.Extensions;
 using Microsoft.UI.Dispatching;
 using WinUI3Localizer;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// State of one component tile on the main page: the title, the process state, the

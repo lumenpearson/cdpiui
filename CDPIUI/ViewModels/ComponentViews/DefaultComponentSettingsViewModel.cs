@@ -17,7 +17,7 @@ using Microsoft.UI.Dispatching;
 using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// State of the default component settings page: the configuration list and selection,

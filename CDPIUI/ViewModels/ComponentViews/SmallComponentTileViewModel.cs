@@ -14,7 +14,7 @@ using Microsoft.UI.Dispatching;
 using WinUI3Localizer;
 using StoreComponents = CDPIUI.Core.Store.Data.Components;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// State of one small component tile: the process state from the task manager, the

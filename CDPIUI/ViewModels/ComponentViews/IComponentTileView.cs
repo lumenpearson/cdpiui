@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace CDPIUI.ViewModels.Components;
+namespace CDPIUI.ViewModels.ComponentViews;
 
 /// <summary>
 /// The windows a component tile opens for its view model.
