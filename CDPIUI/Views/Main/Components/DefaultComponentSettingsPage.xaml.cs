@@ -88,7 +88,6 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
     private void InitSettingsTiles(ConfigSelectorItem sel)
     {
-        bool _flag;
         int generation = Interlocked.Increment(ref _tilesGeneration);
 
         DispatcherQueue.TryEnqueue(() =>
@@ -105,217 +104,48 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
 
         ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
+        ConfigurationService configHelper = componentHelper.GetConfigHelper();
+        ComponentSettingsTileBuilder tileBuilder = new(configHelper, _localizer);
 
-        List<VariableItem> variables = componentHelper.GetConfigHelper().GetVariables(sel.FileName, sel.PackId);
-        List<CommaVariableItem> commaVariables = componentHelper.GetConfigHelper()
+        List<VariableItem> variables = configHelper.GetVariables(sel.FileName, sel.PackId);
+        List<CommaVariableItem> commaVariables = configHelper
             .GetCommaVariables(sel.FileName, sel.PackId);
-        List<string> toggleLists = componentHelper.GetConfigHelper().GetToggleLists(sel.FileName, sel.PackId);
+        List<string> toggleLists = configHelper.GetToggleLists(sel.FileName, sel.PackId);
 
         if (variables.Count > 0 || toggleLists.Count > 0)
         {
-
-            SettingsTile variablesItem = new()
-            {
-                IconGlyph = "\uE713",
-                Title = _localizer.GetLocalizedString("/SettingTiles/AvailableSettings"),
-                Description = _localizer.GetLocalizedString("/SettingTiles/SetupConfig")
-            };
-
-            _flag = false;
-            foreach (var variable in variables)
-            {
-                SettingsTileItem settingsTileItem = new()
-                {
-                    Title = $"{componentHelper.GetConfigHelper().GetLocalizedConfigVarName(variable.name, sel.PackId)}",
-                    ShowTopRectangle = _flag,
-                };
-
-                settingsTileItem.Contents.Add(new SettingTileContentDefinition
-                {
-                    ContentType = SettingTileContentType.ToggleSwitch,
-                    VariableName = variable.name,
-                    InitialToggleState = variable.value,
-                    PackId = sel.PackId,
-                    FileName = sel.FileName,
-                });
-
-                variablesItem.Items.Add(settingsTileItem);
-
-                _flag = true;
-            }
+            SettingsTile variablesItem = tileBuilder.BuildVariablesTile(variables, sel.FileName, sel.PackId);
             DispatcherQueue.TryEnqueue(() =>
             {
                 AddTileIfCurrent(generation, CreateSettingTile(variablesItem, HandleSettingTileElementClick));
             });
         }
 
-        List<SiteListItem> list = componentHelper.GetConfigHelper().GetSiteListItems(sel.FileName, sel.PackId, ignoreNull: true);
+        List<SiteListItem> list = configHelper.GetSiteListItems(sel.FileName, sel.PackId, ignoreNull: true);
         if (list.Count > 0)
         {
-            SettingsTile sitelistTile = new()
-            {
-                IconGlyph = "\uE7C3",
-                Title = _localizer.GetLocalizedString("/SettingTiles/UsedSiteLists"),
-                Description = _localizer.GetLocalizedString("/SettingTiles/UsedSiteListsTip")
-            };
-
-            _flag = false;
-            foreach (SiteListItem item in list)
-            {
-                if (item.Type == "NULL")
-                    continue;
-
-                string hardLinkTargetFile = FileSystemLinksManager.IsFileLinked(sel.PackId, item.FilePath);
-
-                string title =
-                    _localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
-                    $" {item.Name}" + (string.IsNullOrEmpty(hardLinkTargetFile) ? "" : $" ({Path.GetFileName(hardLinkTargetFile)})");
-
-                SettingsTileItem settingsTileItem = new()
-                {
-                    Title = title,
-                    ShowTopRectangle = _flag,
-                };
-
-                settingsTileItem.Contents.Add(new SettingTileContentDefinition
-                {
-                    ContentType = item.Type == "AutoSiteList" ? SettingTileContentType.OnlyViewButton : SettingTileContentType.EditViewButtons,
-                    EditFilePath = item.FilePath,
-                    PackId = sel.PackId,
-                    ViewParams = item.ApplyParams,
-                    PrettyViewParams = item.PrettyApplyParams,
-                    IsFileHardLinked = !string.IsNullOrEmpty(hardLinkTargetFile),
-                    HardLinkTargetFile = hardLinkTargetFile,
-                    IsIPSet = item.Type == "IpList"
-                });
-
-                sitelistTile.Items.Add(settingsTileItem);
-
-                _flag = true;
-            }
-
+            SettingsTile sitelistTile = tileBuilder.BuildSiteListTile(
+                list, sel.PackId, "UsedSiteLists", "UsedSiteListsTip");
             DispatcherQueue.TryEnqueue(() => { AddTileIfCurrent(generation, CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
         }
-        List<SiteListItem> excludeList = componentHelper.GetConfigHelper().GetExcludedSiteListItems(sel.FileName, sel.PackId, ignoreNull: true);
+        List<SiteListItem> excludeList = configHelper.GetExcludedSiteListItems(sel.FileName, sel.PackId, ignoreNull: true);
         if (excludeList.Count > 0)
         {
-            SettingsTile sitelistTile = new()
-            {
-                IconGlyph = "\uE7C3",
-                Title = _localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteLists"),
-                Description = _localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteListsTip")
-            };
-
-            _flag = false;
-            foreach (SiteListItem item in excludeList)
-            {
-                if (item.Type == "NULL")
-                    continue;
-
-                string hardLinkTargetFile = FileSystemLinksManager.IsFileLinked(sel.PackId, item.FilePath);
-
-                string title =
-                    _localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
-                    $" {item.Name}" + (string.IsNullOrEmpty(hardLinkTargetFile) ? "" : $" ({Path.GetFileName(hardLinkTargetFile)})");
-
-                SettingsTileItem settingsTileItem = new()
-                {
-                    Title = title,
-                    ShowTopRectangle = _flag,
-                };
-
-                settingsTileItem.Contents.Add(new SettingTileContentDefinition
-                {
-                    ContentType = item.Type == "AutoSiteList" ? SettingTileContentType.OnlyViewButton : SettingTileContentType.EditViewButtons,
-                    PackId = sel.PackId,
-                    EditFilePath = item.FilePath,
-                    ViewParams = item.ApplyParams,
-                    PrettyViewParams = item.PrettyApplyParams,
-                    IsFileHardLinked = !string.IsNullOrEmpty(hardLinkTargetFile),
-                    HardLinkTargetFile = hardLinkTargetFile,
-                    IsIPSet = item.Type == "IpList"
-                });
-
-                sitelistTile.Items.Add(settingsTileItem);
-
-                _flag = true;
-            }
-
+            SettingsTile sitelistTile = tileBuilder.BuildSiteListTile(
+                excludeList, sel.PackId, "UsedExcludedSiteLists", "UsedExcludedSiteListsTip");
             DispatcherQueue.TryEnqueue(() => { AddTileIfCurrent(generation, CreateSettingTile(sitelistTile, HandleSettingTileElementClick)); });
         }
 
         if (commaVariables.Count > 0)
         {
-            SettingsTile commaVariablesWidget = new()
-            {
-                IconGlyph = "\uEC7A",
-                Title = _localizer.GetLocalizedString("/SettingTiles/AdvancedSettings"),
-                Description = _localizer.GetLocalizedString("/SettingTiles/ConfigVariablesTip"),
-            };
-
-            _flag = false;
-            foreach (CommaVariableItem variable in commaVariables)
-            {
-                SettingsTileItem variableButton = new()
-                {
-                    Title = variable.name,
-                    ShowTopRectangle = _flag,
-                };
-                variableButton.Contents.Add(new SettingTileContentDefinition
-                {
-                    ContentType = SettingTileContentType.FullButton,
-                    Text = variable.value,
-                    VariableName = variable.name,
-                    PackId = sel.PackId,
-                    FileName = sel.FileName,
-                    ClickId = "EDITCOMMAVAR"
-                });
-                commaVariablesWidget.Items.Add(variableButton);
-                _flag = true;
-            }
-
+            SettingsTile commaVariablesWidget = tileBuilder.BuildCommaVariablesTile(commaVariables, sel.FileName, sel.PackId);
             DispatcherQueue.TryEnqueue(() =>
             {
                 AddTileIfCurrent(generation, CreateSettingTile(commaVariablesWidget, HandleSettingTileElementClick));
             });
         }
 
-        SettingsTile helpTile = new()
-        {
-            IconGlyph = "\uE754",
-            Title = _localizer.GetLocalizedString("/Flashlight/Title"),
-            Description = _localizer.GetLocalizedString("/Flashlight/DefaultTip")
-        };
-
-        SettingsTileItem helpTileItem = new()
-        {
-            Title = _localizer.GetLocalizedString("/Flashlight/OpenOfflineHelp"),
-            ShowTopRectangle = false,
-        };
-        helpTileItem.Contents.Add(new SettingTileContentDefinition
-        {
-            ContentType = SettingTileContentType.FullButton,
-            ClickId = "HELPOFFLINE"
-        });
-
-        helpTile.Items.Add(helpTileItem);
-
-        SettingsTileItem whatConfigChooseHelpTileItem = new()
-        {
-            Title = _localizer.GetLocalizedString("/Flashlight/WhatConfigChooseHelp"),
-            ShowTopRectangle = true,
-        };
-        whatConfigChooseHelpTileItem.Contents.Add(new SettingTileContentDefinition
-        {
-            ContentType = SettingTileContentType.FullButton,
-            ClickId = "HELPOFFLINECONFIGCHOOISE"
-        });
-
-        helpTile.Items.Add(whatConfigChooseHelpTileItem);
-
-
-
-        // TODO: add dynamic help
+        SettingsTile helpTile = tileBuilder.BuildHelpTile();
 
         DispatcherQueue.TryEnqueue(() =>
         {
@@ -329,246 +159,6 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
     {
         if (await ComponentTasksManager.Instance.IsTaskRunning(ComponentId))
             await ComponentTasksManager.Instance.RestartTask(ComponentId);
-    }
-
-    private void HandleSettingTileElementClick(ActionIds actionId, List<string> arguments, SettingTileContentDefinition contentDefinition)
-    {
-        switch (actionId)
-        {
-            case ActionIds.ViewButtonClicked:
-                Controls.Dialogs.ViewApplyArgsContentDialog dialog = new()
-                {
-                    Title = _localizer.GetLocalizedString("AppliedFlagsDialogTitle"),
-                    DialogTitle = arguments[0],
-                    Args = contentDefinition.PrettyViewParams,
-                    XamlRoot = this.XamlRoot,
-                };
-                _ = dialog.ShowQueuedAsync();
-                break;
-            case ActionIds.OpenFolderClicked:
-                ShellHelper.LookupFileInDirectory(contentDefinition.EditFilePath);
-                break;
-            case ActionIds.ChangeSiteListClicked:
-                if (contentDefinition.IsFileHardLinked)
-                {
-                    // RevertFileLink catches and logs its own errors.
-                    _ = RevertFileLink(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.HardLinkTargetFile);
-                }
-                else
-                {
-                    // ShowChangeListDialog catches and logs its own errors.
-                    _ = ShowChangeListDialog(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.IsIPSet);
-                }
-                break;
-            case ActionIds.EditButtonClicked:
-                if (!SettingsManager.Instance.GetValue<bool>("FILEOPENACTIONS", "isDialogShown") || !SettingsManager.Instance.GetValueOrDefault<bool>("FILEOPENACTIONS", "doNotRemindAgain", defaultValue: true))
-                {
-                    _ = ShowEditAskDialog(contentDefinition.EditFilePath); // ShowEditAskDialog catches and logs its own errors.
-                }
-                else
-                {
-                    ShellHelper.OpenFile(contentDefinition.EditFilePath);
-                }
-                break;
-            case ActionIds.SwitchToggled:
-                ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-                bool.TryParse(arguments[0], out bool result);
-                componentHelper.GetConfigHelper().ChangeVariableValue(contentDefinition.FileName, contentDefinition.PackId, contentDefinition.VariableName, result);
-
-                _showAnim = false;
-                var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-                Task.Run(() => InitSettingsTiles(item));
-                _ = RestartComponentIfRunning();
-                break;
-            case ActionIds.FullButtonElementClicked:
-                _ = ButtonClick(contentDefinition); // ButtonClick catches and logs its own errors.
-                break;
-
-        }
-    }
-
-    private async Task ShowEditCommaVariableDialog(SettingTileContentDefinition contentDefinition)
-    {
-        ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-        CommaVariableItem variable = componentHelper.GetConfigHelper()
-            .GetCommaVariables(contentDefinition.FileName, contentDefinition.PackId)
-            .FirstOrDefault(item => string.Equals(
-                item.name,
-                contentDefinition.VariableName,
-                StringComparison.OrdinalIgnoreCase));
-        if (variable == null)
-            return;
-
-        var availableValues = new AvailableVarValues
-        {
-            Comment = variable.comment ?? string.Empty,
-            VarName = variable.name,
-            CurrentValueIndex = variable.values.FindIndex(value =>
-                string.Equals(value, variable.value, StringComparison.Ordinal)),
-            Values = variable.values,
-        };
-        var dialog = new EditConfigVarValueDialog(variable.name, variable.value, availableValues)
-        {
-            XamlRoot = XamlRoot,
-        };
-        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary ||
-            string.Equals(dialog.VarValue, variable.value, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        componentHelper.GetConfigHelper().ChangeCommaVariableValue(
-            contentDefinition.FileName,
-            contentDefinition.PackId,
-            contentDefinition.VariableName,
-            dialog.VarValue);
-
-        _showAnim = false;
-        var selectedConfig = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-        _ = Task.Run(() => InitSettingsTiles(selectedConfig));
-        if (await ComponentTasksManager.Instance.IsTaskRunning(ComponentId))
-            _ = ComponentTasksManager.Instance.RestartTask(ComponentId);
-    }
-
-    private async Task RevertFileLink(string file, string packId, string fileName, string linkName)
-    {
-        try
-        {
-            var result = await FileSystemLinksManager.RemoveLinkForItemId(packId, linkName, fileName);
-
-            Debug.WriteLine(result.Success);
-
-            if (!result.Success)
-            {
-                ErrorContentDialog dialog = new();
-                await dialog.ShowErrorDialogAsync(
-                    string.Format(_localizer.GetLocalizedString("ReplaceSiteListException"),
-                    Path.GetFileName(linkName),
-                    Path.GetFileName(fileName),
-                    result.Error.ErrorCode),
-                    result.Error.FriendlyDescription,
-                    this.XamlRoot
-                    );
-            }
-            else
-            {
-
-                _showAnim = false;
-                var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-                _ = Task.Run(() => InitSettingsTiles(item));
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
-        }
-    }
-
-    private async Task ShowChangeListDialog(string file, string packId, string fileName, bool isIPSet)
-    {
-        try
-        {
-            ChangeSiteListContentDialog changeListContentDialog = new()
-            {
-                XamlRoot = this.XamlRoot,
-                ListTitle = file,
-                PackId = packId,
-                FileName = fileName,
-                IsIpSet = isIPSet,
-            };
-            await changeListContentDialog.ShowQueuedAsync();
-
-            if (changeListContentDialog.IsDialogFinishedSuccessfully)
-            {
-                OperationResultModel<EmptyResult> result;
-                if (changeListContentDialog.SelectionType == FileSelectionType.FromTheStore)
-                {
-                    result = await FileSystemLinksManager.CreateHardLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
-                }
-                else
-                {
-                    result = await FileSystemLinksManager.CreateSymbolicLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
-                }
-
-                if (!result.Success)
-                {
-                    ErrorContentDialog dialog = new();
-                    await dialog.ShowErrorDialogAsync(
-                        string.Format(_localizer.GetLocalizedString("ReplaceSiteListException"), Path.GetFileName(fileName), Path.GetFileName(changeListContentDialog.NewFileName), result.Error.ErrorCode),
-                        result.Error.FriendlyDescription,
-                        this.XamlRoot
-                        );
-                }
-                else
-                {
-                    _showAnim = false;
-                    var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-                    _ = Task.Run(() => InitSettingsTiles(item));
-                }
-
-
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
-        }
-    }
-    private async Task ShowEditAskDialog(string file)
-    {
-        try
-        {
-            EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
-            {
-                XamlRoot = this.XamlRoot,
-                FilePath = file
-            };
-            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
-            if (editSitelistAskApplicationContentDialog.IsSuccess)
-                SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
-        }
-    }
-
-    private async Task ButtonClick(SettingTileContentDefinition contentDefinition)
-    {
-        try
-        {
-            switch (contentDefinition.ClickId)
-            {
-                case "CFGCREATE":
-                    await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
-                    break;
-                case "CFGEDIT":
-                    ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-                    var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
-
-                    if (componentHelper != null && item != null)
-                        await ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
-                    break;
-                case "CFGGOODCHECK":
-                    CreateConfigUtilWindow gwindow = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
-                    gwindow.NavigateToPage<CreateViaGoodCheck>(new NameValueCollection() { { "componentId", ComponentId } });
-                    break;
-                case "HELPOFFLINE":
-                    Commands.CommandsHandler.HandleCommand("cdpiui://Help/");
-                    break;
-                case "HELPOFFLINECONFIGCHOOISE":
-                    Commands.CommandsHandler.HandleCommand(
-                        "cdpiui://Help/Autoselection/BestConfigSelection/");
-                    break;
-                case "EDITCOMMAVAR":
-                    await ShowEditCommaVariableDialog(contentDefinition);
-                    break;
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
-        }
     }
 
     private ComponentPresetListSubscription _presetListSubscription;
