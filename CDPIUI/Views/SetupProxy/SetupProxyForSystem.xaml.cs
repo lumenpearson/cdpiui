@@ -31,7 +31,7 @@ namespace CDPIUI.Views.SetupProxy;
 /// </summary>
 public sealed partial class SetupProxyForSystem : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public SetupProxyForSystem()
     {
         InitializeComponent();
@@ -127,9 +127,9 @@ public sealed partial class SetupProxyForSystem : TemplatePage
             Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService), ex.Message);
             _ = new ContentDialog()
             {
-                Title = localizer.GetLocalizedString("ErrorOccurred"),
-                Content = string.Format(localizer.GetLocalizedString("ExceptionSystemProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
-                CloseButtonText = localizer.GetLocalizedString("OkButtonText"),
+                Title = _localizer.GetLocalizedString("ErrorOccurred"),
+                Content = string.Format(_localizer.GetLocalizedString("ExceptionSystemProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
+                CloseButtonText = _localizer.GetLocalizedString("OkButtonText"),
                 Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
                 XamlRoot = this.XamlRoot
             }.ShowQueuedAsync();

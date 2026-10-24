@@ -18,40 +18,40 @@ public class ProcessManager : IProcessService
     public string Id { get; set; } = string.Empty;
     public string ProcessName { get; private set; } = string.Empty;
 
-    private bool useProxy = false;
-    private string proxyType = string.Empty;
-    private string proxiFyreDir = string.Empty;
+    private bool _useProxy = false;
+    private string _proxyType = string.Empty;
+    private string _proxiFyreDir = string.Empty;
     private string _ip = string.Empty;
     private string _port = string.Empty;
 
-    private string? Executable;
+    private string? _executable;
     private string? Args;
 
     public event Action<Tuple<string, bool>>? ProcessStateChanged;
 
-    public bool IsProcessRunning => conPTYHelper?.processState ?? false;
+    public bool IsProcessRunning => _conPTYHelper?.processState ?? false;
 
     public bool IsErrorHappens => LastError != null;
     public ErrorModel? LastError { get; private set; }
 
 
-    private ConPTYHelper conPTYHelper;
-    private ConPTYHelper proxiFyreHelper;
+    private ConPTYHelper _conPTYHelper;
+    private ConPTYHelper _proxiFyreHelper;
 
 
     public ProcessManager()
     {
-        conPTYHelper = new ConPTYHelper();
-        conPTYHelper.ProcessExited += SendStopMessage;
-        conPTYHelper.OutputAdded += SendOutput;
-        conPTYHelper.ErrorHappens += ShowErrorMessage;
-        conPTYHelper.ProcessStateChanged += ChangeProcessState;
+        _conPTYHelper = new ConPTYHelper();
+        _conPTYHelper.ProcessExited += SendStopMessage;
+        _conPTYHelper.OutputAdded += SendOutput;
+        _conPTYHelper.ErrorHappens += ShowErrorMessage;
+        _conPTYHelper.ProcessStateChanged += ChangeProcessState;
 
-        proxiFyreHelper = new ConPTYHelper("PROXIFYRE");
-        proxiFyreHelper.ProcessExited += PFSendStopMessage;
-        proxiFyreHelper.OutputAdded += PFSendOutput;
-        proxiFyreHelper.ErrorHappens += PFShowErrorMessage;
-        proxiFyreHelper.ProcessStateChanged += PFChangeProcessState;
+        _proxiFyreHelper = new ConPTYHelper("PROXIFYRE");
+        _proxiFyreHelper.ProcessExited += PFSendStopMessage;
+        _proxiFyreHelper.OutputAdded += PFSendOutput;
+        _proxiFyreHelper.ErrorHappens += PFShowErrorMessage;
+        _proxiFyreHelper.ProcessStateChanged += PFChangeProcessState;
     }
 
     public bool IsProcessInfoChanged = false;
@@ -66,40 +66,40 @@ public class ProcessManager : IProcessService
 
     public void InitProxy(string path)
     {
-        proxiFyreDir = path;
+        _proxiFyreDir = path;
     }
 
     public void CleanProxy()
     {
-        proxyType = string.Empty;
-        proxiFyreDir = string.Empty;
-        useProxy = false;
+        _proxyType = string.Empty;
+        _proxiFyreDir = string.Empty;
+        _useProxy = false;
     }
 
     public bool IsProxyEnabled()
     {
-        if (proxyType == "AllSystem")
+        if (_proxyType == "AllSystem")
             return true;
 
-        return proxiFyreHelper.processState;
+        return _proxiFyreHelper.processState;
     }
 
     public async Task StartProxy(string _proxyType, string ip, string port)
     {
         _ip = ip;
         _port = port;
-        proxyType = _proxyType;
-        useProxy = !string.IsNullOrEmpty(proxyType);
-        Debug.WriteLine($"Proxy setup for {proxyType}, {ip}, {port}");
-        if (!string.IsNullOrEmpty(proxyType))
+        _proxyType = _proxyType;
+        _useProxy = !string.IsNullOrEmpty(_proxyType);
+        Debug.WriteLine($"Proxy setup for {_proxyType}, {ip}, {port}");
+        if (!string.IsNullOrEmpty(_proxyType))
         {
-            if (proxyType == "AllSystem")
+            if (_proxyType == "AllSystem")
             {
                 StartSystemProxy(ip, port);
             }
-            else if (proxyType == "ProxiFyre")
+            else if (_proxyType == "ProxiFyre")
             {
-                _ = proxiFyreHelper.RunProcess(proxiFyreDir, string.Empty, Path.GetDirectoryName(proxiFyreDir)!);
+                _ = _proxiFyreHelper.RunProcess(_proxiFyreDir, string.Empty, Path.GetDirectoryName(_proxiFyreDir)!);
             }
         }
         await Task.CompletedTask;
@@ -115,18 +115,18 @@ public class ProcessManager : IProcessService
         if (Interlocked.Exchange(ref _systemProxyStarted, 0) == 1)
             StopSystemProxy();
 
-        if (proxiFyreHelper.processState)
-            await proxiFyreHelper.StopProcess();
+        if (_proxiFyreHelper.processState)
+            await _proxiFyreHelper.StopProcess();
     }
 
     public async Task StartProcess()
     {
-        if (Executable != null && Args != null && !IsProcessInfoChanged)
+        if (_executable != null && Args != null && !IsProcessInfoChanged)
         {
-            if (useProxy)
-                await StartProxy(proxyType, _ip, _port);
+            if (_useProxy)
+                await StartProxy(_proxyType, _ip, _port);
 
-            await StartProcess(Executable, Args);
+            await StartProcess(_executable, Args);
         }
         else
         {
@@ -139,7 +139,7 @@ public class ProcessManager : IProcessService
     {
         LastError = null;
         IsProcessInfoChanged = false;
-        Executable = executable;
+        _executable = executable;
         Args = args;
 
         var exePath = executable;
@@ -151,7 +151,7 @@ public class ProcessManager : IProcessService
 
         SendNowSelectedComponentName();
 
-        _ = conPTYHelper.RunProcess(exePath, args ?? string.Empty, workingDirectory ?? "");
+        _ = _conPTYHelper.RunProcess(exePath, args ?? string.Empty, workingDirectory ?? "");
     }
 
     public void SendNowSelectedComponentName()
@@ -168,10 +168,10 @@ public class ProcessManager : IProcessService
     {
         // A start that still waits for its turn counts too: it ran after this stop when the
         // previous process had just exited.
-        if (conPTYHelper.IsRunningOrStarting)
+        if (_conPTYHelper.IsRunningOrStarting)
         {
             await StopProxy();
-            await conPTYHelper.StopProcess(output);
+            await _conPTYHelper.StopProcess(output);
         }
 
         await Task.CompletedTask;
@@ -238,7 +238,7 @@ public class ProcessManager : IProcessService
     {
         _ = PipeHelper.SendConPTYPacket(CONPTYMessageIds.ProcessIdFullOutput, Id, new()
         {
-            { "output", $"{proxiFyreHelper.GetDefaultOutput()}\n{conPTYHelper.GetDefaultOutput()}" }
+            { "output", $"{_proxiFyreHelper.GetDefaultOutput()}\n{_conPTYHelper.GetDefaultOutput()}" }
         });
     }
     public void SendState()
@@ -253,7 +253,7 @@ public class ProcessManager : IProcessService
                 { "stateSnapshot", "true" },
             });
         }
-        else if (conPTYHelper.processState)
+        else if (_conPTYHelper.processState)
         {
             _ = PipeHelper.SendConPTYPacket(CONPTYMessageIds.MarkProcessIdAsStarted, Id);
         }
@@ -264,7 +264,7 @@ public class ProcessManager : IProcessService
     }
 
     // The system proxy is global, so the user's previous settings are kept once for all components.
-    private static readonly object SystemProxyLock = new();
+    private static readonly object SystemProxySyncRoot = new();
     private static RegeditHelper.ProxySnapshot? _systemProxyBackup;
 
     private void StartSystemProxy(string ip, string port)
@@ -288,7 +288,7 @@ public class ProcessManager : IProcessService
         }
         try
         {
-            lock (SystemProxyLock)
+            lock (SystemProxySyncRoot)
             {
                 if (_systemProxyBackup == null)
                 {
@@ -310,7 +310,7 @@ public class ProcessManager : IProcessService
     {
         try
         {
-            lock (SystemProxyLock)
+            lock (SystemProxySyncRoot)
             {
                 // Without a backup the settings were already restored; clearing them here
                 // wiped the user's own proxy.
@@ -376,7 +376,7 @@ public class ProcessManager : IProcessService
         {
             { "output", $"{output}" }
         });
-        _ = conPTYHelper.StopProcess();
+        _ = _conPTYHelper.StopProcess();
     }
     private void PFSendOutput(string output)
     {
@@ -389,7 +389,7 @@ public class ProcessManager : IProcessService
     {
         ProcessStateChanged?.Invoke(Tuple.Create(Id, isRunning));
         if (isRunning == false)
-            _ = conPTYHelper.StopProcess();
+            _ = _conPTYHelper.StopProcess();
     }
     private void PFShowErrorMessage(Tuple<PrettyErrorCode, string> tuple)
     {
@@ -402,7 +402,7 @@ public class ProcessManager : IProcessService
             { "errorMessage", message.ToString() },
             { "errorObject", _object },
         });
-        _ = conPTYHelper.StopProcess();
+        _ = _conPTYHelper.StopProcess();
     }
 
     #endregion

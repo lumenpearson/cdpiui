@@ -24,34 +24,34 @@ public partial class ConsoleFontHelper : INotifyPropertyChanged
 
     #region Settings
 
-    private FontFamily fontFamily;
+    private FontFamily _fontFamily;
     public FontFamily FontFamily
     {
-        get => fontFamily;
+        get => _fontFamily;
         set
         {
-            if (ReferenceEquals(fontFamily, value))
+            if (ReferenceEquals(_fontFamily, value))
                 return;
 
-            fontFamily = value;
+            _fontFamily = value;
 
-            SettingsManager.Instance.SetValue<string>("PSEUDOCONSOLE", "fontFamily", fontFamily.Source.ToString());
+            SettingsManager.Instance.SetValue<string>("PSEUDOCONSOLE", "fontFamily", _fontFamily.Source.ToString());
             Notify(nameof(FontFamily));
         }
     }
 
-    private double fontSize;
+    private double _fontSize;
     public double FontSize
     {
-        get => fontSize;
+        get => _fontSize;
         set
         {
-            if (Equals(fontSize, value))
+            if (Equals(_fontSize, value))
                 return;
 
-            fontSize = value;
+            _fontSize = value;
 
-            SettingsManager.Instance.SetValue<double>("PSEUDOCONSOLE", "fontSize", fontSize);
+            SettingsManager.Instance.SetValue<double>("PSEUDOCONSOLE", "fontSize", _fontSize);
             Notify(nameof(FontSize));
         }
     }
@@ -60,33 +60,33 @@ public partial class ConsoleFontHelper : INotifyPropertyChanged
 
     #region UI
 
-    private bool onlyMonospace = SettingsManager.Instance.GetValueOrDefault<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", defaultValue: true);
+    private bool _onlyMonospace = SettingsManager.Instance.GetValueOrDefault<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", defaultValue: true);
     public bool OnlyMonospace
     {
-        get => onlyMonospace;
+        get => _onlyMonospace;
         set
         {
-            if (Equals(onlyMonospace, value))
+            if (Equals(_onlyMonospace, value))
                 return;
 
-            onlyMonospace = value;
-            SettingsManager.Instance.SetValue<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", onlyMonospace);
+            _onlyMonospace = value;
+            SettingsManager.Instance.SetValue<bool>("PSEUDOCONSOLE", "showOnlyMonospaceFontsInView", _onlyMonospace);
             LoadFonts();
             Notify(nameof(OnlyMonospace));
         }
     }
 
-    private readonly ObservableCollection<FontFamily> availableFonts = [];
+    private readonly ObservableCollection<FontFamily> _availableFonts = [];
     public ObservableCollection<FontFamily> AvailableFonts
     {
         get
         {
-            if (availableFonts is null || availableFonts.Count == 0)
+            if (_availableFonts is null || _availableFonts.Count == 0)
             {
                 LoadFonts();
-                return availableFonts;
+                return _availableFonts;
             }
-            return availableFonts;
+            return _availableFonts;
         }
     }
 
@@ -141,13 +141,13 @@ public partial class ConsoleFontHelper : INotifyPropertyChanged
 
     private void LoadFonts()
     {
-        availableFonts.Clear();
+        _availableFonts.Clear();
 
         foreach (System.Drawing.FontFamily font in System.Drawing.FontFamily.Families)
         {
             if (!OnlyMonospace)
             {
-                availableFonts.Add(new FontFamily(font.Name));
+                _availableFonts.Add(new FontFamily(font.Name));
                 continue;
             }
 
@@ -160,7 +160,7 @@ public partial class ConsoleFontHelper : INotifyPropertyChanged
                 }
                 if (Math.Abs(diff) < float.Epsilon * 2)
                 {
-                    availableFonts.Add(new FontFamily(font.Name));
+                    _availableFonts.Add(new FontFamily(font.Name));
                 }
             }
 

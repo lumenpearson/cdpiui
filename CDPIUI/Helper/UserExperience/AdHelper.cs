@@ -23,18 +23,18 @@ public class AdViewModel : INotifyPropertyChanged
     public required AdType Type { get; set; }
     public string Name { get; set; }
 
-    private bool isActive = false;
+    private bool _isActive = false;
     public bool IsActive
     {
-        get => isActive;
+        get => _isActive;
         set
         {
-            if (Equals(isActive, value))
+            if (Equals(_isActive, value))
                 return;
 
             SettingsManager.Instance.SetValue("AD", $"Show{Type}Ad", value);
 
-            isActive = value;
+            _isActive = value;
             PropertyChanged?.Invoke(
                 this,
                 new PropertyChangedEventArgs(nameof(IsActive)));
@@ -56,18 +56,18 @@ public class AdHelper : INotifyPropertyChanged
 
     public ObservableCollection<AdViewModel> AdSettings { get; } = [];
 
-    private bool showAd = true;
+    private bool _showAd = true;
     public bool ShowAd
     {
-        get => showAd;
+        get => _showAd;
         set
         {
-            if (Equals(showAd, value))
+            if (Equals(_showAd, value))
                 return;
 
             SettingsManager.Instance.SetValue("AD", $"ShowAd", value);
 
-            showAd = value;
+            _showAd = value;
             PropertyChanged?.Invoke(
                 this,
                 new PropertyChangedEventArgs(nameof(ShowAd)));

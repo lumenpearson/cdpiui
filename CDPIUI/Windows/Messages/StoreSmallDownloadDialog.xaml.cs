@@ -38,7 +38,7 @@ namespace CDPIUI.Messages;
 
 public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     private string StoreId = string.Empty;
 
@@ -49,7 +49,7 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
     private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
     private Action<string> _itemActionsStoppedHandler;
 
-    private RepoItemModel item;
+    private RepoItemModel _item;
 
     public StoreSmallDownloadDialog()
     {
@@ -57,7 +57,7 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 
         NewIdSet += NewIdSeted;
 
-        WindowTitle = localizer.GetLocalizedString("StoreWindowsTitle");
+        WindowTitle = _localizer.GetLocalizedString("StoreWindowsTitle");
         IconUri = @"Assets/Icons/Store.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 
@@ -126,28 +126,28 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 
     private void LoadItemInfo()
     {
-        item = StoreHelper.Instance.GetItemInfoFromStoreId(StoreId);
+        _item = StoreHelper.Instance.GetItemInfoFromStoreId(StoreId);
 
-        if (item == null)
+        if (_item == null)
             return;
 
         ConnectHandlers();
         CheckCurrentStatus();
 
-        ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemName"), item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
-        ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(item.icon)));
-        DeveloperTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), item.developer);
-        CategoryTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallCategoryText"), StoreHelper.Instance.GetLocalizedStoreItemName(
-                StoreHelper.Instance.GetCategoryFromStoreId(item.category_id).name,
+        ItemNameTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallItemName"), _item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(_item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
+        ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(_item.icon)));
+        DeveloperTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallDeveloperText"), _item.developer);
+        CategoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallCategoryText"), StoreHelper.Instance.GetLocalizedStoreItemName(
+                StoreHelper.Instance.GetCategoryFromStoreId(_item.category_id).name,
                 StoreLocalizationHelper.GetStoreLikeLocale()
             ));
-        ItemSmallDescriptionTextBlock.Text = LScriptLangHelper.ExecuteScript(item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
+        ItemSmallDescriptionTextBlock.Text = LScriptLangHelper.ExecuteScript(_item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
 
         ToggleItemLoadingMode(false);
 
         if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
         {
-            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+            CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
 
             ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
             DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
@@ -195,7 +195,7 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 
             GetReadyUI();
 
-            CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
+            CurrentStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
             StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
         }
         catch (Exception exception)
@@ -206,12 +206,12 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 
     private async Task<bool> AskLicense()
     {
-        if (item.license == null || item.license.Count == 0)
+        if (_item.license == null || _item.license.Count == 0)
             return true;
 
         AcceptLicenseContentDialog dialog = new()
         {
-            Licenses = item.license,
+            Licenses = _item.license,
             XamlRoot = this.Content.XamlRoot
         };
         if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
@@ -242,39 +242,39 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
         switch (state)
         {
             case "GETR":
-                stageHeaderText = localizer.GetLocalizedString("GettingReady");
+                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "END":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "Downloading":
-                stageHeaderText = localizer.GetLocalizedString("Downloading");
+                stageHeaderText = _localizer.GetLocalizedString("Downloading");
                 StatusProgressbar.IsIndeterminate = false;
                 CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
                 break;
             case "Extracting":
-                stageHeaderText = localizer.GetLocalizedString("Installing");
+                stageHeaderText = _localizer.GetLocalizedString("Installing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "ErrorHappens":
-                stageHeaderText = localizer.GetLocalizedString("ErrorHappens");
+                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
                 break;
             case "Completed":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "CANC":
-                stageHeaderText = localizer.GetLocalizedString("Cancel");
+                stageHeaderText = _localizer.GetLocalizedString("Cancel");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "ConnectingToService":
-                stageHeaderText = localizer.GetLocalizedString("ConnectingToService");
+                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             default:
-                stageHeaderText = localizer.GetLocalizedString(state);
+                stageHeaderText = _localizer.GetLocalizedString(state);
                 StatusProgressbar.IsIndeterminate = true;
                 break;
         }
@@ -349,9 +349,9 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
             ErrorGrid.Visibility = Visibility.Visible;
 
             ErrorCodeTextBlock.Text = errorCode;
-            errorHappened = true;
+            _errorHappened = true;
 
-            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+            CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
         };
         StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
@@ -359,23 +359,23 @@ public sealed partial class StoreSmallDownloadDialog : TemplateWindow
         // another item finished.
         _itemActionsStoppedHandler = (id) =>
         {
-            if (id != StoreId || errorHappened)
+            if (id != StoreId || _errorHappened)
                 return;
             ShowItemAfterInstallActions();
         };
         StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
     }
 
-    private bool errorHappened = false;
+    private bool _errorHappened = false;
 
     private void ShowItemAfterInstallActions()
     {
-        if (item == null)
+        if (_item == null)
             return;
         DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-        CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+        CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
 
-        ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemNameComplete"), item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
+        ItemNameTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallItemNameComplete"), _item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(_item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
     }
 
 }

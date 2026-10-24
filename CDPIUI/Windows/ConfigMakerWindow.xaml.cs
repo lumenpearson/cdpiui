@@ -25,7 +25,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
             if (configItem?.target == null || configItem.target.Count == 0)
                 return;
             var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
-            window.componentSelectionRequested = true;
+            window._componentSelectionRequested = true;
             App.ActivateWindow(window);
             if (await window.IsExitAvailable())
             {
@@ -41,7 +41,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
     public static async Task CreateForComponentAsync(string componentId)
     {
         var window = await ((App)Application.Current).SafeCreateNewWindow<ConfigMakerWindow>(activate: false);
-        window.componentSelectionRequested = true;
+        window._componentSelectionRequested = true;
         App.ActivateWindow(window);
         if (!await window.IsExitAvailable())
             return;
@@ -49,8 +49,8 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
         await window.ConfigMaker.NewDocumentAsync();
     }
 
-    private bool componentSelectionRequested;
-    private ILocalizer localizer = Localizer.Get();
+    private bool _componentSelectionRequested;
+    private ILocalizer _localizer = Localizer.Get();
 
     public ConfigMakerWindow()
     {
@@ -105,12 +105,12 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
     private async void RootGrid_Loaded(object sender, RoutedEventArgs e)
     {
-        if (componentSelectionRequested || !string.IsNullOrWhiteSpace(ConfigMaker.ComponentId))
+        if (_componentSelectionRequested || !string.IsNullOrWhiteSpace(ConfigMaker.ComponentId))
         {
             return;
         }
 
-        componentSelectionRequested = true;
+        _componentSelectionRequested = true;
         IReadOnlyList<ConfigMakerComponentInfo> components =
             ConfigMakerComponentCatalog.GetAvailableComponents();
 
@@ -119,9 +119,9 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
             ContentDialog unavailableDialog = new()
             {
                 XamlRoot = RootGrid.XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerSelectComponentDialogTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerNoComponentsDialogMessage"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                Title = _localizer.GetLocalizedString("ConfigMakerSelectComponentDialogTitle"),
+                Content = _localizer.GetLocalizedString("ConfigMakerNoComponentsDialogMessage"),
+                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
             };
             await unavailableDialog.ShowQueuedAsync();
             Close();
@@ -133,19 +133,19 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
 
 
 
-    private bool closeConfirmed;
-    private bool isExitDialogOpened;
+    private bool _closeConfirmed;
+    private bool _isExitDialogOpened;
 
     private async void ConfigMakerWindow_Closed(object sender, WindowEventArgs args)
     {
-        if (!closeConfirmed && HasUnsavedChanges())
+        if (!_closeConfirmed && HasUnsavedChanges())
         {
             // Handled must be set before the first await, otherwise the window is already closing.
             args.Handled = true;
-            if (isExitDialogOpened)
+            if (_isExitDialogOpened)
                 return;
 
-            isExitDialogOpened = true;
+            _isExitDialogOpened = true;
             bool confirmed;
             try
             {
@@ -153,13 +153,13 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
             }
             finally
             {
-                isExitDialogOpened = false;
+                _isExitDialogOpened = false;
             }
 
             if (!confirmed)
                 return;
 
-            closeConfirmed = true;
+            _closeConfirmed = true;
             Close();
             return;
         }
@@ -306,10 +306,10 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
     {
         ContentDialog exitDialog = new()
         {
-            Title = localizer.GetLocalizedString("Exit"),
-            Content = localizer.GetLocalizedString("ExitAsk"),
-            PrimaryButtonText = localizer.GetLocalizedString("Yes"),
-            CloseButtonText = localizer.GetLocalizedString("No"),
+            Title = _localizer.GetLocalizedString("Exit"),
+            Content = _localizer.GetLocalizedString("ExitAsk"),
+            PrimaryButtonText = _localizer.GetLocalizedString("Yes"),
+            CloseButtonText = _localizer.GetLocalizedString("No"),
             XamlRoot = this.Content.XamlRoot,
             Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
         };

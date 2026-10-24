@@ -37,13 +37,13 @@ public enum InstallError
 public class InstallHelper
 {
     private static InstallHelper _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static InstallHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new InstallHelper();

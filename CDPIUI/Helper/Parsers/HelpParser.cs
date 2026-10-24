@@ -24,7 +24,7 @@ public class HelpItem
 }
 public class HelpParser
 {
-    private static Dictionary<string, string> HelpIconGlyphsPairs = new()
+    private static Dictionary<string, string> _helpIconGlyphsPairs = new()
     {
         { "WelcomeToHelp", "\uE734" },
         { "GettingStarted", "\uE7BE" },
@@ -42,7 +42,7 @@ public class HelpParser
 
     private static string GetGlyphForId(string id)
     {
-        return HelpIconGlyphsPairs.FirstOrDefault((x) => x.Key == id, new(key: id, value: string.Empty)).Value;
+        return _helpIconGlyphsPairs.FirstOrDefault((x) => x.Key == id, new(key: id, value: string.Empty)).Value;
     }
 
     private static string GetLocalizedNameFromId(string id)

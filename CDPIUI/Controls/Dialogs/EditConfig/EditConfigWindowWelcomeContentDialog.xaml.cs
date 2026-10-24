@@ -49,14 +49,14 @@ public enum EditConfigWelcomeWindowResult
 public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 {
 
-    private readonly ObservableCollection<ConfigSelectorItem> ConfigModels = [];
-    private readonly ObservableCollection<ViewStoreItemModel> ConfigKits = [];
+    private readonly ObservableCollection<ConfigSelectorItem> _configModels = [];
+    private readonly ObservableCollection<ViewStoreItemModel> _configKits = [];
 
     public EditConfigWelcomeWindowResult Result { get; private set; } = EditConfigWelcomeWindowResult.None;
     public object ResultObject { get; private set; } = null;
     public string ResultSelectedComponentId { get; private set; } = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public EditConfigWindowWelcomeContentDialog()
     {
@@ -65,8 +65,8 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         InitDialog();
         _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
 
-        ConfigsListView.ItemsSource = ConfigModels;
-        ConfigKitsListView.ItemsSource = ConfigKits;
+        ConfigsListView.ItemsSource = _configModels;
+        ConfigKitsListView.ItemsSource = _configKits;
 
         this.Closing += EditConfigWindowWelcomeContentDialog_Closing;
     }
@@ -97,7 +97,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
     private void InitModel(string componentId)
     {
-        ConfigModels.Clear();
+        _configModels.Clear();
         ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
                 componentId);
@@ -109,7 +109,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
             PackNameLookup packNames = new();
             foreach (var item in items)
             {
-                ConfigModels.Add(
+                _configModels.Add(
                     new()
                     {
                         DisplayName = item.name,
@@ -121,7 +121,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
             }
         }
 
-        if (ConfigModels.Count == 0)
+        if (_configModels.Count == 0)
         {
             ConfigsNotFoundStackPanel.Visibility = Visibility.Visible;
         }
@@ -135,12 +135,12 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
     {
         try
         {
-            ConfigKits.Clear();
+            _configKits.Clear();
             List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
             foreach (DatabaseStoreItem item in items)
             {
-                ConfigKits.Add(new()
+                _configKits.Add(new()
                 {
                     StoreId = item.Id,
                     Name = item.ShortName,

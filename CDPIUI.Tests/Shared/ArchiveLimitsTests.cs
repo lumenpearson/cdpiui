@@ -5,15 +5,15 @@ namespace CDPIUI.Tests.Shared;
 
 public sealed class ArchiveLimitsTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-limits-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-limits-" + Guid.NewGuid().ToString("N"));
 
-    public ArchiveLimitsTests() => Directory.CreateDirectory(directory);
+    public ArchiveLimitsTests() => Directory.CreateDirectory(_directory);
 
-    public void Dispose() => Directory.Delete(directory, true);
+    public void Dispose() => Directory.Delete(_directory, true);
 
     private string CreateArchive(Action<ZipArchive> fill)
     {
-        string path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".zip");
+        string path = Path.Combine(_directory, Guid.NewGuid().ToString("N") + ".zip");
         using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
             fill(archive);
         return path;
@@ -59,7 +59,7 @@ public sealed class ArchiveLimitsTests : IDisposable
     {
         byte[] content = [1, 2, 3, 4, 5];
         string path = CreateArchive(archive => WriteEntry(archive, "a.bin", content));
-        string destination = Path.Combine(directory, "a.bin");
+        string destination = Path.Combine(_directory, "a.bin");
         using (var archive = ZipFile.OpenRead(path))
             ArchivePaths.ExtractToFileBounded(archive.Entries[0], destination);
         Assert.Equal(content, File.ReadAllBytes(destination));
@@ -68,8 +68,8 @@ public sealed class ArchiveLimitsTests : IDisposable
     [Fact]
     public void LinkedFolderInsideRootIsRejected()
     {
-        string root = Path.Combine(directory, "root");
-        string outside = Path.Combine(directory, "outside");
+        string root = Path.Combine(_directory, "root");
+        string outside = Path.Combine(_directory, "outside");
         Directory.CreateDirectory(root);
         Directory.CreateDirectory(outside);
         try
@@ -89,7 +89,7 @@ public sealed class ArchiveLimitsTests : IDisposable
     [Fact]
     public void PlainFoldersPassTheLinkCheck()
     {
-        string root = Path.Combine(directory, "root");
+        string root = Path.Combine(_directory, "root");
         Directory.CreateDirectory(Path.Combine(root, "lists"));
         ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "lists", "list.txt"));
     }

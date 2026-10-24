@@ -26,18 +26,18 @@ internal class LocalizationService : ILocalizationService
     public string? LocalizationName;
     public Dictionary<string, string>? LocalizationDict;
 
-    private Dictionary<string, string> storeLocalizationPaths = [];
-    private readonly object cacheLock = new();
+    private Dictionary<string, string> _storeLocalizationPaths = [];
+    private readonly object _cacheLock = new();
 
     // Set after every repository sync: the cached strings were kept from the previous one.
     public Dictionary<string, string> StoreLocalizationPaths
     {
-        get => storeLocalizationPaths;
+        get => _storeLocalizationPaths;
         set
         {
-            lock (cacheLock)
+            lock (_cacheLock)
             {
-                storeLocalizationPaths = value ?? [];
+                _storeLocalizationPaths = value ?? [];
                 LocalizationName = null;
                 LocalizationDict = null;
             }
@@ -58,7 +58,7 @@ internal class LocalizationService : ILocalizationService
 
         try
         {
-            lock (cacheLock)
+            lock (_cacheLock)
             {
                 if (LocalizationName != langCode || LocalizationDict == null)
                 {

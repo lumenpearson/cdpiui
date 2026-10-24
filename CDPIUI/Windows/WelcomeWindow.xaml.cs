@@ -55,19 +55,19 @@ public sealed partial class WelcomeWindow : TemplateWindow
 {
     public const string MigrationWindowId = "GoodbyeDpiMigrationWelcome";
 
-    private ILocalizer localizer = Localizer.Get();
-    private GoodbyeDpiMigrationSession? migrationSession;
-    private CancellationTokenSource migrationCancellation = new();
-    private List<RepoItemModel> migrationComponents = [];
-    private readonly Dictionary<string, double> migrationComponentProgress = new(StringComparer.OrdinalIgnoreCase);
-    private bool migrationFlowStarted;
-    private bool migrationImportInProgress;
-    private bool migrationReadyToContinue;
-    private bool migrationHandlersConnected;
-    private Action<Tuple<string, string>>? migrationStageHandler;
-    private Action<Tuple<string, double>>? migrationProgressHandler;
-    private Action<Tuple<string, ErrorModel>>? migrationErrorHandler;
-    private Action<string>? migrationStoppedHandler;
+    private ILocalizer _localizer = Localizer.Get();
+    private GoodbyeDpiMigrationSession? _migrationSession;
+    private CancellationTokenSource _migrationCancellation = new();
+    private List<RepoItemModel> _migrationComponents = [];
+    private readonly Dictionary<string, double> _migrationComponentProgress = new(StringComparer.OrdinalIgnoreCase);
+    private bool _migrationFlowStarted;
+    private bool _migrationImportInProgress;
+    private bool _migrationReadyToContinue;
+    private bool _migrationHandlersConnected;
+    private Action<Tuple<string, string>>? _migrationStageHandler;
+    private Action<Tuple<string, double>>? _migrationProgressHandler;
+    private Action<Tuple<string, ErrorModel>>? _migrationErrorHandler;
+    private Action<string>? _migrationStoppedHandler;
 
     private MarkdownConfig _config;
 
@@ -83,7 +83,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("WelcomeWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("WelcomeWindowTitle");
         IconUri = @"Assets/favicon.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 
@@ -91,33 +91,33 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
         _config = new MarkdownConfig();
         Closed += WelcomeWindow_Closed;
-        localizer.LanguageChanged += Localizer_LanguageChanged;
+        _localizer.LanguageChanged += Localizer_LanguageChanged;
 
         StoreViewBundles.ItemsSource = Kits;
     }
 
     internal void SetMigrationSession(GoodbyeDpiMigrationSession session)
     {
-        if (ReferenceEquals(migrationSession, session))
+        if (ReferenceEquals(_migrationSession, session))
         {
             ApplyMigrationSessionState();
             return;
         }
 
-        if (migrationSession != null)
-            migrationSession.Changed -= MigrationSession_Changed;
+        if (_migrationSession != null)
+            _migrationSession.Changed -= MigrationSession_Changed;
         DisconnectMigrationQueueHandlers();
-        migrationCancellation.Cancel();
-        migrationCancellation.Dispose();
-        migrationCancellation = new CancellationTokenSource();
+        _migrationCancellation.Cancel();
+        _migrationCancellation.Dispose();
+        _migrationCancellation = new CancellationTokenSource();
 
-        migrationSession = session;
-        migrationSession.Changed += MigrationSession_Changed;
-        migrationFlowStarted = false;
-        migrationImportInProgress = false;
-        migrationReadyToContinue = false;
-        migrationComponents = [];
-        migrationComponentProgress.Clear();
+        _migrationSession = session;
+        _migrationSession.Changed += MigrationSession_Changed;
+        _migrationFlowStarted = false;
+        _migrationImportInProgress = false;
+        _migrationReadyToContinue = false;
+        _migrationComponents = [];
+        _migrationComponentProgress.Clear();
 
         ReadyBundlesContent.Visibility = Visibility.Collapsed;
         MigrationContent.Visibility = Visibility.Visible;
@@ -163,7 +163,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
             (BackButton, sel == WelcomeItem || isComplete
                 ? Visibility.Collapsed
                 : Visibility.Visible),
-            (SkipButton, sel == StoreItem && migrationSession == null ? Visibility.Visible : Visibility.Collapsed),
+            (SkipButton, sel == StoreItem && _migrationSession == null ? Visibility.Visible : Visibility.Collapsed),
             (NextButton, isComplete ? Visibility.Collapsed : Visibility.Visible),
             (CompleteButton, isComplete ? Visibility.Visible : Visibility.Collapsed));
 
@@ -184,7 +184,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
         }
         else if (sel == StoreItem)
         {
-            if (migrationSession == null)
+            if (_migrationSession == null)
             {
                 _ = TryLoadStore(); // TryLoadStore catches and logs its own errors.
             }
@@ -193,7 +193,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 UtilityButtonControls.SetButtonVisibilities(
                     (SkipButton, Visibility.Collapsed),
                     (NextButton, Visibility.Visible));
-                NextButton.IsEnabled = migrationReadyToContinue;
+                NextButton.IsEnabled = _migrationReadyToContinue;
                 _ = TryStartMigrationFlow(); // TryStartMigrationFlow catches and logs its own errors.
             }
         }
@@ -265,7 +265,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 (NextButton, Visibility.Collapsed),
                 (SkipButton, Visibility.Visible));
             UtilityButtonControls.IsLoading = true;
-            UtilityButtonControls.LoadingStateText = localizer.GetLocalizedString("UpdatingStoreDatabase");
+            UtilityButtonControls.LoadingStateText = _localizer.GetLocalizedString("UpdatingStoreDatabase");
 
             bool result = await StoreHelper.Instance.LoadAllStoreDatabase();
 
@@ -324,10 +324,10 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private void ApplyMigrationSessionState()
     {
-        if (migrationSession == null)
+        if (_migrationSession == null)
             return;
-        MigrationProgressBar.Value = Math.Max(MigrationProgressBar.Value, migrationSession.Progress);
-        switch (migrationSession.State)
+        MigrationProgressBar.Value = Math.Max(MigrationProgressBar.Value, _migrationSession.Progress);
+        switch (_migrationSession.State)
         {
             case MigrationSessionState.Accepted:
             case MigrationSessionState.Preparing:
@@ -352,9 +352,9 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 ShowMigrationStatus("MigrationImportTitle", "MigrationImportMessage", InfoBarSeverity.Informational);
                 break;
             case MigrationSessionState.Completed:
-                migrationReadyToContinue = true;
+                _migrationReadyToContinue = true;
                 bool completedWithWarnings = string.Equals(
-                    migrationSession.ErrorCode,
+                    _migrationSession.ErrorCode,
                     "MIGRATION_IMPORT_INCOMPLETE",
                     StringComparison.Ordinal);
                 ShowMigrationStatus(
@@ -366,43 +366,43 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 break;
             case MigrationSessionState.Failed:
                 ShowMigrationError(
-                    migrationSession.Message ?? Localized("MigrationGenericError"),
-                    migrationSession.ErrorCode ?? "MIGRATION_FAILED");
+                    _migrationSession.Message ?? Localized("MigrationGenericError"),
+                    _migrationSession.ErrorCode ?? "MIGRATION_FAILED");
                 break;
         }
         if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
-            NextButton.IsEnabled = migrationReadyToContinue;
+            NextButton.IsEnabled = _migrationReadyToContinue;
     }
 
     private async Task TryStartMigrationFlow()
     {
         try
         {
-            if (migrationSession == null || migrationReadyToContinue || migrationFlowStarted)
+            if (_migrationSession == null || _migrationReadyToContinue || _migrationFlowStarted)
                 return;
-            if (migrationSession.Package == null)
+            if (_migrationSession.Package == null)
             {
-                if (migrationSession.State == MigrationSessionState.Failed)
+                if (_migrationSession.State == MigrationSessionState.Failed)
                     ShowMigrationError(
-                        migrationSession.Message ?? Localized("MigrationGenericError"),
-                        migrationSession.ErrorCode ?? "MIGRATION_PREPARATION_FAILED");
+                        _migrationSession.Message ?? Localized("MigrationGenericError"),
+                        _migrationSession.ErrorCode ?? "MIGRATION_PREPARATION_FAILED");
                 else
                     ShowMigrationStatus("MigrationPreparingTitle", "MigrationPreparingMessage", InfoBarSeverity.Informational);
                 return;
             }
 
-            VerifiedMigrationPackage package = migrationSession.Package;
+            VerifiedMigrationPackage package = _migrationSession.Package;
             if (MigrationImportService.IsAlreadyCompleted(package))
             {
                 MigrationSummaryTextBlock.Text = Localized("MigrationAlreadyCompleted");
-                await migrationSession.UpdateAsync(MigrationSessionState.Completed, 100);
+                await _migrationSession.UpdateAsync(MigrationSessionState.Completed, 100);
                 return;
             }
 
-            migrationFlowStarted = true;
+            _migrationFlowStarted = true;
             RetryMigrationButton.Visibility = Visibility.Collapsed;
             MigrationComponentsListView.Visibility = Visibility.Visible;
-            await migrationSession.UpdateAsync(MigrationSessionState.LoadingComponents, 22);
+            await _migrationSession.UpdateAsync(MigrationSessionState.LoadingComponents, 22);
             bool storeLoaded = await StoreHelper.Instance.LoadAllStoreDatabase();
             if (!storeLoaded)
             {
@@ -412,20 +412,20 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 return;
             }
 
-            migrationComponents = package.Components
+            _migrationComponents = package.Components
                 .Select(component => StoreHelper.Instance.GetItemInfoFromStoreId(component.InstallItemId))
                 .OfType<RepoItemModel>()
                 .GroupBy(component => component.store_id, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
-            if (migrationComponents.Count != package.Components.Count)
+            if (_migrationComponents.Count != package.Components.Count)
             {
                 await FailMigrationAsync(
                     Localized("MigrationComponentMissingFromStore"),
                     "MIGRATION_COMPONENT_NOT_FOUND");
                 return;
             }
-            if (migrationComponents.Any(component => !IsItemSupported(component)))
+            if (_migrationComponents.Any(component => !IsItemSupported(component)))
             {
                 await FailMigrationAsync(
                     Localized("MigrationComponentUnsupported"),
@@ -434,7 +434,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
             }
 
             UpdateMigrationComponentList();
-            List<RepoItemModel> itemsToInstall = migrationComponents
+            List<RepoItemModel> itemsToInstall = _migrationComponents
                 .Where(item => !DatabaseHelper.Instance.IsItemInstalled(item.store_id!))
                 .ToList();
             if (itemsToInstall.Count == 0)
@@ -450,7 +450,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 .ToList();
             if (licenses.Count > 0)
             {
-                await migrationSession.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
+                await _migrationSession.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
                 AcceptLicenseContentDialog dialog = new()
                 {
                     Licenses = licenses,
@@ -458,7 +458,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 };
                 if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
                 {
-                    migrationFlowStarted = false;
+                    _migrationFlowStarted = false;
                     RetryMigrationButton.Visibility = Visibility.Visible;
                     MigrationSummaryTextBlock.Text = Localized("MigrationComponentLicenseDeclined");
                     return;
@@ -468,11 +468,11 @@ public sealed partial class WelcomeWindow : TemplateWindow
             ConnectMigrationQueueHandlers();
             foreach (RepoItemModel item in itemsToInstall)
             {
-                migrationComponentProgress[item.store_id!] = 0;
+                _migrationComponentProgress[item.store_id!] = 0;
                 StoreHelper.Instance.RemoveItemFromQueue(item.store_id!);
                 StoreHelper.Instance.AddItemToQueue(item.store_id!, string.Empty);
             }
-            await migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
+            await _migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
             UpdateMigrationComponentList();
             UpdateMigrationComponentProgress();
         }
@@ -492,9 +492,9 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private void ConnectMigrationQueueHandlers()
     {
-        if (migrationHandlersConnected)
+        if (_migrationHandlersConnected)
             return;
-        migrationStageHandler = data =>
+        _migrationStageHandler = data =>
         {
             string? itemId = StoreHelper.Instance.GetItemIdFromOperationId(data.Item1);
             if (!ContainsMigrationComponent(itemId))
@@ -505,18 +505,18 @@ public sealed partial class WelcomeWindow : TemplateWindow
                 UpdateMigrationComponentProgress();
             });
         };
-        migrationProgressHandler = data =>
+        _migrationProgressHandler = data =>
         {
             string? itemId = StoreHelper.Instance.GetItemIdFromOperationId(data.Item1);
             if (!ContainsMigrationComponent(itemId))
                 return;
             RunMigrationOnUiThread(() =>
             {
-                migrationComponentProgress[itemId!] = data.Item2;
+                _migrationComponentProgress[itemId!] = data.Item2;
                 UpdateMigrationComponentProgress();
             });
         };
-        migrationErrorHandler = data =>
+        _migrationErrorHandler = data =>
         {
             string? itemId = StoreHelper.Instance.GetItemIdFromOperationId(data.Item1);
             if (!ContainsMigrationComponent(itemId))
@@ -527,36 +527,36 @@ public sealed partial class WelcomeWindow : TemplateWindow
                     ? "MIGRATION_COMPONENT_INSTALL_FAILED"
                     : data.Item2.ErrorCode));
         };
-        migrationStoppedHandler = itemId =>
+        _migrationStoppedHandler = itemId =>
         {
             if (!ContainsMigrationComponent(itemId))
                 return;
             RunMigrationOnUiThread(() => _ = HandleMigrationQueueStoppedAsync(itemId));
         };
-        StoreHelper.Instance.ItemDownloadStageChanged += migrationStageHandler;
-        StoreHelper.Instance.ItemDownloadProgressChanged += migrationProgressHandler;
-        StoreHelper.Instance.ItemInstallingErrorHappens += migrationErrorHandler;
-        StoreHelper.Instance.ItemActionsStopped += migrationStoppedHandler;
-        migrationHandlersConnected = true;
+        StoreHelper.Instance.ItemDownloadStageChanged += _migrationStageHandler;
+        StoreHelper.Instance.ItemDownloadProgressChanged += _migrationProgressHandler;
+        StoreHelper.Instance.ItemInstallingErrorHappens += _migrationErrorHandler;
+        StoreHelper.Instance.ItemActionsStopped += _migrationStoppedHandler;
+        _migrationHandlersConnected = true;
     }
 
     private void DisconnectMigrationQueueHandlers()
     {
-        if (!migrationHandlersConnected)
+        if (!_migrationHandlersConnected)
             return;
-        StoreHelper.Instance.ItemDownloadStageChanged -= migrationStageHandler;
-        StoreHelper.Instance.ItemDownloadProgressChanged -= migrationProgressHandler;
-        StoreHelper.Instance.ItemInstallingErrorHappens -= migrationErrorHandler;
-        StoreHelper.Instance.ItemActionsStopped -= migrationStoppedHandler;
-        migrationHandlersConnected = false;
+        StoreHelper.Instance.ItemDownloadStageChanged -= _migrationStageHandler;
+        StoreHelper.Instance.ItemDownloadProgressChanged -= _migrationProgressHandler;
+        StoreHelper.Instance.ItemInstallingErrorHappens -= _migrationErrorHandler;
+        StoreHelper.Instance.ItemActionsStopped -= _migrationStoppedHandler;
+        _migrationHandlersConnected = false;
     }
 
     private async Task HandleMigrationQueueStoppedAsync(string itemId)
     {
-        migrationComponentProgress[itemId] = DatabaseHelper.Instance.IsItemInstalled(itemId) ? 100 : 0;
+        _migrationComponentProgress[itemId] = DatabaseHelper.Instance.IsItemInstalled(itemId) ? 100 : 0;
         UpdateMigrationComponentList();
         UpdateMigrationComponentProgress();
-        if (migrationComponents.Count > 0 && migrationComponents.All(
+        if (_migrationComponents.Count > 0 && _migrationComponents.All(
                 item => DatabaseHelper.Instance.IsItemInstalled(item.store_id!)))
         {
             DisconnectMigrationQueueHandlers();
@@ -564,7 +564,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
             return;
         }
 
-        bool hasQueuedItems = migrationComponents.Any(item =>
+        bool hasQueuedItems = _migrationComponents.Any(item =>
             !string.IsNullOrWhiteSpace(StoreHelper.Instance.GetOperationIdFromItemId(item.store_id!)));
         if (!hasQueuedItems)
         {
@@ -576,16 +576,16 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private async Task BeginMigrationImportAsync()
     {
-        if (migrationSession?.Package == null || migrationImportInProgress || migrationReadyToContinue)
+        if (_migrationSession?.Package == null || _migrationImportInProgress || _migrationReadyToContinue)
             return;
-        migrationImportInProgress = true;
+        _migrationImportInProgress = true;
         DisconnectMigrationQueueHandlers();
         RetryMigrationButton.Visibility = Visibility.Collapsed;
-        MigrationComponentsListView.Visibility = migrationComponents.Count == 0
+        MigrationComponentsListView.Visibility = _migrationComponents.Count == 0
             ? Visibility.Collapsed
             : Visibility.Visible;
-        await migrationSession.UpdateAsync(MigrationSessionState.ReadyToImport, 65);
-        await migrationSession.UpdateAsync(MigrationSessionState.Importing, 67);
+        await _migrationSession.UpdateAsync(MigrationSessionState.ReadyToImport, 65);
+        await _migrationSession.UpdateAsync(MigrationSessionState.Importing, 67);
 
         try
         {
@@ -593,20 +593,20 @@ public sealed partial class WelcomeWindow : TemplateWindow
             {
                 double overall = 67 + Math.Clamp(value, 0, 100) * 0.31;
                 MigrationProgressBar.Value = overall;
-                _ = migrationSession.UpdateAsync(MigrationSessionState.Importing, overall);
+                _ = _migrationSession.UpdateAsync(MigrationSessionState.Importing, overall);
             });
             // Read before Task.Run: closing the window or a new session replaces the source.
-            CancellationToken migrationToken = migrationCancellation.Token;
+            CancellationToken migrationToken = _migrationCancellation.Token;
             MigrationImportResult result = await Task.Run(() =>
                 new MigrationImportService().Import(
-                    migrationSession.Package,
+                    _migrationSession.Package,
                     importProgress,
                     migrationToken));
 
             try
             {
                 ComponentItemsLoaderHelper.Instance.Init();
-                foreach (MigrationComponentRequirement component in migrationSession.Package.Components)
+                foreach (MigrationComponentRequirement component in _migrationSession.Package.Components)
                     ComponentItemsLoaderHelper.Instance
                         .GetComponentHelperFromId(component.InstallItemId)?
                         .ReInitConfigs();
@@ -632,9 +632,9 @@ public sealed partial class WelcomeWindow : TemplateWindow
                     string.Format(Localized("MigrationImportWarningsSummary"), result.Issues.Count);
             }
             MigrationSummaryTextBlock.Text = summary;
-            migrationReadyToContinue = true;
-            migrationImportInProgress = false;
-            await migrationSession.UpdateAsync(
+            _migrationReadyToContinue = true;
+            _migrationImportInProgress = false;
+            await _migrationSession.UpdateAsync(
                 MigrationSessionState.Completed,
                 100,
                 result.Issues.Count > 0 ? Localized("MigrationImportIncompleteMessage") : null,
@@ -643,16 +643,16 @@ public sealed partial class WelcomeWindow : TemplateWindow
         }
         catch (OperationCanceledException)
         {
-            migrationImportInProgress = false;
+            _migrationImportInProgress = false;
             await FailMigrationAsync(Localized("MigrationCanceled"), "MIGRATION_CANCELED");
         }
         catch (Exception exception)
         {
-            migrationImportInProgress = false;
+            _migrationImportInProgress = false;
             Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
             MigrationSummaryTextBlock.Text = Localized("MigrationImportIncompleteMessage");
-            migrationReadyToContinue = true;
-            await migrationSession.UpdateAsync(
+            _migrationReadyToContinue = true;
+            await _migrationSession.UpdateAsync(
                 MigrationSessionState.Completed,
                 100,
                 Localized("MigrationImportIncompleteMessage"),
@@ -663,13 +663,13 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private void UpdateMigrationComponentProgress()
     {
-        if (migrationComponents.Count == 0)
+        if (_migrationComponents.Count == 0)
         {
             MigrationProgressBar.Value = 65;
             return;
         }
         double total = 0;
-        foreach (RepoItemModel item in migrationComponents)
+        foreach (RepoItemModel item in _migrationComponents)
         {
             if (DatabaseHelper.Instance.IsItemInstalled(item.store_id!))
             {
@@ -678,21 +678,21 @@ public sealed partial class WelcomeWindow : TemplateWindow
             }
             string? operationId = StoreHelper.Instance.GetOperationIdFromItemId(item.store_id!);
             double value = operationId == null
-                ? migrationComponentProgress.GetValueOrDefault(item.store_id!, 0)
+                ? _migrationComponentProgress.GetValueOrDefault(item.store_id!, 0)
                 : StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadProgress ?? 0;
             total += Math.Clamp(value, 0, 100);
         }
-        double aggregate = total / migrationComponents.Count;
+        double aggregate = total / _migrationComponents.Count;
         double overall = 25 + aggregate * 0.4;
         MigrationProgressBar.Value = overall;
-        if (migrationSession != null)
-            _ = migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, overall);
+        if (_migrationSession != null)
+            _ = _migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, overall);
     }
 
     private void UpdateMigrationComponentList()
     {
         List<MigrationComponentDisplayItem> items = [];
-        foreach (RepoItemModel component in migrationComponents)
+        foreach (RepoItemModel component in _migrationComponents)
         {
             string id = component.store_id!;
             string status;
@@ -735,25 +735,25 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private async Task FailMigrationAsync(string message, string errorCode)
     {
-        migrationFlowStarted = false;
-        migrationReadyToContinue = false;
+        _migrationFlowStarted = false;
+        _migrationReadyToContinue = false;
         DisconnectMigrationQueueHandlers();
         ShowMigrationError(message, errorCode);
-        if (migrationSession != null)
-            await migrationSession.UpdateAsync(MigrationSessionState.Failed,
+        if (_migrationSession != null)
+            await _migrationSession.UpdateAsync(MigrationSessionState.Failed,
                 MigrationProgressBar.Value, message, errorCode);
     }
 
     private async void RetryMigrationButton_Click(object sender, RoutedEventArgs e)
     {
-        if (migrationSession == null || migrationImportInProgress)
+        if (_migrationSession == null || _migrationImportInProgress)
             return;
         RetryMigrationButton.Visibility = Visibility.Collapsed;
         MigrationSummaryTextBlock.Text = string.Empty;
-        migrationFlowStarted = false;
-        if (migrationSession.Package == null)
-            await migrationSession.RetryPreparationAsync();
-        if (migrationSession.Package != null)
+        _migrationFlowStarted = false;
+        if (_migrationSession.Package == null)
+            await _migrationSession.RetryPreparationAsync();
+        if (_migrationSession.Package != null)
             await TryStartMigrationFlow();
     }
 
@@ -771,7 +771,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
     private void ShowMigrationError(string message, string errorCode)
     {
         // The migration session reports some failures with an English message; the code selects the localized text.
-        string localizedMessage = localizer.GetLocalizedString($"/WelcomeWizard/MigrationError_{errorCode}");
+        string localizedMessage = _localizer.GetLocalizedString($"/WelcomeWizard/MigrationError_{errorCode}");
         if (!string.IsNullOrWhiteSpace(localizedMessage))
             message = localizedMessage;
         MigrationStatusInfoBar.Title = Localized("MigrationFailedTitle");
@@ -783,7 +783,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
     }
 
     private bool ContainsMigrationComponent(string? itemId) =>
-        !string.IsNullOrWhiteSpace(itemId) && migrationComponents.Any(item =>
+        !string.IsNullOrWhiteSpace(itemId) && _migrationComponents.Any(item =>
             string.Equals(item.store_id, itemId, StringComparison.OrdinalIgnoreCase));
 
     private void RunMigrationOnUiThread(Action action)
@@ -795,11 +795,11 @@ public sealed partial class WelcomeWindow : TemplateWindow
     }
 
     private string Localized(string key) =>
-        localizer.GetLocalizedString($"/WelcomeWizard/{key}");
+        _localizer.GetLocalizedString($"/WelcomeWizard/{key}");
 
     private void UpdateMigrationLocalizedText()
     {
-        if (migrationSession == null)
+        if (_migrationSession == null)
             return;
         StoreItem.Header = Localized("MigrationAnimatedHorizontalContentItemHeader");
         StoreItem.Description = Localized("MigrationAnimatedHorizontalContentItemDescription");
@@ -815,15 +815,15 @@ public sealed partial class WelcomeWindow : TemplateWindow
     private void WelcomeWindow_Closed(object sender, WindowEventArgs args)
     {
         DisconnectMigrationQueueHandlers();
-        migrationCancellation.Cancel();
-        migrationCancellation.Dispose();
-        localizer.LanguageChanged -= Localizer_LanguageChanged;
+        _migrationCancellation.Cancel();
+        _migrationCancellation.Dispose();
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
         Closed -= WelcomeWindow_Closed;
-        if (migrationSession != null)
+        if (_migrationSession != null)
         {
-            migrationSession.Changed -= MigrationSession_Changed;
-            if (!migrationSession.IsTerminal)
-                _ = migrationSession.UpdateAsync(
+            _migrationSession.Changed -= MigrationSession_Changed;
+            if (!_migrationSession.IsTerminal)
+                _ = _migrationSession.UpdateAsync(
                     MigrationSessionState.Failed,
                     MigrationProgressBar.Value,
                     "The migration wizard was closed before completion.",
@@ -842,7 +842,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
         catch
         {
             LicenseAgreeCheckBox.IsEnabled = false;
-            LicenseTextBlock.Text = string.Format(localizer.GetLocalizedString("/WelcomeWizard/UnableLoadLicense"), path);
+            LicenseTextBlock.Text = string.Format(_localizer.GetLocalizedString("/WelcomeWizard/UnableLoadLicense"), path);
         }
     }
 
@@ -894,7 +894,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
             bool result = await StoreHelper.Instance.IsServerAvailable();
             UtilityButtonControls.IsLoading = false;
             CheckStoreStatusButton.IsEnabled = true;
-            StoreStatusTextBlock.Text = result ? localizer.GetLocalizedString("Available") : localizer.GetLocalizedString("NotAvailable");
+            StoreStatusTextBlock.Text = result ? _localizer.GetLocalizedString("Available") : _localizer.GetLocalizedString("NotAvailable");
             StoreStatusTextBlock.Foreground = result
                 ? (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"]
                 : (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];

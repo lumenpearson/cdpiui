@@ -41,7 +41,7 @@ public sealed partial class ChooseGroupModeContentDialog : ContentDialog
 
     private ObservableCollection<ByeDPIModeComboBoxItem> _modes = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public List<ByeDPIGroupModes> Result { get; private set; } = [];
 
@@ -55,25 +55,25 @@ public sealed partial class ChooseGroupModeContentDialog : ContentDialog
         {
             Mode = ByeDPIGroupModes.Torst,
             DisplayName = "TORST",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/TORST")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/TORST")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.Redirect,
             DisplayName = "REDIRECT",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/REDIRECT")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/REDIRECT")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.SslErr,
             DisplayName = "SSLERR",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/SSLERR")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/SSLERR")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.None,
             DisplayName = "NONE",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/NONE")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/NONE")
         });
 
         foreach (var mode in modes)

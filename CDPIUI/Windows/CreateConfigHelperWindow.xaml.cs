@@ -53,16 +53,16 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
     public static CreateConfigHelperWindow Instanse { get; private set; }
     public bool IsOperationExitAskAvailable { get; set; } = false;
 
-    private bool IsDialogRequested = false;
-    private ConfigItem ConfigItemToEditRequsted = null;
+    private bool _isDialogRequested = false;
+    private ConfigItem _configItemToEditRequsted = null;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public CreateConfigHelperWindow()
     {
         this.InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("CreateConfigHelperWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("CreateConfigHelperWindowTitle");
         IconUri = @"Assets/Icons/Edit.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 
@@ -88,9 +88,9 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     private void Fe_Loaded(object sender, RoutedEventArgs e)
     {
-        if (IsDialogRequested)
+        if (_isDialogRequested)
         {
-            OpenConfigEditPage(true, configItem: ConfigItemToEditRequsted);
+            OpenConfigEditPage(true, configItem: _configItemToEditRequsted);
         }
 
         BackButton.Visibility = Visibility.Collapsed;
@@ -112,10 +112,10 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
         {
             ContentDialog exitDialog = new ContentDialog()
             {
-                Title = localizer.GetLocalizedString("Exit"),
-                Content = localizer.GetLocalizedString("ExitAsk"),
-                PrimaryButtonText = localizer.GetLocalizedString("Yes"),
-                CloseButtonText = localizer.GetLocalizedString("No"),
+                Title = _localizer.GetLocalizedString("Exit"),
+                Content = _localizer.GetLocalizedString("ExitAsk"),
+                PrimaryButtonText = _localizer.GetLocalizedString("Yes"),
+                CloseButtonText = _localizer.GetLocalizedString("No"),
                 XamlRoot = this.Content.XamlRoot,
                 Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"]
             };
@@ -200,7 +200,7 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     private void UpdateCurrentHelpItem(Type page)
     {
-        CurrentHelpMenuFlyoutItem.Text = string.Format(localizer.GetLocalizedString("/Flashlight/GetHelpFor"), localizer.GetLocalizedString($"/Flashlight/{page.Name}"));
+        CurrentHelpMenuFlyoutItem.Text = string.Format(_localizer.GetLocalizedString("/Flashlight/GetHelpFor"), _localizer.GetLocalizedString($"/Flashlight/{page.Name}"));
     }
 
     private void HomeItem_Click(object sender, RoutedEventArgs e)
@@ -214,8 +214,8 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     public void OpenConfigEditPage(bool skp = false, ConfigItem configItem = null)
     {
-        IsDialogRequested = true;
-        ConfigItemToEditRequsted = configItem;
+        _isDialogRequested = true;
+        _configItemToEditRequsted = configItem;
         if (skp)
         {
             DispatcherQueue.TryEnqueue(async () =>
@@ -287,11 +287,11 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseConfigTitle");
+            openFileDialog.Title = _localizer.GetLocalizedString("FileDialogChooseConfigTitle");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             openFileDialog.FilterIndex = 4;
 
-            openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogJsonConfigs")} (*.json)|*.json|{localizer.GetLocalizedString("FileDialogBatConfigs")} (*.bat)|*.bat|{localizer.GetLocalizedString("FileDialogCmdConfigs")} (*.cmd)|*.cmd|{localizer.GetLocalizedString("FileDialogAllConfigs")} (*.bat, *.cmd, *.json)|*.bat;*.cmd;*.json";
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("FileDialogJsonConfigs")} (*.json)|*.json|{_localizer.GetLocalizedString("FileDialogBatConfigs")} (*.bat)|*.bat|{_localizer.GetLocalizedString("FileDialogCmdConfigs")} (*.cmd)|*.cmd|{_localizer.GetLocalizedString("FileDialogAllConfigs")} (*.bat, *.cmd, *.json)|*.bat;*.cmd;*.json";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -335,10 +335,10 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
         string filePath;
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseGoodCheckReportTitle");
+            openFileDialog.Title = _localizer.GetLocalizedString("FileDialogChooseGoodCheckReportTitle");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-            openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogXmlData")} (*.xml)|*.xml";
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("FileDialogXmlData")} (*.xml)|*.xml";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -566,7 +566,7 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
         {
             StatusProgressIcon.Visibility = isWorking ? Visibility.Collapsed : Visibility.Visible;
             StatusProgressRing.Visibility = isWorking ? Visibility.Visible : Visibility.Collapsed;
-            StatusTextBlock.Text = string.IsNullOrEmpty(text) ? localizer.GetLocalizedString("Ready") : text;
+            StatusTextBlock.Text = string.IsNullOrEmpty(text) ? _localizer.GetLocalizedString("Ready") : text;
         });
     }
 }

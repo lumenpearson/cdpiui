@@ -9,7 +9,7 @@ namespace CDPIUI.TrayIcon.Helper;
 internal static class ComponentCommandQueue
 {
     private static readonly Dictionary<string, Task> Queues = [];
-    private static readonly object QueuesLock = new();
+    private static readonly object QueuesSyncRoot = new();
 
     // Takes its place in the queue before the first await, so it must be called before any
     // await of the caller; the pipe runs a handler synchronously up to its first await.
@@ -18,7 +18,7 @@ internal static class ComponentCommandQueue
     {
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task previous;
-        lock (QueuesLock)
+        lock (QueuesSyncRoot)
         {
             previous = Queues.GetValueOrDefault(componentId) ?? Task.CompletedTask;
             Queues[componentId] = done.Task;
@@ -32,7 +32,7 @@ internal static class ComponentCommandQueue
         }
         finally
         {
-            lock (QueuesLock)
+            lock (QueuesSyncRoot)
             {
                 if (Queues.TryGetValue(componentId, out var last) && last == done.Task)
                     Queues.Remove(componentId);

@@ -48,16 +48,16 @@ public partial class MainPageMarkupManager : INotifyPropertyChanged
             ?? Markups[0];
     }
 
-    private MainPageMarkupViewModel currentMarkup;
+    private MainPageMarkupViewModel _currentMarkup;
     public MainPageMarkupViewModel CurrentMarkup
     {
-        get => currentMarkup;
+        get => _currentMarkup;
         private set
         {
-            if (ReferenceEquals(currentMarkup, value))
+            if (ReferenceEquals(_currentMarkup, value))
                 return;
 
-            currentMarkup = value;
+            _currentMarkup = value;
             PropertyChanged?.Invoke(
                 this,
                 new PropertyChangedEventArgs(nameof(CurrentMarkup)));

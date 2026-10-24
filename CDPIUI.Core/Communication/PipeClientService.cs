@@ -14,13 +14,13 @@ namespace CDPIUI.Core.Communication;
 public class PipeClientService : PipeServiceBase
 {
     private static PipeClientService? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static PipeClientService Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new PipeClientService();
                 return _instance;

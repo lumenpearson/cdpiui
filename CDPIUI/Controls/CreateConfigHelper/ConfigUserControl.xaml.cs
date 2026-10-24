@@ -168,7 +168,7 @@ public sealed partial class ConfigUserControl : UserControl
         set
         {
             SetValue(LastEditTimeProperty, value);
-            LastEditTextBlock.Text = string.Format(localizer.GetLocalizedString("LastEditTimeText"), LastEditTime);
+            LastEditTextBlock.Text = string.Format(_localizer.GetLocalizedString("LastEditTimeText"), LastEditTime);
         }
     }
 
@@ -178,7 +178,7 @@ public sealed partial class ConfigUserControl : UserControl
         );
     #endregion
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public ConfigUserControl()
     {
         InitializeComponent();
@@ -189,16 +189,16 @@ public sealed partial class ConfigUserControl : UserControl
         if (UsedSiteLists.Count > 1)
         {
             SitelistTextBlock.Text =
-                string.Format(localizer.GetLocalizedString("UsedSiteListsText"), UsedSiteLists[0], UsedSiteLists.Count - 1);
+                string.Format(_localizer.GetLocalizedString("UsedSiteListsText"), UsedSiteLists[0], UsedSiteLists.Count - 1);
         }
         else if (UsedSiteLists.Count == 1)
         {
             SitelistTextBlock.Text =
-                string.Format(localizer.GetLocalizedString("UsedSiteListText"), UsedSiteLists[0]);
+                string.Format(_localizer.GetLocalizedString("UsedSiteListText"), UsedSiteLists[0]);
         }
         else
         {
-            SitelistTextBlock.Text = localizer.GetLocalizedString("NoUsedSiteListText");
+            SitelistTextBlock.Text = _localizer.GetLocalizedString("NoUsedSiteListText");
         }
     }
     private void CreateExcludedSiteListInfo()
@@ -206,16 +206,16 @@ public sealed partial class ConfigUserControl : UserControl
         if (ExcludedSiteLists.Count > 1)
         {
             ExcludedSitelistTextBlock.Text =
-                string.Format(localizer.GetLocalizedString("ExcludedSiteListsText"), ExcludedSiteLists[0], ExcludedSiteLists.Count - 1);
+                string.Format(_localizer.GetLocalizedString("ExcludedSiteListsText"), ExcludedSiteLists[0], ExcludedSiteLists.Count - 1);
         }
         else if (ExcludedSiteLists.Count == 1)
         {
             ExcludedSitelistTextBlock.Text =
-                string.Format(localizer.GetLocalizedString("ExcludedSiteListText"), ExcludedSiteLists[0]);
+                string.Format(_localizer.GetLocalizedString("ExcludedSiteListText"), ExcludedSiteLists[0]);
         }
         else
         {
-            ExcludedSitelistTextBlock.Text = localizer.GetLocalizedString("NoExcludedSiteListText");
+            ExcludedSitelistTextBlock.Text = _localizer.GetLocalizedString("NoExcludedSiteListText");
         }
     }
 

@@ -29,7 +29,7 @@ public class LoggerBase(string? actualPath, LogSelevirity logLevel)
     /// Minimum severity written to log files
     /// </summary>
     public readonly LogSelevirity? LogLevel = logLevel;
-    private static readonly object _logLock = new object();
+    private static readonly object LogSyncRoot = new object();
 
     // A log grows without limit otherwise; the previous file is kept as *.old.log.
     private const long MaxLogFileSize = 5 * 1024 * 1024;
@@ -116,7 +116,7 @@ public class LoggerBase(string? actualPath, LogSelevirity logLevel)
 
     private void CreateLog(string message, LogSelevirity severity, string sender)
     {
-        lock (_logLock)
+        lock (LogSyncRoot)
         {
             string logMessage = $"[{sender}] [{severity}] {message}";
             Debug.WriteLine(logMessage);

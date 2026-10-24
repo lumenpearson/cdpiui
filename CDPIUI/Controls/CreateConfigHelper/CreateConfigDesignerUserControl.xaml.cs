@@ -60,7 +60,7 @@ public sealed partial class CreateConfigDesignerUserControl : UserControl
     public ICommand ViewFullCommand { get; }
     public ICommand EditModeCommand { get; }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     private ObservableCollection<ByeDPIModeComboBoxItem> _badges = [];
 
@@ -153,7 +153,7 @@ public sealed partial class CreateConfigDesignerUserControl : UserControl
             {
                 Mode = mode,
                 DisplayName = mode.ToString().ToUpperInvariant(),
-                DisplayTip = localizer.GetLocalizedString($"/Flashlight/{mode.ToString().ToUpperInvariant()}"),
+                DisplayTip = _localizer.GetLocalizedString($"/Flashlight/{mode.ToString().ToUpperInvariant()}"),
             });
         }
     }
@@ -163,7 +163,7 @@ public sealed partial class CreateConfigDesignerUserControl : UserControl
         ViewApplyArgsContentDialog dialog = new()
         {
             XamlRoot = this.XamlRoot,
-            Title = localizer.GetLocalizedString("ViewArguments"),
+            Title = _localizer.GetLocalizedString("ViewArguments"),
             DialogTitle = string.Empty,
             SeparationTextVisible = Visibility.Collapsed,
             Args = [this.Args ?? string.Empty]

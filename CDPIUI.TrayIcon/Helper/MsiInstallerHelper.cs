@@ -21,13 +21,13 @@ public class MsiInstallerHelper
     }
 
     private static MsiInstallerHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static MsiInstallerHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new MsiInstallerHelper();
@@ -52,7 +52,7 @@ public class MsiInstallerHelper
 
     public void AddToQueue(string operationId, string fileName)
     {
-        lock (_lock)
+        lock (SyncRoot)
         {
             if (_pendingOps.Contains(operationId) || _currentOperationId == operationId)
                 return;
@@ -78,7 +78,7 @@ public class MsiInstallerHelper
         bool removedFromWaiting = false;
         bool wasRunning = false;
 
-        lock (_lock)
+        lock (SyncRoot)
         {
             if (_currentOperationId == operationId)
             {
@@ -133,7 +133,7 @@ public class MsiInstallerHelper
     {
         QueueItem? next = null;
 
-        lock (_lock)
+        lock (SyncRoot)
         {
             if (_currentOperationId != null)
                 return;
@@ -173,7 +173,7 @@ public class MsiInstallerHelper
             _ = PipeHelper
                 .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Installing);
 
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (string.Equals(Path.GetExtension(stagedPath), ".msi", StringComparison.OrdinalIgnoreCase))
                     _currentProcess = RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedPath}\" /passive /norestart");
@@ -224,7 +224,7 @@ public class MsiInstallerHelper
         }
         finally
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 try
                 { _currentProcess?.Dispose(); }

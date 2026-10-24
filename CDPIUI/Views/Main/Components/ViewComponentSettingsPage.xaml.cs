@@ -66,7 +66,7 @@ public sealed partial class ViewComponentSettingsPage : TemplatePage
 
     public ICommand ShowComponentSettingsClickCommand { get; }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public ViewComponentSettingsPage()
     {
@@ -79,14 +79,14 @@ public sealed partial class ViewComponentSettingsPage : TemplatePage
         ElementToAnimateForwardConnectedAnimation = ComponentTileUserControl;
     }
 
-    private bool importingDrop;
+    private bool _importingDrop;
 
     private void RootGrid_DragOver(object sender, DragEventArgs e)
     {
-        if (importingDrop || !e.DataView.Contains(StandardDataFormats.StorageItems))
+        if (_importingDrop || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
         e.AcceptedOperation = DataPackageOperation.Copy;
-        e.DragUIOverride.Caption = localizer.GetLocalizedString("ComponentDropImportCaption");
+        e.DragUIOverride.Caption = _localizer.GetLocalizedString("ComponentDropImportCaption");
         e.DragUIOverride.IsCaptionVisible = true;
         e.Handled = true;
 
@@ -97,18 +97,18 @@ public sealed partial class ViewComponentSettingsPage : TemplatePage
     {
         DragGrid.Visibility = Visibility.Collapsed;
 
-        if (importingDrop || !e.DataView.Contains(StandardDataFormats.StorageItems))
+        if (_importingDrop || !e.DataView.Contains(StandardDataFormats.StorageItems))
             return;
         e.Handled = true;
         var deferral = e.GetDeferral();
-        importingDrop = true;
+        _importingDrop = true;
         try
         {
             var items = await e.DataView.GetStorageItemsAsync();
             if (!IsLoaded)
                 return;
             if (items.Any(item => item is not StorageFile))
-                throw new InvalidOperationException(localizer.GetLocalizedString("ComponentDropFilesOnly"));
+                throw new InvalidOperationException(_localizer.GetLocalizedString("ComponentDropFilesOnly"));
             var paths = items.Select(item => item.Path).ToArray();
             if (paths.Length == 0)
                 return;
@@ -143,11 +143,11 @@ public sealed partial class ViewComponentSettingsPage : TemplatePage
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ViewComponentSettingsPage), exception.ToString());
             if (IsLoaded)
                 await new ErrorContentDialog().ShowErrorDialogAsync(
-                    localizer.GetLocalizedString("ConfigShareError"), ConfigShareUI.ErrorText(exception), XamlRoot);
+                    _localizer.GetLocalizedString("ConfigShareError"), ConfigShareUI.ErrorText(exception), XamlRoot);
         }
         finally
         {
-            importingDrop = false;
+            _importingDrop = false;
             deferral.Complete();
         }
     }

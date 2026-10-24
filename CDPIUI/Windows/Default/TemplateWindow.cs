@@ -31,16 +31,16 @@ public partial class TemplateWindow : WindowEx
 
     public event Action NewIdSet;
 
-    private string WindowTitleProperty = "CDPI UI";
+    private string _windowTitleProperty = "CDPI UI";
     public string WindowTitle
     {
         get
         {
-            return WindowTitleProperty;
+            return _windowTitleProperty;
         }
         set
         {
-            WindowTitleProperty = value;
+            _windowTitleProperty = value;
             DispatcherQueue?.TryEnqueue(() =>
             {
                 if (WindowTitle != null)
@@ -53,103 +53,103 @@ public partial class TemplateWindow : WindowEx
         }
     }
 
-    private Size WindowSizeProperty = new(484, 300);
+    private Size _windowSizeProperty = new(484, 300);
     public Size WindowMinSize
     {
         get
         {
-            return WindowSizeProperty;
+            return _windowSizeProperty;
         }
         set
         {
-            if (WindowSizeProperty == value)
+            if (_windowSizeProperty == value)
             { return; }
-            WindowSizeProperty = value;
+            _windowSizeProperty = value;
             UpdateWindowMinSize();
         }
     }
 
-    private string IconUriProperty = "";
+    private string _iconUriProperty = "";
     public string IconUri
     {
         get
         {
-            return IconUriProperty;
+            return _iconUriProperty;
         }
         set
         {
-            IconUriProperty = value;
+            _iconUriProperty = value;
             UpdateWindowIcon();
         }
     }
 
-    private TitleBarUserControl CustomTitleBarUserControlProperty = null;
+    private TitleBarUserControl _customTitleBarUserControlProperty = null;
     public TitleBarUserControl CustomTitleBarUserControl
     {
         get
         {
-            return CustomTitleBarUserControlProperty;
+            return _customTitleBarUserControlProperty;
         }
         set
         {
-            CustomTitleBarUserControlProperty = value;
+            _customTitleBarUserControlProperty = value;
             InitializeTitleBar();
         }
     }
 
-    private bool IsAppShownInSwitchersProperty = false;
+    private bool _isAppShownInSwitchersProperty = false;
     public bool IsAppShownInSwitchers
     {
         get
         {
-            return IsAppShownInSwitchersProperty;
+            return _isAppShownInSwitchersProperty;
         }
         set
         {
-            IsAppShownInSwitchersProperty = value;
+            _isAppShownInSwitchersProperty = value;
             UpdateAppShownInSwitcher();
         }
     }
 
-    private string IdProperty = string.Empty;
+    private string _idProperty = string.Empty;
     public string Id
     {
         get
         {
-            return IdProperty;
+            return _idProperty;
         }
         set
         {
-            IdProperty = value;
+            _idProperty = value;
             NewIdSet?.Invoke();
         }
     }
 
-    private TitleBarModes titleBarMode = TitleBarModes.Custom;
+    private TitleBarModes _titleBarMode = TitleBarModes.Custom;
     public TitleBarModes TitleBarMode
     {
         get
         {
-            return titleBarMode;
+            return _titleBarMode;
         }
         set
         {
-            titleBarMode = value;
+            _titleBarMode = value;
             SetTitleBarMode(TitleBarMode);
         }
     }
-    private object NavigateBackParameterProperty = null;
+    private object _navigateBackParameterProperty = null;
     public object NavigateBackParameter
     {
-        get => NavigateBackParameterProperty;
-        private set => NavigateBackParameterProperty = value;
+        get => _navigateBackParameterProperty;
+        private set => _navigateBackParameterProperty = value;
     }
 
-    private Frame MainFrameProperty;
+    private Frame _mainFrameProperty;
     public Frame MainFrame
     {
-        get => MainFrameProperty;
-        set => MainFrameProperty = value;
+        get => _mainFrameProperty;
+        set => _mainFrameProperty = value;
     }
 
     public TemplateWindow()
@@ -210,7 +210,7 @@ public partial class TemplateWindow : WindowEx
     {
         DispatcherQueue?.TryEnqueue(() =>
         {
-            if (CustomTitleBarUserControlProperty == null)
+            if (_customTitleBarUserControlProperty == null)
                 return;
 
             SetTitleBar(CustomTitleBarUserControl.WindowMoveAera);
@@ -275,8 +275,8 @@ public partial class TemplateWindow : WindowEx
         AppWindow.IsShownInSwitchers = IsAppShownInSwitchers;
     }
 
-    private long LastTimestamp = 0;
-    private readonly int DoubleClickTimeMS = 250;
+    private long _lastTimestamp = 0;
+    private readonly int _doubleClickTimeMS = 250;
 
     private void AssignActionHandlerToWindowIcon()
     {
@@ -291,14 +291,14 @@ public partial class TemplateWindow : WindowEx
         // Monotonic: a change of the system clock does not count as a double-click.
         long milliseconds = Environment.TickCount64;
 
-        if (milliseconds - LastTimestamp < DoubleClickTimeMS && milliseconds != 0)
+        if (milliseconds - _lastTimestamp < _doubleClickTimeMS && milliseconds != 0)
         {
             this.Close();
             return;
         }
         else
         {
-            LastTimestamp = milliseconds;
+            _lastTimestamp = milliseconds;
         }
 
         IntPtr hWnd = WindowNative.GetWindowHandle(this);

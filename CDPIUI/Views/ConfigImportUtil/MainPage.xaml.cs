@@ -40,51 +40,51 @@ public enum ImportUtilitySteps
 
 public sealed partial class MainPage : TemplatePage
 {
-    private readonly ObservableCollection<DatabaseStoreItem> components = [];
-    private readonly ObservableCollection<ConfigImportPresetViewModel> results = [];
-    private readonly ObservableCollection<ConfigImportMissingFileViewModel> missingFiles = [];
-    private readonly ConfigImportService importService = new();
-    private readonly ConfigImportInstaller installer = new();
-    private readonly ConfigImportAutoCorrector autoCorrector = new();
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ObservableCollection<DatabaseStoreItem> _components = [];
+    private readonly ObservableCollection<ConfigImportPresetViewModel> _results = [];
+    private readonly ObservableCollection<ConfigImportMissingFileViewModel> _missingFiles = [];
+    private readonly ConfigImportService _importService = new();
+    private readonly ConfigImportInstaller _installer = new();
+    private readonly ConfigImportAutoCorrector _autoCorrector = new();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
-    private string requestedTargetId = string.Empty;
-    private ConfigImportPresetViewModel activeTestItem;
-    private string activeTestComponentId = string.Empty;
-    private ConfigImportTestPlaceholder activeTestPlaceholder;
-    private bool isUnloaded;
-    private string[] pendingDroppedFiles;
-    private bool importingDroppedFiles;
-    private readonly HashSet<ConfigSharePackage> packagesBeingSaved = [];
+    private string _requestedTargetId = string.Empty;
+    private ConfigImportPresetViewModel _activeTestItem;
+    private string _activeTestComponentId = string.Empty;
+    private ConfigImportTestPlaceholder _activeTestPlaceholder;
+    private bool _isUnloaded;
+    private string[] _pendingDroppedFiles;
+    private bool _importingDroppedFiles;
+    private readonly HashSet<ConfigSharePackage> _packagesBeingSaved = [];
 
     public MainPage()
     {
         InitializeComponent();
         LoadComponents();
-        ResultItemsControl.ItemsSource = results;
-        MissingFilesItemsControl.ItemsSource = missingFiles;
+        ResultItemsControl.ItemsSource = _results;
+        MissingFilesItemsControl.ItemsSource = _missingFiles;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        isUnloaded = false;
-        requestedTargetId = Parameter.Get("componentId") ?? string.Empty;
+        _isUnloaded = false;
+        _requestedTargetId = Parameter.Get("componentId") ?? string.Empty;
     }
 
     private void LoadComponents()
     {
-        components.Clear();
+        _components.Clear();
         foreach (DatabaseStoreItem item in DatabaseHelper.Instance.GetItemsByType("component")
                      .Where(IsImportTarget)
                      .OrderBy(item => item.ShortName.NullIfEmpty() ?? item.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             item.ShortName = string.IsNullOrWhiteSpace(item.ShortName) ? item.Name : item.ShortName;
-            components.Add(item);
+            _components.Add(item);
         }
-        if (results.Count == 0)
+        if (_results.Count == 0)
         {
-            bool available = components.Count > 0;
+            bool available = _components.Count > 0;
             PlaceholderGrid.Visibility = available ? Visibility.Collapsed : Visibility.Visible;
             MainContent.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
             NextButton.IsEnabled = available;
@@ -93,7 +93,7 @@ public sealed partial class MainPage : TemplatePage
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-        isUnloaded = false;
+        _isUnloaded = false;
         StoreHelper.Instance.ItemActionsStopped -= StoreComponentsChanged;
         StoreHelper.Instance.ItemRemoved -= StoreComponentsChanged;
         StoreHelper.Instance.ItemActionsStopped += StoreComponentsChanged;
@@ -104,7 +104,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void StoreComponentsChanged(string id) => DispatcherQueue.TryEnqueue(() =>
     {
-        if (!isUnloaded && results.Count == 0)
+        if (!_isUnloaded && _results.Count == 0)
             LoadComponents();
     });
 
@@ -126,32 +126,32 @@ public sealed partial class MainPage : TemplatePage
 
     public void QueueDroppedFiles(string[] paths)
     {
-        pendingDroppedFiles = paths.ToArray();
+        _pendingDroppedFiles = paths.ToArray();
         if (IsLoaded)
             _ = ImportPendingFilesAsync();
     }
 
     private async Task ImportPendingFilesAsync()
     {
-        if (pendingDroppedFiles == null || importingDroppedFiles || isUnloaded)
+        if (_pendingDroppedFiles == null || _importingDroppedFiles || _isUnloaded)
             return;
-        var paths = pendingDroppedFiles;
-        pendingDroppedFiles = null;
-        importingDroppedFiles = true;
+        var paths = _pendingDroppedFiles;
+        _pendingDroppedFiles = null;
+        _importingDroppedFiles = true;
         NextButton.Visibility = Visibility.Collapsed;
         try
         { await ImportConfigsAsync(paths); }
         catch (Exception exception)
         {
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-            if (!isUnloaded && IsLoaded)
+            if (!_isUnloaded && IsLoaded)
                 await new CDPIUI.Controls.Dialogs.Universal.ErrorContentDialog().ShowErrorDialogAsync(
-                    localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
+                    _localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
         }
         finally
         {
-            importingDroppedFiles = false;
-            if (!isUnloaded)
+            _importingDroppedFiles = false;
+            if (!_isUnloaded)
             {
                 UtilityButtons.IsLoading = false;
                 NextButton.Visibility = Visibility.Visible;
@@ -162,7 +162,7 @@ public sealed partial class MainPage : TemplatePage
     private async Task<bool> ImportConfigsAsync(string[] suppliedPaths = null)
     {
         LoadComponents();
-        if (components.Count == 0)
+        if (_components.Count == 0)
             return false;
         string[] filePaths = suppliedPaths;
         if (filePaths == null)
@@ -180,24 +180,24 @@ public sealed partial class MainPage : TemplatePage
 
         MainContent.GoTo(ProgressStep);
 
-        foreach (var item in results)
+        foreach (var item in _results)
             item.Result.SharedPackage?.Dispose();
-        results.Clear();
-        missingFiles.Clear();
+        _results.Clear();
+        _missingFiles.Clear();
 
         await Task.Run(() => ImportWork(filePaths));
-        if (isUnloaded)
+        if (_isUnloaded)
             return false;
 
         await PrepareSharedComponentsAsync();
-        if (isUnloaded)
+        if (_isUnloaded)
             return false;
 
         await PrepareMissingFilesAsync();
-        if (isUnloaded)
+        if (_isUnloaded)
             return false;
 
-        if (missingFiles.Count > 0)
+        if (_missingFiles.Count > 0)
             ShowMissingFiles();
         else
             ShowCompletion();
@@ -207,19 +207,19 @@ public sealed partial class MainPage : TemplatePage
 
     private async Task ImportWork(string[] filePaths)
     {
-        List<ConfigImportTarget> targets = [.. components.Select(CreateTarget)];
+        List<ConfigImportTarget> targets = [.. _components.Select(CreateTarget)];
         for (int index = 0; index < filePaths.Length; index++)
         {
 
             string text = string.Format(
-                localizer.GetLocalizedString("ConfigImportProgressCounter"),
+                _localizer.GetLocalizedString("ConfigImportProgressCounter"),
                 index + 1,
                 filePaths.Length,
                 Path.GetFileName(filePaths[index]));
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!isUnloaded)
+                if (!_isUnloaded)
                     UtilityButtons.LoadingStateText = text;
             });
 
@@ -228,14 +228,14 @@ public sealed partial class MainPage : TemplatePage
 
             bool queued = DispatcherQueue.TryEnqueue(() =>
             {
-                if (isUnloaded)
+                if (_isUnloaded)
                 {
                     analyzed.Result.SharedPackage?.Dispose();
                     return;
                 }
-                results.Add(new ConfigImportPresetViewModel(
+                _results.Add(new ConfigImportPresetViewModel(
                 analyzed.Result,
-                components,
+                _components,
                 initialComponent,
                 analyzed.TargetWasDetected));
             });
@@ -246,14 +246,14 @@ public sealed partial class MainPage : TemplatePage
 
     private async Task PrepareSharedComponentsAsync()
     {
-        var shared = results.Where(item => item.Result.SharedPackage != null).ToArray();
+        var shared = _results.Where(item => item.Result.SharedPackage != null).ToArray();
         if (shared.Length == 0)
             return;
-        var selections = results.ToDictionary(item => item, item => item.SelectedComponent?.Id);
+        var selections = _results.ToDictionary(item => item, item => item.SelectedComponent?.Id);
         var offered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in shared)
         {
-            if (isUnloaded)
+            if (_isUnloaded)
                 return;
             string missingId = ConfigShareService.GetMissingComponentId(item.Result.Config);
             if (missingId == null || !offered.Add(missingId))
@@ -263,33 +263,33 @@ public sealed partial class MainPage : TemplatePage
             catch (Exception exception)
             {
                 CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-                if (!isUnloaded)
+                if (!_isUnloaded)
                     item.SetOperationError(ConfigShareUI.ErrorText(exception));
             }
         }
-        if (isUnloaded)
+        if (_isUnloaded)
             return;
         LoadComponents();
-        foreach (var item in results)
+        foreach (var item in _results)
         {
             string selectedId = selections[item];
             if (selectedId == null && item.Result.SharedPackage != null)
                 selectedId = ConfigShareService.GetInstalledComponentId(item.Result.Config);
-            item.SelectedComponent = components.FirstOrDefault(component => component.Id == selectedId);
+            item.SelectedComponent = _components.FirstOrDefault(component => component.Id == selectedId);
         }
     }
 
     private async Task PrepareMissingFilesAsync()
     {
-        foreach (ConfigImportPresetViewModel item in results.Where(item => item.Result.IsSuccessful))
+        foreach (ConfigImportPresetViewModel item in _results.Where(item => item.Result.IsSuccessful))
         {
             foreach (string missingPath in item.Result.MissingReferencedFiles)
             {
-                bool suggestEmptyFile = autoCorrector.ShouldSuggestEmptyFile(missingPath);
+                bool suggestEmptyFile = _autoCorrector.ShouldSuggestEmptyFile(missingPath);
                 string suggestion = suggestEmptyFile
                     ? null
-                    : await Task.Run(() => autoCorrector.FindReplacement(item.Result, missingPath));
-                missingFiles.Add(new ConfigImportMissingFileViewModel(
+                    : await Task.Run(() => _autoCorrector.FindReplacement(item.Result, missingPath));
+                _missingFiles.Add(new ConfigImportMissingFileViewModel(
                     item,
                     missingPath,
                     suggestion,
@@ -305,7 +305,7 @@ public sealed partial class MainPage : TemplatePage
 
         MainContent.GoTo(MissingFilesStep);
 
-        NextButton.Content = localizer.GetLocalizedString("ConfigImportContinueButton");
+        NextButton.Content = _localizer.GetLocalizedString("ConfigImportContinueButton");
         UpdateMissingFilesNextState();
     }
 
@@ -313,31 +313,31 @@ public sealed partial class MainPage : TemplatePage
     {
         if (ConfigShareService.IsSupported(filePath))
         {
-            ConfigImportResult shared = importService.Import(filePath);
+            ConfigImportResult shared = _importService.Import(filePath);
             return new AnalyzedImport(shared, targets.Any(target => target.ComponentId == shared.Target.ComponentId));
         }
-        IReadOnlyList<ConfigImportTarget> matches = importService.FindMatchingTargets(filePath, targets);
+        IReadOnlyList<ConfigImportTarget> matches = _importService.FindMatchingTargets(filePath, targets);
         ConfigImportTarget target = matches.FirstOrDefault()
             ?? FindRequestedTarget(targets)
             ?? targets.FirstOrDefault()
             ?? new ConfigImportTarget(string.Empty, string.Empty, string.Empty, null);
         return new AnalyzedImport(
-            importService.Import(filePath, target),
+            _importService.Import(filePath, target),
             matches.Count > 0);
     }
 
     private ConfigImportTarget FindRequestedTarget(IReadOnlyList<ConfigImportTarget> targets) =>
         targets.FirstOrDefault(target =>
-            string.Equals(target.ComponentId, requestedTargetId, StringComparison.OrdinalIgnoreCase));
+            string.Equals(target.ComponentId, _requestedTargetId, StringComparison.OrdinalIgnoreCase));
 
     private DatabaseStoreItem GetInitialComponent(string conversionTargetId)
     {
-        DatabaseStoreItem requested = components.FirstOrDefault(item =>
-            string.Equals(item.Id, requestedTargetId, StringComparison.OrdinalIgnoreCase));
+        DatabaseStoreItem requested = _components.FirstOrDefault(item =>
+            string.Equals(item.Id, _requestedTargetId, StringComparison.OrdinalIgnoreCase));
         if (requested != null)
             return requested;
 
-        return components.FirstOrDefault(item =>
+        return _components.FirstOrDefault(item =>
             string.Equals(item.Id, conversionTargetId, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -346,31 +346,31 @@ public sealed partial class MainPage : TemplatePage
         UtilityButtons.IsLoading = false;
         NextButton.IsEnabled = true;
 
-        NextButton.Content = localizer.GetLocalizedString("SaveAll");
+        NextButton.Content = _localizer.GetLocalizedString("SaveAll");
 
         MainContent.GoTo(CompletedStep);
 
-        int successful = results.Count(item => item.Result.IsSuccessful);
-        if (successful == results.Count)
+        int successful = _results.Count(item => item.Result.IsSuccessful);
+        if (successful == _results.Count)
         {
             CompletionInfoBar.Severity = InfoBarSeverity.Success;
-            CompletionInfoBar.Title = localizer.GetLocalizedString("ConfigImportCompletedSuccessTitle");
-            CompletionInfoBar.Message = localizer.GetLocalizedString("ConfigImportCompletedSuccessMessage");
+            CompletionInfoBar.Title = _localizer.GetLocalizedString("ConfigImportCompletedSuccessTitle");
+            CompletionInfoBar.Message = _localizer.GetLocalizedString("ConfigImportCompletedSuccessMessage");
         }
         else if (successful > 0)
         {
             CompletionInfoBar.Severity = InfoBarSeverity.Warning;
-            CompletionInfoBar.Title = localizer.GetLocalizedString("ConfigImportCompletedPartialTitle");
+            CompletionInfoBar.Title = _localizer.GetLocalizedString("ConfigImportCompletedPartialTitle");
             CompletionInfoBar.Message = string.Format(
-                localizer.GetLocalizedString("ConfigImportCompletedPartialMessage"),
+                _localizer.GetLocalizedString("ConfigImportCompletedPartialMessage"),
                 successful,
-                results.Count);
+                _results.Count);
         }
         else
         {
             CompletionInfoBar.Severity = InfoBarSeverity.Error;
-            CompletionInfoBar.Title = localizer.GetLocalizedString("ConfigImportCompletedFailedTitle");
-            CompletionInfoBar.Message = localizer.GetLocalizedString("ConfigImportCompletedFailedMessage");
+            CompletionInfoBar.Title = _localizer.GetLocalizedString("ConfigImportCompletedFailedTitle");
+            CompletionInfoBar.Message = _localizer.GetLocalizedString("ConfigImportCompletedFailedMessage");
         }
     }
 
@@ -383,9 +383,9 @@ public sealed partial class MainPage : TemplatePage
             return;
         }
         if (await SaveItemAsync(item))
-            results.Remove(item);
+            _results.Remove(item);
 
-        if (results.Count == 0)
+        if (_results.Count == 0)
         {
             NextButton.Visibility = Visibility.Collapsed;
             MainContent.GoTo(WorkDoneStep);
@@ -394,17 +394,17 @@ public sealed partial class MainPage : TemplatePage
 
     private async Task<bool> SaveItemAsync(ConfigImportPresetViewModel item)
     {
-        if (ReferenceEquals(activeTestItem, item))
+        if (ReferenceEquals(_activeTestItem, item))
             await StopActiveTestAsync();
 
         item.SetSaving(true);
         if (item.Result.SharedPackage != null)
-            packagesBeingSaved.Add(item.Result.SharedPackage);
+            _packagesBeingSaved.Add(item.Result.SharedPackage);
         try
         {
             ConfigImportResult selectedResult = GetSelectedResult(item);
             EnsureSuccessfulRetarget(selectedResult);
-            ConfigImportInstallResult installResult = await installer.InstallAsync(selectedResult, item.Name);
+            ConfigImportInstallResult installResult = await _installer.InstallAsync(selectedResult, item.Name);
             if (!installResult.IsSuccessful)
             {
                 item.SetOperationError(ConfigImportIssueText.GetInstallError(installResult.ErrorCode));
@@ -427,8 +427,8 @@ public sealed partial class MainPage : TemplatePage
         {
             if (item.Result.SharedPackage != null)
             {
-                packagesBeingSaved.Remove(item.Result.SharedPackage);
-                if (isUnloaded)
+                _packagesBeingSaved.Remove(item.Result.SharedPackage);
+                if (_isUnloaded)
                     item.Result.SharedPackage.Dispose();
             }
         }
@@ -443,7 +443,7 @@ public sealed partial class MainPage : TemplatePage
             return;
         }
 
-        if (ReferenceEquals(activeTestItem, item))
+        if (ReferenceEquals(_activeTestItem, item))
         {
             await StopActiveTestAsync();
             return;
@@ -457,24 +457,24 @@ public sealed partial class MainPage : TemplatePage
             selectedResult.Config!.packId = Path.GetDirectoryName(item.SourcePath)!;
             string arguments = ConfigurationService.GetStartupParametersByConfigItem(selectedResult.Config);
             if (string.IsNullOrWhiteSpace(arguments))
-                throw new InvalidOperationException(localizer.GetLocalizedString("ConfigImportTestEmptyArguments"));
+                throw new InvalidOperationException(_localizer.GetLocalizedString("ConfigImportTestEmptyArguments"));
 
-            activeTestPlaceholder = ConfigImportTestPlaceholder.Create(
+            _activeTestPlaceholder = ConfigImportTestPlaceholder.Create(
                 arguments,
                 selectedResult.SourcePath,
                 selectedResult.MissingReferencedFiles,
                 selectedResult.MissingFileResolutions,
                 selectedResult.GeneratedFiles);
-            arguments = activeTestPlaceholder.Arguments;
+            arguments = _activeTestPlaceholder.Arguments;
 
-            activeTestItem = item;
-            activeTestComponentId = item.SelectedComponent.Id!;
-            await ComponentTasksManager.Instance.StopTask(activeTestComponentId);
+            _activeTestItem = item;
+            _activeTestComponentId = item.SelectedComponent.Id!;
+            await ComponentTasksManager.Instance.StopTask(_activeTestComponentId);
             item.SetTesting(true);
-            await ComponentTasksManager.Instance.CreateAndRunNewTask(activeTestComponentId, arguments);
+            await ComponentTasksManager.Instance.CreateAndRunNewTask(_activeTestComponentId, arguments);
             ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
-            if (!await ComponentTasksManager.Instance.IsTaskRunning(activeTestComponentId))
-                throw new InvalidOperationException(localizer.GetLocalizedString("ConfigImportTestProcessExited"));
+            if (!await ComponentTasksManager.Instance.IsTaskRunning(_activeTestComponentId))
+                throw new InvalidOperationException(_localizer.GetLocalizedString("ConfigImportTestProcessExited"));
         }
         catch (Exception exception)
         {
@@ -485,10 +485,10 @@ public sealed partial class MainPage : TemplatePage
 
     private ConfigImportResult GetSelectedResult(ConfigImportPresetViewModel item)
     {
-        ConfigImportResult resolved = importService.ApplyMissingFileResolutions(
+        ConfigImportResult resolved = _importService.ApplyMissingFileResolutions(
             item.Result,
             item.MissingFileResolutions);
-        return importService.Retarget(resolved, CreateTarget(item.SelectedComponent!));
+        return _importService.Retarget(resolved, CreateTarget(item.SelectedComponent!));
     }
 
     private void UseSuggestedFileButton_Click(object sender, RoutedEventArgs e)
@@ -496,7 +496,7 @@ public sealed partial class MainPage : TemplatePage
         if (sender is Button { Tag: ConfigImportMissingFileViewModel item })
         {
             item.UseSuggestion();
-            missingFiles.Remove(item);
+            _missingFiles.Remove(item);
             UpdateMissingFilesNextState();
         }
     }
@@ -509,11 +509,11 @@ public sealed partial class MainPage : TemplatePage
         string extension = Path.GetExtension(item.MissingPath);
         using var dialog = new System.Windows.Forms.OpenFileDialog
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
+            Title = _localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
-                ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
-                : $"{extension.TrimStart('.').ToUpperInvariant()} (*{extension})|*{extension}|{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*",
+                ? $"{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
+                : $"{extension.TrimStart('.').ToUpperInvariant()} (*{extension})|*{extension}|{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*",
             FilterIndex = 1,
             RestoreDirectory = true,
         };
@@ -521,7 +521,7 @@ public sealed partial class MainPage : TemplatePage
             return;
 
         item.UseReplacement(dialog.FileName);
-        missingFiles.Remove(item);
+        _missingFiles.Remove(item);
         UpdateMissingFilesNextState();
     }
 
@@ -530,16 +530,16 @@ public sealed partial class MainPage : TemplatePage
         if (sender is Button { Tag: ConfigImportMissingFileViewModel item })
         {
             item.UseEmptyFile();
-            missingFiles.Remove(item);
+            _missingFiles.Remove(item);
             UpdateMissingFilesNextState();
         }
     }
 
     private void UpdateMissingFilesNextState() =>
         NextButton.IsEnabled =
-        missingFiles.Count == 0
-        || (missingFiles.Count > 0 && missingFiles.All(item => item.IsResolved))
-        || (missingFiles.Count > 0 && missingFiles.All(item => item.HasSuggestion));
+        _missingFiles.Count == 0
+        || (_missingFiles.Count > 0 && _missingFiles.All(item => item.IsResolved))
+        || (_missingFiles.Count > 0 && _missingFiles.All(item => item.HasSuggestion));
 
     private void EnsureSuccessfulRetarget(ConfigImportResult result)
     {
@@ -552,13 +552,13 @@ public sealed partial class MainPage : TemplatePage
                 .Where(issue => issue.Severity == ConfigImportIssueSeverity.Error)
                 .Select(issue => ConfigImportIssueText.GetMessage(issue)));
         throw new InvalidOperationException(string.IsNullOrWhiteSpace(errors)
-            ? localizer.GetLocalizedString("ConfigImportConvertFailed")
+            ? _localizer.GetLocalizedString("ConfigImportConvertFailed")
             : errors);
     }
 
     private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
     {
-        if (!string.Equals(state.Item1, activeTestComponentId, StringComparison.OrdinalIgnoreCase) || state.Item2)
+        if (!string.Equals(state.Item1, _activeTestComponentId, StringComparison.OrdinalIgnoreCase) || state.Item2)
             return;
 
         DispatcherQueue.TryEnqueue(CompleteTestSession);
@@ -567,7 +567,7 @@ public sealed partial class MainPage : TemplatePage
     private async Task StopActiveTestAsync()
     {
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
-        string componentId = activeTestComponentId;
+        string componentId = _activeTestComponentId;
         if (!string.IsNullOrWhiteSpace(componentId))
         {
             try
@@ -585,11 +585,11 @@ public sealed partial class MainPage : TemplatePage
     private void CompleteTestSession()
     {
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
-        activeTestItem?.SetTesting(false);
-        activeTestPlaceholder?.Dispose();
-        activeTestPlaceholder = null;
-        activeTestItem = null;
-        activeTestComponentId = string.Empty;
+        _activeTestItem?.SetTesting(false);
+        _activeTestPlaceholder?.Dispose();
+        _activeTestPlaceholder = null;
+        _activeTestItem = null;
+        _activeTestComponentId = string.Empty;
     }
 
     private void DetailsButton_Click(object sender, RoutedEventArgs e)
@@ -600,8 +600,8 @@ public sealed partial class MainPage : TemplatePage
         var detailsPanel = new StackPanel { Spacing = 10, Width = 350 };
 
         string titleText = item.HasDetails
-            ? string.Format(localizer.GetLocalizedString("ConfigImportErrorView"), item.FileName)
-            : localizer.GetLocalizedString("ConfigImportSuccess");
+            ? string.Format(_localizer.GetLocalizedString("ConfigImportErrorView"), item.FileName)
+            : _localizer.GetLocalizedString("ConfigImportSuccess");
 
         detailsPanel.Children.Add(new TextBlock
         {
@@ -613,7 +613,7 @@ public sealed partial class MainPage : TemplatePage
         foreach (ConfigImportIssue issue in item.Result.Issues)
         {
             string location = issue.LineNumber.HasValue
-                ? string.Format(localizer.GetLocalizedString("ConfigImportIssueLine"), issue.LineNumber.Value)
+                ? string.Format(_localizer.GetLocalizedString("ConfigImportIssueLine"), issue.LineNumber.Value)
                 : string.Empty;
             detailsPanel.Children.Add(new TextBlock
             {
@@ -645,12 +645,12 @@ public sealed partial class MainPage : TemplatePage
 
     private async void MainPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        isUnloaded = true;
+        _isUnloaded = true;
         StoreHelper.Instance.ItemActionsStopped -= StoreComponentsChanged;
         StoreHelper.Instance.ItemRemoved -= StoreComponentsChanged;
         await StopActiveTestAsync();
-        foreach (var item in results)
-            if (item.Result.SharedPackage != null && !packagesBeingSaved.Contains(item.Result.SharedPackage))
+        foreach (var item in _results)
+            if (item.Result.SharedPackage != null && !_packagesBeingSaved.Contains(item.Result.SharedPackage))
                 item.Result.SharedPackage.Dispose();
     }
 
@@ -683,14 +683,14 @@ public sealed partial class MainPage : TemplatePage
         catch (Exception exception)
         {
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-            if (isUnloaded)
+            if (_isUnloaded)
                 return;
             UtilityButtons.IsLoading = false;
             ResultItemsControl.IsEnabled = true;
             NextButton.Visibility = Visibility.Visible;
             if (IsLoaded)
                 await new CDPIUI.Controls.Dialogs.Universal.ErrorContentDialog().ShowErrorDialogAsync(
-                    localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
+                    _localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
         }
     }
 
@@ -700,7 +700,7 @@ public sealed partial class MainPage : TemplatePage
         {
             NextButton.Visibility = Visibility.Collapsed;
             await ImportConfigsAsync();
-            if (isUnloaded)
+            if (_isUnloaded)
                 return;
             NextButton.Visibility = Visibility.Visible;
         }
@@ -708,7 +708,7 @@ public sealed partial class MainPage : TemplatePage
         {
             NextButton.Visibility = Visibility.Visible;
             bool flg = false;
-            foreach (var item in missingFiles)
+            foreach (var item in _missingFiles)
             {
                 if (!item.IsResolved && item.HasSuggestion)
                 {
@@ -729,10 +729,10 @@ public sealed partial class MainPage : TemplatePage
             ResultItemsControl.IsEnabled = false;
 
             UtilityButtons.IsLoading = true;
-            UtilityButtons.LoadingStateText = localizer.GetLocalizedString("Saving");
+            UtilityButtons.LoadingStateText = _localizer.GetLocalizedString("Saving");
 
             List<ConfigImportPresetViewModel> itemsToRemove = [];
-            foreach (var item in results.ToList())
+            foreach (var item in _results.ToList())
             {
                 if (item.CanSave)
                 {
@@ -745,7 +745,7 @@ public sealed partial class MainPage : TemplatePage
             {
                 if (string.IsNullOrEmpty(item.OperationError))
                 {
-                    results.Remove(item);
+                    _results.Remove(item);
                 }
             }
 
@@ -754,7 +754,7 @@ public sealed partial class MainPage : TemplatePage
             UtilityButtons.IsLoading = false;
             ResultItemsControl.IsEnabled = true;
 
-            if (results.Count == 0)
+            if (_results.Count == 0)
             {
                 MainContent.GoTo(WorkDoneStep);
             }

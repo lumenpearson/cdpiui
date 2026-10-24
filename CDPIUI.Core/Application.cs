@@ -11,12 +11,12 @@ namespace CDPIUI.Core;
 public class ApplicationInfo
 {
     private static ApplicationInfo? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static ApplicationInfo Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new ApplicationInfo();

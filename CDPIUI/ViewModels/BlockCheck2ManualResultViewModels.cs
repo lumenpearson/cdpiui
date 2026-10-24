@@ -59,25 +59,25 @@ public sealed class BlockCheck2ManualIssueItem
 
 public sealed class BlockCheck2StrategyEvidenceItem : INotifyPropertyChanged
 {
-    private ProbeSummary summary;
-    private BlockCheckEvidenceStatus status;
-    private string httpStatusText;
-    private string failureText;
-    private bool isSelectedForPreset;
-    private bool isAutomaticSelection;
+    private ProbeSummary _summary;
+    private BlockCheckEvidenceStatus _status;
+    private string _httpStatusText;
+    private string _failureText;
+    private bool _isSelectedForPreset;
+    private bool _isAutomaticSelection;
 
     public BlockCheck2StrategyEvidenceItem(BlockCheckStrategyEvidence evidence)
     {
         Evidence = evidence;
-        summary = evidence.Summary;
-        status = evidence.Status;
+        _summary = evidence.Summary;
+        _status = evidence.Status;
         SiteUrl = BlockCheckTargetDisplayFormatter.FormatUrl(evidence.Target);
         ConnectionDetails = BlockCheckTargetDisplayFormatter.FormatConnectionDetails(evidence.Target);
         StrategyName = string.IsNullOrWhiteSpace(evidence.Strategy.DisplayName)
             ? evidence.Strategy.Id
             : evidence.Strategy.DisplayName;
-        httpStatusText = FormatStatuses(evidence.HttpStatusCodes);
-        failureText = string.Join(", ", evidence.FailureCodes);
+        _httpStatusText = FormatStatuses(evidence.HttpStatusCodes);
+        _failureText = string.Join(", ", evidence.FailureCodes);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -89,23 +89,23 @@ public sealed class BlockCheck2StrategyEvidenceItem : INotifyPropertyChanged
     public string StrategyArguments => Evidence.StrategyArguments;
     public string SiteUrl { get; }
     public string ConnectionDetails { get; }
-    public BlockCheckEvidenceStatus Status => status;
-    public int AttemptCount => summary.AttemptCount;
-    public int SuccessCount => summary.SuccessCount;
-    public double SuccessRate => summary.SuccessRate;
+    public BlockCheckEvidenceStatus Status => _status;
+    public int AttemptCount => _summary.AttemptCount;
+    public int SuccessCount => _summary.SuccessCount;
+    public double SuccessRate => _summary.SuccessRate;
     public double ResponseTimeSortValue =>
-        double.IsFinite(summary.MedianTimeToFirstByteMs)
-            ? summary.MedianTimeToFirstByteMs
+        double.IsFinite(_summary.MedianTimeToFirstByteMs)
+            ? _summary.MedianTimeToFirstByteMs
             : double.PositiveInfinity;
     public string ResultText => $"{SuccessCount}/{AttemptCount} ({SuccessRate:P0})";
     public bool HasPartialScopeWarning =>
-        status == BlockCheckEvidenceStatus.Partial && SuccessCount == AttemptCount;
+        _status == BlockCheckEvidenceStatus.Partial && SuccessCount == AttemptCount;
     public string ResponseTimeText =>
-        double.IsFinite(summary.MedianTimeToFirstByteMs)
-            ? $"{summary.MedianTimeToFirstByteMs:0} ms"
+        double.IsFinite(_summary.MedianTimeToFirstByteMs)
+            ? $"{_summary.MedianTimeToFirstByteMs:0} ms"
             : "—";
-    public string HttpStatusText => httpStatusText;
-    public string FailureText => failureText;
+    public string HttpStatusText => _httpStatusText;
+    public string FailureText => _failureText;
     public string BaselineText =>
         $"{Evidence.BaselineSummary.SuccessCount}/{Evidence.BaselineSummary.AttemptCount} " +
         $"({Evidence.BaselineSummary.SuccessRate:P0})";
@@ -117,22 +117,22 @@ public sealed class BlockCheck2StrategyEvidenceItem : INotifyPropertyChanged
         string.IsNullOrWhiteSpace(FailureText) ? null : FailureText,
     }.Where(value => value != null));
 
-    public bool IsSelectedForPreset => isSelectedForPreset;
-    public bool IsAutomaticSelection => isAutomaticSelection;
-    public string SelectionText => !isSelectedForPreset
+    public bool IsSelectedForPreset => _isSelectedForPreset;
+    public bool IsAutomaticSelection => _isAutomaticSelection;
+    public string SelectionText => !_isSelectedForPreset
         ? string.Empty
-        : isAutomaticSelection
+        : _isAutomaticSelection
             ? "Auto"
             : "Manual";
 
     public void SetSelection(bool selected, bool automatic)
     {
-        if (isSelectedForPreset == selected && isAutomaticSelection == automatic)
+        if (_isSelectedForPreset == selected && _isAutomaticSelection == automatic)
         {
             return;
         }
-        isSelectedForPreset = selected;
-        isAutomaticSelection = automatic;
+        _isSelectedForPreset = selected;
+        _isAutomaticSelection = automatic;
         Notify(nameof(IsSelectedForPreset));
         Notify(nameof(IsAutomaticSelection));
         Notify(nameof(SelectionText));
@@ -141,20 +141,20 @@ public sealed class BlockCheck2StrategyEvidenceItem : INotifyPropertyChanged
     public void ApplyTestResult(ProbeResult result)
     {
         ProbeAttempt[] attempts = result.Attempts.ToArray();
-        summary = ProbeSummary.FromAttempts(attempts);
-        status = summary.AttemptCount == 0
+        _summary = ProbeSummary.FromAttempts(attempts);
+        _status = _summary.AttemptCount == 0
             ? BlockCheckEvidenceStatus.Untested
-            : summary.SuccessCount == summary.AttemptCount
+            : _summary.SuccessCount == _summary.AttemptCount
                 ? BlockCheckEvidenceStatus.Successful
-                : summary.SuccessCount > 0
+                : _summary.SuccessCount > 0
                     ? BlockCheckEvidenceStatus.Partial
                     : BlockCheckEvidenceStatus.Failed;
-        httpStatusText = FormatStatuses(attempts
+        _httpStatusText = FormatStatuses(attempts
             .Select(attempt => attempt.HttpStatusCode)
             .Where(code => code > 0)
             .Distinct()
             .Order());
-        failureText = string.Join(", ", attempts
+        _failureText = string.Join(", ", attempts
             .Select(attempt => attempt.FailureCode)
             .Where(code => !string.IsNullOrWhiteSpace(code))
             .Distinct(StringComparer.OrdinalIgnoreCase));
@@ -180,7 +180,7 @@ public sealed class BlockCheck2StrategyEvidenceItem : INotifyPropertyChanged
 
 public sealed class BlockCheck2ManualAssignmentItem : INotifyPropertyChanged
 {
-    private int order;
+    private int _order;
 
     public BlockCheck2ManualAssignmentItem(
         BlockCheckManualAssignment assignment,
@@ -203,7 +203,7 @@ public sealed class BlockCheck2ManualAssignmentItem : INotifyPropertyChanged
     public BlockCheckManualAssignment Assignment { get; }
     public StrategyDefinition Strategy { get; }
     public BlockCheckTarget Target { get; }
-    public int Order => order;
+    public int Order => _order;
     public string Scope { get; }
     public string ConnectionDetails { get; }
     public string StrategyArguments { get; }
@@ -214,11 +214,11 @@ public sealed class BlockCheck2ManualAssignmentItem : INotifyPropertyChanged
 
     public void SetOrder(int value)
     {
-        if (order == value)
+        if (_order == value)
         {
             return;
         }
-        order = value;
+        _order = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Order)));
     }
 }

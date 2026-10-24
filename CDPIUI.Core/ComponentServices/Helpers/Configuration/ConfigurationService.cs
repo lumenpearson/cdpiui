@@ -24,16 +24,16 @@ public partial class ConfigurationService
 
     private readonly List<ConfigItem> Items = [];
 
-    private string Target;
+    private string _target;
 
 
-    private List<Tuple<string, LocaleModel>> ConfigLocaleHelpers = [];
+    private List<Tuple<string, LocaleModel>> _configLocaleHelpers = [];
 
 
     private readonly object _lock = new object();
     public ConfigurationService(string target)
     {
-        Target = target;
+        _target = target;
     }
 
     private List<ConfigItem> InitConfigDirectory(DatabaseStoreItem item)
@@ -68,7 +68,7 @@ public partial class ConfigurationService
         string[] jsonFiles = Directory.GetFiles(directory, "*.json");
 
         LocaleModel localeModel = new LocaleModel();
-        ConfigLocaleHelpers.Add(Tuple.Create(id, localeModel));
+        _configLocaleHelpers.Add(Tuple.Create(id, localeModel));
         ConfigLocalizationHelper.InitLocaleHelper(
             localeModel,
             configInitItem.localized_strings_directory!,
@@ -83,7 +83,7 @@ public partial class ConfigurationService
 
             try
             {
-                ConfigItem? configItem = LoadPresetForTarget(jsonFile, Target, out bool isLegacyZapretConfig);
+                ConfigItem? configItem = LoadPresetForTarget(jsonFile, _target, out bool isLegacyZapretConfig);
                 if (configItem == null)
                     continue;
 
@@ -243,7 +243,7 @@ public partial class ConfigurationService
         lock (_lock)
         {
             Items.Clear();
-            ConfigLocaleHelpers.Clear();
+            _configLocaleHelpers.Clear();
             List<DatabaseStoreItem> configItems =
                 string.IsNullOrEmpty(itemId) ?
                 DatabaseHelper.Instance.GetItemsByType("configlist") :
@@ -401,7 +401,7 @@ public partial class ConfigurationService
     {
         try
         {
-            foreach (Tuple<string, LocaleModel> localeHelperTuple in ConfigLocaleHelpers)
+            foreach (Tuple<string, LocaleModel> localeHelperTuple in _configLocaleHelpers)
             {
                 if (localeHelperTuple.Item1 == packId)
                 {

@@ -14,16 +14,16 @@ public class PipeServer : PipeServiceBase
     private int _maxServerInstances = 1;
     private Task? _listenerTask;
 
-    private bool IsAuthorized = false;
+    private bool _isAuthorized = false;
 
     private static PipeServer? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static PipeServer Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new PipeServer();
                 return _instance;
@@ -53,7 +53,7 @@ public class PipeServer : PipeServiceBase
     {
         while (!(CancellationToken?.IsCancellationRequested ?? true))
         {
-            IsAuthorized = false;
+            _isAuthorized = false;
             try
             {
                 var ps = PipeAccessPolicy.CreatePipeSecurity();
@@ -106,7 +106,7 @@ public class PipeServer : PipeServiceBase
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(AuthorizationTimeout);
-                    if (!IsAuthorized && ReferenceEquals(PipeStream, connectedStream) && connectedStream.IsConnected)
+                    if (!_isAuthorized && ReferenceEquals(PipeStream, connectedStream) && connectedStream.IsConnected)
                     {
                         Logger?.CreateWarningLog(nameof(PipeServer), "The client did not authorize in time; disconnecting.");
                         try
@@ -155,7 +155,7 @@ public class PipeServer : PipeServiceBase
     // component output and paths are for the authorized GUI only.
     protected override bool CanSend(string message)
     {
-        if (IsAuthorized)
+        if (_isAuthorized)
             return true;
         try
         {
@@ -198,13 +198,13 @@ public class PipeServer : PipeServiceBase
                 if (!string.IsNullOrEmpty(key) &&
                     messageModel.MessageData != null && SecretEquals(messageModel.MessageData["GUID"], key))
                 {
-                    IsAuthorized = true;
+                    _isAuthorized = true;
                     _ = SendMessageAsync(ServiceMessageModel.AuthSuccessful().ToString());
                 }
                 else
                 {
                     // A client with a wrong GUID could retry until the authorization timeout.
-                    IsAuthorized = false;
+                    _isAuthorized = false;
                     await SendMessageAsync(ServiceMessageModel.AuthFailure().ToString());
                     Logger?.CreateWarningLog(nameof(PipeServer), "Authorization failed; disconnecting the client.");
                     try
@@ -219,7 +219,7 @@ public class PipeServer : PipeServiceBase
             }
         }
 
-        if (!IsAuthorized)
+        if (!_isAuthorized)
         {
             Logger?.CreateWarningLog(nameof(PipeServer), "Authorization failed.");
             return;

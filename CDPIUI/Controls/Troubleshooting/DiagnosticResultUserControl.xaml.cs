@@ -23,7 +23,7 @@ namespace CDPIUI.Controls.Troubleshooting;
 
 public sealed partial class DiagnosticResultUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public DiagnosticResultUserControl()
     {
@@ -94,7 +94,7 @@ public sealed partial class DiagnosticResultUserControl : UserControl
             {
                 if (value.StartsWith("$INTERNAL_HELP"))
                 {
-                    NetHelpAskButton.Content = localizer.GetLocalizedString("/Flashlight/InternalHelp");
+                    NetHelpAskButton.Content = _localizer.GetLocalizedString("/Flashlight/InternalHelp");
                 }
                 NetHelpAskButton.Visibility = Visibility.Visible;
             }

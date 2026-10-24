@@ -40,7 +40,7 @@ namespace CDPIUI.Controls.MainPage;
 
 public sealed partial class SmallComponentTileUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     #region Commands
 
@@ -233,7 +233,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
     private void SetToolTip()
     {
-        ShowMoreSettingsToolTip.Text = IsOpened ? localizer.GetLocalizedString("ShowLessComponentSettingsText") : localizer.GetLocalizedString("ShowMoreComponentSettingsText");
+        ShowMoreSettingsToolTip.Text = IsOpened ? _localizer.GetLocalizedString("ShowLessComponentSettingsText") : _localizer.GetLocalizedString("ShowMoreComponentSettingsText");
     }
 
     private async Task<ProcessService> GetProcessManager()
@@ -284,27 +284,27 @@ public sealed partial class SmallComponentTileUserControl : UserControl
                 ForegroundStopStatusFontIcon.Glyph = "\uE713";
                 ForegroundStatusFontIcon.Visibility = Visibility.Collapsed;
                 ForegroundStopStatusFontIcon.Visibility = Visibility.Visible;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusSetupRequired"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusSetupRequired"));
                 break;
             case ComponentState.Stopped:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"];
                 ForegroundStopStatusFontIcon.Glyph = "\uE7E8";
                 ForegroundStatusFontIcon.Visibility = Visibility.Collapsed;
                 ForegroundStopStatusFontIcon.Visibility = Visibility.Visible;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStopped"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusStopped"));
                 break;
             case ComponentState.Running:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uF13E";
                 ForegroundStatusFontIcon.FontSize = 18;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStarted"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusStarted"));
                 break;
             case ComponentState.ExitedWithException:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];
                 ForegroundStopStatusFontIcon.Glyph = "\uEDAE";
                 ForegroundStatusFontIcon.Visibility = Visibility.Collapsed;
                 ForegroundStopStatusFontIcon.Visibility = Visibility.Visible;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusExceptionHappens"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusExceptionHappens"));
                 break;
         }
     }
@@ -317,13 +317,13 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
             if (isRunning)
             {
-                PlayToolTip.Text = localizer.GetLocalizedString("Stop");
+                PlayToolTip.Text = _localizer.GetLocalizedString("Stop");
                 PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph() ? "\uE62E" : "\uF8AE";
                 ShowComponentState(ComponentState.Running);
             }
             else
             {
-                PlayToolTip.Text = localizer.GetLocalizedString("Start");
+                PlayToolTip.Text = _localizer.GetLocalizedString("Start");
                 PlayGlyph.Glyph = "\uF5B0";
                 _ = CheckComponentState(); // CheckComponentState catches and logs its own errors.
             }

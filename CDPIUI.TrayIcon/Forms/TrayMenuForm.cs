@@ -11,13 +11,13 @@ namespace CDPIUI.TrayIcon.Forms;
 
 public partial class TrayMenuForm : Form
 {
-    private readonly int DefaultWidth;
+    private readonly int _defaultWidth;
 
     public Action? Hidden;
 
     public TrayMenuForm()
     {
-        DefaultWidth = 285;
+        _defaultWidth = 285;
 
         HideWindow();
         this.ShowInTaskbar = false;
@@ -313,7 +313,7 @@ public partial class TrayMenuForm : Form
     public void ShowWindow(Point location, int vertOffset, int horOffset)
     {
         this.Visible = true;
-        Size = new Size(DefaultWidth, CheckWindowHeight());
+        Size = new Size(_defaultWidth, CheckWindowHeight());
 
         var taskbarPos = Taskbar.DisplayBounds;
         float scaleFactor = GetScalingFactor();

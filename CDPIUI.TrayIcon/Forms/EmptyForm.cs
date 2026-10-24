@@ -25,7 +25,7 @@ public partial class EmptyForm : Form
     private bool _iconAdded;
     private int _iconAttempts;
 
-    private TrayMenuForm? TrayMenuForm;
+    private TrayMenuForm? _trayMenuForm;
 
     public EmptyForm()
     {
@@ -234,20 +234,20 @@ public partial class EmptyForm : Form
         // A second right click opened another menu and the first one, with its task
         // subscriptions, was never closed.
         HideContextMenu();
-        TrayMenuForm = new();
-        TrayMenuForm.ShowWindow(location, vertOffset, horOffset);
-        TrayMenuForm.Hidden += HideContextMenu;
+        _trayMenuForm = new();
+        _trayMenuForm.ShowWindow(location, vertOffset, horOffset);
+        _trayMenuForm.Hidden += HideContextMenu;
     }
 
     private void HideContextMenu()
     {
-        if (TrayMenuForm != null)
+        if (_trayMenuForm != null)
         {
-            TrayMenuForm.Hidden -= HideContextMenu;
-            TrayMenuForm.Close();
-            TrayMenuForm.Dispose();
+            _trayMenuForm.Hidden -= HideContextMenu;
+            _trayMenuForm.Close();
+            _trayMenuForm.Dispose();
 
-            TrayMenuForm = null;
+            _trayMenuForm = null;
         }
     }
 
@@ -411,7 +411,7 @@ public partial class EmptyForm : Form
 
 
     #region MessageHandler
-    static uint s_uTaskbarRestart;
+    static uint _s_uTaskbarRestart;
     protected override void WndProc(ref Message m)
     {
         if (ConditionalLaunchEngine.Instance.HandleWindowMessage(ref m))
@@ -419,10 +419,10 @@ public partial class EmptyForm : Form
 
         if (m.Msg == WM_CREATE)
         {
-            s_uTaskbarRestart = RegisterWindowMessage("TaskbarCreated");
+            _s_uTaskbarRestart = RegisterWindowMessage("TaskbarCreated");
             // Explorer runs at medium integrity; this process requires administrator rights.
-            if (s_uTaskbarRestart == 0 ||
-                !ChangeWindowMessageFilterEx(m.HWnd, s_uTaskbarRestart, 1, IntPtr.Zero))
+            if (_s_uTaskbarRestart == 0 ||
+                !ChangeWindowMessageFilterEx(m.HWnd, _s_uTaskbarRestart, 1, IntPtr.Zero))
                 Logger.Instance.CreateDebugLog(nameof(EmptyForm),
                     $"Cannot allow TaskbarCreated through UIPI: Win32={Marshal.GetLastWin32Error()}. Timer retry remains available.");
         }
@@ -469,7 +469,7 @@ public partial class EmptyForm : Form
         }
         else
         {
-            if (s_uTaskbarRestart != 0 && m.Msg == s_uTaskbarRestart)
+            if (_s_uTaskbarRestart != 0 && m.Msg == _s_uTaskbarRestart)
             {
                 Logger.Instance.CreateDebugLog(nameof(EmptyForm), "TaskbarCreated received; restoring tray icon.");
                 _iconAdded = false;

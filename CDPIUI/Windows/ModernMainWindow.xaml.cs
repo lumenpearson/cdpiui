@@ -40,7 +40,7 @@ namespace CDPIUI;
 /// </summary>
 public sealed partial class ModernMainWindow : TemplateWindow
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public ModernMainWindow()
     {
         InitializeComponent();

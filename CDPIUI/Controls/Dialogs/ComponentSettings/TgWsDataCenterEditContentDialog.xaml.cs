@@ -20,31 +20,31 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings;
 
 public sealed partial class TgWsDataCenterEditContentDialog : ContentDialog
 {
-    private string number = string.Empty;
+    private string _number = string.Empty;
     public string Number
     {
         get
         {
-            return number;
+            return _number;
         }
         set
         {
-            number = value;
+            _number = value;
             if (NumberTextBox.Text != Number)
                 NumberTextBox.Text = Number;
         }
     }
 
-    private string ip = string.Empty;
+    private string _ip = string.Empty;
     public string Ip
     {
         get
         {
-            return ip;
+            return _ip;
         }
         set
         {
-            ip = value;
+            _ip = value;
             if (IpTextBox.Text != Ip)
                 IpTextBox.Text = Ip;
         }

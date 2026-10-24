@@ -45,9 +45,9 @@ namespace CDPIUI.Views.Store.Settings.Memory;
 /// </summary>
 public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
 {
-    private ObservableCollection<LibraryItemModel> LibraryItems = [];
+    private ObservableCollection<LibraryItemModel> _libraryItems = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MemoryViewInstalledItemsDetailsPage()
     {
         InitializeComponent();
@@ -55,8 +55,8 @@ public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
-        ItemsListView.ItemsSource = LibraryItems;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
+        ItemsListView.ItemsSource = _libraryItems;
 
         CreateBreadcrumbBarNavigation();
         StoreHelper.Instance.ItemRemoved += StoreHelper_ItemRemoved;
@@ -92,23 +92,23 @@ public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
 
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryUsage"),
+            DisplayName = _localizer.GetLocalizedString("MemoryUsage"),
             Tag = typeof(MemoryViewPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryViewInstalledItemsDetails"),
+            DisplayName = _localizer.GetLocalizedString("MemoryViewInstalledItemsDetails"),
             Tag = this.GetType()
         });
 
@@ -124,7 +124,7 @@ public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
     {
         try
         {
-            LibraryItems.Clear();
+            _libraryItems.Clear();
             List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
             List<LibraryItemModel> models = [];
             List<Task<long>> sizeTasks = [];
@@ -139,7 +139,7 @@ public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
                 string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
                 title = title.StartsWith("slocale:") ? item.ShortName : title;
 
-                string category = localizer.GetLocalizedString(item.Type);
+                string category = _localizer.GetLocalizedString(item.Type);
                 category = string.IsNullOrEmpty(category) ? item.Type : category;
 
                 string eImageSource = LScriptLangHelper.ExecuteScript(item.IconPath);
@@ -163,13 +163,13 @@ public sealed partial class MemoryViewInstalledItemsDetailsPage : TemplatePage
 
             long[] sizes = await Task.WhenAll(sizeTasks);
             // Another reload may have filled the list while the sizes were read.
-            LibraryItems.Clear();
+            _libraryItems.Clear();
             for (int i = 0; i < models.Count; i++)
             {
                 models[i].Size = sizes[i];
-                LibraryItems.Add(models[i]);
+                _libraryItems.Add(models[i]);
             }
-            LibraryItems.Sort();
+            _libraryItems.Sort();
             // _libraryItems.Reverse();
             await Task.CompletedTask;
         }

@@ -23,8 +23,8 @@ public static class NativeWindowHelper
 
     private delegate nint WndProcDelegate(nint hwnd, uint msg, nint wParam, nint lParam);
 
-    private static readonly ConcurrentDictionary<nint, nint> _originalProcs = new();
-    private static readonly ConcurrentDictionary<nint, WndProcDelegate> _wndProcDelegates = new();
+    private static readonly ConcurrentDictionary<nint, nint> OriginalProcs = new();
+    private static readonly ConcurrentDictionary<nint, WndProcDelegate> WndProcDelegates = new();
 
     public static void ForceDisableMaximize(Window window)
     {
@@ -32,7 +32,7 @@ public static class NativeWindowHelper
         if (hwnd == nint.Zero)
             return;
 
-        if (_originalProcs.ContainsKey(hwnd))
+        if (OriginalProcs.ContainsKey(hwnd))
             return;
 
         nint original = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
@@ -66,8 +66,8 @@ public static class NativeWindowHelper
             return CallWindowProc(original, wndHwnd, msg, wParam, lParam);
         };
 
-        _originalProcs[hwnd] = original;
-        _wndProcDelegates[hwnd] = del;
+        OriginalProcs[hwnd] = original;
+        WndProcDelegates[hwnd] = del;
 
         nint newPtr = Marshal.GetFunctionPointerForDelegate(del);
         nint prev = SetWindowLongPtr(hwnd, GWLP_WNDPROC, newPtr);
@@ -75,8 +75,8 @@ public static class NativeWindowHelper
         {
             int err = Marshal.GetLastWin32Error();
             Debug.WriteLine($"SetWindowLongPtr failed: {err}");
-            _originalProcs.TryRemove(hwnd, out _);
-            _wndProcDelegates.TryRemove(hwnd, out _);
+            OriginalProcs.TryRemove(hwnd, out _);
+            WndProcDelegates.TryRemove(hwnd, out _);
         }
         else
         {
@@ -101,8 +101,8 @@ public static class NativeWindowHelper
         }
         finally
         {
-            _originalProcs.TryRemove(hwnd, out _);
-            _wndProcDelegates.TryRemove(hwnd, out _);
+            OriginalProcs.TryRemove(hwnd, out _);
+            WndProcDelegates.TryRemove(hwnd, out _);
         }
     }
 

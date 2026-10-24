@@ -30,55 +30,55 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
     private const int MinimumRequestsPerDomain = 1;
     private const int MaximumRequestsPerDomain = 20;
 
-    private readonly BlockCheckAddOnService addOnService;
-    private readonly BlockCheckSessionPreparationService preparationService;
-    private readonly BlockCheckReportBuilder reportBuilder;
-    private readonly BlockCheckReportSerializer reportSerializer;
-    private readonly BlockCheckReportHistoryService reportHistoryService;
-    private readonly BlockCheckMaximumDurationEstimator maximumDurationEstimator = new();
-    private readonly BlockCheckRemainingTimeEstimator remainingTimeEstimator = new();
-    private readonly Stopwatch runStopwatch = new();
-    private string generatedSiteListRoot = CreateGeneratedSiteListRoot();
-    private CancellationTokenSource? cancellation;
-    private string targetInput = string.Empty;
-    private BlockCheckRunPreset selectedRunPreset = BlockCheckRunPreset.Balanced;
-    private bool includeHttp;
-    private bool includeTls12 = true;
-    private bool includeTls13;
-    private bool includeTlsAuto = true;
-    private bool includeQuic;
-    private bool includeIpv4 = true;
-    private bool includeIpv6;
-    private BlockCheckSessionState state = BlockCheckSessionState.Idle;
-    private BlockCheckScanPhase? currentPhase;
-    private int progressCurrent;
-    private int progressTotal;
-    private TimeSpan? estimatedRemainingTime;
-    private TimeSpan? estimatedOverallRemainingTime;
-    private BlockCheckScanPhase? estimatorPhase;
-    private int lastObservedCheckCount;
-    private TimeSpan lastObservedCheckElapsed;
-    private double? secondsPerCheck;
-    private int successfulChecks;
-    private int failedChecks;
-    private int successfulStrategies;
-    private string currentTargetId = string.Empty;
-    private string currentStrategyId = string.Empty;
-    private string? operationError;
-    private string? historySaveError;
-    private IReadOnlyList<BlockCheckIssue> issues = [];
-    private IReadOnlyList<BlockCheckTarget> targets = [];
-    private BlockCheckRunResult? lastResult;
-    private BlockCheckReport? lastReport;
-    private BlockCheckResultSession? lastSession;
-    private bool siteListsLoaded;
-    private bool isSiteListLoading;
-    private string? siteListLoadError;
-    private double connectTimeoutSeconds = 5d;
-    private double requestTimeoutSeconds = 10d;
-    private double startupGraceSeconds = 0.75d;
-    private bool testAllStrategies;
-    private double requestsPerDomain = 3d;
+    private readonly BlockCheckAddOnService _addOnService;
+    private readonly BlockCheckSessionPreparationService _preparationService;
+    private readonly BlockCheckReportBuilder _reportBuilder;
+    private readonly BlockCheckReportSerializer _reportSerializer;
+    private readonly BlockCheckReportHistoryService _reportHistoryService;
+    private readonly BlockCheckMaximumDurationEstimator _maximumDurationEstimator = new();
+    private readonly BlockCheckRemainingTimeEstimator _remainingTimeEstimator = new();
+    private readonly Stopwatch _runStopwatch = new();
+    private string _generatedSiteListRoot = CreateGeneratedSiteListRoot();
+    private CancellationTokenSource? _cancellation;
+    private string _targetInput = string.Empty;
+    private BlockCheckRunPreset _selectedRunPreset = BlockCheckRunPreset.Balanced;
+    private bool _includeHttp;
+    private bool _includeTls12 = true;
+    private bool _includeTls13;
+    private bool _includeTlsAuto = true;
+    private bool _includeQuic;
+    private bool _includeIpv4 = true;
+    private bool _includeIpv6;
+    private BlockCheckSessionState _state = BlockCheckSessionState.Idle;
+    private BlockCheckScanPhase? _currentPhase;
+    private int _progressCurrent;
+    private int _progressTotal;
+    private TimeSpan? _estimatedRemainingTime;
+    private TimeSpan? _estimatedOverallRemainingTime;
+    private BlockCheckScanPhase? _estimatorPhase;
+    private int _lastObservedCheckCount;
+    private TimeSpan _lastObservedCheckElapsed;
+    private double? _secondsPerCheck;
+    private int _successfulChecks;
+    private int _failedChecks;
+    private int _successfulStrategies;
+    private string _currentTargetId = string.Empty;
+    private string _currentStrategyId = string.Empty;
+    private string? _operationError;
+    private string? _historySaveError;
+    private IReadOnlyList<BlockCheckIssue> _issues = [];
+    private IReadOnlyList<BlockCheckTarget> _targets = [];
+    private BlockCheckRunResult? _lastResult;
+    private BlockCheckReport? _lastReport;
+    private BlockCheckResultSession? _lastSession;
+    private bool _siteListsLoaded;
+    private bool _isSiteListLoading;
+    private string? _siteListLoadError;
+    private double _connectTimeoutSeconds = 5d;
+    private double _requestTimeoutSeconds = 10d;
+    private double _startupGraceSeconds = 0.75d;
+    private bool _testAllStrategies;
+    private double _requestsPerDomain = 3d;
 
     public BlockCheck2ViewModel(
         BlockCheckAddOnService? addOnService = null,
@@ -87,11 +87,11 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         BlockCheckReportSerializer? reportSerializer = null,
         BlockCheckReportHistoryService? reportHistoryService = null)
     {
-        this.addOnService = addOnService ?? new BlockCheckAddOnService();
-        this.preparationService = preparationService ?? new BlockCheckSessionPreparationService();
-        this.reportBuilder = reportBuilder ?? new BlockCheckReportBuilder();
-        this.reportSerializer = reportSerializer ?? new BlockCheckReportSerializer();
-        this.reportHistoryService = reportHistoryService ?? new BlockCheckReportHistoryService(this.reportSerializer);
+        _addOnService = addOnService ?? new BlockCheckAddOnService();
+        _preparationService = preparationService ?? new BlockCheckSessionPreparationService();
+        _reportBuilder = reportBuilder ?? new BlockCheckReportBuilder();
+        _reportSerializer = reportSerializer ?? new BlockCheckReportSerializer();
+        _reportHistoryService = reportHistoryService ?? new BlockCheckReportHistoryService(_reportSerializer);
         LoadSettings();
     }
 
@@ -104,15 +104,15 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public string TargetInput
     {
-        get => targetInput;
+        get => _targetInput;
         set
         {
-            if (targetInput == value)
+            if (_targetInput == value)
             {
                 return;
             }
 
-            targetInput = value ?? string.Empty;
+            _targetInput = value ?? string.Empty;
             Notify();
             Notify(nameof(DirectTargetInputCount));
             Notify(nameof(HasTargetSources));
@@ -122,15 +122,15 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public BlockCheckRunPreset SelectedRunPreset
     {
-        get => selectedRunPreset;
+        get => _selectedRunPreset;
         set
         {
-            if (selectedRunPreset == value)
+            if (_selectedRunPreset == value)
             {
                 return;
             }
 
-            selectedRunPreset = value;
+            _selectedRunPreset = value;
             Notify();
             SaveSetting(nameof(SelectedRunPreset), (int)value);
             RequestsPerDomain = BlockCheckRunPresetFactory.GetRecommendedAttemptsPerTarget(value);
@@ -139,70 +139,70 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public bool IncludeHttp
     {
-        get => includeHttp;
-        set => SetProtocolSelection(ref includeHttp, value);
+        get => _includeHttp;
+        set => SetProtocolSelection(ref _includeHttp, value);
     }
 
     public bool IncludeTls12
     {
-        get => includeTls12;
-        set => SetProtocolSelection(ref includeTls12, value);
+        get => _includeTls12;
+        set => SetProtocolSelection(ref _includeTls12, value);
     }
 
     public bool IncludeTls13
     {
-        get => includeTls13;
-        set => SetProtocolSelection(ref includeTls13, value);
+        get => _includeTls13;
+        set => SetProtocolSelection(ref _includeTls13, value);
     }
 
     public bool IncludeTlsAuto
     {
-        get => includeTlsAuto;
-        set => SetProtocolSelection(ref includeTlsAuto, value);
+        get => _includeTlsAuto;
+        set => SetProtocolSelection(ref _includeTlsAuto, value);
     }
 
     public bool IncludeQuic
     {
-        get => includeQuic;
-        set => SetProtocolSelection(ref includeQuic, value);
+        get => _includeQuic;
+        set => SetProtocolSelection(ref _includeQuic, value);
     }
 
-    public bool IsHttpOnly => includeHttp && !includeTls12 && !includeTls13 && !includeTlsAuto && !includeQuic;
+    public bool IsHttpOnly => _includeHttp && !_includeTls12 && !_includeTls13 && !_includeTlsAuto && !_includeQuic;
 
     public bool IncludeIpv4
     {
-        get => includeIpv4;
-        set => SetIpVersionSelection(ref includeIpv4, value);
+        get => _includeIpv4;
+        set => SetIpVersionSelection(ref _includeIpv4, value);
     }
 
     public bool IncludeIpv6
     {
-        get => includeIpv6;
-        set => SetIpVersionSelection(ref includeIpv6, value);
+        get => _includeIpv6;
+        set => SetIpVersionSelection(ref _includeIpv6, value);
     }
 
-    public BlockCheckSessionState State => state;
-    public BlockCheckScanPhase? CurrentPhase => currentPhase;
-    public int ProgressCurrent => progressCurrent;
-    public int ProgressTotal => progressTotal;
-    public TimeSpan? EstimatedRemainingTime => estimatedRemainingTime;
-    public TimeSpan? EstimatedOverallRemainingTime => estimatedOverallRemainingTime;
-    public bool IsProgressIndeterminate => progressTotal <= 0;
-    public int SuccessfulChecks => successfulChecks;
-    public int FailedChecks => failedChecks;
-    public int CompletedChecks => successfulChecks + failedChecks;
-    public int SuccessfulStrategies => successfulStrategies;
-    public double ProgressValue => progressTotal <= 0
+    public BlockCheckSessionState State => _state;
+    public BlockCheckScanPhase? CurrentPhase => _currentPhase;
+    public int ProgressCurrent => _progressCurrent;
+    public int ProgressTotal => _progressTotal;
+    public TimeSpan? EstimatedRemainingTime => _estimatedRemainingTime;
+    public TimeSpan? EstimatedOverallRemainingTime => _estimatedOverallRemainingTime;
+    public bool IsProgressIndeterminate => _progressTotal <= 0;
+    public int SuccessfulChecks => _successfulChecks;
+    public int FailedChecks => _failedChecks;
+    public int CompletedChecks => _successfulChecks + _failedChecks;
+    public int SuccessfulStrategies => _successfulStrategies;
+    public double ProgressValue => _progressTotal <= 0
         ? 0d
-        : Math.Clamp((double)progressCurrent / progressTotal, 0d, 1d);
-    public string CurrentTargetId => currentTargetId;
+        : Math.Clamp((double)_progressCurrent / _progressTotal, 0d, 1d);
+    public string CurrentTargetId => _currentTargetId;
     public string CurrentTargetUrl
     {
         get
         {
             BlockCheckTarget? target = CurrentTarget();
             return target == null
-                ? currentTargetId
+                ? _currentTargetId
                 : BlockCheckTargetDisplayFormatter.FormatUrl(target);
         }
     }
@@ -222,69 +222,69 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         {
             BlockCheckTarget? target = CurrentTarget();
             return target == null
-                ? currentTargetId
+                ? _currentTargetId
                 : BlockCheckTargetDisplayFormatter.Format(target);
         }
     }
-    public string CurrentStrategyId => currentStrategyId;
-    public string? OperationError => operationError;
-    public string? HistorySaveError => historySaveError;
-    public bool IsSiteListLoading => isSiteListLoading;
-    public string? SiteListLoadError => siteListLoadError;
+    public string CurrentStrategyId => _currentStrategyId;
+    public string? OperationError => _operationError;
+    public string? HistorySaveError => _historySaveError;
+    public bool IsSiteListLoading => _isSiteListLoading;
+    public string? SiteListLoadError => _siteListLoadError;
     public int SelectedSiteListCount => SelectedSiteLists.Count;
     public int SelectedDomainCount => SelectedSiteLists.Sum(item => item.DomainCount);
-    public int DirectTargetInputCount => targetInput
+    public int DirectTargetInputCount => _targetInput
         .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .Count();
     public bool HasTargetSources => DirectTargetInputCount > 0 || SelectedSiteLists.Count > 0;
     public bool HasProtocolSelection =>
-        includeHttp || includeTls12 || includeTls13 || includeTlsAuto || includeQuic;
-    public bool HasIpVersionSelection => includeIpv4 || includeIpv6;
+        _includeHttp || _includeTls12 || _includeTls13 || _includeTlsAuto || _includeQuic;
+    public bool HasIpVersionSelection => _includeIpv4 || _includeIpv6;
     public bool CanContinueFromTargets => !IsRunning && HasProtocolSelection && HasIpVersionSelection;
-    public IReadOnlyList<BlockCheckIssue> Issues => issues;
-    public IReadOnlyList<BlockCheckTarget> Targets => targets;
-    public int TargetCount => targets.Count;
-    public BlockCheckRunResult? LastResult => lastResult;
-    public BlockCheckReport? LastReport => lastReport;
-    public BlockCheckResultSession? LastSession => lastSession;
-    public bool NoBypassRequired => lastReport?.Issues.Any(issue =>
+    public IReadOnlyList<BlockCheckIssue> Issues => _issues;
+    public IReadOnlyList<BlockCheckTarget> Targets => _targets;
+    public int TargetCount => _targets.Count;
+    public BlockCheckRunResult? LastResult => _lastResult;
+    public BlockCheckReport? LastReport => _lastReport;
+    public BlockCheckResultSession? LastSession => _lastSession;
+    public bool NoBypassRequired => _lastReport?.Issues.Any(issue =>
         string.Equals(issue.Code, "NO_BYPASS_REQUIRED", StringComparison.Ordinal)) == true;
-    public bool LastReportIsHttpOnly => lastReport?.Targets.Count > 0 &&
-        lastReport.Targets.All(target => target.Protocol == BlockCheckProtocol.Http);
-    public string ReportJson => lastReport == null ? string.Empty : reportSerializer.SerializeJson(lastReport);
-    public string ReportText => lastReport == null ? string.Empty : reportSerializer.SerializeText(lastReport);
-    public string PresetArguments => lastReport?.PresetArguments ?? string.Empty;
+    public bool LastReportIsHttpOnly => _lastReport?.Targets.Count > 0 &&
+        _lastReport.Targets.All(target => target.Protocol == BlockCheckProtocol.Http);
+    public string ReportJson => _lastReport == null ? string.Empty : _reportSerializer.SerializeJson(_lastReport);
+    public string ReportText => _lastReport == null ? string.Empty : _reportSerializer.SerializeText(_lastReport);
+    public string PresetArguments => _lastReport?.PresetArguments ?? string.Empty;
 
     public double ConnectTimeoutSeconds
     {
-        get => connectTimeoutSeconds;
-        set => SetAdvancedOption(ref connectTimeoutSeconds, value);
+        get => _connectTimeoutSeconds;
+        set => SetAdvancedOption(ref _connectTimeoutSeconds, value);
     }
 
     public double RequestTimeoutSeconds
     {
-        get => requestTimeoutSeconds;
-        set => SetAdvancedOption(ref requestTimeoutSeconds, value);
+        get => _requestTimeoutSeconds;
+        set => SetAdvancedOption(ref _requestTimeoutSeconds, value);
     }
 
     public double StartupGraceSeconds
     {
-        get => startupGraceSeconds;
-        set => SetAdvancedOption(ref startupGraceSeconds, value);
+        get => _startupGraceSeconds;
+        set => SetAdvancedOption(ref _startupGraceSeconds, value);
     }
 
     public bool TestAllStrategies
     {
-        get => testAllStrategies;
+        get => _testAllStrategies;
         set
         {
-            if (testAllStrategies == value)
+            if (_testAllStrategies == value)
             {
                 return;
             }
 
-            testAllStrategies = value;
+            _testAllStrategies = value;
             Notify();
             SaveSetting(nameof(TestAllStrategies), value);
         }
@@ -292,15 +292,15 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public double RequestsPerDomain
     {
-        get => requestsPerDomain;
+        get => _requestsPerDomain;
         set
         {
-            if (requestsPerDomain.Equals(value))
+            if (_requestsPerDomain.Equals(value))
             {
                 return;
             }
 
-            requestsPerDomain = value;
+            _requestsPerDomain = value;
             Notify();
             Notify(nameof(AdvancedOptionsValid));
             Notify(nameof(CanStart));
@@ -312,22 +312,22 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
     }
 
     public bool AdvancedOptionsValid =>
-        double.IsFinite(connectTimeoutSeconds) && connectTimeoutSeconds is >= 1d and <= 60d &&
-        double.IsFinite(requestTimeoutSeconds) && requestTimeoutSeconds is >= 2d and <= 180d &&
-        requestTimeoutSeconds >= connectTimeoutSeconds &&
-        double.IsFinite(startupGraceSeconds) && startupGraceSeconds is >= 0.25d and <= 10d &&
-        IsValidRequestsPerDomain(requestsPerDomain);
+        double.IsFinite(_connectTimeoutSeconds) && _connectTimeoutSeconds is >= 1d and <= 60d &&
+        double.IsFinite(_requestTimeoutSeconds) && _requestTimeoutSeconds is >= 2d and <= 180d &&
+        _requestTimeoutSeconds >= _connectTimeoutSeconds &&
+        double.IsFinite(_startupGraceSeconds) && _startupGraceSeconds is >= 0.25d and <= 10d &&
+        IsValidRequestsPerDomain(_requestsPerDomain);
 
-    public bool IsRunning => state is BlockCheckSessionState.Running or BlockCheckSessionState.Canceling;
+    public bool IsRunning => _state is BlockCheckSessionState.Running or BlockCheckSessionState.Canceling;
     public bool CanStart => !IsRunning &&
                             HasTargetSources &&
                             HasProtocolSelection &&
                             HasIpVersionSelection &&
                             AdvancedOptionsValid;
-    public bool CanCancel => state == BlockCheckSessionState.Running;
-    public bool CanExportReport => lastReport != null;
-    public bool CanExportPreset => (lastReport?.Success == true || lastReport?.IsBestEffort == true) &&
-                                   !string.IsNullOrWhiteSpace(lastReport.PresetArguments);
+    public bool CanCancel => _state == BlockCheckSessionState.Running;
+    public bool CanExportReport => _lastReport != null;
+    public bool CanExportPreset => (_lastReport?.Success == true || _lastReport?.IsBestEffort == true) &&
+                                   !string.IsNullOrWhiteSpace(_lastReport.PresetArguments);
 
     public async Task<BlockCheckRunResult?> StartAsync()
     {
@@ -336,19 +336,19 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             return null;
         }
 
-        if (lastReport != null)
+        if (_lastReport != null)
         {
-            generatedSiteListRoot = CreateGeneratedSiteListRoot();
+            _generatedSiteListRoot = CreateGeneratedSiteListRoot();
         }
         ResetResultState();
-        remainingTimeEstimator.Reset();
-        runStopwatch.Restart();
+        _remainingTimeEstimator.Reset();
+        _runStopwatch.Restart();
         CancellationTokenSource? runCancellation = null;
         try
         {
-            BlockCheckSessionPreparationResult prepared = preparationService.Prepare(CreateSessionRequest());
-            targets = prepared.Targets;
-            issues = prepared.Issues;
+            BlockCheckSessionPreparationResult prepared = _preparationService.Prepare(CreateSessionRequest());
+            _targets = prepared.Targets;
+            _issues = prepared.Issues;
             Notify(nameof(Targets));
             Notify(nameof(TargetCount));
             Notify(nameof(Issues));
@@ -359,22 +359,22 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             }
 
             runCancellation = new CancellationTokenSource();
-            cancellation = runCancellation;
+            _cancellation = runCancellation;
             SetState(BlockCheckSessionState.Running);
             Progress<BlockCheckScanProgress> progress = new(UpdateProgress);
-            BlockCheckRunResult runResult = await addOnService.RunWithCdpiuiAdaptersAsync(
+            BlockCheckRunResult runResult = await _addOnService.RunWithCdpiuiAdaptersAsync(
                 prepared.Catalog,
                 prepared.Targets,
                 prepared.RunOptions,
                 progress,
                 strategyRunnerOptions: new CdpiuiZapret2StrategyRunnerOptions
                 {
-                    StartupGracePeriod = TimeSpan.FromSeconds(startupGraceSeconds),
+                    StartupGracePeriod = TimeSpan.FromSeconds(_startupGraceSeconds),
                 },
                 probeRunnerOptions: new CurlBlockCheckProbeRunnerOptions
                 {
-                    ConnectTimeout = TimeSpan.FromSeconds(connectTimeoutSeconds),
-                    RequestTimeout = TimeSpan.FromSeconds(requestTimeoutSeconds),
+                    ConnectTimeout = TimeSpan.FromSeconds(_connectTimeoutSeconds),
+                    RequestTimeout = TimeSpan.FromSeconds(_requestTimeoutSeconds),
                 },
                 cancellationToken: runCancellation.Token);
 
@@ -390,24 +390,24 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                 WasCanceled = runResult.WasCanceled,
             };
 
-            lastResult = result;
-            lastReport = reportBuilder.Build(
+            _lastResult = result;
+            _lastReport = _reportBuilder.Build(
                 prepared.Catalog,
-                selectedRunPreset,
+                _selectedRunPreset,
                 prepared.Targets,
                 result);
-            lastSession = new BlockCheckResultSession
+            _lastSession = new BlockCheckResultSession
             {
                 Catalog = prepared.Catalog,
                 Targets = prepared.Targets,
                 RunOptions = prepared.RunOptions,
                 RunResult = result,
-                Report = lastReport,
-                ConnectTimeout = TimeSpan.FromSeconds(connectTimeoutSeconds),
-                RequestTimeout = TimeSpan.FromSeconds(requestTimeoutSeconds),
-                StartupGracePeriod = TimeSpan.FromSeconds(startupGraceSeconds),
+                Report = _lastReport,
+                ConnectTimeout = TimeSpan.FromSeconds(_connectTimeoutSeconds),
+                RequestTimeout = TimeSpan.FromSeconds(_requestTimeoutSeconds),
+                StartupGracePeriod = TimeSpan.FromSeconds(_startupGraceSeconds),
             };
-            issues = lastReport.Issues;
+            _issues = _lastReport.Issues;
             NotifyResult();
             CompleteDisplayedProgress();
             BlockCheckSessionState finalState = result.WasCanceled
@@ -421,11 +421,11 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             // otherwise a second run started meanwhile had its CTS disposed by this one.
             try
             {
-                await reportHistoryService.SaveAsync(lastReport);
+                await _reportHistoryService.SaveAsync(_lastReport);
             }
             catch (Exception exception)
             {
-                historySaveError = exception.Message;
+                _historySaveError = exception.Message;
                 Notify(nameof(HistorySaveError));
                 Logger.Instance.CreateWarningLog(
                     nameof(BlockCheck2ViewModel),
@@ -441,22 +441,22 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         }
         catch (Exception exception)
         {
-            operationError = exception.Message;
+            _operationError = exception.Message;
             Notify(nameof(OperationError));
             SetState(BlockCheckSessionState.Failed);
             return null;
         }
         finally
         {
-            runStopwatch.Stop();
-            estimatedRemainingTime = null;
-            estimatedOverallRemainingTime = null;
+            _runStopwatch.Stop();
+            _estimatedRemainingTime = null;
+            _estimatedOverallRemainingTime = null;
             Notify(nameof(EstimatedRemainingTime));
             Notify(nameof(EstimatedOverallRemainingTime));
             runCancellation?.Dispose();
-            if (ReferenceEquals(cancellation, runCancellation))
+            if (ReferenceEquals(_cancellation, runCancellation))
             {
-                cancellation = null;
+                _cancellation = null;
             }
             CleanupGeneratedSiteListsIfUnviewable();
             NotifyActionState();
@@ -465,24 +465,24 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public void Cancel()
     {
-        if (!CanCancel || cancellation == null)
+        if (!CanCancel || _cancellation == null)
         {
             return;
         }
 
         SetState(BlockCheckSessionState.Canceling);
-        cancellation.Cancel();
+        _cancellation.Cancel();
     }
 
     public async Task LoadSiteListsAsync()
     {
-        if (siteListsLoaded || isSiteListLoading)
+        if (_siteListsLoaded || _isSiteListLoading)
         {
             return;
         }
 
-        isSiteListLoading = true;
-        siteListLoadError = null;
+        _isSiteListLoading = true;
+        _siteListLoadError = null;
         Notify(nameof(IsSiteListLoading));
         Notify(nameof(SiteListLoadError));
         try
@@ -499,21 +499,21 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                     item.Name ?? System.IO.Path.GetFileName(item.Directory!) ?? "site-list.txt",
                     item.PackName ?? string.Empty,
                     item.Directory!,
-                    individualSiteListRoot: generatedSiteListRoot);
+                    individualSiteListRoot: _generatedSiteListRoot);
                 if (siteListItem.DomainCount > 0 && !siteListItem.DisplayName.Contains("exclude"))
                     AvailableSiteLists.Add(siteListItem);
 
             }
-            siteListsLoaded = true;
+            _siteListsLoaded = true;
         }
         catch (Exception exception)
         {
-            siteListLoadError = exception.Message;
+            _siteListLoadError = exception.Message;
             Notify(nameof(SiteListLoadError));
         }
         finally
         {
-            isSiteListLoading = false;
+            _isSiteListLoading = false;
             Notify(nameof(IsSiteListLoading));
         }
     }
@@ -534,7 +534,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             Path.GetFileName(fullPath),
             sourceName,
             fullPath,
-            individualSiteListRoot: generatedSiteListRoot);
+            individualSiteListRoot: _generatedSiteListRoot);
         return added;
     }
 
@@ -572,7 +572,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                 filePath,
                 isCustom: true,
                 editableContent: normalizedContent,
-                individualSiteListRoot: generatedSiteListRoot);
+                individualSiteListRoot: _generatedSiteListRoot);
             SelectedSiteLists.Insert(0, item);
         }
         else
@@ -624,14 +624,14 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         CancellationToken cancellationToken = default)
     {
         BlockCheckSessionRequest request = CreateSessionRequest();
-        double requestTimeout = requestTimeoutSeconds;
-        double startupGrace = startupGraceSeconds;
+        double requestTimeout = _requestTimeoutSeconds;
+        double startupGrace = _startupGraceSeconds;
         BlockCheck2PreparationPreview preview = await Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            BlockCheckSessionPreparationResult prepared = preparationService.Prepare(request);
+            BlockCheckSessionPreparationResult prepared = _preparationService.Prepare(request);
             BlockCheckMaximumDurationEstimate? estimate = prepared.Success
-                ? maximumDurationEstimator.Estimate(
+                ? _maximumDurationEstimator.Estimate(
                     prepared.Catalog,
                     prepared.Targets,
                     prepared.RunOptions,
@@ -654,7 +654,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     public void CleanupGeneratedSiteListsIfUnviewable()
     {
-        if (lastReport == null)
+        if (_lastReport == null)
         {
             CleanupGeneratedSiteLists();
         }
@@ -684,7 +684,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         RequestTimeoutSeconds = 10d;
         StartupGraceSeconds = 0.75d;
         TestAllStrategies = false;
-        RequestsPerDomain = BlockCheckRunPresetFactory.GetRecommendedAttemptsPerTarget(selectedRunPreset);
+        RequestsPerDomain = BlockCheckRunPresetFactory.GetRecommendedAttemptsPerTarget(_selectedRunPreset);
     }
 
     private void LoadSettings()
@@ -692,59 +692,59 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         int presetValue = ReadIntSetting(
             nameof(SelectedRunPreset),
             (int)BlockCheckRunPreset.Balanced);
-        selectedRunPreset = Enum.IsDefined(typeof(BlockCheckRunPreset), presetValue)
+        _selectedRunPreset = Enum.IsDefined(typeof(BlockCheckRunPreset), presetValue)
             ? (BlockCheckRunPreset)presetValue
             : BlockCheckRunPreset.Balanced;
 
-        includeHttp = ReadBoolSetting(nameof(IncludeHttp), defaultValue: false);
-        includeTls12 = ReadBoolSetting(nameof(IncludeTls12), defaultValue: true);
-        includeTls13 = ReadBoolSetting(nameof(IncludeTls13), defaultValue: false);
-        includeTlsAuto = ReadBoolSetting(nameof(IncludeTlsAuto), defaultValue: true);
-        includeQuic = ReadBoolSetting(nameof(IncludeQuic), defaultValue: false);
-        includeIpv4 = ReadBoolSetting(nameof(IncludeIpv4), defaultValue: true);
-        includeIpv6 = ReadBoolSetting(nameof(IncludeIpv6), defaultValue: false);
+        _includeHttp = ReadBoolSetting(nameof(IncludeHttp), defaultValue: false);
+        _includeTls12 = ReadBoolSetting(nameof(IncludeTls12), defaultValue: true);
+        _includeTls13 = ReadBoolSetting(nameof(IncludeTls13), defaultValue: false);
+        _includeTlsAuto = ReadBoolSetting(nameof(IncludeTlsAuto), defaultValue: true);
+        _includeQuic = ReadBoolSetting(nameof(IncludeQuic), defaultValue: false);
+        _includeIpv4 = ReadBoolSetting(nameof(IncludeIpv4), defaultValue: true);
+        _includeIpv6 = ReadBoolSetting(nameof(IncludeIpv6), defaultValue: false);
 
         double savedConnectTimeout = ReadDoubleSetting(nameof(ConnectTimeoutSeconds), 5d);
-        connectTimeoutSeconds = double.IsFinite(savedConnectTimeout) && savedConnectTimeout is >= 1d and <= 60d
+        _connectTimeoutSeconds = double.IsFinite(savedConnectTimeout) && savedConnectTimeout is >= 1d and <= 60d
             ? savedConnectTimeout
             : 5d;
 
         double savedRequestTimeout = ReadDoubleSetting(nameof(RequestTimeoutSeconds), 10d);
-        requestTimeoutSeconds = double.IsFinite(savedRequestTimeout) &&
+        _requestTimeoutSeconds = double.IsFinite(savedRequestTimeout) &&
                                 savedRequestTimeout is >= 2d and <= 180d &&
-                                savedRequestTimeout >= connectTimeoutSeconds
+                                savedRequestTimeout >= _connectTimeoutSeconds
             ? savedRequestTimeout
-            : Math.Max(10d, connectTimeoutSeconds);
+            : Math.Max(10d, _connectTimeoutSeconds);
 
         double savedStartupGrace = ReadDoubleSetting(nameof(StartupGraceSeconds), 0.75d);
-        startupGraceSeconds = double.IsFinite(savedStartupGrace) && savedStartupGrace is >= 0.25d and <= 10d
+        _startupGraceSeconds = double.IsFinite(savedStartupGrace) && savedStartupGrace is >= 0.25d and <= 10d
             ? savedStartupGrace
             : 0.75d;
 
-        testAllStrategies = ReadBoolSetting(nameof(TestAllStrategies), defaultValue: false);
-        int recommendedAttempts = BlockCheckRunPresetFactory.GetRecommendedAttemptsPerTarget(selectedRunPreset);
+        _testAllStrategies = ReadBoolSetting(nameof(TestAllStrategies), defaultValue: false);
+        int recommendedAttempts = BlockCheckRunPresetFactory.GetRecommendedAttemptsPerTarget(_selectedRunPreset);
         int savedAttempts = ReadIntSetting(nameof(RequestsPerDomain), recommendedAttempts);
-        requestsPerDomain = IsValidRequestsPerDomain(savedAttempts)
+        _requestsPerDomain = IsValidRequestsPerDomain(savedAttempts)
             ? savedAttempts
             : recommendedAttempts;
     }
 
     public Task SaveReportJsonAsync(string filePath, CancellationToken cancellationToken = default) =>
-        reportSerializer.SaveJsonAsync(
+        _reportSerializer.SaveJsonAsync(
             filePath,
-            lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
+            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
             cancellationToken);
 
     public Task SaveReportTextAsync(string filePath, CancellationToken cancellationToken = default) =>
-        reportSerializer.SaveTextAsync(
+        _reportSerializer.SaveTextAsync(
             filePath,
-            lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
+            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
             cancellationToken);
 
     public Task SavePresetArgumentsAsync(string filePath, CancellationToken cancellationToken = default) =>
-        reportSerializer.SavePresetArgumentsAsync(
+        _reportSerializer.SavePresetArgumentsAsync(
             filePath,
-            lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
+            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
             cancellationToken);
 
     public void Reset()
@@ -754,13 +754,13 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
             return;
         }
 
-        if (lastReport == null)
+        if (_lastReport == null)
         {
             CleanupGeneratedSiteLists();
         }
-        generatedSiteListRoot = CreateGeneratedSiteListRoot();
+        _generatedSiteListRoot = CreateGeneratedSiteListRoot();
         ResetResultState();
-        targets = [];
+        _targets = [];
         Notify(nameof(Targets));
         Notify(nameof(TargetCount));
         SetState(BlockCheckSessionState.Idle);
@@ -768,11 +768,11 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     private BlockCheckSessionRequest CreateSessionRequest() => new()
     {
-        TargetInput = targetInput,
-        SiteLists = SelectedSiteLists.Select(item => item.CreateInput(generatedSiteListRoot)).ToArray(),
-        RunPreset = selectedRunPreset,
-        TestAllStrategies = testAllStrategies,
-        AttemptsPerTarget = (int)requestsPerDomain,
+        TargetInput = _targetInput,
+        SiteLists = SelectedSiteLists.Select(item => item.CreateInput(_generatedSiteListRoot)).ToArray(),
+        RunPreset = _selectedRunPreset,
+        TestAllStrategies = _testAllStrategies,
+        AttemptsPerTarget = (int)_requestsPerDomain,
         Protocols = SelectedProtocols(),
         IpVersions = SelectedIpVersions(),
     };
@@ -780,15 +780,15 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
     private IReadOnlySet<BlockCheckProtocol> SelectedProtocols()
     {
         HashSet<BlockCheckProtocol> selected = [];
-        if (includeHttp)
+        if (_includeHttp)
             selected.Add(BlockCheckProtocol.Http);
-        if (includeTls12)
+        if (_includeTls12)
             selected.Add(BlockCheckProtocol.Tls12);
-        if (includeTls13)
+        if (_includeTls13)
             selected.Add(BlockCheckProtocol.Tls13);
-        if (includeTlsAuto)
+        if (_includeTlsAuto)
             selected.Add(BlockCheckProtocol.TlsAuto);
-        if (includeQuic)
+        if (_includeQuic)
             selected.Add(BlockCheckProtocol.Quic);
         return selected;
     }
@@ -796,39 +796,39 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
     private IReadOnlySet<BlockCheckIpVersion> SelectedIpVersions()
     {
         HashSet<BlockCheckIpVersion> selected = [];
-        if (includeIpv4)
+        if (_includeIpv4)
             selected.Add(BlockCheckIpVersion.IPv4);
-        if (includeIpv6)
+        if (_includeIpv6)
             selected.Add(BlockCheckIpVersion.IPv6);
         return selected;
     }
 
     private void UpdateProgress(BlockCheckScanProgress progress)
     {
-        if (!estimatorPhase.HasValue ||
-            GetEstimatorStage(estimatorPhase.Value) != GetEstimatorStage(progress.Phase))
+        if (!_estimatorPhase.HasValue ||
+            GetEstimatorStage(_estimatorPhase.Value) != GetEstimatorStage(progress.Phase))
         {
-            remainingTimeEstimator.Reset();
-            runStopwatch.Restart();
-            estimatorPhase = progress.Phase;
-            lastObservedCheckCount = progress.CompletedChecks;
-            lastObservedCheckElapsed = TimeSpan.Zero;
+            _remainingTimeEstimator.Reset();
+            _runStopwatch.Restart();
+            _estimatorPhase = progress.Phase;
+            _lastObservedCheckCount = progress.CompletedChecks;
+            _lastObservedCheckElapsed = TimeSpan.Zero;
         }
 
-        currentPhase = progress.Phase;
-        progressCurrent = progress.CompletedStrategyTargets;
-        progressTotal = progress.TotalStrategyTargets;
-        currentTargetId = progress.TargetId;
-        currentStrategyId = progress.StrategyId;
-        successfulChecks = progress.SuccessfulChecks;
-        failedChecks = progress.FailedChecks;
-        successfulStrategies = progress.SuccessfulStrategies;
-        estimatedRemainingTime = remainingTimeEstimator.Update(
+        _currentPhase = progress.Phase;
+        _progressCurrent = progress.CompletedStrategyTargets;
+        _progressTotal = progress.TotalStrategyTargets;
+        _currentTargetId = progress.TargetId;
+        _currentStrategyId = progress.StrategyId;
+        _successfulChecks = progress.SuccessfulChecks;
+        _failedChecks = progress.FailedChecks;
+        _successfulStrategies = progress.SuccessfulStrategies;
+        _estimatedRemainingTime = _remainingTimeEstimator.Update(
             progress.CompletedStrategyTargets,
             progress.TotalStrategyTargets,
-            runStopwatch.Elapsed);
-        UpdateObservedCheckDuration(progress.CompletedChecks, runStopwatch.Elapsed);
-        estimatedOverallRemainingTime = EstimateOverallRemainingTime(progress.Phase);
+            _runStopwatch.Elapsed);
+        UpdateObservedCheckDuration(progress.CompletedChecks, _runStopwatch.Elapsed);
+        _estimatedOverallRemainingTime = EstimateOverallRemainingTime(progress.Phase);
         Notify(nameof(CurrentPhase));
         Notify(nameof(ProgressCurrent));
         Notify(nameof(ProgressTotal));
@@ -849,26 +849,26 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     private void ResetResultState()
     {
-        operationError = null;
-        historySaveError = null;
-        issues = [];
-        lastResult = null;
-        lastReport = null;
-        lastSession = null;
-        currentPhase = null;
-        progressCurrent = 0;
-        progressTotal = 0;
-        estimatedRemainingTime = null;
-        estimatedOverallRemainingTime = null;
-        estimatorPhase = null;
-        lastObservedCheckCount = 0;
-        lastObservedCheckElapsed = TimeSpan.Zero;
-        secondsPerCheck = null;
-        successfulChecks = 0;
-        failedChecks = 0;
-        successfulStrategies = 0;
-        currentTargetId = string.Empty;
-        currentStrategyId = string.Empty;
+        _operationError = null;
+        _historySaveError = null;
+        _issues = [];
+        _lastResult = null;
+        _lastReport = null;
+        _lastSession = null;
+        _currentPhase = null;
+        _progressCurrent = 0;
+        _progressTotal = 0;
+        _estimatedRemainingTime = null;
+        _estimatedOverallRemainingTime = null;
+        _estimatorPhase = null;
+        _lastObservedCheckCount = 0;
+        _lastObservedCheckElapsed = TimeSpan.Zero;
+        _secondsPerCheck = null;
+        _successfulChecks = 0;
+        _failedChecks = 0;
+        _successfulStrategies = 0;
+        _currentTargetId = string.Empty;
+        _currentStrategyId = string.Empty;
         Notify(nameof(OperationError));
         Notify(nameof(HistorySaveError));
         NotifyResult();
@@ -907,12 +907,12 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     private void CompleteDisplayedProgress()
     {
-        if (progressTotal <= 0)
+        if (_progressTotal <= 0)
         {
             return;
         }
 
-        progressCurrent = progressTotal;
+        _progressCurrent = _progressTotal;
         Notify(nameof(ProgressCurrent));
         Notify(nameof(ProgressValue));
     }
@@ -968,46 +968,46 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
         Notify(nameof(CanStart));
     }
 
-    private BlockCheckTarget? CurrentTarget() => targets.FirstOrDefault(
-        item => string.Equals(item.Id, currentTargetId, StringComparison.Ordinal));
+    private BlockCheckTarget? CurrentTarget() => _targets.FirstOrDefault(
+        item => string.Equals(item.Id, _currentTargetId, StringComparison.Ordinal));
 
     private void UpdateObservedCheckDuration(int completedChecks, TimeSpan elapsed)
     {
-        if (completedChecks <= lastObservedCheckCount)
+        if (completedChecks <= _lastObservedCheckCount)
         {
             return;
         }
 
-        int completedDelta = completedChecks - lastObservedCheckCount;
-        double elapsedDelta = Math.Max(0d, (elapsed - lastObservedCheckElapsed).TotalSeconds);
+        int completedDelta = completedChecks - _lastObservedCheckCount;
+        double elapsedDelta = Math.Max(0d, (elapsed - _lastObservedCheckElapsed).TotalSeconds);
         double sample = elapsedDelta / completedDelta;
         if (sample > 0d)
         {
-            secondsPerCheck = secondsPerCheck.HasValue
-                ? 0.2d * sample + 0.8d * secondsPerCheck.Value
+            _secondsPerCheck = _secondsPerCheck.HasValue
+                ? 0.2d * sample + 0.8d * _secondsPerCheck.Value
                 : sample;
         }
 
-        lastObservedCheckCount = completedChecks;
-        lastObservedCheckElapsed = elapsed;
+        _lastObservedCheckCount = completedChecks;
+        _lastObservedCheckElapsed = elapsed;
     }
 
     private TimeSpan? EstimateOverallRemainingTime(BlockCheckScanPhase phase)
     {
-        if (phase == BlockCheckScanPhase.BaselineProbing || !estimatedRemainingTime.HasValue)
+        if (phase == BlockCheckScanPhase.BaselineProbing || !_estimatedRemainingTime.HasValue)
         {
             return null;
         }
 
-        if (GetEstimatorStage(phase) != 1 || !secondsPerCheck.HasValue)
+        if (GetEstimatorStage(phase) != 1 || !_secondsPerCheck.HasValue)
         {
-            return estimatedRemainingTime;
+            return _estimatedRemainingTime;
         }
 
-        int validationAttempts = (int)requestsPerDomain;
-        double validationSeconds = targets.Count * validationAttempts * secondsPerCheck.Value +
-                                   startupGraceSeconds;
-        return estimatedRemainingTime.Value + TimeSpan.FromSeconds(validationSeconds);
+        int validationAttempts = (int)_requestsPerDomain;
+        double validationSeconds = _targets.Count * validationAttempts * _secondsPerCheck.Value +
+                                   _startupGraceSeconds;
+        return _estimatedRemainingTime.Value + TimeSpan.FromSeconds(validationSeconds);
     }
 
     private static int GetEstimatorStage(BlockCheckScanPhase phase) => phase switch
@@ -1023,12 +1023,12 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
 
     private void SetState(BlockCheckSessionState value)
     {
-        if (state == value)
+        if (_state == value)
         {
             return;
         }
 
-        state = value;
+        _state = value;
         Notify(nameof(State));
         NotifyActionState();
     }
@@ -1149,7 +1149,7 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                     "BlockCheck2",
                     "GeneratedSiteLists"))
                 .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            string target = Path.GetFullPath(generatedSiteListRoot);
+            string target = Path.GetFullPath(_generatedSiteListRoot);
             if (!target.StartsWith(generatedBase, StringComparison.OrdinalIgnoreCase))
             {
                 Logger.Instance.CreateWarningLog(
@@ -1182,9 +1182,9 @@ public sealed record BlockCheck2PreparationPreview(
 
 public sealed class BlockCheck2SiteListItem : INotifyPropertyChanged
 {
-    private int processingModeIndex;
-    private string editableContent;
-    private int domainCount;
+    private int _processingModeIndex;
+    private string _editableContent;
+    private int _domainCount;
 
     public BlockCheck2SiteListItem(
         string displayName,
@@ -1198,8 +1198,8 @@ public sealed class BlockCheck2SiteListItem : INotifyPropertyChanged
         SourceName = sourceName;
         FilePath = Path.GetFullPath(filePath);
         IsCustom = isCustom;
-        this.editableContent = editableContent ?? string.Empty;
-        domainCount = CountDomains(this.editableContent, FilePath);
+        _editableContent = editableContent ?? string.Empty;
+        _domainCount = CountDomains(_editableContent, FilePath);
         IndividualSiteListRoot = individualSiteListRoot;
     }
 
@@ -1209,28 +1209,28 @@ public sealed class BlockCheck2SiteListItem : INotifyPropertyChanged
     public string SourceName { get; }
     public string FilePath { get; }
     public bool IsCustom { get; }
-    public string EditableContent => editableContent;
-    public int DomainCount => domainCount;
+    public string EditableContent => _editableContent;
+    public int DomainCount => _domainCount;
     private string? IndividualSiteListRoot { get; }
 
     public int ProcessingModeIndex
     {
-        get => processingModeIndex;
+        get => _processingModeIndex;
         set
         {
             int normalized = value == 1 ? 1 : 0;
-            if (processingModeIndex == normalized)
+            if (_processingModeIndex == normalized)
             {
                 return;
             }
 
-            processingModeIndex = normalized;
+            _processingModeIndex = normalized;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessingModeIndex)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessingMode)));
         }
     }
 
-    public BlockCheckSiteListProcessingMode ProcessingMode => processingModeIndex == 1
+    public BlockCheckSiteListProcessingMode ProcessingMode => _processingModeIndex == 1
         ? BlockCheckSiteListProcessingMode.EachSite
         : BlockCheckSiteListProcessingMode.WholeList;
 
@@ -1246,8 +1246,8 @@ public sealed class BlockCheck2SiteListItem : INotifyPropertyChanged
 
     public void UpdateCustomContent(string content)
     {
-        editableContent = content ?? string.Empty;
-        domainCount = CountDomains(editableContent, FilePath);
+        _editableContent = content ?? string.Empty;
+        _domainCount = CountDomains(_editableContent, FilePath);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EditableContent)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DomainCount)));
     }

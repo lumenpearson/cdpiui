@@ -38,12 +38,12 @@ public class ThemeViewModel
 public class ApplicationThemeManager : INotifyPropertyChanged
 {
     private static ApplicationThemeManager _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static ApplicationThemeManager Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new ApplicationThemeManager();
                 return _instance;
@@ -61,16 +61,16 @@ public class ApplicationThemeManager : INotifyPropertyChanged
         CurrentTheme = Themes.FirstOrDefault(x => x.FriendlyThemeId == theme);
     }
 
-    private ThemeViewModel currentTheme;
+    private ThemeViewModel _currentTheme;
     public ThemeViewModel CurrentTheme
     {
-        get => currentTheme;
+        get => _currentTheme;
         private set
         {
-            if (ReferenceEquals(currentTheme, value))
+            if (ReferenceEquals(_currentTheme, value))
                 return;
 
-            currentTheme = value;
+            _currentTheme = value;
             PropertyChanged?.Invoke(
                 this,
                 new PropertyChangedEventArgs(nameof(CurrentTheme)));

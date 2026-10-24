@@ -41,7 +41,7 @@ public class WindowsPositionHelper
     }
 
 
-    private static Dictionary<string, WindowResizeOptions> WindowsResizeModes = new()
+    private static Dictionary<string, WindowResizeOptions> _windowsResizeModes = new()
     {
         { nameof(AppFeaturesWindow), WindowResizeOptions.OnlyPositionWizard },
         { nameof(PrepareWindow), WindowResizeOptions.AlwaysCenter },
@@ -70,7 +70,7 @@ public class WindowsPositionHelper
         { nameof(ConditionalTaskEditorWindow), WindowResizeOptions.ResizeAndPositionUtility },
     };
     // positionType, Width, Height
-    private static Dictionary<WindowResizeOptions, Tuple<WindowPositionVariants, int, int>> WindowsResizeParams = new()
+    private static Dictionary<WindowResizeOptions, Tuple<WindowPositionVariants, int, int>> _windowsResizeParams = new()
     {
         { WindowResizeOptions.Any, Tuple.Create(WindowPositionVariants.FollowSystem, -1, -1) },
         { WindowResizeOptions.ResizeAndPositionMain, Tuple.Create(WindowPositionVariants.CenterIn, 800, 600) },
@@ -91,7 +91,7 @@ public class WindowsPositionHelper
 
         AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
 
-        WindowsResizeParams.TryGetValue(resizeOptions, out Tuple<WindowPositionVariants, int, int> value);
+        _windowsResizeParams.TryGetValue(resizeOptions, out Tuple<WindowPositionVariants, int, int> value);
 
         if (width == 0 && height == 0 || width < value.Item2 || height < value.Item3)
         {
@@ -114,7 +114,7 @@ public class WindowsPositionHelper
         WindowResizeOptions resizeOptions = GetWindowResizeOptionsFromWindow(window);
         var hwnd = WindowNative.GetWindowHandle(window);
 
-        WindowsResizeParams.TryGetValue(resizeOptions, out Tuple<WindowPositionVariants, int, int> value);
+        _windowsResizeParams.TryGetValue(resizeOptions, out Tuple<WindowPositionVariants, int, int> value);
 
         if (value == null)
             return;
@@ -287,7 +287,7 @@ public class WindowsPositionHelper
 
     private static WindowResizeOptions GetWindowResizeOptionsFromWindow(Window window)
     {
-        var pair = WindowsResizeModes.FirstOrDefault(x => x.Key == window.GetType().Name, new KeyValuePair<string, WindowResizeOptions>(key: string.Empty, value: WindowResizeOptions.Any));
+        var pair = _windowsResizeModes.FirstOrDefault(x => x.Key == window.GetType().Name, new KeyValuePair<string, WindowResizeOptions>(key: string.Empty, value: WindowResizeOptions.Any));
         return pair.Value;
     }
 

@@ -44,11 +44,11 @@ public class DragItem(string args, string siteListName, string directory, bool s
     public string Directory { get; set; } = directory;
     public Guid Id { get; set; } = guid;
 
-    private bool showGroupModeChooser = showGroupModeChooser;
+    private bool _showGroupModeChooser = showGroupModeChooser;
     public bool ShowGroupModeChooser
     {
-        get => showGroupModeChooser;
-        set => SetField(ref showGroupModeChooser, value);
+        get => _showGroupModeChooser;
+        set => SetField(ref _showGroupModeChooser, value);
     }
 
     public List<ChooseGroupModeContentDialog.ByeDPIGroupModes> Modes { get; set; } = modes;

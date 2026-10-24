@@ -109,12 +109,12 @@ public sealed partial class FileConfigInspectUserControl : UserControl
         ShellHelper.OpenFileInDefaultApp(AutoCorrectFilePath);
     }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     private async Task ShowDialog(string message)
     {
         try
         {
-            var dlg = new MessageDialog(message, localizer.GetLocalizedString("AutoCorrectError"));
+            var dlg = new MessageDialog(message, _localizer.GetLocalizedString("AutoCorrectError"));
             InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
             await dlg.ShowAsync();
         }
@@ -149,7 +149,7 @@ public sealed partial class FileConfigInspectUserControl : UserControl
     {
         using (OpenFileDialog openFileDialog = new())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseFileTitle");
+            openFileDialog.Title = _localizer.GetLocalizedString("FileDialogChooseFileTitle");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             openFileDialog.FilterIndex = 0;
 

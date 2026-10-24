@@ -36,25 +36,25 @@ public sealed partial class CreateConfigUtilWindow : TemplateWindow
 {
     public static CreateConfigUtilWindow Instance { get; private set; }
 
-    private string targetStoreId = string.Empty;
+    private string _targetStoreId = string.Empty;
     public string TargetStoreId
     {
-        get => targetStoreId;
+        get => _targetStoreId;
         set
         {
-            targetStoreId = value;
+            _targetStoreId = value;
             if (ContentFrame.SourcePageType == typeof(Views.CreateConfigUtil.MainPage))
                 ContentFrame.Navigate(typeof(Views.CreateConfigUtil.MainPage), new NameValueCollection() { { "componentId", TargetStoreId } });
         }
     }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public CreateConfigUtilWindow()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("CreateConfigUtilWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("CreateConfigUtilWindowTitle");
         IconUri = @"Assets/Icons/GoodCheck.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
         DisableResizeFeature();
@@ -88,22 +88,22 @@ public sealed partial class CreateConfigUtilWindow : TemplateWindow
     }
 
     private readonly SemaphoreSlim _dialogLock = new SemaphoreSlim(1, 1);
-    private bool isDialogOpened = false;
+    private bool _isDialogOpened = false;
 
     private async Task AskForExit()
     {
         await _dialogLock.WaitAsync();
-        isDialogOpened = true;
+        _isDialogOpened = true;
         try
         {
             ContentDialog dialog = new()
             {
-                Title = localizer.GetLocalizedString("ConfirmationRequired"),
-                Content = localizer.GetLocalizedString(IsBlockCheck2Running
+                Title = _localizer.GetLocalizedString("ConfirmationRequired"),
+                Content = _localizer.GetLocalizedString(IsBlockCheck2Running
                     ? "BlockCheck2AskStopSelection"
                     : "GoodCheckAskStopSelection"),
-                PrimaryButtonText = localizer.GetLocalizedString("Yes"),
-                CloseButtonText = localizer.GetLocalizedString("No"),
+                PrimaryButtonText = _localizer.GetLocalizedString("Yes"),
+                CloseButtonText = _localizer.GetLocalizedString("No"),
                 XamlRoot = this.Content.XamlRoot
             };
             if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
@@ -118,7 +118,7 @@ public sealed partial class CreateConfigUtilWindow : TemplateWindow
         }
         finally
         {
-            isDialogOpened = false;
+            _isDialogOpened = false;
             _dialogLock.Release();
 
         }
@@ -126,7 +126,7 @@ public sealed partial class CreateConfigUtilWindow : TemplateWindow
 
     private void CreateConfigUtilWindow_Closed(object sender, WindowEventArgs args)
     {
-        if (isDialogOpened)
+        if (_isDialogOpened)
         {
             StopActiveSelection();
         }

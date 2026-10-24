@@ -9,9 +9,9 @@ namespace CDPIUI.Helper.Basic;
 
 public sealed class TasksManagerHelper
 {
-    private static TasksManagerHelper instance;
-    public static TasksManagerHelper Instance => instance ??= new TasksManagerHelper();
-    private readonly DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+    private static TasksManagerHelper _instance;
+    public static TasksManagerHelper Instance => _instance ??= new TasksManagerHelper();
+    private readonly DispatcherQueue _dispatcher = DispatcherQueue.GetForCurrentThread();
 
     private TasksManagerHelper()
     {
@@ -22,7 +22,7 @@ public sealed class TasksManagerHelper
     {
         if (!SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true))
             return;
-        dispatcher.TryEnqueue(async () =>
+        _dispatcher.TryEnqueue(async () =>
         {
             try
             {

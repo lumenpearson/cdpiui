@@ -20,7 +20,7 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
 {
     public SupportedVersionControls VersionControl { get; init; }
 
-    private readonly List<string> SupportedCategoryTypes = ["basic_category", "second_category"];
+    private readonly List<string> _supportedCategoryTypes = ["basic_category", "second_category"];
 
     private static readonly string GitHubApiToken = Secret.GitHubToken;
     private static readonly string GitLabApiToken = Secret.GitLabToken;
@@ -79,7 +79,7 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
         return false;
     }
 
-    private readonly StoreLoadGate<(bool ForseSync, SupportedVersionControls VersionControl)> LoadGate = new();
+    private readonly StoreLoadGate<(bool ForseSync, SupportedVersionControls VersionControl)> _loadGate = new();
 
     public Task<bool> LoadAllStoreDatabase(bool forseSync, SupportedVersionControls versionControl)
     {
@@ -87,7 +87,7 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
 
         // Several Store buttons ask for the database at the same time on the first launch:
         // they share one download.
-        return LoadGate.Run(
+        return _loadGate.Run(
             (forseSync, usedVersionControl),
             () => LoadAllStoreDatabaseCore(forseSync, usedVersionControl));
     }
@@ -349,7 +349,7 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
                 RepoCategoryInitializationModel? repoCategoryInit = TryLoad<RepoCategoryInitializationModel>(categoryInitPath);
 
                 if (repoCategoryInit?.items == null || repoCategoryInit.items_directories == null ||
-                    repoCategoryInit.type == null || !SupportedCategoryTypes.Contains(repoCategoryInit.type))
+                    repoCategoryInit.type == null || !_supportedCategoryTypes.Contains(repoCategoryInit.type))
                 {
                     Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the category: {categoryName}, {categoryPath}");
                     continue;

@@ -22,22 +22,22 @@ namespace CDPIUI.Core.Store.Network;
 
 internal class DownloadWorker : IDisposable
 {
-    private readonly RequestWorker requestWorker;
-    private readonly string TempDirectory = Directories.DownloadManagerDirectory;
+    private readonly RequestWorker _requestWorker;
+    private readonly string _tempDirectory = Directories.DownloadManagerDirectory;
 
-    private readonly CancellationToken cancellationToken;
+    private readonly CancellationToken _cancellationToken;
 
     public readonly string OperationId;
-    private string? msiGUID;
+    private string? _msiGUID;
 
     public ErrorModel? LastError { get; private set; }
 
     public DownloadWorker(string operationId, CancellationToken cancellationToken, HttpClient? client = null)
     {
-        this.cancellationToken = cancellationToken;
+        _cancellationToken = cancellationToken;
 
         OperationId = operationId;
-        requestWorker = new RequestWorker(client);
+        _requestWorker = new RequestWorker(client);
     }
 
     public event Action<Tuple<string, double>>? DownloadSpeedChanged;
@@ -71,21 +71,21 @@ internal class DownloadWorker : IDisposable
 
 
         string tempFileName = FileSystemService.GetNewTempFileName(nameof(DownloadWorker), FileSystemService.GetFileExtension(FileExtensionTypes.temp));
-        string tempDestination = Path.Combine(TempDirectory, tempFileName);
+        string tempDestination = Path.Combine(_tempDirectory, tempFileName);
 
         try
         {
-            Directory.CreateDirectory(TempDirectory);
+            Directory.CreateDirectory(_tempDirectory);
 
             StageChanged?.Invoke(Tuple.Create(OperationId, "Downloading"));
 
             Logger.Instance.CreateDebugLog(nameof(DownloadWorker), $"Uri used: {url}");
 
-            cancellationToken.ThrowIfCancellationRequested();
+            _cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                await requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
-                    cancellationToken: cancellationToken);
+                await _requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
+                    cancellationToken: _cancellationToken);
             }
             catch (HttpRequestException ex) when (ex.StatusCode.HasValue)
             {
@@ -108,7 +108,7 @@ internal class DownloadWorker : IDisposable
                 return false;
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
+            _cancellationToken.ThrowIfCancellationRequested();
             if (extractArchive)
             {
                 StageChanged?.Invoke(Tuple.Create(OperationId, "Extracting"));
@@ -148,10 +148,10 @@ internal class DownloadWorker : IDisposable
                 if (_extractedFiles.Count == 0)
                     throw new IOException("The installer was not copied.");
                 string msiPath = _extractedFiles[^1];
-                msiGUID = Guid.NewGuid().ToString();
-                MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
+                _msiGUID = Guid.NewGuid().ToString();
+                MsiInstallerService msiInstallerHelper = new(_msiGUID, msiPath);
                 msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
-                MsiCallback callback = await msiInstallerHelper.Run(cancellationToken);
+                MsiCallback callback = await msiInstallerHelper.Run(_cancellationToken);
                 msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
 
                 Logger.Instance.CreateDebugLog(nameof(DownloadWorker), "TRY");
@@ -173,11 +173,11 @@ internal class DownloadWorker : IDisposable
             }
 
 
-            cancellationToken.ThrowIfCancellationRequested();
+            _cancellationToken.ThrowIfCancellationRequested();
             StageChanged?.Invoke(Tuple.Create(OperationId, "Completed"));
             success = true;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (_cancellationToken.IsCancellationRequested)
         {
             // Cancellation is a user action, not a download failure.
         }
@@ -260,7 +260,7 @@ internal class DownloadWorker : IDisposable
 
     public void HandleMsiInstallerMessage(MsiCallback callback)
     {
-        if (msiGUID == callback.operationId)
+        if (_msiGUID == callback.operationId)
         {
             StageChanged?.Invoke(Tuple.Create(OperationId, callback.State.ToString()));
         }
@@ -284,6 +284,6 @@ internal class DownloadWorker : IDisposable
     }
     public void Dispose()
     {
-        requestWorker.Dispose();
+        _requestWorker.Dispose();
     }
 }

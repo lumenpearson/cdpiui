@@ -47,8 +47,8 @@ public class DownloadItemModel
 }
 public sealed partial class DownloadsPage : TemplatePage
 {
-    private ObservableCollection<DownloadItemModel> downloads = [];
-    private ObservableCollection<DownloadItemModel> updates = [];
+    private ObservableCollection<DownloadItemModel> _downloads = [];
+    private ObservableCollection<DownloadItemModel> _updates = [];
 
     public ICommand ActionCommand { get; }
     public ICommand UpdateCommand { get; }
@@ -58,8 +58,8 @@ public sealed partial class DownloadsPage : TemplatePage
         InitializeComponent();
         this.DataContext = this;
 
-        DownloadsListView.ItemsSource = downloads;
-        UpdatesListView.ItemsSource = updates;
+        DownloadsListView.ItemsSource = _downloads;
+        UpdatesListView.ItemsSource = _updates;
 
         UpdateCurrentDownloadsList();
         UpdateCurrentDownloadItem();
@@ -76,13 +76,13 @@ public sealed partial class DownloadsPage : TemplatePage
     }
 
     // The services are singletons: a page that is not shown must not keep receiving their events.
-    private bool eventsConnected;
+    private bool _eventsConnected;
 
     private void ConnectEvents()
     {
-        if (eventsConnected)
+        if (_eventsConnected)
             return;
-        eventsConnected = true;
+        _eventsConnected = true;
         StoreHelper.Instance.QueueUpdated += UpdateCurrentDownloadsList;
         StoreHelper.Instance.ErrorListUpdated += UpdateCurrentDownloadsList;
         StoreHelper.Instance.NowProcessItemActions += StoreHelper_NowProcessItemActions;
@@ -93,9 +93,9 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected)
+        if (!_eventsConnected)
             return;
-        eventsConnected = false;
+        _eventsConnected = false;
         StoreHelper.Instance.QueueUpdated -= UpdateCurrentDownloadsList;
         StoreHelper.Instance.ErrorListUpdated -= UpdateCurrentDownloadsList;
         StoreHelper.Instance.NowProcessItemActions -= StoreHelper_NowProcessItemActions;
@@ -127,7 +127,7 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void AuditSubHeaderVisible()
     {
-        if (downloads.Count == 0)
+        if (_downloads.Count == 0)
             NowDownloadingTextBlock.Visibility = Visibility.Collapsed;
         else
             NowDownloadingTextBlock.Visibility = Visibility.Visible;
@@ -135,16 +135,16 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void RemoveItem(DownloadItemModel item)
     {
-        downloads.Remove(item);
+        _downloads.Remove(item);
         AuditSubHeaderVisible();
     }
 
     private void StoreHelper_ItemActionsStopped(string obj)
     {
-        var item = downloads.FirstOrDefault(x => x.StoreId == obj);
+        var item = _downloads.FirstOrDefault(x => x.StoreId == obj);
         if (item != null)
         {
-            downloads.Remove(item);
+            _downloads.Remove(item);
         }
         AuditSubHeaderVisible();
     }
@@ -158,9 +158,9 @@ public sealed partial class DownloadsPage : TemplatePage
     {
         string opId = StoreHelper.Instance.GetCurrentQueueOperationId();
         Debug.WriteLine("WTF1");
-        var curItem = downloads.FirstOrDefault(x => x.StoreId == StoreHelper.Instance.GetItemIdFromOperationId(opId));
+        var curItem = _downloads.FirstOrDefault(x => x.StoreId == StoreHelper.Instance.GetItemIdFromOperationId(opId));
         if (curItem != null)
-            downloads.Remove(curItem);
+            _downloads.Remove(curItem);
 
         Debug.WriteLine("WTF2");
 
@@ -187,13 +187,13 @@ public sealed partial class DownloadsPage : TemplatePage
         downloadItemModel.CardBackgroundBrush = solidColorBrush;
         downloadItemModel.IsErrorHappens = false;
 
-        downloads.Add(downloadItemModel);
+        _downloads.Add(downloadItemModel);
         AuditSubHeaderVisible();
     }
 
     private void UpdateCurrentDownloadsList()
     {
-        downloads.Clear();
+        _downloads.Clear();
         UpdateCurrentDownloadItem();
 
         Queue<QueueItemModel> queueItems = StoreHelper.Instance.GetQueue();
@@ -206,11 +206,11 @@ public sealed partial class DownloadsPage : TemplatePage
         {
             opIds.Add(item.OperationId);
             Debug.WriteLine($"{item.ItemId}");
-            var curItem = downloads.FirstOrDefault(x => x.StoreId == item.ItemId);
+            var curItem = _downloads.FirstOrDefault(x => x.StoreId == item.ItemId);
             if (curItem != null && !curItem.IsErrorHappens)
                 continue;
             else
-                downloads.Remove(curItem);
+                _downloads.Remove(curItem);
 
             var storeItem = StoreHelper.Instance.GetItemInfoFromStoreId(item.ItemId);
 
@@ -229,7 +229,7 @@ public sealed partial class DownloadsPage : TemplatePage
                 ImageSource = image,
                 CardBackgroundBrush = solidColorBrush,
             };
-            downloads.Add(downloadItem);
+            _downloads.Add(downloadItem);
         }
 
         List<QueueItemModel> failureItems = StoreHelper.Instance.GetFailedToInstallItems();
@@ -238,7 +238,7 @@ public sealed partial class DownloadsPage : TemplatePage
         {
             opIds.Add(item.OperationId);
             Debug.WriteLine($">>> {item.ItemId}");
-            var curItem = downloads.FirstOrDefault(x => x.StoreId == item.ItemId);
+            var curItem = _downloads.FirstOrDefault(x => x.StoreId == item.ItemId);
             if (curItem != null)
                 continue;
 
@@ -260,7 +260,7 @@ public sealed partial class DownloadsPage : TemplatePage
                 CardBackgroundBrush = solidColorBrush,
                 IsErrorHappens = true
             };
-            downloads.Add(downloadItem);
+            _downloads.Add(downloadItem);
         }
 
         AuditSubHeaderVisible();
@@ -268,7 +268,7 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void LoadUpdatesList()
     {
-        updates.Clear();
+        _updates.Clear();
         foreach (var item in StoreHelper.Instance.UpdatesAvailableList)
         {
             if (!string.IsNullOrEmpty(StoreHelper.Instance.GetOperationIdFromItemId(item.StoreId)))
@@ -293,10 +293,10 @@ public sealed partial class DownloadsPage : TemplatePage
                 Descripition = item.VersionInfo
             };
 
-            updates.Add(downloadItem);
+            _updates.Add(downloadItem);
         }
 
-        if (updates.Count > 0)
+        if (_updates.Count > 0)
             EmptyGrid.Visibility = Visibility.Collapsed;
         else
             EmptyGrid.Visibility = Visibility.Visible;
@@ -304,7 +304,7 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void StoreHelper_UpdateCheckStarted()
     {
-        updates.Clear();
+        _updates.Clear();
         ToggleUpdateMode(true);
     }
 
@@ -322,11 +322,11 @@ public sealed partial class DownloadsPage : TemplatePage
 
     private void UpdateElement(DownloadItemModel downloadItemModel)
     {
-        updates.Remove(downloadItemModel);
+        _updates.Remove(downloadItemModel);
 
         StoreHelper.Instance.AddItemToQueue(downloadItemModel.StoreId, downloadItemModel.ServerVersion);
 
-        if (updates.Count <= 0)
+        if (_updates.Count <= 0)
         {
             EmptyGrid.Visibility = Visibility.Visible;
         }

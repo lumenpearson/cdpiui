@@ -66,16 +66,16 @@ public class ConfigSettingsItem
 
 public sealed partial class ComponentTileUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public ICommand ViewOutputClickCommand { get; }
     public ICommand ViewSettingsButtonClickCommand { get; }
     public ICommand ToggleProcessButtonClickCommand { get; }
 
     private ObservableCollection<ConfigSelectorItem> _configItems = new();
-    private ObservableCollection<ConfigSettingsItem> ConfigSettingsList = [];
-    private ObservableCollection<FeaturesViewModel> AvailableFeaturesList = [];
-    private int configLoadVersion;
+    private ObservableCollection<ConfigSettingsItem> _configSettingsList = [];
+    private ObservableCollection<FeaturesViewModel> _availableFeaturesList = [];
+    private int _configLoadVersion;
 
 
 
@@ -86,8 +86,8 @@ public sealed partial class ComponentTileUserControl : UserControl
     {
         InitializeComponent();
 
-        ViewOutputIconButton.DisplayText = localizer.GetLocalizedString("ViewOutputIconButton");
-        SettingsIconButton.DisplayText = localizer.GetLocalizedString("SettingsIconButton");
+        ViewOutputIconButton.DisplayText = _localizer.GetLocalizedString("ViewOutputIconButton");
+        SettingsIconButton.DisplayText = _localizer.GetLocalizedString("SettingsIconButton");
 
         // The command methods catch and log their own errors.
         ViewOutputClickCommand = new RelayCommand(p => _ = ViewOutputButtonClick());
@@ -102,8 +102,8 @@ public sealed partial class ComponentTileUserControl : UserControl
 
         ConfigChooseCombobox.ItemsSource = _configItems;
         _configItems.CollectionChanged += ConfigItems_CollectionChanged;
-        ConfigSettingsListView.ItemsSource = ConfigSettingsList;
-        AdditionalFeaturesListView.ItemsSource = AvailableFeaturesList;
+        ConfigSettingsListView.ItemsSource = _configSettingsList;
+        AdditionalFeaturesListView.ItemsSource = _availableFeaturesList;
 
         StatusFontIcon.Glyph = SharedUtils.IsOsSupportedNewGlyph() ? "\uF4A5" : "\uE8B0";
 
@@ -278,7 +278,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         DispatcherQueue.TryEnqueue(() =>
         {
             ConfigSettingsLoadFailureTextBlock.Visibility = Visibility.Visible;
-            ConfigSettingsList.Clear();
+            _configSettingsList.Clear();
         });
         var sel = await GetSelectedItemAsync();
         if (sel == null)
@@ -299,7 +299,7 @@ public sealed partial class ComponentTileUserControl : UserControl
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    ConfigSettingsList.Add(new()
+                    _configSettingsList.Add(new()
                     {
                         DisplayName = $"{componentHelper.GetConfigHelper().GetLocalizedConfigVarName(variable.name, sel.PackId)}",
                         Id = variable.name,
@@ -310,7 +310,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         }
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (ConfigSettingsList.Count > 0)
+            if (_configSettingsList.Count > 0)
             {
                 ConfigSettingsLoadFailureTextBlock.Visibility = Visibility.Collapsed;
             }
@@ -319,7 +319,7 @@ public sealed partial class ComponentTileUserControl : UserControl
 
     private void GetAvailableFeaturesForItem()
     {
-        AvailableFeaturesList.Clear();
+        _availableFeaturesList.Clear();
         FeaturesData.AvailableFeaturesForComponent.TryGetValue(StoreId, out var availableFeatures);
         if (availableFeatures == null)
             return;
@@ -330,9 +330,9 @@ public sealed partial class ComponentTileUserControl : UserControl
             if (imageSource == null)
                 continue;
 
-            AvailableFeaturesList.Add(new()
+            _availableFeaturesList.Add(new()
             {
-                DisplayName = localizer.GetLocalizedString(feature.ToString()),
+                DisplayName = _localizer.GetLocalizedString(feature.ToString()),
                 Id = feature,
                 Image = new Uri(imageSource)
             });
@@ -352,12 +352,12 @@ public sealed partial class ComponentTileUserControl : UserControl
 
             if (isRunning)
             {
-                StateToggleButton.DisplayText = localizer.GetLocalizedString("Stop");
+                StateToggleButton.DisplayText = _localizer.GetLocalizedString("Stop");
                 ShowComponentState(ComponentState.Running);
             }
             else
             {
-                StateToggleButton.DisplayText = localizer.GetLocalizedString("Start");
+                StateToggleButton.DisplayText = _localizer.GetLocalizedString("Start");
                 _ = CheckComponentState(); // CheckComponentState catches and logs its own errors.
             }
 
@@ -430,25 +430,25 @@ public sealed partial class ComponentTileUserControl : UserControl
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorSolidNeutralBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uE713";
                 ForegroundStatusFontIcon.FontSize = 22;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusSetupRequired"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusSetupRequired"));
                 break;
             case ComponentState.Stopped:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uE7E8";
                 ForegroundStatusFontIcon.FontSize = 20;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStopped"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusStopped"));
                 break;
             case ComponentState.Running:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uF13E";
                 ForegroundStatusFontIcon.FontSize = 28;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusStarted"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusStarted"));
                 break;
             case ComponentState.ExitedWithException:
                 BackgroundStatusFontIcon.Foreground = (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];
                 ForegroundStatusFontIcon.Glyph = "\uE7BA";
                 ForegroundStatusFontIcon.FontSize = 18;
-                SetStatusToolTip(localizer.GetLocalizedString("ComponentStatusExceptionHappens"));
+                SetStatusToolTip(_localizer.GetLocalizedString("ComponentStatusExceptionHappens"));
                 break;
         }
     }
@@ -499,7 +499,7 @@ public sealed partial class ComponentTileUserControl : UserControl
     {
         try
         {
-            int loadVersion = Interlocked.Increment(ref configLoadVersion);
+            int loadVersion = Interlocked.Increment(ref _configLoadVersion);
 
             ComponentItemsLoaderHelper.Instance.Init(forse: false);
 
@@ -538,7 +538,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         int loadVersion,
         IReadOnlyList<ConfigItem> items)
     {
-        if (loadVersion != configLoadVersion ||
+        if (loadVersion != _configLoadVersion ||
             !string.Equals(componentId, StoreId, StringComparison.Ordinal))
         {
             return;
@@ -642,7 +642,7 @@ public sealed partial class ComponentTileUserControl : UserControl
         bool value = (sender as ToggleSwitch).IsOn;
         string id = (string)(sender as ToggleSwitch).Tag;
 
-        var item = ConfigSettingsList.FirstOrDefault((x) => x.Id == id);
+        var item = _configSettingsList.FirstOrDefault((x) => x.Id == id);
         if (item == null)
             return;
 

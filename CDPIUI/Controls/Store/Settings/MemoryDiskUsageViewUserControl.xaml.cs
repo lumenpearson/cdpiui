@@ -77,11 +77,11 @@ public class MemoryViewItemModel : IComparable
 
 public sealed partial class MemoryDiskUsageViewUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     private ObservableCollection<MemoryViewItemModel> MemoryViewItemModels { get; set; } = [];
 
-    private Dictionary<MemoryUsageCategories, string> CategoryGlyphPairs = new()
+    private Dictionary<MemoryUsageCategories, string> _categoryGlyphPairs = new()
     {
         { MemoryUsageCategories.Application, "\uE74C" },
         { MemoryUsageCategories.Settings, "\uE713" },
@@ -93,7 +93,7 @@ public sealed partial class MemoryDiskUsageViewUserControl : UserControl
         { MemoryUsageCategories.PreviousVersions, "\uE777" },
     };
 
-    private Dictionary<MemoryUsageCategories, Type> CategoryPageTypePairs = new()
+    private Dictionary<MemoryUsageCategories, Type> _categoryPageTypePairs = new()
     {
         { MemoryUsageCategories.Application, typeof(MemoryViewApplicationFilesDetailsPage) },
         { MemoryUsageCategories.Settings, typeof(MemoryViewSettingsDetailsPage) },
@@ -180,8 +180,8 @@ public sealed partial class MemoryDiskUsageViewUserControl : UserControl
             long totalFreeMemory = usedDriveInfo.AvailableFreeSpace;
 
             DiskNameTextBlock.Text = string.Format(
-                localizer.GetLocalizedString("MemoryDiskName"),
-                string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel,
+                _localizer.GetLocalizedString("MemoryDiskName"),
+                string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? _localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel,
                 usedDriveInfo.Name);
 
             Logger.Instance.CreateInfoLog(nameof(MemoryDiskUsageViewUserControl), $"Disk is {usedDriveInfo.Name}, {string.IsNullOrEmpty(usedDriveInfo.Name)}");
@@ -205,8 +205,8 @@ public sealed partial class MemoryDiskUsageViewUserControl : UserControl
         MainProgressBar.Maximum = totalBytesSize;
         MainProgressBar.Value = dirSize;
 
-        UsedMemoryTextBlock.Text = string.Format(localizer.GetLocalizedString("UsedMemory"), UnitsParser.FormatSize(dirSize));
-        FreeMemoryTextBlock.Text = string.Format(localizer.GetLocalizedString("FreeMemory"), UnitsParser.FormatSize((long)totalFreeMemory));
+        UsedMemoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("UsedMemory"), UnitsParser.FormatSize(dirSize));
+        FreeMemoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("FreeMemory"), UnitsParser.FormatSize((long)totalFreeMemory));
     }
 
     private async Task CreateTilesForCategories(string directory, long totalSize)
@@ -287,10 +287,10 @@ public sealed partial class MemoryDiskUsageViewUserControl : UserControl
             Category = category,
             IsClickEnabled = true,
 
-            DisplayName = localizer.GetLocalizedString($"MemoryUsageCategory{category}DisplayName"),
-            DisplayDescription = localizer.GetLocalizedString($"MemoryUsageCategory{category}Description"),
+            DisplayName = _localizer.GetLocalizedString($"MemoryUsageCategory{category}DisplayName"),
+            DisplayDescription = _localizer.GetLocalizedString($"MemoryUsageCategory{category}Description"),
             DisplayMemoryUsageText = $"{UnitsParser.FormatSize(size)}/{UnitsParser.FormatSize(totalSize)}",
-            IconGlyph = CategoryGlyphPairs.GetValueOrDefault(category),
+            IconGlyph = _categoryGlyphPairs.GetValueOrDefault(category),
 
             CurrentValue = size,
             MaxValue = totalSize
@@ -306,7 +306,7 @@ public sealed partial class MemoryDiskUsageViewUserControl : UserControl
             if (settingsCard.Tag is MemoryUsageCategories category)
             {
                 var window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
-                window.NavigateSubPage(CategoryPageTypePairs.GetValueOrDefault(category), UnitsParser.FormatSize((long)MemoryViewItemModels.FirstOrDefault(x => x.Category == category)?.CurrentValue), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                window.NavigateSubPage(_categoryPageTypePairs.GetValueOrDefault(category), UnitsParser.FormatSize((long)MemoryViewItemModels.FirstOrDefault(x => x.Category == category)?.CurrentValue), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
         }
     }

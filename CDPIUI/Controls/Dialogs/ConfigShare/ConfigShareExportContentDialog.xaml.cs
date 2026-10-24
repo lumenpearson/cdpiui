@@ -18,44 +18,44 @@ namespace CDPIUI.Controls.Dialogs.ConfigShare;
 
 public sealed partial class ConfigShareExportContentDialog : ContentDialog
 {
-    private readonly ConfigSelectorItem selected;
-    private bool initialized;
-    private bool busy;
-    private CancellationTokenSource shareCancellation;
+    private readonly ConfigSelectorItem _selected;
+    private bool _initialized;
+    private bool _busy;
+    private CancellationTokenSource _shareCancellation;
 
     public ConfigShareExportContentDialog(ConfigSelectorItem selected)
     {
-        this.selected = selected;
+        _selected = selected;
         InitializeComponent();
         PresetNameBox.Header = ConfigShareUI.Text("ConfigSharePresetName");
         DeveloperNameBox.Header = ConfigShareUI.Text("ConfigShareDeveloper");
         PresetNameBox.Text = selected.DisplayName;
         DeveloperNameBox.Text = SettingsManager.Instance.GetValueOrDefault("CONFIGKIT", "lastUsedDevName", defaultValue: Environment.UserName);
         ExportStatus.Text = ConfigShareUI.Text("ConfigShareCollecting");
-        initialized = true;
+        _initialized = true;
         UpdateButtons();
     }
 
     private void UpdateButtons()
     {
-        bool valid = !busy && !string.IsNullOrWhiteSpace(PresetNameBox.Text) &&
+        bool valid = !_busy && !string.IsNullOrWhiteSpace(PresetNameBox.Text) &&
             !string.IsNullOrWhiteSpace(DeveloperNameBox.Text);
         SaveButton.IsEnabled = ShareButton.IsEnabled = valid;
     }
 
     private void PresetFields_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (initialized)
+        if (_initialized)
             UpdateButtons();
     }
 
-    private void Dialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args) => args.Cancel = busy;
+    private void Dialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args) => args.Cancel = _busy;
 
     private async Task ExportAsync(bool share)
     {
-        if (busy)
+        if (_busy)
             return;
-        busy = true;
+        _busy = true;
         UpdateButtons();
         PresetNameBox.IsEnabled = DeveloperNameBox.IsEnabled = false;
         ExportProgress.Visibility = ExportStatus.Visibility = Visibility.Visible;
@@ -67,9 +67,9 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
         try
         {
             ConfigItem config = await Task.Run(() => JSONConvertor.LoadJson<ConfigItem>(Path.Combine(
-                ConfigurationService.GetItemFolderFromPackId(selected.PackId), selected.FileName)))
-                ?? throw new ConfigShareException("SHARE_CONFIG_INVALID", selected.FileName);
-            config.packId = selected.PackId;
+                ConfigurationService.GetItemFolderFromPackId(_selected.PackId), _selected.FileName)))
+                ?? throw new ConfigShareException("SHARE_CONFIG_INVALID", _selected.FileName);
+            config.packId = _selected.PackId;
             using var package = await new ConfigShareService().ExportAsync(config, PresetNameBox.Text, DeveloperNameBox.Text);
             if (share)
             {
@@ -78,7 +78,7 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
                 var owner = ((App)Application.Current).OpenWindows.FirstOrDefault(window => window.Content?.XamlRoot == XamlRoot)
                     ?? throw new InvalidOperationException("The sharing window is no longer available.");
                 using var cancellation = new CancellationTokenSource();
-                shareCancellation = cancellation;
+                _shareCancellation = cancellation;
                 await WindowsPresetShare.ShareAsync(owner, package, cancellation.Token);
             }
             else
@@ -105,7 +105,7 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
                 });
                 Logger.Instance.CreateInfoLog(nameof(ConfigShareExportContentDialog), $"Preset exported to {picker.FileName}");
             }
-            busy = false;
+            _busy = false;
             Hide();
         }
         // The system share was cancelled: this is not an error.
@@ -118,8 +118,8 @@ public sealed partial class ConfigShareExportContentDialog : ContentDialog
         }
         finally
         {
-            busy = false;
-            shareCancellation = null;
+            _busy = false;
+            _shareCancellation = null;
             PresetNameBox.IsEnabled = DeveloperNameBox.IsEnabled = true;
             ExportProgress.Visibility = ExportStatus.Visibility = Visibility.Collapsed;
             ExportStatus.Text = ConfigShareUI.Text("ConfigShareCollecting");

@@ -223,7 +223,7 @@ public static class UIHelper
         QuickWidget
     }
 
-    private static Thickness _Padding = new Thickness(15, 10, 15, 10);
+    private static Thickness _padding = new Thickness(15, 10, 15, 10);
 
     static public UIElement CreateSettingTile(
         SettingsTile config,
@@ -234,7 +234,7 @@ public static class UIHelper
         ILocalizer localizer = Localizer.Get();
 
         if (padding == null)
-            padding = _Padding;
+            padding = _padding;
         var rootStack = new StackPanel();
 
         foreach (var list in config.Items)

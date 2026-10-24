@@ -55,11 +55,11 @@ namespace CDPIUI.Views.Main.Components;
 /// </summary>
 public sealed partial class TgWsProxyComponentPage : TemplatePage
 {
-    private readonly string DefaultTgWsProxyStartString =
+    private readonly string _defaultTgWsProxyStartString =
         $"--host=127.0.0.1 --port=1443 --secret={SharedUtils.GetRandomHexNumber(32)} --dc-ip=2:149.154.167.220 --dc-ip=4:149.154.167.220 --buf-kb=256 --pool-size=4 --log-max-mb=5";
 
 
-    private readonly ObservableCollection<ViewTelegramDataCenterModel> TelegramDataCenterModels = [];
+    private readonly ObservableCollection<ViewTelegramDataCenterModel> _telegramDataCenterModels = [];
     private readonly ObservableCollection<ConfigSelectorItem> _configItems = [];
 
     public ICommand TgWsProxyEditCommand { get; }
@@ -67,10 +67,10 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
     public ICommand LinkedSettingClickCommand { get; }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public string ComponentId { get; private set; } = string.Empty;
-    private ComponentPageNavigationModel Model;
+    private ComponentPageNavigationModel _model;
 
     public readonly ObservableCollection<SettingLinkModel> LinkedSettings = [];
 
@@ -90,7 +90,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         TgWsProxyRemoveCommand = new RelayCommand(p => RemoveElement((string)p));
         LinkedSettingClickCommand = new RelayCommand(p => _ = LinkedSettingClicked(p));
 
-        DataCentersListView.ItemsSource = TelegramDataCenterModels;
+        DataCentersListView.ItemsSource = _telegramDataCenterModels;
         LinkedSettingsUserControl.SettingModelsList = LinkedSettings;
 
         CreateFromTemplateCommand = new RelayCommand(p => HandleCreatePlCommand((AvailableConfigCreationActios)p));
@@ -111,8 +111,8 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         if (e.Parameter != null && e.Parameter is ComponentPageNavigationModel model)
         {
 
-            Model = model;
-            ComponentId = Model.Id;
+            _model = model;
+            ComponentId = _model.Id;
             EmptyPlaceholder.StoreId = ComponentId;
         }
 
@@ -138,24 +138,24 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         }
     }
 
-    private ComponentPresetListSubscription presetListSubscription;
-    private bool updatingConfigList;
+    private ComponentPresetListSubscription _presetListSubscription;
+    private bool _updatingConfigList;
 
     private void PresetPage_Loaded(object sender, RoutedEventArgs e)
     {
-        presetListSubscription?.Dispose();
-        presetListSubscription = new(ComponentId, DispatcherQueue, ApplyPresetItems);
+        _presetListSubscription?.Dispose();
+        _presetListSubscription = new(ComponentId, DispatcherQueue, ApplyPresetItems);
     }
 
     private void PresetPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        presetListSubscription?.Dispose();
-        presetListSubscription = null;
+        _presetListSubscription?.Dispose();
+        _presetListSubscription = null;
     }
 
     private void ApplyPresetItems(IReadOnlyList<ConfigSelectorItem> items)
     {
-        updatingConfigList = true;
+        _updatingConfigList = true;
         try
         {
             _configItems.Clear();
@@ -163,7 +163,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
                 _configItems.Add(item);
             ToggleVisibility(_configItems.Count > 0);
         }
-        finally { updatingConfigList = false; }
+        finally { _updatingConfigList = false; }
         ApplySavedSelection();
     }
 
@@ -187,7 +187,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            TelegramDataCenterModels.Clear();
+            _telegramDataCenterModels.Clear();
         });
         if (configItem == null)
             return;
@@ -234,7 +234,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
                         // Groups.Count is the same with or without a match.
                         if (matchResult.Success)
                         {
-                            TelegramDataCenterModels.Add(new()
+                            _telegramDataCenterModels.Add(new()
                             {
                                 Guid = item.Guid,
                                 Number = matchResult.Groups[1].Value,
@@ -266,20 +266,20 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
     private void RemoveElement(string guid)
     {
-        TelegramDataCenterModels.Remove(TelegramDataCenterModels.FirstOrDefault(x => x.Guid == guid));
+        _telegramDataCenterModels.Remove(_telegramDataCenterModels.FirstOrDefault(x => x.Guid == guid));
     }
 
     private async Task EditElement(string guid)
     {
         try
         {
-            var el = TelegramDataCenterModels.FirstOrDefault(x => x.Guid == guid);
+            var el = _telegramDataCenterModels.FirstOrDefault(x => x.Guid == guid);
             var dialog = new TgWsDataCenterEditContentDialog()
             {
                 XamlRoot = this.XamlRoot,
                 Number = el?.Number,
                 Ip = el?.Ip,
-                Title = localizer.GetLocalizedString("EditDataCenter")
+                Title = _localizer.GetLocalizedString("EditDataCenter")
             };
 
             await dialog.ShowQueuedAsync();
@@ -312,14 +312,14 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
             {
                 foreach (Match item in matchResult)
                 {
-                    var existItem = TelegramDataCenterModels.FirstOrDefault(x => x.Number == item.Groups[1].Value);
+                    var existItem = _telegramDataCenterModels.FirstOrDefault(x => x.Number == item.Groups[1].Value);
                     if (existItem != null)
                     {
                         existItem.Ip = item.Groups[2].Value;
                     }
                     else
                     {
-                        TelegramDataCenterModels.Add(new()
+                        _telegramDataCenterModels.Add(new()
                         {
                             Guid = Guid.NewGuid().ToString(),
                             Number = item.Groups[1].Value,
@@ -328,10 +328,10 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
                     }
                 }
 
-                ShowInfoBar(localizer.GetLocalizedString("PasteComplete"), InfoBarSeverity.Success);
+                ShowInfoBar(_localizer.GetLocalizedString("PasteComplete"), InfoBarSeverity.Success);
                 return;
             }
-            ShowInfoBar(localizer.GetLocalizedString("PasteFailure"), InfoBarSeverity.Warning);
+            ShowInfoBar(_localizer.GetLocalizedString("PasteFailure"), InfoBarSeverity.Warning);
 
         }
     }
@@ -341,13 +341,13 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         var dialog = new TgWsDataCenterEditContentDialog()
         {
             XamlRoot = this.XamlRoot,
-            Title = localizer.GetLocalizedString("AddDataCenter")
+            Title = _localizer.GetLocalizedString("AddDataCenter")
         };
 
         await dialog.ShowQueuedAsync();
         if (dialog.Result)
         {
-            TelegramDataCenterModels.Add(new()
+            _telegramDataCenterModels.Add(new()
             {
                 Guid = Guid.NewGuid().ToString(),
                 Number = dialog.Number,
@@ -359,7 +359,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
     private void ShareButton_Click(object sender, RoutedEventArgs e)
     {
         string targetText = string.Empty;
-        foreach (var model in TelegramDataCenterModels)
+        foreach (var model in _telegramDataCenterModels)
         {
             targetText += $"{model.Number}:{model.Ip}\n";
         }
@@ -369,7 +369,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         dataPackage.SetText(targetText);
         Clipboard.SetContent(dataPackage);
 
-        ShowInfoBar(localizer.GetLocalizedString("CopyComplete"), InfoBarSeverity.Success);
+        ShowInfoBar(_localizer.GetLocalizedString("CopyComplete"), InfoBarSeverity.Success);
         return;
     }
 
@@ -407,7 +407,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
     private async void ConfigChooseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (updatingConfigList || !IsLoaded)
+        if (_updatingConfigList || !IsLoaded)
             return;
         if (ConfigChooseCombobox.SelectedItem is ConfigSelectorItem sel)
         {
@@ -443,14 +443,14 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         try
         {
             var item = CreateConfigPageHelper.CreateConfigItem(
-                SharedConstants.LocalUserItemsId, localizer.GetLocalizedString("DefaultConfigPlaceholder"), ComponentId, [], [], [], [], DefaultTgWsProxyStartString
+                SharedConstants.LocalUserItemsId, _localizer.GetLocalizedString("DefaultConfigPlaceholder"), ComponentId, [], [], [], [], _defaultTgWsProxyStartString
                 );
             string fileName = $"{Guid.NewGuid()}.json";
             string errorCode = await ConfigurationService.SaveConfigItem(fileName, SharedConstants.LocalUserItemsId, item);
 
             if (!string.IsNullOrEmpty(errorCode))
             {
-                await ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                await ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
                 return;
             }
 
@@ -536,7 +536,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
         lst.RemoveAll(x => x.DisplayName == "--dc-ip");
 
-        foreach (var item in TelegramDataCenterModels)
+        foreach (var item in _telegramDataCenterModels)
         {
             lst.Add(new()
             {
@@ -555,7 +555,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        Model?.GoBackSignal?.Invoke(Model);
+        _model?.GoBackSignal?.Invoke(_model);
     }
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -570,7 +570,7 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         string errorCode = await ConfigurationService.SaveConfigItem(sel.FileName, sel.PackId, item);
         if (!string.IsNullOrEmpty(errorCode))
         {
-            await ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+            await ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
             return;
         }
 

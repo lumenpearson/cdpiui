@@ -51,7 +51,7 @@ public sealed partial class IconButton : UserControl
         set => SetValue(ClickCommandParameterProperty, value);
     }
 
-    private bool IsPointerOnButton = false;
+    private bool _isPointerOnButton = false;
 
     public IconButton()
     {
@@ -130,14 +130,14 @@ public sealed partial class IconButton : UserControl
             SetValue(CheckedProperty, value);
             if (value)
             {
-                Icon.Style = IsPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconAccentTertiaryColor"];
-                MainTextBlock.Style = IsPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextAccentTertiaryColor"];
+                Icon.Style = _isPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconAccentTertiaryColor"];
+                MainTextBlock.Style = _isPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextAccentTertiaryColor"];
                 Icon.Glyph = !string.IsNullOrEmpty(CheckedIconGlyph) ? CheckedIconGlyph : IconGlyph;
             }
             else
             {
-                Icon.Style = IsPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconDefaultColor"];
-                MainTextBlock.Style = IsPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextDefaultColor"];
+                Icon.Style = _isPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconDefaultColor"];
+                MainTextBlock.Style = _isPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextDefaultColor"];
                 Icon.Glyph = IconGlyph;
             }
         }
@@ -173,12 +173,12 @@ public sealed partial class IconButton : UserControl
         Icon.Style = (Style)Resources["FontIconAccentColor"];
         MainTextBlock.Style = (Style)Resources["TextAccentColor"];
 
-        IsPointerOnButton = true;
+        _isPointerOnButton = true;
     }
 
     private void Button_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        IsPointerOnButton = false;
+        _isPointerOnButton = false;
         if (Checked)
         {
             Icon.Style = (Style)Resources["FontIconAccentTertiaryColor"];

@@ -69,7 +69,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
         set => _config = value;
     }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public StoreDownloadItemButton()
     {
@@ -78,7 +78,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
 
         this.Loaded += StoreDownloadItemButton_Loaded;
 
-        BigStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
+        BigStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
     }
 
     private void CheckCurrentStatus()
@@ -204,7 +204,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
         set
         {
             if (string.IsNullOrEmpty(value))
-                SetValue(DescriptionProperty, localizer.GetLocalizedString("DeveloperNotCommentedRelease"));
+                SetValue(DescriptionProperty, _localizer.GetLocalizedString("DeveloperNotCommentedRelease"));
             else
                 SetValue(DescriptionProperty, value);
         }
@@ -350,12 +350,12 @@ public sealed partial class StoreDownloadItemButton : UserControl
     {
         ErrorTextBlock.Text = "";
         ActionGlyph = "\uE894";
-        BigStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
+        BigStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
 
         ProgressBar.IsIndeterminate = true;
         ProgressBar.Value = 0;
 
-        Tooltip = localizer.GetLocalizedString("Cancel");
+        Tooltip = _localizer.GetLocalizedString("Cancel");
 
         ProgressBar.Foreground = (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"];
         CheckCurrentStatus();
@@ -367,12 +367,12 @@ public sealed partial class StoreDownloadItemButton : UserControl
         ErrorTextBlock.Text = errorCode;
         SpeedTextBlock.Text = "";
         TimeTextBlock.Text = "";
-        BigStatusTextBlock.Text = localizer.GetLocalizedString("ErrorHappens");
+        BigStatusTextBlock.Text = _localizer.GetLocalizedString("ErrorHappens");
 
         ProgressBar.IsIndeterminate = false;
         ProgressBar.Value = 100;
 
-        Tooltip = localizer.GetLocalizedString("Retry");
+        Tooltip = _localizer.GetLocalizedString("Retry");
 
         ProgressBar.Foreground = new SolidColorBrush((Color)Application.Current.Resources["SystemFillColorCritical"]);
         RemoveHandlers();
@@ -425,43 +425,43 @@ public sealed partial class StoreDownloadItemButton : UserControl
         switch (state)
         {
             case "GETR":
-                stageHeaderText = localizer.GetLocalizedString("GettingReady");
+                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "END":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "Downloading":
-                stageHeaderText = localizer.GetLocalizedString("Downloading");
+                stageHeaderText = _localizer.GetLocalizedString("Downloading");
                 ProgressBar.IsIndeterminate = false;
                 break;
             case "Extracting":
-                stageHeaderText = localizer.GetLocalizedString("Installing");
+                stageHeaderText = _localizer.GetLocalizedString("Installing");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "ErrorHappens":
-                stageHeaderText = localizer.GetLocalizedString("ErrorHappens");
+                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
                 break;
             case "Completed":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "CANC":
-                stageHeaderText = localizer.GetLocalizedString("Cancel");
+                stageHeaderText = _localizer.GetLocalizedString("Cancel");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "ConnectingToService":
-                stageHeaderText = localizer.GetLocalizedString("ConnectingToService");
+                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
                 ProgressBar.IsIndeterminate = true;
                 break;
             case "":
-                stageHeaderText = localizer.GetLocalizedString("QueueWaiting");
+                stageHeaderText = _localizer.GetLocalizedString("QueueWaiting");
                 ProgressBar.IsIndeterminate = false;
                 ProgressBar.Value = 0;
                 break;
             default:
-                stageHeaderText = localizer.GetLocalizedString(state);
+                stageHeaderText = _localizer.GetLocalizedString(state);
                 ProgressBar.IsIndeterminate = true;
                 break;
         }
@@ -507,7 +507,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
         MarkdownTextViewContentDialog dialog = new MarkdownTextViewContentDialog()
         {
             XamlRoot = this.XamlRoot,
-            Title = localizer.GetLocalizedString("ViewMore"),
+            Title = _localizer.GetLocalizedString("ViewMore"),
             Text = Description
         };
 

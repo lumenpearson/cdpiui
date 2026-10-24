@@ -13,13 +13,13 @@ namespace CDPIUI.AddOns.Troubleshooting;
 public class TroubleshootingService
 {
     private static TroubleshootingService? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static TroubleshootingService Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new TroubleshootingService();
                 return _instance;
@@ -70,7 +70,7 @@ public class TroubleshootingService
         CurrentStateChanged?.Invoke(StoreCheckStates.Preparing);
 
         await Task.Delay(1000);
-        Services = null;
+        _services = null;
         Dictionary<StoreCheckStates, bool> completedStates = [];
 
         CurrentStateChanged?.Invoke(StoreCheckStates.CheckGitHubRepo);
@@ -107,7 +107,7 @@ public class TroubleshootingService
         };
 
         await Task.CompletedTask;
-        Services = null;
+        _services = null;
 
         CurrentStateChanged?.Invoke(StoreCheckStates.Completed);
 
@@ -174,7 +174,7 @@ public class TroubleshootingService
         CurrentStateChanged?.Invoke(RunBasicDialogStates.Preparing);
 
         await Task.Delay(1000);
-        Services = null;
+        _services = null;
         Dictionary<RunBasicDialogStates, bool> completedStates = [];
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckBFE);
@@ -244,7 +244,7 @@ public class TroubleshootingService
         };
 
         await Task.CompletedTask;
-        Services = null;
+        _services = null;
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.Completed);
 
@@ -288,7 +288,7 @@ public class TroubleshootingService
                 for (int i = 0; i < 20 && !fixResultModel.IsFixed; i++)
                 {
                     await Task.Delay(500);
-                    Services = null;
+                    _services = null;
                     fixResultModel.IsFixed = !IsServiceRunning("windivert");
                 }
                 fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
@@ -338,7 +338,7 @@ public class TroubleshootingService
 
     #region BasicFixServices
 
-    ServiceController[]? Services;
+    ServiceController[]? _services;
 
     private bool IsServiceExist(string name)
     {
@@ -346,9 +346,9 @@ public class TroubleshootingService
         {
             if (!OperatingSystem.IsWindows())
                 return true;
-            Services ??= ServiceController.GetServices();
+            _services ??= ServiceController.GetServices();
             // A loop, not a lambda: the platform analyzer sees the Windows check above.
-            foreach (var service in Services)
+            foreach (var service in _services)
             {
                 if (service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase))
                     return true;
@@ -372,8 +372,8 @@ public class TroubleshootingService
         {
             if (!OperatingSystem.IsWindows())
                 return true;
-            Services ??= ServiceController.GetServices();
-            foreach (var service in Services)
+            _services ??= ServiceController.GetServices();
+            foreach (var service in _services)
             {
                 if (match(service) &&
                     service.Status is ServiceControllerStatus.Running or ServiceControllerStatus.StopPending or ServiceControllerStatus.StartPending)

@@ -56,12 +56,12 @@ public partial class App : Application
 
     public List<Window> OpenWindows { get; private set; } = new List<Window>();
 
-    private readonly Dictionary<Window, ModalSession> modalSessions = new();
-    private readonly Dictionary<Window, DisabledOwner> disabledOwners = new();
-    private readonly Microsoft.UI.Dispatching.DispatcherQueue uiDispatcher =
+    private readonly Dictionary<Window, ModalSession> _modalSessions = new();
+    private readonly Dictionary<Window, DisabledOwner> _disabledOwners = new();
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _uiDispatcher =
         Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
 
-    public Microsoft.UI.Dispatching.DispatcherQueue UiDispatcher => uiDispatcher;
+    public Microsoft.UI.Dispatching.DispatcherQueue UiDispatcher => _uiDispatcher;
 
     private sealed class DisabledOwner
     {
@@ -79,8 +79,8 @@ public partial class App : Application
         public readonly TaskCompletionSource<bool> Completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Windows.Foundation.TypedEventHandler<object, WindowEventArgs> ClosedHandler;
     }
-    private readonly SemaphoreSlim migrationWindowActivationLock = new(1, 1);
-    private int isUnhandledErrorShown;
+    private readonly SemaphoreSlim _migrationWindowActivationLock = new(1, 1);
+    private int _isUnhandledErrorShown;
 
     public App()
     {
@@ -124,7 +124,7 @@ public partial class App : Application
 
     private async Task ShowUnhandledError(Exception exception)
     {
-        if (Interlocked.Exchange(ref isUnhandledErrorShown, 1) != 0)
+        if (Interlocked.Exchange(ref _isUnhandledErrorShown, 1) != 0)
             return;
 
         try
@@ -145,7 +145,7 @@ public partial class App : Application
         }
         finally
         {
-            Interlocked.Exchange(ref isUnhandledErrorShown, 0);
+            Interlocked.Exchange(ref _isUnhandledErrorShown, 0);
         }
     }
 
@@ -455,7 +455,7 @@ public partial class App : Application
     private async Task<bool> OpenMigrationWelcomeAsync(
         GoodbyeDpiMigrationActivationRequest request)
     {
-        await migrationWindowActivationLock.WaitAsync();
+        await _migrationWindowActivationLock.WaitAsync();
         try
         {
             if (!GoodbyeDpiMigrationCoordinator.Instance.TryAccept(request, out var session) ||
@@ -486,21 +486,21 @@ public partial class App : Application
         {
             if (!OpenWindows.OfType<WelcomeWindow>().Any(window => window.Id == WelcomeWindow.MigrationWindowId))
                 Program.CompleteMigrationActivation();
-            migrationWindowActivationLock.Release();
+            _migrationWindowActivationLock.Release();
         }
     }
 
-    private bool settingsRecoveryWarningShown;
+    private bool _settingsRecoveryWarningShown;
     private async Task ShowSettingsRecoveryWarningAsync()
     {
         var settings = SettingsManager.Instance;
-        if (settingsRecoveryWarningShown ||
+        if (_settingsRecoveryWarningShown ||
             (!settings.HasUnrecoverableLoadError && !File.Exists(settings.RecoveryNoticePath)))
             return;
         var owner = OpenWindows.LastOrDefault();
         if (owner == null)
             return;
-        settingsRecoveryWarningShown = true;
+        _settingsRecoveryWarningShown = true;
         try
         {
             var dialog = new Windows.UI.Popups.MessageDialog(
@@ -515,7 +515,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            settingsRecoveryWarningShown = false;
+            _settingsRecoveryWarningShown = false;
             Logger.Instance.CreateWarningLog(nameof(App), ex.ToString());
         }
     }
@@ -756,7 +756,7 @@ public partial class App : Application
             catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(App), exception.ToString()); }
             if (migrationWindowClosed)
                 Program.CompleteMigrationActivation();
-            disabledOwners.Remove(window);
+            _disabledOwners.Remove(window);
         }
 
         if (migrationWindowClosed)
@@ -828,16 +828,16 @@ public partial class App : Application
             { await BeginModal(modalWindow, ownerWindow); completion.TrySetResult(true); }
             catch (Exception exception) { completion.TrySetException(exception); }
         }
-        if (uiDispatcher.HasThreadAccess)
+        if (_uiDispatcher.HasThreadAccess)
             Begin();
-        else if (!uiDispatcher.TryEnqueue(Begin))
+        else if (!_uiDispatcher.TryEnqueue(Begin))
             completion.TrySetCanceled();
         return completion.Task;
     }
 
     private Task BeginModal(Window modalWindow, Window ownerWindow)
     {
-        if (modalSessions.TryGetValue(modalWindow, out var existing))
+        if (_modalSessions.TryGetValue(modalWindow, out var existing))
             return existing.Completion.Task;
         if (!OpenWindows.Contains(modalWindow))
             return Task.CompletedTask;
@@ -845,7 +845,7 @@ public partial class App : Application
         if (!IsWindow(handle))
             return Task.CompletedTask;
         var session = new ModalSession { Handle = handle, Owner = ownerWindow };
-        modalSessions.Add(modalWindow, session);
+        _modalSessions.Add(modalWindow, session);
         try
         {
             if (ownerWindow != null && OpenWindows.Contains(ownerWindow))
@@ -865,10 +865,10 @@ public partial class App : Application
                 var ownerHandle = WindowNative.GetWindowHandle(owner);
                 if (!IsWindow(ownerHandle))
                     continue;
-                if (!disabledOwners.TryGetValue(owner, out var state))
+                if (!_disabledOwners.TryGetValue(owner, out var state))
                 {
                     state = new DisabledOwner { Handle = ownerHandle, WasEnabled = IsWindowEnabled(ownerHandle) };
-                    disabledOwners.Add(owner, state);
+                    _disabledOwners.Add(owner, state);
                 }
                 state.Count++;
                 session.Disabled.Add(owner);
@@ -899,16 +899,16 @@ public partial class App : Application
             { ReleaseModal(modalWindow, isClosing: false); completion.TrySetResult(true); }
             catch (Exception exception) { completion.TrySetException(exception); }
         }
-        if (uiDispatcher.HasThreadAccess)
+        if (_uiDispatcher.HasThreadAccess)
             Restore();
-        else if (!uiDispatcher.TryEnqueue(Restore))
+        else if (!_uiDispatcher.TryEnqueue(Restore))
             completion.TrySetCanceled();
         return completion.Task;
     }
 
     private void ReleaseModal(Window modalWindow, bool isClosing)
     {
-        if (!modalSessions.Remove(modalWindow, out var session))
+        if (!_modalSessions.Remove(modalWindow, out var session))
             return;
         if (session.ClosedHandler != null)
             modalWindow.Closed -= session.ClosedHandler;
@@ -920,11 +920,11 @@ public partial class App : Application
                     IsWindow(session.PreviousOwner) ? session.PreviousOwner : IntPtr.Zero);
             foreach (var owner in session.Disabled)
             {
-                if (!disabledOwners.TryGetValue(owner, out var state))
+                if (!_disabledOwners.TryGetValue(owner, out var state))
                     continue;
                 if (--state.Count > 0)
                     continue;
-                disabledOwners.Remove(owner);
+                _disabledOwners.Remove(owner);
                 if (state.WasEnabled && OpenWindows.Contains(owner) && IsWindow(state.Handle))
                     EnableWindow(state.Handle, true);
             }

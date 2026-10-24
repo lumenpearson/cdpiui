@@ -24,13 +24,13 @@ namespace CDPIUI.Views;
 
 public sealed partial class MainPage : TemplatePage
 {
-    private ObservableCollection<ViewStoreItemModel> Components = [];
+    private ObservableCollection<ViewStoreItemModel> _components = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public ICommand ShowComponentSettingsClickCommand { get; }
 
-    private FrameworkElement StoredElement;
+    private FrameworkElement _storedElement;
 
     public MainPage()
     {
@@ -38,7 +38,7 @@ public sealed partial class MainPage : TemplatePage
         this.DataContext = this;
         this.NavigationCacheMode = NavigationCacheMode.Enabled;
 
-        MainListView.ItemsSource = Components;
+        MainListView.ItemsSource = _components;
 
         LoadComponents();
         ShowComponentSettingsClickCommand = new RelayCommand(p => ShowComponentSettings(p));
@@ -51,22 +51,22 @@ public sealed partial class MainPage : TemplatePage
     }
 
     // The services are singletons: a page that is not shown must not keep receiving their events.
-    private bool eventsConnected;
+    private bool _eventsConnected;
 
     private void ConnectEvents()
     {
-        if (eventsConnected)
+        if (_eventsConnected)
             return;
-        eventsConnected = true;
+        _eventsConnected = true;
         StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
     }
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected)
+        if (!_eventsConnected)
             return;
-        eventsConnected = false;
+        _eventsConnected = false;
         StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
     }
@@ -88,12 +88,12 @@ public sealed partial class MainPage : TemplatePage
 
     private void LoadComponents()
     {
-        Components.Clear();
+        _components.Clear();
         List<DatabaseStoreItem> installedComponents = DatabaseHelper.Instance.GetItemsByType("component");
 
         foreach (DatabaseStoreItem installedComponent in installedComponents)
         {
-            Components.Add(new ViewStoreItemModel()
+            _components.Add(new ViewStoreItemModel()
             {
                 StoreId = installedComponent.Id,
                 ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(installedComponent.IconPath))),
@@ -102,7 +102,7 @@ public sealed partial class MainPage : TemplatePage
             });
         }
 
-        if (Components.Count > 0)
+        if (_components.Count > 0)
         {
             ComponentTilePlaceholder.Visibility = Visibility.Collapsed;
             FlashlightContainer.Visibility = Visibility.Visible;
@@ -118,7 +118,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void TryAnimate()
     {
-        StoredElement = null;
+        _storedElement = null;
     }
 
     private void ShowComponentSettings(object p)
@@ -126,8 +126,8 @@ public sealed partial class MainPage : TemplatePage
         var item = MainListView.ContainerFromItem((ViewStoreItemModel)p);
         if (item is FrameworkElement fw)
         {
-            StoredElement = fw;
-            ElementToAnimateBackwardConnectedAnimation = StoredElement;
+            _storedElement = fw;
+            ElementToAnimateBackwardConnectedAnimation = _storedElement;
             PrepareToConnectedForwardAnimate(fw);
         }
         var nvc = new NameValueCollection

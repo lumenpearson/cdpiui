@@ -13,13 +13,13 @@ public class ApplicationTaskMonitor
     public Action<bool> StoreStateChanged;
 
     private static ApplicationTaskMonitor _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static ApplicationTaskMonitor Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new ApplicationTaskMonitor();

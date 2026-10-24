@@ -26,8 +26,8 @@ internal class ErrorContentDialog
         return string.IsNullOrEmpty(result) ? defaultString : result;
     }
 
-    private StackPanel ErrorDetailsPanel;
-    private HyperlinkButton MoreButton;
+    private StackPanel _errorDetailsPanel;
+    private HyperlinkButton _moreButton;
 
     public async Task ShowErrorDialogAsync(string content, string errorDetails, XamlRoot xamlRoot)
     {
@@ -50,16 +50,16 @@ internal class ErrorContentDialog
 
         stackPanel.Children.Add(contentTextBlock);
 
-        MoreButton = new HyperlinkButton()
+        _moreButton = new HyperlinkButton()
         {
             Content = GetLocalizedString("ViewMore", "More"),
             Margin = new Thickness(0, 10, 0, 0),
             Padding = new Thickness(0)
         };
 
-        stackPanel.Children.Add(MoreButton);
+        stackPanel.Children.Add(_moreButton);
 
-        ErrorDetailsPanel = new StackPanel()
+        _errorDetailsPanel = new StackPanel()
         {
             Visibility = Visibility.Collapsed,
             Margin = new Thickness(0, 10, 0, 0),
@@ -81,7 +81,7 @@ internal class ErrorContentDialog
         paragraph.Inlines.Add(run);
         errorDetailsTextBlock.Blocks.Add(paragraph);
 
-        ErrorDetailsPanel.Children.Add(errorDetailsTextBlock);
+        _errorDetailsPanel.Children.Add(errorDetailsTextBlock);
 
         var transparent = new Microsoft.UI.Xaml.Media.SolidColorBrush();
         transparent.Opacity = 0;
@@ -116,11 +116,11 @@ internal class ErrorContentDialog
             Clipboard.SetContent(dataPackage);
         };
 
-        ErrorDetailsPanel.Children.Add(copyButton);
+        _errorDetailsPanel.Children.Add(copyButton);
 
-        stackPanel.Children.Add(ErrorDetailsPanel);
+        stackPanel.Children.Add(_errorDetailsPanel);
 
-        MoreButton.Click += ViewMoreHandler;
+        _moreButton.Click += ViewMoreHandler;
 
         dialog.Content = scrollView;
 
@@ -129,10 +129,10 @@ internal class ErrorContentDialog
 
     private void ViewMoreHandler(object sender, RoutedEventArgs e)
     {
-        ErrorDetailsPanel.Visibility = ErrorDetailsPanel.Visibility == Visibility.Collapsed
+        _errorDetailsPanel.Visibility = _errorDetailsPanel.Visibility == Visibility.Collapsed
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-        MoreButton.Content = ErrorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore", "More") : GetLocalizedString("ViewLess", "Less");
+        _moreButton.Content = _errorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore", "More") : GetLocalizedString("ViewLess", "Less");
     }
 }

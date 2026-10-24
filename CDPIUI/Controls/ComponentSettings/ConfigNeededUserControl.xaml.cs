@@ -51,7 +51,7 @@ public sealed partial class ConfigNeededUserControl : UserControl
 
     private readonly ObservableCollection<AvailableConfigCreationActionModel> Actions = [];
 
-    private readonly Dictionary<Components, List<AvailableConfigCreationActios>> ActionModels = new()
+    private readonly Dictionary<Components, List<AvailableConfigCreationActios>> _actionModels = new()
     {
         { Components.GoodbyeDPI, [AvailableConfigCreationActios.CreateAutomatically] },
         { Components.Zapret, [AvailableConfigCreationActios.CreateAutomatically, AvailableConfigCreationActios.ViewInStore] },
@@ -60,7 +60,7 @@ public sealed partial class ConfigNeededUserControl : UserControl
         { Components.TgWsProxy, [AvailableConfigCreationActios.CreateFromTemplate] },
     };
 
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public ConfigNeededUserControl()
     {
@@ -93,7 +93,7 @@ public sealed partial class ConfigNeededUserControl : UserControl
         // A component that is not in the list has no creation actions; FirstOrDefault gave
         // default(Components), so it got the actions of Zapret.
         var cmpActions = HardcodedItemIds.ComponentIds.TryGetKeyByValue(StoreId, out var component) &&
-            ActionModels.TryGetValue(component, out var actions)
+            _actionModels.TryGetValue(component, out var actions)
             ? actions
             : [];
 
@@ -101,8 +101,8 @@ public sealed partial class ConfigNeededUserControl : UserControl
         {
             Actions.Add(new AvailableConfigCreationActionModel
             {
-                Name = localizer.GetLocalizedString("CreateFromTemplate"),
-                Description = localizer.GetLocalizedString("CreateFromTemplateDescription"),
+                Name = _localizer.GetLocalizedString("CreateFromTemplate"),
+                Description = _localizer.GetLocalizedString("CreateFromTemplateDescription"),
                 IconUri = UIHelper.GetUriFromString("ms-appx:///Assets/Icons/Edit.png"),
                 ActionIconGlyph = "\uE76C",
                 Action = AvailableConfigCreationActios.CreateFromTemplate
@@ -112,8 +112,8 @@ public sealed partial class ConfigNeededUserControl : UserControl
         {
             Actions.Add(new AvailableConfigCreationActionModel
             {
-                Name = localizer.GetLocalizedString("CreateAutomatically"),
-                Description = localizer.GetLocalizedString("CreateAutomaticallyDescription"),
+                Name = _localizer.GetLocalizedString("CreateAutomatically"),
+                Description = _localizer.GetLocalizedString("CreateAutomaticallyDescription"),
                 IconUri = UIHelper.GetUriFromString("ms-appx:///Assets/Icons/GoodCheck.ico"),
                 ActionIconGlyph = "\uE8A7",
                 Action = AvailableConfigCreationActios.CreateAutomatically
@@ -122,8 +122,8 @@ public sealed partial class ConfigNeededUserControl : UserControl
 
         Actions.Add(new AvailableConfigCreationActionModel
         {
-            Name = localizer.GetLocalizedString("ConfigImportUtilWindowTitle"),
-            Description = localizer.GetLocalizedString("ConfigImportUtilDescription"),
+            Name = _localizer.GetLocalizedString("ConfigImportUtilWindowTitle"),
+            Description = _localizer.GetLocalizedString("ConfigImportUtilDescription"),
             IconUri = UIHelper.GetUriFromString("ms-appx:///Assets/Icons/Import.ico"),
             ActionIconGlyph = "\uE8A7",
             Action = AvailableConfigCreationActios.ImportFromFile
@@ -133,8 +133,8 @@ public sealed partial class ConfigNeededUserControl : UserControl
         {
             Actions.Add(new AvailableConfigCreationActionModel
             {
-                Name = localizer.GetLocalizedString("GetInStore"),
-                Description = localizer.GetLocalizedString("GetInStoreDescription"),
+                Name = _localizer.GetLocalizedString("GetInStore"),
+                Description = _localizer.GetLocalizedString("GetInStoreDescription"),
                 IconUri = UIHelper.GetUriFromString("ms-appx:///Assets/Icons/Store.png"),
                 ActionIconGlyph = "\uE8A7",
                 Action = AvailableConfigCreationActios.ViewInStore
@@ -143,8 +143,8 @@ public sealed partial class ConfigNeededUserControl : UserControl
 
         Actions.Add(new AvailableConfigCreationActionModel
         {
-            Name = localizer.GetLocalizedString("CreateConfigManually"),
-            Description = localizer.GetLocalizedString("CreateConfigManuallyDescription"),
+            Name = _localizer.GetLocalizedString("CreateConfigManually"),
+            Description = _localizer.GetLocalizedString("CreateConfigManuallyDescription"),
             IconUri = UIHelper.GetUriFromString("ms-appx:///Assets/Icons/Edit.png"),
             ActionIconGlyph = "\uE8A7",
             Action = AvailableConfigCreationActios.CreateManually

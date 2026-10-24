@@ -42,7 +42,7 @@ public class GraphicDesignerHelper
     }
 
     // DisplayName; LOCID; IsTextInputEnabled; DefaultValue
-    private static List<Tuple<string, string, bool, string>> GoodbyeDPIDesignerConfig = new()
+    private static List<Tuple<string, string, bool, string>> _goodbyeDPIDesignerConfig = new()
     {
         Tuple.Create("-p", "P", false, string.Empty),
         Tuple.Create("-q", "Q", false, string.Empty),
@@ -75,7 +75,7 @@ public class GraphicDesignerHelper
         Tuple.Create("--fake-gen", string.Empty, true, "5"),
         Tuple.Create("--fake-resend", string.Empty, true, "1"),
     };
-    private static List<Tuple<string, string, bool, string>> SpoofDPIDesignerConfig = new()
+    private static List<Tuple<string, string, bool, string>> _spoofDPIDesignerConfig = new()
     {
         Tuple.Create("-debug", "Debug", false, string.Empty),
         Tuple.Create("-enable-doh", "EnableDoH", false, string.Empty),
@@ -227,13 +227,13 @@ public class GraphicDesignerHelper
     public static void LoadGoodbyeDPIDesignerConfig(ObservableCollection<GraphicDesignerSettingItemModel> list, ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList)
     {
         exList.Clear();
-        LoadDesignerConfig(GoodbyeDPIDesignerConfig, list);
+        LoadDesignerConfig(_goodbyeDPIDesignerConfig, list);
     }
 
     public static void LoadSpoofDPIDesignerConfig(ObservableCollection<GraphicDesignerSettingItemModel> list, ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList)
     {
         exList.Clear();
-        LoadDesignerConfig(SpoofDPIDesignerConfig, list);
+        LoadDesignerConfig(_spoofDPIDesignerConfig, list);
     }
 
     private static void LoadDesignerConfig(List<Tuple<string, string, bool, string>> config, ObservableCollection<GraphicDesignerSettingItemModel> list)

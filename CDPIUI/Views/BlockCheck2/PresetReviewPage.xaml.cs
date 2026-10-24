@@ -18,10 +18,10 @@ namespace CDPIUI.Views.BlockCheck2;
 
 public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplatePage, IStatusNotificationSource, INotifyPropertyChanged
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly BlockCheck2PresetStorageService presetStorageService = new();
-    private bool updatingEditingToggle;
-    private bool savingPreset;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly BlockCheck2PresetStorageService _presetStorageService = new();
+    private bool _updatingEditingToggle;
+    private bool _savingPreset;
 
     public PresetReviewPage()
     {
@@ -89,16 +89,16 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             return;
         }
         BlockCheck2PresetDraft draft = ViewModel.Draft;
-        updatingEditingToggle = true;
+        _updatingEditingToggle = true;
         AllowEditingCheckBox.IsChecked = draft.IsExpertEditingEnabled;
-        updatingEditingToggle = false;
+        _updatingEditingToggle = false;
         ExpertInfoBar.IsOpen = draft.IsExpertEditingEnabled;
         RaiseMenuStateChanged();
     }
 
     private async void AllowEditingCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        if (updatingEditingToggle || ViewModel == null)
+        if (_updatingEditingToggle || ViewModel == null)
         {
             return;
         }
@@ -116,9 +116,9 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             };
             if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
             {
-                updatingEditingToggle = true;
+                _updatingEditingToggle = true;
                 AllowEditingCheckBox.IsChecked = false;
-                updatingEditingToggle = false;
+                _updatingEditingToggle = false;
                 return;
             }
         }
@@ -164,7 +164,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
 
     public async Task SaveToApplicationAsync()
     {
-        if (ViewModel == null || !ViewModel.Draft.CanUseConfig || savingPreset)
+        if (ViewModel == null || !ViewModel.Draft.CanUseConfig || _savingPreset)
         {
             return;
         }
@@ -201,12 +201,12 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             return;
         }
 
-        savingPreset = true;
+        _savingPreset = true;
         SaveToApplicationProgressRing.IsActive = true;
         UpdateState();
         try
         {
-            BlockCheck2PresetStorageResult result = await presetStorageService.SaveAsync(
+            BlockCheck2PresetStorageResult result = await _presetStorageService.SaveAsync(
                 nameTextBox.Text,
                 ViewModel.Draft);
             if (!result.Success)
@@ -252,7 +252,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         }
         finally
         {
-            savingPreset = false;
+            _savingPreset = false;
             SaveToApplicationProgressRing.IsActive = false;
             UpdateState();
         }
@@ -356,7 +356,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
     private void RaiseMenuStateChanged() =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 
-    private string Text(string key) => localizer.GetLocalizedString(key);
+    private string Text(string key) => _localizer.GetLocalizedString(key);
 
 
 }

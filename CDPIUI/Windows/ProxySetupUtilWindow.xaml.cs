@@ -28,12 +28,12 @@ namespace CDPIUI;
 
 public sealed partial class ProxySetupUtilWindow : TemplateWindow
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public ProxySetupUtilWindow()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("ProxyWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("ProxyWindowTitle");
         IconUri = @"Assets/Icons/Proxy.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
         DisableResizeFeature();

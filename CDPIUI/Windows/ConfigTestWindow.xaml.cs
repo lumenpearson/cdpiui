@@ -27,30 +27,30 @@ namespace CDPIUI;
 
 public sealed partial class ConfigTestWindow : TemplateWindow
 {
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     private CancellationTokenSource _testCts;
     private bool _isTesting = false;
     private bool _isClosed = false;
 
-    private string componentIdToTest = string.Empty;
+    private string _componentIdToTest = string.Empty;
     public string ComponentIdToTest
     {
         get
         {
-            return componentIdToTest;
+            return _componentIdToTest;
         }
         set
         {
-            componentIdToTest = value;
+            _componentIdToTest = value;
             LoadComponents();
         }
     }
 
-    private string TestedComponentId = string.Empty;
+    private string _testedComponentId = string.Empty;
 
     private readonly ObservableCollection<PresetResultViewModel> _resultItems = new();
-    private readonly ObservableCollection<ViewComponentModel> Models = new();
+    private readonly ObservableCollection<ViewComponentModel> _models = new();
 
     private PresetTestHelper _activeHelper;
     private PresetTestType _lastTestType = PresetTestType.Standard;
@@ -66,7 +66,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("PresetTestWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("PresetTestWindowTitle");
 
         IconUri = @"Assets/Icons/GoodCheck.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
@@ -74,7 +74,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         WindowMinSize = new System.Windows.Size(1100, 520);
 
 
-        ComponentComboBox.ItemsSource = Models;
+        ComponentComboBox.ItemsSource = _models;
         ResultsListView.ItemsSource = _resultItems;
         LoadComponents();
 
@@ -90,14 +90,14 @@ public sealed partial class ConfigTestWindow : TemplateWindow
     {
         try
         {
-            UIHelper.LoadInstalledComponentsList(Models);
+            UIHelper.LoadInstalledComponentsList(_models);
 
-            Models.Remove(Models.FirstOrDefault(x => x.StoreId == "CSTYFL050"));
+            _models.Remove(_models.FirstOrDefault(x => x.StoreId == "CSTYFL050"));
 
 
-            if (Models.Count > 0)
+            if (_models.Count > 0)
             {
-                ComponentComboBox.SelectedItem = Models.FirstOrDefault(x => x.StoreId == ComponentIdToTest) ?? Models.First();
+                ComponentComboBox.SelectedItem = _models.FirstOrDefault(x => x.StoreId == ComponentIdToTest) ?? _models.First();
                 StartTestButton.IsEnabled = true;
             }
             else
@@ -163,8 +163,8 @@ public sealed partial class ConfigTestWindow : TemplateWindow
             presets = PresetListView.SelectedItems.OfType<ConfigItem>().ToList();
             if (presets.Count == 0)
             {
-                AppendLine(new TestLogSegment($"[{localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
-                           new TestLogSegment(localizer.GetLocalizedString("PT_NoSelection")));
+                AppendLine(new TestLogSegment($"[{_localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
+                           new TestLogSegment(_localizer.GetLocalizedString("PT_NoSelection")));
                 return;
             }
         }
@@ -180,8 +180,8 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         ProcessService processManager = (await ComponentTasksManager.Instance.GetTaskFromId(entry.StoreId))?.ProcessManager;
         if (processManager == null)
         {
-            AppendLine(new TestLogSegment($"[{localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
-                       new TestLogSegment(localizer.GetLocalizedString("PT_ComponentNotFound")));
+            AppendLine(new TestLogSegment($"[{_localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
+                       new TestLogSegment(_localizer.GetLocalizedString("PT_ComponentNotFound")));
             return;
         }
 
@@ -191,7 +191,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         _testCts = new CancellationTokenSource();
         _activeHelper = new PresetTestHelper();
 
-        TestedComponentId = entry.StoreId;
+        _testedComponentId = entry.StoreId;
 
         var logProgress = new Progress<List<TestLogSegment>>(AppendLine);
         var testProgress = new Progress<PresetTestProgress>(UpdateProgress);
@@ -202,7 +202,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
                 _activeHelper.RunAsync(entry.StoreId, processManager, _lastTestType, presets, logProgress, testProgress, _testCts.Token));
 
             if (runResult.WasCancelled)
-                AppendLine(new TestLogSegment(localizer.GetLocalizedString("PT_Cancelled"), TestLogColor.Yellow));
+                AppendLine(new TestLogSegment(_localizer.GetLocalizedString("PT_Cancelled"), TestLogColor.Yellow));
 
             if (!_isClosed)
                 ShowResults(runResult, _lastTestType);
@@ -210,7 +210,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         catch (Exception ex)
         {
             // RunAsync has already stopped the tested preset and restored the component.
-            AppendLine(new TestLogSegment($"[{localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
+            AppendLine(new TestLogSegment($"[{_localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
                        new TestLogSegment(ex.Message, TestLogColor.Red));
         }
         finally
@@ -258,34 +258,34 @@ public sealed partial class ConfigTestWindow : TemplateWindow
 
     private async Task ApplyPresetAsync(PresetResultViewModel vm, bool restartIfRunning)
     {
-        if (vm?.Preset == null || string.IsNullOrEmpty(TestedComponentId))
+        if (vm?.Preset == null || string.IsNullOrEmpty(_testedComponentId))
             return;
 
         try
         {
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", TestedComponentId], "configFile", vm.Preset.file_name);
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", TestedComponentId], "configId", vm.Preset.packId);
+            SettingsManager.Instance.SetValue<string>(["CONFIGS", _testedComponentId], "configFile", vm.Preset.file_name);
+            SettingsManager.Instance.SetValue<string>(["CONFIGS", _testedComponentId], "configId", vm.Preset.packId);
 
-            ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(TestedComponentId);
+            ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(_testedComponentId);
             componentHelper.ReInitConfigs();
 
-            AppendLine(new TestLogSegment(string.Format(localizer.GetLocalizedString("PT_PresetApplied"), vm.PresetName), TestLogColor.Green));
+            AppendLine(new TestLogSegment(string.Format(_localizer.GetLocalizedString("PT_PresetApplied"), vm.PresetName), TestLogColor.Green));
 
             if (restartIfRunning)
             {
-                if (await ComponentTasksManager.Instance.IsTaskRunning(TestedComponentId))
-                    await ComponentTasksManager.Instance.RestartTask(TestedComponentId);
+                if (await ComponentTasksManager.Instance.IsTaskRunning(_testedComponentId))
+                    await ComponentTasksManager.Instance.RestartTask(_testedComponentId);
                 else
-                    _ = ComponentTasksManager.Instance.CreateAndRunNewTask(TestedComponentId);
+                    _ = ComponentTasksManager.Instance.CreateAndRunNewTask(_testedComponentId);
             }
-            else if (await ComponentTasksManager.Instance.IsTaskRunning(TestedComponentId))
+            else if (await ComponentTasksManager.Instance.IsTaskRunning(_testedComponentId))
             {
-                await ComponentTasksManager.Instance.RestartTask(TestedComponentId);
+                await ComponentTasksManager.Instance.RestartTask(_testedComponentId);
             }
         }
         catch (Exception ex)
         {
-            AppendLine(new TestLogSegment($"[{localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
+            AppendLine(new TestLogSegment($"[{_localizer.GetLocalizedString("PT_Warn")}] ", TestLogColor.Yellow),
                        new TestLogSegment(ex.Message, TestLogColor.Red));
         }
     }
@@ -300,9 +300,9 @@ public sealed partial class ConfigTestWindow : TemplateWindow
             return;
         }
 
-        string applyLabel = localizer.GetLocalizedString("PresetTestApplyButton");
-        string runLabel = localizer.GetLocalizedString("PresetTestRunButton");
-        string recommended = localizer.GetLocalizedString("PresetTestRecommendedBadge");
+        string applyLabel = _localizer.GetLocalizedString("PresetTestApplyButton");
+        string runLabel = _localizer.GetLocalizedString("PresetTestRunButton");
+        string recommended = _localizer.GetLocalizedString("PresetTestRecommendedBadge");
         ConfigItem bestPreset = runResult.Best?.Preset;
 
         foreach (PresetTestResult r in runResult.Ranked)
@@ -316,7 +316,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
                 Preset = r.Preset,
                 PresetName = r.PresetName,
                 PackName = string.IsNullOrEmpty(r.PackName) ? r.Preset?.file_name : r.PackName,
-                MetricsText = r.GetMetricsSummary(testType, localizer),
+                MetricsText = r.GetMetricsSummary(testType, _localizer),
                 IsBest = isBest,
                 RecommendedBadge = recommended,
                 ApplyLabel = applyLabel,
@@ -343,7 +343,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         ProgressPanel.Visibility = Visibility.Visible;
         TestProgressBar.Value = p.Percent;
         ProgressStatusTextBlock.Text = string.Format(
-            localizer.GetLocalizedString("PT_ProgressStatus"),
+            _localizer.GetLocalizedString("PT_ProgressStatus"),
             p.CurrentIndex, p.TotalPresets, p.CurrentPresetName);
 
         if (p.EstimatedRemaining.HasValue && p.CompletedPresets > 0 && p.CompletedPresets < p.TotalPresets)
@@ -354,7 +354,7 @@ public sealed partial class ConfigTestWindow : TemplateWindow
         }
         else
         {
-            ProgressEtaTextBlock.Text = localizer.GetLocalizedString("Calculating");
+            ProgressEtaTextBlock.Text = _localizer.GetLocalizedString("Calculating");
         }
     }
 

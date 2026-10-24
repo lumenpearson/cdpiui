@@ -40,9 +40,9 @@ public sealed partial class RecentGoodCheckSelectionsContentDialog : ContentDial
     public string SelectedReport { get; private set; }
     public SelectResult SelectedResult { get; private set; } = SelectResult.Nothing;
 
-    private ObservableCollection<ReportFileToEditModel> ReportModels = new();
+    private ObservableCollection<ReportFileToEditModel> _reportModels = new();
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public RecentGoodCheckSelectionsContentDialog()
     {
@@ -50,7 +50,7 @@ public sealed partial class RecentGoodCheckSelectionsContentDialog : ContentDial
         this.DataContext = this;
 
         SelectConfigCommand = new RelayCommand(p => ConfigSelected((Tuple<string, string>)p));
-        ConfigsListView.ItemsSource = ReportModels;
+        ConfigsListView.ItemsSource = _reportModels;
 
         InitDialog();
     }
@@ -59,12 +59,12 @@ public sealed partial class RecentGoodCheckSelectionsContentDialog : ContentDial
     {
         string targetFolder = Path.Combine(CDPIUI.AddOns.GoodCheck.GoodCheckProcessService.GetAddOnDirectory(), "Reports");
 
-        ReportModels.Clear();
+        _reportModels.Clear();
         GetReportFiles(targetFolder);
 
-        Logger.Instance.CreateDebugLog(nameof(RecentGoodCheckSelectionsContentDialog), ReportModels.Count.ToString());
+        Logger.Instance.CreateDebugLog(nameof(RecentGoodCheckSelectionsContentDialog), _reportModels.Count.ToString());
 
-        if (ReportModels.Count == 0)
+        if (_reportModels.Count == 0)
         {
             ReportErrorTextBlock.Visibility = Visibility.Visible;
             ConfigsScrollViewer.Visibility = Visibility.Collapsed;
@@ -100,7 +100,7 @@ public sealed partial class RecentGoodCheckSelectionsContentDialog : ContentDial
                 creationTime = File.GetLastWriteTime(filePath);
             }
 
-            var displayName = $"{localizer.GetLocalizedString("Report")} {creationTime.ToString("HH:mm dd.MM.yy")}";
+            var displayName = $"{_localizer.GetLocalizedString("Report")} {creationTime.ToString("HH:mm dd.MM.yy")}";
 
             double sizeKb = 0;
             try
@@ -115,7 +115,7 @@ public sealed partial class RecentGoodCheckSelectionsContentDialog : ContentDial
 
             string packName = $"{sizeKb:F0} KB";
 
-            ReportModels.Add(new ReportFileToEditModel
+            _reportModels.Add(new ReportFileToEditModel
             {
                 DisplayName = displayName,
                 PackName = packName,

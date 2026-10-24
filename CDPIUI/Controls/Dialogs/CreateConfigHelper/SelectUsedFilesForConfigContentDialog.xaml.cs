@@ -56,14 +56,14 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
     public Dictionary<string, string> Files = [];
 
     private List<string> _files;
-    private string ConfigName;
-    private string ConfigPath;
+    private string _configName;
+    private string _configPath;
     private AskAutoFillMode _askAutoFillMode;
-    private ConfigItem ConfigItem;
+    private ConfigItem _configItem;
 
     public CreateConfigResult Result { get; private set; } = CreateConfigResult.Nothing;
 
-    private ObservableCollection<FileSelectModel> Models = [];
+    private ObservableCollection<FileSelectModel> _models = [];
 
     public SelectUsedFilesForConfigContentDialog(List<string> files, string configName, string configPath, ConfigItem configItem, AskAutoFillMode askAutoFillMode)
     {
@@ -73,14 +73,14 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
 
         _files = files;
         _askAutoFillMode = askAutoFillMode;
-        ConfigName = configName;
-        ConfigPath = configPath;
-        ConfigItem = configItem;
+        _configName = configName;
+        _configPath = configPath;
+        _configItem = configItem;
 
         ChangeFilePathCommand = new RelayCommand(p => ChangeFilePath((Tuple<string, string>)p));
 
         CreateModels();
-        FilesListView.ItemsSource = Models;
+        FilesListView.ItemsSource = _models;
 
 
     }
@@ -113,7 +113,7 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
 
         TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
         int secondsSinceEpoch = (int)t.TotalSeconds;
-        string folderName = $"{GetSafeFolderName(ConfigName)}_converted_{secondsSinceEpoch}";
+        string folderName = $"{GetSafeFolderName(_configName)}_converted_{secondsSinceEpoch}";
 
         foreach (var file in _files)
         {
@@ -135,7 +135,7 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
             }
             // The folder is created when a file is copied into it, not before the user confirms.
             string autoCorrectPath = FindAutoCorrectPath(file);
-            Models.Add(new FileSelectModel()
+            _models.Add(new FileSelectModel()
             {
                 ConvertDirectoryPath = convDir,
                 FilePath = file,
@@ -155,19 +155,19 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
 
     private string FindAutoCorrectPath(string filePath)
     {
-        return Autocorrector.FindAutoCorrectPath(filePath, ConfigItem, ConfigPath);
+        return Autocorrector.FindAutoCorrectPath(filePath, _configItem, _configPath);
     }
 
     private void ChangeFilePath(Tuple<string, string> tuple)
     {
-        var _m = Models.FirstOrDefault(m => m.FilePath == tuple.Item1);
+        var _m = _models.FirstOrDefault(m => m.FilePath == tuple.Item1);
         if (_m != null)
-            Models.Remove(_m);
+            _models.Remove(_m);
 
         _files.Remove(tuple.Item1);
         Files.Add(tuple.Item1, tuple.Item2);
 
-        if (Models.Count == 0)
+        if (_models.Count == 0)
         {
             IsPrimaryButtonEnabled = true;
         }
@@ -176,17 +176,17 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
     private void RootDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         Result = CreateConfigResult.Selected;
-        if (Models.Count != 0)
+        if (_models.Count != 0)
         {
             AutoCorrectActions();
         }
     }
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     private async Task ShowDialog(string message)
     {
         try
         {
-            var dlg = new MessageDialog(message, localizer.GetLocalizedString("AutoCorrectError"));
+            var dlg = new MessageDialog(message, _localizer.GetLocalizedString("AutoCorrectError"));
             InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
             await dlg.ShowAsync();
         }
@@ -198,7 +198,7 @@ public sealed partial class SelectUsedFilesForConfigContentDialog : ContentDialo
 
     private void AutoCorrectActions()
     {
-        foreach (var model in Models)
+        foreach (var model in _models)
         {
             try
             {

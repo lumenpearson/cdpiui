@@ -39,14 +39,14 @@ public class ConPTYHelper
     public Action<string>? ProcessExited;
     public Action<string>? OutputAdded;
 
-    private readonly string Prefix = string.Empty;
+    private readonly string _prefix = string.Empty;
 
-    private StopActionCallers StopActionCaller = StopActionCallers.Unknown;
+    private StopActionCallers _stopActionCaller = StopActionCallers.Unknown;
 
     // Checked in this order and the first match of a line wins: with the dictionary every
     // matching key overwrote the previous one, so "Error opening filter" became UNKNOWN
     // through the generic "error" key.
-    static readonly (string Text, PrettyErrorCode Code)[] errorMappings =
+    static readonly (string Text, PrettyErrorCode Code)[] ErrorMappings =
     {
         ("Error opening filter", PrettyErrorCode.FILTER_OPEN_ERROR),
         ("unknown option", PrettyErrorCode.PARAMETER_ERROR),
@@ -70,7 +70,7 @@ public class ConPTYHelper
     private static PrettyErrorCode? FindError(string output)
     {
         PrettyErrorCode? generic = null;
-        foreach (var (text, code) in errorMappings)
+        foreach (var (text, code) in ErrorMappings)
         {
             if (!output.Contains(text, StringComparison.OrdinalIgnoreCase))
                 continue;
@@ -92,16 +92,16 @@ public class ConPTYHelper
     /// <summary>A process runs, or a start is waiting for its turn.</summary>
     public bool IsRunningOrStarting =>
         processState || Interlocked.Read(ref _lastStartTicket) > Interlocked.Read(ref _lastStopTicket);
-    private bool CurrentState = false;
+    private bool _currentState = false;
     private object _setStateLock = new();
     private void ChangeProcessState(bool isRunning)
     {
         lock (_setStateLock)
         {
-            if (CurrentState != isRunning)
+            if (_currentState != isRunning)
             {
-                CurrentState = isRunning;
-                processState = CurrentState;
+                _currentState = isRunning;
+                processState = _currentState;
                 ProcessStateChanged?.Invoke(isRunning);
                 Debug.WriteLine(processState);
             }
@@ -110,7 +110,7 @@ public class ConPTYHelper
 
     public ConPTYHelper(string prefix = "")
     {
-        Prefix = prefix;
+        _prefix = prefix;
         _outputDefaultBuffer = new StringBuilder();
     }
 
@@ -376,7 +376,7 @@ public class ConPTYHelper
                 if (ticket <= Interlocked.Read(ref _lastStopTicket))
                     return;
 
-                StopActionCaller = StopActionCallers.Unknown;
+                _stopActionCaller = StopActionCallers.Unknown;
                 lock (_outputLock)
                     _outputDefaultBuffer.Clear();
 
@@ -573,12 +573,12 @@ public class ConPTYHelper
                     if (found != null && (lastError == PrettyErrorCode.SUCCESS || found != PrettyErrorCode.UNKNOWN))
                         lastError = found.Value;
 
-                    if (!string.IsNullOrEmpty(Prefix) && !string.IsNullOrEmpty(_output))
+                    if (!string.IsNullOrEmpty(_prefix) && !string.IsNullOrEmpty(_output))
                     {
                         string newOutput = string.Empty;
                         foreach (string str in _output.Split("\n"))
                         {
-                            newOutput += $"[{Prefix}] {str}\n";
+                            newOutput += $"[{_prefix}] {str}\n";
                         }
                         _output = newOutput;
                     }
@@ -602,7 +602,7 @@ public class ConPTYHelper
         {
 
             Logger.Instance.CreateInfoLog(nameof(ConPTYHelper), $"Process will be stopped {lastError}.");
-            if (lastError != PrettyErrorCode.SUCCESS && StopActionCaller == StopActionCallers.Unknown)
+            if (lastError != PrettyErrorCode.SUCCESS && _stopActionCaller == StopActionCallers.Unknown)
                 ShowErrorMessage(lastError);
         }
         catch (Exception ex)
@@ -715,7 +715,7 @@ public class ConPTYHelper
 
     public async Task StopProcess(bool output = true)
     {
-        StopActionCaller = StopActionCallers.User;
+        _stopActionCaller = StopActionCallers.User;
         InterlockedMax(ref _lastStopTicket, Interlocked.Read(ref _lastStartTicket));
         TryCancel(_cancellationTokenSource);
 
@@ -761,7 +761,7 @@ public class ConPTYHelper
 
     private void SendStopMessage(string output = "Process will be stopped by user")
     {
-        string prefix = string.IsNullOrEmpty(Prefix) ? "" : $" [{Prefix}]";
+        string prefix = string.IsNullOrEmpty(_prefix) ? "" : $" [{_prefix}]";
         lock (_outputLock)
             _outputDefaultBuffer.Append($"\n[PSEUDOCONSOLE]{prefix} {output}");
 

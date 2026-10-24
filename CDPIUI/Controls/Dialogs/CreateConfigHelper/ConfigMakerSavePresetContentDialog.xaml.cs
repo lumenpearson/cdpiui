@@ -14,16 +14,16 @@ public enum ConfigMakerSavePresetContentDialogResult
 
 public sealed partial class ConfigMakerSavePresetContentDialog : ContentDialog
 {
-    private bool overwriteEnable = true;
+    private bool _overwriteEnable = true;
 
     public ConfigMakerSavePresetContentDialogResult Result = ConfigMakerSavePresetContentDialogResult.Cancel;
 
     public bool OverwriteEnable
     {
-        get => overwriteEnable;
+        get => _overwriteEnable;
         set
         {
-            overwriteEnable = value;
+            _overwriteEnable = value;
             SaveOverwriteItem.IsEnabled = value;
             if (!value && SelectorBar.SelectedItem == SaveOverwriteItem)
             {

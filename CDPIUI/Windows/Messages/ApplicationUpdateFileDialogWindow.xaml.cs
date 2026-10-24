@@ -18,7 +18,7 @@ public sealed partial class ApplicationUpdateFileDialogWindow : TemplateWindow
     private string _filePath = string.Empty;
     private bool _handlersConnected;
 
-    private bool ErrorHappens = false;
+    private bool _errorHappens = false;
 
     private Action<Tuple<string, string>>? _stageChangedHandler;
     private Action<Tuple<string, double>>? _progressChangedHandler;
@@ -70,7 +70,7 @@ public sealed partial class ApplicationUpdateFileDialogWindow : TemplateWindow
         if (string.IsNullOrEmpty(_filePath))
             return;
 
-        ErrorHappens = false;
+        _errorHappens = false;
 
         try
         {
@@ -162,7 +162,7 @@ public sealed partial class ApplicationUpdateFileDialogWindow : TemplateWindow
 
     private void SetWorkingState(string status, bool indeterminate)
     {
-        if (ErrorHappens)
+        if (_errorHappens)
             return;
         ErrorGrid.Visibility = Visibility.Collapsed;
         DownloadProgressStackPanel.Visibility = Visibility.Visible;
@@ -172,7 +172,7 @@ public sealed partial class ApplicationUpdateFileDialogWindow : TemplateWindow
 
     private void ShowError(string message)
     {
-        ErrorHappens = true;
+        _errorHappens = true;
         DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
         ErrorCodeTextBlock.Text = message;
         ErrorGrid.Visibility = Visibility.Visible;

@@ -41,12 +41,12 @@ namespace CDPIUI.Views.CreateConfigHelper;
 public sealed partial class EditConfigKitPage : TemplatePage
 {
     private string KitId = string.Empty;
-    private readonly ObservableCollection<ViewConfigInKitModel> Configs = [];
-    private ConfigurationService ConfigHelper = null;
+    private readonly ObservableCollection<ViewConfigInKitModel> _configs = [];
+    private ConfigurationService _configHelper = null;
 
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
-    private readonly ObservableCollection<MenuItemViewModel> Folders = [];
+    private readonly ObservableCollection<MenuItemViewModel> _folders = [];
 
     public ICommand RemoveConfigCommand { get; }
     public ICommand RenameConfigCommand { get; }
@@ -58,7 +58,7 @@ public sealed partial class EditConfigKitPage : TemplatePage
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
-        ConfigsListView.ItemsSource = Configs;
+        ConfigsListView.ItemsSource = _configs;
 
         RemoveConfigCommand = new RelayCommand(p => RemoveConfig((Tuple<string>)p));
         RenameConfigCommand = new RelayCommand(p => RenameConfig((Tuple<string, string>)p));
@@ -76,7 +76,7 @@ public sealed partial class EditConfigKitPage : TemplatePage
     {
         if (e.SourcePageType != typeof(CreateNewConfigPage))
         {
-            Configs.Clear();
+            _configs.Clear();
             KitId = string.Empty;
         }
     }
@@ -116,19 +116,19 @@ public sealed partial class EditConfigKitPage : TemplatePage
 
     private async Task LoadConfigItems()
     {
-        ToggleLoadingMode(true, localizer.GetLocalizedString("LoadingConfigs"));
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("LoadingConfigs"));
 
         DispatcherQueue.TryEnqueue(() =>
         {
-            Folders.Clear();
-            Configs.Clear();
+            _folders.Clear();
+            _configs.Clear();
         });
-        ConfigHelper = new(target: "$ANY");
-        ConfigHelper.Init(KitId);
+        _configHelper = new(target: "$ANY");
+        _configHelper.Init(KitId);
 
         await Task.Delay(100);
 
-        List<ConfigItem> items = ConfigHelper.GetConfigItems();
+        List<ConfigItem> items = _configHelper.GetConfigItems();
 
         foreach (ConfigItem item in items)
         {
@@ -136,13 +136,13 @@ public sealed partial class EditConfigKitPage : TemplatePage
             if (item.MarkAsRemoved || item.target == null || item.target.Count == 0)
                 continue;
             List<string> usedSiteLists =
-                [.. (await ConfigHelper.GetSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
+                [.. (await _configHelper.GetSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
             List<string> excludedSiteLists =
-                [.. (await ConfigHelper.GetExcludedSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
+                [.. (await _configHelper.GetExcludedSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                Configs.Add(new()
+                _configs.Add(new()
                 {
                     Guid = Guid.NewGuid().ToString(),
                     PackId = item.packId,
@@ -173,38 +173,38 @@ public sealed partial class EditConfigKitPage : TemplatePage
 
     private void RemoveConfig(Tuple<string> parameter)
     {
-        var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
 
         if (item != null)
         {
-            Configs.Remove(item);
-            ConfigHelper.RemoveConfig(item.FileName, item.PackId, false);
+            _configs.Remove(item);
+            _configHelper.RemoveConfig(item.FileName, item.PackId, false);
         }
     }
 
     private void RenameConfig(Tuple<string, string> parameter)
     {
-        var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
 
         if (item != null)
         {
             item.DisplayName = parameter.Item2;
-            ConfigItem configItem = ConfigHelper.GetConfigItem(item.FileName, item.PackId);
+            ConfigItem configItem = _configHelper.GetConfigItem(item.FileName, item.PackId);
             if (configItem != null && !configItem.MarkAsRemoved)
             {
                 configItem.name = parameter.Item2;
             }
-            ConfigHelper.SetConfigItem(configItem);
+            _configHelper.SetConfigItem(configItem);
         }
     }
 
     private void EditConfig(Tuple<string> parameter)
     {
-        var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
 
         if (item != null)
         {
-            ConfigItem configItem = ConfigHelper.GetConfigItem(item.FileName, item.PackId);
+            ConfigItem configItem = _configHelper.GetConfigItem(item.FileName, item.PackId);
             var nvc = new NameValueCollection
             {
                 { "type", "CFGRETURNEDITED" },
@@ -215,7 +215,7 @@ public sealed partial class EditConfigKitPage : TemplatePage
     }
     private void OpenConfigDirectory(Tuple<string, OpenFileDirectoryTypes> parameter)
     {
-        var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
 
         if (item != null)
         {
@@ -225,34 +225,34 @@ public sealed partial class EditConfigKitPage : TemplatePage
 
     private void ReplaceConfig(ConfigItem newItem)
     {
-        var item = Configs.FirstOrDefault(x => x.FileName == newItem.file_name && x.PackId == newItem.packId);
+        var item = _configs.FirstOrDefault(x => x.FileName == newItem.file_name && x.PackId == newItem.packId);
 
         if (item != null)
         {
             item.DisplayName = string.IsNullOrEmpty(newItem.name) ? newItem.not_converted_name : newItem.name;
             item.LastEditTime = DateTime.Now.ToString();
-            ConfigHelper.SetConfigItem(newItem);
+            _configHelper.SetConfigItem(newItem);
         }
     }
 
 
     private async Task SaveKit()
     {
-        ToggleLoadingMode(true, localizer.GetLocalizedString("SavingConfigKit"));
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("SavingConfigKit"));
         List<ConfigItem> items = [];
-        items.AddRange(ConfigHelper.GetConfigItems());
+        items.AddRange(_configHelper.GetConfigItems());
         for (int i = 0; i < items.Count; i++)
         {
             ConfigItem configItem = items[i];
-            var item = Configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
+            var item = _configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
             if (item == null)
             {
                 string errorCode =
-                    ConfigHelper.RemoveConfig(configItem.file_name, configItem.packId, true);
+                    _configHelper.RemoveConfig(configItem.file_name, configItem.packId, true);
                 if (!string.IsNullOrEmpty(errorCode))
                 {
                     // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
-                    _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                    _ = ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
                     SaveButton.IsEnabled = true;
                     SaveAsButton.IsEnabled = true;
                     return;
@@ -264,7 +264,7 @@ public sealed partial class EditConfigKitPage : TemplatePage
                 if (!string.IsNullOrEmpty(errorCode))
                 {
                     // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
-                    _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                    _ = ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
                     SaveButton.IsEnabled = true;
                     SaveAsButton.IsEnabled = true;
                     return;
@@ -315,12 +315,12 @@ public sealed partial class EditConfigKitPage : TemplatePage
 
     private async void SaveAsButton_Click(object sender, RoutedEventArgs e)
     {
-        ToggleLoadingMode(true, localizer.GetLocalizedString("SavingConfigKit"));
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("SavingConfigKit"));
 
         SaveConfigKitAsContentDialog dialog = new()
         {
             XamlRoot = this.XamlRoot,
-            DisplayName = DatabaseHelper.Instance.GetItemById(KitId)?.ShortName + $" ({localizer.GetLocalizedString("Edited")})" ?? string.Empty,
+            DisplayName = DatabaseHelper.Instance.GetItemById(KitId)?.ShortName + $" ({_localizer.GetLocalizedString("Edited")})" ?? string.Empty,
         };
 
         await dialog.ShowQueuedAsync();
@@ -348,13 +348,13 @@ public sealed partial class EditConfigKitPage : TemplatePage
             };
 
             var operationResult = await Task.Run(() =>
-                ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), directory, autoImport: true));
+                ConfigPackMakeHelper.CreateConfigPack(templateModel, _configHelper.GetConfigItems(), directory, autoImport: true));
 
             if (operationResult?.Success != true)
             {
                 ErrorContentDialog errorDialog = new() { };
                 await errorDialog.ShowErrorDialogAsync(
-                    content: string.Format(localizer.GetLocalizedString("FileSaveErrorMessage"), directory, operationResult?.Error.ErrorCode),
+                    content: string.Format(_localizer.GetLocalizedString("FileSaveErrorMessage"), directory, operationResult?.Error.ErrorCode),
                     errorDetails: operationResult?.Error.FriendlyDescription,
                     xamlRoot: this.Content.XamlRoot);
             }
@@ -366,7 +366,7 @@ public sealed partial class EditConfigKitPage : TemplatePage
                 OverwritePrompt = true,
                 FileName = $"{result.DisplayName}.cdpiconfigpack",
                 DefaultExt = ".cdpiconfigpack",
-                Filter = $"{localizer.GetLocalizedString("ConfigPack")}|*.cdpiconfigpack"
+                Filter = $"{_localizer.GetLocalizedString("ConfigPack")}|*.cdpiconfigpack"
             };
             var saveDialogResult = _dialog.ShowDialog();
             if (saveDialogResult.HasValue && saveDialogResult.Value)
@@ -385,13 +385,13 @@ public sealed partial class EditConfigKitPage : TemplatePage
                 };
 
                 var operationResult = await Task.Run(() =>
-                    ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), filename));
+                    ConfigPackMakeHelper.CreateConfigPack(templateModel, _configHelper.GetConfigItems(), filename));
 
                 if (operationResult?.Success != true)
                 {
                     ErrorContentDialog errorDialog = new() { };
                     await errorDialog.ShowErrorDialogAsync(
-                        content: string.Format(localizer.GetLocalizedString("FileSaveErrorMessage"), _dialog.FileName, operationResult?.Error.ErrorCode),
+                        content: string.Format(_localizer.GetLocalizedString("FileSaveErrorMessage"), _dialog.FileName, operationResult?.Error.ErrorCode),
                         errorDetails: operationResult?.Error.FriendlyDescription,
                         xamlRoot: this.Content.XamlRoot);
                 }

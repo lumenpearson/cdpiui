@@ -27,14 +27,14 @@ namespace CDPIUI.Controls.MainPage;
 
 public sealed partial class WelcomePlaceholderUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public WelcomePlaceholderUserControl()
     {
         InitializeComponent();
 
-        LearnMoreAboutUIHyperlink.Content = localizer.GetLocalizedString("/Help/LearnMoreAboutUI");
-        FirstStepsHyperlink.Content = localizer.GetLocalizedString("/Help/FirstSteps");
-        AddingCustomSiteListsToConfigHyperlink.Content = localizer.GetLocalizedString("/Help/AddingCustomSiteListsToConfig");
+        LearnMoreAboutUIHyperlink.Content = _localizer.GetLocalizedString("/Help/LearnMoreAboutUI");
+        FirstStepsHyperlink.Content = _localizer.GetLocalizedString("/Help/FirstSteps");
+        AddingCustomSiteListsToConfigHyperlink.Content = _localizer.GetLocalizedString("/Help/AddingCustomSiteListsToConfig");
 
         StoreHelper.Instance.QueueUpdated += Store_QueueUpdated;
         Unloaded += WelcomePlaceholderUserControl_Unloaded;

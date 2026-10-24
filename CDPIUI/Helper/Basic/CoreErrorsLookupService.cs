@@ -6,13 +6,13 @@ namespace CDPIUI.Helper.Basic;
 public class CoreErrorsLookupService
 {
     private static CoreErrorsLookupService _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
 
     public static CoreErrorsLookupService Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new CoreErrorsLookupService();
                 return _instance;

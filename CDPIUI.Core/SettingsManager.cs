@@ -8,13 +8,13 @@ namespace CDPIUI.Core;
 public class SettingsManager : XMLSettingsService
 {
     private static SettingsManager? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static SettingsManager Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new SettingsManager();
                 return _instance;

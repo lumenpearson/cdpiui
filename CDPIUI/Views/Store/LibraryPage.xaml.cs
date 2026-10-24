@@ -57,7 +57,7 @@ public sealed partial class LibraryPage : TemplatePage
 {
     private ObservableCollection<LibraryItemModel> _libraryItems = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public LibraryPage()
     {
         InitializeComponent();
@@ -95,7 +95,7 @@ public sealed partial class LibraryPage : TemplatePage
                 string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
                 title = title.StartsWith("slocale:") ? item.ShortName : title;
 
-                string category = localizer.GetLocalizedString(item.Type);
+                string category = _localizer.GetLocalizedString(item.Type);
                 category = string.IsNullOrEmpty(category) ? item.Type : category;
 
                 BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));

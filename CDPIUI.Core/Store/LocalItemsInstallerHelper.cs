@@ -26,7 +26,7 @@ public class LocalItemInitModel
 
 public class LocalItemsInstallerHelper
 {
-    private readonly string TempDirectory;
+    private readonly string _tempDirectory;
 
     private const string AppTempDirectory = "TempFiles";
     private const string DownloadManagerDirectory = "Offline";
@@ -34,13 +34,13 @@ public class LocalItemsInstallerHelper
     public Action<string>? ErrorHappens;
 
     private static LocalItemsInstallerHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static LocalItemsInstallerHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new LocalItemsInstallerHelper();
                 return _instance;
@@ -58,13 +58,13 @@ public class LocalItemsInstallerHelper
     private LocalItemsInstallerHelper()
     {
         string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
-        TempDirectory = Path.Combine(localAppData, AppTempDirectory, DownloadManagerDirectory);
+        _tempDirectory = Path.Combine(localAppData, AppTempDirectory, DownloadManagerDirectory);
     }
 
     public async Task<LocalItemInitModel?> ImportStoreItemPackFile(string itemPackFile, Action<string>? onError = null)
     {
         string tempFolderName = FileSystemService.GetNewTempFileName("ap");
-        string tempDestination = Path.Combine(TempDirectory, tempFolderName);
+        string tempDestination = Path.Combine(_tempDirectory, tempFolderName);
 
         bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
         List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
@@ -93,7 +93,7 @@ public class LocalItemsInstallerHelper
                 // before the user had confirmed anything.
                 if (File.Exists(iconUrl) && IsPackImage(tempDestination, iconUrl))
                 {
-                    string newIconUrl = Path.Combine(TempDirectory, $"{tempFolderName}_ICONDATA", Path.GetFileName(iconUrl));
+                    string newIconUrl = Path.Combine(_tempDirectory, $"{tempFolderName}_ICONDATA", Path.GetFileName(iconUrl));
 
                     Directory.CreateDirectory(Path.GetDirectoryName(newIconUrl)!);
 
@@ -128,7 +128,7 @@ public class LocalItemsInstallerHelper
     public async Task BeginLocalItemInstalling(string itemPackFile, Action<string>? onError = null, CancellationToken cancellationToken = default)
     {
         string tempFolderName = FileSystemService.GetNewTempFileName("ap");
-        string tempDestination = Path.Combine(TempDirectory, tempFolderName);
+        string tempDestination = Path.Combine(_tempDirectory, tempFolderName);
 
         bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
         List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;

@@ -12,13 +12,13 @@ namespace CDPIUI.Core.Features;
 public class ApplicationUpdate
 {
     private static ApplicationUpdate? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static ApplicationUpdate Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new ApplicationUpdate();
                 return _instance;

@@ -30,16 +30,16 @@ public class SubItemModel
 }
 public sealed partial class SubItemInstallAskContentDialog : ContentDialog
 {
-    private ObservableCollection<SubItemModel> items = [];
+    private ObservableCollection<SubItemModel> _items = [];
     public SubItemInstallAskContentDialog(List<SubItemModel> _items)
     {
         InitializeComponent();
 
-        ItemsListView.ItemsSource = items;
+        ItemsListView.ItemsSource = _items;
 
         foreach (SubItemModel item in _items)
         {
-            items.Add(item);
+            _items.Add(item);
         }
     }
 }

@@ -31,14 +31,14 @@ public sealed partial class UtilityButtonControls : UserControl
     private static readonly TimeSpan RepositionAnimationDuration = HideAnimationDuration * 2;
     private static readonly TimeSpan ButtonSequenceGap = TimeSpan.FromMilliseconds(10);
 
-    private static ILocalizer localizer = Localizer.Get();
-    private readonly bool animationsEnabled;
-    private readonly HashSet<Button> configuredButtons = [];
-    private readonly Dictionary<Button, long> visibilityCallbackTokens = [];
-    private readonly Dictionary<Button, Visibility> requestedVisibilityStates = [];
-    private CancellationTokenSource visibilitySequenceCancellation;
-    private Frame navigationFrame;
-    private Page navigationPage;
+    private static ILocalizer _localizer = Localizer.Get();
+    private readonly bool _animationsEnabled;
+    private readonly HashSet<Button> _configuredButtons = [];
+    private readonly Dictionary<Button, long> _visibilityCallbackTokens = [];
+    private readonly Dictionary<Button, Visibility> _requestedVisibilityStates = [];
+    private CancellationTokenSource _visibilitySequenceCancellation;
+    private Frame _navigationFrame;
+    private Page _navigationPage;
 
     public ObservableCollection<Button> Items { get; } = [];
 
@@ -46,7 +46,7 @@ public sealed partial class UtilityButtonControls : UserControl
     {
         InitializeComponent();
 
-        animationsEnabled = new UISettings().AnimationsEnabled;
+        _animationsEnabled = new UISettings().AnimationsEnabled;
         Items.CollectionChanged += Items_CollectionChanged;
         Loaded += UtilityButtonControls_Loaded;
         Unloaded += UtilityButtonControls_Unloaded;
@@ -57,7 +57,7 @@ public sealed partial class UtilityButtonControls : UserControl
         Loaded -= UtilityButtonControls_Loaded;
         Unloaded -= UtilityButtonControls_Unloaded;
 
-        if (!animationsEnabled)
+        if (!_animationsEnabled)
             return;
 
         DetachFromNavigationFrame();
@@ -66,7 +66,7 @@ public sealed partial class UtilityButtonControls : UserControl
 
     private void UtilityButtonControls_Loaded(object sender, RoutedEventArgs e)
     {
-        if (!animationsEnabled)
+        if (!_animationsEnabled)
             return;
 
         AttachToNavigationFrame();
@@ -84,9 +84,9 @@ public sealed partial class UtilityButtonControls : UserControl
         {
             if (current is Page page && page.Frame is Frame frame)
             {
-                navigationPage = page;
-                navigationFrame = frame;
-                navigationFrame.Navigating += NavigationFrame_Navigating;
+                _navigationPage = page;
+                _navigationFrame = frame;
+                _navigationFrame.Navigating += NavigationFrame_Navigating;
                 return;
             }
 
@@ -96,18 +96,18 @@ public sealed partial class UtilityButtonControls : UserControl
 
     private void DetachFromNavigationFrame()
     {
-        if (navigationFrame is null)
+        if (_navigationFrame is null)
             return;
 
-        navigationFrame.Navigating -= NavigationFrame_Navigating;
-        navigationFrame = null;
-        navigationPage = null;
+        _navigationFrame.Navigating -= NavigationFrame_Navigating;
+        _navigationFrame = null;
+        _navigationPage = null;
     }
 
     private void NavigationFrame_Navigating(object sender, NavigatingCancelEventArgs e)
     {
-        Frame currentFrame = navigationFrame;
-        Page currentPage = navigationPage;
+        Frame currentFrame = _navigationFrame;
+        Page currentPage = _navigationPage;
         DetachFromNavigationFrame();
         SuspendVisibilityAnimations();
 
@@ -121,13 +121,13 @@ public sealed partial class UtilityButtonControls : UserControl
             foreach (Button button in Items)
                 PrepareVisibilityAnimations(button);
 
-            if (requestedVisibilityStates.Count == 0)
+            if (_requestedVisibilityStates.Count == 0)
                 return;
 
             (Button Button, Visibility Visibility)[] states =
-                new (Button, Visibility)[requestedVisibilityStates.Count];
+                new (Button, Visibility)[_requestedVisibilityStates.Count];
             int stateIndex = 0;
-            foreach (KeyValuePair<Button, Visibility> state in requestedVisibilityStates)
+            foreach (KeyValuePair<Button, Visibility> state in _requestedVisibilityStates)
                 states[stateIndex++] = (state.Key, state.Value);
 
             SetButtonVisibilities(states);
@@ -136,11 +136,11 @@ public sealed partial class UtilityButtonControls : UserControl
 
     private void SuspendVisibilityAnimations()
     {
-        visibilitySequenceCancellation?.Cancel();
+        _visibilitySequenceCancellation?.Cancel();
 
-        foreach (Button button in configuredButtons)
+        foreach (Button button in _configuredButtons)
         {
-            if (visibilityCallbackTokens.TryGetValue(button, out long callbackToken))
+            if (_visibilityCallbackTokens.TryGetValue(button, out long callbackToken))
             {
                 button.UnregisterPropertyChangedCallback(
                     UIElement.VisibilityProperty,
@@ -158,8 +158,8 @@ public sealed partial class UtilityButtonControls : UserControl
             visual.ImplicitAnimations?.Remove("Offset");
         }
 
-        visibilityCallbackTokens.Clear();
-        configuredButtons.Clear();
+        _visibilityCallbackTokens.Clear();
+        _configuredButtons.Clear();
     }
 
     private void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -172,14 +172,14 @@ public sealed partial class UtilityButtonControls : UserControl
             if (button.MinWidth < ActionButtonMinWidth)
                 button.MinWidth = ActionButtonMinWidth;
 
-            if (animationsEnabled && IsLoaded)
+            if (_animationsEnabled && IsLoaded)
                 PrepareVisibilityAnimations(button);
         }
     }
 
     private void PrepareVisibilityAnimations(Button button)
     {
-        if (!configuredButtons.Add(button))
+        if (!_configuredButtons.Add(button))
             return;
 
         if (button.IsLoaded)
@@ -254,7 +254,7 @@ public sealed partial class UtilityButtonControls : UserControl
 
                 SuppressRepositionForCurrentShow(targetButton, compositor);
             });
-        visibilityCallbackTokens[button] = callbackToken;
+        _visibilityCallbackTokens[button] = callbackToken;
     }
 
     public void SetButtonVisibilities(params (Button Button, Visibility Visibility)[] states)
@@ -266,18 +266,18 @@ public sealed partial class UtilityButtonControls : UserControl
                 requestedStates[button] = visibility;
         }
 
-        if (visibilitySequenceCancellation is { IsCancellationRequested: false } &&
-            AreSameStates(requestedStates, requestedVisibilityStates))
+        if (_visibilitySequenceCancellation is { IsCancellationRequested: false } &&
+            AreSameStates(requestedStates, _requestedVisibilityStates))
         {
             return;
         }
 
-        visibilitySequenceCancellation?.Cancel();
-        requestedVisibilityStates.Clear();
+        _visibilitySequenceCancellation?.Cancel();
+        _requestedVisibilityStates.Clear();
         foreach (KeyValuePair<Button, Visibility> state in requestedStates)
-            requestedVisibilityStates[state.Key] = state.Value;
+            _requestedVisibilityStates[state.Key] = state.Value;
 
-        if (!animationsEnabled || !IsLoaded)
+        if (!_animationsEnabled || !IsLoaded)
         {
             foreach (Button button in Items)
             {
@@ -309,7 +309,7 @@ public sealed partial class UtilityButtonControls : UserControl
             return;
 
         CancellationTokenSource cancellation = new();
-        visibilitySequenceCancellation = cancellation;
+        _visibilitySequenceCancellation = cancellation;
         _ = RunVisibilitySequenceAsync(hiddenButtons, shownButtons, cancellation);
     }
 
@@ -378,8 +378,8 @@ public sealed partial class UtilityButtonControls : UserControl
         }
         finally
         {
-            if (ReferenceEquals(visibilitySequenceCancellation, cancellation))
-                visibilitySequenceCancellation = null;
+            if (ReferenceEquals(_visibilitySequenceCancellation, cancellation))
+                _visibilitySequenceCancellation = null;
 
             cancellation.Dispose();
         }
@@ -514,7 +514,7 @@ public sealed partial class UtilityButtonControls : UserControl
 
     public static readonly DependencyProperty LoadingStateTextProperty =
         DependencyProperty.Register(
-            nameof(LoadingStateText), typeof(string), typeof(UtilityButtonControls), new PropertyMetadata(localizer.GetLocalizedString("WorkingOnIt"))
+            nameof(LoadingStateText), typeof(string), typeof(UtilityButtonControls), new PropertyMetadata(_localizer.GetLocalizedString("WorkingOnIt"))
         );
 
 

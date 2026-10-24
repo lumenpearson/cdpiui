@@ -14,13 +14,13 @@ namespace CDPIUI.Core;
 public class CoreEvents
 {
     private static CoreEvents? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
 
     public static CoreEvents Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new CoreEvents();
                 return _instance;
