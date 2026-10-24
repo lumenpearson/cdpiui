@@ -1,4 +1,3 @@
-using CDPIUI.AddOns.BlockCheck2.Analysis;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Synthesis;
 
@@ -40,30 +39,7 @@ public sealed class BlockCheckPresetValidationService
         ProbeResult[] originalProbeResults = scanProbeResults.ToArray();
         ProbeResult[] baselineResults = baselineProbeResults.ToArray();
         List<BlockCheckIssue> issues = [];
-        if (!initialSynthesis.Success)
-        {
-            issues.Add(BlockCheckScanIssues.Error(
-                "PRESET_SYNTHESIS_INVALID",
-                "Preset validation requires a successful initial synthesis result."));
-        }
-
-        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
-        {
-            return Result(false, [], initialSynthesis, issues);
-        }
-
-        if (!options.Enabled)
-        {
-            return Result(false, [], initialSynthesis, issues);
-        }
-
-        issues.AddRange(ValidateOptions(options));
-        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
-        {
-            return Result(false, [], initialSynthesis, issues);
-        }
-
-        if (initialSynthesis.Profiles.Count == 0)
+        if (!IsValidationRequired(initialSynthesis, options, issues))
         {
             return Result(false, [], initialSynthesis, issues);
         }
@@ -107,6 +83,37 @@ public sealed class BlockCheckPresetValidationService
         }
 
         return Result(true, attempts, repairLoop.CurrentSynthesis, issues);
+    }
+
+    private static bool IsValidationRequired(
+        BlockCheckSynthesisResult initialSynthesis,
+        BlockCheckPresetValidationOptions options,
+        List<BlockCheckIssue> issues)
+    {
+        if (!initialSynthesis.Success)
+        {
+            issues.Add(BlockCheckScanIssues.Error(
+                "PRESET_SYNTHESIS_INVALID",
+                "Preset validation requires a successful initial synthesis result."));
+        }
+
+        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
+        {
+            return false;
+        }
+
+        if (!options.Enabled)
+        {
+            return false;
+        }
+
+        issues.AddRange(ValidateOptions(options));
+        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
+        {
+            return false;
+        }
+
+        return initialSynthesis.Profiles.Count > 0;
     }
 
     /// <summary>

@@ -1,4 +1,3 @@
-using CDPIUI.AddOns.BlockCheck2.Analysis;
 using CDPIUI.AddOns.BlockCheck2.Catalog;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Synthesis;
@@ -41,19 +40,7 @@ public sealed class BlockCheckScanService
         ];
 
         ValidateOptions(options, issues);
-
-        HashSet<string> catalogIds = catalog.Strategies
-            .Select(strategy => strategy.Id)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        HashSet<string>? selectedIds = options.StrategyIds?
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (selectedIds != null)
-        {
-            foreach (string unknownId in selectedIds.Where(id => !catalogIds.Contains(id)))
-            {
-                issues.Add(BlockCheckScanIssues.Error("SCAN_STRATEGY_UNKNOWN", "Requested strategy is absent from the catalog.", unknownId));
-            }
-        }
+        HashSet<string>? selectedIds = GetSelectedStrategyIds(catalog, options, issues);
 
         if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
         {
@@ -143,43 +130,25 @@ public sealed class BlockCheckScanService
             };
         }
 
-        int successfulChecks = baselineResults.Sum(result => result.Attempts.Count(attempt => attempt.Success));
-        int failedChecks = baselineResults.Sum(result => result.Attempts.Count(attempt => !attempt.Success));
-
         HashSet<string> ignoredTargetIds = BlockCheckScanPlanner.FindDnsUnresolvedTargets(baselineResults, options);
         BlockCheckTarget[] activeTargets = targetArray
             .Where(target => !ignoredTargetIds.Contains(target.Id))
             .ToArray();
         if (ignoredTargetIds.Count > 0)
-        {
             issues.Add(BlockCheckScanPlanner.CreateDnsTargetsIgnoredIssue(targetArray, ignoredTargetIds));
-        }
 
         if (activeTargets.Length == 0)
         {
             issues.Add(BlockCheckScanIssues.Error(
                 "NO_RESOLVABLE_TARGETS",
                 "None of the requested URLs has an address in the selected DNS resolver."));
-            return new BlockCheckScanResult
-            {
-                BaselineResults = baselineResults,
-                IgnoredTargetIds = ignoredTargetIds,
-                Issues = issues,
-            };
+            return StoppedAfterBaseline(baselineResults, ignoredTargetIds, issues);
         }
 
         BlockCheckRouteScanGroup[] routes = BlockCheckScanPlanner.BuildRoutes(activeTargets, baselineResults, options);
 
-        StrategyDefinition[] strategies = BlockCheckScanPlanner.OrderStrategiesProgressively(catalog.Strategies
-            .Where(strategy => selectedIds != null
-                ? selectedIds.Contains(strategy.Id)
-                : strategy.ScanTier <= options.MaximumTier));
-
-        Dictionary<string, StrategyDefinition[]> strategiesByRoute = routes.ToDictionary(
-            route => route.Key,
-            route => strategies
-                .Where(strategy => route.Targets.All(strategy.AppliesTo))
-                .ToArray());
+        Dictionary<string, StrategyDefinition[]> strategiesByRoute =
+            BlockCheckScanPlanner.AssignStrategies(catalog.Strategies, routes, selectedIds, options);
         int totalJobs = strategiesByRoute.Values.Sum(routeStrategies => routeStrategies.Length);
 
         if (routes.Length > 0 && totalJobs == 0)
@@ -187,12 +156,7 @@ public sealed class BlockCheckScanService
             issues.Add(BlockCheckScanIssues.Error(
                 "SCAN_NO_APPLICABLE_STRATEGIES",
                 "No selected catalog strategy applies to every target in the requested runtime routes."));
-            return new BlockCheckScanResult
-            {
-                BaselineResults = baselineResults,
-                IgnoredTargetIds = ignoredTargetIds,
-                Issues = issues,
-            };
+            return StoppedAfterBaseline(baselineResults, ignoredTargetIds, issues);
         }
 
         var sweep = new BlockCheckStrategySweep(
@@ -203,8 +167,7 @@ public sealed class BlockCheckScanService
             progress,
             issues,
             totalJobs,
-            successfulChecks,
-            failedChecks,
+            baselineResults,
             cancellationToken);
         await sweep.RunAsync(routes, strategiesByRoute).ConfigureAwait(false);
 
@@ -221,6 +184,37 @@ public sealed class BlockCheckScanService
             Issues = issues,
             WasCanceled = sweep.WasCanceled,
         };
+    }
+
+    private static BlockCheckScanResult StoppedAfterBaseline(
+        IReadOnlyList<ProbeResult> baselineResults,
+        HashSet<string> ignoredTargetIds,
+        List<BlockCheckIssue> issues) => new()
+        {
+            BaselineResults = baselineResults,
+            IgnoredTargetIds = ignoredTargetIds,
+            Issues = issues,
+        };
+
+    private static HashSet<string>? GetSelectedStrategyIds(
+        StrategyCatalog catalog,
+        BlockCheckScanOptions options,
+        ICollection<BlockCheckIssue> issues)
+    {
+        HashSet<string> catalogIds = catalog.Strategies
+            .Select(strategy => strategy.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        HashSet<string>? selectedIds = options.StrategyIds?
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (selectedIds != null)
+        {
+            foreach (string unknownId in selectedIds.Where(id => !catalogIds.Contains(id)))
+            {
+                issues.Add(BlockCheckScanIssues.Error("SCAN_STRATEGY_UNKNOWN", "Requested strategy is absent from the catalog.", unknownId));
+            }
+        }
+
+        return selectedIds;
     }
 
     private static void ValidateOptions(
