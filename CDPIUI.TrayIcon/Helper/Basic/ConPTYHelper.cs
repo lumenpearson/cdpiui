@@ -2,26 +2,14 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32.SafeHandles;
+using static CDPIUI.TrayIcon.Helper.Basic.ConPTYNativeMethods;
 
 namespace CDPIUI.TrayIcon.Helper;
 
-public sealed class ConPTYCaptureResult
-{
-    public string Output { get; init; } = string.Empty;
-    public int ExitCode { get; init; }
-    public bool TimedOut { get; init; }
-}
-
-enum StopActionCallers
-{
-    Unknown,
-    User
-}
 public class ConPTYHelper
 {
     private CancellationTokenSource? _cancellationTokenSource;
@@ -42,44 +30,6 @@ public class ConPTYHelper
     private readonly string _prefix = string.Empty;
 
     private StopActionCallers _stopActionCaller = StopActionCallers.Unknown;
-
-    // Checked in this order and the first match of a line wins: with the dictionary every
-    // matching key overwrote the previous one, so "Error opening filter" became UNKNOWN
-    // through the generic "error" key.
-    static readonly (string Text, PrettyErrorCode Code)[] ErrorMappings =
-    {
-        ("Error opening filter", PrettyErrorCode.FILTER_OPEN_ERROR),
-        ("unknown option", PrettyErrorCode.PARAMETER_ERROR),
-        ("hostlists load failed", PrettyErrorCode.HOSTLIST_LOAD_ERROR),
-        ("must specify port filter", PrettyErrorCode.PORT_FILTER_ERROR),
-        ("must specify port or/and partial raw filter", PrettyErrorCode.PORT_FILTER_WRONG_VALUE_ERROR),
-        ("ERROR:", PrettyErrorCode.UNKNOWN),
-        ("Component not installed correctly", PrettyErrorCode.COMPONENT_INSTALL_ERROR),
-        ("error", PrettyErrorCode.UNKNOWN),
-        ("invalid value", PrettyErrorCode.INVALID_VALUE_ERROR),
-        ("nvalid value", PrettyErrorCode.INVALID_VALUE_ERROR),
-        ("option requires an argument", PrettyErrorCode.INVALID_VALUE_ERROR),
-        ("--debug=0|1|syslog|@<filename>", PrettyErrorCode.PARAMETER_ERROR),
-        ("already running", PrettyErrorCode.ALREADY_RUNNING_WARN),
-        ("could not read", PrettyErrorCode.FILE_READ_ERROR),
-        ("flag provided but not defined:", PrettyErrorCode.PARAMETER_ERROR),
-        ("cannot create", PrettyErrorCode.ACCESS_DENIED),
-        ("cannot access", PrettyErrorCode.ACCESS_DENIED)
-    };
-
-    private static PrettyErrorCode? FindError(string output)
-    {
-        PrettyErrorCode? generic = null;
-        foreach (var (text, code) in ErrorMappings)
-        {
-            if (!output.Contains(text, StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (code != PrettyErrorCode.UNKNOWN)
-                return code;
-            generic ??= code;
-        }
-        return generic;
-    }
 
     public bool processState { get; private set; } = false;
 
@@ -125,241 +75,16 @@ public class ConPTYHelper
 
     private readonly SemaphoreSlim _processLock = new SemaphoreSlim(1, 1);
 
-    public static async Task<ConPTYCaptureResult> CaptureProcessOutputAsync(
+    private const uint ProcessExitWaitMs = 5000;
+
+    public static Task<ConPTYCaptureResult> CaptureProcessOutputAsync(
         string exePath,
         string args,
         string workingDirectory,
         TimeSpan timeout,
         CancellationToken cancellationToken = default)
     {
-        IntPtr pseudoConsoleHandle = IntPtr.Zero;
-        IntPtr hInputRead = IntPtr.Zero;
-        IntPtr hInputWrite = IntPtr.Zero;
-        IntPtr hOutputRead = IntPtr.Zero;
-        IntPtr hOutputWrite = IntPtr.Zero;
-        IntPtr attributeList = IntPtr.Zero;
-        PROCESS_INFORMATION processInfo = default;
-        Task? outputTask = null;
-        StringBuilder output = new();
-        bool timedOut = false;
-        bool canceled = false;
-        int exitCode = -1;
-        ExecutableLease? lease = null;
-
-        try
-        {
-            lease = await ExecutableTrust.AcquireAsync(exePath, "help output capture")
-                ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
-
-            CreatePipe(out hInputRead, out hInputWrite, false);
-            CreatePipe(out hOutputRead, out hOutputWrite, false);
-
-            COORD size = new() { X = 4096, Y = 50 };
-            uint result = CreatePseudoConsole(
-                size,
-                hInputRead,
-                hOutputWrite,
-                0,
-                out pseudoConsoleHandle);
-            if (result != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Unable to create PseudoConsole, error: {result}");
-            }
-
-            CloseHandle(hInputRead);
-            hInputRead = IntPtr.Zero;
-            CloseHandle(hOutputWrite);
-            hOutputWrite = IntPtr.Zero;
-
-            STARTUPINFOEX startupInfo = new()
-            {
-                StartupInfo = new STARTUPINFO
-                {
-                    cb = Marshal.SizeOf<STARTUPINFOEX>(),
-                    dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW,
-                    wShowWindow = SW_HIDE,
-                },
-            };
-
-            IntPtr attributeListSize = IntPtr.Zero;
-            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attributeListSize);
-            attributeList = Marshal.AllocHGlobal(attributeListSize);
-            if (!InitializeProcThreadAttributeList(attributeList, 1, 0, ref attributeListSize))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot initialize process attributes, error: {Marshal.GetLastWin32Error()}");
-            }
-
-            if (!UpdateProcThreadAttribute(
-                attributeList,
-                0,
-                (IntPtr)PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-                pseudoConsoleHandle,
-                (IntPtr)IntPtr.Size,
-                IntPtr.Zero,
-                IntPtr.Zero))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot attach PseudoConsole, error: {Marshal.GetLastWin32Error()}");
-            }
-
-            startupInfo.lpAttributeList = attributeList;
-            string resolvedWorkingDirectory = string.IsNullOrWhiteSpace(workingDirectory)
-                ? Path.GetDirectoryName(exePath) ?? Environment.CurrentDirectory
-                : workingDirectory;
-            bool started = CreateProcess(
-                null,
-                new StringBuilder($"\"{exePath}\" {args}"),
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
-                IntPtr.Zero,
-                resolvedWorkingDirectory,
-                ref startupInfo,
-                out processInfo);
-            if (!started)
-            {
-                throw new InvalidOperationException(
-                    $"Cannot start process, error: {Marshal.GetLastWin32Error()}");
-            }
-            // Kept until the process exits (finally below), like the lease of a component start.
-
-            ChildProcessJob.Assign(processInfo.hProcess);
-            CloseHandle(processInfo.hThread);
-            processInfo.hThread = IntPtr.Zero;
-
-            SafeFileHandle safeOutputHandle = new(hOutputRead, ownsHandle: true);
-            hOutputRead = IntPtr.Zero;
-            outputTask = ReadCaptureOutputAsync(safeOutputHandle, output);
-
-            using CancellationTokenSource timeoutSource = new(timeout);
-            using CancellationTokenSource linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken,
-                timeoutSource.Token);
-            try
-            {
-                await WaitForProcessExitAsync(processInfo, linkedSource.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                canceled = cancellationToken.IsCancellationRequested;
-                timedOut = !canceled && timeoutSource.IsCancellationRequested;
-                TerminateProcess(processInfo.hProcess, 1);
-                WaitForSingleObject(processInfo.hProcess, INFINITE);
-            }
-
-            if (GetExitCodeProcess(processInfo.hProcess, out uint nativeExitCode))
-            {
-                exitCode = unchecked((int)nativeExitCode);
-            }
-
-            ClosePseudoConsole(pseudoConsoleHandle);
-            pseudoConsoleHandle = IntPtr.Zero;
-            CloseHandle(hInputWrite);
-            hInputWrite = IntPtr.Zero;
-
-            try
-            {
-                await outputTask;
-            }
-            catch (IOException)
-            {
-                // pass
-            }
-
-            if (canceled)
-            {
-                throw new OperationCanceledException(cancellationToken);
-            }
-
-            return new ConPTYCaptureResult
-            {
-                Output = output.ToString(),
-                ExitCode = exitCode,
-                TimedOut = timedOut,
-            };
-        }
-        finally
-        {
-            lease?.Dispose();
-            if (processInfo.hProcess != IntPtr.Zero)
-            {
-                if (WaitForSingleObject(processInfo.hProcess, 0) == WAIT_TIMEOUT)
-                {
-                    TerminateProcess(processInfo.hProcess, 1);
-                    WaitForSingleObject(processInfo.hProcess, INFINITE);
-                }
-                CloseHandle(processInfo.hProcess);
-            }
-            if (processInfo.hThread != IntPtr.Zero)
-            {
-                CloseHandle(processInfo.hThread);
-            }
-            if (attributeList != IntPtr.Zero)
-            {
-                DeleteProcThreadAttributeList(attributeList);
-                Marshal.FreeHGlobal(attributeList);
-            }
-            if (pseudoConsoleHandle != IntPtr.Zero)
-            {
-                ClosePseudoConsole(pseudoConsoleHandle);
-            }
-            if (hInputRead != IntPtr.Zero)
-            {
-                CloseHandle(hInputRead);
-            }
-            if (hInputWrite != IntPtr.Zero)
-            {
-                CloseHandle(hInputWrite);
-            }
-            if (hOutputRead != IntPtr.Zero)
-            {
-                CloseHandle(hOutputRead);
-            }
-            if (hOutputWrite != IntPtr.Zero)
-            {
-                CloseHandle(hOutputWrite);
-            }
-
-            if (outputTask != null && !outputTask.IsCompleted)
-            {
-                try
-                {
-                    await outputTask;
-                }
-                catch
-                {
-                    // The capture has already failed and its handles are closed; a read error
-                    // here only follows from that and must not replace the first exception.
-                }
-            }
-        }
-    }
-
-    private static async Task ReadCaptureOutputAsync(
-        SafeFileHandle outputHandle,
-        StringBuilder output)
-    {
-        using FileStream stream = new(outputHandle, FileAccess.Read, 4096, isAsync: false);
-        using StreamReader reader = new(stream, Encoding.UTF8, true, 4096, leaveOpen: false);
-        char[] buffer = new char[4096];
-        int charsRead;
-        while ((charsRead = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            output.Append(buffer, 0, charsRead);
-        }
-    }
-
-    private static async Task WaitForProcessExitAsync(
-        PROCESS_INFORMATION processInfo,
-        CancellationToken cancellationToken)
-    {
-        while (WaitForSingleObject(processInfo.hProcess, 100) == WAIT_TIMEOUT)
-        {
-            await Task.Delay(25, cancellationToken);
-        }
+        return ConPTYOutputCapture.CaptureAsync(exePath, args, workingDirectory, timeout, cancellationToken);
     }
 
     // Not awaited by the callers: the lock is held by a running component until it exits.
@@ -439,103 +164,24 @@ public class ConPTYHelper
     private async Task RunProcessWithConPTYCoreAsync(string exePath, string args, string workingDirectory, CancellationTokenSource cancellationTokenSource)
     {
         CancellationToken token = cancellationTokenSource.Token;
-        IntPtr pseudoConsoleHandle = IntPtr.Zero;
         IntPtr hInputRead = IntPtr.Zero;
-        IntPtr hInputWrite = IntPtr.Zero;
-        IntPtr hOutputRead = IntPtr.Zero;
         IntPtr hOutputWrite = IntPtr.Zero;
         IntPtr lpAttrList = IntPtr.Zero;
         var pi = new PROCESS_INFORMATION();
 
-        PrettyErrorCode lastError = PrettyErrorCode.SUCCESS;
+        var outputReader = new ConPTYOutputReader(_prefix, AppendOutput);
         ExecutableLease? lease = null;
 
         try
         {
-            // The arguments come from the UI; an option that writes a file must stay in the
-            // application directories, because the component runs with administrator rights.
-            string? unsafeOption = FileWritingOptions.FindOutsideWrite(
-                args,
-                TrustedPaths.AllowedRoots,
-                string.IsNullOrWhiteSpace(workingDirectory) ? Path.GetDirectoryName(exePath) : workingDirectory,
-                followArgumentFiles: true);
-            if (unsafeOption != null)
-                throw new UnauthorizedAccessException($"The arguments write a file outside the application directories: {unsafeOption}");
+            EnsureArgumentsWriteInsideAllowedRoots(exePath, args, workingDirectory);
 
             lease = await ExecutableTrust.AcquireAsync(exePath, "process start")
                 ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
 
-            CreatePipe(out hInputRead, out hInputWrite, false);
-            CreatePipe(out hOutputRead, out hOutputWrite, false);
-
-            _hInputWrite = hInputWrite;
-            _hOutputRead = hOutputRead;
-
-            uint consoleSizeX = 80;
-            uint consoleSizeY = 25;
-            var size = new COORD { X = (short)consoleSizeX, Y = (short)consoleSizeY };
-            var hr = CreatePseudoConsole(size, hInputRead, hOutputWrite, 0, out pseudoConsoleHandle);
-
-            if (hr != 0)
-            {
-                // An HRESULT: the error converter maps it like other system errors.
-                throw new COMException("Unable to create PseudoConsole.", unchecked((int)hr));
-            }
-
-            _pseudoConsoleHandle = pseudoConsoleHandle;
-
-            CloseHandle(hInputRead);
-            hInputRead = IntPtr.Zero;
-            CloseHandle(hOutputWrite);
-            hOutputWrite = IntPtr.Zero;
-
-            var si = new STARTUPINFOEX
-            {
-                StartupInfo = new STARTUPINFO
-                {
-                    cb = Marshal.SizeOf(typeof(STARTUPINFOEX)),
-                    dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW,
-                    wShowWindow = SW_HIDE
-                }
-            };
-
-            var lpSize = IntPtr.Zero;
-
-            InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref lpSize);
-            lpAttrList = Marshal.AllocHGlobal(lpSize);
-            if (!InitializeProcThreadAttributeList(lpAttrList, 1, 0, ref lpSize))
-            {
-                // Read before FreeHGlobal, which can change the last error.
-                int error = Marshal.GetLastWin32Error();
-                Marshal.FreeHGlobal(lpAttrList);
-                lpAttrList = IntPtr.Zero;
-                throw new Win32Exception(error, "Cannot initialize process attributes.");
-            }
-
-            UpdateProcThreadAttribute(lpAttrList, 0, (IntPtr)PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, _pseudoConsoleHandle, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero);
-
-            si.lpAttributeList = lpAttrList;
-
-            // CreateProcessW: CreateProcessA turned characters outside the ANSI code page of
-            // the system into '?' in paths and arguments.
-            var success = CreateProcess(
-                null,
-                new StringBuilder($"\"{exePath}\" {args}"),
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
-                IntPtr.Zero,
-                workingDirectory,
-                ref si,
-                out pi);
-
-            if (!success)
-            {
-                // Win32Exception keeps the error code, so "file not found" or "access denied"
-                // reach the GUI as such instead of an unknown error.
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot start process.");
-            }
+            CreatePseudoConsoleWithPipes(ref hInputRead, ref hOutputWrite);
+            lpAttrList = CreateAttributeList();
+            StartProcess(exePath, args, workingDirectory, lpAttrList, ref pi);
             // The lease stays until the process exits (finally below): the child maps its DLLs
             // after CreateProcess returns and can load more later, and a user process could
             // replace them in the item folder the moment the lease was released.
@@ -548,59 +194,13 @@ public class ConPTYHelper
             var safeOutputReadHandle = new SafeFileHandle(_hOutputRead, ownsHandle: true);
             _hOutputRead = IntPtr.Zero;
 
-            _ = Task.Run(() => CheckProcessState(pi, cancellationTokenSource));
+            _ = Task.Run(() => ConPTYProcessWatcher.CancelOnExitAsync(pi, cancellationTokenSource));
 
-            using (var reader = new FileStream(safeOutputReadHandle, FileAccess.Read))
-            {
-                byte[] buffer = new byte[4096];
-                char[] chars = new char[Encoding.UTF8.GetMaxCharCount(buffer.Length)];
-                // Keeps a multi-byte character that is split between two reads.
-                Decoder decoder = Encoding.UTF8.GetDecoder();
-                int bytesRead;
-
-
-                while (!token.IsCancellationRequested)
-                {
-                    bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length, cancellationToken: token);
-                    // The pipe was closed: reading again returns 0 at once and spun the loop.
-                    if (bytesRead == 0)
-                        break;
-
-                    string _output = new string(chars, 0, decoder.GetChars(buffer, 0, bytesRead, chars, 0));
-
-                    // A specific error stays; a later generic match does not overwrite it.
-                    PrettyErrorCode? found = FindError(_output);
-                    if (found != null && (lastError == PrettyErrorCode.SUCCESS || found != PrettyErrorCode.UNKNOWN))
-                        lastError = found.Value;
-
-                    if (!string.IsNullOrEmpty(_prefix) && !string.IsNullOrEmpty(_output))
-                    {
-                        string newOutput = string.Empty;
-                        foreach (string str in _output.Split("\n"))
-                        {
-                            newOutput += $"[{_prefix}] {str}\n";
-                        }
-                        _output = newOutput;
-                    }
-
-                    lock (_outputLock)
-                    {
-                        if (_outputDefaultBuffer.Length > 5000)
-                        {
-                            _outputDefaultBuffer.Clear();
-                        }
-
-                        _outputDefaultBuffer.Append(_output);
-                    }
-
-                    OutputAdded?.Invoke(_output);
-                }
-            }
-
+            await outputReader.ReadAsync(safeOutputReadHandle, token);
         }
         catch (OperationCanceledException)
         {
-
+            PrettyErrorCode lastError = outputReader.LastError;
             Logger.Instance.CreateInfoLog(nameof(ConPTYHelper), $"Process will be stopped {lastError}.");
             if (lastError != PrettyErrorCode.SUCCESS && _stopActionCaller == StopActionCallers.Unknown)
                 ShowErrorMessage(lastError);
@@ -614,44 +214,9 @@ public class ConPTYHelper
         finally
         {
             lease?.Dispose();
-            // The process handle was left open on the cancel and error paths.
-            if (pi.hProcess != IntPtr.Zero)
-            {
-                if (WaitForSingleObject(pi.hProcess, 0) == WAIT_TIMEOUT)
-                {
-                    TerminateProcess(pi.hProcess, 0);
-                    WaitForSingleObject(pi.hProcess, ProcessExitWaitMs);
-                }
-                CloseHandle(pi.hProcess);
-            }
-            if (lpAttrList != IntPtr.Zero)
-            {
-                DeleteProcThreadAttributeList(lpAttrList);
-                Marshal.FreeHGlobal(lpAttrList);
-            }
-            if (_pseudoConsoleHandle != IntPtr.Zero)
-            {
-                ClosePseudoConsole(_pseudoConsoleHandle);
-                _pseudoConsoleHandle = IntPtr.Zero;
-            }
-            if (_hInputWrite != IntPtr.Zero)
-            {
-                CloseHandle(_hInputWrite);
-                _hInputWrite = IntPtr.Zero;
-            }
-            // Pipes of a failed CreatePseudoConsole.
-            if (hInputRead != IntPtr.Zero)
-                CloseHandle(hInputRead);
-            if (hOutputWrite != IntPtr.Zero)
-                CloseHandle(hOutputWrite);
-            if (_hOutputRead != IntPtr.Zero)
-            {
-                CloseHandle(_hOutputRead);
-                _hOutputRead = IntPtr.Zero;
-            }
+            CloseRunHandles(pi, lpAttrList, hInputRead, hOutputWrite);
 
             SendStopMessage("Process will be stopped");
-
 
             processState = false;
             ChangeProcessState(processState);
@@ -659,18 +224,130 @@ public class ConPTYHelper
         }
     }
 
-    // Cancels the source of its own run: the field may already hold the source of a newer run.
-    private async Task CheckProcessState(PROCESS_INFORMATION pi, CancellationTokenSource cancellationTokenSource)
+    // The arguments come from the UI; an option that writes a file must stay in the
+    // application directories, because the component runs with administrator rights.
+    private static void EnsureArgumentsWriteInsideAllowedRoots(string exePath, string args, string workingDirectory)
     {
-        while (!cancellationTokenSource.IsCancellationRequested)
+        string? unsafeOption = FileWritingOptions.FindOutsideWrite(
+            args,
+            TrustedPaths.AllowedRoots,
+            string.IsNullOrWhiteSpace(workingDirectory) ? Path.GetDirectoryName(exePath) : workingDirectory,
+            followArgumentFiles: true);
+        if (unsafeOption != null)
+            throw new UnauthorizedAccessException($"The arguments write a file outside the application directories: {unsafeOption}");
+    }
+
+    // The console sides of the pipes are closed here once the pseudo console holds them; the
+    // caller closes them when CreatePseudoConsole fails.
+    private void CreatePseudoConsoleWithPipes(ref IntPtr hInputRead, ref IntPtr hOutputWrite)
+    {
+        CreatePipe(out hInputRead, out IntPtr hInputWrite, false);
+        CreatePipe(out IntPtr hOutputRead, out hOutputWrite, false);
+
+        _hInputWrite = hInputWrite;
+        _hOutputRead = hOutputRead;
+
+        var size = new COORD { X = 80, Y = 25 };
+        var hr = CreatePseudoConsole(size, hInputRead, hOutputWrite, 0, out IntPtr pseudoConsoleHandle);
+
+        if (hr != 0)
         {
-            if (!ProcessAliveCheck(pi))
-            {
-                TryCancel(cancellationTokenSource);
-                break;
-            }
+            // An HRESULT: the error converter maps it like other system errors.
+            throw new COMException("Unable to create PseudoConsole.", unchecked((int)hr));
         }
-        await Task.CompletedTask;
+
+        _pseudoConsoleHandle = pseudoConsoleHandle;
+
+        CloseHandle(hInputRead);
+        hInputRead = IntPtr.Zero;
+        CloseHandle(hOutputWrite);
+        hOutputWrite = IntPtr.Zero;
+    }
+
+    // Returns the initialized list that holds the pseudo console; frees it itself on failure.
+    private IntPtr CreateAttributeList()
+    {
+        var lpSize = IntPtr.Zero;
+
+        InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref lpSize);
+        IntPtr lpAttrList = Marshal.AllocHGlobal(lpSize);
+        if (!InitializeProcThreadAttributeList(lpAttrList, 1, 0, ref lpSize))
+        {
+            // Read before FreeHGlobal, which can change the last error.
+            int error = Marshal.GetLastWin32Error();
+            Marshal.FreeHGlobal(lpAttrList);
+            throw new Win32Exception(error, "Cannot initialize process attributes.");
+        }
+
+        UpdateProcThreadAttribute(lpAttrList, 0, (IntPtr)PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, _pseudoConsoleHandle, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero);
+        return lpAttrList;
+    }
+
+    private static void StartProcess(string exePath, string args, string workingDirectory, IntPtr lpAttrList, ref PROCESS_INFORMATION pi)
+    {
+        var si = CreateHiddenStartupInfo(lpAttrList);
+        var success = ConPTYNativeMethods.StartProcess(exePath, args, workingDirectory, ref si, out pi);
+
+        if (!success)
+        {
+            // Win32Exception keeps the error code, so "file not found" or "access denied"
+            // reach the GUI as such instead of an unknown error.
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot start process.");
+        }
+    }
+
+    private void AppendOutput(string output)
+    {
+        lock (_outputLock)
+        {
+            if (_outputDefaultBuffer.Length > 5000)
+            {
+                _outputDefaultBuffer.Clear();
+            }
+
+            _outputDefaultBuffer.Append(output);
+        }
+
+        OutputAdded?.Invoke(output);
+    }
+
+    private void CloseRunHandles(PROCESS_INFORMATION pi, IntPtr lpAttrList, IntPtr hInputRead, IntPtr hOutputWrite)
+    {
+        // The process handle was left open on the cancel and error paths.
+        if (pi.hProcess != IntPtr.Zero)
+        {
+            if (WaitForSingleObject(pi.hProcess, 0) == WAIT_TIMEOUT)
+            {
+                TerminateProcess(pi.hProcess, 0);
+                WaitForSingleObject(pi.hProcess, ProcessExitWaitMs);
+            }
+            CloseHandle(pi.hProcess);
+        }
+        if (lpAttrList != IntPtr.Zero)
+        {
+            DeleteProcThreadAttributeList(lpAttrList);
+            Marshal.FreeHGlobal(lpAttrList);
+        }
+        if (_pseudoConsoleHandle != IntPtr.Zero)
+        {
+            ClosePseudoConsole(_pseudoConsoleHandle);
+            _pseudoConsoleHandle = IntPtr.Zero;
+        }
+        if (_hInputWrite != IntPtr.Zero)
+        {
+            CloseHandle(_hInputWrite);
+            _hInputWrite = IntPtr.Zero;
+        }
+        // Pipes of a failed CreatePseudoConsole.
+        if (hInputRead != IntPtr.Zero)
+            CloseHandle(hInputRead);
+        if (hOutputWrite != IntPtr.Zero)
+            CloseHandle(hOutputWrite);
+        if (_hOutputRead != IntPtr.Zero)
+        {
+            CloseHandle(_hOutputRead);
+            _hOutputRead = IntPtr.Zero;
+        }
     }
 
     private static void InterlockedMax(ref long target, long value)
@@ -685,44 +362,16 @@ public class ConPTYHelper
         }
     }
 
-    private static void TryCancel(CancellationTokenSource? cancellationTokenSource)
-    {
-        try
-        {
-            cancellationTokenSource?.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-            // A newer run replaced and disposed it; that run ended this process already.
-        }
-    }
-
-    private static bool ProcessAliveCheck(PROCESS_INFORMATION pi)
-    {
-        switch (WaitForSingleObject(pi.hProcess, 2000))
-        {
-            case WAIT_OBJECT_0:
-                return false;
-
-            case WAIT_TIMEOUT:
-                return true;
-            default:
-                // WAIT_FAILED: the handle is closed. Reporting it as alive spun the check
-                // loop without any wait.
-                return false;
-        }
-    }
-
     public async Task StopProcess(bool output = true)
     {
         _stopActionCaller = StopActionCallers.User;
         InterlockedMax(ref _lastStopTicket, Interlocked.Read(ref _lastStartTicket));
-        TryCancel(_cancellationTokenSource);
+        ConPTYProcessWatcher.TryCancel(_cancellationTokenSource);
 
         // The worker holds the lock until its process ends. A start that took the lock before
         // this stop is stopped as well, because the stop came after it.
         while (!await _processLock.WaitAsync(100))
-            TryCancel(_cancellationTokenSource);
+            ConPTYProcessWatcher.TryCancel(_cancellationTokenSource);
 
         try
         {
@@ -779,138 +428,4 @@ public class ConPTYHelper
         lock (_outputLock)
             return _outputDefaultBuffer.ToString();
     }
-
-    #region WinAPI Definitions
-
-
-    private const uint PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE = 0x00020016;
-    private const int STARTF_USESTDHANDLES = 0x00000100;
-    private const int STARTF_USESHOWWINDOW = 0x00000001;
-    private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
-    private const ushort SW_HIDE = 0;
-    private const uint INFINITE = 0xFFFFFFFF;
-    private const uint ProcessExitWaitMs = 5000;
-    private const uint CREATE_UNICODE_ENVIRONMENT = 0x00000400;
-
-    private const uint WAIT_OBJECT_0 = 0x000000000;
-    private const uint WAIT_TIMEOUT = 0x00000102;
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern uint CreatePseudoConsole(COORD size, IntPtr hInput, IntPtr hOutput, uint dwFlags, out IntPtr phPC);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern void ClosePseudoConsole(IntPtr hPC);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool InitializeProcThreadAttributeList(IntPtr lpAttributeList, int dwAttributeCount, int dwFlags, ref IntPtr lpSize);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool UpdateProcThreadAttribute(IntPtr lpAttributeList, uint dwFlags, IntPtr Attribute, IntPtr lpValue, IntPtr cbSize, IntPtr lpPreviousValue, IntPtr lpReturnSize);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern void DeleteProcThreadAttributeList(IntPtr lpAttributeList);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool GetExitCodeProcess(
-        IntPtr hProcess,
-        out System.UInt32 lpExitCode);
-
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateProcessW")]
-    static extern bool CreateProcess(
-        string? lpApplicationName,
-        StringBuilder lpCommandLine,
-        IntPtr lpProcessAttributes,
-        IntPtr lpThreadAttributes,
-        bool bInheritHandles,
-        uint dwCreationFlags,
-        IntPtr lpEnvironment,
-        string lpCurrentDirectory,
-        [In] ref STARTUPINFOEX lpStartupInfo,
-        out PROCESS_INFORMATION lpProcessInformation);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool CreatePipe(out IntPtr hReadPipe, out IntPtr hWritePipe, ref SECURITY_ATTRIBUTES lpPipeAttributes, int nSize);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool CloseHandle(IntPtr hObject);
-
-    [DllImport("kernel32.dll")]
-    static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct COORD
-    {
-        public short X;
-        public short Y;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct STARTUPINFO
-    {
-        public int cb;
-        public IntPtr lpReserved;
-        public IntPtr lpDesktop;
-        public IntPtr lpTitle;
-        public int dwX;
-        public int dwY;
-        public int dwXSize;
-        public int dwYSize;
-        public int dwXCountChars;
-        public int dwYCountChars;
-        public int dwFillAttribute;
-        public int dwFlags;
-        public ushort wShowWindow;
-        public ushort cbReserved2;
-        public IntPtr lpReserved2;
-        public IntPtr hStdInput;
-        public IntPtr hStdOutput;
-        public IntPtr hStdError;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct STARTUPINFOEX
-    {
-        public STARTUPINFO StartupInfo;
-        public IntPtr lpAttributeList;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct PROCESS_INFORMATION
-    {
-        public IntPtr hProcess;
-        public IntPtr hThread;
-        public int dwProcessId;
-        public int dwThreadId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct SECURITY_ATTRIBUTES
-    {
-        public int nLength;
-        public IntPtr lpSecurityDescriptor;
-        public bool bInheritHandle;
-    }
-
-    private static void CreatePipe(out IntPtr hReadPipe, out IntPtr hWritePipe, bool bInheritHandle)
-    {
-        SECURITY_ATTRIBUTES saAttr = new SECURITY_ATTRIBUTES
-        {
-            nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
-            bInheritHandle = bInheritHandle,
-            lpSecurityDescriptor = IntPtr.Zero
-        };
-
-        if (!CreatePipe(out hReadPipe, out hWritePipe, ref saAttr, 0))
-        {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot create PseudoTerminal.");
-        }
-    }
-
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
-    public static extern int GetSystemDefaultLCID();
-
-    #endregion
 }
