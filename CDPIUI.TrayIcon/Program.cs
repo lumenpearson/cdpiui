@@ -49,6 +49,43 @@ class Programm
             return;
         }
 
+        InstallExceptionLogging(args);
+
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+
+        ToastNotificationManagerCompat.History.Clear();
+
+        CleanUpAndStartPipeServer();
+
+        if (ToastNotificationManagerCompat.WasCurrentProcessToastActivated())
+        {
+            using var toastContext = new TrayApplicationContext();
+            Application.Run(toastContext);
+            return;
+        }
+
+        StartGuiIfRequested(args);
+        FinishUpdate(args);
+
+        if (args.Contains("--autorun"))
+        {
+            if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide"))
+                NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("TrayHide"), "SHOW_MAIN_WINDOW");
+        }
+
+        _ = CheckProgramUpdates();
+        _ = BeginCompatibilityCheck();
+
+        using var context = new TrayApplicationContext(args.Contains("--autorun"));
+        Application.Run(context);
+        ToastNotificationManagerCompat.History.Clear();
+    }
+
+    private static void InstallExceptionLogging(string[] args)
+    {
         // An exception in a UI event handler is logged instead of ending the tray, which owns
         // the running components and the system proxy.
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -61,14 +98,10 @@ class Programm
             Logger.Instance.CreateDebugLog("Startup",
                 $"Starting PID={process.Id}, session={process.SessionId}, path='{Environment.ProcessPath}', " +
                 $"autorun={args.Contains("--autorun")}.");
+    }
 
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-
-        ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
-
-        ToastNotificationManagerCompat.History.Clear();
-
+    private static void CleanUpAndStartPipeServer()
+    {
         PackageStaging.CleanUp();
         RegeditHelper.RestoreLeftoverSnapshot();
 
@@ -76,14 +109,10 @@ class Programm
         PipeSessionKeyWriter.Create();
         PipeServer.Instance.Init();
         PipeServer.Instance.Start();
+    }
 
-        if (ToastNotificationManagerCompat.WasCurrentProcessToastActivated())
-        {
-            using var toastContext = new TrayApplicationContext();
-            Application.Run(toastContext);
-            return;
-        }
-
+    private static void StartGuiIfRequested(string[] args)
+    {
         GoodbyeDpiMigrationActivation.TryFindArgument(args, out var migrationRequest);
         if (args.Contains("--show-ui") || args.Contains("--after-patching") ||
             args.Contains("--after-failed-update") || migrationRequest != null)
@@ -96,7 +125,13 @@ class Programm
                 Path.Combine(Utils.GetDataDirectory(), "CDPIUI.exe"),
                 guiCommandLine);
         }
+    }
 
+    /// <summary>
+    /// Replaces Update.exe with the _Update.exe a self-update left, and reports a failed update.
+    /// </summary>
+    private static void FinishUpdate(string[] args)
+    {
         string updateFilePath = Path.Combine(Utils.GetDataDirectory(), "Update.exe");
         string newUpdateFilePath = Path.Combine(Utils.GetDataDirectory(), "_Update.exe");
         try
@@ -115,28 +150,10 @@ class Programm
             }
         }
 
-
-
-
         if (args.Contains("--after-failed-update"))
         {
             NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
         }
-
-        if (args.Contains("--autorun"))
-        {
-            if (SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide"))
-                NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("TrayHide"), "SHOW_MAIN_WINDOW");
-        }
-
-        _ = CheckProgramUpdates();
-        _ = BeginCompatibilityCheck();
-
-
-
-        using var context = new TrayApplicationContext(args.Contains("--autorun"));
-        Application.Run(context);
-        ToastNotificationManagerCompat.History.Clear();
     }
 
     public class TrayApplicationContext : ApplicationContext
