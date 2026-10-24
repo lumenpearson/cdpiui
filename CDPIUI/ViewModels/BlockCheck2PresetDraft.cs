@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -18,7 +17,7 @@ public enum BlockCheck2PresetDraftOrigin
     ModifiedAutomatic,
 }
 
-public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
+public sealed class BlockCheck2PresetDraft : ObservableObject
 {
     private string _automaticArguments = string.Empty;
     private string _structuredArguments = string.Empty;
@@ -26,8 +25,6 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
     private bool _isExpertEditingEnabled;
     private bool _hasExpertChanges;
     private BlockCheck2PresetDraftOrigin _origin = BlockCheck2PresetDraftOrigin.Manual;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<BlockCheck2ManualAssignmentItem> Assignments { get; } = [];
     public ObservableCollection<BlockCheck2PresetFileItem> Files { get; } = [];
@@ -283,8 +280,7 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
         Notify(nameof(Files));
     }
 
-    private void Notify([CallerMemberName] string? propertyName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    private void Notify([CallerMemberName] string? propertyName = null) => OnPropertyChanged(propertyName);
 }
 
 public enum BlockCheck2PresetFileKind
