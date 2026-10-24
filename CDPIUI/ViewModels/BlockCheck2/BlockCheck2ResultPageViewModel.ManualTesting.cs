@@ -1,42 +1,23 @@
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using CDPIUI.AddOns.BlockCheck2.Models;
-using CDPIUI.AddOns.BlockCheck2.Presentation;
-using CDPIUI.AddOns.BlockCheck2.Reporting;
-using CDPIUI.Controls.CreateConfigHelper;
-using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Universal;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Store.Data;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Helper.AddOns.BlockCheck2;
-using CDPIUI.Helper.CreateConfigHelper;
-using CDPIUI.Helper.UserExperience;
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.Win32;
-using Windows.ApplicationModel.DataTransfer;
-using WinUI3Localizer;
 
-namespace CDPIUI.Views.BlockCheck2;
+namespace CDPIUI.ViewModels.BlockCheck2;
 
-public sealed partial class ResultPage
+public sealed partial class BlockCheck2ResultPageViewModel
 {
-    private bool _isStartingTest = false;
-    private bool _isManualTestRunning = false;
-    private bool _restoreComponentAfterTest = false;
+    private bool _isStartingTest;
+    private bool _isManualTestRunning;
+    private bool _restoreComponentAfterTest;
 
-    private async void ComponentManualTestButton_Click(object sender, RoutedEventArgs e)
+    public bool IsManualTestRunning => _isManualTestRunning;
+
+    /// <summary>Runs after a click on the toggle button, which has already changed its state.</summary>
+    public async Task ToggleManualTestFromButtonAsync()
     {
-        if (ComponentManualTestButton.IsChecked == true)
+        if (IsManualTestChecked == true)
         {
             await StartTestAsync();
         }
@@ -46,7 +27,7 @@ public sealed partial class ResultPage
         }
     }
 
-    private async void ComponentManualTestMenuItem_Click(object sender, RoutedEventArgs e)
+    public async Task ToggleManualTestAsync()
     {
         if (_isManualTestRunning)
         {
@@ -84,7 +65,7 @@ public sealed partial class ResultPage
         if (showCompletionMessage)
         {
             ShowActionMessage(
-                InfoBarSeverity.Informational,
+                BlockCheck2NoticeSeverity.Informational,
                 Text("ManualTesting"),
                 Text("ConfigMakerTestStoppedMessage"));
         }
@@ -121,13 +102,13 @@ public sealed partial class ResultPage
         }
         catch (Exception exception)
         {
-            Logger.Instance.CreateWarningLog(nameof(ResultPage), $"Cannot stop the manual test: {exception}");
+            Logger.Instance.CreateWarningLog(LogSource, $"Cannot stop the manual test: {exception}");
         }
     }
 
     public async Task StartTestAsync()
     {
-        BlockCheck2StrategyEvidenceItem? item = SelectedStrategy;
+        BlockCheck2StrategyEvidenceItem? item = _view.SelectedStrategy;
         if (item == null || _isManualTestRunning || _strategyTestRunning)
         {
             return;
@@ -135,12 +116,12 @@ public sealed partial class ResultPage
 
         UpdateSelectedStrategy();
 
-        var result = ViewModel.GetFullStrategyArguments(item);
+        var result = Result.GetFullStrategyArguments(item);
 
         if (!result.Success || string.IsNullOrEmpty(result.Result))
         {
             ShowActionMessage(
-                InfoBarSeverity.Warning,
+                BlockCheck2NoticeSeverity.Warning,
                 Text("ManualTesting"),
                 result.ErrorHappens ? result.Error.ErrorCode : Text("ConfigMakerEmptyArgumentsMessage"));
             return;
@@ -148,7 +129,7 @@ public sealed partial class ResultPage
 
         await StopTestAsync();
         bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunning(HardcodedItemIds.ComponentIds[Components.Zapret2]);
-        if (componentWasRunning && !await ConfirmReplaceRunningComponentAsync())
+        if (componentWasRunning && !await _view.ConfirmReplaceRunningComponentAsync())
         {
             return;
         }
@@ -162,7 +143,7 @@ public sealed partial class ResultPage
         UpdateSelectedStrategy();
 
         ShowActionMessage(
-            InfoBarSeverity.Informational,
+            BlockCheck2NoticeSeverity.Informational,
             Text("ManualTesting"),
             Text("ConfigMakerTestStartedMessage"));
 
@@ -175,27 +156,13 @@ public sealed partial class ResultPage
         {
             _isStartingTest = false;
             ShowActionMessage(
-                InfoBarSeverity.Error,
+                BlockCheck2NoticeSeverity.Error,
                 Text("ManualTesting"),
                 string.Format(
                     Text("ConfigMakerTestStartFailedMessage"),
                     exception.Message));
             await StopTestAsync();
         }
-    }
-
-    private async Task<bool> ConfirmReplaceRunningComponentAsync()
-    {
-        ContentDialog confirmation = new()
-        {
-            XamlRoot = XamlRoot,
-            Title = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
-            Content = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
-            PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
-            CloseButtonText = _localizer.GetLocalizedString("Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-        return await confirmation.ShowQueuedAsync() == ContentDialogResult.Primary;
     }
 
     private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
@@ -207,12 +174,12 @@ public sealed partial class ResultPage
             return;
         }
 
-        DispatcherQueue.TryEnqueue(async () =>
+        _dispatcherQueue.TryEnqueue(async () =>
         {
             ShowActionMessage(
-                InfoBarSeverity.Warning,
+                BlockCheck2NoticeSeverity.Warning,
                 Text("ManualTesting"),
-                _localizer.GetLocalizedString("ConfigMakerTestExitedMessage"));
+                Text("ConfigMakerTestExitedMessage"));
             await StopTestAsync();
         });
     }

@@ -226,6 +226,7 @@
                         </ComboBox>
                         <TextBlock
                             x:Name="StrategyCountTextBlock"
+                            Text="{x:Bind ViewModel.StrategyCountText, Mode=OneWay}"
                             Grid.Column="5"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
@@ -270,6 +271,7 @@
                             <SemanticZoom
                                 x:Name="StrategySemanticZoom"
                                 Grid.Row="1"
+                                Visibility="{x:Bind ViewModel.AreStrategiesVisible, Mode=OneWay}"
                                 IsZoomedInViewActive="True">
                                 <SemanticZoom.ZoomedInView>
                                     <ListView
@@ -359,6 +361,7 @@
                             <StackPanel
                                 x:Name="NoStrategiesPanel"
                                 Grid.Row="1"
+                                Visibility="{x:Bind ViewModel.IsNoStrategiesVisible, Mode=OneWay}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Spacing="5">
@@ -389,7 +392,7 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <def:PanelTitleUserControl l:Uids.Uid="ConfigActionsPanelTitle" CloseEnabled="False"/>
-                            <Grid x:Name="StrategyDetailsGrid" Grid.Row="1" Padding="0" >
+                            <Grid x:Name="StrategyDetailsGrid" Grid.Row="1" Padding="0" IsHitTestVisible="{x:Bind ViewModel.IsDetailsHitTestVisible, Mode=OneWay}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="350" />
                                     <ColumnDefinition Width="2*" />
@@ -401,27 +404,27 @@
                                     </Grid.RowDefinitions>
                                     <ScrollView>
                                         <StackPanel Spacing="7" Margin="12 12 12 0">
-                                            <TextBlock x:Name="SelectedSiteTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
-                                            <TextBlock x:Name="SelectedConnectionTextBlock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock x:Name="SelectedEvidenceTextBlock" TextWrapping="Wrap" />
-                                            <TextBlock x:Name="SelectedBaselineTextBlock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock x:Name="SelectedSiteTextBlock" Text="{x:Bind ViewModel.SelectedSite, Mode=OneWay}" Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                            <TextBlock x:Name="SelectedConnectionTextBlock" Text="{x:Bind ViewModel.SelectedConnection, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock x:Name="SelectedEvidenceTextBlock" Text="{x:Bind ViewModel.SelectedEvidence, Mode=OneWay}" TextWrapping="Wrap" />
+                                            <TextBlock x:Name="SelectedBaselineTextBlock" Text="{x:Bind ViewModel.SelectedBaseline, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
                                     </ScrollView>
                                     <CommandBar Grid.Row="1"  DefaultLabelPosition="Bottom" Background="{ThemeResource CardBackgroundFillColorSecondary}">
-                                        <AppBarButton x:Name="TestStrategyButton" l:Uids.Uid="BlockCheck2TestStrategyButton" Click="TestStrategyButton_Click">
+                                        <AppBarButton x:Name="TestStrategyButton" l:Uids.Uid="BlockCheck2TestStrategyButton" IsEnabled="{x:Bind ViewModel.IsTestStrategyEnabled, Mode=OneWay}" Click="TestStrategyButton_Click">
                                             <FontIcon Glyph="&#xE9A1;" />
                                             <AppBarButton.KeyboardAccelerators>
                                                 <KeyboardAccelerator Modifiers="Control" Key="F5" />
                                             </AppBarButton.KeyboardAccelerators>
                                         </AppBarButton>
-                                        <AppBarToggleButton x:Name="ComponentManualTestButton" Click="ComponentManualTestButton_Click">
-                                            <FontIcon x:Name="TestGlyph" Glyph="&#xE768;" />
+                                        <AppBarToggleButton x:Name="ComponentManualTestButton" Label="{x:Bind ViewModel.ManualTestLabel, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsManualTestEnabled, Mode=OneWay}" IsChecked="{x:Bind ViewModel.IsManualTestChecked, Mode=TwoWay}" Click="ComponentManualTestButton_Click">
+                                            <FontIcon x:Name="TestGlyph" Glyph="{x:Bind ViewModel.ManualTestGlyph, Mode=OneWay}" />
                                             <AppBarToggleButton.KeyboardAccelerators>
                                                 <KeyboardAccelerator Key="F5" />
                                             </AppBarToggleButton.KeyboardAccelerators>
                                         </AppBarToggleButton>
                                         <AppBarSeparator/>
-                                        <AppBarButton x:Name="AddForSiteButton" l:Uids.Uid="BlockCheck2AddForSiteButton" Click="AddForSiteButton_Click">
+                                        <AppBarButton x:Name="AddForSiteButton" l:Uids.Uid="BlockCheck2AddForSiteButton" IsEnabled="{x:Bind ViewModel.IsAddForSiteEnabled, Mode=OneWay}" Click="AddForSiteButton_Click">
                                             <AppBarButton.Icon>
                                                 <FontIcon Glyph="&#xECC8;" />
                                             </AppBarButton.Icon>
@@ -429,7 +432,7 @@
                                                 <KeyboardAccelerator Modifiers="Control" Key="A" />
                                             </AppBarButton.KeyboardAccelerators>
                                         </AppBarButton>
-                                        <AppBarButton x:Name="AddForListButton" l:Uids.Uid="BlockCheck2AddForListButton"  Click="AddForListButton_Click">
+                                        <AppBarButton x:Name="AddForListButton" l:Uids.Uid="BlockCheck2AddForListButton" IsEnabled="{x:Bind ViewModel.IsAddForListEnabled, Mode=OneWay}" Click="AddForListButton_Click">
                                             <AppBarButton.Icon>
                                                 <FontIcon Glyph="&#xED0E;" />
                                             </AppBarButton.Icon>
@@ -450,7 +453,7 @@
                                             </AppBarButton>
                                         </CommandBar.SecondaryCommands>
                                     </CommandBar>
-                                    <ProgressBar x:Name="StrategyTestProgressRing" IsIndeterminate="True" Grid.Row="1" VerticalAlignment="Bottom" CornerRadius="0" Visibility="Collapsed"/>
+                                    <ProgressBar x:Name="StrategyTestProgressRing" IsIndeterminate="True" Grid.Row="1" VerticalAlignment="Bottom" CornerRadius="0" Visibility="{x:Bind ViewModel.IsStrategyTestProgressVisible, Mode=OneWay}"/>
                                 </Grid>
                                 <Grid Grid.Column="1" RowSpacing="8" Padding="12 12 12 12">
                                     <Grid.RowDefinitions>
@@ -463,11 +466,13 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="SelectedStrategyNameTextBlock" 
+                                                   Text="{x:Bind ViewModel.SelectedStrategyName, Mode=OneWay}"
                                                    Style="{ThemeResource BodyStrongTextBlockStyle}" 
                                                    TextTrimming="CharacterEllipsis" 
                                                    TextWrapping="NoWrap"/>
                                         <TextBlock 
                                             x:Name="SelectedStrategyIdTextBlock" 
+                                            Text="{x:Bind ViewModel.SelectedStrategyId, Mode=OneWay}"
                                             Grid.Column="1" 
                                             FontSize="{x:Bind uexp:ConsoleFontHelper.Instance.FontSize, Mode=OneWay}" 
                                             FontFamily="{x:Bind uexp:ConsoleFontHelper.Instance.FontFamily, Mode=OneWay}" 
@@ -484,7 +489,7 @@
                                                 FontSize="{x:Bind uexp:ConsoleFontHelper.Instance.FontSize, Mode=OneWay}" 
                                                 FontFamily="{x:Bind uexp:ConsoleFontHelper.Instance.FontFamily, Mode=OneWay}">
                                                 <Paragraph>
-                                                    <Run x:Name="SelectedStrategyArgumentsTextBox"/>
+                                                    <Run x:Name="SelectedStrategyArgumentsTextBox" Text="{x:Bind ViewModel.SelectedStrategyArguments, Mode=OneWay}"/>
                                                 </Paragraph>
                                             </RichTextBlock>
                                         </Grid>
@@ -580,13 +585,13 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
-                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentUpButton" l:Uids.Uid="MoveUpButton" Padding="7 8 7 7" Click="MoveAssignmentUpButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentUpButton" l:Uids.Uid="MoveUpButton" IsEnabled="{x:Bind ViewModel.IsMoveAssignmentUpEnabled, Mode=OneWay}" Padding="7 8 7 7" Click="MoveAssignmentUpButton_Click">
                             <FontIcon FontSize="14" Glyph="&#xE74A;" />
                         </Button>
-                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentDownButton" l:Uids.Uid="MoveDownButton" Grid.Column="1" Padding="7 8 7 7" Click="MoveAssignmentDownButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="MoveAssignmentDownButton" l:Uids.Uid="MoveDownButton" IsEnabled="{x:Bind ViewModel.IsMoveAssignmentDownEnabled, Mode=OneWay}" Grid.Column="1" Padding="7 8 7 7" Click="MoveAssignmentDownButton_Click">
                             <FontIcon FontSize="14" Glyph="&#xE74B;" />
                         </Button>
-                        <Button x:Name="RemoveAssignmentButton" Grid.Column="2" Padding="7,5" Click="RemoveAssignmentButton_Click">
+                        <Button x:Name="RemoveAssignmentButton" Grid.Column="2" IsEnabled="{x:Bind ViewModel.IsRemoveAssignmentEnabled, Mode=OneWay}" Padding="7,5" Click="RemoveAssignmentButton_Click">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <FontIcon FontSize="14" Glyph="&#xE74D;" />
                                 <TextBlock l:Uids.Uid="BlockCheck2RemoveAssignmentButtonText" />
@@ -598,6 +603,7 @@
                         </Button>
                         <Button
                             x:Name="ReviewPresetButton"
+                            IsEnabled="{x:Bind ViewModel.IsReviewPresetEnabled, Mode=OneWay}"
                             Grid.Column="6"
                             Padding="12,6"
                             Style="{StaticResource AccentButtonStyle}"
@@ -631,6 +637,7 @@
                             <ListView
                                 x:Name="ManualAssignmentsListView"
                                 Grid.Row="1"
+                                Visibility="{x:Bind ViewModel.AreAssignmentsVisible, Mode=OneWay}"
                                 SelectionChanged="ManualAssignmentsListView_SelectionChanged"
                                 SelectionMode="Single"
                                 ItemContainerStyle="{StaticResource ListBoxListViewStyle}">
@@ -654,6 +661,7 @@
                             <StackPanel
                                 x:Name="EmptyAssignmentsPanel"
                                 Grid.Row="1"
+                                Visibility="{x:Bind ViewModel.IsEmptyAssignmentsVisible, Mode=OneWay}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Spacing="4">
@@ -704,6 +712,7 @@
                                 <ListView
                                     x:Name="ManualIssuesListView"
                                     Grid.Row="1"
+                                    Visibility="{x:Bind ViewModel.AreManualIssuesVisible, Mode=OneWay}"
                                     SelectionMode="None">
                                     <ListView.ItemContainerStyle>
                                         <Style TargetType="ListViewItem">
@@ -742,6 +751,7 @@
                                 <TextBlock
                                     x:Name="NoManualIssuesTextBlock"
                                     Grid.Row="1"
+                                    Visibility="{x:Bind ViewModel.IsNoManualIssuesVisible, Mode=OneWay}"
                                     Margin="12"
                                     l:Uids.Uid="BlockCheck2NoRecommendationsText"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -768,7 +778,8 @@
                             <def:PanelTitleUserControl l:Uids.Uid="BlockCheck2IssuesHeader" CloseEnabled="False"/>
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl
-                                    x:Name="IssuesListView">
+                                    x:Name="IssuesListView"
+                                    Visibility="{x:Bind ViewModel.AreIssuesVisible, Mode=OneWay}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:BlockCheck2ManualIssueItem">
                                             <StackPanel Padding="6" Spacing="3">
@@ -782,6 +793,7 @@
                             <TextBlock
                                 x:Name="NoIssuesTextBlock"
                                 Grid.Row="1"
+                                Visibility="{x:Bind ViewModel.IsNoIssuesVisible, Mode=OneWay}"
                                 Margin="12"
                                 l:Uids.Uid="BlockCheck2NoIssuesText" />
                         </Grid>
