@@ -1,7 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.Versioning;
-using System.ServiceProcess;
-using CDPIUI.Core.Basic;
 using CDPIUI.Core.Communication;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Data;
@@ -28,6 +24,8 @@ public class TroubleshootingService
     }
 
     public Action<Enum>? CurrentStateChanged;
+
+    private readonly WindowsServiceInspector _serviceInspector = new();
 
     private TroubleshootingService()
     {
@@ -70,7 +68,7 @@ public class TroubleshootingService
         CurrentStateChanged?.Invoke(StoreCheckStates.Preparing);
 
         await Task.Delay(1000);
-        _services = null;
+        _serviceInspector.Reset();
         Dictionary<StoreCheckStates, bool> completedStates = [];
 
         CurrentStateChanged?.Invoke(StoreCheckStates.CheckGitHubRepo);
@@ -83,16 +81,16 @@ public class TroubleshootingService
         string localAppData = Core.Data.Directories.DataDirectory;
         string storeFolder = Directories.StoreDirectory;
 
-        bool hasWriteAccess = IsDirectoryWritable(Path.Combine(storeFolder));
+        bool hasWriteAccess = LocalEnvironmentProbe.IsDirectoryWritable(Path.Combine(storeFolder));
 
         CurrentStateChanged?.Invoke(StoreCheckStates.CheckWriteAccessIntoItemsFolder);
-        bool hasWriteAccessIntoItemsFolder = IsDirectoryWritable(Directories.StoreItemsDirectory);
+        bool hasWriteAccessIntoItemsFolder = LocalEnvironmentProbe.IsDirectoryWritable(Directories.StoreItemsDirectory);
 
         CurrentStateChanged?.Invoke(StoreCheckStates.CheckWriteAccessIntoRepoFolder);
-        bool hasWriteAccessIntoRepoFolder = IsDirectoryWritable(Directories.StoreRepoCacheDirectory);
+        bool hasWriteAccessIntoRepoFolder = LocalEnvironmentProbe.IsDirectoryWritable(Directories.StoreRepoCacheDirectory);
 
         CurrentStateChanged?.Invoke(StoreCheckStates.CheckWriteAccessIntoDatabaseFolder);
-        bool hasWriteAccessIntoDatabaseFolder = IsDirectoryWritable(Directories.StoreLocalCacheDirectory);
+        bool hasWriteAccessIntoDatabaseFolder = LocalEnvironmentProbe.IsDirectoryWritable(Directories.StoreLocalCacheDirectory);
 
         await Task.Delay(1000);
 
@@ -107,7 +105,7 @@ public class TroubleshootingService
         };
 
         await Task.CompletedTask;
-        _services = null;
+        _serviceInspector.Reset();
 
         CurrentStateChanged?.Invoke(StoreCheckStates.Completed);
 
@@ -174,55 +172,55 @@ public class TroubleshootingService
         CurrentStateChanged?.Invoke(RunBasicDialogStates.Preparing);
 
         await Task.Delay(1000);
-        _services = null;
+        _serviceInspector.Reset();
         Dictionary<RunBasicDialogStates, bool> completedStates = [];
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckBFE);
-        bool isRunningBFE = IsServiceRunning("BFE");
+        bool isRunningBFE = _serviceInspector.IsRunning("BFE");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckProxy);
         bool isProxyEnabled = WindowsNativeProxySettingsService.IsProxyEnabled();
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckNetsh);
-        bool isNetshExistInPATH = ExistsOnPath("netsh.exe");
+        bool isNetshExistInPATH = LocalEnvironmentProbe.ExistsOnPath("netsh.exe");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckTimestamps);
-        bool isTimestampsChecked = await CheckTimestamps();
+        bool isTimestampsChecked = await NetworkSettingsDiagnostics.AreTimestampsEnabledAsync();
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAdGuard);
-        bool isAdGuardRunning = IsProcessRunning("adguardvpnsvc") || IsProcessRunning("adguardvpn") || IsProcessRunning("adguardsvc");
+        bool isAdGuardRunning = LocalEnvironmentProbe.IsProcessRunning("adguardvpnsvc") || LocalEnvironmentProbe.IsProcessRunning("adguardvpn") || LocalEnvironmentProbe.IsProcessRunning("adguardsvc");
         await Task.Delay(1000);
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckKiller);
-        bool isRunningKiller = IsServiceRunning("Killer");
+        bool isRunningKiller = _serviceInspector.IsRunning("Killer");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckIntelConnectivityNetwork);
         // The Intel(R) Connectivity Network Service only: "Network" alone matched many
         // Windows services, so the check failed on almost every computer.
-        bool isRunningIntelConnectivityNetwork = IsServiceRunning(service =>
-            OperatingSystem.IsWindows() && Matches(service, "Intel") && Matches(service, "Connectivity Network"));
+        bool isRunningIntelConnectivityNetwork = _serviceInspector.IsRunning(service =>
+            OperatingSystem.IsWindows() && WindowsServiceInspector.Matches(service, "Intel") && WindowsServiceInspector.Matches(service, "Connectivity Network"));
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckCheckPointServices);
-        bool isCheckPointServiceRunning = IsServiceRunning("TracSrvWrapper") || IsServiceRunning("EPWD");
+        bool isCheckPointServiceRunning = _serviceInspector.IsRunning("TracSrvWrapper") || _serviceInspector.IsRunning("EPWD");
         await Task.Delay(1000);
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckSmartByte);
-        bool isSmartByteRunning = IsServiceRunning("SmartByte");
+        bool isSmartByteRunning = _serviceInspector.IsRunning("SmartByte");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckVPNs);
         // Running, not merely installed: the dialog reports it as running.
-        bool isRunningVPN = IsServiceRunning("vpn");
+        bool isRunningVPN = _serviceInspector.IsRunning("vpn");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckDNS);
-        bool isUsedDNS = await GetDnsAddress();
+        bool isUsedDNS = await NetworkSettingsDiagnostics.IsEncryptedDnsConfiguredAsync();
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckWinDivert);
-        bool isWinDivertRunning = IsServiceRunning("windivert");
+        bool isWinDivertRunning = _serviceInspector.IsRunning("windivert");
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponentsServices);
-        bool isAnotherServiceComponentRunning = IsServiceExist("GoodbyeDPI") || IsServiceExist("discordfix_zapret") || IsServiceExist("winws1") || IsServiceExist("winws2");
+        bool isAnotherServiceComponentRunning = _serviceInspector.Exists("GoodbyeDPI") || _serviceInspector.Exists("discordfix_zapret") || _serviceInspector.Exists("winws1") || _serviceInspector.Exists("winws2");
         CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckAnotherComponents);
-        bool isAnotherComponentRunning = IsProcessRunning("winws") || IsProcessRunning("winws2") || IsProcessRunning("goodbyedpi");
+        bool isAnotherComponentRunning = LocalEnvironmentProbe.IsProcessRunning("winws") || LocalEnvironmentProbe.IsProcessRunning("winws2") || LocalEnvironmentProbe.IsProcessRunning("goodbyedpi");
         await Task.Delay(1000);
 
         completedStates = new()
@@ -244,7 +242,7 @@ public class TroubleshootingService
         };
 
         await Task.CompletedTask;
-        _services = null;
+        _serviceInspector.Reset();
 
         CurrentStateChanged?.Invoke(RunBasicDialogStates.Completed);
 
@@ -277,7 +275,7 @@ public class TroubleshootingService
         switch (state)
         {
             case RunBasicDialogStates.CheckTimestamps:
-                fixResultModel.IsFixed = await EnableTimestamps();
+                fixResultModel.IsFixed = await NetworkSettingsDiagnostics.EnableTimestampsAsync();
                 fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
                 break;
             case RunBasicDialogStates.CheckWinDivert:
@@ -288,8 +286,8 @@ public class TroubleshootingService
                 for (int i = 0; i < 20 && !fixResultModel.IsFixed; i++)
                 {
                     await Task.Delay(500);
-                    _services = null;
-                    fixResultModel.IsFixed = !IsServiceRunning("windivert");
+                    _serviceInspector.Reset();
+                    fixResultModel.IsFixed = !_serviceInspector.IsRunning("windivert");
                 }
                 fixResultModel.ErrorCode = fixResultModel.IsFixed ? string.Empty : "ERR_WIN32_UNKNOWN";
                 break;
@@ -336,192 +334,6 @@ public class TroubleshootingService
         return fixResultModel;
     }
 
-    #region BasicFixServices
-
-    ServiceController[]? _services;
-
-    private bool IsServiceExist(string name)
-    {
-        try
-        {
-            if (!OperatingSystem.IsWindows())
-                return true;
-            _services ??= ServiceController.GetServices();
-            // A loop, not a lambda: the platform analyzer sees the Windows check above.
-            foreach (var service in _services)
-            {
-                if (service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool IsServiceRunning(string name) =>
-        IsServiceRunning(service =>
-            OperatingSystem.IsWindows() && service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
-
-    // Any matching service that runs: the first match alone could be a stopped one.
-    private bool IsServiceRunning(Func<ServiceController, bool> match)
-    {
-        try
-        {
-            if (!OperatingSystem.IsWindows())
-                return true;
-            _services ??= ServiceController.GetServices();
-            foreach (var service in _services)
-            {
-                if (match(service) &&
-                    service.Status is ServiceControllerStatus.Running or ServiceControllerStatus.StopPending or ServiceControllerStatus.StartPending)
-                    return true;
-            }
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static bool Matches(ServiceController service, string text) =>
-        service.ServiceName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-        service.DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase);
-
-    private static bool ExistsOnPath(string fileName)
-    {
-        try
-        {
-            return GetFullPath(fileName) != null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static string? GetFullPath(string fileName)
-    {
-        if (File.Exists(fileName))
-            return Path.GetFullPath(fileName);
-
-        var values = Environment.GetEnvironmentVariable("PATH");
-        foreach (var path in values.Split(Path.PathSeparator))
-        {
-            var fullPath = Path.Combine(path, fileName);
-            if (File.Exists(fullPath))
-                return fullPath;
-        }
-        return null;
-    }
-
-    private static readonly string PowerShellPath =
-        Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
-
-    /// <summary>
-    /// Runs a system tool without a console window and without blocking the calling thread
-    /// </summary>
-    private static async Task<(int ExitCode, string Output)> RunToolAsync(string fileName, params string[] arguments)
-    {
-        var startInfo = new ProcessStartInfo(fileName)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        foreach (string argument in arguments)
-            startInfo.ArgumentList.Add(argument);
-
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Cannot start {fileName}");
-        Task<string> output = process.StandardOutput.ReadToEndAsync();
-        Task<string> errors = process.StandardError.ReadToEndAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        try
-        {
-            await process.WaitForExitAsync(timeout.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            try
-            { process.Kill(); }
-            catch (Exception ex)
-            {
-                // For example, the process exited at the same time; the timeout is reported below.
-                Logger.Instance.CreateWarningLog(nameof(TroubleshootingService), $"Cannot stop {fileName}: {ex.Message}");
-            }
-            throw new System.TimeoutException($"{fileName} did not finish in time");
-        }
-        await errors;
-        return (process.ExitCode, await output);
-    }
-
-    private async Task<bool> EnableTimestamps()
-    {
-        try
-        {
-            var result = await RunToolAsync(Path.Combine(Environment.SystemDirectory, "netsh.exe"),
-                "interface", "tcp", "set", "global", "timestamps=enabled");
-            return result.ExitCode == 0;
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(nameof(TroubleshootingService), $"Cannot enable timestamps. {ex.Message}");
-            return false;
-        }
-    }
-
-    private async Task<bool> CheckTimestamps()
-    {
-        try
-        {
-            // netsh prints localized text and cannot pipe into findstr without a shell;
-            // Get-NetTCPSetting returns the state as Enabled or Disabled in any language.
-            var result = await RunToolAsync(PowerShellPath, "-NoProfile", "-NonInteractive", "-Command",
-                "(Get-NetTCPSetting -SettingName Internet).Timestamps");
-            return result.ExitCode == 0 &&
-                string.Equals(result.Output.Trim(), "Enabled", StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(nameof(TroubleshootingService), $"Cannot check timestamps. {ex.Message}");
-            return false;
-        }
-    }
-
-    private static bool IsProcessRunning(string procName)
-    {
-        Process[] processes =
-            Process.GetProcessesByName(procName);
-        // Each Process holds a handle until it is disposed.
-        foreach (var process in processes)
-            process.Dispose();
-        return processes.Length > 0;
-    }
-
-    private static async Task<bool> GetDnsAddress()
-    {
-        try
-        {
-            var result = await RunToolAsync(PowerShellPath, "-NoProfile", "-NonInteractive", "-Command",
-                "Get-ChildItem -Recurse -Path 'HKLM:System\\CurrentControlSet\\Services\\Dnscache\\InterfaceSpecificParameters\\' | Get-ItemProperty | Where-Object { $_.DohFlags -gt 0 } | Measure-Object | Select-Object -ExpandProperty Count");
-
-            return int.TryParse(result.Output.Trim(), out int count) && count != 0;
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(nameof(TroubleshootingService), $"Cannot check DNS. {ex.Message}");
-            return false;
-        }
-    }
-
-    #endregion
-
-    #region StoreFixServices
     private TaskCompletionSource<bool>? _tcs;
     // The answer of the tray can be lost; without a time limit the fix waited forever.
     private static readonly TimeSpan GrantAccessTimeout = TimeSpan.FromSeconds(30);
@@ -545,28 +357,4 @@ public class TroubleshootingService
         // An answer without a request is ignored.
         _tcs?.TrySetResult(state);
     }
-
-    private static bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)
-    {
-        try
-        {
-            using FileStream fs = File.Create(
-                Path.Combine(
-                    dirPath,
-                    Path.GetRandomFileName()
-                ),
-                1,
-                FileOptions.DeleteOnClose);
-            return true;
-        }
-        catch
-        {
-            if (throwIfFails)
-                throw;
-            else
-                return false;
-        }
-    }
-
-    #endregion
 }
