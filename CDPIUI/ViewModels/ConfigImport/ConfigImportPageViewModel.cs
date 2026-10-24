@@ -61,7 +61,7 @@ public sealed partial class ConfigImportPageViewModel : ObservableObject
         _nextButtonText = _localizer.GetLocalizedString("GoForwardButton.Content");
         _loadingStateText = _localizer.GetLocalizedString("WorkingOnIt");
 
-        NextCommand = new AsyncRelayCommand(NextAsync, () => _isNextEnabled, LogSource);
+        NextCommand = new AsyncRelayCommand(NextAsync, () => _isNextEnabled);
         OpenComponentsStoreCommand = new RelayCommand(() => CommandsHandler.HandleCommand("cdpiui://Store/Category/C001CS"));
 
         LoadComponents();

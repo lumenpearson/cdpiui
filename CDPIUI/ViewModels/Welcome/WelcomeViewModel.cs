@@ -51,7 +51,7 @@ public sealed partial class WelcomeViewModel : ObservableObject
         CheckStoreStatusCommand = new RelayCommand(
             () => _ = CheckStoreStatusAsync(), // CheckStoreStatusAsync catches and logs its own errors.
             () => _isStoreStatusCheckIdle);
-        RetryMigrationCommand = new AsyncRelayCommand(RetryMigrationAsync, logSource: LogSource);
+        RetryMigrationCommand = new AsyncRelayCommand(RetryMigrationAsync);
     }
 
     public RelayCommand CheckStoreStatusCommand { get; }

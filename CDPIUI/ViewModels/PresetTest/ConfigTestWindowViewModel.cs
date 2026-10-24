@@ -52,7 +52,7 @@ public sealed partial class ConfigTestWindowViewModel : ObservableObject
     public ConfigTestWindowViewModel(IConfigTestWindowView view)
     {
         _view = view;
-        StartTestCommand = new AsyncRelayCommand(StartTestAsync, () => CanStartTest, LogSource);
+        StartTestCommand = new AsyncRelayCommand(StartTestAsync, () => CanStartTest);
         StopTestCommand = new RelayCommand(CancelTest, () => _isTesting);
         OpenTargetsFileCommand = new RelayCommand(OpenTargetsFile);
         OpenHelpCommand = new RelayCommand(() => CommandsHandler.HandleCommand(HelpCommandUri));

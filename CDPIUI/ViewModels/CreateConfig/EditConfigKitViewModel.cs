@@ -46,7 +46,7 @@ public sealed partial class EditConfigKitViewModel : ObservableObject
         RenameConfigCommand = new RelayCommand(p => RenameConfig((Tuple<string, string>)p));
         EditConfigCommand = new RelayCommand(p => EditConfig((Tuple<string>)p));
         OpenDirectoryCommand = new RelayCommand(p => OpenConfigDirectory((Tuple<string, OpenFileDirectoryTypes>)p));
-        _saveAsCommand = new AsyncRelayCommand(SaveKitAsAsync, () => IsSaveEnabled, LogSource);
+        _saveAsCommand = new AsyncRelayCommand(SaveKitAsAsync, () => IsSaveEnabled);
     }
 
     public ObservableCollection<ViewConfigInKitModel> Configs { get; } = [];

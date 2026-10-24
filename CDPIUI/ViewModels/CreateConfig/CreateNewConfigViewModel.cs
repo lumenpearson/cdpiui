@@ -62,8 +62,8 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
         GraphicDesignerBoolValueToggledCommand = new RelayCommand(p => HandleGraphicDesignerBoolValueToggled((Tuple<string, bool>)p));
         GraphicDesignerSelectedGuidChangedCommand = new RelayCommand(p => HandleGraphicDesignerSelectedGuidChanged((Tuple<string, string>)p));
 
-        _saveCommand = new AsyncRelayCommand(SaveAsync, IsSaveAvailable, LogSource);
-        _testCommand = new AsyncRelayCommand(ToggleTestRunAsync, IsSaveAvailable, LogSource);
+        _saveCommand = new AsyncRelayCommand(SaveAsync, IsSaveAvailable);
+        _testCommand = new AsyncRelayCommand(ToggleTestRunAsync, IsSaveAvailable);
         OpenListsDirectoryCommand = new RelayCommand(OpenListsDirectory);
         OpenBinsDirectoryCommand = new RelayCommand(OpenBinsDirectory);
 
