@@ -25,7 +25,7 @@
     </tpl:TemplatePage.Resources>
 
     <Grid x:Name="RootGrid">
-        <Grid x:Name="LoadingGrid" HorizontalAlignment="Center" VerticalAlignment="Stretch" Canvas.ZIndex="10">
+        <Grid x:Name="LoadingGrid" HorizontalAlignment="Center" VerticalAlignment="Stretch" Canvas.ZIndex="10" Visibility="{x:Bind ViewModel.IsLoadingVisible, Mode=OneWay}">
             <StackPanel VerticalAlignment="Center">
                 <Image Source="/Assets/Icons/Store.png" Width="100" Margin="0, 0, 0, 20"/>
                 <ProgressRing IsActive="True" Background="Transparent"/>
@@ -41,7 +41,7 @@
             Margin="0"
             IsTabStop="False"
             UseSystemFocusVisuals="False"
-            Visibility="Collapsed">
+            Visibility="{x:Bind ViewModel.IsErrorVisible, Mode=OneWay}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
@@ -69,7 +69,7 @@
                 <HyperlinkButton l:Uids.Uid="/Flashlight/AskSupport" x:Name="AskSupportButton" Click="AskSupportButton_Click" Padding="6 0"/>
             </toolkit:WrapPanel>
             <Grid HorizontalAlignment="Center" Margin="0, 20, 0, 0" Grid.Row="2">
-                <TextBlock x:Name="ErrorCodeText" Text="FLASHLIGHT_BUSY" IsTextSelectionEnabled="True"/>
+                <TextBlock x:Name="ErrorCodeText" Text="{x:Bind ViewModel.ErrorCode, Mode=OneWay}" IsTextSelectionEnabled="True"/>
             </Grid>
         </Grid>
         <ScrollViewer
@@ -83,7 +83,7 @@
             VerticalScrollMode="Auto"
             HorizontalScrollMode="Enabled"
             HorizontalScrollBarVisibility="Hidden"
-            Visibility="Collapsed">
+            Visibility="{x:Bind ViewModel.IsStoreVisible, Mode=OneWay}">
             <Grid Margin="0 20 0 0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
