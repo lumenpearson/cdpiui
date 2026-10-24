@@ -25,6 +25,7 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Extensions;
 using CDPIUI.Helper;
 using CDPIUI.Helper.CreateConfigHelper;
+using CDPIUI.Helper.TgWsProxy;
 using CDPIUI.Helper.UserExperience;
 using CDPIUI.Shared;
 using CDPIUI.ViewModels;
@@ -55,8 +56,7 @@ namespace CDPIUI.Views.Main.Components;
 /// </summary>
 public sealed partial class TgWsProxyComponentPage : TemplatePage
 {
-    private readonly string _defaultTgWsProxyStartString =
-        $"--host=127.0.0.1 --port=1443 --secret={SharedUtils.GetRandomHexNumber(32)} --dc-ip=2:149.154.167.220 --dc-ip=4:149.154.167.220 --buf-kb=256 --pool-size=4 --log-max-mb=5";
+    private readonly string _defaultTgWsProxyStartString = TgWsProxyStartupArguments.CreateDefault();
 
 
     private readonly ObservableCollection<ViewTelegramDataCenterModel> _telegramDataCenterModels = [];
@@ -195,57 +195,35 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
 
         string startupString = componentHelper.GetConfigHelper().GetStartupParameters(configItem.FileName, configItem.PackId);
 
-        ObservableCollection<GraphicDesignerSettingItemModel> lst = [];
-        GraphicDesignerHelper.LoadTgWsProxyDesignerConfig(lst, []);
-        GraphicDesignerHelper.ConvertStringToGraphicDesignerSettings(lst, [], startupString, exclusive: false, model: GraphicDesignerHelper.TgWsProxyDesignerConfig);
+        TgWsProxyStartupValues values = TgWsProxyStartupArguments.Parse(startupString);
 
-        DispatcherQueue.TryEnqueue(() =>
+        DispatcherQueue.TryEnqueue(() => ApplyStartupValues(values));
+    }
+
+    private void ApplyStartupValues(TgWsProxyStartupValues values)
+    {
+        AdvancedLoggingToggleSwitch.IsOn = values.Verbose;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.PortOption, out string port))
+            PortValue.Text = port;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.HostOption, out string host))
+            IPValue.Text = host;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.SecretOption, out string secret))
+            KeyValue.Text = secret;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.BufferSizeOption, out string bufferSize))
+            BufferSizeTextBox.Text = bufferSize;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.PoolSizeOption, out string poolSize))
+            WebSocketSizeTextBox.Text = poolSize;
+        if (values.Options.TryGetValue(TgWsProxyStartupArguments.LogMaxSizeOption, out string logSize))
+            LogSizeTextBox.Text = logSize;
+        foreach (TgWsProxyDataCenter dataCenter in values.DataCenters)
         {
-            AdvancedLoggingToggleSwitch.IsOn = false;
-            foreach (var item in lst)
+            _telegramDataCenterModels.Add(new()
             {
-                if (!item.IsChecked && item.Type == "string")
-                    continue;
-                switch (item.DisplayName)
-                {
-                    case "--port":
-                        PortValue.Text = item.Value;
-                        break;
-                    case "--host":
-                        IPValue.Text = item.Value;
-                        break;
-                    case "--secret":
-                        KeyValue.Text = item.Value;
-                        break;
-                    case "--buf-kb":
-                        BufferSizeTextBox.Text = item.Value;
-                        break;
-                    case "--pool-size":
-                        WebSocketSizeTextBox.Text = item.Value;
-                        break;
-                    case "--log-max-mb":
-                        LogSizeTextBox.Text = item.Value;
-                        break;
-                    case "--verbose":
-                        AdvancedLoggingToggleSwitch.IsOn = item.IsChecked;
-                        break;
-                    case "--dc-ip":
-                        var matchResult = FindSupportedString().Match(item.Value);
-                        // Groups.Count is the same with or without a match.
-                        if (matchResult.Success)
-                        {
-                            _telegramDataCenterModels.Add(new()
-                            {
-                                Guid = item.Guid,
-                                Number = matchResult.Groups[1].Value,
-                                Ip = matchResult.Groups[2].Value,
-                            });
-                        }
-                        break;
-                }
-            }
-        });
-
+                Guid = dataCenter.Guid,
+                Number = dataCenter.Number,
+                Ip = dataCenter.Ip,
+            });
+        }
     }
 
     private void ShowInfoBar(string title, InfoBarSeverity severity)
@@ -262,115 +240,6 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
     {
         ShowInfoBarAnimation.Stop();
         HideInfoBarAnimation.Begin();
-    }
-
-    private void RemoveElement(string guid)
-    {
-        _telegramDataCenterModels.Remove(_telegramDataCenterModels.FirstOrDefault(x => x.Guid == guid));
-    }
-
-    private async Task EditElement(string guid)
-    {
-        try
-        {
-            var el = _telegramDataCenterModels.FirstOrDefault(x => x.Guid == guid);
-            var dialog = new TgWsDataCenterEditContentDialog()
-            {
-                XamlRoot = this.XamlRoot,
-                Number = el?.Number,
-                Ip = el?.Ip,
-                Title = _localizer.GetLocalizedString("EditDataCenter")
-            };
-
-            await dialog.ShowQueuedAsync();
-
-            if (dialog.Result)
-            {
-                el.Number = dialog.Number;
-                el.Ip = dialog.Ip;
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
-        }
-    }
-
-
-
-    private async void PasteFromBufferButton_Click(object sender, RoutedEventArgs e)
-    {
-        DataPackageView dataPackageView = Clipboard.GetContent();
-
-        if (dataPackageView.Contains(StandardDataFormats.Text) is true)
-        {
-            string text = await dataPackageView.GetTextAsync();
-
-            var matchResult = FindSupportedString().Matches(text);
-            Debug.WriteLine(matchResult.Count);
-            if (matchResult.Count > 0)
-            {
-                foreach (Match item in matchResult)
-                {
-                    var existItem = _telegramDataCenterModels.FirstOrDefault(x => x.Number == item.Groups[1].Value);
-                    if (existItem != null)
-                    {
-                        existItem.Ip = item.Groups[2].Value;
-                    }
-                    else
-                    {
-                        _telegramDataCenterModels.Add(new()
-                        {
-                            Guid = Guid.NewGuid().ToString(),
-                            Number = item.Groups[1].Value,
-                            Ip = item.Groups[2].Value
-                        });
-                    }
-                }
-
-                ShowInfoBar(_localizer.GetLocalizedString("PasteComplete"), InfoBarSeverity.Success);
-                return;
-            }
-            ShowInfoBar(_localizer.GetLocalizedString("PasteFailure"), InfoBarSeverity.Warning);
-
-        }
-    }
-
-    private async void AddButton_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new TgWsDataCenterEditContentDialog()
-        {
-            XamlRoot = this.XamlRoot,
-            Title = _localizer.GetLocalizedString("AddDataCenter")
-        };
-
-        await dialog.ShowQueuedAsync();
-        if (dialog.Result)
-        {
-            _telegramDataCenterModels.Add(new()
-            {
-                Guid = Guid.NewGuid().ToString(),
-                Number = dialog.Number,
-                Ip = dialog.Ip,
-            });
-        }
-    }
-
-    private void ShareButton_Click(object sender, RoutedEventArgs e)
-    {
-        string targetText = string.Empty;
-        foreach (var model in _telegramDataCenterModels)
-        {
-            targetText += $"{model.Number}:{model.Ip}\n";
-        }
-
-        DataPackage dataPackage = new();
-        dataPackage.RequestedOperation = DataPackageOperation.Copy;
-        dataPackage.SetText(targetText);
-        Clipboard.SetContent(dataPackage);
-
-        ShowInfoBar(_localizer.GetLocalizedString("CopyComplete"), InfoBarSeverity.Success);
-        return;
     }
 
     private void ActionInfoBar_Closing(InfoBar sender, InfoBarClosingEventArgs args)
@@ -432,198 +301,8 @@ public sealed partial class TgWsProxyComponentPage : TemplatePage
         }
     }
 
-    private void HandleCreatePlCommand(AvailableConfigCreationActios action)
-    {
-        if (action == AvailableConfigCreationActios.CreateFromTemplate)
-            _ = CreatePlConfig(); // CreatePlConfig catches and logs its own errors.
-    }
-
-    private async Task CreatePlConfig()
-    {
-        try
-        {
-            var item = CreateConfigPageHelper.CreateConfigItem(
-                SharedConstants.LocalUserItemsId, _localizer.GetLocalizedString("DefaultConfigPlaceholder"), ComponentId, [], [], [], [], _defaultTgWsProxyStartString
-                );
-            string fileName = $"{Guid.NewGuid()}.json";
-            string errorCode = await ConfigurationService.SaveConfigItem(fileName, SharedConstants.LocalUserItemsId, item);
-
-            if (!string.IsNullOrEmpty(errorCode))
-            {
-                await ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
-                return;
-            }
-
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configFile", fileName);
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configId", SharedConstants.LocalUserItemsId);
-
-            ComponentHelper componentHelper =
-                ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-            componentHelper.ReInitConfigs();
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
-        }
-    }
-
-    private async Task CreateConfig()
-    {
-        try
-        {
-            var dialog = new CreateNewConfigForComponentContentDialog()
-            {
-                XamlRoot = this.XamlRoot,
-            };
-
-            await dialog.ShowQueuedAsync();
-
-            if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.FromTemplate)
-            {
-                await CreatePlConfig();
-            }
-            else if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.Manual)
-            {
-                await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
-        }
-    }
-
-    private void CreateConfigButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = CreateConfig(); // CreateConfig catches and logs its own errors.
-    }
-
-    private void SetValueToGraphicDesignerItemsList(string key, string value, ObservableCollection<GraphicDesignerSettingItemModel> list, bool isChecked = true)
-    {
-        var flag = list.FirstOrDefault(x => x.DisplayName == key);
-        if (flag != null)
-        {
-            flag.IsChecked = isChecked;
-            flag.Value = value;
-        }
-        else
-        {
-            list.Add(new()
-            {
-                Guid = Guid.NewGuid().ToString(),
-                DisplayName = key,
-                IsChecked = isChecked,
-                Value = value,
-                EnableTextInput = true,
-                Type = "string",
-                Description = string.Empty
-            });
-        }
-    }
-
-    private string GetStartupString(string startupString)
-    {
-        ObservableCollection<GraphicDesignerSettingItemModel> lst = [];
-        string addArgs = GraphicDesignerHelper.ConvertStringToGraphicDesignerSettings(lst, [], startupString, exclusive: false, model: GraphicDesignerHelper.TgWsProxyDesignerConfig);
-
-        SetValueToGraphicDesignerItemsList("--port", PortValue.Text, lst);
-        SetValueToGraphicDesignerItemsList("--host", IPValue.Text, lst);
-        SetValueToGraphicDesignerItemsList("--secret", KeyValue.Text, lst);
-        SetValueToGraphicDesignerItemsList("--buf-kb", BufferSizeTextBox.Text, lst);
-        SetValueToGraphicDesignerItemsList("--pool-size", WebSocketSizeTextBox.Text, lst);
-        SetValueToGraphicDesignerItemsList("--log-max-mb", LogSizeTextBox.Text, lst);
-        SetValueToGraphicDesignerItemsList("--verbose", string.Empty, lst, AdvancedLoggingToggleSwitch.IsOn);
-
-        lst.RemoveAll(x => x.DisplayName == "--dc-ip");
-
-        foreach (var item in _telegramDataCenterModels)
-        {
-            lst.Add(new()
-            {
-                Guid = Guid.NewGuid().ToString(),
-                DisplayName = "--dc-ip",
-                IsChecked = true,
-                Value = $"{item.Number}:{item.Ip}",
-                EnableTextInput = true,
-                Type = "string",
-                Description = string.Empty
-            });
-        }
-        startupString = GraphicDesignerHelper.ConvertGraphicDesignerSettingsToString(lst, [], addArgs);
-        return startupString;
-    }
-
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
         _model?.GoBackSignal?.Invoke(_model);
     }
-
-    private async void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        var sel = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-        ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-
-        var item = componentHelper.GetConfigHelper().GetConfigItem(sel.FileName, sel.PackId);
-
-        item.startup_string = GetStartupString(item.startup_string);
-
-        string errorCode = await ConfigurationService.SaveConfigItem(sel.FileName, sel.PackId, item);
-        if (!string.IsNullOrEmpty(errorCode))
-        {
-            await ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
-            return;
-        }
-
-        componentHelper.ReInitConfigs();
-    }
-
-    private async Task ShowErrorDialog(string message, string title)
-    {
-        var dlg = new MessageDialog(message, title);
-        InitializeWithWindow.Initialize(
-            dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>())
-            );
-        await dlg.ShowAsync();
-
-
-    }
-
-    private async Task LinkedSettingClicked(object param)
-    {
-        try
-        {
-            if (param is LinkedActions action)
-            {
-                switch (action)
-                {
-                    case LinkedActions.EditCurrentConfig:
-                        ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-                        var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
-
-                        if (componentHelper != null && item != null)
-                            await ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
-                        break;
-                    case LinkedActions.CreateNewConfigForComponent:
-                        await CreateConfig();
-                        break;
-                    case LinkedActions.OpenProxyInTelegram:
-                        ConnectTelegramProxyContentDialog dialog = new()
-                        {
-                            XamlRoot = this.XamlRoot,
-                        };
-                        await dialog.ShowQueuedAsync();
-                        break;
-                }
-            }
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
-        }
-    }
-
-    [GeneratedRegex(@"(\d.*?):(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\D*", RegexOptions.Singleline)]
-    private static partial Regex FindSupportedString();
-
-
 }
