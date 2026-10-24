@@ -5,11 +5,20 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
 using Microsoft.UI.Xaml.Controls;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
 // The test run of the edited command in the selected component.
-public sealed partial class ConfigMakerUserControl
+public sealed partial class ConfigMakerViewModel
 {
+    private bool _isTesting;
+    private bool _isStartingTest;
+    private bool _restoreComponentAfterTest;
+    private string _testComponentId = string.Empty;
+
+    public event EventHandler TestStateChanged;
+
+    public bool IsTesting => _isTesting;
+
     public async Task StartTestAsync()
     {
         if (string.IsNullOrWhiteSpace(ComponentId))
@@ -39,7 +48,7 @@ public sealed partial class ConfigMakerUserControl
         _isTesting = true;
         _isStartingTest = true;
         ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
-        UpdateTestButtons();
+        RaiseTestStateChanged();
 
         if (!DatabaseHelper.Instance.IsItemInstalled(_testComponentId))
         {
@@ -58,7 +67,7 @@ public sealed partial class ConfigMakerUserControl
         {
             await ComponentTasksManager.Instance.CreateAndRunNewTask(_testComponentId, arguments);
             _isStartingTest = false;
-            await ConfigOutput.RefreshComponentAsync();
+            await _view.RefreshOutputAsync();
         }
         catch (Exception exception)
         {
@@ -84,7 +93,7 @@ public sealed partial class ConfigMakerUserControl
         _isTesting = false;
         _isStartingTest = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
-        UpdateTestButtons();
+        RaiseTestStateChanged();
 
         if (!string.IsNullOrWhiteSpace(componentId))
         {
@@ -133,19 +142,10 @@ public sealed partial class ConfigMakerUserControl
         return true;
     }
 
-    private async Task<bool> ConfirmReplaceRunningComponentAsync()
-    {
-        ContentDialog confirmation = new()
-        {
-            XamlRoot = XamlRoot,
-            Title = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
-            Content = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
-            PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
-            CloseButtonText = _localizer.GetLocalizedString("Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-        return await confirmation.ShowQueuedAsync() == ContentDialogResult.Primary;
-    }
+    private Task<bool> ConfirmReplaceRunningComponentAsync() => _view.ConfirmAsync(
+        _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
+        _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
+        _localizer.GetLocalizedString("Continue"));
 
     private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
     {
@@ -156,7 +156,7 @@ public sealed partial class ConfigMakerUserControl
             return;
         }
 
-        DispatcherQueue.TryEnqueue(async () =>
+        _dispatcherQueue.TryEnqueue(async () =>
         {
             ShowEditorMessage(
                 _localizer.GetLocalizedString("ConfigMakerTestExitedMessage"),
@@ -165,8 +165,9 @@ public sealed partial class ConfigMakerUserControl
         });
     }
 
-    private void UpdateTestButtons()
+    private void RaiseTestStateChanged()
     {
+        OnPropertyChanged(nameof(IsTesting));
         TestStateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

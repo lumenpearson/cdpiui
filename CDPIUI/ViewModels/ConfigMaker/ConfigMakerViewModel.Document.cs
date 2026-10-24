@@ -1,19 +1,26 @@
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CDPIUI.AddOns.ConfigImport;
-using CDPIUI.Controls.Dialogs.CreateConfigHelper;
+using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Helper.CreateConfigHelper;
-using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
 // Loading, saving and exporting the edited preset document.
-public sealed partial class ConfigMakerUserControl
+public sealed partial class ConfigMakerViewModel
 {
+    public event EventHandler DocumentStateChanged;
+
+    public ObservableCollection<ConfigMakerVariableDefinition> PresetVariables => _presetDocument.Variables;
+    public ObservableCollection<ConfigMakerPresetResource> PresetResources => _presetDocument.Resources;
+    public bool HasVariables => _presetDocument.HasVariables;
+    public bool CanExportText => !HasVariables;
+
     public void LoadPresetDocument(ConfigMakerPresetDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -68,27 +75,24 @@ public sealed partial class ConfigMakerUserControl
         SyncDocumentFromEditor();
         AttachExistingPresetFiles();
         SyncDocumentFromEditor();
-        ConfigMakerSavePresetContentDialog dialog = new(_presetDocument.Name)
-        {
-            XamlRoot = XamlRoot,
-            OverwriteEnable = !string.IsNullOrWhiteSpace(_presetDocument.PackId) &&
-                              !string.IsNullOrWhiteSpace(_presetDocument.FileName),
-        };
-        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
+        ConfigMakerSavePresetRequest request = await _view.AskSavePresetAsync(
+            _presetDocument.Name,
+            !string.IsNullOrWhiteSpace(_presetDocument.PackId) &&
+            !string.IsNullOrWhiteSpace(_presetDocument.FileName));
+        if (request == null)
         {
             return ConfigMakerPresetSaveResult.Failed("CANCELED");
         }
 
         ConfigMakerPresetStorageService storageService = new();
-        bool overwrite = dialog.Result == ConfigMakerSavePresetContentDialogResult.Overwrite;
-        ConfigMakerPresetSaveResult result = overwrite
+        ConfigMakerPresetSaveResult result = request.Overwrite
             ? await storageService.OverwriteAsync(_presetDocument)
-            : await storageService.SaveAsync(dialog.PresetName, _presetDocument);
+            : await storageService.SaveAsync(request.PresetName, _presetDocument);
         if (result.Success)
         {
-            if (!overwrite)
+            if (!request.Overwrite)
             {
-                _presetDocument.Name = dialog.PresetName;
+                _presetDocument.Name = request.PresetName;
             }
             _presetDocument.PackId = result.PackId;
             _presetDocument.FileName = result.ConfigFileName;
@@ -118,23 +122,15 @@ public sealed partial class ConfigMakerUserControl
         {
             return;
         }
-        if (!string.IsNullOrWhiteSpace(CommandEditor.Text) ||
-            _presetDocument.HasVariables ||
-            _presetDocument.HasResources)
+        if ((!string.IsNullOrWhiteSpace(_view.EditorText) ||
+             _presetDocument.HasVariables ||
+             _presetDocument.HasResources) &&
+            !await _view.ConfirmAsync(
+                _localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
+                _localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
+                _localizer.GetLocalizedString("Continue")))
         {
-            ContentDialog dialog = new()
-            {
-                XamlRoot = XamlRoot,
-                Title = _localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
-                Content = _localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
-                PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
-                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-            {
-                return;
-            }
+            return;
         }
 
         SetEditorText(string.Empty);
@@ -143,28 +139,21 @@ public sealed partial class ConfigMakerUserControl
         _presetDocument.Variables.Clear();
         _presetDocument.Resources.Clear();
         ClearPresetStructure();
-        CommandEditor.ClearUndoRedoHistory();
+        _view.ClearEditorUndoHistory();
     }
 
     public async Task SaveTextAsync()
     {
         try
         {
-            Microsoft.Win32.SaveFileDialog dialog = new()
-            {
-                OverwritePrompt = true,
-                FileName = "config" + ConfigMakerPresetExporter.SharePackageExtension,
-                DefaultExt = ConfigMakerPresetExporter.SharePackageExtension,
-                Filter = (!HasVariables ? _localizer.GetLocalizedString("ConfigMakerTextFileFilter") + "|" : "") + _localizer.GetLocalizedString("ConfigMakerCCFileFilter"),
-            };
-            dialog.FilterIndex = dialog.Filter.Split('|').Length / 2;
-            if (dialog.ShowDialog() != true)
+            string path = _view.ChooseExportPath(allowTextFormat: !HasVariables);
+            if (path == null)
             {
                 return;
             }
 
             SyncDocumentFromEditor();
-            await ConfigMakerPresetExporter.ExportAsync(_presetDocument, dialog.FileName);
+            await ConfigMakerPresetExporter.ExportAsync(_presetDocument, path);
 
             ShowEditorMessage(
                 _localizer.GetLocalizedString("ConfigMakerTextSavedMessage"),
@@ -226,7 +215,7 @@ public sealed partial class ConfigMakerUserControl
             catch (Exception ex)
             {
                 // A silent import leaves unresolved references unchanged.
-                Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), $"Cannot resolve \"{missingPath}\": {ex.Message}");
+                Core.Basic.Logger.Instance.CreateWarningLog(LogSource, $"Cannot resolve \"{missingPath}\": {ex.Message}");
             }
         }
     }
@@ -243,7 +232,7 @@ public sealed partial class ConfigMakerUserControl
     private void SyncDocumentFromEditor()
     {
         _presetDocument.ComponentId = ComponentId;
-        _presetDocument.CommandText = CommandEditor.Text ?? string.Empty;
+        _presetDocument.CommandText = _view.EditorText ?? string.Empty;
     }
 
     private void PresetDocument_ContentChanged(object sender, EventArgs e)

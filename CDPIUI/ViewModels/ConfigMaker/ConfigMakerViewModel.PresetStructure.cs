@@ -2,22 +2,46 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
-using CDPIUI.Helper.UserExperience;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using ParsedPresetOption = CDPIUI.Core.ComponentServices.Helpers.Configuration.ConfigCommandOption;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
-// The preset structure panels: the file tree and the tree of the option groups and profiles.
-public sealed partial class ConfigMakerUserControl
+// The preset structure: the file tree and the tree of the option groups and profiles.
+public sealed partial class ConfigMakerViewModel
 {
+    private readonly Zapret2PresetOptionDescriber _zapret2OptionDescriber;
+    private bool _hasPresetFiles;
+    private bool _hasPresetGroups;
+    private bool _usesExplicitPresetStructure;
+    private ConfigMakerPresetFileInfo[] _explicitPresetFiles = [];
+    private ConfigMakerPresetGroupInfo[] _explicitPresetGroups = [];
+    private IReadOnlyList<ConfigMakerTreeNode> _presetFileNodes = [];
+    private IReadOnlyList<ConfigMakerTreeNode> _presetGroupNodes = [];
+
+    /// <summary>Raised when the preset files or the preset groups appear or disappear.</summary>
+    public event EventHandler PresetStructureAvailabilityChanged;
+
+    public IReadOnlyList<ConfigMakerTreeNode> PresetFileNodes
+    {
+        get => _presetFileNodes;
+        private set => SetProperty(ref _presetFileNodes, value);
+    }
+
+    public IReadOnlyList<ConfigMakerTreeNode> PresetGroupNodes
+    {
+        get => _presetGroupNodes;
+        private set => SetProperty(ref _presetGroupNodes, value);
+    }
+
+    public bool IsPresetStructureVisible => _hasPresetFiles || HasPresetGroups;
+    public bool HasPresetFiles => _hasPresetFiles;
+    public bool HasPresetGroups => _hasPresetGroups || !_usesExplicitPresetStructure;
+
     private bool IsZapret2Component => string.Equals(
         ComponentId,
         HardcodedItemIds.ComponentIds[Components.Zapret2],
@@ -37,7 +61,6 @@ public sealed partial class ConfigMakerUserControl
         _explicitPresetGroups = groups.ToArray();
         _usesExplicitPresetStructure = true;
         RebuildPresetStructure();
-        SetPresetFilesPanelVisible(_hasPresetFiles);
     }
 
     public void ClearPresetStructure()
@@ -46,17 +69,6 @@ public sealed partial class ConfigMakerUserControl
         _explicitPresetFiles = [];
         _explicitPresetGroups = [];
         RebuildPresetStructure();
-    }
-
-    public void SetPresetFilesPanelVisible(bool visible)
-    {
-        PresetFilesPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        PresetFilesContentSizer.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        PresetFilesColumn.Width = visible ? GridLength.Auto : new GridLength(0);
-        PresetFilesSizerColumn.Width = visible ? new GridLength(12) : new GridLength(0);
-        _layoutInitialized = false;
-        UpdateLayoutBounds();
-        PanelStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void RebuildPresetStructure()
@@ -71,18 +83,20 @@ public sealed partial class ConfigMakerUserControl
             .DistinctBy(file => (file.Kind, file.Path), ConfigMakerPresetFileKeyComparer.Instance)
             .ToArray();
 
-        RebuildPresetFilesTree(files);
-        RebuildPresetGroupsTree(ConfigCommandLine.ParseOptions(CommandText));
+        PresetFileNodes = BuildPresetFileNodes(files);
+        List<ConfigMakerTreeNode> groupNodes = BuildPresetGroupNodes(ConfigCommandLine.ParseOptions(CommandText));
 
         bool filesAvailabilityChanged = _hasPresetFiles != (files.Length > 0);
-        bool groupsAvailabilityChanged = _hasPresetGroups != (PresetGroupsTreeView.RootNodes.Count > 0);
+        bool groupsAvailabilityChanged = _hasPresetGroups != (groupNodes.Count > 0);
         _hasPresetFiles = files.Length > 0;
-        _hasPresetGroups = PresetGroupsTreeView.RootNodes.Count > 0;
+        _hasPresetGroups = groupNodes.Count > 0;
 
-        UpdatePresetGroupsTab();
+        // The view shows or hides the preset groups tab from HasPresetGroups when the nodes change.
+        PresetGroupNodes = groupNodes;
+        OnPropertiesChanged(nameof(HasPresetFiles), nameof(HasPresetGroups), nameof(IsPresetStructureVisible));
         if (filesAvailabilityChanged || groupsAvailabilityChanged)
         {
-            PanelStateChanged?.Invoke(this, EventArgs.Empty);
+            PresetStructureAvailabilityChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -102,9 +116,9 @@ public sealed partial class ConfigMakerUserControl
             .ToArray();
     }
 
-    private void RebuildPresetFilesTree(IReadOnlyList<ConfigMakerPresetFileInfo> fileItems)
+    private List<ConfigMakerTreeNode> BuildPresetFileNodes(IReadOnlyList<ConfigMakerPresetFileInfo> fileItems)
     {
-        PresetFilesTreeView.RootNodes.Clear();
+        List<ConfigMakerTreeNode> nodes = [];
         foreach (ConfigMakerPresetFileKind kind in Enum.GetValues<ConfigMakerPresetFileKind>())
         {
             ConfigMakerPresetFileInfo[] categoryFiles = fileItems
@@ -116,24 +130,20 @@ public sealed partial class ConfigMakerUserControl
                 continue;
             }
 
-            TreeViewNode categoryNode = new()
-            {
-                Content = new ConfigMakerPresetFileTreeItem
+            ConfigMakerTreeNode categoryNode = new(
+                new ConfigMakerPresetFileTreeItem
                 {
                     DisplayName = PresetFileCategoryName(kind),
                     ToolTip = PresetFileCategoryName(kind),
                 },
-                IsExpanded = true,
-            };
+                isExpanded: true);
             foreach (ConfigMakerPresetFileInfo file in categoryFiles)
             {
-                categoryNode.Children.Add(new TreeViewNode
-                {
-                    Content = CreatePresetFileTreeItem(file),
-                });
+                categoryNode.Children.Add(new ConfigMakerTreeNode(CreatePresetFileTreeItem(file)));
             }
-            PresetFilesTreeView.RootNodes.Add(categoryNode);
+            nodes.Add(categoryNode);
         }
+        return nodes;
     }
 
     private ConfigMakerPresetFileTreeItem CreatePresetFileTreeItem(ConfigMakerPresetFileInfo file)
@@ -155,22 +165,24 @@ public sealed partial class ConfigMakerUserControl
         };
     }
 
-    private void RebuildPresetGroupsTree(IReadOnlyList<ParsedPresetOption> options)
+    private List<ConfigMakerTreeNode> BuildPresetGroupNodes(IReadOnlyList<ParsedPresetOption> options)
     {
-        PresetGroupsTreeView.RootNodes.Clear();
+        List<ConfigMakerTreeNode> nodes = [];
         if (options.Count == 0)
         {
-            AddExplicitPresetGroupsFallback();
-            return;
+            AddExplicitPresetGroupsFallback(nodes);
+            return nodes;
         }
 
         int firstProfileOption = ConfigMakerPresetOptionGroups.FindFirstProfileOptionIndex(options);
         IReadOnlyList<ParsedPresetOption> common = options.Take(firstProfileOption).ToArray();
-        AddPresetOptionGroup(
+        AddOptionNode(
+            nodes,
             _localizer.GetLocalizedString("ConfigMakerPresetCommonFiltersGroup"),
             common.Where(option => ConfigMakerPresetOptionGroups.IsCommonFilter(option.Name)),
             "ConfigMakerZapret2CommonFiltersDescription");
-        AddPresetOptionGroup(
+        AddOptionNode(
+            nodes,
             _localizer.GetLocalizedString("ConfigMakerPresetCommonOptionsGroup"),
             common.Where(option => !ConfigMakerPresetOptionGroups.IsCommonFilter(option.Name)),
             "ConfigMakerZapret2CommonOptionsDescription");
@@ -179,16 +191,20 @@ public sealed partial class ConfigMakerUserControl
             ConfigMakerPresetOptionGroups.SplitProfiles(options.Skip(firstProfileOption));
         for (int index = 0; index < profiles.Count; index++)
         {
-            AddPresetProfileGroup(profiles[index], index);
+            AddPresetProfileNode(nodes, profiles[index], index);
         }
 
-        if (PresetGroupsTreeView.RootNodes.Count == 0)
+        if (nodes.Count == 0)
         {
-            AddExplicitPresetGroupsFallback();
+            AddExplicitPresetGroupsFallback(nodes);
         }
+        return nodes;
     }
 
-    private void AddPresetProfileGroup(IReadOnlyList<ParsedPresetOption> options, int profileIndex)
+    private void AddPresetProfileNode(
+        List<ConfigMakerTreeNode> nodes,
+        IReadOnlyList<ParsedPresetOption> options,
+        int profileIndex)
     {
         string parsedName = ConfigMakerPresetOptionGroups.FindProfileName(options);
         string explicitName = profileIndex < _explicitPresetGroups.Length
@@ -202,48 +218,27 @@ public sealed partial class ConfigMakerUserControl
                     _localizer.GetLocalizedString("ConfigMakerPresetProfileFallbackName"),
                     profileIndex + 1);
 
-        TreeViewNode profileNode = new()
-        {
-            Content = CreatePresetTreeItem(
-                name,
-                GetZapret2Description("ConfigMakerZapret2ProfileDescription")),
-            IsExpanded = true,
-        };
-        TreeViewNode filtersNode = CreateOptionNode(
+        ConfigMakerTreeNode profileNode = new(
+            CreatePresetTreeItem(name, GetZapret2Description("ConfigMakerZapret2ProfileDescription")),
+            isExpanded: true);
+        AddOptionNode(
+            profileNode.Children,
             _localizer.GetLocalizedString("ConfigMakerPresetProfileFiltersGroup"),
             options.Where(option => ConfigMakerPresetOptionGroups.IsProfileFilter(option.Name)),
             "ConfigMakerZapret2ProfileFiltersDescription");
-        TreeViewNode actionsNode = CreateOptionNode(
+        AddOptionNode(
+            profileNode.Children,
             _localizer.GetLocalizedString("ConfigMakerPresetProfileActionsGroup"),
             options.Where(option => !ConfigMakerPresetOptionGroups.IsProfileFilter(option.Name)),
             "ConfigMakerZapret2ProfileActionsDescription");
-        if (filtersNode != null)
-        {
-            profileNode.Children.Add(filtersNode);
-        }
-        if (actionsNode != null)
-        {
-            profileNode.Children.Add(actionsNode);
-        }
         if (profileNode.Children.Count > 0)
         {
-            PresetGroupsTreeView.RootNodes.Add(profileNode);
+            nodes.Add(profileNode);
         }
     }
 
-    private void AddPresetOptionGroup(
-        string name,
-        IEnumerable<ParsedPresetOption> options,
-        string descriptionResourceKey)
-    {
-        TreeViewNode node = CreateOptionNode(name, options, descriptionResourceKey);
-        if (node != null)
-        {
-            PresetGroupsTreeView.RootNodes.Add(node);
-        }
-    }
-
-    private TreeViewNode CreateOptionNode(
+    private void AddOptionNode(
+        List<ConfigMakerTreeNode> nodes,
         string name,
         IEnumerable<ParsedPresetOption> options,
         string descriptionResourceKey)
@@ -251,40 +246,32 @@ public sealed partial class ConfigMakerUserControl
         ParsedPresetOption[] items = options.ToArray();
         if (items.Length == 0)
         {
-            return null;
+            return;
         }
-        TreeViewNode node = new()
-        {
-            Content = CreatePresetTreeItem(name, GetZapret2Description(descriptionResourceKey)),
-            IsExpanded = true,
-        };
+        ConfigMakerTreeNode node = new(
+            CreatePresetTreeItem(name, GetZapret2Description(descriptionResourceKey)),
+            isExpanded: true);
         foreach (ParsedPresetOption option in items)
         {
-            node.Children.Add(new TreeViewNode
-            {
-                Content = CreatePresetTreeItem(
-                    option.DisplayText,
-                    GetPresetOptionDescription(option),
-                    isCode: true,
-                    source: option),
-            });
+            node.Children.Add(new ConfigMakerTreeNode(CreatePresetTreeItem(
+                option.DisplayText,
+                GetPresetOptionDescription(option),
+                isCode: true,
+                source: option)));
         }
-        return node;
+        nodes.Add(node);
     }
 
-    private void AddExplicitPresetGroupsFallback()
+    private void AddExplicitPresetGroupsFallback(List<ConfigMakerTreeNode> nodes)
     {
         foreach (ConfigMakerPresetGroupInfo group in _explicitPresetGroups)
         {
-            TreeViewNode node = new() { Content = CreatePresetTreeItem(group.Name) };
+            ConfigMakerTreeNode node = new(CreatePresetTreeItem(group.Name));
             foreach (string detail in group.Details.Where(value => !string.IsNullOrWhiteSpace(value)))
             {
-                node.Children.Add(new TreeViewNode
-                {
-                    Content = CreatePresetTreeItem(detail, isCode: true),
-                });
+                node.Children.Add(new ConfigMakerTreeNode(CreatePresetTreeItem(detail, isCode: true)));
             }
-            PresetGroupsTreeView.RootNodes.Add(node);
+            nodes.Add(node);
         }
     }
 
@@ -296,7 +283,7 @@ public sealed partial class ConfigMakerUserControl
         {
             Title = title ?? string.Empty,
             Description = description ?? string.Empty,
-            TitleFontFamily = new FontFamily(isCode ? ConsoleFontHelper.Instance.FontFamily.Source.ToString() : "Segoe UI"),
+            IsCode = isCode,
             SourceIndex = source?.SourceIndex ?? -1,
             SourceLength = source?.SourceLength ?? 0,
             SourceLine = source?.SourceLine ?? 0,
@@ -312,24 +299,6 @@ public sealed partial class ConfigMakerUserControl
         ? _zapret2OptionDescriber.Describe(option, _helpDocument.Options)
         : string.Empty;
 
-    private void UpdatePresetGroupsTab()
-    {
-        bool shouldShow = _hasPresetGroups || !_usesExplicitPresetStructure;
-        bool containsItem = BottomSelector.Items.Contains(PresetGroupsSelectorItem);
-        if (shouldShow && !containsItem)
-        {
-            BottomSelector.Items.Add(PresetGroupsSelectorItem);
-        }
-        else if (!shouldShow && containsItem)
-        {
-            if (BottomSelector.SelectedIndex == BottomSelector.Items.IndexOf(PresetGroupsSelectorItem))
-            {
-                BottomSelector.SelectIndex(0);
-            }
-            BottomSelector.Items.Remove(PresetGroupsSelectorItem);
-        }
-    }
-
     private string PresetFileCategoryName(ConfigMakerPresetFileKind kind) =>
         _localizer.GetLocalizedString(kind switch
         {
@@ -337,24 +306,4 @@ public sealed partial class ConfigMakerUserControl
             ConfigMakerPresetFileKind.Payload => "ConfigMakerPresetFileCategoryPayloads",
             _ => "ConfigMakerPresetFileCategorySiteLists",
         });
-
-    private void PresetGroupsTreeView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        if (PresetGroupsTreeView.SelectedNode?.Content is not ConfigMakerPresetTreeItemViewModel item ||
-            item.SourceIndex < 0 ||
-            item.SourceLength <= 0)
-        {
-            return;
-        }
-
-        CommandEditor.Focus(FocusState.Programmatic);
-        CommandEditor.SetCursorPosition(
-            item.SourceLine,
-            item.SourceColumn,
-            scrollIntoView: true,
-            autoClamp: true);
-        CommandEditor.SetSelection(item.SourceIndex, item.SourceLength);
-        CommandEditor.ScrollLineToCenter(item.SourceLine);
-        e.Handled = true;
-    }
 }

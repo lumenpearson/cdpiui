@@ -1,24 +1,146 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Helper.CreateConfigHelper;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.ApplicationModel.DataTransfer;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
 // The command reference panel built from the component help output.
-public sealed partial class ConfigMakerUserControl
+public sealed partial class ConfigMakerViewModel
 {
+    private readonly ComponentCommandHelpService _helpService = new();
+    private ComponentCommandHelpDocument _helpDocument = new();
+    private CancellationTokenSource _helpCancellation;
+    private object _selectedCommandModule;
+    private string _commandSearchText = string.Empty;
+    private ConfigMakerCommandOptionViewModel _selectedCommand;
+    private bool _isHelpLoading;
+    private bool _hasCommandModules = true;
+    private string _usageText = string.Empty;
+    private string _commandArgumentText = string.Empty;
+    private string _commandArgumentPlaceholder = string.Empty;
+    private string _commandArgumentLabel = string.Empty;
+
+    public ObservableCollection<ConfigMakerCommandOptionViewModel> CommandOptions { get; } = [];
+    public ObservableCollection<ConfigMakerCommandModuleViewModel> CommandModules { get; } = [];
+    public RelayCommand CopyCommandCommand { get; }
+    public RelayCommand InsertCommandCommand { get; }
+
+    /// <summary>The module filter; <see cref="object"/> because the combo box binds it two-way.</summary>
+    public object SelectedCommandModule
+    {
+        get => _selectedCommandModule;
+        set
+        {
+            if (SetProperty(ref _selectedCommandModule, value))
+            {
+                RebuildCommandOptions();
+            }
+        }
+    }
+
+    /// <summary>Set by the view when the user types in the search box.</summary>
+    public string CommandSearchText
+    {
+        get => _commandSearchText;
+        set
+        {
+            _commandSearchText = value ?? string.Empty;
+            RebuildCommandOptions();
+        }
+    }
+
+    public bool IsHelpLoading
+    {
+        get => _isHelpLoading;
+        private set
+        {
+            if (SetProperty(ref _isHelpLoading, value))
+            {
+                OnPropertyChanged(nameof(IsCommandListEnabled));
+            }
+        }
+    }
+
+    public bool IsCommandListEnabled => !_isHelpLoading;
+
+    public bool HasCommandModules
+    {
+        get => _hasCommandModules;
+        private set => SetProperty(ref _hasCommandModules, value);
+    }
+
+    public string UsageText
+    {
+        get => _usageText;
+        private set => SetProperty(ref _usageText, value);
+    }
+
+    public bool HasSelectedCommand => _selectedCommand != null;
+    public bool CanInsertCommand => !IsEditorReadOnly && _selectedCommand != null;
+    public string SelectedCommandName => _selectedCommand?.Source.DisplayName ?? string.Empty;
+    public string SelectedCommandSyntax => _selectedCommand?.Source.Syntax ?? string.Empty;
+    public string SelectedCommandDescription => _selectedCommand?.Description ?? string.Empty;
+    public bool HasCommandArgument => !string.IsNullOrWhiteSpace(_selectedCommand?.Source.ArgumentPlaceholder);
+
+    public string CommandArgumentText
+    {
+        get => _commandArgumentText;
+        set => SetProperty(ref _commandArgumentText, value ?? string.Empty);
+    }
+
+    public string CommandArgumentPlaceholder
+    {
+        get => _commandArgumentPlaceholder;
+        private set => SetProperty(ref _commandArgumentPlaceholder, value);
+    }
+
+    public string CommandArgumentLabel
+    {
+        get => _commandArgumentLabel;
+        private set => SetProperty(ref _commandArgumentLabel, value);
+    }
+
     public async Task RefreshHelpAsync()
     {
         if (!string.IsNullOrWhiteSpace(ComponentId))
         {
             await LoadHelpAsync(ComponentId, forceRefresh: true);
         }
+    }
+
+    /// <summary>Called by the view when the selection of the command list changed.</summary>
+    public void SelectCommand(ConfigMakerCommandOptionViewModel command)
+    {
+        _selectedCommand = command;
+        if (command != null)
+        {
+            ComponentCommandHelpOption option = command.Source;
+            CommandArgumentText = string.Empty;
+            CommandArgumentPlaceholder = option.ArgumentPlaceholder;
+            CommandArgumentLabel = HasCommandArgument
+                ? string.Format(
+                    _localizer.GetLocalizedString(
+                        option.IsArgumentRequired
+                            ? "ConfigMakerRequiredArgumentLabel"
+                            : "ConfigMakerOptionalArgumentLabel"),
+                    option.ArgumentPlaceholder)
+                : string.Empty;
+        }
+        OnPropertiesChanged(
+            nameof(SelectedCommandName),
+            nameof(SelectedCommandSyntax),
+            nameof(SelectedCommandDescription),
+            nameof(HasCommandArgument),
+            nameof(HasSelectedCommand),
+            nameof(CanInsertCommand));
+        CopyCommandCommand.NotifyCanExecuteChanged();
+        InsertCommandCommand.NotifyCanExecuteChanged();
     }
 
     private async Task LoadHelpAsync(string componentId, bool forceRefresh)
@@ -28,9 +150,8 @@ public sealed partial class ConfigMakerUserControl
         _helpCancellation = new CancellationTokenSource();
         CancellationToken cancellationToken = _helpCancellation.Token;
 
-        HelpProgressRing.IsActive = true;
-        CommandListView.IsEnabled = false;
-        UsageTextBlock.Text = _localizer.GetLocalizedString("ConfigMakerLoadingHelpMessage");
+        IsHelpLoading = true;
+        UsageText = _localizer.GetLocalizedString("ConfigMakerLoadingHelpMessage");
         try
         {
             ComponentCommandHelpDocument document = await _helpService.LoadAsync(
@@ -44,7 +165,7 @@ public sealed partial class ConfigMakerUserControl
             }
 
             _helpDocument = document;
-            UsageTextBlock.Text = !string.IsNullOrWhiteSpace(document.Usage)
+            UsageText = !string.IsNullOrWhiteSpace(document.Usage)
                 ? document.Usage
                 : string.Format(
                     _localizer.GetLocalizedString("ConfigMakerHelpOptionsLoadedMessage"),
@@ -63,8 +184,7 @@ public sealed partial class ConfigMakerUserControl
         {
             if (!cancellationToken.IsCancellationRequested)
             {
-                HelpProgressRing.IsActive = false;
-                CommandListView.IsEnabled = true;
+                IsHelpLoading = false;
             }
         }
     }
@@ -87,15 +207,15 @@ public sealed partial class ConfigMakerUserControl
         }
         else
         {
-            EditorInfoBar.IsOpen = false;
+            IsStatusOpen = false;
         }
     }
 
     private void RebuildCommandOptions()
     {
-        string query = CommandSearchBox.Text?.Trim() ?? string.Empty;
+        string query = _commandSearchText.Trim();
         IEnumerable<ComponentCommandHelpOption> filtered = _helpDocument.Options;
-        if (ModuleComboBox.SelectedItem is ConfigMakerCommandModuleViewModel module && !module.IsAll)
+        if (_selectedCommandModule is ConfigMakerCommandModuleViewModel module && !module.IsAll)
         {
             filtered = filtered.Where(option =>
                 string.Equals(option.GroupName, module.GroupName, StringComparison.OrdinalIgnoreCase));
@@ -125,8 +245,9 @@ public sealed partial class ConfigMakerUserControl
 
     private void RebuildCommandModules()
     {
-        string previousGroup = (ModuleComboBox.SelectedItem as ConfigMakerCommandModuleViewModel)?.GroupName;
-        bool previousWasAll = (ModuleComboBox.SelectedItem as ConfigMakerCommandModuleViewModel)?.IsAll != false;
+        ConfigMakerCommandModuleViewModel previous = _selectedCommandModule as ConfigMakerCommandModuleViewModel;
+        string previousGroup = previous?.GroupName;
+        bool previousWasAll = previous?.IsAll != false;
         List<string> namedGroups = _helpDocument.Options
             .Select(option => option.GroupName)
             .Where(group => !string.IsNullOrWhiteSpace(group))
@@ -158,62 +279,15 @@ public sealed partial class ConfigMakerUserControl
             });
         }
 
-        ModuleComboBox.Visibility = namedGroups.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        ModuleComboBox.SelectedItem = previousWasAll
+        HasCommandModules = namedGroups.Count > 0;
+        SelectedCommandModule = previousWasAll
             ? CommandModules[0]
             : CommandModules.FirstOrDefault(item =>
                 !item.IsAll && string.Equals(item.GroupName, previousGroup, StringComparison.OrdinalIgnoreCase))
                 ?? CommandModules[0];
     }
 
-    private void ModuleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        RebuildCommandOptions();
-
-    private void CommandSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-    {
-        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-        {
-            RebuildCommandOptions();
-        }
-    }
-
-    private void CommandListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        _selectedCommand = CommandListView.SelectedItem as ConfigMakerCommandOptionViewModel;
-        if (_selectedCommand == null)
-        {
-            CommandDetailsBorder.Visibility = Visibility.Collapsed;
-            CopyButton.IsEnabled = false;
-            InsertButton.IsEnabled = false;
-            Grid.SetRowSpan(CommandListView, 2);
-            return;
-        }
-
-        ComponentCommandHelpOption option = _selectedCommand.Source;
-        SelectedCommandNameTextBlock.Text = option.DisplayName;
-        SelectedCommandSyntaxTextBlock.Text = option.Syntax;
-        SelectedCommandDescriptionTextBlock.Text = _selectedCommand.Description;
-
-        bool hasArgument = !string.IsNullOrWhiteSpace(option.ArgumentPlaceholder);
-        CommandArgumentPanel.Visibility = hasArgument ? Visibility.Visible : Visibility.Collapsed;
-        CopyButton.IsEnabled = true;
-        InsertButton.IsEnabled = !IsEditorReadOnly;
-
-        CommandArgumentTextBox.Text = string.Empty;
-        CommandArgumentTextBox.PlaceholderText = option.ArgumentPlaceholder;
-        CommandArgumentLabelTextBlock.Text = hasArgument
-            ? string.Format(
-                _localizer.GetLocalizedString(
-                    option.IsArgumentRequired
-                        ? "ConfigMakerRequiredArgumentLabel"
-                        : "ConfigMakerOptionalArgumentLabel"),
-                option.ArgumentPlaceholder)
-            : string.Empty;
-        CommandDetailsBorder.Visibility = Visibility.Visible;
-        Grid.SetRowSpan(CommandListView, 1);
-    }
-
-    private void InsertCommandButton_Click(object sender, RoutedEventArgs e)
+    private void InsertSelectedCommand()
     {
         if (IsEditorReadOnly)
         {
@@ -228,7 +302,7 @@ public sealed partial class ConfigMakerUserControl
         InsertAtCursor(command);
     }
 
-    private void CopyCommandButton_Click(object sender, RoutedEventArgs e)
+    private void CopySelectedCommand()
     {
         string command = BuildSelectedCommand();
         if (string.IsNullOrWhiteSpace(command))
@@ -236,9 +310,7 @@ public sealed partial class ConfigMakerUserControl
             return;
         }
 
-        DataPackage package = new();
-        package.SetText(command);
-        Clipboard.SetContent(package);
+        _view.CopyToClipboard(command);
     }
 
     private string BuildSelectedCommand()
@@ -250,7 +322,7 @@ public sealed partial class ConfigMakerUserControl
 
         string command = ConfigMakerCommandText.BuildOptionCommand(
             _selectedCommand.Source,
-            CommandArgumentTextBox.Text);
+            _commandArgumentText);
         if (command == null)
         {
             ShowEditorMessage(
