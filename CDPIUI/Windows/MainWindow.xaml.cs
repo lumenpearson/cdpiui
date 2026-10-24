@@ -9,8 +9,7 @@ using System.Threading.Tasks;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Core.Store.Database;
+using CDPIUI.ViewModels.Shell;
 using CDPIUI.Views;
 using CDPIUI.Views.Main.Components;
 using Microsoft.UI;
@@ -48,8 +47,11 @@ public sealed partial class MainWindow : WindowEx
 
     public static MainWindow Instance { get; private set; }
 
+    public MainWindowViewModel ViewModel { get; }
+
     public MainWindow()
     {
+        ViewModel = new MainWindowViewModel(LeaveRemovedComponentPage);
         this.InitializeComponent();
         ApplyDarkThemeToSystemMenu();
         InitializeWindow();
@@ -71,17 +73,10 @@ public sealed partial class MainWindow : WindowEx
         SetTitleBar(WindowMoveAera);
         NavView.SelectionChanged += NavView_SelectionChanged;
 
-        StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
-        StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
-        // StoreHelper outlives the window; each reopened window added handlers.
-        this.Closed += (_, _) =>
-        {
-            StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
-            StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
-        };
+        this.Closed += (_, _) => ViewModel.Dispose();
         RestartPrompt.Attach(this);
 
-        AuditNavigationItems();
+        ViewModel.RefreshInstalledComponents();
     }
 
     public double GetContentHeight()
@@ -93,44 +88,12 @@ public sealed partial class MainWindow : WindowEx
         return ContentFrame.ActualWidth;
     }
 
-    private void AuditNavigationItems()
+    private void LeaveRemovedComponentPage()
     {
-        ZapretNavigationViewItem.Visibility = Visibility.Collapsed;
-        ByeDPINavigationViewItem.Visibility = Visibility.Collapsed;
-        GoodbyeDPINavigationViewItem.Visibility = Visibility.Collapsed;
-        SpoofDPINavigationViewItem.Visibility = Visibility.Collapsed;
-
-        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]))
-        {
-            ZapretNavigationViewItem.Visibility = Visibility.Visible;
-        }
-        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]))
-        {
-            ByeDPINavigationViewItem.Visibility = Visibility.Visible;
-        }
-        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]))
-        {
-            GoodbyeDPINavigationViewItem.Visibility = Visibility.Visible;
-        }
-        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI]))
-        {
-            SpoofDPINavigationViewItem.Visibility = Visibility.Visible;
-        }
-
         if (ContentFrame.CurrentSourcePageType == typeof(ViewComponentSettingsPage))
         {
             ContentFrame.Navigate(typeof(MainPage));
         }
-    }
-
-    private void Instance_ItemActionsStopped(string obj)
-    {
-        AuditNavigationItems();
-    }
-
-    private void Instance_ItemRemoved(string obj)
-    {
-        AuditNavigationItems();
     }
 
 
@@ -231,7 +194,7 @@ public sealed partial class MainWindow : WindowEx
 
     private void On_Navigated(object sender, NavigationEventArgs e)
     {
-        NavView.IsBackEnabled = ContentFrame.CanGoBack;
+        ViewModel.CanGoBack = ContentFrame.CanGoBack;
 
         var sourcePageType = ContentFrame.SourcePageType;
         if (sourcePageType == null)
@@ -254,9 +217,7 @@ public sealed partial class MainWindow : WindowEx
         if (item != null && !ReferenceEquals(NavView.SelectedItem, item))
             NavView.SelectedItem = item;
 
-        BackButton.Visibility = item == null
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        ViewModel.IsBackButtonVisible = item == null;
     }
 
     public void NavigateSubPage(Type page, SlideNavigationTransitionEffect effect)
@@ -264,7 +225,7 @@ public sealed partial class MainWindow : WindowEx
         try
         {
             ContentFrame.Navigate(page, null, new SlideNavigationTransitionInfo() { Effect = effect });
-            BackButton.Visibility = Visibility.Visible;
+            ViewModel.IsBackButtonVisible = true;
         }
         catch (Exception ex)
         {
@@ -305,8 +266,6 @@ public sealed partial class MainWindow : WindowEx
     {
         _ = ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
     }
-
-    #region WINAPI
 
     private delegate IntPtr WindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
@@ -366,8 +325,6 @@ public sealed partial class MainWindow : WindowEx
 
     [DllImport("uxtheme.dll", EntryPoint = "#136", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern void FlushMenuThemes();
-
-    #endregion
 
 
 }
