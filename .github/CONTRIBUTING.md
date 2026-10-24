@@ -132,6 +132,30 @@ cdpiui/
 
 WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, executable trust in `ExecutableTrust`, package signatures). Do not open files or links through the shell from the tray.
 
+### Code style
+
+The root `.editorconfig` sets the code style. Visual Studio and `dotnet format` use it.
+
+- Use file-scoped namespaces (`namespace CDPIUI.Core;`). The namespace must agree with the folder.
+- Put the braces on new lines (Allman style). Use four spaces for indents.
+- Save files as UTF-8 without a byte order mark. Do not keep spaces at the end of lines.
+- Names:
+  - types, methods, properties, events and constants: `PascalCase`;
+  - private and internal fields: `_camelCase`;
+  - private static readonly fields: `PascalCase`. A static lock object has the name `SyncRoot`;
+  - parameters and local variables: `camelCase`;
+  - interfaces start with `I`.
+- Do not write `this.` before members.
+- Put one type in one file. The file has the name of the type.
+- Keep classes and methods small. A class must have one responsibility. If a method becomes longer than about 80 lines, divide it into named steps. If a XAML page has much code, move the logic into classes in `Helper` or `ViewModels`. Divide the remaining page code into partial files by function: `PageName.Function.cs`.
+- Do not add `#region`.
+
+To format the changed project, run this command:
+
+```
+dotnet format whitespace <project>.csproj
+```
+
 ### CDPIUI.TrayIcon
 
 The tray operates all the time and keeps the components in operation. The tray must be fast and it must always respond.
