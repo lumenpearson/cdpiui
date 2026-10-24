@@ -1,19 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using CDPIUI.Controls.Default;
+using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Store.Data;
 using CDPIUI.Helper.CreateConfigHelper;
-using CDPIUI.Shared;
-using CDPIUI.ViewModels;
+using CDPIUI.ViewModels.CreateConfig;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using TextControlBoxNS;
 using Windows.UI.Popups;
@@ -22,73 +20,39 @@ using WinUI3Localizer;
 
 namespace CDPIUI.Views.CreateConfigHelper;
 
-public sealed partial class CreateNewConfigPage : TemplatePage
+public sealed partial class CreateNewConfigPage : TemplatePage, ICreateNewConfigView
 {
-    private List<string> _designerSupportedComponentIds = ["CSSIXC048", "CSGIVS036", "CSNIG9025"];
+    private readonly ILocalizer _localizer = Localizer.Get();
 
-    private class ComponentModel
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-    }
-
-    public ObservableCollection<ConditionVariableModel> Conditions { get; } = new ObservableCollection<ConditionVariableModel>();
-    public ObservableCollection<VariableModel> Variables { get; } = new ObservableCollection<VariableModel>();
-
-    public ICommand RemoveConditionCommand { get; }
-    public ICommand RemoveVariableCommand { get; }
-    public ICommand VariableChangedCommand { get; }
-
-    public ICommand GraphicDesignerTextValueChangedCommand { get; }
-    public ICommand GraphicDesignerBoolValueToggledCommand { get; }
-    public ICommand GraphicDesignerSelectedGuidChangedCommand { get; }
-    public ObservableCollection<GraphicDesignerSettingItemModel> DesignerSettingItemModels { get; } = [];
-    public ObservableCollection<GraphicDesignerExclusiveSettingItemModel> DesignerExclusiveSettingItemModels { get; } = [];
-
-    private ConfigItem _configItem;
-
-    private ILocalizer _localizer = Localizer.Get();
-
-    public string EditItemId = string.Empty;
-    public PageOpenModes PageOpenMode = PageOpenModes.None;
-
-    private bool _isRunning = false;
-    private string _curRunId = string.Empty;
     private bool _isOpened = true;
-    private string _listDirectory = string.Empty;
-    private string _binDirectory = string.Empty;
-    private string _nowConfigLoadedId = string.Empty;
 
     public CreateNewConfigPage()
     {
+        ViewModel = new CreateNewConfigViewModel(this);
         InitializeComponent();
-        this.DataContext = this;
         this.Loaded += CreateNewConfigPage_Loaded;
-        RemoveConditionCommand = new RelayCommand(p => RemoveCondition(p));
-        RemoveVariableCommand = new RelayCommand(p => RemoveVariable(p));
-        VariableChangedCommand = new RelayCommand(p => VariableChangedValue((Tuple<string, string>)p));
-
-        ConditionsListView.ItemsSource = Conditions;
-        VariablesListView.ItemsSource = Variables;
-
-        GraphicDesignerTextValueChangedCommand = new RelayCommand(p => HandleGraphicDesignerTextValueChanged((Tuple<string, string>)p));
-        GraphicDesignerBoolValueToggledCommand = new RelayCommand(p => HandleGraphicDesignerBoolValueToggled((Tuple<string, bool>)p));
-        GraphicDesignerSelectedGuidChangedCommand = new RelayCommand(p => HandleGraphicDesignerSelectedGuidChanged((Tuple<string, string>)p));
-
-        GUIDesignerListView.ItemsSource = DesignerSettingItemModels;
-        GUIDesignerExclusiveListView.ItemsSource = DesignerExclusiveSettingItemModels;
 
         CheckHighlight();
 
         StartupStringTextBox.UseSpacesInsteadTabs = true;
         StartupStringTextBox.NumberOfSpacesForTab = 4;
 
-        InitPage();
+        ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
 
         this.ActualThemeChanged += CreateNewConfigPage_ActualThemeChanged;
         this.ProcessKeyboardAccelerators += CreateNewConfigPage_ProcessKeyboardAccelerators;
         this.KeyDown += CreateNewConfigPage_KeyDown;
     }
+
+    public CreateNewConfigViewModel ViewModel { get; }
+
+    public string EditorText
+    {
+        get => StartupStringTextBox.Text;
+        set => StartupStringTextBox.Text = value;
+    }
+
+    public bool IsTextEditorTabSelected => MainPivot.SelectedItem == DefaultDesigner;
 
     public void OpenSearch()
     {
@@ -141,27 +105,85 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         MainGrid.Style = style;
     }
 
+    public void ResetEditorCursor() => StartupStringTextBox.SetCursorPosition(0, 0);
+
+    public void SelectDesignerTab() => DesignerItem.IsSelected = true;
+
+    public void SelectTextEditorTab() => DefaultDesigner.IsSelected = true;
+
+    public void ApplyEditorBackground() => ChangeBackground();
+
+    public void CloseSearch() => SearchControl.Close();
+
+    public void SetExitAskAvailable(bool value) =>
+        CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = value;
+
+    public async Task<Dictionary<string, string>> SelectUsedFilesAsync(List<string> usedFiles, ConfigItem configItem, string directory, AskAutoFillMode mode)
+    {
+        SelectUsedFilesForConfigContentDialog dialog = new(usedFiles, configItem.name, directory, configItem, mode)
+        {
+            XamlRoot = this.XamlRoot
+        };
+        await dialog.ShowQueuedAsync();
+        return dialog.Result == CreateConfigResult.Selected ? dialog.Files : null;
+    }
+
+    public async Task ShowErrorAsync(string message, string title)
+    {
+        try
+        {
+            var dlg = new MessageDialog(message, title);
+            InitializeWithWindow.Initialize(
+                dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
+                );
+            await dlg.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), exception.ToString());
+        }
+    }
+
+    public async Task ShowSaveCompletedAsync()
+    {
+        CreateCompleteDialog dialog = new()
+        {
+            XamlRoot = this.XamlRoot
+        };
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
+            CreateConfigHelperWindow.Instanse.Close();
+        else
+        {
+            if (Frame.CanGoBack)
+                Frame.GoBack();
+            else
+                Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
+        }
+    }
+
+    public void NavigateToMainPage() =>
+        Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
+
+    public void ReturnEditedConfig(ConfigItem configItem)
+    {
+        var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
+        if (window != null)
+            window.IsOperationExitAskAvailable = false;
+        window?.NavigateBackWithParameter(configItem);
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
         this.KeyDown -= CreateNewConfigPage_KeyDown;
         this.ProcessKeyboardAccelerators -= CreateNewConfigPage_ProcessKeyboardAccelerators;
         this.ActualThemeChanged -= CreateNewConfigPage_ActualThemeChanged;
-        StopTestRun();
-    }
-
-    protected override void OnNavigatedTo(NavigationEventArgs e)
-    {
-        base.OnNavigatedTo(e);
+        ViewModel.StopTestRun();
     }
 
     private void CreateNewConfigPage_Loaded(object sender, RoutedEventArgs e)
     {
-        EditItemId = SharedConstants.LocalUserItemsId;
-
-        if (Parameter != null)
-            RunOnNavigatedToActions(Parameter);
-        AuditSaveAvailable();
+        ViewModel.Open(Parameter);
         Parameter = null;
         this.Loaded -= CreateNewConfigPage_Loaded;
     }
@@ -217,97 +239,33 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         CheckHighlight(MainGrid.RequestedTheme);
     }
 
-    private void InitPage()
-    {
-        List<ComponentModel> components = new();
-        foreach (var component in HardcodedItemIds.ComponentIds)
-        {
-            components.Add(new()
-            {
-                Id = component.Value,
-                Name = component.Key.ToString()
-            });
-        }
-        ComponentChooseComboBox.ItemsSource = components;
-
-        AuditSaveAvailable();
-
-        SaveButtonText.Text = _localizer.GetLocalizedString("Save");
-        PageTitleTextBlock.Text = _localizer.GetLocalizedString("CreateNewConfig");
-        TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
-        ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
-    }
-
-    private bool IsSaveAvailable()
-    {
-        bool result = false;
-
-        result = ComponentChooseComboBox.SelectedIndex != -1 &&
-            !string.IsNullOrEmpty(DisplayNameTextBox.Text) &&
-            !string.IsNullOrEmpty(StartupStringTextBox.Text);
-        return result;
-    }
-
-    private void AuditSaveAvailable()
-    {
-        bool state = IsSaveAvailable();
-        SaveConfigButton.IsEnabled = state;
-        TestButtonText.IsEnabled = state;
-    }
-
     private bool IsSearchAvailable()
     {
-        if (_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem)?.Id ?? ""))
+        if (ViewModel.IsDesignerSupported)
             return MainPivot.SelectedItem == DefaultDesigner;
         else
             return true;
     }
 
-    private void CheckViewType()
+    private void MainPivot_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (ComponentChooseComboBox.SelectedItem == null)
-        {
-            AdditionalSettingsPanel.Visibility = Visibility.Collapsed;
-            NotReadyErrorGrid.Visibility = Visibility.Visible;
-            return;
-        }
-        else
-        {
-            AdditionalSettingsPanel.Visibility = Visibility.Visible;
-            NotReadyErrorGrid.Visibility = Visibility.Collapsed;
-        }
-        if (_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
-        {
-            DesignerItem.IsSelected = true;
-            MainPivot.Visibility = Visibility.Visible;
-            HandleSelectionChange(false);
-        }
-        else
-        {
-            HandleSelectionChange(true);
-            DefaultDesigner.IsSelected = true;
-            MainPivot.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private void ComponentChooseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        CheckViewType();
-
-        CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = true;
-        AuditSaveAvailable();
-    }
-
-    private void DisplayNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = true;
-        AuditSaveAvailable();
+        ViewModel.OnEditorTabChanged();
     }
 
     private void StartupStringTextBox_TextChanged(TextControlBox sender)
     {
-        CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = true;
-        AuditSaveAvailable();
+        ViewModel.OnEditorTextChanged();
+    }
+
+    private void ConditionFlyout_Opened(object sender, object e)
+    {
+        ViewModel.ResetConditionDraft();
+    }
+
+    private void SaveConditionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.AddCondition();
+        ConditionFlyout.Hide();
     }
 
     private void ExpandButton_Click(object sender, RoutedEventArgs e)
@@ -317,7 +275,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             ShowInfoPanel.Begin();
             HideInfoPanel.Stop();
             InfoPanelDefinition.Width = new GridLength(350);
-            ShowButtonFontIcon.Glyph = "\uE76C";
+            ShowButtonFontIcon.Glyph = "";
             ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
         }
         else
@@ -325,25 +283,9 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             ShowInfoPanel.Stop();
             HideInfoPanel.Begin();
             InfoPanelDefinition.Width = new GridLength(0);
-            ShowButtonFontIcon.Glyph = "\uE76B";
+            ShowButtonFontIcon.Glyph = "";
             ExpandToolTip.Content = _localizer.GetLocalizedString("ShowConfigSettings");
         }
         _isOpened = !_isOpened;
-    }
-
-    private async Task ShowErrorDialog(string message, string title)
-    {
-        try
-        {
-            var dlg = new MessageDialog(message, title);
-            InitializeWithWindow.Initialize(
-                dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
-                );
-            await dlg.ShowAsync();
-        }
-        catch (Exception exception)
-        {
-            Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), exception.ToString());
-        }
     }
 }

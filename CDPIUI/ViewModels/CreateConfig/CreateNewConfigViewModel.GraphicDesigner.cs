@@ -5,44 +5,42 @@ using System.Linq;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
-namespace CDPIUI.Views.CreateConfigHelper;
+namespace CDPIUI.ViewModels.CreateConfig;
 
 // The graphic designer for GoodbyeDPI, SpoofDPI and NoDPI.
-public sealed partial class CreateNewConfigPage
+public sealed partial class CreateNewConfigViewModel
 {
-    private void MainPivot_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
-    {
-        HandleSelectionChange();
-    }
+    private string _nowConfigLoadedId = string.Empty;
+
+    /// <summary>Call when the user switched between the text editor and the designer.</summary>
+    public void OnEditorTabChanged() => HandleSelectionChange();
 
     private void HandleSelectionChange(bool showDefaultOnly = false)
     {
-        ChangeBackground();
-        if (MainPivot.SelectedItem == DefaultDesigner || showDefaultOnly)
+        _view.ApplyEditorBackground();
+        if (_view.IsTextEditorTabSelected || showDefaultOnly)
         {
-            StartupStringTextBox.Visibility = Visibility.Visible;
-            GUIDesignerGrid.Visibility = Visibility.Collapsed;
+            IsTextEditorVisible = true;
+            IsDesignerVisible = false;
             if (!showDefaultOnly)
                 ConvertDesignerLikeSettingsToString();
         }
         else
         {
-            StartupStringTextBox.Visibility = Visibility.Collapsed;
-            GUIDesignerGrid.Visibility = Visibility.Visible;
+            IsTextEditorVisible = false;
+            IsDesignerVisible = true;
             LoadDesigner();
             ConvertStringToDesignerLikeSettings();
-            SearchControl.Close();
+            _view.CloseSearch();
         }
     }
 
     private void LoadDesigner()
     {
-        if (ComponentChooseComboBox.SelectedItem == null)
+        if (SelectedComponent == null)
             return;
-        string id = ((ComponentModel)ComponentChooseComboBox.SelectedItem).Id;
+        string id = SelectedComponent.Id;
         if (HardcodedItemIds.ComponentIds[Components.GoodbyeDPI] == id && _nowConfigLoadedId != HardcodedItemIds.ComponentIds[Components.GoodbyeDPI])
         {
             GraphicDesignerHelper.LoadGoodbyeDPIDesignerConfig(DesignerSettingItemModels, DesignerExclusiveSettingItemModels);
@@ -89,19 +87,19 @@ public sealed partial class CreateNewConfigPage
     private void HandleGraphicDesignerBoolValueToggled(Tuple<string, bool> tuple)
     {
         string guid = tuple.Item1;
-        bool _value = tuple.Item2;
+        bool value = tuple.Item2;
 
         var item = DesignerSettingItemModels.FirstOrDefault(x => x.Guid == guid);
         if (item != null)
         {
-            item.IsChecked = _value;
+            item.IsChecked = value;
         }
         else
         {
             item = DesignerExclusiveSettingItemModels.FirstOrDefault(x => x.Items.FirstOrDefault(y => y.Guid == guid) != null)?.Items.FirstOrDefault(y => y.Guid == guid);
             if (item != null)
             {
-                item.IsChecked = _value;
+                item.IsChecked = value;
             }
         }
     }
@@ -120,18 +118,18 @@ public sealed partial class CreateNewConfigPage
 
     private void ConvertStringToDesignerLikeSettings()
     {
-        StartupStringTextBox.Text = StartupStringTextBox.Text.Replace("\n", " ");
-        AdditionalSettingsTextBox.Text = GraphicDesignerHelper.ConvertStringToGraphicDesignerSettings(DesignerSettingItemModels, DesignerExclusiveSettingItemModels, StartupStringTextBox.Text);
+        _view.EditorText = _view.EditorText.Replace("\n", " ");
+        AdditionalSettings = GraphicDesignerHelper.ConvertStringToGraphicDesignerSettings(DesignerSettingItemModels, DesignerExclusiveSettingItemModels, _view.EditorText);
     }
 
     private void ConvertDesignerLikeSettingsToString()
     {
-        if (ComponentChooseComboBox.SelectedItem != null && !_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
+        if (SelectedComponent != null && !IsDesignerSupported)
         {
             return;
         }
 
-        StartupStringTextBox.Text = GraphicDesignerHelper.ConvertGraphicDesignerSettingsToString(DesignerSettingItemModels, DesignerExclusiveSettingItemModels, AdditionalSettingsTextBox.Text);
-        StartupStringTextBox.Text = StartupStringTextBox.Text.Replace("\n", " ");
+        _view.EditorText = GraphicDesignerHelper.ConvertGraphicDesignerSettingsToString(DesignerSettingItemModels, DesignerExclusiveSettingItemModels, AdditionalSettings);
+        _view.EditorText = _view.EditorText.Replace("\n", " ");
     }
 }
