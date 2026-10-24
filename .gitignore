@@ -370,3 +370,6 @@ FodyWeavers.xsd
 /CDPIUI.TrayIcon/Helper/Secret.cs
 /CDPIUI.Shared/Secrets/Secret.cs
 /CDPIUI.AddOns.BlockCheck2.Regression
+
+# Mono registry written by local builds outside Windows
+.mono/
