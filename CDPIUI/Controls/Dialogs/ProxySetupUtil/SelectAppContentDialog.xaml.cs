@@ -48,7 +48,7 @@ public sealed partial class SelectAppContentDialog : ContentDialog
         UniversalApp
     }
     public ICommand RemoveAppClickCommand { get; }
-    public ObservableCollection<SelectedApplicationInfo> _applications { get; private set; } = [];
+    public ObservableCollection<SelectedApplicationInfo> Applications { get; private set; } = [];
 
     private ILocalizer _localizer = Localizer.Get();
     public SelectAppContentDialog(List<SelectedApplicationInfo> applications)
@@ -59,10 +59,10 @@ public sealed partial class SelectAppContentDialog : ContentDialog
 
         AuditVisibility();
 
-        SelectedApplicationsListView.ItemsSource = _applications;
+        SelectedApplicationsListView.ItemsSource = Applications;
 
         foreach (var app in applications)
-            _applications.Add(app);
+            Applications.Add(app);
     }
 
     private SelectAppContentDialogResult GetResult()
@@ -200,7 +200,7 @@ public sealed partial class SelectAppContentDialog : ContentDialog
 
     private void RemoveApp(SelectedApplicationInfo model)
     {
-        _applications.Remove(model);
+        Applications.Remove(model);
     }
 
     private void Clean()
@@ -213,13 +213,13 @@ public sealed partial class SelectAppContentDialog : ContentDialog
 
     private void AddApplicationButton_Click(object sender, RoutedEventArgs e)
     {
-        _applications.Add(new()
+        Applications.Add(new()
         {
             AppType = GetResult(),
             DisplayName = Path.GetFileNameWithoutExtension(ApplicationPreviewTextBlock.Text),
             FullPath = ApplicationPreviewTextBlock.Text,
         });
-        Debug.WriteLine(_applications.Count);
+        Debug.WriteLine(Applications.Count);
         Clean();
     }
 

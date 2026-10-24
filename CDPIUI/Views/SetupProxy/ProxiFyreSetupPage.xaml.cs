@@ -411,7 +411,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         dialog.Title = string.Format(_localizer.GetLocalizedString("EditApplicationListDialogTitle"), _localizer.GetLocalizedString("ApplicationBlackList"));
         await dialog.ShowQueuedAsync();
 
-        _blackList = dialog._applications.ToList();
+        _blackList = dialog.Applications.ToList();
         SetDescription();
     }
 
@@ -422,7 +422,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         dialog.Title = string.Format(_localizer.GetLocalizedString("EditApplicationListDialogTitle"), _localizer.GetLocalizedString("ApplicationWhiteList"));
         await dialog.ShowQueuedAsync();
 
-        _whiteList = dialog._applications.ToList();
+        _whiteList = dialog.Applications.ToList();
         SetDescription();
     }
 }

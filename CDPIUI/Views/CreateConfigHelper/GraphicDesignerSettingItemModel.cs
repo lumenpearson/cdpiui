@@ -14,7 +14,7 @@ public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
     public string Type { get; set; }
     public List<EnumModel> AvailableEnumValues { get; set; } = [];
     public bool EnableTextInput { get; set; }
-    public string _value = "";
+    private string _value = "";
     public string Value
     {
         get => _value;
