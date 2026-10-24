@@ -117,37 +117,13 @@ public static class Zapret2LegacyConfigService
 
             Dictionary<string, FileMapping> mappings =
                 new(StringComparer.OrdinalIgnoreCase);
-
-            string MapFile(string sourcePath)
-            {
-                if (!mappings.TryGetValue(sourcePath, out FileMapping? mapping))
-                {
-                    mapping = CreateFileMapping(
-                        sourcePath,
-                        packDirectory,
-                        legacyComponentDirectory,
-                        cachePackDirectory);
-                    mappings.Add(sourcePath, mapping);
-                }
-
-                return mapping.DestinationPath;
-            }
-
-            ZapretConversionResult conversion = new Zapret1ToZapret2Converter(
-                new ZapretConversionOptions { FilePathMapper = MapFile })
-                .Convert(expandedLegacyStartupString);
-
-            LogConversionWarnings(config, conversion.Issues);
-            if (!conversion.IsSuccessful)
-            {
-                string errors = string.Join(
-                    "; ",
-                    conversion.Issues
-                        .Where(issue => issue.Severity == ZapretConversionIssueSeverity.Error)
-                        .Select(issue => $"{issue.Code}: {issue.Message}"));
-                throw new InvalidOperationException(
-                    $"Cannot convert legacy Zapret config '{config.name}': {errors}");
-            }
+            ZapretConversionResult conversion = ConvertOrThrow(
+                config,
+                expandedLegacyStartupString,
+                mappings,
+                packDirectory,
+                legacyComponentDirectory,
+                cachePackDirectory);
 
             string inputHash = ComputeInputHash(
                 config,
@@ -166,24 +142,77 @@ public static class Zapret2LegacyConfigService
 
             MaterializeFiles(conversion.ReferencedFiles, mappings);
 
-            ConvertedConfigManifest newManifest = new()
-            {
-                CacheFormatVersion = CacheFormatVersion,
-                PackId = config.packId,
-                ConfigFileName = config.file_name,
-                InputHash = inputHash,
-                ConverterVersion = ConverterVersion.Value,
-                CommandLineHash = commandLineHash,
-                StartupString = conversion.StartupString,
-                RequiredCachedFiles = GetRequiredCachedFiles(conversion.ReferencedFiles, mappings),
-                ConvertedAtUtc = DateTime.UtcNow
-            };
+            ConvertedConfigManifest newManifest = CreateManifest(config.packId, config.file_name, inputHash, commandLineHash, conversion, mappings);
 
             Directory.CreateDirectory(manifestDirectory);
             SaveManifest(manifestPath, newManifest);
             return conversion.StartupString;
         }
     }
+
+    /// <summary>
+    /// Converts the command line and fills <paramref name="mappings"/> with the files it
+    /// references, keyed by source path.
+    /// </summary>
+    private static ZapretConversionResult ConvertOrThrow(
+        ConfigItem config,
+        string expandedLegacyStartupString,
+        Dictionary<string, FileMapping> mappings,
+        string packDirectory,
+        string legacyComponentDirectory,
+        string cachePackDirectory)
+    {
+        string MapFile(string sourcePath)
+        {
+            if (!mappings.TryGetValue(sourcePath, out FileMapping? mapping))
+            {
+                mapping = CreateFileMapping(
+                    sourcePath,
+                    packDirectory,
+                    legacyComponentDirectory,
+                    cachePackDirectory);
+                mappings.Add(sourcePath, mapping);
+            }
+
+            return mapping.DestinationPath;
+        }
+
+        ZapretConversionResult conversion = new Zapret1ToZapret2Converter(
+            new ZapretConversionOptions { FilePathMapper = MapFile })
+            .Convert(expandedLegacyStartupString);
+
+        LogConversionWarnings(config, conversion.Issues);
+        if (!conversion.IsSuccessful)
+        {
+            string errors = string.Join(
+                "; ",
+                conversion.Issues
+                    .Where(issue => issue.Severity == ZapretConversionIssueSeverity.Error)
+                    .Select(issue => $"{issue.Code}: {issue.Message}"));
+            throw new InvalidOperationException(
+                $"Cannot convert legacy Zapret config '{config.name}': {errors}");
+        }
+        return conversion;
+    }
+
+    private static ConvertedConfigManifest CreateManifest(
+        string packId,
+        string configFileName,
+        string inputHash,
+        string commandLineHash,
+        ZapretConversionResult conversion,
+        Dictionary<string, FileMapping> mappings) => new()
+    {
+        CacheFormatVersion = CacheFormatVersion,
+        PackId = packId,
+        ConfigFileName = configFileName,
+        InputHash = inputHash,
+        ConverterVersion = ConverterVersion.Value,
+        CommandLineHash = commandLineHash,
+        StartupString = conversion.StartupString,
+        RequiredCachedFiles = GetRequiredCachedFiles(conversion.ReferencedFiles, mappings),
+        ConvertedAtUtc = DateTime.UtcNow
+    };
 
     private static string GetPackDirectory(string packId)
     {

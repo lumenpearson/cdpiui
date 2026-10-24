@@ -86,117 +86,131 @@ public class CoreCommandsHandler
         switch (model.MessageType)
         {
             case CONPTYMessageIds.GetStartupString:
-                {
-                    var id = model.MessageData?["componentId"];
-                    if (id == null)
-                        return;
-
-                    await ComponentTasksManager.Instance.CreateAndRunNewTask(id);
-                    return;
-                }
+                await RunComponentTaskAsync(model);
+                return;
 
             case CONPTYMessageIds.GetAllStartupStrings:
                 await ComponentTasksManager.Instance.RunAllPreferredActions();
                 return;
 
             case CONPTYMessageIds.CleanOutputForId:
-                {
-                    var id = model.MessageData?["componentId"];
-                    if (id == null)
-                        return;
-
-                    (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager?
-                        .ClearOutput();
-
-                    return;
-                }
+                await ClearProcessOutputAsync(model);
+                return;
 
             case CONPTYMessageIds.MarkProcessIdAsStarted:
-                {
-                    var id = model.MessageData?["componentId"];
-                    if (id == null)
-                        return;
-
-                    (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager?
-                        .MarkAsStarted();
-
-                    return;
-                }
+                await MarkProcessAsStartedAsync(model);
+                return;
 
             case CONPTYMessageIds.MarkProcessIdAsStopped:
-                {
-                    var id = model.MessageData?["componentId"];
-                    if (id == null)
-                        return;
-
-                    var title = model.MessageData?["errorMessage"];
-                    var text = model.MessageData?["errorObject"];
-
-                    var pm = (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager;
-
-                    if (title != null && text != null)
-                    {
-                        Debug.WriteLine(title, text);
-                        if (pm != null)
-                            await pm.ShowErrorMessage(title, text, showWindow: model.MessageData?["stateSnapshot"] != "true");
-                    }
-                    else
-                    {
-                        pm?.MarkAsFinished();
-                    }
-
-                    return;
-                }
+                await MarkProcessAsStoppedAsync(model);
+                return;
 
             case CONPTYMessageIds.ChangeProcessIdExecutable:
-                {
-                    var id = model.MessageData?["componentId"];
-                    var processName = model.MessageData?["processName"];
-
-                    if (id == null || processName == null)
-                        return;
-
-                    (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager?
-                        .ChangeProcName(processName);
-
-                    return;
-                }
+                await ChangeProcessExecutableAsync(model);
+                return;
 
             case CONPTYMessageIds.ProcessIdNewOutput:
-                {
-                    var id = model.MessageData?["componentId"];
-                    var output = model.MessageData?["output"];
-
-                    if (id == null || output == null)
-                        return;
-
-                    (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager?
-                        .AddOutput(output);
-
-                    return;
-                }
+                await AddProcessOutputAsync(model);
+                return;
 
             case CONPTYMessageIds.ProcessIdFullOutput:
-                {
-                    var id = model.MessageData?["componentId"];
-                    var output = model.MessageData?["output"];
-
-                    if (id == null || output == null)
-                        return;
-
-                    var pm = (await ComponentTasksManager.Instance.GetTaskFromId(id))?
-                        .ProcessManager;
-
-                    pm?.SetOutput(output);
-
-                    return;
-                }
+                await SetProcessOutputAsync(model);
+                return;
         }
+    }
+
+    private static async Task RunComponentTaskAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        if (id == null)
+            return;
+
+        await ComponentTasksManager.Instance.CreateAndRunNewTask(id);
+    }
+
+    private static async Task ClearProcessOutputAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        if (id == null)
+            return;
+
+        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager?
+            .ClearOutput();
+    }
+
+    private static async Task MarkProcessAsStartedAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        if (id == null)
+            return;
+
+        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager?
+            .MarkAsStarted();
+    }
+
+    private static async Task MarkProcessAsStoppedAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        if (id == null)
+            return;
+
+        var title = model.MessageData?["errorMessage"];
+        var text = model.MessageData?["errorObject"];
+
+        var pm = (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager;
+
+        if (title != null && text != null)
+        {
+            Debug.WriteLine(title, text);
+            if (pm != null)
+                await pm.ShowErrorMessage(title, text, showWindow: model.MessageData?["stateSnapshot"] != "true");
+        }
+        else
+        {
+            pm?.MarkAsFinished();
+        }
+    }
+
+    private static async Task ChangeProcessExecutableAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        var processName = model.MessageData?["processName"];
+
+        if (id == null || processName == null)
+            return;
+
+        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager?
+            .ChangeProcName(processName);
+    }
+
+    private static async Task AddProcessOutputAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        var output = model.MessageData?["output"];
+
+        if (id == null || output == null)
+            return;
+
+        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager?
+            .AddOutput(output);
+    }
+
+    private static async Task SetProcessOutputAsync(CONPTYMessageModel model)
+    {
+        var id = model.MessageData?["componentId"];
+        var output = model.MessageData?["output"];
+
+        if (id == null || output == null)
+            return;
+
+        (await ComponentTasksManager.Instance.GetTaskFromId(id))?
+            .ProcessManager?
+            .SetOutput(output);
     }
 
     private static void HandleSettingsMessage(SettingsMessageModel model)
@@ -267,74 +281,7 @@ public class CoreCommandsHandler
                 throw new ArgumentException("Unknown conditional action type.");
             }
 
-            switch (actionType)
-            {
-                case ConditionalActionType.ApplyPreset:
-                    ApplyPreset(model);
-                    break;
-
-                case ConditionalActionType.StartComponent:
-                    {
-                        var componentId = RequireParameter(model, "componentId");
-                        if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
-                        {
-                            await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
-                            var task = await ComponentTasksManager.Instance.GetTaskFromId(componentId);
-                            if (task?.ProcessManager.IsErrorHappens == true)
-                            {
-                                throw new InvalidOperationException(
-                                    task.ProcessManager.LastError?.ErrorCode ??
-                                    $"Component '{componentId}' could not be started.");
-                            }
-                        }
-                        break;
-                    }
-
-                case ConditionalActionType.ToggleComponent:
-                    {
-                        var componentId = RequireParameter(model, "componentId");
-                        if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
-                        {
-                            await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
-                            var task = await ComponentTasksManager.Instance.GetTaskFromId(componentId);
-                            if (task?.ProcessManager.IsErrorHappens == true)
-                            {
-                                throw new InvalidOperationException(
-                                    task.ProcessManager.LastError?.ErrorCode ??
-                                    $"Component '{componentId}' could not be started.");
-                            }
-                        }
-                        else
-                        {
-                            await ComponentTasksManager.Instance.StopTask(componentId);
-                        }
-                    }
-                    break;
-
-                case ConditionalActionType.StartAutorunComponents:
-                    await ComponentTasksManager.Instance.RunAllPreferredActions();
-                    break;
-
-                case ConditionalActionType.CheckStoreUpdates:
-                    await StoreHelper.Instance.CheckUpdates();
-                    if (StoreHelper.Instance.IsExceptonHappensWhileCheckingUpdates)
-                        throw new InvalidOperationException("One or more Store update checks failed.");
-                    break;
-
-                case ConditionalActionType.CheckApplicationUpdates:
-                    await ApplicationUpdate.Instance.CheckForUpdates(notify: true);
-                    if (ApplicationUpdate.Instance.ErrorHappened)
-                    {
-                        throw new InvalidOperationException(
-                            ApplicationUpdate.Instance.ErrorInfo ??
-                            "The application update check failed.");
-                    }
-                    break;
-
-                default:
-                    throw new InvalidOperationException(
-                        $"Action '{actionType}' cannot be executed by CDPIUI.Core.");
-            }
+            await ExecuteConditionalActionAsync(actionType, model);
 
             await PipeHelper.SendConditionalLaunchResult(operationId, success: true);
         }
@@ -344,6 +291,72 @@ public class CoreCommandsHandler
                 nameof(CoreCommandsHandler),
                 $"Conditional action failed: {ex}");
             await PipeHelper.SendConditionalLaunchResult(operationId, success: false, ex.Message);
+        }
+    }
+
+    private static async Task ExecuteConditionalActionAsync(
+        ConditionalActionType actionType,
+        ConditionalLaunchMessageModel model)
+    {
+        switch (actionType)
+        {
+            case ConditionalActionType.ApplyPreset:
+                ApplyPreset(model);
+                break;
+
+            case ConditionalActionType.StartComponent:
+                {
+                    var componentId = RequireParameter(model, "componentId");
+                    if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
+                        await StartComponentOrThrowAsync(componentId);
+                    break;
+                }
+
+            case ConditionalActionType.ToggleComponent:
+                {
+                    var componentId = RequireParameter(model, "componentId");
+                    if (!await ComponentTasksManager.Instance.IsTaskRunning(componentId))
+                        await StartComponentOrThrowAsync(componentId);
+                    else
+                        await ComponentTasksManager.Instance.StopTask(componentId);
+                }
+                break;
+
+            case ConditionalActionType.StartAutorunComponents:
+                await ComponentTasksManager.Instance.RunAllPreferredActions();
+                break;
+
+            case ConditionalActionType.CheckStoreUpdates:
+                await StoreHelper.Instance.CheckUpdates();
+                if (StoreHelper.Instance.IsExceptonHappensWhileCheckingUpdates)
+                    throw new InvalidOperationException("One or more Store update checks failed.");
+                break;
+
+            case ConditionalActionType.CheckApplicationUpdates:
+                await ApplicationUpdate.Instance.CheckForUpdates(notify: true);
+                if (ApplicationUpdate.Instance.ErrorHappened)
+                {
+                    throw new InvalidOperationException(
+                        ApplicationUpdate.Instance.ErrorInfo ??
+                        "The application update check failed.");
+                }
+                break;
+
+            default:
+                throw new InvalidOperationException(
+                    $"Action '{actionType}' cannot be executed by CDPIUI.Core.");
+        }
+    }
+
+    private static async Task StartComponentOrThrowAsync(string componentId)
+    {
+        await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
+        var task = await ComponentTasksManager.Instance.GetTaskFromId(componentId);
+        if (task?.ProcessManager.IsErrorHappens == true)
+        {
+            throw new InvalidOperationException(
+                task.ProcessManager.LastError?.ErrorCode ??
+                $"Component '{componentId}' could not be started.");
         }
     }
 
