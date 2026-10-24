@@ -91,7 +91,7 @@ public sealed class BlockCheck2SiteListItem : INotifyPropertyChanged
                 ? File.ReadLines(filePath)
                 : content.Split(['\r', '\n']);
             return lines
-                .Select(line => (line ?? string.Empty).Trim().TrimStart('﻿'))
+                .Select(line => (line ?? string.Empty).Trim().TrimStart('\uFEFF'))
                 .Where(line => line.Length > 0 && !line.StartsWith('#'))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count();
