@@ -378,9 +378,11 @@ public sealed partial class HomePage : TemplatePage
     {
         try
         {
-            // The catalogue is parsed again only when the daily sync is due or nothing is loaded yet.
+            // The catalogue is parsed again only when the daily sync is due, nothing is loaded yet,
+            // or the Store cache was cleaned up (Memory settings delete the catalogue folder).
             TimeSpan sinceSync = DateTime.UtcNow - SettingsManager.Instance.GetValue<DateTime>("STORE", "lastSyncTime");
-            bool result = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: sinceSync.TotalDays >= 1);
+            bool cacheMissing = !Directory.Exists(CDPIUI.Core.Data.Directories.StoreRepoCacheDirectory);
+            bool result = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: sinceSync.TotalDays >= 1 || cacheMissing);
             // bool result = true;
             if (result)
             {

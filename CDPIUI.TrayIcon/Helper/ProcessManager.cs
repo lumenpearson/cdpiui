@@ -166,7 +166,9 @@ namespace CDPIUI.TrayIcon.Helper
 
         public async Task StopProcess(bool output = true)
         {
-            if (conPTYHelper.processState)
+            // A start that still waits for its turn counts too: it ran after this stop when the
+            // previous process had just exited.
+            if (conPTYHelper.IsRunningOrStarting)
             {
                 await StopProxy();
                 await conPTYHelper.StopProcess(output);

@@ -49,8 +49,8 @@ public sealed partial class ViewConfigOutput : UserControl
     private string pendingLine = string.Empty;
     private string pendingDisplay = string.Empty;
     private Run lastRun;
-    private long receivedChunks;
-    private long shownChunks;
+    // Number of the last output change shown (ProcessService numbers each change under its lock).
+    private long shownSequence;
 
     public ViewConfigOutput()
     {
@@ -99,7 +99,7 @@ public sealed partial class ViewConfigOutput : UserControl
             return;
         }
 
-        processManager.OutputReceived += ProcessManager_OutputReceived;
+        processManager.OutputAppended += ProcessManager_OutputAppended;
         processManager.OutputReset += ProcessManager_OutputReset;
         processManager.ProcessStateChanged += ProcessManager_ProcessStateChanged;
         processManager.ErrorHappens += ProcessManager_ErrorHappens;
@@ -112,9 +112,7 @@ public sealed partial class ViewConfigOutput : UserControl
 
     public void RefreshOutput()
     {
-        // Chunks counted before the snapshot is read are already part of it.
-        shownChunks = Volatile.Read(ref receivedChunks);
-        string text = GetSourceOutput();
+        string text = GetSourceOutput(out shownSequence);
         ClearOutput();
         AppendOutput(text);
     }
@@ -165,7 +163,7 @@ public sealed partial class ViewConfigOutput : UserControl
             return;
         }
 
-        processManager.OutputReceived -= ProcessManager_OutputReceived;
+        processManager.OutputAppended -= ProcessManager_OutputAppended;
         processManager.OutputReset -= ProcessManager_OutputReset;
         processManager.ProcessStateChanged -= ProcessManager_ProcessStateChanged;
         processManager.ErrorHappens -= ProcessManager_ErrorHappens;
@@ -173,11 +171,8 @@ public sealed partial class ViewConfigOutput : UserControl
         processManager = null;
     }
 
-    private void ProcessManager_OutputReceived(string output)
-    {
-        long chunk = Interlocked.Increment(ref receivedChunks);
-        QueueRefresh(() => AppendReceivedOutput(output, chunk));
-    }
+    private void ProcessManager_OutputAppended(string output, long sequence) =>
+        QueueRefresh(() => AppendReceivedOutput(output, sequence));
 
     private void ProcessManager_OutputReset() => QueueRefresh(() => SynchronizeOutput());
 
@@ -190,11 +185,19 @@ public sealed partial class ViewConfigOutput : UserControl
         });
     }
 
-    private void AppendReceivedOutput(string output, long chunk)
+    private void AppendReceivedOutput(string output, long sequence)
     {
-        // The chunk is already shown as part of a later snapshot.
-        if (chunk <= shownChunks)
+        // The chunk is already part of a snapshot that was shown.
+        if (sequence <= shownSequence)
         {
+            return;
+        }
+
+        // A chunk is missing or came out of order (pipe messages run concurrently): the buffer
+        // has the right order.
+        if (sequence != shownSequence + 1)
+        {
+            SynchronizeOutput();
             return;
         }
 
@@ -212,15 +215,14 @@ public sealed partial class ViewConfigOutput : UserControl
             return;
         }
 
-        shownChunks = chunk;
+        shownSequence = sequence;
         AppendOutput(output);
     }
 
     private void SynchronizeOutput()
     {
         // Read the current snapshot: queued output and full-buffer replies may overlap.
-        shownChunks = Volatile.Read(ref receivedChunks);
-        string text = GetSourceOutput();
+        string text = GetSourceOutput(out shownSequence);
         if (text.Length >= sourceBuffer.Length && sourceBuffer.Equals(text.AsSpan(0, sourceBuffer.Length)))
         {
             AppendOutput(text[sourceBuffer.Length..]);
@@ -305,16 +307,17 @@ public sealed partial class ViewConfigOutput : UserControl
         OutputScrollViewer.ChangeView(null, OutputScrollViewer.ScrollableHeight, null, disableAnimation: true);
     }
 
-    private string GetSourceOutput()
+    private string GetSourceOutput(out long sequence)
     {
         if (processManager == null)
         {
+            sequence = 0;
             return string.Empty;
         }
 
         return IsCleanOutputMode()
-            ? processManager.GetProcessOutput()
-            : processManager.GetDefaultProcessOutput();
+            ? processManager.GetProcessOutput(out sequence)
+            : processManager.GetDefaultProcessOutput(out sequence);
     }
 
     private static bool IsCleanOutputMode() => SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "outputMode");

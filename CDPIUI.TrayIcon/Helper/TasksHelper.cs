@@ -100,7 +100,9 @@ namespace CDPIUI.TrayIcon.Helper
         // The exit and GoodCheck stop with StopAllTasks: they must not wait behind queued commands.
         public async Task StopAllTasksInOrder()
         {
-            await Task.WhenAll((await GetTasksSnapshot()).Select(task =>
+            // The synchronous snapshot lets every stop join its queue before the first await, so a
+            // start that arrives later is not stopped by this earlier command.
+            await Task.WhenAll(GetTasksSnapshotSync().Select(task =>
                 ComponentCommandQueue.Run(task.Id, async () =>
                 {
                     try

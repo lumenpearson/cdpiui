@@ -160,17 +160,18 @@ namespace CDPIUI.TrayIcon.Controls
             {
                 EventHappens?.Invoke();
 
-                // The button shows IsRunning, so the click asks for the other state. The command waits
-                // in the component's queue behind the pipe commands that came first; the UI does not wait.
+                // The click toggles the state the component has when its turn comes in the queue, behind
+                // the pipe commands that came first; the UI does not wait. Deciding from the shown state
+                // made a quick double-click start the component twice (a restart) instead of
+                // starting and stopping it.
                 var id = ComponentId;
-                if (!IsRunning)
+                ComponentCommandQueue.Post(id, async () =>
                 {
-                    ComponentCommandQueue.Post(id, () => TasksHelper.Instance.CreateAndRunNewTask(id), nameof(ComponentUserControl));
-                }
-                else
-                {
-                    ComponentCommandQueue.Post(id, () => TasksHelper.Instance.StopTask(id), nameof(ComponentUserControl));
-                }
+                    if (await TasksHelper.Instance.IsTaskRunning(id))
+                        await TasksHelper.Instance.StopTask(id);
+                    else
+                        await TasksHelper.Instance.CreateAndRunNewTask(id);
+                }, nameof(ComponentUserControl));
             }
             catch (Exception ex)
             {
