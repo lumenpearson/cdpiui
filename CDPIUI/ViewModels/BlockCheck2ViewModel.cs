@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -15,7 +14,7 @@ using CDPIUI.Helper.AddOns.BlockCheck2;
 
 namespace CDPIUI.ViewModels;
 
-public sealed partial class BlockCheck2ViewModel : INotifyPropertyChanged
+public sealed partial class BlockCheck2ViewModel : ObservableObject
 {
     private readonly BlockCheckAddOnService _addOnService;
     private readonly BlockCheckSessionPreparationService _preparationService;
@@ -58,8 +57,6 @@ public sealed partial class BlockCheck2ViewModel : INotifyPropertyChanged
         _reportHistoryService = reportHistoryService ?? new BlockCheckReportHistoryService(_reportSerializer);
         LoadSettings();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public BlockCheckSessionState State => _state;
     public BlockCheckScanPhase? CurrentPhase => _currentPhase;
@@ -460,6 +457,5 @@ public sealed partial class BlockCheck2ViewModel : INotifyPropertyChanged
         Notify(nameof(CanExportPreset));
     }
 
-    private void Notify([CallerMemberName] string? propertyName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    private void Notify([CallerMemberName] string? propertyName = null) => OnPropertyChanged(propertyName);
 }
