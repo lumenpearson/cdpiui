@@ -93,20 +93,20 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="TitleTextBlock" Margin="10 10 10 0" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                <Grid x:Name="AutorunBadgeGrid" l:Uids.Uid="AutorunBadgeGrid" Grid.Column="1" Margin="0 10 10 0" Visibility="Collapsed">
+                <TextBlock x:Name="TitleTextBlock" Text="{x:Bind ViewModel.Title, Mode=OneWay}" Margin="10 10 10 0" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <Grid x:Name="AutorunBadgeGrid" l:Uids.Uid="AutorunBadgeGrid" Grid.Column="1" Margin="0 10 10 0" Visibility="{x:Bind ViewModel.IsAutorunBadgeVisible, Mode=OneWay}">
                     <Border Background="{ThemeResource AccentFillColorTertiaryBrush}" CornerRadius="5"/>
                     <TextBlock l:Uids.Uid="AutorunBadgeTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="12" Margin="2 2"/>
                 </Grid>
             </Grid>
             <Grid x:Name="ImageGrid" Grid.Row="1">
                 <Image x:Name="MainImage" Height="50" Width="50"/>
-                <Grid x:Name="StatusGrid" Height="30" Width="30">
+                <Grid x:Name="StatusGrid" Height="30" Width="30" ToolTipService.ToolTip="{x:Bind ViewModel.StatusToolTip, Mode=OneWay}">
                     <Grid.RenderTransform>
                         <TranslateTransform X="25" Y="25"/>
                     </Grid.RenderTransform>
-                    <FontIcon x:Name="BackgroundStatusFontIcon" Glyph="&#xE91F;" Foreground="{ThemeResource SystemFillColorSuccessBrush}" FontSize="28"/>
-                    <FontIcon x:Name="ForegroundStatusFontIcon" Glyph="&#xF13E;" Foreground="Black" FontSize="18" Margin="1 0 0 0" />
+                    <FontIcon x:Name="BackgroundStatusFontIcon" Glyph="&#xE91F;" Foreground="{x:Bind StatusBrush(ViewModel.StatusBrushKey), Mode=OneWay}" FontSize="28"/>
+                    <FontIcon x:Name="ForegroundStatusFontIcon" Glyph="{x:Bind ViewModel.StatusGlyph, Mode=OneWay}" Foreground="Black" FontSize="{x:Bind ViewModel.StatusGlyphFontSize, Mode=OneWay}" Margin="1 0 0 0" />
                     <FontIcon Glyph="&#xEA3A;" Foreground="Black" FontSize="30"/>
                 </Grid>
             </Grid>
@@ -123,16 +123,16 @@
                         <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="0" />
                     </Grid>
                     <StackPanel Padding="10" VerticalAlignment="Top">
-                        <lcontrols:IconButton x:Name="StateToggleButton" IconGlyph="&#xF5B0;" CheckedIconGlyph="&#xF8AE;" IsButtonToggle="True" HorizontalAlignment="Stretch" ClickCommand="{Binding ToggleProcessButtonClickCommand, ElementName=MainUserControl}"/>
-                        <lcontrols:IconButton x:Name="ViewOutputIconButton" IconGlyph="&#xF78B;" HorizontalAlignment="Stretch" ClickCommand="{Binding ViewOutputClickCommand, ElementName=MainUserControl}"/>
-                        <lcontrols:IconButton x:Name="SettingsIconButton" IconGlyph="&#xE713;" HorizontalAlignment="Stretch" ClickCommand="{Binding ViewSettingsButtonClickCommand, ElementName=MainUserControl}"/>
+                        <lcontrols:IconButton x:Name="StateToggleButton" IconGlyph="&#xF5B0;" CheckedIconGlyph="&#xF8AE;" IsButtonToggle="True" HorizontalAlignment="Stretch" DisplayText="{x:Bind ViewModel.StateToggleText, Mode=OneWay}" Checked="{x:Bind ViewModel.IsRunning, Mode=OneWay}" ClickCommand="{x:Bind ViewModel.ToggleProcessCommand}"/>
+                        <lcontrols:IconButton x:Name="ViewOutputIconButton" IconGlyph="&#xF78B;" HorizontalAlignment="Stretch" DisplayText="{x:Bind ViewModel.ViewOutputText}" ClickCommand="{x:Bind ViewModel.ViewOutputCommand}"/>
+                        <lcontrols:IconButton x:Name="SettingsIconButton" IconGlyph="&#xE713;" HorizontalAlignment="Stretch" DisplayText="{x:Bind ViewModel.SettingsText}" ClickCommand="{x:Bind ViewModel.ViewSettingsCommand}"/>
                         <StackPanel x:Name="AdditionalFeaturesStackPanel" Margin="0 10 0 0" Spacing="2">
                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                <FontIcon x:Name="StatusFontIcon" Glyph="&#xF4A5;" FontSize="16"/>
+                                <FontIcon x:Name="StatusFontIcon" Glyph="{x:Bind ViewModel.LinkedFeaturesGlyph}" FontSize="16"/>
                                 <TextBlock l:Uids.Uid="LinkedFeaturesTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             </StackPanel>
 
-                            <ListView x:Name="AdditionalFeaturesListView" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}">
+                            <ListView x:Name="AdditionalFeaturesListView" ItemsSource="{x:Bind ViewModel.AvailableFeatures}" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="viewmodels:FeaturesViewModel">
                                         <Button x:Name="AvailableFeaturesButton" Background="Transparent" BorderBrush="Transparent" 
@@ -161,11 +161,11 @@
                         </Grid.RowDefinitions>
                         <TextBlock l:Uids.Uid="QuickSettingsTextBlock" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0 0 0 10"/>
 
-                        <StackPanel x:Name="ErrorStackPanel" Visibility="Collapsed" Grid.Row="1" Spacing="10">
+                        <StackPanel x:Name="ErrorStackPanel" Visibility="{x:Bind ViewModel.IsConfigErrorVisible, Mode=OneWay}" Grid.Row="1" Spacing="10">
                             <TextBlock l:Uids.Uid="ConfigNotReadyToDisplayQuickSettingsTextBlock" TextWrapping="Wrap"/>
-                            <HyperlinkButton l:Uids.Uid="GoToComponentSettings" x:Name="GoToComponentSettings" Click="GoToComponentSettings_Click"/>
+                            <HyperlinkButton l:Uids.Uid="GoToComponentSettings" x:Name="GoToComponentSettings" Command="{x:Bind ViewModel.ViewSettingsCommand}"/>
                         </StackPanel>
-                        <Grid x:Name="ContentStackPanel" Grid.Row="2">
+                        <Grid x:Name="ContentStackPanel" Grid.Row="2" Visibility="{x:Bind ViewModel.IsConfigContentVisible, Mode=OneWay}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="auto"/>
                                 <RowDefinition Height="auto"/>
@@ -175,6 +175,8 @@
                                 <TextBlock l:Uids.Uid="StartupConfigTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                 <componentControls:ConfigSelector
                                     x:Name="ConfigChooseCombobox"
+                                    ItemsSource="{x:Bind ViewModel.ConfigItems}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedConfig, Mode=OneWay}"
                                     MinWidth="400"
                                     Height="47"
                                     Margin="0 0 0 10"
@@ -183,9 +185,10 @@
                             </StackPanel>
 
                             <TextBlock Grid.Row="1" l:Uids.Uid="AvailableConfigSettingsTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Grid.Row="2" x:Name="ConfigSettingsLoadFailureTextBlock" l:Uids.Uid="ConfigSettingsLoadFailureTextBlock" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Row="2" x:Name="ConfigSettingsLoadFailureTextBlock" Visibility="{x:Bind ViewModel.IsConfigSettingsLoadFailureVisible, Mode=OneWay}" l:Uids.Uid="ConfigSettingsLoadFailureTextBlock" TextWrapping="Wrap"/>
 
                             <ListView x:Name="ConfigSettingsListView"
+                                      ItemsSource="{x:Bind ViewModel.ConfigSettings}"
                                       ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}"
                                       Grid.Row="2" Margin="0 0 -12 0">
                                 <ListView.ItemTemplate>
@@ -213,7 +216,7 @@
             </Grid>
 
             <Grid x:Name="AccentSmallRectangle" Grid.Row="2">
-                <Border x:Name="TileBackgroungBorder" CornerRadius="0" Height="7" VerticalAlignment="Bottom"/>
+                <Border x:Name="TileBackgroungBorder" Background="{x:Bind AccentBrush(ViewModel.AccentColor), Mode=OneWay}" CornerRadius="0" Height="7" VerticalAlignment="Bottom"/>
             </Grid>
         </Grid>
     </Grid>
