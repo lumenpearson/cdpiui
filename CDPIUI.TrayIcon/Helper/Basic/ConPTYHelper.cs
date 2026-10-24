@@ -82,6 +82,16 @@ namespace CDPIUI.TrayIcon.Helper
         }
 
         public bool processState { get; private set; } = false;
+
+        // Starts take a ticket before they wait for the lock; a stop records the last ticket given
+        // out. A start whose ticket is not newer than the last stop does not run, because the stop
+        // came after it, even when the stop got the lock first.
+        private long _lastStartTicket;
+        private long _lastStopTicket;
+
+        /// <summary>A process runs, or a start is waiting for its turn.</summary>
+        public bool IsRunningOrStarting =>
+            processState || Interlocked.Read(ref _lastStartTicket) > Interlocked.Read(ref _lastStopTicket);
         private bool CurrentState = false;
         private object _setStateLock = new();
         private void ChangeProcessState(bool isRunning)
@@ -358,10 +368,14 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
+                long ticket = Interlocked.Increment(ref _lastStartTicket);
                 await _processLock.WaitAsync();
                 bool workerStarted = false;
                 try
                 {
+                    if (ticket <= Interlocked.Read(ref _lastStopTicket))
+                        return;
+
                     StopActionCaller = StopActionCallers.Unknown;
                     lock (_outputLock) _outputDefaultBuffer.Clear();
 
@@ -655,6 +669,18 @@ namespace CDPIUI.TrayIcon.Helper
             await Task.CompletedTask;
         }
 
+        private static void InterlockedMax(ref long target, long value)
+        {
+            long current = Interlocked.Read(ref target);
+            while (value > current)
+            {
+                long previous = Interlocked.CompareExchange(ref target, value, current);
+                if (previous == current)
+                    return;
+                current = previous;
+            }
+        }
+
         private static void TryCancel(CancellationTokenSource? cancellationTokenSource)
         {
             try
@@ -686,6 +712,7 @@ namespace CDPIUI.TrayIcon.Helper
         public async Task StopProcess(bool output = true)
         {
             StopActionCaller = StopActionCallers.User;
+            InterlockedMax(ref _lastStopTicket, Interlocked.Read(ref _lastStartTicket));
             TryCancel(_cancellationTokenSource);
 
             // The worker holds the lock until its process ends. A start that took the lock before

@@ -96,7 +96,9 @@ namespace CDPIUI.Core.Store.Repository
         {
             try
             {
-                if (FormattedStoreDatabase != null && !forseSync)
+                // The parsed catalogue is kept only while its folder exists: icons and item pages
+                // are read from there, and the Store cache clean-up deletes it.
+                if (FormattedStoreDatabase != null && !forseSync && Directory.Exists(Directories.StoreRepoCacheDirectory))
                 {
                     return true;
                 }
