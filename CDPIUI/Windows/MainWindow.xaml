@@ -51,7 +51,7 @@
                     PointerEntered="BackButton_PointerEntered" 
                     PointerExited="BackButton_PointerExited"
                     Click="BackButton_Click"
-                    Visibility="Collapsed">
+                    Visibility="{x:Bind ViewModel.IsBackButtonVisible, Mode=OneWay}">
                 <AnimatedIcon x:Name="SearchAnimatedIcon">
                     <AnimatedIcon.Source>
                         <animatedvisuals:AnimatedBackVisualSource/>
@@ -95,7 +95,7 @@
                 PaneDisplayMode="Left"
                 IsSettingsVisible="False"
                 IsTitleBarAutoPaddingEnabled="False"
-                IsBackEnabled="True"
+                IsBackEnabled="{x:Bind ViewModel.CanGoBack, Mode=OneWay}"
                 IsBackButtonVisible="Collapsed"
                 IsPaneToggleButtonVisible="False"
                 Loaded="NavView_Loaded"
@@ -125,22 +125,22 @@
 
                 <NavigationViewItemSeparator/>
 
-                <NavigationViewItem x:Name="ZapretNavigationViewItem" Content="Zapret" Tag="CDPIUI.Views.Components.Zapret" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="ZapretNavigationViewItem" Content="Zapret" Tag="CDPIUI.Views.Components.Zapret" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="{x:Bind ViewModel.IsZapretInstalled, Mode=OneWay}">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/zapret.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ByeDPINavigationViewItem" Content="ByeDPI" Tag="CDPIUI.Views.Components.ByeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="ByeDPINavigationViewItem" Content="ByeDPI" Tag="CDPIUI.Views.Components.ByeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="{x:Bind ViewModel.IsByeDpiInstalled, Mode=OneWay}">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/byedpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="GoodbyeDPINavigationViewItem" Content="GoodbyeDPI" Tag="CDPIUI.Views.Components.GoodbyeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="GoodbyeDPINavigationViewItem" Content="GoodbyeDPI" Tag="CDPIUI.Views.Components.GoodbyeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="{x:Bind ViewModel.IsGoodbyeDpiInstalled, Mode=OneWay}">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/goodbyedpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="SpoofDPINavigationViewItem" Content="SpoofDPI" Tag="CDPIUI.Views.Components.SpoofDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="SpoofDPINavigationViewItem" Content="SpoofDPI" Tag="CDPIUI.Views.Components.SpoofDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="{x:Bind ViewModel.IsSpoofDpiInstalled, Mode=OneWay}">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/spoofdpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
