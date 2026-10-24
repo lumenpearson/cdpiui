@@ -1,11 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Xml;
 using System.Xml.Linq;
 using CDPIUI.Shared.Exceptions.Settings;
 
@@ -48,117 +44,44 @@ public class XMLSettingsService
             _persistenceUnavailable = false;
             try
             {
-                _xDocument = LoadDocument(SettingsFilePath);
+                _xDocument = SettingsFileStore.Load(SettingsFilePath);
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
                 _xDocument = new XDocument(new XElement("Settings"));
                 SaveSettings();
             }
-            catch (Exception ex) when (IsReadFailure(ex))
+            catch (Exception ex) when (SettingsFileStore.IsReadFailure(ex))
             {
-                LoadError = ex.Message;
-                try
-                {
-                    if (_xDocument == null)
-                    {
-                        _xDocument = LoadDocument(SettingsFilePath + ".bak");
-                        WasRecoveredFromBackup = true;
-                    }
-                }
-                catch (Exception backupError) when (IsReadFailure(backupError))
-                {
-                    HasUnrecoverableLoadError = _xDocument == null;
-                    _xDocument ??= new XDocument(new XElement("Settings"));
-                }
-
-                try
-                {
-                    File.Copy(SettingsFilePath, SettingsFilePath + ".corrupt-" + Guid.NewGuid().ToString("N"));
-                }
-                catch (Exception copyError) when (IsReadFailure(copyError))
-                {
-                    // The copy is kept only for diagnostics; the recovery goes on without it.
-                    Trace.WriteLine($"[XMLSettingsService] Cannot keep a copy of the damaged settings file: {copyError.Message}");
-                }
-
-                if (HasUnrecoverableLoadError)
-                {
-                    try
-                    { File.WriteAllText(RecoveryNoticePath, LoadError); }
-                    catch (Exception noticeError) when (IsReadFailure(noticeError))
-                    {
-                        Trace.WriteLine($"[XMLSettingsService] Cannot write the recovery notice: {noticeError.Message}");
-                    }
-                }
-
-                SaveSettings(keepBackup: false);
+                RecoverFromDamagedFile(ex);
             }
         }
     }
 
-    private static bool IsReadFailure(Exception exception) =>
-        exception is XmlException or IOException or UnauthorizedAccessException;
-
-    private static XDocument LoadDocument(string path)
+    // The caller holds _reloadLock.
+    private void RecoverFromDamagedFile(Exception loadError)
     {
-        // Settings are read by the elevated tray from a file the user can change: no DTD processing,
-        // so internal entities cannot blow up the memory of the elevated process.
-        var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
-        XDocument document;
-        using (var reader = XmlReader.Create(path, readerSettings))
-            document = XDocument.Load(reader);
-        if (document.Root?.Name != "Settings")
-            throw new XmlException("The settings document must have a Settings root element.");
-        return document;
-    }
-
-    // Items are separated by ';'. A ';' or '%' inside an item is stored as %3B or %25, so file
-    // names with ';' survive; values written before contain neither sequence and read the same.
-    private static string JoinList(IEnumerable<string> items) =>
-        string.Join(";", items.Select(item => (item ?? string.Empty).Replace("%", "%25").Replace(";", "%3B")));
-
-    private static List<string> SplitList(string value) =>
-        value.Split(';')
-            .Select(item => System.Text.RegularExpressions.Regex.Replace(item, "%(3B|25)", match =>
-                string.Equals(match.Groups[1].Value, "3B", StringComparison.OrdinalIgnoreCase) ? ";" : "%",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            .ToList();
-
-    private static void ApplySetting(XElement root, IEnumerable<string> groupPath, string key, string type, string? valueString)
-    {
-        XElement current = root;
-        foreach (var grp in groupPath)
+        LoadError = loadError.Message;
+        try
         {
-            var next = current
-                .Elements("Group")
-                .FirstOrDefault(g => (string?)g.Attribute("Name") == grp);
-
-            if (next == null)
+            if (_xDocument == null)
             {
-                next = new XElement("Group", new XAttribute("Name", grp));
-                current.Add(next);
+                _xDocument = SettingsFileStore.Load(SettingsFilePath + ".bak");
+                WasRecoveredFromBackup = true;
             }
-
-            current = next;
         }
-
-        var setting = current
-            .Elements("Setting")
-            .FirstOrDefault(s => (string?)s.Attribute("Key") == key);
-
-        if (setting != null)
+        catch (Exception backupError) when (SettingsFileStore.IsReadFailure(backupError))
         {
-            setting.SetAttributeValue("Type", type);
-            setting.SetAttributeValue("Value", valueString);
+            HasUnrecoverableLoadError = _xDocument == null;
+            _xDocument ??= new XDocument(new XElement("Settings"));
         }
-        else
-        {
-            current.Add(new XElement("Setting",
-                new XAttribute("Key", key),
-                new XAttribute("Type", type),
-                new XAttribute("Value", valueString)));
-        }
+
+        SettingsFileStore.KeepDamagedCopy(SettingsFilePath);
+
+        if (HasUnrecoverableLoadError)
+            SettingsFileStore.WriteRecoveryNotice(RecoveryNoticePath, LoadError);
+
+        SaveSettings(keepBackup: false);
     }
 
     /// <summary>
@@ -169,13 +92,13 @@ public class XMLSettingsService
     {
         lock (_reloadLock)
         {
-            using (AcquireFileLock(out bool lockTimedOut))
+            using (SettingsFileStore.AcquireLock(SettingsFilePath, out bool lockTimedOut))
             {
                 if (lockTimedOut)
                 {
                     // Writing without the lock could overwrite what the other process saves at
                     // this moment. The change stays in memory only, as after a failed write.
-                    ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
+                    SettingsXmlTree.ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
                     Trace.WriteLine($"[XMLSettingsService] The settings file stayed locked; {key} was not saved.");
                     return;
                 }
@@ -184,99 +107,27 @@ public class XMLSettingsService
                 {
                     try
                     {
-                        _xDocument = LoadDocument(SettingsFilePath);
+                        _xDocument = SettingsFileStore.Load(SettingsFilePath);
                     }
-                    catch (Exception ex) when (IsReadFailure(ex))
+                    catch (Exception ex) when (SettingsFileStore.IsReadFailure(ex))
                     {
                         // Keep the copy in memory; saving it replaces the unreadable file.
                     }
                 }
 
-                ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
+                SettingsXmlTree.ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
                 SaveSettings();
             }
         }
     }
 
-    private const int LockAttempts = 40;
-    private const int LockRetryDelayMs = 50;
-
-    // A lock file works for both processes, while a named mutex of the elevated tray would not be
-    // accessible to the UI.
-    private IDisposable? AcquireFileLock(out bool timedOut)
-    {
-        timedOut = false;
-        string lockPath = SettingsFilePath + ".lock";
-        for (int attempt = 1; attempt <= LockAttempts; attempt++)
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(SettingsFilePath))!);
-                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
-                    1, FileOptions.DeleteOnClose);
-            }
-            catch (IOException)
-            {
-                Thread.Sleep(LockRetryDelayMs);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return null;
-            }
-        }
-        timedOut = true;
-        return null;
-    }
-
-    private const int SaveAttempts = 5;
-    private const int SaveRetryDelayMs = 50;
-
+    // The caller holds _reloadLock.
     private void SaveSettings(bool keepBackup = true)
     {
         if (_persistenceUnavailable)
             return;
-        string temporaryPath = SettingsFilePath + ".tmp-" + Guid.NewGuid().ToString("N");
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(SettingsFilePath))!);
-            _xDocument!.Save(temporaryPath);
-
-            for (int attempt = 1; ; attempt++)
-            {
-                try
-                {
-                    if (File.Exists(SettingsFilePath))
-                        File.Replace(temporaryPath, SettingsFilePath, keepBackup ? SettingsFilePath + ".bak" : null);
-                    else
-                        File.Move(temporaryPath, SettingsFilePath);
-                    break;
-                }
-                catch (IOException) when (attempt < SaveAttempts)
-                {
-                    // The other process (GUI or tray) may be reading the file at this moment.
-                    Thread.Sleep(SaveRetryDelayMs * attempt);
-                }
-            }
-        }
-        catch (UnauthorizedAccessException ex)
-        {
+        if (!SettingsFileStore.Save(_xDocument!, SettingsFilePath, keepBackup))
             _persistenceUnavailable = true;
-            Debug.WriteLine(ex);
-        }
-        catch (IOException ex)
-        {
-            Debug.WriteLine(ex);
-        }
-        finally
-        {
-            try
-            { File.Delete(temporaryPath); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // A left temporary file does no harm; the next save replaces it.
-                Trace.WriteLine($"[XMLSettingsService] Cannot delete the temporary settings file: {ex.Message}");
-            }
-        }
     }
 
     /// <summary>
@@ -294,11 +145,7 @@ public class XMLSettingsService
         {
             if (xElement == null)
                 xElement = _xDocument.Root;
-            var settingElement = xElement
-                .Elements("Group")
-                .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
-                .Elements("Setting")
-                .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
+            var settingElement = SettingsXmlTree.FindSetting(SettingsXmlTree.FindGroup(xElement, group), key);
 
             if (settingElement == null)
             {
@@ -326,11 +173,7 @@ public class XMLSettingsService
         lock (_reloadLock)
         {
             xElement ??= _xDocument.Root;
-            var settingElement = xElement
-                .Elements("Group")
-                .FirstOrDefault(g => g.Attribute("Name")?.Value == group)?
-                .Elements("Setting")
-                .FirstOrDefault(s => s.Attribute("Key")?.Value == key);
+            var settingElement = SettingsXmlTree.FindSetting(SettingsXmlTree.FindGroup(xElement, group), key);
 
             if (settingElement == null)
             {
@@ -348,7 +191,7 @@ public class XMLSettingsService
 
             try
             {
-                return GetValueFromString<T>(value, type);
+                return SettingsValueCodec.Decode<T>(value, type);
             }
             catch
             {
@@ -376,27 +219,18 @@ public class XMLSettingsService
         {
             if (xElement == null)
                 xElement = _xDocument.Root;
-            XElement current = xElement;
-
-            foreach (var grp in groupPath)
+            XElement? current = SettingsXmlTree.FindGroup(xElement, groupPath);
+            if (current == null)
             {
-                current = current
-                    .Elements("Group")
-                    .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-                if (current == null)
-                {
-                    if (raiseExceptionIfNotExits)
-                        throw new SettingNotFoundException("Value not exist");
-                    var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
-                    SetValue(groupPath, key, defaultValue);
-                    Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
-                    return defaultValue;
-                }
+                if (raiseExceptionIfNotExits)
+                    throw new SettingNotFoundException("Value not exist");
+                var defaultValue = GetDefaultValueForKey<T>(groupPath, key);
+                SetValue(groupPath, key, defaultValue);
+                Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
+                return defaultValue;
             }
 
-            var settingElement = current
-                .Elements("Setting")
-                .FirstOrDefault(s => (string)s.Attribute("Key") == key);
+            var settingElement = SettingsXmlTree.FindSetting(current, key);
 
             if (settingElement == null)
             {
@@ -413,7 +247,7 @@ public class XMLSettingsService
 
             try
             {
-                return GetValueFromString<T>(value, type);
+                return SettingsValueCodec.Decode<T>(value, type);
             }
             catch
             {
@@ -438,42 +272,33 @@ public class XMLSettingsService
         {
             if (xElement == null)
                 xElement = _xDocument.Root;
-            XElement current = xElement;
 
             Dictionary<string, T?> dict = [];
 
-            foreach (var grp in groupPath)
+            XElement? current = SettingsXmlTree.FindGroup(xElement, groupPath);
+            if (current == null)
             {
-                current = current
-                    .Elements("Group")
-                    .FirstOrDefault(g => (string)g.Attribute("Name") == grp);
-                if (current == null)
-                {
-                    if (raiseExceptionIfNotExits)
-                        throw new SettingNotFoundException("Value not exist");
-                    var defaultValue = GetDefaultValueForKey<T>(groupPath, "$$~");
-                    SetValue(groupPath, "$$~", defaultValue);
-                    Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
-                    return dict;
-                }
+                if (raiseExceptionIfNotExits)
+                    throw new SettingNotFoundException("Value not exist");
+                var defaultValue = GetDefaultValueForKey<T>(groupPath, "$$~");
+                SetValue(groupPath, "$$~", defaultValue);
+                Debug.WriteLine($"Group path '{string.Join("/", groupPath)}' not found.");
+                return dict;
             }
 
-            if (current != null)
+            foreach (var setting in current.Elements("Setting"))
             {
-                foreach (var setting in current.Elements("Setting"))
+                string key = (string)setting.Attribute("Key");
+                // "$$~" only marks a group created empty; it is no setting.
+                if (key == null || key == "$$~")
+                    continue;
+                try
                 {
-                    string key = (string)setting.Attribute("Key");
-                    // "$$~" only marks a group created empty; it is no setting.
-                    if (key == null || key == "$$~")
-                        continue;
-                    try
-                    {
-                        dict[key] = GetValueFromString<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
-                    }
-                    catch
-                    {
-                        Debug.WriteLine($"Skipping setting '{key}' of another type in group path '{string.Join("/", groupPath)}'.");
-                    }
+                    dict[key] = SettingsValueCodec.Decode<T>((string)setting.Attribute("Value"), (string)setting.Attribute("Type"));
+                }
+                catch
+                {
+                    Debug.WriteLine($"Skipping setting '{key}' of another type in group path '{string.Join("/", groupPath)}'.");
                 }
             }
             return dict;
@@ -490,47 +315,7 @@ public class XMLSettingsService
     /// <param name="value">Value to set</param>
     public void SetValue<T>(string group, string key, T value)
     {
-        string type;
-        string? valueString;
-
-        if (value is int)
-        {
-            type = "int";
-            valueString = value.ToString();
-        }
-        else if (value is double d)
-        {
-            type = "double";
-            valueString = FormatDouble(d);
-        }
-        else if (value is bool)
-        {
-            type = "bool";
-            valueString = value.ToString().ToLowerInvariant();
-        }
-        else if (value is string)
-        {
-            type = "string";
-            valueString = value as string;
-        }
-        else if (value is DateTime dateTime)
-        {
-            type = nameof(DateTime);
-            valueString = FormatDateTime(dateTime);
-        }
-        else if (typeof(T) == typeof(List<string>))
-        {
-            type = nameof(List<string>);
-            valueString = JoinList((List<string>?)(object?)value ?? []);
-
-            Debug.WriteLine(valueString);
-        }
-        else
-        {
-            type = typeof(T).Name;
-            valueString = value?.ToString() ?? string.Empty;
-        }
-
+        var (type, valueString) = SettingsValueCodec.EncodeForGroup(value);
         SaveChange([group], key, type, valueString);
         PropertyChanged?.Invoke(group);
     }
@@ -544,80 +329,20 @@ public class XMLSettingsService
     /// <param name="value">Value to set</param>
     public void SetValue<T>(IEnumerable<string> groupPath, string key, T value)
     {
-        string type;
-        string valueString;
-
-        switch (value)
-        {
-            case int i:
-                type = "int";
-                valueString = i.ToString();
-                break;
-            case double d:
-                type = "double";
-                valueString = FormatDouble(d);
-                break;
-            case bool b:
-                type = "bool";
-                valueString = b.ToString().ToLowerInvariant();
-                break;
-            case string s:
-                type = "string";
-                valueString = s;
-                break;
-            case List<string> lst:
-                type = nameof(List<string>);
-                valueString = JoinList(lst);
-                break;
-            case DateTime dateTime:
-                type = nameof(DateTime);
-                valueString = FormatDateTime(dateTime);
-                break;
-            default:
-                type = typeof(T).Name;
-                valueString = value?.ToString() ?? string.Empty;
-                break;
-        }
-
+        var (type, valueString) = SettingsValueCodec.EncodeForGroupPath(value);
         SaveChange(groupPath, key, type, valueString);
         EnumPropertyChanged?.Invoke(groupPath);
     }
 
-    private static T? GetValueFromString<T>(string? value, string? type)
-    {
-        if (typeof(T) == typeof(int) && type == "int" && int.TryParse(value, out var iv))
-            return (T)(object)iv;
-        if (typeof(T) == typeof(double) && type == "double" && TryParseDouble(value, out var dv))
-            return (T)(object)dv;
-        if (typeof(T) == typeof(bool) && type == "bool" && bool.TryParse(value, out var bv))
-            return (T)(object)bv;
-        if (typeof(T) == typeof(string) && type == "string")
-            return (T)(object)value;
+    public static string FormatDouble(double value) => SettingsValueCodec.FormatDouble(value);
 
-        if (typeof(T) == typeof(List<string>) && type == nameof(List<string>))
-            return string.IsNullOrEmpty(value) ? (T)(object)new List<string>() : (T)(object)SplitList(value);
+    public static string FormatDateTime(DateTime value) => SettingsValueCodec.FormatDateTime(value);
 
-        if (typeof(T) == typeof(DateTime) && type == nameof(DateTime) && TryParseDateTime(value, out var dtv))
-            return (T)(object)dtv;
-
-        throw new InvalidCastException($"A setting of type '{type}' cannot be read as {typeof(T).Name}.");
-    }
-
-    public static string FormatDouble(double value) =>
-        value.ToString("R", CultureInfo.InvariantCulture);
-
-    public static string FormatDateTime(DateTime value) =>
-        value.ToString("o", CultureInfo.InvariantCulture);
-
-    // Values written by older versions used the current culture, so it is tried after the invariant form.
     public static bool TryParseDouble(string? value, out double result) =>
-        double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)
-        || double.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out result);
+        SettingsValueCodec.TryParseDouble(value, out result);
 
     public static bool TryParseDateTime(string? value, out DateTime result) =>
-        DateTime.TryParseExact(value, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result)
-        || DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out result)
-        || DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+        SettingsValueCodec.TryParseDateTime(value, out result);
 
     protected virtual T? GetDefaultValueForKey<T>(string group, string key)
     {
