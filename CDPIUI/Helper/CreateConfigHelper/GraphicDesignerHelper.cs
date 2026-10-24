@@ -263,101 +263,137 @@ public class GraphicDesignerHelper
         List<Tuple<string, string, bool, string>> model = null
         )
     {
+        ClearSelection(list, exList);
+
+        var notSupportedFlags = new StringBuilder();
+        List<string> tokens = Tokenize(args);
+
+        for (int i = 0; i < tokens.Count; i++)
+        {
+            (string token, string value) = ReadOption(tokens, ref i);
+
+            var item = exclusive ? list.FirstOrDefault(x => x.DisplayName == token) : null;
+            bool supported;
+            if (item == null && exclusive)
+            {
+                supported = TrySelectExclusiveItem(exList, token, value);
+            }
+            else if (item == null && !exclusive && model != null)
+            {
+                supported = TryAddModelItem(list, model, token, value);
+            }
+            else
+            {
+                CheckItem(item, value);
+                supported = true;
+            }
+
+            if (!supported)
+            {
+                notSupportedFlags.Append($"{token} ");
+                if (!string.IsNullOrEmpty(value))
+                    notSupportedFlags.Append($"{value} ");
+            }
+        }
+
+        return notSupportedFlags.ToString();
+    }
+
+    private static void ClearSelection(
+        ObservableCollection<GraphicDesignerSettingItemModel> list,
+        ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList)
+    {
         foreach (var item in list)
         {
             item.IsChecked = false;
         }
-        foreach (var _exItem in exList)
+        foreach (var exItem in exList)
         {
-            foreach (var item in _exItem.Items)
+            foreach (var item in exItem.Items)
             {
                 item.IsChecked = false;
             }
         }
+    }
 
-        string notSupportedFlags = string.Empty;
+    private static List<string> Tokenize(string args)
+    {
         var tokenPattern = @"(?<=\s|^)(?:(?:(?:--|/)[^\s]*=""[^""]*"")|""[^""]*""|[^ ]+)+";
-        var tokens = Regex.Matches(args, tokenPattern)
-                          .Cast<Match>()
-                          .Select(m => m.Value.Trim('"'))
-                          .ToList();
+        return Regex.Matches(args, tokenPattern)
+                    .Cast<Match>()
+                    .Select(m => m.Value.Trim('"'))
+                    .ToList();
+    }
 
-        for (int i = 0; i < tokens.Count; i++)
+    // Reads the option at index i and its value: "--name=value", or "--name value" when the
+    // next token is not an option (then i moves past the value).
+    private static (string Token, string Value) ReadOption(List<string> tokens, ref int i)
+    {
+        string token = tokens[i];
+        string value = string.Empty;
+        if (token.Contains('='))
         {
-            string token = tokens[i];
-            string value = string.Empty;
-            if (token.Contains('='))
-            {
-                // The value may contain '=' itself (base64, fake payload hex and so on).
-                int separator = token.IndexOf('=');
-                value = token[(separator + 1)..];
-                token = token[..separator];
-            }
-            else if (tokens.Count - 1 >= i + 1 && !tokens[i + 1].StartsWith('-') && !tokens[i + 1].StartsWith('/'))
-            {
+            // The value may contain '=' itself (base64, fake payload hex and so on).
+            int separator = token.IndexOf('=');
+            value = token[(separator + 1)..];
+            token = token[..separator];
+        }
+        else if (tokens.Count - 1 >= i + 1 && !tokens[i + 1].StartsWith('-') && !tokens[i + 1].StartsWith('/'))
+        {
+            value = tokens[i + 1];
+            i++;
+        }
+        return (token, value);
+    }
 
-                value = tokens[i + 1];
-
-                i++;
-            }
-
-            var item = exclusive ? list.FirstOrDefault(x => x.DisplayName == token) : null;
-            if (item == null && exclusive)
+    private static bool TrySelectExclusiveItem(
+        ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList,
+        string token,
+        string value)
+    {
+        foreach (var exModel in exList)
+        {
+            var item = exModel.Items.FirstOrDefault(x => x.DisplayName == token);
+            if (item != null)
             {
-                bool flag = false;
-                foreach (var _exModel in exList)
-                {
-                    item = _exModel.Items.FirstOrDefault(x => x.DisplayName == token);
-                    if (item != null)
-                    {
-                        item.IsChecked = true;
-                        if (value.StartsWith("\""))
-                            value += "\"";
-                        item.Value = value;
-                        _exModel.SelectedItemGuid = item.Guid;
-                        flag = true;
-                        break;
-                    }
-                }
-                if (!flag)
-                {
-                    notSupportedFlags += $"{token} ";
-                    if (!string.IsNullOrEmpty(value))
-                        notSupportedFlags += $"{value} ";
-                }
-            }
-            else if (item == null && !exclusive && model != null)
-            {
-                ILocalizer localizer = Localizer.Get();
-                var tuple = model.FirstOrDefault(x => x.Item1 == token);
-                if (tuple == null)
-                {
-                    notSupportedFlags += $"{token} ";
-                    if (!string.IsNullOrEmpty(value))
-                        notSupportedFlags += $"{value} ";
-                    continue;
-                }
-                list.Add(new()
-                {
-                    Guid = Guid.NewGuid().ToString(),
-                    DisplayName = tuple.Item1,
-                    Description = string.IsNullOrEmpty(tuple.Item2) ? "" : localizer.GetLocalizedString($"/GraphicDesignerDescriptions/{tuple.Item2}"),
-                    EnableTextInput = tuple.Item3,
-                    Type = tuple.Item3 ? "string" : "flag",
-                    Value = value,
-                    IsChecked = true,
-                });
-            }
-            else
-            {
-                item.IsChecked = true;
-                if (value.StartsWith("\""))
-                    value += "\"";
-                item.Value = value;
+                CheckItem(item, value);
+                exModel.SelectedItemGuid = item.Guid;
+                return true;
             }
         }
+        return false;
+    }
 
-        return notSupportedFlags;
+    private static bool TryAddModelItem(
+        ObservableCollection<GraphicDesignerSettingItemModel> list,
+        List<Tuple<string, string, bool, string>> model,
+        string token,
+        string value)
+    {
+        ILocalizer localizer = Localizer.Get();
+        var tuple = model.FirstOrDefault(x => x.Item1 == token);
+        if (tuple == null)
+            return false;
+
+        list.Add(new()
+        {
+            Guid = Guid.NewGuid().ToString(),
+            DisplayName = tuple.Item1,
+            Description = string.IsNullOrEmpty(tuple.Item2) ? "" : localizer.GetLocalizedString($"/GraphicDesignerDescriptions/{tuple.Item2}"),
+            EnableTextInput = tuple.Item3,
+            Type = tuple.Item3 ? "string" : "flag",
+            Value = value,
+            IsChecked = true,
+        });
+        return true;
+    }
+
+    private static void CheckItem(GraphicDesignerSettingItemModel item, string value)
+    {
+        item.IsChecked = true;
+        if (value.StartsWith("\""))
+            value += "\"";
+        item.Value = value;
     }
 
     private static readonly List<string> TextSupportedValues = ["string", "integer", "file_path", "enum"];
