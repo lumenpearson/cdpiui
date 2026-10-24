@@ -1,6 +1,5 @@
 using CDPIUI.AddOns.BlockCheck2.Analysis;
 using CDPIUI.AddOns.BlockCheck2.Models;
-using CDPIUI.AddOns.BlockCheck2.Synthesis;
 
 namespace CDPIUI.AddOns.BlockCheck2.Execution;
 
@@ -56,7 +55,29 @@ internal static class BlockCheckScanPlanner
             .ToArray();
     }
 
-    public static StrategyDefinition[] OrderStrategiesProgressively(
+    /// <summary>
+    /// The selected strategies, or those up to the maximum tier, that apply to every target of a
+    /// route, in the progressive order.
+    /// </summary>
+    public static Dictionary<string, StrategyDefinition[]> AssignStrategies(
+        IEnumerable<StrategyDefinition> catalogStrategies,
+        IReadOnlyList<BlockCheckRouteScanGroup> routes,
+        IReadOnlySet<string>? selectedIds,
+        BlockCheckScanOptions options)
+    {
+        StrategyDefinition[] strategies = OrderStrategiesProgressively(catalogStrategies
+            .Where(strategy => selectedIds != null
+                ? selectedIds.Contains(strategy.Id)
+                : strategy.ScanTier <= options.MaximumTier));
+
+        return routes.ToDictionary(
+            route => route.Key,
+            route => strategies
+                .Where(strategy => route.Targets.All(strategy.AppliesTo))
+                .ToArray());
+    }
+
+    private static StrategyDefinition[] OrderStrategiesProgressively(
         IEnumerable<StrategyDefinition> strategies)
     {
         List<StrategyDefinition> result = [];

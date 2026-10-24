@@ -152,35 +152,8 @@ internal static class ZapretTextConfigImporter
 
         foreach (Match match in matches)
         {
-            string rawPath = match.Groups["quoted"].Success
-                ? match.Groups["quoted"].Value
-                : match.Groups["plain"].Value;
-
-            string expandedPath = ZapretBatchExpander.ExpandBatchValue(rawPath, referringFile, variables);
-            string candidatePath = Path.IsPathRooted(expandedPath)
-                ? expandedPath
-                : Path.Combine(Path.GetDirectoryName(referringFile)!, expandedPath);
-
-            string fullCandidatePath;
-            try
-            {
-                fullCandidatePath = Path.GetFullPath(candidatePath);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (!File.Exists(fullCandidatePath))
-            {
-                context.AddError(
-                    "INCLUDED_CONFIG_NOT_FOUND",
-                    $"Referenced config file '{rawPath}' was not found.",
-                    referringFile);
-                continue;
-            }
-
-            if (!LooksLikeTextConfig(fullCandidatePath))
+            string? fullCandidatePath = ResolveIncludedConfig(match, referringFile, variables, context);
+            if (fullCandidatePath == null)
                 continue;
 
             ZapretImportedPayload? nested = Import(
@@ -211,6 +184,44 @@ internal static class ZapretTextConfigImporter
         }
 
         return new ZapretIncludeExpansion(input, null, null);
+    }
+
+    /// <returns>The full path of the included text config, or null when the token names none.</returns>
+    private static string? ResolveIncludedConfig(
+        Match match,
+        string referringFile,
+        IReadOnlyDictionary<string, ZapretBatchVariable> variables,
+        ZapretImportContext context)
+    {
+        string rawPath = match.Groups["quoted"].Success
+            ? match.Groups["quoted"].Value
+            : match.Groups["plain"].Value;
+
+        string expandedPath = ZapretBatchExpander.ExpandBatchValue(rawPath, referringFile, variables);
+        string candidatePath = Path.IsPathRooted(expandedPath)
+            ? expandedPath
+            : Path.Combine(Path.GetDirectoryName(referringFile)!, expandedPath);
+
+        string fullCandidatePath;
+        try
+        {
+            fullCandidatePath = Path.GetFullPath(candidatePath);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (!File.Exists(fullCandidatePath))
+        {
+            context.AddError(
+                "INCLUDED_CONFIG_NOT_FOUND",
+                $"Referenced config file '{rawPath}' was not found.",
+                referringFile);
+            return null;
+        }
+
+        return LooksLikeTextConfig(fullCandidatePath) ? fullCandidatePath : null;
     }
 
     private static ZapretTextConfig ParseTextConfig(string filePath)

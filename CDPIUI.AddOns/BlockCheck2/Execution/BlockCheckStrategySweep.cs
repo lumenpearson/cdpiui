@@ -39,8 +39,7 @@ internal sealed class BlockCheckStrategySweep
         IProgress<BlockCheckScanProgress>? progress,
         List<BlockCheckIssue> issues,
         int totalJobs,
-        int successfulBaselineChecks,
-        int failedBaselineChecks,
+        IReadOnlyList<ProbeResult> baselineResults,
         CancellationToken cancellationToken)
     {
         _writer = writer;
@@ -50,8 +49,9 @@ internal sealed class BlockCheckStrategySweep
         _progress = progress;
         _issues = issues;
         _totalJobs = totalJobs;
-        _successfulChecks = successfulBaselineChecks;
-        _failedChecks = failedBaselineChecks;
+        // The counters of the progress reports continue from the baseline checks.
+        _successfulChecks = baselineResults.Sum(result => result.Attempts.Count(attempt => attempt.Success));
+        _failedChecks = baselineResults.Sum(result => result.Attempts.Count(attempt => !attempt.Success));
         _cancellationToken = cancellationToken;
     }
 
