@@ -130,22 +130,6 @@ public sealed partial class CreateConfigHelperWindow
         window.Close();
     }
 
-    private void ReportIssueButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = UrlOpenHelper.LaunchReportUrl();
-    }
-
-    private void OfflineHelpButton_Click(object sender, RoutedEventArgs e)
-    {
-        Commands.CommandsHandler.HandleCommand(
-            $"cdpiui://Help/Utils/{nameof(CreateConfigHelperWindow)}/");
-    }
-
-    private void OnlineHelpButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = UrlOpenHelper.LaunchWikiUrl();
-    }
-
     private void CurrentHelpMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
     {
         Commands.CommandsHandler.HandleCommand(
@@ -168,26 +152,6 @@ public sealed partial class CreateConfigHelperWindow
         }
     }
 
-    private void SetEditorBackgroundSettings()
-    {
-        string key = SettingsManager.Instance.GetValue<string>("APPEARANCE", "configEditorBackground");
-        switch (key)
-        {
-            case "Mica":
-                MicaBackgroundMenuItem.IsChecked = true;
-                break;
-            case "MicaTransparent":
-                MicaAltMenuItem.IsChecked = true;
-                break;
-            case "MicaSmoke":
-                MicaSmokeMenuItem.IsChecked = true;
-                break;
-            default:
-                DefaultBackgroundMenuItem.IsChecked = true;
-                break;
-        }
-    }
-
     private void EditorBackgroundMenuItem_Click(object sender, RoutedEventArgs e)
     {
         string key = "Black";
@@ -204,7 +168,7 @@ public sealed partial class CreateConfigHelperWindow
             key = "MicaSmoke";
         }
 
-        SettingsManager.Instance.SetValue("APPEARANCE", "configEditorBackground", key);
+        ViewModel.SetEditorBackground(key);
 
         if (ContentFrame.Content is CreateNewConfigPage configPage)
         {
