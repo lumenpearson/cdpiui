@@ -24,7 +24,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel x:Name="LoadingStackPanel" Grid.Row="1">
+            <StackPanel x:Name="LoadingStackPanel" Grid.Row="1" Visibility="{x:Bind ViewModel.IsLoadingVisible, Mode=OneWay}">
                 <StackPanel.RenderTransform>
                     <TranslateTransform/>
                 </StackPanel.RenderTransform>
@@ -36,20 +36,20 @@
                 </RichTextBlock>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Top" Spacing="10">
                     <ProgressRing Height="20" Width="20"/>
-                    <TextBlock x:Name="CurrentStateTextBlock" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="CurrentStateTextBlock" VerticalAlignment="Center" Text="{x:Bind ViewModel.CurrentStateText, Mode=OneWay}"/>
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel x:Name="ViewResultsStackPanel" Grid.Row="1">
-                <TextBlock x:Name="ResultTextBlock" Style="{StaticResource TitleTextBlockStyle}"/>
+            <StackPanel x:Name="ViewResultsStackPanel" Grid.Row="1" Visibility="{x:Bind ViewModel.IsViewResultsVisible, Mode=OneWay}">
+                <TextBlock x:Name="ResultTextBlock" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.ResultTitle, Mode=OneWay}"/>
                 <RichTextBlock Margin="0 15" TextWrapping="Wrap" HorizontalAlignment="Left" IsTextSelectionEnabled="False">
                     <Paragraph>
-                        <Run x:Name="ResultTipTextBlock"/>
+                        <Run x:Name="ResultTipTextBlock" Text="{x:Bind ViewModel.ResultTip, Mode=OneWay}"/>
                     </Paragraph>
                 </RichTextBlock>
             </StackPanel>
             
-            <StackPanel x:Name="FixStackPanel" Grid.Row="1">
+            <StackPanel x:Name="FixStackPanel" Grid.Row="1" Visibility="{x:Bind ViewModel.IsFixVisible, Mode=OneWay}">
                 <TextBlock l:Uids.Uid="FixTextBlock" Style="{StaticResource TitleTextBlockStyle}"/>
                 <RichTextBlock Margin="0 15" TextWrapping="Wrap" HorizontalAlignment="Left" IsTextSelectionEnabled="False">
                     <Paragraph>
@@ -62,8 +62,8 @@
                 </StackPanel>
             </StackPanel>
 
-            <Grid x:Name="DiagnosticResultStackPanel" Grid.Row="2" Visibility="Collapsed" >
-                <ListView x:Name="DiagnosticResultListView" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}" Style="{StaticResource FixedHeaderListViewStyle}" Margin="0 0 0 10">
+            <Grid x:Name="DiagnosticResultStackPanel" Grid.Row="2" Visibility="{x:Bind ViewModel.IsDiagnosticResultVisible, Mode=OneWay}">
+                <ListView x:Name="DiagnosticResultListView" ItemsSource="{x:Bind ViewModel.DiagnosticResults}" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}" Style="{StaticResource FixedHeaderListViewStyle}" Margin="0 0 0 10">
                     <ListView.Header>
                         <tcontrols:DiagnosticResultUserControl l:Uids.Uid="/Troubleshooting/DiagnosticTableHeader" ShowTopRectangle="True"/>
                     </ListView.Header>
@@ -84,8 +84,8 @@
                     </ListView.ItemTemplate>
                 </ListView>
             </Grid>
-            <Grid x:Name="FixResultStackPanel" Grid.Row="2" Visibility="Collapsed" >
-                <ListView x:Name="FixResultListView" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}" Style="{StaticResource FixedHeaderListViewStyle}" Margin="0 0 0 10">
+            <Grid x:Name="FixResultStackPanel" Grid.Row="2" Visibility="{x:Bind ViewModel.IsFixResultVisible, Mode=OneWay}">
+                <ListView x:Name="FixResultListView" ItemsSource="{x:Bind ViewModel.FixResults}" Visibility="{x:Bind ViewModel.IsFixResultListVisible, Mode=OneWay}" ItemContainerStyle="{StaticResource ListViewSmallItemStretchStyle}" Style="{StaticResource FixedHeaderListViewStyle}" Margin="0 0 0 10">
                     <ListView.Header>
                         <tcontrols:DiagnosticResultUserControl l:Uids.Uid="/Troubleshooting/DiagnosticTableHeader" ShowTopRectangle="True"/>
                     </ListView.Header>
@@ -137,15 +137,15 @@
             <Rectangle Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
 
             <Grid Padding="20">
-                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="GetHelpButton" x:Name="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
+                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="GetHelpButton" x:Name="GetHelpButton" Padding="6" Command="{x:Bind ViewModel.OpenHelpCommand}">
                     <Button.Content>
                         <FontIcon Glyph="&#xE897;" FontSize="16"/>
                     </Button.Content>
                 </Button>
                 <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Right">
-                    <Button l:Uids.Uid="StopButton" x:Name="CancelButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="False"/>
-                    <Button l:Uids.Uid="ExitButton" x:Name="ExitButton" MinWidth="150" Click="ExitButton_Click" Visibility="Collapsed" />
-                    <Button l:Uids.Uid="GoForwardButton" x:Name="ForwardButton" Style="{ThemeResource AccentButtonStyle}" MinWidth="150" Visibility="Collapsed" Click="ForwardButton_Click"/>
+                    <Button l:Uids.Uid="StopButton" x:Name="CancelButton" MinWidth="150" IsEnabled="False" Visibility="{x:Bind ViewModel.IsCancelVisible, Mode=OneWay}"/>
+                    <Button l:Uids.Uid="ExitButton" x:Name="ExitButton" MinWidth="150" Click="ExitButton_Click" Visibility="{x:Bind ViewModel.IsExitVisible, Mode=OneWay}" />
+                    <Button l:Uids.Uid="GoForwardButton" x:Name="ForwardButton" Style="{ThemeResource AccentButtonStyle}" MinWidth="150" Visibility="{x:Bind ViewModel.IsForwardVisible, Mode=OneWay}" Command="{x:Bind ViewModel.ForwardCommand}"/>
                 </StackPanel>
             </Grid>
         </Grid>
