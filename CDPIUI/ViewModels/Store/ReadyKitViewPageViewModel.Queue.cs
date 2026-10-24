@@ -1,37 +1,25 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using CDPIUI.Commands;
-using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Dialogs.Store;
-using CDPIUI.Core;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Queue;
-using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.ViewModels;
-using CDPIUI.Helper;
-using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
 using CDPIUI.Shared.PrettyErrorConversionService;
-using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Navigation;
-using WinUI3Localizer;
+using CDPIUI.Views.Store;
 
-namespace CDPIUI.Views.Store;
+namespace CDPIUI.ViewModels.Store;
 
-public sealed partial class ReadyKitViewPage
+public sealed partial class ReadyKitViewPageViewModel
 {
+    private bool _handlersConnected;
+
+    private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadSpeedChangedHandler;
+    private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
+    private Action<string> _itemActionsStoppedHandler;
+
     private void RefreshActionState()
     {
         if (!_isPageActive || _kit == null)
@@ -41,9 +29,9 @@ public sealed partial class ReadyKitViewPage
 
         if (_hasInstallationError)
         {
-            ErrorStatusGrid.Visibility = Visibility.Visible;
-            InstallButton.Visibility = Visibility.Collapsed;
-            DownloadStatusGrid.Visibility = Visibility.Collapsed;
+            IsErrorStatusVisible = true;
+            IsInstallVisible = false;
+            IsDownloadStatusVisible = false;
             return;
         }
 
@@ -52,12 +40,12 @@ public sealed partial class ReadyKitViewPage
         if (isFullyInstalled)
         {
             _activeItemId = string.Empty;
-            InstallButtonTextBlock.Text = _localizer.GetLocalizedString("Installed");
-            InstallButton.IsEnabled = false;
-            InstallButton.Visibility = Visibility.Visible;
-            DownloadStatusGrid.Visibility = Visibility.Collapsed;
-            ErrorStatusGrid.Visibility = Visibility.Collapsed;
-            StatusProgressBar.Value = 100;
+            InstallText = _localizer.GetLocalizedString("Installed");
+            IsInstallEnabled = false;
+            IsInstallVisible = true;
+            IsDownloadStatusVisible = false;
+            IsErrorStatusVisible = false;
+            ProgressValue = 100;
             return;
         }
 
@@ -94,32 +82,30 @@ public sealed partial class ReadyKitViewPage
         }
 
         _activeItemId = string.Empty;
-        DownloadStatusGrid.Visibility = Visibility.Collapsed;
-        ErrorStatusGrid.Visibility = Visibility.Collapsed;
-        InstallButton.Visibility = Visibility.Visible;
-        InstallButtonTextBlock.Text = _localizer.GetLocalizedString("Get");
-        InstallButton.IsEnabled = _canInstall;
+        IsDownloadStatusVisible = false;
+        IsErrorStatusVisible = false;
+        IsInstallVisible = true;
+        InstallText = _localizer.GetLocalizedString("Get");
+        IsInstallEnabled = _canInstall;
 
         if (!_hasInstallationError)
-            StatusProgressBar.Value = CalculateAggregateProgress();
+            ProgressValue = CalculateAggregateProgress();
     }
 
     private void ApplyDownloadStage(string stage, RepoItemModel activeItem)
     {
-        CurrentStatusTextBlock.Text = GetStageText(stage);
-        CurrentStatusSpeedTextBlock.Visibility = string.Equals(stage, "Downloading", StringComparison.Ordinal)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        StatusText = GetStageText(stage);
+        IsSpeedVisible = string.Equals(stage, "Downloading", StringComparison.Ordinal);
 
         if (activeItem == null)
         {
-            CurrentStatusTipTextBlock.Text = string.Empty;
+            StatusTip = string.Empty;
             return;
         }
 
         int itemNumber = _items.FindIndex(item =>
             string.Equals(item.store_id, activeItem.store_id, StringComparison.OrdinalIgnoreCase)) + 1;
-        CurrentStatusTipTextBlock.Text = string.Format(
+        StatusTip = string.Format(
             _localizer.GetLocalizedString("ReadyKitItemProgress"),
             itemNumber,
             _items.Count,
@@ -140,7 +126,7 @@ public sealed partial class ReadyKitViewPage
     };
 
     private void UpdateAggregateProgress() =>
-        StatusProgressBar.Value = CalculateAggregateProgress();
+        ProgressValue = CalculateAggregateProgress();
 
     private double CalculateAggregateProgress()
     {
@@ -217,7 +203,7 @@ public sealed partial class ReadyKitViewPage
             RunOnUIThread(() =>
             {
                 _activeItemId = itemId;
-                CurrentStatusSpeedTextBlock.Text = string.Empty;
+                SpeedText = string.Empty;
                 RefreshActionState();
             });
         };
@@ -233,7 +219,7 @@ public sealed partial class ReadyKitViewPage
             {
                 _activeItemId = itemId;
                 _itemProgress[itemId] = data.Item2;
-                if (DownloadStatusGrid.Visibility != Visibility.Visible)
+                if (!IsDownloadStatusVisible)
                     RefreshActionState();
                 else
                     UpdateAggregateProgress();
@@ -252,8 +238,8 @@ public sealed partial class ReadyKitViewPage
                 if (!string.Equals(_activeItemId, itemId, StringComparison.OrdinalIgnoreCase))
                     return;
 
-                CurrentStatusSpeedTextBlock.Text = $"{UnitsParser.FormatSpeed(data.Item2)},";
-                CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
+                SpeedText = $"{UnitsParser.FormatSpeed(data.Item2)},";
+                IsSpeedVisible = true;
             });
         };
         StoreHelper.Instance.ItemDownloadSpeedChanged += _itemDownloadSpeedChangedHandler;
@@ -270,10 +256,10 @@ public sealed partial class ReadyKitViewPage
             RunOnUIThread(() =>
             {
                 _hasInstallationError = true;
-                ErrorNameTextBlock.Text = data.Item2.ErrorCode;
-                ErrorStatusGrid.Visibility = Visibility.Visible;
-                InstallButton.Visibility = Visibility.Collapsed;
-                DownloadStatusGrid.Visibility = Visibility.Collapsed;
+                ErrorName = data.Item2.ErrorCode;
+                IsErrorStatusVisible = true;
+                IsInstallVisible = false;
+                IsDownloadStatusVisible = false;
             });
         };
         StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
@@ -283,7 +269,7 @@ public sealed partial class ReadyKitViewPage
             if (!ContainsItem(itemId))
                 return;
 
-            DispatcherQueue.TryEnqueue(() =>
+            _dispatcherQueue.TryEnqueue(() =>
             {
                 if (!_isPageActive)
                     return;
@@ -310,10 +296,10 @@ public sealed partial class ReadyKitViewPage
 
     private void ShowDownloadState()
     {
-        StopActionButton.IsEnabled = true;
-        ErrorStatusGrid.Visibility = Visibility.Collapsed;
-        InstallButton.Visibility = Visibility.Collapsed;
-        DownloadStatusGrid.Visibility = Visibility.Visible;
+        IsStopEnabled = true;
+        IsErrorStatusVisible = false;
+        IsInstallVisible = false;
+        IsDownloadStatusVisible = true;
     }
 
     private bool ContainsItem(string itemId) =>
@@ -325,10 +311,10 @@ public sealed partial class ReadyKitViewPage
         if (!_isPageActive)
             return;
 
-        if (DispatcherQueue.HasThreadAccess)
+        if (_dispatcherQueue.HasThreadAccess)
             action();
         else
-            DispatcherQueue.TryEnqueue(() =>
+            _dispatcherQueue.TryEnqueue(() =>
             {
                 if (_isPageActive)
                     action();

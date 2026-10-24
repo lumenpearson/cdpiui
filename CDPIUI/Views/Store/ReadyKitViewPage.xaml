@@ -106,10 +106,10 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Width="90" Height="90">
-                        <Border x:Name="KitIconBackground" CornerRadius="12" Visibility="Collapsed"/>
+                        <Border x:Name="KitIconBackground" CornerRadius="12" Background="{x:Bind ViewModel.KitIconBackground, Mode=OneWay}" Visibility="Collapsed"/>
                         <Image
                             x:Name="KitImage"
-                            Source="/Assets/Store/empty.png"
+                            Source="{x:Bind ViewModel.KitIcon, Mode=OneWay}"
                             Width="68"
                             Height="68"/>
                     </Grid>
@@ -121,12 +121,13 @@
                         </Grid.RowDefinitions>
                         <TextBlock
                             x:Name="KitNameTextBlock"
+                            Text="{x:Bind ViewModel.KitName, Mode=OneWay}"
                             MaxLines="2"
                             TextWrapping="Wrap"
                             Style="{ThemeResource TitleTextBlockStyle}"/>
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,5,0,0">
                             <StackPanel Orientation="Horizontal" Spacing="3">
-                                <TextBlock x:Name="KitItemsCountTextBlock" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="KitItemsCountTextBlock" Text="{x:Bind ViewModel.ItemsCountText, Mode=OneWay}" VerticalAlignment="Center"/>
                                 <FontIcon
                                     Glyph="&#xE8FD;"
                                     VerticalAlignment="Center"
@@ -141,7 +142,7 @@
                                 x:Name="ReadyKitsCategoryButton"
                                 Padding="4,0"
                                 Click="ReadyKitsCategoryButton_Click">
-                                <TextBlock x:Name="ReadyKitsCategoryTextBlock"/>
+                                <TextBlock x:Name="ReadyKitsCategoryTextBlock" Text="{x:Bind ViewModel.ReadyKitsCategoryText, Mode=OneWay}"/>
                             </HyperlinkButton>
                         </StackPanel>
                     </Grid>
@@ -149,6 +150,7 @@
 
                 <TextBlock
                     x:Name="KitSmallDescriptionTextBlock"
+                    Text="{x:Bind ViewModel.SmallDescription, Mode=OneWay}"
                     MaxLines="3"
                     Width="400"
                     TextWrapping="Wrap"
@@ -165,9 +167,12 @@
                         HorizontalContentAlignment="Stretch"
                         VerticalContentAlignment="Stretch"
                         Padding="0"
+                        Visibility="{x:Bind ViewModel.IsInstallVisible, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.IsInstallEnabled, Mode=OneWay}"
                         Click="InstallButton_Click">
                         <TextBlock
                             x:Name="InstallButtonTextBlock"
+                            Text="{x:Bind ViewModel.InstallText, Mode=OneWay}"
                             Style="{ThemeResource BodyStrongTextBlockStyle}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"/>
@@ -178,7 +183,7 @@
                         CornerRadius="4"
                         MinWidth="180"
                         Height="55"
-                        Visibility="Collapsed">
+                        Visibility="{x:Bind ViewModel.IsDownloadStatusVisible, Mode=OneWay}">
                         <Rectangle Fill="{ThemeResource ControlFillColorDefaultBrush}"/>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
@@ -193,14 +198,17 @@
                                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="0">
                                     <TextBlock
                                         x:Name="CurrentStatusTextBlock"
+                                        Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
                                         Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock
                                             x:Name="CurrentStatusSpeedTextBlock"
+                                            Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}"
                                             Margin="0,0,5,0"
-                                            Visibility="Collapsed"/>
+                                            Visibility="{x:Bind ViewModel.IsSpeedVisible, Mode=OneWay}"/>
                                         <TextBlock
                                             x:Name="CurrentStatusTipTextBlock"
+                                            Text="{x:Bind ViewModel.StatusTip, Mode=OneWay}"
                                             TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -212,6 +220,7 @@
                                         BorderBrush="Transparent"
                                         Padding="6"
                                         VerticalAlignment="Center"
+                                        IsEnabled="{x:Bind ViewModel.IsStopEnabled, Mode=OneWay}"
                                         Click="StopActionButton_Click">
                                         <FontIcon Glyph="&#xE978;" FontSize="16"/>
                                     </Button>
@@ -219,6 +228,7 @@
                             </Grid>
                             <ProgressBar
                                 x:Name="StatusProgressBar"
+                                Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}"
                                 Grid.Row="1"
                                 Minimum="0"
                                 Maximum="100"
@@ -234,7 +244,7 @@
                         CornerRadius="4"
                         MinWidth="180"
                         Height="55"
-                        Visibility="Collapsed">
+                        Visibility="{x:Bind ViewModel.IsErrorStatusVisible, Mode=OneWay}">
                         <Rectangle Fill="{ThemeResource ControlFillColorDefaultBrush}"/>
                         <Grid HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
@@ -264,6 +274,7 @@
                                             Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock
                                             x:Name="ErrorNameTextBlock"
+                                            Text="{x:Bind ViewModel.ErrorName, Mode=OneWay}"
                                             Margin="0,0,5,0"
                                             IsTextSelectionEnabled="True"/>
                                     </StackPanel>
@@ -285,7 +296,7 @@
                     </Grid>
                 </StackPanel>
 
-                <Grid x:Name="KitUnsupportedWarningGrid" Visibility="Collapsed">
+                <Grid x:Name="KitUnsupportedWarningGrid" Visibility="{x:Bind ViewModel.IsUnsupportedWarningVisible, Mode=OneWay}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto"/>
                         <ColumnDefinition Width="10"/>
@@ -295,11 +306,12 @@
                     <StackPanel Grid.Column="2">
                         <TextBlock
                             x:Name="KitUnsupportedWarningTextBlock"
+                            Text="{x:Bind ViewModel.UnsupportedWarningText, Mode=OneWay}"
                             TextWrapping="Wrap"/>
                         <HyperlinkButton
                             Padding="0"
                             x:Name="LaunchKitUnsupportedHelp"
-                            Click="LaunchKitUnsupportedHelp_Click">
+                            Command="{x:Bind ViewModel.LaunchKitUnsupportedHelpCommand}">
                             <TextBlock l:Uids.Uid="GetHelpTextBlock"/>
                         </HyperlinkButton>
                     </StackPanel>
@@ -333,6 +345,7 @@
                                 Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
                             <controls:MarkdownTextBlock
                                 x:Name="KitDescriptionTextBlock"
+                                Text="{x:Bind ViewModel.Description, Mode=OneWay}"
                                 Grid.Row="2"
                                 Margin="20"
                                 Config="{x:Bind MarkdownConfig, Mode=OneTime}"
@@ -354,6 +367,7 @@
                             </Grid.RowDefinitions>
                             <TextBlock
                                 x:Name="ContentsTitleTextBlock"
+                                Text="{x:Bind ViewModel.ContentsTitle, Mode=OneWay}"
                                 Style="{ThemeResource BodyStrongTextBlockStyle}"
                                 VerticalAlignment="Center"
                                 Margin="20,0,0,0"/>
@@ -365,7 +379,7 @@
                                 Grid.Row="2"
                                 Margin="12 0 0 0"
                                 Padding="0 12 0 -10"
-                                ItemsSource="{x:Bind ContentItems, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.ContentItems, Mode=OneWay}"
                                 ItemContainerStyle="{StaticResource ReadyKitContentItemStyle}"
                                 SelectionMode="None">
                                 <ListView.ItemTemplate>
