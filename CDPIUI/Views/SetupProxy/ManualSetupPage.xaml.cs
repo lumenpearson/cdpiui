@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.Controls.Default;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Proxy;
@@ -9,140 +17,133 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
 using WinUI3Localizer;
-using CDPIUI.Controls.Default;
-using System.Collections.Specialized;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views.SetupProxy
+namespace CDPIUI.Views.SetupProxy;
+
+/// <summary>
+/// An empty page that can be used on its own or navigated to within a Frame.
+/// </summary>
+public sealed partial class ManualSetupPage : TemplatePage
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class ManualSetupPage : TemplatePage
+    private ILocalizer localizer = Localizer.Get();
+    public ManualSetupPage()
     {
-        private ILocalizer localizer = Localizer.Get();
-        public ManualSetupPage()
+        InitializeComponent();
+
+        IsForwardAnimationToPageAvailable = true;
+        ElementToAnimateForwardConnectedAnimation = ActionButtonsGrid;
+
+        SetSettings();
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+    }
+
+    private void GoBackButton_Click(object sender, RoutedEventArgs e)
+    {
+        PrepareToConnectedBackwardAnimate(ActionButtonsGrid, new DirectConnectedAnimationConfiguration());
+        if (Frame.CanGoBack)
+            Frame.GoBack();
+    }
+
+    private void Navigate<T>() where T : Page
+    {
+        PrepareToConnectedForwardAnimate(ActionButtonsGrid, new DirectConnectedAnimationConfiguration());
+
+        Frame.Navigate(typeof(T), new NameValueCollection(), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+    }
+
+    private void SetSettings()
+    {
+        IPValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
+        PortValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "port");
+        string proxyType = SettingsManager.Instance.GetValue<string>("PROXY", "proxyType");
+
+        if (proxyType == ProxySetupTypes.AsInConfig.ToString())
         {
-            InitializeComponent();
-
-            IsForwardAnimationToPageAvailable = true;
-            ElementToAnimateForwardConnectedAnimation = ActionButtonsGrid;
-
-            SetSettings();
+            UseConfigSettings.IsChecked = true;
         }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        else
         {
-            base.OnNavigatedTo(e);
+            UseConfigSettings.IsChecked = false;
         }
+    }
 
-        private void GoBackButton_Click(object sender, RoutedEventArgs e)
+    private bool SaveSettings()
+    {
+        string proxyServer = "";
+
+        try
         {
-            PrepareToConnectedBackwardAnimate(ActionButtonsGrid, new DirectConnectedAnimationConfiguration());
-            if (Frame.CanGoBack)
-                Frame.GoBack();
-        }
-
-        private void Navigate<T>() where T : Page
-        {
-            PrepareToConnectedForwardAnimate(ActionButtonsGrid, new DirectConnectedAnimationConfiguration());
-
-            Frame.Navigate(typeof(T), new NameValueCollection(), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-        }
-
-        private void SetSettings()
-        {
-            IPValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
-            PortValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "port");
-            string proxyType = SettingsManager.Instance.GetValue<string>("PROXY", "proxyType");
-
-            if (proxyType == ProxySetupTypes.AsInConfig.ToString())
+            IPAddress address;
+            if (IPAddress.TryParse(IPValue.Text, out address))
             {
-                UseConfigSettings.IsChecked = true;
+                proxyServer = address.AddressFamily switch
+                {
+                    System.Net.Sockets.AddressFamily.InterNetwork => $"socks={IPValue.Text}:{PortValue.Text}",
+                    System.Net.Sockets.AddressFamily.InterNetworkV6 => $"socks=[{IPValue.Text}]:{PortValue.Text}",
+                    _ => "",
+                };
+            }
+
+            if (string.IsNullOrEmpty(proxyServer))
+                throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
+            if (!ProxyHelper.IsValidPort(PortValue.Text))
+                throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
+
+            if ((bool)UseConfigSettings.IsChecked)
+            {
+                SettingsManager.Instance.SetValue("PROXY", "proxyType", ProxySetupTypes.AsInConfig.ToString());
             }
             else
             {
-                UseConfigSettings.IsChecked = false;
+                SettingsManager.Instance.SetValue("PROXY", "IPAddress", IPValue.Text);
+                SettingsManager.Instance.SetValue("PROXY", "port", PortValue.Text);
+                SettingsManager.Instance.SetValue("PROXY", "proxyType", ProxySetupTypes.NoActions.ToString());
             }
+            return true;
         }
-
-        private bool SaveSettings()
+        catch (Exception ex)
         {
-            string proxyServer = "";
-
-            try
+            Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService), ex.Message);
+            _ = new ContentDialog()
             {
-                IPAddress address;
-                if (IPAddress.TryParse(IPValue.Text, out address))
-                {
-                    proxyServer = address.AddressFamily switch
-                    {
-                        System.Net.Sockets.AddressFamily.InterNetwork => $"socks={IPValue.Text}:{PortValue.Text}",
-                        System.Net.Sockets.AddressFamily.InterNetworkV6 => $"socks=[{IPValue.Text}]:{PortValue.Text}",
-                        _ => "",
-                    };
-                }
-
-                if (string.IsNullOrEmpty(proxyServer)) throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
-                if (!ProxyHelper.IsValidPort(PortValue.Text)) throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
-
-                if ((bool)UseConfigSettings.IsChecked)
-                {
-                    SettingsManager.Instance.SetValue("PROXY", "proxyType", ProxySetupTypes.AsInConfig.ToString());
-                }
-                else
-                {
-                    SettingsManager.Instance.SetValue("PROXY", "IPAddress", IPValue.Text);
-                    SettingsManager.Instance.SetValue("PROXY", "port", PortValue.Text);
-                    SettingsManager.Instance.SetValue("PROXY", "proxyType", ProxySetupTypes.NoActions.ToString());
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService), ex.Message);
-                _ = new ContentDialog()
-                {
-                    Title = localizer.GetLocalizedString("ErrorOccurred"),
-                    Content = string.Format(localizer.GetLocalizedString("ExceptionProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
-                    CloseButtonText = localizer.GetLocalizedString("OkButtonText"),
-                    Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
-                    XamlRoot = this.XamlRoot
-                }.ShowQueuedAsync();
-            }
-            return false;
+                Title = localizer.GetLocalizedString("ErrorOccurred"),
+                Content = string.Format(localizer.GetLocalizedString("ExceptionProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
+                CloseButtonText = localizer.GetLocalizedString("OkButtonText"),
+                Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
+                XamlRoot = this.XamlRoot
+            }.ShowQueuedAsync();
         }
+        return false;
+    }
 
-        private void GetHelpButton_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO: Open help link
-        }
+    private void GetHelpButton_Click(object sender, RoutedEventArgs e)
+    {
+        // TODO: Open help link
+    }
 
-        private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
-        {
-            // With the component's own settings the address is not taken from here.
-            if (UseConfigSettings.IsChecked != true && !await global::CDPIUI.Helper.Basic.ProxyAddressWarning.ConfirmAsync(XamlRoot, IPValue.Text))
-                return;
-            if (SaveSettings())
-                Navigate<ProxySetupCompletePage>();
-        }
+    private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
+    {
+        // With the component's own settings the address is not taken from here.
+        if (UseConfigSettings.IsChecked != true && !await global::CDPIUI.Helper.Basic.ProxyAddressWarning.ConfirmAsync(XamlRoot, IPValue.Text))
+            return;
+        if (SaveSettings())
+            Navigate<ProxySetupCompletePage>();
+    }
 
-        private void ResetButton_Click(object sender, RoutedEventArgs e)
-        {
-            IPValue.Text = "127.0.0.1";
-            PortValue.Text = "1080";
-        }
+    private void ResetButton_Click(object sender, RoutedEventArgs e)
+    {
+        IPValue.Text = "127.0.0.1";
+        PortValue.Text = "1080";
     }
 }

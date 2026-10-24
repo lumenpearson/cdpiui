@@ -1,6 +1,3 @@
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Communication;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,6 +7,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.Core.Communication;
+using CDPIUI.Core.ComponentServices.Helpers;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
 namespace CDPIUI.Helper.CreateConfigHelper;
 

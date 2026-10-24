@@ -1,6 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Core.ComponentServices;
-
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,14 +17,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -126,10 +125,12 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     public bool Flag
     {
         get { return (bool)GetValue(FlagProperty); }
-        set { 
+        set
+        {
             SetValue(FlagProperty, value);
             FlagIconButton.Checked = value;
-            if (FlagIconButton.Checked) FlagIconButton.Visibility = Visibility.Visible;
+            if (FlagIconButton.Checked)
+                FlagIconButton.Visibility = Visibility.Visible;
             FlagToolTip.Content = FlagIconButton.Checked ? localizer.GetLocalizedString("RemoveFlag") : localizer.GetLocalizedString("SetFlag");
         }
     }
@@ -198,7 +199,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 
     private void ApplyProcessState(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != ComponentId) return;
+        if (tuple.Item1 != ComponentId)
+            return;
         if (tuple.Item2)
         {
             PlayIconButton.Checked = true;

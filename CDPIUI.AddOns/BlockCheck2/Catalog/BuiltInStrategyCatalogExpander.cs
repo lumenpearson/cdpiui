@@ -368,28 +368,28 @@ internal static class BuiltInStrategyCatalogExpander
         double cost,
         List<LuaActionDefinition> actions,
         IReadOnlyList<BlockCheckIpVersion>? ipVersions = null) => new()
-    {
-        Id = id,
-        DisplayName = displayName,
-        Family = family,
-        Protocols = [.. protocols],
-        IpVersions = ipVersions == null
+        {
+            Id = id,
+            DisplayName = displayName,
+            Family = family,
+            Protocols = [.. protocols],
+            IpVersions = ipVersions == null
             ? [BlockCheckIpVersion.IPv4, BlockCheckIpVersion.IPv6]
             : [.. ipVersions],
-        ScanTier = tier,
-        BaseCost = cost,
-        Actions = actions,
-    };
+            ScanTier = tier,
+            BaseCost = cost,
+            Actions = actions,
+        };
 
     private static LuaActionDefinition Action(
         string function,
         string payload,
         IEnumerable<LuaArgumentDefinition> arguments) => new()
-    {
-        Function = function,
-        Payloads = [payload],
-        Arguments = [.. arguments],
-    };
+        {
+            Function = function,
+            Payloads = [payload],
+            Arguments = [.. arguments],
+        };
 
     private static FoolingDefinition Fooling(
         string id,

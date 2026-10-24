@@ -11,11 +11,11 @@ public class BlockCheckTargetInputParserTests
         BlockCheckProtocol[]? protocols = null,
         BlockCheckIpVersion[]? ipVersions = null,
         int maximumTargets = 200) => new()
-    {
-        Protocols = new HashSet<BlockCheckProtocol>(protocols ?? [BlockCheckProtocol.TlsAuto]),
-        IpVersions = new HashSet<BlockCheckIpVersion>(ipVersions ?? [BlockCheckIpVersion.IPv4]),
-        MaximumTargets = maximumTargets,
-    };
+        {
+            Protocols = new HashSet<BlockCheckProtocol>(protocols ?? [BlockCheckProtocol.TlsAuto]),
+            IpVersions = new HashSet<BlockCheckIpVersion>(ipVersions ?? [BlockCheckIpVersion.IPv4]),
+            MaximumTargets = maximumTargets,
+        };
 
     [Fact]
     public void DefaultOptionsCreateTls12AndAutomaticTlsTargets()

@@ -1,8 +1,8 @@
 namespace CDPIUI.AddOns.ConfigImport;
 
-using CDPIUI.Core.Basic;
 using System.Text;
 using System.Text.RegularExpressions;
+using CDPIUI.Core.Basic;
 
 /// <summary>
 /// Redirects unavailable and batch-generated resources to short-lived temporary

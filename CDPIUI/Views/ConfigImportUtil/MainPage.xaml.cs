@@ -1,20 +1,3 @@
-using CDPIUI.Shared.Extensions;
-using CDPIUI.AddOns.ConfigImport;
-using CDPIUI.AddOns.ConfigShare;
-using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Universal;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Configuration;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Core.Store;
-using CDPIUI.Helper.AddOns.ConfigImport;
-using CDPIUI.Helper.AddOns.ConfigShare;
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,6 +6,23 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using CDPIUI.AddOns.ConfigImport;
+using CDPIUI.AddOns.ConfigShare;
+using CDPIUI.Controls.Default;
+using CDPIUI.Controls.Universal;
+using CDPIUI.Core.ComponentServices;
+using CDPIUI.Core.ComponentServices.Configuration;
+using CDPIUI.Core.ComponentServices.Helpers;
+using CDPIUI.Core.Store;
+using CDPIUI.Core.Store.Database;
+using CDPIUI.Helper.AddOns.ConfigImport;
+using CDPIUI.Helper.AddOns.ConfigShare;
+using CDPIUI.Shared.Extensions;
+using CDPIUI.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -104,7 +104,8 @@ public sealed partial class MainPage : TemplatePage
 
     private void StoreComponentsChanged(string id) => DispatcherQueue.TryEnqueue(() =>
     {
-        if (!isUnloaded && results.Count == 0) LoadComponents();
+        if (!isUnloaded && results.Count == 0)
+            LoadComponents();
     });
 
     private void OpenComponentsStore_Click(object sender, RoutedEventArgs e) =>
@@ -126,17 +127,20 @@ public sealed partial class MainPage : TemplatePage
     public void QueueDroppedFiles(string[] paths)
     {
         pendingDroppedFiles = paths.ToArray();
-        if (IsLoaded) _ = ImportPendingFilesAsync();
+        if (IsLoaded)
+            _ = ImportPendingFilesAsync();
     }
 
     private async Task ImportPendingFilesAsync()
     {
-        if (pendingDroppedFiles == null || importingDroppedFiles || isUnloaded) return;
+        if (pendingDroppedFiles == null || importingDroppedFiles || isUnloaded)
+            return;
         var paths = pendingDroppedFiles;
         pendingDroppedFiles = null;
         importingDroppedFiles = true;
         NextButton.Visibility = Visibility.Collapsed;
-        try { await ImportConfigsAsync(paths); }
+        try
+        { await ImportConfigsAsync(paths); }
         catch (Exception exception)
         {
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
@@ -158,34 +162,40 @@ public sealed partial class MainPage : TemplatePage
     private async Task<bool> ImportConfigsAsync(string[] suppliedPaths = null)
     {
         LoadComponents();
-        if (components.Count == 0) return false;
+        if (components.Count == 0)
+            return false;
         string[] filePaths = suppliedPaths;
         if (filePaths == null)
         {
             var result = ConfigImportHelper.OpenFileSelectionDialog(true);
-            if (!result.Success) return false;
+            if (!result.Success)
+                return false;
             filePaths = result.Result;
         }
 
         if (filePaths.Length == 0)
             return false;
-        
+
         UtilityButtons.IsLoading = true;
 
         MainContent.GoTo(ProgressStep);
 
-        foreach (var item in results) item.Result.SharedPackage?.Dispose();
+        foreach (var item in results)
+            item.Result.SharedPackage?.Dispose();
         results.Clear();
         missingFiles.Clear();
 
         await Task.Run(() => ImportWork(filePaths));
-        if (isUnloaded) return false;
+        if (isUnloaded)
+            return false;
 
         await PrepareSharedComponentsAsync();
-        if (isUnloaded) return false;
+        if (isUnloaded)
+            return false;
 
         await PrepareMissingFilesAsync();
-        if (isUnloaded) return false;
+        if (isUnloaded)
+            return false;
 
         if (missingFiles.Count > 0)
             ShowMissingFiles();
@@ -200,7 +210,7 @@ public sealed partial class MainPage : TemplatePage
         List<ConfigImportTarget> targets = [.. components.Select(CreateTarget)];
         for (int index = 0; index < filePaths.Length; index++)
         {
-            
+
             string text = string.Format(
                 localizer.GetLocalizedString("ConfigImportProgressCounter"),
                 index + 1,
@@ -209,7 +219,8 @@ public sealed partial class MainPage : TemplatePage
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!isUnloaded) UtilityButtons.LoadingStateText = text;
+                if (!isUnloaded)
+                    UtilityButtons.LoadingStateText = text;
             });
 
             AnalyzedImport analyzed = await Task.Run(() => AnalyzeFile(Path.GetFullPath(filePaths[index]), targets));
@@ -228,29 +239,36 @@ public sealed partial class MainPage : TemplatePage
                 initialComponent,
                 analyzed.TargetWasDetected));
             });
-            if (!queued) analyzed.Result.SharedPackage?.Dispose();
+            if (!queued)
+                analyzed.Result.SharedPackage?.Dispose();
         }
     }
 
     private async Task PrepareSharedComponentsAsync()
     {
         var shared = results.Where(item => item.Result.SharedPackage != null).ToArray();
-        if (shared.Length == 0) return;
+        if (shared.Length == 0)
+            return;
         var selections = results.ToDictionary(item => item, item => item.SelectedComponent?.Id);
         var offered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in shared)
         {
-            if (isUnloaded) return;
+            if (isUnloaded)
+                return;
             string missingId = ConfigShareService.GetMissingComponentId(item.Result.Config);
-            if (missingId == null || !offered.Add(missingId)) continue;
-            try { await ConfigShareUI.OfferComponentInstallAsync(XamlRoot, item.Result.Config); }
+            if (missingId == null || !offered.Add(missingId))
+                continue;
+            try
+            { await ConfigShareUI.OfferComponentInstallAsync(XamlRoot, item.Result.Config); }
             catch (Exception exception)
             {
                 CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-                if (!isUnloaded) item.SetOperationError(ConfigShareUI.ErrorText(exception));
+                if (!isUnloaded)
+                    item.SetOperationError(ConfigShareUI.ErrorText(exception));
             }
         }
-        if (isUnloaded) return;
+        if (isUnloaded)
+            return;
         LoadComponents();
         foreach (var item in results)
         {
@@ -276,7 +294,7 @@ public sealed partial class MainPage : TemplatePage
                     missingPath,
                     suggestion,
                     suggestEmptyFile));
-                
+
             }
         }
     }
@@ -380,7 +398,8 @@ public sealed partial class MainPage : TemplatePage
             await StopActiveTestAsync();
 
         item.SetSaving(true);
-        if (item.Result.SharedPackage != null) packagesBeingSaved.Add(item.Result.SharedPackage);
+        if (item.Result.SharedPackage != null)
+            packagesBeingSaved.Add(item.Result.SharedPackage);
         try
         {
             ConfigImportResult selectedResult = GetSelectedResult(item);
@@ -409,7 +428,8 @@ public sealed partial class MainPage : TemplatePage
             if (item.Result.SharedPackage != null)
             {
                 packagesBeingSaved.Remove(item.Result.SharedPackage);
-                if (isUnloaded) item.Result.SharedPackage.Dispose();
+                if (isUnloaded)
+                    item.Result.SharedPackage.Dispose();
             }
         }
     }
@@ -516,8 +536,8 @@ public sealed partial class MainPage : TemplatePage
     }
 
     private void UpdateMissingFilesNextState() =>
-        NextButton.IsEnabled = 
-        missingFiles.Count == 0 
+        NextButton.IsEnabled =
+        missingFiles.Count == 0
         || (missingFiles.Count > 0 && missingFiles.All(item => item.IsResolved))
         || (missingFiles.Count > 0 && missingFiles.All(item => item.HasSuggestion));
 
@@ -663,7 +683,8 @@ public sealed partial class MainPage : TemplatePage
         catch (Exception exception)
         {
             CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-            if (isUnloaded) return;
+            if (isUnloaded)
+                return;
             UtilityButtons.IsLoading = false;
             ResultItemsControl.IsEnabled = true;
             NextButton.Visibility = Visibility.Visible;
@@ -679,7 +700,8 @@ public sealed partial class MainPage : TemplatePage
         {
             NextButton.Visibility = Visibility.Collapsed;
             await ImportConfigsAsync();
-            if (isUnloaded) return;
+            if (isUnloaded)
+                return;
             NextButton.Visibility = Visibility.Visible;
         }
         else if (MainContent.SelectedItem == MissingFilesStep)
@@ -698,7 +720,8 @@ public sealed partial class MainPage : TemplatePage
                     flg = true;
                 }
             }
-            if (!flg) ShowCompletion();
+            if (!flg)
+                ShowCompletion();
         }
         else if (MainContent.SelectedItem == CompletedStep)
         {
@@ -736,7 +759,7 @@ public sealed partial class MainPage : TemplatePage
                 MainContent.GoTo(WorkDoneStep);
             }
         }
-        
+
     }
 
     private sealed record AnalyzedImport(ConfigImportResult Result, bool TargetWasDetected);

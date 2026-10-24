@@ -1,14 +1,3 @@
-using CDPIUI.AddOns.BlockCheck2;
-using CDPIUI.AddOns.BlockCheck2.Execution;
-using CDPIUI.AddOns.BlockCheck2.Models;
-using CDPIUI.AddOns.BlockCheck2.Presentation;
-using CDPIUI.AddOns.BlockCheck2.Reporting;
-using CDPIUI.AddOns.GoodCheck;
-using CDPIUI.Core;
-using CDPIUI.Core.Basic;
-using CDPIUI.Core.Data;
-using CDPIUI.Helper.AddOns.BlockCheck2;
-using CDPIUI.Shared;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,6 +10,17 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.AddOns.BlockCheck2;
+using CDPIUI.AddOns.BlockCheck2.Execution;
+using CDPIUI.AddOns.BlockCheck2.Models;
+using CDPIUI.AddOns.BlockCheck2.Presentation;
+using CDPIUI.AddOns.BlockCheck2.Reporting;
+using CDPIUI.AddOns.GoodCheck;
+using CDPIUI.Core;
+using CDPIUI.Core.Basic;
+using CDPIUI.Core.Data;
+using CDPIUI.Helper.AddOns.BlockCheck2;
+using CDPIUI.Shared;
 
 namespace CDPIUI.ViewModels;
 
@@ -500,7 +500,8 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                     item.PackName ?? string.Empty,
                     item.Directory!,
                     individualSiteListRoot: generatedSiteListRoot);
-                if (siteListItem.DomainCount > 0 && !siteListItem.DisplayName.Contains("exclude")) AvailableSiteLists.Add(siteListItem);
+                if (siteListItem.DomainCount > 0 && !siteListItem.DisplayName.Contains("exclude"))
+                    AvailableSiteLists.Add(siteListItem);
 
             }
             siteListsLoaded = true;
@@ -779,19 +780,26 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
     private IReadOnlySet<BlockCheckProtocol> SelectedProtocols()
     {
         HashSet<BlockCheckProtocol> selected = [];
-        if (includeHttp) selected.Add(BlockCheckProtocol.Http);
-        if (includeTls12) selected.Add(BlockCheckProtocol.Tls12);
-        if (includeTls13) selected.Add(BlockCheckProtocol.Tls13);
-        if (includeTlsAuto) selected.Add(BlockCheckProtocol.TlsAuto);
-        if (includeQuic) selected.Add(BlockCheckProtocol.Quic);
+        if (includeHttp)
+            selected.Add(BlockCheckProtocol.Http);
+        if (includeTls12)
+            selected.Add(BlockCheckProtocol.Tls12);
+        if (includeTls13)
+            selected.Add(BlockCheckProtocol.Tls13);
+        if (includeTlsAuto)
+            selected.Add(BlockCheckProtocol.TlsAuto);
+        if (includeQuic)
+            selected.Add(BlockCheckProtocol.Quic);
         return selected;
     }
 
     private IReadOnlySet<BlockCheckIpVersion> SelectedIpVersions()
     {
         HashSet<BlockCheckIpVersion> selected = [];
-        if (includeIpv4) selected.Add(BlockCheckIpVersion.IPv4);
-        if (includeIpv6) selected.Add(BlockCheckIpVersion.IPv6);
+        if (includeIpv4)
+            selected.Add(BlockCheckIpVersion.IPv4);
+        if (includeIpv6)
+            selected.Add(BlockCheckIpVersion.IPv6);
         return selected;
     }
 

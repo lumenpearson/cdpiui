@@ -1,17 +1,17 @@
+using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.JSON;
-using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Data;
+using CDPIUI.Core.Store.Database;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Security;
-using System.IO.Compression;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CDPIUI.AddOns.ConfigShare;
 
@@ -34,8 +34,10 @@ public sealed class ConfigShareService
     public static string? GetInstalledComponentId(ConfigItem config)
     {
         string? required = config.target?.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(required)) return null;
-        if (DatabaseHelper.Instance.GetItemById(required)?.Type == "component") return required;
+        if (string.IsNullOrWhiteSpace(required))
+            return null;
+        if (DatabaseHelper.Instance.GetItemById(required)?.Type == "component")
+            return required;
         string zapret2 = HardcodedItemIds.ComponentIds[Components.Zapret2];
         return required == HardcodedItemIds.ComponentIds[Components.Zapret] &&
             DatabaseHelper.Instance.GetItemById(zapret2)?.Type == "component" ? zapret2 : null;
@@ -49,7 +51,8 @@ public sealed class ConfigShareService
     {
         TryCleanup(() =>
         {
-            if (!Directory.Exists(Directories.TempFilesDirectory)) return;
+            if (!Directory.Exists(Directories.TempFilesDirectory))
+                return;
             foreach (string directory in Directory.EnumerateDirectories(Directories.TempFilesDirectory, "*_ConfigShare_*"))
                 if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) == 0 &&
                     File.Exists(Path.Combine(directory, SystemShareMarker)))
@@ -110,7 +113,8 @@ public sealed class ConfigShareService
                         output.Write(bytes);
                     manifest.Resources.Add(new ConfigShareResource
                     {
-                        Path = resource.Value.ArchivePath, Length = bytes.Length,
+                        Path = resource.Value.ArchivePath,
+                        Length = bytes.Length,
                         Sha256 = Convert.ToHexString(SHA256.HashData(bytes))
                     });
                 }
@@ -222,7 +226,8 @@ public sealed class ConfigShareService
         string? packId = null, string? newPackName = null, ConfigItem? editedConfig = null)
     {
         await InstallGate.WaitAsync();
-        try { return await Task.Run(() => Install(package, displayName, packId, newPackName, editedConfig)); }
+        try
+        { return await Task.Run(() => Install(package, displayName, packId, newPackName, editedConfig)); }
         finally { InstallGate.Release(); }
     }
 
@@ -246,7 +251,8 @@ public sealed class ConfigShareService
                 throw new ConfigShareException("SHARE_DESTINATION_INVALID", "The selected kit is not installed.");
             if (createPack)
             {
-                if (Directory.Exists(packDirectory)) throw new IOException("Kit directory already exists.");
+                if (Directory.Exists(packDirectory))
+                    throw new IOException("Kit directory already exists.");
                 Directory.CreateDirectory(packDirectory);
                 newPackDirectory = packDirectory;
                 File.WriteAllText(Path.Combine(packDirectory, "init.json"), JSONConvertor.SerializeObject(new ConfigInitItem
@@ -277,7 +283,8 @@ public sealed class ConfigShareService
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 if (resource.RewriteReferences)
                     File.WriteAllText(destination, ReplaceReferences(File.ReadAllText(source), libraryReferences), new UTF8Encoding(false));
-                else File.Copy(source, destination, false);
+                else
+                    File.Copy(source, destination, false);
             }
             ConfigItem config = Clone(editedConfig ?? package.Config);
             ConfigShareResources.MapConfig(config, text => ReplaceConfigReferences(text, runtimeReferences));
@@ -294,20 +301,31 @@ public sealed class ConfigShareService
             }
             if (createPack && !DatabaseHelper.Instance.AddOrUpdateItem(new DatabaseStoreItem
             {
-                Id = packId, Type = "configlist", Directory = packDirectory, Name = newPackName!.Trim(),
-                ShortName = newPackName.Trim(), Developer = package.Manifest.Developer,
-                VersionControlType = "local", CurrentVersion = "1.0", IconPath = "$STATICIMAGE(Store/empty.png)",
+                Id = packId,
+                Type = "configlist",
+                Directory = packDirectory,
+                Name = newPackName!.Trim(),
+                ShortName = newPackName.Trim(),
+                Developer = package.Manifest.Developer,
+                VersionControlType = "local",
+                CurrentVersion = "1.0",
+                IconPath = "$STATICIMAGE(Store/empty.png)",
                 BackgroundColor = "",
-                RequiredItemIds = [Tuple.Create(config.target![0], config.target.ElementAtOrDefault(1) ?? "0.0")], DependentItemIds = []
-            })) throw new ConfigShareException("SHARE_DATABASE_FAILED", "Cannot register the new kit.");
+                RequiredItemIds = [Tuple.Create(config.target![0], config.target.ElementAtOrDefault(1) ?? "0.0")],
+                DependentItemIds = []
+            }))
+                throw new ConfigShareException("SHARE_DATABASE_FAILED", "Cannot register the new kit.");
             Log($"Installed shared preset in {packId}/{filename}.");
             return new ConfigShareInstallResult(filename, packId);
         }
         catch (Exception exception)
         {
-            if (configCreated && configPath != null) TryCleanup(() => File.Delete(configPath));
-            if (resourceDirectory != null) TryCleanup(() => Directory.Delete(resourceDirectory, true));
-            if (newPackDirectory != null) TryCleanup(() => Directory.Delete(newPackDirectory, true));
+            if (configCreated && configPath != null)
+                TryCleanup(() => File.Delete(configPath));
+            if (resourceDirectory != null)
+                TryCleanup(() => Directory.Delete(resourceDirectory, true));
+            if (newPackDirectory != null)
+                TryCleanup(() => Directory.Delete(newPackDirectory, true));
             throw Report("SHARE_INSTALL_FAILED", exception);
         }
     }
@@ -322,7 +340,8 @@ public sealed class ConfigShareService
             string right = destination.Replace('\\', '/');
             // All packaged files start with resources/<category>/... . Only expose their real parents.
             int boundary = left.IndexOf("resources/", StringComparison.Ordinal);
-            if (boundary < 0) continue;
+            if (boundary < 0)
+                continue;
             while (left.LastIndexOf('/') > boundary + "resources".Length && right.LastIndexOf('/') >= 0)
             {
                 left = left[..left.LastIndexOf('/')];
@@ -334,7 +353,8 @@ public sealed class ConfigShareService
 
     internal static string ReplaceReferences(string text, IReadOnlyDictionary<string, string> replacements)
     {
-        if (replacements.Count == 0) return text;
+        if (replacements.Count == 0)
+            return text;
         string pattern = string.Join("|", replacements.Keys.OrderByDescending(key => key.Length).Select(Regex.Escape));
         return Regex.Replace(text, pattern, match => replacements[match.Value], RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
             TimeSpan.FromSeconds(5));
@@ -342,7 +362,8 @@ public sealed class ConfigShareService
 
     internal static string ReplaceConfigReferences(string text, IReadOnlyDictionary<string, string> replacements)
     {
-        if (replacements.Count == 0) return text;
+        if (replacements.Count == 0)
+            return text;
         string pattern = string.Join("|", replacements.Keys.OrderByDescending(key => key.Length).Select(Regex.Escape));
         return Regex.Replace(text, pattern, match =>
         {
@@ -379,7 +400,8 @@ public sealed class ConfigShareService
     internal static byte[] ReadBoundedFile(string path)
     {
         using var input = File.OpenRead(path);
-        if (input.Length > MaxTotalBytes) throw new ConfigShareException("SHARE_TOO_LARGE", path);
+        if (input.Length > MaxTotalBytes)
+            throw new ConfigShareException("SHARE_TOO_LARGE", path);
         using var output = new MemoryStream();
         CopyBounded(input, output, MaxTotalBytes);
         return output.ToArray();
@@ -390,7 +412,8 @@ public sealed class ConfigShareService
         using var input = entry.Open();
         using var output = new MemoryStream();
         CopyBounded(input, output, Math.Min(limit, entry.Length));
-        if (output.Length != entry.Length) throw new InvalidDataException("Truncated ZIP entry.");
+        if (output.Length != entry.Length)
+            throw new InvalidDataException("Truncated ZIP entry.");
         return output.ToArray();
     }
 
@@ -401,7 +424,8 @@ public sealed class ConfigShareService
         long total = 0;
         while ((count = input.Read(buffer)) > 0)
         {
-            if ((total += count) > limit) throw new ConfigShareException("SHARE_TOO_LARGE", "Resource exceeds declared size.");
+            if ((total += count) > limit)
+                throw new ConfigShareException("SHARE_TOO_LARGE", "Resource exceeds declared size.");
             output.Write(buffer, 0, count);
         }
     }
@@ -431,13 +455,15 @@ public sealed class ConfigShareService
 
     private static void TryCleanup(Action cleanup)
     {
-        try { cleanup(); }
+        try
+        { cleanup(); }
         catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(ConfigShareService), $"Cleanup failed: {exception}"); }
     }
 
     private static void Log(string text)
     {
-        try { Logger.Instance.CreateInfoLog(nameof(ConfigShareService), text); }
+        try
+        { Logger.Instance.CreateInfoLog(nameof(ConfigShareService), text); }
         catch { /* A logging failure must not roll back an already registered kit. */ }
     }
     internal static ConfigShareException Report(string code, Exception exception)

@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
@@ -5,8 +7,6 @@ using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Linq;
 
 namespace CDPIUI.Controls.BlockCheck2;
 

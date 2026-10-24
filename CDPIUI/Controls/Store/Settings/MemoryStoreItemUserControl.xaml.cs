@@ -1,9 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Core;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.System;
 using CDPIUI.Helper.Parsers;
-
 using CDPIUI.Shared;
 using CDPIUI.Views.Main.Components;
 using Microsoft.UI;
@@ -15,181 +20,175 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Controls.Store.Settings
+namespace CDPIUI.Controls.Store.Settings;
+
+public sealed partial class MemoryStoreItemUserControl : UserControl
 {
-    public sealed partial class MemoryStoreItemUserControl : UserControl
+    public MemoryStoreItemUserControl()
     {
-        public MemoryStoreItemUserControl()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        public string StoreId
+    public string StoreId
+    {
+        get { return (string)GetValue(StoreIdProperty); }
+        set
         {
-            get { return (string)GetValue(StoreIdProperty); }
-            set
+            SetValue(StoreIdProperty, value);
+            // One read of the row serves both the actions and the version.
+            DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+            CheckAvailiableActions(databaseStoreItem);
+            VersionTextBlock.Text = databaseStoreItem?.CurrentVersion.Replace("v", "") ?? string.Empty;
+            if (string.IsNullOrEmpty(VersionTextBlock.Text))
             {
-                SetValue(StoreIdProperty, value);
-                // One read of the row serves both the actions and the version.
-                DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
-                CheckAvailiableActions(databaseStoreItem);
-                VersionTextBlock.Text = databaseStoreItem?.CurrentVersion.Replace("v", "") ?? string.Empty;
-                if (string.IsNullOrEmpty(VersionTextBlock.Text))
-                {
-                    VersionTextBlock.Visibility = Visibility.Collapsed;
-                    VersionTextBlockSeparator.Visibility = Visibility.Collapsed;
-                }
+                VersionTextBlock.Visibility = Visibility.Collapsed;
+                VersionTextBlockSeparator.Visibility = Visibility.Collapsed;
             }
         }
+    }
 
-        public static readonly DependencyProperty StoreIdProperty =
-            DependencyProperty.Register(
-                nameof(StoreId), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
-            );
+    public static readonly DependencyProperty StoreIdProperty =
+        DependencyProperty.Register(
+            nameof(StoreId), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
+        );
 
-        public string Title
+    public string Title
+    {
+        get { return (string)GetValue(TitleProperty); }
+        set { SetValue(TitleProperty, value); }
+    }
+
+    public static readonly DependencyProperty TitleProperty =
+        DependencyProperty.Register(
+            nameof(Title), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
+        );
+
+    public string Developer
+    {
+        get { return (string)GetValue(DeveloperProperty); }
+        set { SetValue(DeveloperProperty, value); }
+    }
+
+    public static readonly DependencyProperty DeveloperProperty =
+        DependencyProperty.Register(
+            nameof(Developer), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
+        );
+
+    public string Category
+    {
+        get { return (string)GetValue(CategoryProperty); }
+        set { SetValue(CategoryProperty, value); }
+    }
+
+    public static readonly DependencyProperty CategoryProperty =
+        DependencyProperty.Register(
+            nameof(Category), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
+        );
+
+    public ImageSource CardImageSource
+    {
+        get { return (ImageSource)GetValue(CardImageSourceProperty); }
+        set { SetValue(CardImageSourceProperty, value); }
+    }
+
+    public static readonly DependencyProperty CardImageSourceProperty =
+        DependencyProperty.Register(
+            nameof(CardImageSource), typeof(ImageSource), typeof(MemoryStoreItemUserControl), new PropertyMetadata(null)
+        );
+
+    public Brush CardBackgroundBrush
+    {
+        get { return (Brush)GetValue(CardBackgroundProperty); }
+        set
         {
-            get { return (string)GetValue(TitleProperty); }
-            set { SetValue(TitleProperty, value); }
+            SetValue(CardBackgroundProperty, value);
+            Rectangle.Fill = value;
         }
+    }
 
-        public static readonly DependencyProperty TitleProperty =
-            DependencyProperty.Register(
-                nameof(Title), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
-            );
+    public static readonly DependencyProperty CardBackgroundProperty =
+        DependencyProperty.Register(
+            nameof(CardBackgroundBrush),
+            typeof(Brush),
+            typeof(MemoryStoreItemUserControl),
+            new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
+        );
 
-        public string Developer
+    public double SizeText
+    {
+        get { return (double)GetValue(SizeTextProperty); }
+        set
         {
-            get { return (string)GetValue(DeveloperProperty); }
-            set { SetValue(DeveloperProperty, value); }
+            SetValue(SizeTextProperty, value);
+            SizeTextBlock.Text = UnitsParser.FormatSize((long)value);
         }
+    }
 
-        public static readonly DependencyProperty DeveloperProperty =
-            DependencyProperty.Register(
-                nameof(Developer), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
-            );
+    public static readonly DependencyProperty SizeTextProperty =
+        DependencyProperty.Register(
+            nameof(SizeText), typeof(double), typeof(MemoryStoreItemUserControl), new PropertyMetadata(0d)
+        );
 
-        public string Category
+    private void CheckAvailiableActions(DatabaseStoreItem databaseStoreItem)
+    {
+        SetupMenuFlyuoutItem.IsEnabled = true;
+        DeleteButton.IsEnabled = true;
+        ProgressBar.Visibility = Visibility.Collapsed;
+
+        if (databaseStoreItem.Type == "addon")
         {
-            get { return (string)GetValue(CategoryProperty); }
-            set { SetValue(CategoryProperty, value); }
-        }
-
-        public static readonly DependencyProperty CategoryProperty =
-            DependencyProperty.Register(
-                nameof(Category), typeof(string), typeof(MemoryStoreItemUserControl), new PropertyMetadata(string.Empty)
-            );
-
-        public ImageSource CardImageSource
-        {
-            get { return (ImageSource)GetValue(CardImageSourceProperty); }
-            set { SetValue(CardImageSourceProperty, value); }
-        }
-
-        public static readonly DependencyProperty CardImageSourceProperty =
-            DependencyProperty.Register(
-                nameof(CardImageSource), typeof(ImageSource), typeof(MemoryStoreItemUserControl), new PropertyMetadata(null)
-            );
-
-        public Brush CardBackgroundBrush
-        {
-            get { return (Brush)GetValue(CardBackgroundProperty); }
-            set
-            {
-                SetValue(CardBackgroundProperty, value);
-                Rectangle.Fill = value;
-            }
-        }
-
-        public static readonly DependencyProperty CardBackgroundProperty =
-            DependencyProperty.Register(
-                nameof(CardBackgroundBrush),
-                typeof(Brush),
-                typeof(MemoryStoreItemUserControl),
-                new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
-            );
-
-        public double SizeText
-        {
-            get { return (double)GetValue(SizeTextProperty); }
-            set { 
-                SetValue(SizeTextProperty, value);
-                SizeTextBlock.Text = UnitsParser.FormatSize((long)value);
-            }
-        }
-
-        public static readonly DependencyProperty SizeTextProperty =
-            DependencyProperty.Register(
-                nameof(SizeText), typeof(double), typeof(MemoryStoreItemUserControl), new PropertyMetadata(0d)
-            );
-
-        private void CheckAvailiableActions(DatabaseStoreItem databaseStoreItem)
-        {
-            SetupMenuFlyuoutItem.IsEnabled = true;
-            DeleteButton.IsEnabled = true;
-            ProgressBar.Visibility = Visibility.Collapsed;
-
-            if (databaseStoreItem.Type == "addon")
-            {
-                SetupMenuFlyuoutItem.IsEnabled = false;
-            }
-
-            if (databaseStoreItem.Id == SharedConstants.LocalUserItemsId || databaseStoreItem.Id == SharedConstants.ApplicationStoreId)
-            {
-                SetupMenuFlyuoutItem.IsEnabled = false;
-                DeleteButton.IsEnabled = false;
-            }
-        }
-
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            StoreHelper.Instance.RemoveItem(StoreId);
-            ProgressBar.Visibility = Visibility.Visible;
-            DeleteButton.IsEnabled = false;
             SetupMenuFlyuoutItem.IsEnabled = false;
         }
 
-        private void ShowFolderButton_Click(object sender, RoutedEventArgs e)
+        if (databaseStoreItem.Id == SharedConstants.LocalUserItemsId || databaseStoreItem.Id == SharedConstants.ApplicationStoreId)
         {
-            try
-            {
-                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
-            }
-            catch (Exception exception)
-            {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MemoryStoreItemUserControl), exception.ToString());
-            }
+            SetupMenuFlyuoutItem.IsEnabled = false;
+            DeleteButton.IsEnabled = false;
         }
+    }
 
-        private async void SetupMenuFlyuoutItem_Click(object sender, RoutedEventArgs e)
+    private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        StoreHelper.Instance.RemoveItem(StoreId);
+        ProgressBar.Visibility = Visibility.Visible;
+        DeleteButton.IsEnabled = false;
+        SetupMenuFlyuoutItem.IsEnabled = false;
+    }
+
+    private void ShowFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
         {
-            DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
-            if (databaseStoreItem.Type == "component")
+            ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MemoryStoreItemUserControl), exception.ToString());
+        }
+    }
+
+    private async void SetupMenuFlyuoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+        if (databaseStoreItem.Type == "component")
+        {
+            ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
+            window.NavView_Navigate(typeof(ViewComponentSettingsPage),
+                new NameValueCollection()
             {
-                ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
-                window.NavView_Navigate(typeof(ViewComponentSettingsPage), 
-                    new NameValueCollection()
-                {
-                    { "componentId", StoreId }
-                }, new DrillInNavigationTransitionInfo());
-            }
-            else if (databaseStoreItem.Type == "configlist")
-            {
-                CreateConfigHelperWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>();
-                window.EditConfigKit(StoreId);
-            }
+                { "componentId", StoreId }
+            }, new DrillInNavigationTransitionInfo());
+        }
+        else if (databaseStoreItem.Type == "configlist")
+        {
+            CreateConfigHelperWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>();
+            window.EditConfigKit(StoreId);
         }
     }
 }

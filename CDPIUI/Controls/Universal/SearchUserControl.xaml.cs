@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Controls.Default;
 using CDPIUI.Converters;
 using CDPIUI.Core;
@@ -10,11 +15,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using TextControlBoxNS;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -60,7 +60,7 @@ public sealed partial class SearchUserControl : UserControl
     private void CalcCenter(bool isReplaceOpened)
     {
         SearchWindowScaleTransform.CenterX = this.ActualWidth != 0 ? this.ActualWidth / 2 : this.MaxWidth / 2;
-        SearchWindowScaleTransform.CenterY = (isReplaceOpened? 80 : 45) / 2;
+        SearchWindowScaleTransform.CenterY = (isReplaceOpened ? 80 : 45) / 2;
     }
 
     private void BeginSearch(string searchword, bool matchCase, bool wholeWord)
@@ -76,7 +76,7 @@ public sealed partial class SearchUserControl : UserControl
     }
     private void ColorWindowBorder(SearchResult result)
     {
-        SearchWindow.BorderBrush = (SolidColorBrush)(result == SearchResult.Found ? 
+        SearchWindow.BorderBrush = (SolidColorBrush)(result == SearchResult.Found ?
             ((App)Application.Current).Resources["SystemFillColorSuccessBrush"] : ((App)Application.Current).Resources["SystemFillColorCautionBrush"]);
     }
     private void HideWindow()
@@ -98,7 +98,8 @@ public sealed partial class SearchUserControl : UserControl
     private void CollapseReplace(bool skipAnim = false)
     {
         collapseSearchAnimation.Begin();
-        if (skipAnim) collapseSearchAnimation.SkipToFill();
+        if (skipAnim)
+            collapseSearchAnimation.SkipToFill();
         searchWindowState = SearchWindowState.Default;
     }
 

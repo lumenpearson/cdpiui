@@ -1,19 +1,3 @@
-using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Dialogs.CreateConfigHelper;
-using CDPIUI.Core;
-using CDPIUI.Core.JSON;
-using CDPIUI.Core.Proxy;
-using CDPIUI.Core.Store.Data;
-
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,6 +9,21 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Input;
+using CDPIUI.Controls.Default;
+using CDPIUI.Controls.Dialogs.CreateConfigHelper;
+using CDPIUI.Core;
+using CDPIUI.Core.JSON;
+using CDPIUI.Core.Proxy;
+using CDPIUI.Core.Store.Data;
+using CDPIUI.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -32,386 +31,389 @@ using Windows.Foundation.Collections;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views.CreateConfigHelper
+namespace CDPIUI.Views.CreateConfigHelper;
+
+/// <summary>
+/// An empty page that can be used on its own or navigated to within a Frame.
+/// </summary>
+
+public class DragItem(string args, string siteListName, string directory, bool showGroupModeChooser, List<ChooseGroupModeContentDialog.ByeDPIGroupModes> modes, Guid guid) : INotifyPropertyChanged
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
+    public string Args { get; set; } = args;
+    public string SiteListName { get; set; } = siteListName;
+    public string Directory { get; set; } = directory;
+    public Guid Id { get; set; } = guid;
 
-    public class DragItem(string args, string siteListName, string directory, bool showGroupModeChooser, List<ChooseGroupModeContentDialog.ByeDPIGroupModes> modes, Guid guid) : INotifyPropertyChanged
+    private bool showGroupModeChooser = showGroupModeChooser;
+    public bool ShowGroupModeChooser
     {
-        public string Args { get; set; } = args;
-        public string SiteListName { get; set; } = siteListName;
-        public string Directory { get; set; } = directory;
-        public Guid Id { get; set; } = guid;
-
-        private bool showGroupModeChooser = showGroupModeChooser;
-        public bool ShowGroupModeChooser {
-            get => showGroupModeChooser; 
-            set => SetField(ref showGroupModeChooser, value); 
-        } 
-
-        public List<ChooseGroupModeContentDialog.ByeDPIGroupModes> Modes { get; set; } = modes;
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
-        public override string ToString() => Args;
+        get => showGroupModeChooser;
+        set => SetField(ref showGroupModeChooser, value);
     }
 
-    public sealed partial class GoodCheckConfigVisualEditorPage : TemplatePage
+    public List<ChooseGroupModeContentDialog.ByeDPIGroupModes> Modes { get; set; } = modes;
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
     {
-        public ObservableCollection<DragItem> LeftItems { get; } = new ObservableCollection<DragItem>();
-        public ObservableCollection<DragItem> RightItems { get; } = new ObservableCollection<DragItem>();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 
-        private DragItem _draggedItem;
-        private string _dragSource;
+    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+            return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
 
-        public string ComponentId { get; private set; } = string.Empty;
+    public override string ToString() => Args;
+}
 
-        public ICommand ChangeMode { get; }
+public sealed partial class GoodCheckConfigVisualEditorPage : TemplatePage
+{
+    public ObservableCollection<DragItem> LeftItems { get; } = new ObservableCollection<DragItem>();
+    public ObservableCollection<DragItem> RightItems { get; } = new ObservableCollection<DragItem>();
 
-        public GoodCheckConfigVisualEditorPage()
+    private DragItem _draggedItem;
+    private string _dragSource;
+
+    public string ComponentId { get; private set; } = string.Empty;
+
+    public ICommand ChangeMode { get; }
+
+    public GoodCheckConfigVisualEditorPage()
+    {
+        InitializeComponent();
+        DataContext = this;
+
+        LeftListView.ItemsSource = LeftItems;
+        RightListView.ItemsSource = RightItems;
+
+        RightItems.CollectionChanged += RightItems_CollectionChanged;
+
+        ChangeMode = new RelayCommand(p => ChangeModeInModel((Tuple<string, List<ChooseGroupModeContentDialog.ByeDPIGroupModes>>)p));
+
+        this.Loaded += GoodCheckConfigVisualEditorPage_Loaded;
+        CheckIsContinuationPossible();
+    }
+
+    private void RightItems_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        CheckIsContinuationPossible();
+    }
+
+    private void GoodCheckConfigVisualEditorPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (Parameter != null)
         {
-            InitializeComponent();
-            DataContext = this;
+            List<DragItem> items = JSONConvertor.DeserializeObject<List<DragItem>>(Parameter.Get("dragList") ?? string.Empty);
 
-            LeftListView.ItemsSource = LeftItems;
-            RightListView.ItemsSource = RightItems;
-
-            RightItems.CollectionChanged += RightItems_CollectionChanged;
-
-            ChangeMode = new RelayCommand(p => ChangeModeInModel((Tuple<string, List<ChooseGroupModeContentDialog.ByeDPIGroupModes>>)p));
-
-            this.Loaded += GoodCheckConfigVisualEditorPage_Loaded;
-            CheckIsContinuationPossible();
-        }
-
-        private void RightItems_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-        {
-            CheckIsContinuationPossible();
-        }
-
-        private void GoodCheckConfigVisualEditorPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (Parameter != null)
+            foreach (var item in items)
             {
-                List<DragItem> items = JSONConvertor.DeserializeObject<List<DragItem>>(Parameter.Get("dragList") ?? string.Empty);
-
-                foreach (var item in items)
-                {
-                    LeftItems.Add(item);
-                }
-            }
-
-            this.Loaded -= GoodCheckConfigVisualEditorPage_Loaded;
-        }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-
-            if (Parameter != null)
-            {
-                ComponentId = Parameter.Get("componentId");
-
-                if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
-                {
-                    WarningGrid.Visibility = Visibility.Visible;
-                }
-            }
-        }
-
-        public void CalcWidth()
-        {
-            LeftGrid.MaxWidth = RootPage.ActualWidth - 220;
-        }
-
-        private void RootPage_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            CalcWidth();
-        }
-
-        private void LeftListView_Loaded(object sender, RoutedEventArgs e)
-        {
-            CalcWidth();
-            LeftGrid.Width = (RootPage.ActualWidth - 40) / 2;
-        }
-        private void LeftListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
-        {
-            _draggedItem = e.Items[0] as DragItem;
-            _dragSource = "Left";
-
-            if (_draggedItem != null)
-            {
-                try
-                {
-                    Debug.WriteLine(_draggedItem.Id.ToString());
-                    e.Data.SetText(_draggedItem.Args.ToString());
-                    e.Data.Properties.Title = _draggedItem.Id.ToString();
-                    e.Data.RequestedOperation = DataPackageOperation.Copy;
-                }
-                catch
-                {
-                    _draggedItem = null;
-                    _dragSource = null;
-                }
+                LeftItems.Add(item);
             }
         }
 
-        private void RightListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
-        {
-            _draggedItem = e.Items[0] as DragItem;
-            _dragSource = "Right";
+        this.Loaded -= GoodCheckConfigVisualEditorPage_Loaded;
+    }
 
-            if (_draggedItem != null)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+        if (Parameter != null)
+        {
+            ComponentId = Parameter.Get("componentId");
+
+            if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
             {
-                try
-                {
-                    e.Data.SetText(_draggedItem.Args.ToString());
-                    e.Data.Properties.Title = _draggedItem.Id.ToString();
-                    e.Data.RequestedOperation = DataPackageOperation.Move;
-                }
-                catch
-                {
-                    _draggedItem = null;
-                    _dragSource = null;
-                }
+                WarningGrid.Visibility = Visibility.Visible;
             }
         }
+    }
 
-        private void RightListView_DragOver(object sender, DragEventArgs e)
+    public void CalcWidth()
+    {
+        LeftGrid.MaxWidth = RootPage.ActualWidth - 220;
+    }
+
+    private void RootPage_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        CalcWidth();
+    }
+
+    private void LeftListView_Loaded(object sender, RoutedEventArgs e)
+    {
+        CalcWidth();
+        LeftGrid.Width = (RootPage.ActualWidth - 40) / 2;
+    }
+    private void LeftListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        _draggedItem = e.Items[0] as DragItem;
+        _dragSource = "Left";
+
+        if (_draggedItem != null)
         {
-            if (_dragSource == "Left")
+            try
             {
+                Debug.WriteLine(_draggedItem.Id.ToString());
+                e.Data.SetText(_draggedItem.Args.ToString());
+                e.Data.Properties.Title = _draggedItem.Id.ToString();
+                e.Data.RequestedOperation = DataPackageOperation.Copy;
+            }
+            catch
+            {
+                _draggedItem = null;
+                _dragSource = null;
+            }
+        }
+    }
+
+    private void RightListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        _draggedItem = e.Items[0] as DragItem;
+        _dragSource = "Right";
+
+        if (_draggedItem != null)
+        {
+            try
+            {
+                e.Data.SetText(_draggedItem.Args.ToString());
+                e.Data.Properties.Title = _draggedItem.Id.ToString();
+                e.Data.RequestedOperation = DataPackageOperation.Move;
+            }
+            catch
+            {
+                _draggedItem = null;
+                _dragSource = null;
+            }
+        }
+    }
+
+    private void RightListView_DragOver(object sender, DragEventArgs e)
+    {
+        if (_dragSource == "Left")
+        {
+            if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] && RightItems.Count >= 1)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+            e.AcceptedOperation = DataPackageOperation.Copy;
+        }
+        else if (_dragSource == "Right")
+        {
+            e.AcceptedOperation = DataPackageOperation.Move;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
+    }
+
+    private void LeftListView_DragOver(object sender, DragEventArgs e)
+    {
+        if (_dragSource == "Right")
+            e.AcceptedOperation = DataPackageOperation.Move;
+        else
+            e.AcceptedOperation = DataPackageOperation.None;
+    }
+
+    private void RightListView_Drop(object sender, DragEventArgs e)
+    {
+        try
+        {
+            if (e.DataView.Contains(StandardDataFormats.Text))
+            {
+                string idText = e.DataView.Properties.Title;
+
                 if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] && RightItems.Count >= 1)
                 {
-                    e.AcceptedOperation = DataPackageOperation.None;
                     return;
                 }
-                e.AcceptedOperation = DataPackageOperation.Copy;
-            }
-            else if (_dragSource == "Right")
-            {
-                e.AcceptedOperation = DataPackageOperation.Move;
-            }
-            else
-            {
-                e.AcceptedOperation = DataPackageOperation.None;
-            }
-        }
 
-        private void LeftListView_DragOver(object sender, DragEventArgs e)
-        {
-            if (_dragSource == "Right")
-                e.AcceptedOperation = DataPackageOperation.Move;
-            else
-                e.AcceptedOperation = DataPackageOperation.None;
-        }
-
-        private void RightListView_Drop(object sender, DragEventArgs e)
-        {
-            try
-            {
-                if (e.DataView.Contains(StandardDataFormats.Text))
+                if (Guid.TryParse(idText, out Guid parsedId) && _dragSource == "Left")
                 {
-                    string idText = e.DataView.Properties.Title;
-
-                    if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] && RightItems.Count >= 1)
+                    Debug.WriteLine(idText);
+                    var sourceLeft = LeftItems.FirstOrDefault(x => x.Id == parsedId);
+                    if (sourceLeft != null && RightItems.FirstOrDefault(x => x.Id == parsedId) == null)
                     {
-                        return;
-                    }
-
-                    if (Guid.TryParse(idText, out Guid parsedId) && _dragSource == "Left")
-                    {
-                        Debug.WriteLine(idText);
-                        var sourceLeft = LeftItems.FirstOrDefault(x => x.Id == parsedId);
-                        if (sourceLeft != null && RightItems.FirstOrDefault(x=> x.Id == parsedId) == null)
-                        {
-                            DragItem item = new(sourceLeft.Args,
-                                sourceLeft.SiteListName,
-                                sourceLeft.Directory,
-                                HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] == ComponentId,
-                                [ChooseGroupModeContentDialog.ByeDPIGroupModes.None],
-                                parsedId);
-                            RightItems.Add(item);
-                            CheckRightItemsSort();
-                        }
+                        DragItem item = new(sourceLeft.Args,
+                            sourceLeft.SiteListName,
+                            sourceLeft.Directory,
+                            HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] == ComponentId,
+                            [ChooseGroupModeContentDialog.ByeDPIGroupModes.None],
+                            parsedId);
+                        RightItems.Add(item);
+                        CheckRightItemsSort();
                     }
                 }
             }
-            catch (Exception exception)
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
+        }
+        finally
+        {
+            _draggedItem = null;
+            _dragSource = null;
+        }
+    }
+
+    private void RightListView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        CheckRightItemsSort();
+    }
+
+    private void CheckRightItemsSort()
+    {
+        if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] != ComponentId)
+            return;
+        if (RightItems.Count > 0)
+        {
+            var firstItem = RightItems.First();
+            firstItem.ShowGroupModeChooser = false;
+            foreach (var item in RightItems)
             {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
-            }
-            finally
-            {
-                _draggedItem = null;
-                _dragSource = null;
+                if (item != firstItem && item.ShowGroupModeChooser == false)
+                    item.ShowGroupModeChooser = true;
             }
         }
+    }
 
-        private void RightListView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    private void LeftListView_Drop(object sender, DragEventArgs e)
+    {
+        try
         {
-            CheckRightItemsSort();
-        }
-
-        private void CheckRightItemsSort()
-        {
-            if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] != ComponentId) return;
-            if (RightItems.Count > 0)
+            if (e.DataView.Contains(StandardDataFormats.Text))
             {
-                var firstItem = RightItems.First();
-                firstItem.ShowGroupModeChooser = false;
-                foreach (var item in RightItems)
+                string idText = e.DataView.Properties.Title;
+
+                if (Guid.TryParse(idText, out Guid parsedId) && _dragSource == "Right")
                 {
-                    if (item != firstItem && item.ShowGroupModeChooser == false)
-                        item.ShowGroupModeChooser = true;
-                }
-            }
-        }
-
-        private void LeftListView_Drop(object sender, DragEventArgs e)
-        {
-            try
-            {
-                if (e.DataView.Contains(StandardDataFormats.Text))
-                {
-                    string idText = e.DataView.Properties.Title;
-
-                    if (Guid.TryParse(idText, out Guid parsedId) && _dragSource == "Right")
+                    var toRemove = RightItems.FirstOrDefault(x => x.Id == parsedId);
+                    if (toRemove != null)
                     {
-                        var toRemove = RightItems.FirstOrDefault(x => x.Id == parsedId);
-                        if (toRemove != null)
-                        {
-                            RightItems.Remove(toRemove);
-                        }
+                        RightItems.Remove(toRemove);
                     }
                 }
             }
-            catch (Exception exception)
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
+        }
+        finally
+        {
+            _draggedItem = null;
+            _dragSource = null;
+        }
+    }
+
+    private void ChangeModeInModel(Tuple<string, List<ChooseGroupModeContentDialog.ByeDPIGroupModes>> tuple)
+    {
+        var targetItem = RightItems.FirstOrDefault(x => x.Id.ToString() == tuple.Item1);
+        if (targetItem != null)
+        {
+            targetItem.Modes = tuple.Item2;
+        }
+    }
+
+    private void GoBackButton_Click(object sender, RoutedEventArgs e)
+    {
+        Frame.GoBack();
+    }
+
+    private void GoForwardButton_Click(object sender, RoutedEventArgs e)
+    {
+        string startupString = string.Empty;
+
+        if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret] == ComponentId)
+        {
+            foreach (var item in RightItems)
             {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
-            }
-            finally
-            {
-                _draggedItem = null;
-                _dragSource = null;
+                string _str = "";
+                if (startupString.Length != 0)
+                    _str = "--new ";
+
+                _str += $"--hostlist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {item.Args} ";
+                startupString += _str;
             }
         }
-
-        private void ChangeModeInModel(Tuple<string, List<ChooseGroupModeContentDialog.ByeDPIGroupModes>> tuple)
+        else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] == ComponentId)
         {
-            var targetItem = RightItems.FirstOrDefault(x => x.Id.ToString() == tuple.Item1);
-            if (targetItem != null)
+            foreach (var item in RightItems)
             {
-                targetItem.Modes = tuple.Item2;
-            }
-        }
-
-        private void GoBackButton_Click(object sender, RoutedEventArgs e)
-        {
-            Frame.GoBack();
-        }
-
-        private void GoForwardButton_Click(object sender, RoutedEventArgs e)
-        {
-            string startupString = string.Empty;
-
-            if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret] == ComponentId)
-            {
-                foreach (var item in RightItems)
+                string _str = "";
+                if (startupString.Length != 0)
                 {
-                    string _str = "";
-                    if (startupString.Length != 0) _str = "--new ";
-
-                    _str += $"--hostlist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {item.Args} ";
-                    startupString += _str;
+                    _str = $"-A{ConvertModesToString(item.Modes)} ";
                 }
-            }
-            else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] == ComponentId)
-            {
-                foreach (var item in RightItems)
-                {
-                    string _str = "";
-                    if (startupString.Length != 0)
-                    {
-                        _str = $"-A{ConvertModesToString(item.Modes)} ";
-                    }
 
-                    _str += $"-H=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
-                    startupString += _str;
-                }
+                _str += $"-H=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
+                startupString += _str;
             }
-            else
-            {
-                foreach (var item in RightItems)
-                {
-                    string _str = "";
-
-                    _str += $"--blacklist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
-                    startupString += _str;
-                }
-            }
-            Debug.WriteLine(startupString);
-
-            Frame.Navigate(typeof(CreateNewConfigPage), 
-                new NameValueCollection()
-                {
-                    { "type", "CFGSTRING" },
-                    { "startupString", startupString },
-                    { "componentId", ComponentId }
-                }, 
-                new DrillInNavigationTransitionInfo());
         }
-
-        private string ConvertModesToString(List<ChooseGroupModeContentDialog.ByeDPIGroupModes> modes)
+        else
         {
-            string finalString = string.Empty;
-            foreach (var mode in modes)
+            foreach (var item in RightItems)
             {
-                switch (mode)
-                {
-                    case ChooseGroupModeContentDialog.ByeDPIGroupModes.Torst:
-                        finalString += "t";
-                        break;
-                    case ChooseGroupModeContentDialog.ByeDPIGroupModes.Redirect:
-                        finalString += "r";
-                        break;
-                    case ChooseGroupModeContentDialog.ByeDPIGroupModes.SslErr:
-                        finalString += "s";
-                        break;
-                    case ChooseGroupModeContentDialog.ByeDPIGroupModes.None:
-                        finalString += "n";
-                        break;
-                }
-                finalString += ",";
+                string _str = "";
+
+                _str += $"--blacklist=\"{Path.Combine(item.Directory, item.SiteListName)}\" {ProxyHelper.ReplaceIp(item.Args)} ";
+                startupString += _str;
             }
-            Debug.WriteLine(finalString.Length);
-            return finalString.Length > 0 ? finalString.Remove(finalString.Length-1) : finalString;
         }
+        Debug.WriteLine(startupString);
 
-        private void CheckIsContinuationPossible()
+        Frame.Navigate(typeof(CreateNewConfigPage),
+            new NameValueCollection()
+            {
+                { "type", "CFGSTRING" },
+                { "startupString", startupString },
+                { "componentId", ComponentId }
+            },
+            new DrillInNavigationTransitionInfo());
+    }
+
+    private string ConvertModesToString(List<ChooseGroupModeContentDialog.ByeDPIGroupModes> modes)
+    {
+        string finalString = string.Empty;
+        foreach (var mode in modes)
         {
-            if (RightItems.Count > 0)
+            switch (mode)
             {
-                GoForwardButton.IsEnabled = true;
+                case ChooseGroupModeContentDialog.ByeDPIGroupModes.Torst:
+                    finalString += "t";
+                    break;
+                case ChooseGroupModeContentDialog.ByeDPIGroupModes.Redirect:
+                    finalString += "r";
+                    break;
+                case ChooseGroupModeContentDialog.ByeDPIGroupModes.SslErr:
+                    finalString += "s";
+                    break;
+                case ChooseGroupModeContentDialog.ByeDPIGroupModes.None:
+                    finalString += "n";
+                    break;
             }
-            else
-            {
-                GoForwardButton.IsEnabled = false;
-            }
+            finalString += ",";
+        }
+        Debug.WriteLine(finalString.Length);
+        return finalString.Length > 0 ? finalString.Remove(finalString.Length - 1) : finalString;
+    }
+
+    private void CheckIsContinuationPossible()
+    {
+        if (RightItems.Count > 0)
+        {
+            GoForwardButton.IsEnabled = true;
+        }
+        else
+        {
+            GoForwardButton.IsEnabled = false;
         }
     }
 }

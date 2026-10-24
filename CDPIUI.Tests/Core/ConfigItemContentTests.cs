@@ -7,14 +7,14 @@ public class ConfigItemContentTests
     private static ConfigMakerVariableMetadata Variable(
         string? name, string? value = null, string? kind = null,
         string? onValue = null, string? offValue = null, bool enabled = false) => new()
-    {
-        name = name,
-        value = value,
-        kind = kind,
-        onValue = onValue,
-        offValue = offValue,
-        isSwitchEnabled = enabled,
-    };
+        {
+            name = name,
+            value = value,
+            kind = kind,
+            onValue = onValue,
+            offValue = offValue,
+            isSwitchEnabled = enabled,
+        };
 
     [Theory]
     [InlineData(null, "")]

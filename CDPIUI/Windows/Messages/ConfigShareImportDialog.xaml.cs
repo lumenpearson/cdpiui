@@ -1,5 +1,10 @@
-using CDPIUI.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using CDPIUI.AddOns.ConfigShare;
+using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.ComponentServices.Helpers;
@@ -9,11 +14,6 @@ using CDPIUI.Helper.AddOns.ConfigShare;
 using CDPIUI.Shared;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using WinUI3Localizer;
 
 namespace CDPIUI.Messages;
@@ -78,16 +78,18 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
 
     public async Task SetFileAsync(string path)
     {
-        if (package != null) return;
+        if (package != null)
+            return;
         SourcePath.Text = string.Format(localizer.GetLocalizedString("Source"), path);
         try
         {
             var loaded = await service.ReadAsync(path);
-            if (closed) { loaded.Dispose(); return; }
+            if (closed)
+            { loaded.Dispose(); return; }
             package = loaded;
             PresetName.Text = string.Format(localizer.GetLocalizedString("StoreSmallAddItemName"), package.Manifest.Name);
 
-            DeveloperName.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"),  package.Manifest.Developer);
+            DeveloperName.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), package.Manifest.Developer);
 
             // The raw startup string, so the user can check what the preset runs before adding it.
             string arguments = package.Config?.startup_string;
@@ -106,7 +108,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
             DestinationCombo.ItemsSource = packs;
             DestinationCombo.SelectedItem = packs.FirstOrDefault();
 
-            if (packs.Count == 0) ModeSelectionCombobox.SelectedItem = Modes[1];
+            if (packs.Count == 0)
+                ModeSelectionCombobox.SelectedItem = Modes[1];
 
             DestCard.Visibility = Visibility.Visible;
             UpdateDestination();
@@ -125,7 +128,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
     private void KitName_Changed(object sender, TextChangedEventArgs e) => UpdateDestination();
     private void UpdateDestination()
     {
-        if (!initialized) return;
+        if (!initialized)
+            return;
         bool newKit = (string)ModeSelectionCombobox.SelectedItem == Modes[1];
         NameCard.Visibility = newKit ? Visibility.Visible : Visibility.Collapsed;
         DestCard.Visibility = newKit ? Visibility.Collapsed : Visibility.Visible;
@@ -135,7 +139,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
 
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
-        if (busy || package == null || installed) return;
+        if (busy || package == null || installed)
+            return;
 
         busy = true;
         UpdateDestination();
@@ -150,7 +155,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
         try
         {
             await ConfigShareUI.OfferComponentInstallAsync(Content.XamlRoot, package.Config);
-            if (closed) return;
+            if (closed)
+                return;
             bool newKit = (string)ModeSelectionCombobox.SelectedItem == Modes[1];
             await service.InstallAsync(package, package.Manifest.Name,
                 (DestinationCombo.SelectedItem as DatabaseStoreItem)?.Id,
@@ -163,7 +169,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
                     ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(componentId)?.ReInitConfigs();
             }
             catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(ConfigShareImportDialog), $"Preset list refresh: {exception}"); }
-            if (closed) return;
+            if (closed)
+                return;
             SuccessBar.Message = localizer.GetLocalizedString("ConfigShareImported");
             SuccessBar.IsOpen = true;
             InstallButton.Visibility = DestinationPanel.Visibility = Visibility.Collapsed;
@@ -174,7 +181,8 @@ public sealed partial class ConfigShareImportDialog : TemplateWindow
         finally
         {
             busy = false;
-            if (closed) package?.Dispose();
+            if (closed)
+                package?.Dispose();
             else
             {
                 CancelButton.IsEnabled = ModeSelectionCombobox.IsEnabled = DestinationCombo.IsEnabled = KitName.IsEnabled = true;

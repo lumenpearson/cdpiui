@@ -1,10 +1,9 @@
-﻿namespace CDPIUI.Core.Store.Repository
+namespace CDPIUI.Core.Store.Repository;
+
+internal class RepositoryInitializationModel
 {
-    internal class RepositoryInitializationModel
-    {
-        public List<string>? categories;
-        public Dictionary<string, string>? categories_directory;
-        public Dictionary<string, string>? localized_strings_directory;
-        public string? kits_directory;
-    }
+    public List<string>? categories;
+    public Dictionary<string, string>? categories_directory;
+    public Dictionary<string, string>? localized_strings_directory;
+    public string? kits_directory;
 }

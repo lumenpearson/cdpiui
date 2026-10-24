@@ -1,42 +1,42 @@
-﻿using CDPIUI.Core;
+using CDPIUI.Core;
 using CDPIUI.Shared.PrettyErrorConversionService;
 
-namespace CDPIUI.Helper.Basic
-{
-    public class CoreErrorsLookupService
-    {
-        private static CoreErrorsLookupService _instance;
-        private static readonly object _lock = new();
+namespace CDPIUI.Helper.Basic;
 
-        public static CoreErrorsLookupService Instance
+public class CoreErrorsLookupService
+{
+    private static CoreErrorsLookupService _instance;
+    private static readonly object _lock = new();
+
+    public static CoreErrorsLookupService Instance
+    {
+        get
         {
-            get
+            lock (_lock)
             {
-                lock (_lock)
-                {
-                    _instance ??= new CoreErrorsLookupService();
-                    return _instance;
-                }
+                _instance ??= new CoreErrorsLookupService();
+                return _instance;
             }
         }
+    }
 
-        public void Init() 
-        {
-            CoreEvents.Instance.CriticalCoreExceptionHappens += CoreEventsCriticalExceptionHandler;
-            if (CoreEvents.Instance.LastCriticalError !=  null) CoreEventsCriticalExceptionHandler(CoreEvents.Instance.LastCriticalError);
-        }
+    public void Init()
+    {
+        CoreEvents.Instance.CriticalCoreExceptionHappens += CoreEventsCriticalExceptionHandler;
+        if (CoreEvents.Instance.LastCriticalError != null)
+            CoreEventsCriticalExceptionHandler(CoreEvents.Instance.LastCriticalError);
+    }
 
-        private CoreErrorsLookupService()
-        {
-            
-        }
+    private CoreErrorsLookupService()
+    {
 
-        private void CoreEventsCriticalExceptionHandler(ErrorModel errorModel)
-        {
-            ErrorShowingHelper.RaiseCriticalException(
-                errorModel.Object,
-                string.Format("{0} ({1}) {2}", errorModel.ErrorCode, errorModel.HResult, errorModel.StatusCode),
-                $"APPLICATION CORE EXCEPTION HAPPENS.\n Core log: {errorModel.FriendlyDescription}");
-        }
+    }
+
+    private void CoreEventsCriticalExceptionHandler(ErrorModel errorModel)
+    {
+        ErrorShowingHelper.RaiseCriticalException(
+            errorModel.Object,
+            string.Format("{0} ({1}) {2}", errorModel.ErrorCode, errorModel.HResult, errorModel.StatusCode),
+            $"APPLICATION CORE EXCEPTION HAPPENS.\n Core log: {errorModel.FriendlyDescription}");
     }
 }

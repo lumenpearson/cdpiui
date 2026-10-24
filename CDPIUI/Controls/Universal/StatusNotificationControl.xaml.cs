@@ -1,12 +1,12 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Windows.Controls.Primitives;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using System;
-using System.Collections.ObjectModel;
-using System.Windows.Controls.Primitives;
 
 namespace CDPIUI.Controls.Universal;
 

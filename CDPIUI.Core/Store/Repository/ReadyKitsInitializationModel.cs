@@ -1,8 +1,7 @@
-namespace CDPIUI.Core.Store.Repository
+namespace CDPIUI.Core.Store.Repository;
+
+internal class ReadyKitsInitializationModel
 {
-    internal class ReadyKitsInitializationModel
-    {
-        public List<string>? kits;
-        public Dictionary<string, string>? kits_directories;
-    }
+    public List<string>? kits;
+    public Dictionary<string, string>? kits_directories;
 }

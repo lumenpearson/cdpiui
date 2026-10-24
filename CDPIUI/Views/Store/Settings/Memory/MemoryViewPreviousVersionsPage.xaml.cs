@@ -1,3 +1,7 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Default;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Data;
@@ -8,10 +12,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.Store.Settings.Memory;
@@ -85,7 +85,8 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
         ErrorStackPanel.Visibility = Visibility.Collapsed;
         try
         {
-            if (!File.Exists(RollbackPath)) throw new FileNotFoundException(null, RollbackPath);
+            if (!File.Exists(RollbackPath))
+                throw new FileNotFoundException(null, RollbackPath);
             using var process = Process.Start(new ProcessStartInfo(RollbackPath)
             {
                 WorkingDirectory = PreviousVersionsDirectory,

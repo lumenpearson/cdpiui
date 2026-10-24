@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.ConfigShare;
@@ -7,9 +10,6 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Messages;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Helper.AddOns.ConfigShare;
@@ -36,7 +36,8 @@ internal static class ConfigShareUI
     internal static async Task OfferComponentInstallAsync(XamlRoot root, ConfigItem config)
     {
         string componentId = ConfigShareService.GetMissingComponentId(config);
-        if (string.IsNullOrWhiteSpace(componentId)) return;
+        if (string.IsNullOrWhiteSpace(componentId))
+            return;
         var known = HardcodedItemIds.ComponentIds.FirstOrDefault(item => item.Value == componentId);
         string componentName = known.Value == null ? componentId
             : known.Key == Components.Zapret ? "Zapret Legacy" : known.Key.ToString();
@@ -48,8 +49,10 @@ internal static class ConfigShareUI
             PrimaryButtonText = Text("ConfigShareInstallComponent"),
             CloseButtonText = Text("ConfigShareLater")
         };
-        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary) return;
-        if (ConfigShareService.GetMissingComponentId(config) == null) return;
+        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
+            return;
+        if (ConfigShareService.GetMissingComponentId(config) == null)
+            return;
         Logger.Instance.CreateInfoLog(nameof(ConfigShareUI), $"Opening required component installer: {componentId}");
         var app = (App)Application.Current;
         var installer = await app.UnsafeCreateNewWindow<StoreSmallDownloadDialog>(activate: false, id: componentId);

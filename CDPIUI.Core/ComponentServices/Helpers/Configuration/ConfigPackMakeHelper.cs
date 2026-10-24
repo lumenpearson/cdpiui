@@ -1,378 +1,389 @@
-﻿using CDPIUI.Core.Basic;
+using System.IO.Compression;
+using CDPIUI.Core.Basic;
+using CDPIUI.Core.ComponentServices.Configuration;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
 using CDPIUI.Core.JSON;
 using CDPIUI.Core.LScript;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.Models;
 using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.Shared.Extensions;
-using System.IO.Compression;
-using CDPIUI.Core.ComponentServices.Configuration;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
 
-namespace CDPIUI.Core.ComponentServices.Helpers.Configuration
+namespace CDPIUI.Core.ComponentServices.Helpers.Configuration;
+
+public class ConfigPackMakeHelper
 {
-    public class ConfigPackMakeHelper
+    public class ConfigPackInitModel : LocalItemInitModel
     {
-        public class ConfigPackInitModel : LocalItemInitModel
+        public List<string> toggleListAvailable { get; set; } = [];
+        public Dictionary<string, string> localized_strings_directory { get; set; } = [];
+    }
+
+    public static async Task<OperationResultModel<EmptyResult>> CreateConfigPack(
+        ConfigPackInitModel modelTemplate,
+        List<ConfigItem> configItems,
+        string outputDir,
+        bool autoImport = false)
+    {
+        string tempDir = Path.Combine(
+            Data.Directories.DataDirectory, "TempFiles", nameof(ConfigPackMakeHelper), SharedUtils.GenerateNewId());
+
+        var workResult = await CreateConfigPack_Work(modelTemplate, configItems, outputDir, tempDir, autoImport);
+
+        RemoveTempFiles(tempDir);
+
+        return workResult;
+    }
+
+    private static async Task<OperationResultModel<EmptyResult>> CreateConfigPack_Work(
+        ConfigPackInitModel modelTemplate,
+        List<ConfigItem> configItems,
+        string outputDir,
+        string tempDir,
+        bool autoImport = false)
+    {
+        List<string[]> requirements = [];
+
+        configItems.RemoveAll(x => x.MarkAsRemoved);
+
+        Directory.CreateDirectory(tempDir);
+
+        var copyFilesResult = await CopyUsedFilesToDirectory(configItems, tempDir);
+        if (!(bool)copyFilesResult?.Success!)
+            return copyFilesResult;
+
+        var copyConfigsResult = await CopyConfigsToDirectory(configItems, tempDir);
+        if (!(bool)copyConfigsResult?.Success!)
+        { return copyConfigsResult.ToEmptyResult(); }
+
+        var locFilesCopyResult = await CopyLocFilesToDirectory(modelTemplate, configItems, tempDir);
+        if (!(bool)locFilesCopyResult?.Success!)
+        { return locFilesCopyResult.ToEmptyResult(); }
+
+        modelTemplate = locFilesCopyResult?.Result ?? modelTemplate;
+
+        if (copyConfigsResult.Result is List<Tuple<string, string>> reqList)
         {
-            public List<string> toggleListAvailable { get; set; } = [];
-            public Dictionary<string, string> localized_strings_directory { get; set; } = [];
-        }
-
-        public static async Task<OperationResultModel<EmptyResult>> CreateConfigPack(
-            ConfigPackInitModel modelTemplate, 
-            List<ConfigItem> configItems, 
-            string outputDir, 
-            bool autoImport = false)
-        {
-            string tempDir = Path.Combine(
-                Data.Directories.DataDirectory, "TempFiles", nameof(ConfigPackMakeHelper), SharedUtils.GenerateNewId());
-
-            var workResult = await CreateConfigPack_Work(modelTemplate, configItems, outputDir, tempDir, autoImport);
-
-            RemoveTempFiles(tempDir);
-
-            return workResult;
-        }
-
-        private static async Task<OperationResultModel<EmptyResult>> CreateConfigPack_Work(
-            ConfigPackInitModel modelTemplate, 
-            List<ConfigItem> configItems, 
-            string outputDir, 
-            string tempDir, 
-            bool autoImport = false)
-        {
-            List<string[]> requirements = [];
-
-            configItems.RemoveAll(x => x.MarkAsRemoved);
-
-            Directory.CreateDirectory(tempDir);
-
-            var copyFilesResult = await CopyUsedFilesToDirectory(configItems, tempDir);
-            if (!(bool)copyFilesResult?.Success!) return copyFilesResult;
-
-            var copyConfigsResult = await CopyConfigsToDirectory(configItems, tempDir);
-            if (!(bool)copyConfigsResult?.Success!) { return copyConfigsResult.ToEmptyResult(); }
-
-            var locFilesCopyResult = await CopyLocFilesToDirectory(modelTemplate, configItems, tempDir);
-            if (!(bool)locFilesCopyResult?.Success!) { return locFilesCopyResult.ToEmptyResult(); }
-
-            modelTemplate = locFilesCopyResult?.Result ?? modelTemplate;
-
-            if (copyConfigsResult.Result is List<Tuple<string, string>> reqList)
+            foreach (var req in reqList)
             {
-                foreach (var req in reqList)
-                {
-                    requirements.Add([req.Item1, req.Item2]);
-                }
+                requirements.Add([req.Item1, req.Item2]);
             }
+        }
 
-            var model = FillInitModel(modelTemplate, requirements, tempDir);
+        var model = FillInitModel(modelTemplate, requirements, tempDir);
 
-            string jsonString = JSONConvertor.SerializeObject(model);
+        string jsonString = JSONConvertor.SerializeObject(model);
 
+        try
+        {
+            File.WriteAllText(Path.Combine(tempDir, "init.json"), jsonString);
+        }
+        catch (Exception ex)
+        {
+            return OperationResultModel<EmptyResult>.FailureResult(
+                new ErrorModel()
+                {
+                    ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE_I", ex),
+                    FriendlyDescription = ex.Message,
+                });
+        }
+
+        if (autoImport)
+        {
             try
             {
-                File.WriteAllText(Path.Combine(tempDir, "init.json"), jsonString);
+                await Task.Run(() => Directory.Move(tempDir, outputDir));
+                ImportToDatabase(modelTemplate, outputDir);
             }
             catch (Exception ex)
             {
                 return OperationResultModel<EmptyResult>.FailureResult(
                     new ErrorModel()
                     {
-                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE_I", ex),
+                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE_AI", ex),
                         FriendlyDescription = ex.Message,
                     });
             }
-
-            if (autoImport)
-            {
-                try
-                {
-                    await Task.Run(() => Directory.Move(tempDir, outputDir));
-                    ImportToDatabase(modelTemplate, outputDir);
-                }
-                catch (Exception ex)
-                {
-                    return OperationResultModel<EmptyResult>.FailureResult(
-                        new ErrorModel()
-                        {
-                            ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE_AI", ex),
-                            FriendlyDescription = ex.Message,
-                        });
-                }
-                return OperationResultModel<EmptyResult>.SuccessResult();
-            }
-
-            var createArchiveResult = await CreateArchive(tempDir, outputDir);
-
-            RemoveTempFiles(tempDir);
-
-            if (!createArchiveResult.Success) { return createArchiveResult; }
-
             return OperationResultModel<EmptyResult>.SuccessResult();
         }
 
-        private static void ImportToDatabase(ConfigPackInitModel modelTemplate, string folder)
+        var createArchiveResult = await CreateArchive(tempDir, outputDir);
+
+        RemoveTempFiles(tempDir);
+
+        if (!createArchiveResult.Success)
+        { return createArchiveResult; }
+
+        return OperationResultModel<EmptyResult>.SuccessResult();
+    }
+
+    private static void ImportToDatabase(ConfigPackInitModel modelTemplate, string folder)
+    {
+        DatabaseHelper.Instance.AddOrUpdateItem(new()
         {
-            DatabaseHelper.Instance.AddOrUpdateItem(new()
-            {
-                Id = modelTemplate.StoreId,
-                Type = "configlist",
-                Directory = folder,
-                Executable = null,
-                UpdateCheckUrl = null,
-                DownloadUrl = null,
-                DownloadFileType = null,
-                VersionControlType = "local",
-                CurrentVersion = ApplicationInfo.Version,
-                RequiredItemIds = null,
-                DependentItemIds = null,
-                IconPath = "$STATICIMAGE(Store/empty.png)",
-                Name = modelTemplate.Name,
-                ShortName = modelTemplate.ShortName,
-                Developer = modelTemplate.Developer,
-                BackgroundColor = ""
-            });
+            Id = modelTemplate.StoreId,
+            Type = "configlist",
+            Directory = folder,
+            Executable = null,
+            UpdateCheckUrl = null,
+            DownloadUrl = null,
+            DownloadFileType = null,
+            VersionControlType = "local",
+            CurrentVersion = ApplicationInfo.Version,
+            RequiredItemIds = null,
+            DependentItemIds = null,
+            IconPath = "$STATICIMAGE(Store/empty.png)",
+            Name = modelTemplate.Name,
+            ShortName = modelTemplate.ShortName,
+            Developer = modelTemplate.Developer,
+            BackgroundColor = ""
+        });
+    }
+
+    private static void RemoveTempFiles(string directory)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(ConfigPackMakeHelper), $"Cannot remove temp directory during {ex.Message} exception.");
+        }
+    }
+
+    private static async Task<OperationResultModel<EmptyResult>> CreateArchive(string inputDir, string outputDir)
+    {
+        try
+        {
+            if (!Directory.Exists(outputDir))
+                Directory.CreateDirectory(Path.GetDirectoryName(outputDir)!);
+
+            if (File.Exists(outputDir))
+                File.Delete(outputDir);
+
+            ZipFile.CreateFromDirectory(inputDir, outputDir, CompressionLevel.Optimal, false);
+        }
+        catch (Exception ex)
+        {
+            return OperationResultModel<EmptyResult>.FailureResult(
+                new ErrorModel()
+                {
+                    ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE", ex),
+                    FriendlyDescription = ex.Message
+                });
         }
 
-        private static void RemoveTempFiles(string directory)
+        await Task.CompletedTask;
+
+        return OperationResultModel<EmptyResult>.SuccessResult();
+    }
+
+
+
+    private static ConfigPackInitModel FillInitModel(
+        ConfigPackInitModel modelTemplate,
+        List<string[]> requirements,
+        string targetDirectory)
+    {
+        modelTemplate.Requirements ??= requirements;
+        modelTemplate.Name ??= modelTemplate.ShortName;
+
+        modelTemplate.BeforeInstallActions ??= string.Empty;
+        // Nothing to run: the preset lists are reloaded after every installation.
+        modelTemplate.AfterInstallActions ??= string.Empty;
+
+        modelTemplate.Type = "configlist";
+
+        if (!string.IsNullOrEmpty(modelTemplate.Icon))
+            modelTemplate.Icon = CopyIcon(modelTemplate.Icon, targetDirectory);
+
+
+        return modelTemplate;
+    }
+
+    private static string CopyIcon(string icon, string targetDirectory)
+    {
+        if (icon.StartsWith('$'))
+            return icon;
+
+        try
         {
-            try
-            {
-                Directory.Delete(directory, recursive: true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ConfigPackMakeHelper), $"Cannot remove temp directory during {ex.Message} exception.");
-            }
+            File.Copy(icon, Path.Combine(targetDirectory, Path.GetFileName(icon)), true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(ConfigPackMakeHelper), $"Cannot copy icon {ex.Message}");
         }
 
-        private static async Task<OperationResultModel<EmptyResult>> CreateArchive(string inputDir, string outputDir)
+        return $"$DYNAMICIMAGE({Path.GetFileName(icon)})";
+    }
+
+    private static async Task<OperationResultModel<ConfigPackInitModel>> CopyLocFilesToDirectory(
+        ConfigPackInitModel modelTemplate,
+        List<ConfigItem> items,
+        string targetDirectory)
+    {
+        List<Tuple<ConfigInitItem, string>> initItems = [];
+        foreach (var item in items)
         {
-            try
-            {
-                if (!Directory.Exists(outputDir))
-                    Directory.CreateDirectory(Path.GetDirectoryName(outputDir)!);
+            string dir = ConfigurationService.GetItemFolderFromPackId(item.packId!);
+            string initFile = Path.Combine(dir, "init.json");
 
-                if (File.Exists(outputDir))
-                    File.Delete(outputDir);
+            if (!File.Exists(initFile))
+                continue;
 
-                ZipFile.CreateFromDirectory(inputDir, outputDir, CompressionLevel.Optimal, false);
-            }
-            catch (Exception ex)
-            {
-                return OperationResultModel<EmptyResult>.FailureResult(
-                    new ErrorModel() { 
-                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_CREATE", ex), 
-                        FriendlyDescription = ex.Message 
-                    });
-            }
-
-            await Task.CompletedTask;
-
-            return OperationResultModel<EmptyResult>.SuccessResult();
+            ConfigInitItem configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
+            var data = Tuple.Create(configInitItem, dir);
+            if (!initItems.Contains(data!))
+                initItems.Add(data!);
         }
 
-
-
-        private static ConfigPackInitModel FillInitModel(
-            ConfigPackInitModel modelTemplate, 
-            List<string[]> requirements, 
-            string targetDirectory)
+        try
         {
-            modelTemplate.Requirements ??= requirements;
-            modelTemplate.Name ??= modelTemplate.ShortName;
+            foreach (var item in initItems)
+            {
+                if (item.Item1?.localized_strings_directory == null)
+                    continue;
+                foreach (var locFile in item.Item1.localized_strings_directory)
+                {
+                    if (!modelTemplate.localized_strings_directory.ContainsKey(locFile.Key))
+                        modelTemplate.localized_strings_directory.Add(locFile.Key, locFile.Value);
 
-            modelTemplate.BeforeInstallActions ??= string.Empty;
-            // Nothing to run: the preset lists are reloaded after every installation.
-            modelTemplate.AfterInstallActions ??= string.Empty;
+                    string targetDir = Path.Combine(targetDirectory, locFile.Value);
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetDir)!);
+                    if (File.Exists(targetDir))
+                    {
+                        var oldLocalizationDict = JSONConvertor.LoadJson<Dictionary<string, string>>(targetDir);
+                        var newLocalizationDict = JSONConvertor.LoadJson<Dictionary<string, string>>(
+                            Path.Combine(item.Item2, locFile.Value));
 
-            modelTemplate.Type = "configlist";
+                        if (oldLocalizationDict == null || newLocalizationDict == null)
+                            continue;
+                        foreach (var (key, value) in newLocalizationDict)
+                            oldLocalizationDict.TryAdd(key, value);
 
-            if (!string.IsNullOrEmpty(modelTemplate.Icon)) 
-                modelTemplate.Icon = CopyIcon(modelTemplate.Icon, targetDirectory);
-
-
-            return modelTemplate;
+                        string jsonString = JSONConvertor.SerializeObject(oldLocalizationDict);
+                        File.WriteAllText(targetDir, jsonString);
+                    }
+                    else
+                    {
+                        await FileSystemService.CopyFileAsync(Path.Combine(item.Item2, locFile.Value), targetDir);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return OperationResultModel<ConfigPackInitModel>.FailureResult(
+                new()
+                {
+                    ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_L", ex),
+                    FriendlyDescription = ex.Message
+                });
         }
 
-        private static string CopyIcon(string icon, string targetDirectory)
+        return OperationResultModel<ConfigPackInitModel>.SuccessResult(modelTemplate);
+    }
+
+    private static async Task<OperationResultModel<List<Tuple<string, string>>>> CopyConfigsToDirectory(
+        List<ConfigItem> items,
+        string targetDirectory)
+    {
+        List<Tuple<string, string>> requirements = [];
+        try
         {
-            if (icon.StartsWith('$')) return icon;
-
-            try
-            {
-                File.Copy(icon, Path.Combine(targetDirectory, Path.GetFileName(icon)), true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ConfigPackMakeHelper), $"Cannot copy icon {ex.Message}");
-            }
-
-            return $"$DYNAMICIMAGE({Path.GetFileName(icon)})";
-        }
-
-        private static async Task<OperationResultModel<ConfigPackInitModel>> CopyLocFilesToDirectory(
-            ConfigPackInitModel modelTemplate, 
-            List<ConfigItem> items, 
-            string targetDirectory)
-        {
-            List<Tuple<ConfigInitItem, string>> initItems = [];
             foreach (var item in items)
             {
-                string dir = ConfigurationService.GetItemFolderFromPackId(item.packId!);
-                string initFile = Path.Combine(dir, "init.json");
+                string targetFile = Path.Combine(targetDirectory, item.file_name!);
 
-                if (!File.Exists(initFile)) continue;
+                string jsonString = JSONConvertor.SerializeObject(item);
+                File.WriteAllText(targetFile, jsonString);
 
-                ConfigInitItem configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
-                var data = Tuple.Create(configInitItem, dir);
-                if (!initItems.Contains(data!)) initItems.Add(data!);
-            }
-
-            try
-            {
-                foreach (var item in initItems)
+                if (item.target is { Count: >= 2 } &&
+                    requirements.FirstOrDefault(x => x.Item1 == item.target[0]) == null)
                 {
-                    if (item.Item1?.localized_strings_directory == null) continue;
-                    foreach (var locFile in item.Item1.localized_strings_directory)
-                    {
-                        if (!modelTemplate.localized_strings_directory.ContainsKey(locFile.Key))
-                            modelTemplate.localized_strings_directory.Add(locFile.Key, locFile.Value);
-
-                        string targetDir = Path.Combine(targetDirectory, locFile.Value);
-                        Directory.CreateDirectory(Path.GetDirectoryName(targetDir)!);
-                        if (File.Exists(targetDir))
-                        {
-                            var oldLocalizationDict = JSONConvertor.LoadJson<Dictionary<string, string>>(targetDir);
-                            var newLocalizationDict = JSONConvertor.LoadJson<Dictionary<string, string>>(
-                                Path.Combine(item.Item2, locFile.Value));
-
-                            if (oldLocalizationDict == null || newLocalizationDict == null) continue;
-                            foreach (var (key, value) in newLocalizationDict)
-                                oldLocalizationDict.TryAdd(key, value);
-
-                            string jsonString = JSONConvertor.SerializeObject(oldLocalizationDict);
-                            File.WriteAllText(targetDir, jsonString);
-                        }
-                        else
-                        {
-                            await FileSystemService.CopyFileAsync(Path.Combine(item.Item2, locFile.Value), targetDir);
-                        }
-                    }
+                    requirements.Add(Tuple.Create(item.target[0], item.target[1]));
                 }
             }
-            catch (Exception ex)
-            {
-                return OperationResultModel<ConfigPackInitModel>.FailureResult(
-                    new() { 
-                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_L", ex), 
-                        FriendlyDescription = ex.Message 
-                    });
-            }
-
-            return OperationResultModel<ConfigPackInitModel>.SuccessResult(modelTemplate);
         }
-
-        private static async Task<OperationResultModel<List<Tuple<string, string>>>> CopyConfigsToDirectory(
-            List<ConfigItem> items, 
-            string targetDirectory)
+        catch (Exception ex)
         {
-            List<Tuple<string, string>> requirements = [];
-            try
-            {
-                foreach (var item in items)
+            return OperationResultModel<List<Tuple<string, string>>>.FailureResult(
+                new()
                 {
-                    string targetFile = Path.Combine(targetDirectory, item.file_name!);
-
-                    string jsonString = JSONConvertor.SerializeObject(item);
-                    File.WriteAllText(targetFile, jsonString);
-
-                    if (item.target is { Count: >= 2 } &&
-                        requirements.FirstOrDefault(x => x.Item1 == item.target[0]) == null)
-                    {
-                        requirements.Add(Tuple.Create(item.target[0], item.target[1]));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return OperationResultModel<List<Tuple<string, string>>>.FailureResult(
-                    new() {
-                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_C", ex),
-                        FriendlyDescription = ex.Message,
-                    });
-            }
-
-            await Task.CompletedTask;
-
-            return OperationResultModel<List<Tuple<string, string>>>.SuccessResult(requirements);
+                    ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_C", ex),
+                    FriendlyDescription = ex.Message,
+                });
         }
 
-        private static async Task<OperationResultModel<EmptyResult>> CopyUsedFilesToDirectory(
-            List<ConfigItem> itemsToAdd, 
-            string targetDirectory)
+        await Task.CompletedTask;
+
+        return OperationResultModel<List<Tuple<string, string>>>.SuccessResult(requirements);
+    }
+
+    private static async Task<OperationResultModel<EmptyResult>> CopyUsedFilesToDirectory(
+        List<ConfigItem> itemsToAdd,
+        string targetDirectory)
+    {
+        List<Tuple<string, string>> usedFiles = [];
+
+        foreach (var item in itemsToAdd)
         {
-            List<Tuple<string, string>> usedFiles = [];
-
-            foreach (var item in itemsToAdd)
+            foreach (string file in ConfigurationService.GetUsedFilesFromConfigItem(item))
             {
-                foreach (string file in ConfigurationService.GetUsedFilesFromConfigItem(item))
-                {
-                    Tuple<string, string> pair = 
-                        Tuple.Create(
-                            item.packId!, 
-                            Autocorrector.FindAutoCorrectPath(
-                                file, 
-                                item, 
-                                // A file path is expected: the search uses its folder, and the pack
-                                // folder itself gave the parent Store\Items folder.
-                                Path.Combine(LScriptCore.ExecuteScript("$GETCURRENTDIR()", callItemId: item.packId), "init.json")));
-                    if (!usedFiles.Contains(pair))
-                        usedFiles.Add(pair);
-                }
+                Tuple<string, string> pair =
+                    Tuple.Create(
+                        item.packId!,
+                        Autocorrector.FindAutoCorrectPath(
+                            file,
+                            item,
+                            // A file path is expected: the search uses its folder, and the pack
+                            // folder itself gave the parent Store\Items folder.
+                            Path.Combine(LScriptCore.ExecuteScript("$GETCURRENTDIR()", callItemId: item.packId), "init.json")));
+                if (!usedFiles.Contains(pair))
+                    usedFiles.Add(pair);
             }
-
-            try
-            {
-                foreach (Tuple<string, string> idFilePair in usedFiles)
-                {
-                    if (File.Exists(idFilePair.Item2))
-                    {
-                        string dir = Path.GetRelativePath(
-                            ConfigurationService.GetItemFolderFromPackId(idFilePair.Item1), idFilePair.Item2);
-
-                        // A file of another item gives "..\..\" here, and the copy would land
-                        // outside the pack being built.
-                        if (Path.IsPathRooted(dir) || dir == ".." ||
-                            dir.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-                        {
-                            Logger.Instance.CreateWarningLog(nameof(ConfigPackMakeHelper),
-                                $"\"{idFilePair.Item2}\" is outside the pack {idFilePair.Item1} and is not copied.");
-                            continue;
-                        }
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(targetDirectory, dir))!);
-                        await FileSystemService.CopyFileAsync(idFilePair.Item2, Path.Combine(targetDirectory, dir));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // The failure was created and dropped, so the export reported success without files.
-                return OperationResultModel<EmptyResult>.FailureResult(
-                    new ErrorModel()
-                    {
-                        ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_F", ex),
-                        FriendlyDescription = ex.Message
-                    });
-            }
-
-            return OperationResultModel<EmptyResult>.SuccessResult();
         }
+
+        try
+        {
+            foreach (Tuple<string, string> idFilePair in usedFiles)
+            {
+                if (File.Exists(idFilePair.Item2))
+                {
+                    string dir = Path.GetRelativePath(
+                        ConfigurationService.GetItemFolderFromPackId(idFilePair.Item1), idFilePair.Item2);
+
+                    // A file of another item gives "..\..\" here, and the copy would land
+                    // outside the pack being built.
+                    if (Path.IsPathRooted(dir) || dir == ".." ||
+                        dir.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(ConfigPackMakeHelper),
+                            $"\"{idFilePair.Item2}\" is outside the pack {idFilePair.Item1} and is not copied.");
+                        continue;
+                    }
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(targetDirectory, dir))!);
+                    await FileSystemService.CopyFileAsync(idFilePair.Item2, Path.Combine(targetDirectory, dir));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // The failure was created and dropped, so the export reported success without files.
+            return OperationResultModel<EmptyResult>.FailureResult(
+                new ErrorModel()
+                {
+                    ErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("CONFIG_PACK_COPY_F", ex),
+                    FriendlyDescription = ex.Message
+                });
+        }
+
+        return OperationResultModel<EmptyResult>.SuccessResult();
     }
 }

@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using CDPIUI.Core;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using CDPIUI.Core;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Navigation;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 using WinUI3Localizer;
-using CDPIUI.Helper.UserExperience;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -103,7 +103,8 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 
     public void MoveNext()
     {
-        if (_isAnimating || Tips.Count <= 1) return;
+        if (_isAnimating || Tips.Count <= 1)
+            return;
 
         _targetIndex = (_currentIndex + 1) % Tips.Count;
         StartTransition(slideOutToX: -200, slideInFromX: 200);
@@ -111,7 +112,8 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 
     public void MovePrevious()
     {
-        if (_isAnimating || Tips.Count <= 1) return;
+        if (_isAnimating || Tips.Count <= 1)
+            return;
 
         _targetIndex = (_currentIndex - 1 + Tips.Count) % Tips.Count;
         StartTransition(slideOutToX: 200, slideInFromX: -200);

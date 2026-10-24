@@ -1,3 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.AddOns.GoodCheck;
 using CDPIUI.Controls.Default;
 using CDPIUI.Core;
@@ -12,18 +24,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -39,16 +39,16 @@ namespace CDPIUI.Views.CreateConfigHelper;
 
 public class StrategyUIModel
 {
-    public string Args {  get; set; }
-    public string SuccessCount {  get; set; }
-    public string FailureCount {  get; set; }
-    public bool Flag {  get; set; }
+    public string Args { get; set; }
+    public string SuccessCount { get; set; }
+    public string FailureCount { get; set; }
+    public bool Flag { get; set; }
 
 }
 public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
 {
     private ILocalizer localizer = Localizer.Get();
-    
+
     public ICommand HeaderClickCommand { get; }
     public ICommand FlagSetCommand { get; }
 
@@ -104,7 +104,7 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
             var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
             window?.SetStatus(true, localizer.GetLocalizedString("ReadingReportResults"));
 
-            await Task.Run(() => LoadResultToCollection(isSuccess, isSuccess? SuccessStrategiesList : FailureStrategiesList));
+            await Task.Run(() => LoadResultToCollection(isSuccess, isSuccess ? SuccessStrategiesList : FailureStrategiesList));
 
             if (SuccessStrategiesList.Count == 0)
             {
@@ -123,7 +123,7 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
                 FailureNotShow.Visibility = Visibility.Collapsed;
             }
 
-                window?.SetStatus(false);
+            window?.SetStatus(false);
         }
         catch (Exception exception)
         {
@@ -181,7 +181,7 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
             HeaderButton.FlagsCount = Parameter.Get("buttonFlagsCount");
             HeaderButton.SuccessCount = Parameter.Get("buttonSuccessCount");
             HeaderButton.FailureCount = Parameter.Get("buttonFailureCount");
-            
+
         }
     }
 
@@ -222,13 +222,15 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
         {
             SuccessStackPanel.Visibility = Visibility.Visible;
             FailureStackPanel.Visibility = Visibility.Collapsed;
-            if (SuccessStrategiesList.Count == 0) await LoadResultFor(true);
+            if (SuccessStrategiesList.Count == 0)
+                await LoadResultFor(true);
         }
         else
         {
             SuccessStackPanel.Visibility = Visibility.Collapsed;
             FailureStackPanel.Visibility = Visibility.Visible;
-            if (FailureStrategiesList.Count == 0 && SettingsManager.Instance.GetValue<bool>("CONFIGDESIGNER", "showFailureStrategies")) await LoadResultFor(false);
+            if (FailureStrategiesList.Count == 0 && SettingsManager.Instance.GetValue<bool>("CONFIGDESIGNER", "showFailureStrategies"))
+                await LoadResultFor(false);
         }
     }
 
@@ -238,13 +240,14 @@ public sealed partial class ViewGoodCheckSiteListReportPage : TemplatePage
         FailureStackPanel.Visibility = Visibility.Visible;
         FailureStrategiesListView.Visibility = Visibility.Visible;
         ContentNotDisplayedStackPanel.Visibility = Visibility.Collapsed;
-        if (FailureStrategiesList.Count == 0) _ = LoadResultFor(false); // LoadResultFor catches and logs its own errors.
+        if (FailureStrategiesList.Count == 0)
+            _ = LoadResultFor(false); // LoadResultFor catches and logs its own errors.
     }
 
     private void HeaderClick(object parameter)
     {
         UIHelper.GoBackWithParameter(
-            new NameValueCollection() 
+            new NameValueCollection()
             {
                 { "type", NavigationState.GoBack.ToString() },
                 { "strategies", JSONConvertor.SerializeObject(Strategies) } }

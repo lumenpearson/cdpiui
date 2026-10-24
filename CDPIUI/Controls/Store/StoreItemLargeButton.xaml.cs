@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Helper;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -9,12 +15,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -46,7 +46,7 @@ public sealed partial class StoreItemLargeButton : UserControl
         this.SizeChanged += (s, e) =>
         {
             UserControl sender = s as UserControl;
-            PART_Button.Width = e.NewSize.Width-15;
+            PART_Button.Width = e.NewSize.Width - 15;
             PART_Button.Height = e.NewSize.Height;
         };
 

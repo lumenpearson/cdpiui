@@ -1,9 +1,9 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace CDPIUI;
 

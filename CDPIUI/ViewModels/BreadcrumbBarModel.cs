@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CDPIUI.ViewModels
+namespace CDPIUI.ViewModels;
+
+public class BreadcrumbBarModel
 {
-    public class BreadcrumbBarModel
-    {
-        public string DisplayName { get; set; }
-        public Type Tag { get; set; }
-    }
+    public string DisplayName { get; set; }
+    public Type Tag { get; set; }
 }

@@ -44,21 +44,21 @@ public sealed class BlockCheckReportTests : IDisposable
         string catalog = "2026.08.11-standard",
         string preset = "--filter-tcp=443 --lua-desync=fake",
         int schema = 2) => new()
-    {
-        SchemaVersion = schema,
-        CreatedAtUtc = new DateTimeOffset(2026, 10, 1, 12, 30, 45, TimeSpan.Zero),
-        CatalogVersion = catalog,
-        RunPreset = BlockCheckRunPreset.Balanced,
-        Success = true,
-        WasCanceled = false,
-        IsBestEffort = true,
-        Targets = targets ?? [Target("t1", "example.com", "/", BlockCheckProtocol.Tls12)],
-        Probes = probes ?? [],
-        Profiles = profiles ?? [],
-        Issues = issues ?? [],
-        ValidationAttempts = attempts ?? [],
-        PresetArguments = preset,
-    };
+        {
+            SchemaVersion = schema,
+            CreatedAtUtc = new DateTimeOffset(2026, 10, 1, 12, 30, 45, TimeSpan.Zero),
+            CatalogVersion = catalog,
+            RunPreset = BlockCheckRunPreset.Balanced,
+            Success = true,
+            WasCanceled = false,
+            IsBestEffort = true,
+            Targets = targets ?? [Target("t1", "example.com", "/", BlockCheckProtocol.Tls12)],
+            Probes = probes ?? [],
+            Profiles = profiles ?? [],
+            Issues = issues ?? [],
+            ValidationAttempts = attempts ?? [],
+            PresetArguments = preset,
+        };
 
     private static BlockCheckReport FullReport() => Report(
         targets:

@@ -1,4 +1,3 @@
-﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -6,166 +5,168 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Windows.Forms;
+using Microsoft.Toolkit.Uwp.Notifications;
 using WinRT.Interop;
 using static System.Windows.Forms.AxHost;
 
-namespace CDPIUI.TrayIcon.Helper.Basic
+namespace CDPIUI.TrayIcon.Helper.Basic;
+
+
+public class NotifyHelper : IDisposable
 {
+    private static NotifyHelper? _instance;
+    private static readonly object _lock = new object();
 
-    public class NotifyHelper : IDisposable
+    public static NotifyHelper Instance
     {
-        private static NotifyHelper? _instance;
-        private static readonly object _lock = new object();
-
-        public static NotifyHelper Instance
+        get
         {
-            get
+            lock (_lock)
             {
-                lock (_lock)
-                {
-                    _instance ??= new NotifyHelper();
-                    return _instance;
-                }
+                _instance ??= new NotifyHelper();
+                return _instance;
             }
         }
+    }
 
-        public NotifyHelper()
-        {
-            
-        }
+    public NotifyHelper()
+    {
 
-        public void Init()
-        {
-            TasksHelper.Instance.TaskStateUpdated += HandleTaskStateUpdate;
-        }
+    }
 
-        private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
+    public void Init()
+    {
+        TasksHelper.Instance.TaskStateUpdated += HandleTaskStateUpdate;
+    }
+
+    private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
+    {
+        try
         {
-            try
+            string procName = (await TasksHelper.Instance.GetTaskFromId(taskStateUpdate.Item1))?.ProcessManager.ProcessName ?? $"{taskStateUpdate.Item1}";
+
+            if (taskStateUpdate.Item2)
             {
-                string procName = (await TasksHelper.Instance.GetTaskFromId(taskStateUpdate.Item1))?.ProcessManager.ProcessName ?? $"{taskStateUpdate.Item1}";
-
-                if (taskStateUpdate.Item2)
-                {
-                    if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
-                    ShowMessage(procName, LocaleHelper.GetLocaleString("ProcRun"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
-                }
-                else
-                {
-                    if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState")) return;
-                    ShowMessage(procName, LocaleHelper.GetLocaleString("ProcStop"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
-                }
+                if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState"))
+                    return;
+                ShowMessage(procName, LocaleHelper.GetLocaleString("ProcRun"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot show the state notification for {taskStateUpdate.Item1}: {ex}");
+                if (!SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState"))
+                    return;
+                ShowMessage(procName, LocaleHelper.GetLocaleString("ProcStop"), $"OPEN_PSEUDOCONSOLE({taskStateUpdate.Item1})");
             }
         }
-
-        public static void ShowMessage(string title, string? message, string action)
+        catch (Exception ex)
         {
-            new ToastContentBuilder()
-                .AddArgument("action", action)
-                .AddText(title)
-                .AddText(message)
-                .Show();
+            Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot show the state notification for {taskStateUpdate.Item1}: {ex}");
         }
+    }
 
-        public static async Task HandleToastActionFromBackground(string action)
+    public static void ShowMessage(string title, string? message, string action)
+    {
+        new ToastContentBuilder()
+            .AddArgument("action", action)
+            .AddText(title)
+            .AddText(message)
+            .Show();
+    }
+
+    public static async Task HandleToastActionFromBackground(string action)
+    {
+        try
         {
-            try
+            if (action.StartsWith("OPEN_PSEUDOCONSOLE"))
             {
-                if (action.StartsWith("OPEN_PSEUDOCONSOLE"))
+                var result = ScriptHelper.GetArgsFromString(action);
+                if (result.Length < 1)
                 {
-                    var result = ScriptHelper.GetArgsFromString(action);
-                    if (result.Length < 1)
+                    Console.WriteLine($"ERR, {action} => args exception");
+                    return;
+                }
+
+                await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
+                {
+                    { "id", result[0] },
+                }, true);
+
+                return;
+            }
+            switch (action)
+            {
+                case "SHOW_MAIN_WINDOW":
+                    await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+                    break;
+                case "OPEN_PROXY_SETUP":
+                    await PipeHelper.SendOpenWindowPacket("ProxySetupUtilWindow", true);
+                    break;
+                case "OPEN_BEGIN_STORE_UPDATE_CHECK":
+                    await PipeHelper.SendOpenWindowPacket("StoreWindow", new()
                     {
-                        Console.WriteLine($"ERR, {action} => args exception");
-                        return;
-                    }
+                        { "page", "DownloadsPage" },
+                        { "isUpdateRequested", "true" },
 
-                    await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
-                    { 
-                        { "id", result[0] },
                     }, true);
+                    break;
+                case "LOGGER:OPEN_TRAY_LOG":
+                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "EmptyForm.log"));
+                    break;
+                case "LOGGER:OPEN_MSI_LOG":
+                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "MsiInstallerHelper.log"));
+                    break;
+                case "UPDATE:OPEN_LOG":
+                    OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "update.log"));
+                    break;
+                case "UPDATE:OPEN_DOWNLOAD_PAGE":
+                    await PipeHelper.SendOpenWindowPacket("MainWindow", new()
+                    {
+                        { "page", "AboutPage" },
+                        { "isUpdateRequested", "true" },
 
-                    return;
-                }
-                switch (action)
-                {
-                    case "SHOW_MAIN_WINDOW":
-                        await PipeHelper.SendOpenWindowPacket("MainWindow", true);
-                        break;
-                    case "OPEN_PROXY_SETUP":
-                        await PipeHelper.SendOpenWindowPacket("ProxySetupUtilWindow", true);
-                        break;
-                    case "OPEN_BEGIN_STORE_UPDATE_CHECK":
-                        await PipeHelper.SendOpenWindowPacket("StoreWindow", new()
-                        {
-                            { "page", "DownloadsPage" },
-                            { "isUpdateRequested", "true" },
+                    }, true);
+                    break;
 
-                        }, true);
-                        break;
-                    case "LOGGER:OPEN_TRAY_LOG":
-                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "EmptyForm.log"));
-                        break;
-                    case "LOGGER:OPEN_MSI_LOG":
-                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "Logs", "MsiInstallerHelper.log"));
-                        break;
-                    case "UPDATE:OPEN_LOG":
-                        OpenFileInDefaultApp(Path.Combine(Utils.GetDataDirectory(), "update.log"));
-                        break;
-                    case "UPDATE:OPEN_DOWNLOAD_PAGE":
-                        await PipeHelper.SendOpenWindowPacket("MainWindow", new()
-                        {
-                            { "page", "AboutPage" },
-                            { "isUpdateRequested", "true" },
 
-                        }, true);
-                        break;
-                
-
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot handle the toast action {action}: {ex}");
             }
         }
-
-        public void ShowTrayErrorMessage(string errorCode)
+        catch (Exception ex)
         {
-            ShowMessage(LocaleHelper.GetLocaleString("TrayErrorTitle"), string.Format(LocaleHelper.GetLocaleString("TrayErrorMessage"), errorCode), $"LOGGER:OPEN_TRAY_LOG");
+            Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"Cannot handle the toast action {action}: {ex}");
         }
+    }
 
-        public static void OpenFileInDefaultApp(string filePath)
+    public void ShowTrayErrorMessage(string errorCode)
+    {
+        ShowMessage(LocaleHelper.GetLocaleString("TrayErrorTitle"), string.Format(LocaleHelper.GetLocaleString("TrayErrorMessage"), errorCode), $"LOGGER:OPEN_TRAY_LOG");
+    }
+
+    public static void OpenFileInDefaultApp(string filePath)
+    {
+        try
         {
-            try
-            {
-                // The tray is elevated, and the handler of a file type comes from HKCU: opening the file
-                // through the shell here would run a program the user chose with administrator rights.
-                string fullPath = Path.GetFullPath(filePath);
-                string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
-                if (RunHelper.RunAsDesktopUser(explorer, $"\"{fullPath}\""))
-                    return;
+            // The tray is elevated, and the handler of a file type comes from HKCU: opening the file
+            // through the shell here would run a program the user chose with administrator rights.
+            string fullPath = Path.GetFullPath(filePath);
+            string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            if (RunHelper.RunAsDesktopUser(explorer, $"\"{fullPath}\""))
+                return;
 
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = Path.Combine(Environment.SystemDirectory, "notepad.exe"),
-                    Arguments = $"\"{fullPath}\"",
-                    UseShellExecute = false,
-                });
-            }
-            catch (Exception ex)
+            Process.Start(new ProcessStartInfo
             {
-                Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"ERR_UNABLE_OPEN_FILE details => {ex.Message}");
-            }
+                FileName = Path.Combine(Environment.SystemDirectory, "notepad.exe"),
+                Arguments = $"\"{fullPath}\"",
+                UseShellExecute = false,
+            });
         }
-
-        public void Dispose()
+        catch (Exception ex)
         {
-            GC.SuppressFinalize(this);
+            Logger.Instance.CreateErrorLog(nameof(NotifyHelper), $"ERR_UNABLE_OPEN_FILE details => {ex.Message}");
         }
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
     }
 }

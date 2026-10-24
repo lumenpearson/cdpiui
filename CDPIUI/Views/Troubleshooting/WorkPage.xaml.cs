@@ -1,6 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.Troubleshooting;
 using CDPIUI.Controls.Default;
 using CDPIUI.Helper.LScript;
+using CDPIUI.Shared.Extensions;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -9,20 +17,12 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
 using WinUI3Localizer;
-using static CDPIUI.AddOns.Troubleshooting.TroubleshootingService;
-using CDPIUI.Shared.Extensions;
 using static System.Windows.Forms.AxHost;
+using static CDPIUI.AddOns.Troubleshooting.TroubleshootingService;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -80,14 +80,16 @@ public sealed partial class WorkPage : TemplatePage
 
     private void ConnectEvents()
     {
-        if (eventsConnected) return;
+        if (eventsConnected)
+            return;
         eventsConnected = true;
         TroubleshootingService.Instance.CurrentStateChanged += TroubleshootingHelper_BasicDialogStateChanged;
     }
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected) return;
+        if (!eventsConnected)
+            return;
         eventsConnected = false;
         TroubleshootingService.Instance.CurrentStateChanged -= TroubleshootingHelper_BasicDialogStateChanged;
     }
@@ -306,7 +308,8 @@ public sealed partial class WorkPage : TemplatePage
                 HelpUrl = GetUrl(criterion.Key.ToString())
             });
 
-            if (!isErrorHappens) isErrorHappens = !isCorrect;
+            if (!isErrorHappens)
+                isErrorHappens = !isCorrect;
         }
 
         if (isErrorHappens)
@@ -329,7 +332,8 @@ public sealed partial class WorkPage : TemplatePage
         foreach (var crit in fixResult)
         {
             bool isCorrect = crit.Value.IsFixed;
-            if (isCorrect) continue;
+            if (isCorrect)
+                continue;
 
             string correctText = diagnosticStatesPair.GetValueOrDefault(crit.Key, null)?.CorrectValueDisplayText ?? string.Empty;
             string inCorrectText = diagnosticStatesPair.GetValueOrDefault(crit.Key, null)?.InCorrectValueDisplayText ?? string.Empty;
@@ -346,7 +350,8 @@ public sealed partial class WorkPage : TemplatePage
                 HelpUrl = GetUrl(crit.Key.ToString())
             });
 
-            if (!isErrorHappens) isErrorHappens = !isCorrect;
+            if (!isErrorHappens)
+                isErrorHappens = !isCorrect;
         }
 
 
@@ -372,7 +377,8 @@ public sealed partial class WorkPage : TemplatePage
             string name = localizer.GetLocalizedString($"/Troubleshooting/{key}");
             url = string.Format(localizer.GetLocalizedString("/Flashlight/NetSearchPlaceholder"), name);
         }
-        if (url == "$EMPTY") return string.Empty;
+        if (url == "$EMPTY")
+            return string.Empty;
         return url;
     }
 

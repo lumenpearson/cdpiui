@@ -1,3 +1,19 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using System.Windows.Media;
+using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
@@ -11,7 +27,6 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.System;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.LScript;
-
 using CDPIUI.Shared;
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
@@ -22,23 +37,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using System.Windows.Media;
 using TextControlBoxNS;
 using Unidecode.NET;
 using Windows.ApplicationModel.Chat;
@@ -50,7 +50,6 @@ using WinUI3Localizer;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrayNotify;
 using Color = Windows.UI.Color;
 using SolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
-using CDPIUI.Controls.Default;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -73,7 +72,7 @@ public class VariableModel
     public string Name { get; set; }
     public string Value { get; set; }
     public AvailableVarValues AvailableValues { get; set; } = null;
-    
+
 }
 
 public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
@@ -85,7 +84,8 @@ public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
     public List<EnumModel> AvailableEnumValues { get; set; } = [];
     public bool EnableTextInput { get; set; }
     public string _value = "";
-    public string Value {
+    public string Value
+    {
         get => _value;
         set => SetField(ref _value, value);
     }
@@ -118,7 +118,8 @@ public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
 
     protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
     {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        if (EqualityComparer<T>.Default.Equals(field, value))
+            return false;
         field = value;
         OnPropertyChanged(propertyName);
         return true;
@@ -132,7 +133,7 @@ public partial class GraphicDesignerExclusiveSettingItemModel : INotifyPropertyC
     public string DisplayName { get; set; }
 
     private string _selectedItemGuid = "";
-    public string SelectedItemGuid 
+    public string SelectedItemGuid
     {
         get => _selectedItemGuid;
         set => SetField(ref _selectedItemGuid, value);
@@ -140,7 +141,8 @@ public partial class GraphicDesignerExclusiveSettingItemModel : INotifyPropertyC
     public ObservableCollection<GraphicDesignerSettingItemModel> Items { get; set; }
 
     public string _value = "";
-    public string Value {
+    public string Value
+    {
         get => _value;
         set => SetField(ref _value, value);
     }
@@ -180,7 +182,8 @@ public partial class GraphicDesignerExclusiveSettingItemModel : INotifyPropertyC
 
     protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
     {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        if (EqualityComparer<T>.Default.Equals(field, value))
+            return false;
         field = value;
         OnPropertyChanged(propertyName);
         return true;
@@ -208,7 +211,7 @@ public enum PageOpenModes
 public sealed partial class CreateNewConfigPage : TemplatePage
 {
     private List<string> DesignerSupportedComponentIds = ["CSSIXC048", "CSGIVS036", "CSNIG9025"];
-    
+
     private class ComponentModel
     {
         public string Id { get; set; }
@@ -286,7 +289,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             ChangeZoom(-5);
         }
-    }   
+    }
 
     private void CreateNewConfigPage_ActualThemeChanged(FrameworkElement sender, object args)
     {
@@ -339,7 +342,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     {
         EditItemId = SharedConstants.LocalUserItemsId;
 
-        if (Parameter != null) RunOnNavigatedToActions(Parameter);
+        if (Parameter != null)
+            RunOnNavigatedToActions(Parameter);
         AuditSaveAvailable();
         Parameter = null;
         this.Loaded -= CreateNewConfigPage_Loaded;
@@ -366,8 +370,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             string operationType = collection.Get("type");
             ConfigItem = JSONConvertor.DeserializeObject<ConfigItem>(collection.Get("configItem"));
             Debug.WriteLine(operationType);
-            if (operationType == "CFGSTRING") 
-            { 
+            if (operationType == "CFGSTRING")
+            {
                 string startupString = collection.Get("startupString");
                 string componentId = collection.Get("componentId");
 
@@ -386,8 +390,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 _ = AskAutoFillFiles(
                     ConfigItem,
                     LScriptLangHelper.ExecuteScript(
-                        "$GETCURRENTDIR()", 
-                    callItemId: SharedConstants.LocalUserItemsId), 
+                        "$GETCURRENTDIR()",
+                    callItemId: SharedConstants.LocalUserItemsId),
                     AskAutoFillMode.Quiet);
             }
             else if (operationType == "CFGIMPORT")
@@ -436,7 +440,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                     // AskAutoFillFiles catches and logs its own errors.
                     _ = AskAutoFillFiles(
                         ConfigItem,
-                        LScriptLangHelper.ExecuteScript("$GETCURRENTDIR()", 
+                        LScriptLangHelper.ExecuteScript("$GETCURRENTDIR()",
                         callItemId: ConfigItem.packId), AskAutoFillMode.Quiet);
                 }
 
@@ -508,20 +512,20 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), exception.ToString());
         }
-    } 
+    }
 
     private void LoadConditions(ConfigItem configItem)
     {
         Conditions.Clear();
         if (configItem.variables == null || configItem.variables.Count == 0)
-            { return; }
+        { return; }
 
         List<VariableItem> variables = ConfigurationService.GetVariables(configItem);
-        ComponentHelper componentHelper = 
+        ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId((ComponentChooseComboBox.SelectedItem as ComponentModel).Id);
 
 
-        foreach (var variable in configItem.variables) 
+        foreach (var variable in configItem.variables)
         {
             var t = LScriptLangHelper.GetNameOnOffValuesFromConditionString(variable);
             if (t == null)
@@ -553,7 +557,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 {
                     // Only the first '=' separates the name; values may contain '=' themselves.
                     int separator = variable.IndexOf('=');
-                    if (separator < 0) continue;
+                    if (separator < 0)
+                        continue;
                     Variables.Add(new()
                     {
                         Name = variable[..separator].Replace("%", ""),
@@ -599,8 +604,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         List<ComponentModel> components = new();
         foreach (var component in HardcodedItemIds.ComponentIds)
         {
-            components.Add(new() 
-            { 
+            components.Add(new()
+            {
                 Id = component.Value,
                 Name = component.Key.ToString()
             });
@@ -653,7 +658,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             ConditionPreviewTextBlock.Text = localizer.GetLocalizedString("NothingToPreview");
             return;
         }
-        ConditionPreviewTextBlock.Text = 
+        ConditionPreviewTextBlock.Text =
             LScriptLangHelper.CreateCondition(VarNameTextBox.Text.Replace(" ", ""), OnValueTextBox.Text, OffValueTextBox.Text);
     }
 
@@ -691,7 +696,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
             string locFile = ConfigurationService.GetDefaultLocalePath(EditItemId);
 
-            if (string.IsNullOrEmpty(locFile)) throw new FileNotFoundException("Loc file not found");
+            if (string.IsNullOrEmpty(locFile))
+                throw new FileNotFoundException("Loc file not found");
 
             if (!Directory.Exists(Path.GetDirectoryName(locFile)))
             {
@@ -725,7 +731,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             // ShowErrorDialog catches and logs its own errors.
             _ = ShowErrorDialog(
-                string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)), 
+                string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)),
                 localizer.GetLocalizedString("SomethingWentWrong")
                 );
             Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), $"{ex}");
@@ -737,7 +743,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         string componentId = (ComponentChooseComboBox.SelectedItem as ComponentModel).Id;
         var (jparams, vars) = CreateVariables(secondsSinceEpoch, saveLocalization);
 
-        if (jparams == null || vars == null) return null;
+        if (jparams == null || vars == null)
+            return null;
 
         var configItem = CreateConfigPageHelper.CreateConfigItem(
             SharedConstants.LocalUserItemsId,
@@ -766,7 +773,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void ApplyProcessState(Tuple<string, bool> tuple)
     {
-        if (string.IsNullOrEmpty(curRunId) || tuple.Item1 != curRunId) return;
+        if (string.IsNullOrEmpty(curRunId) || tuple.Item1 != curRunId)
+            return;
         if (tuple.Item2)
         {
             TestButtonGlyph.Glyph = "\uE71A";
@@ -780,7 +788,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             isRunning = false;
         }
     }
-    
+
     private async void TestButton_Click(object sender, RoutedEventArgs e)
     {
         if (!isRunning)
@@ -788,7 +796,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             isRunning = true;
             ComponentTasksManager.Instance.TaskStateUpdated += Instance_onProcessStateChanged;
 
-            
+
             if (ComponentChooseComboBox.SelectedItem is not ComponentModel model)
             {
                 ResetTestState();
@@ -822,7 +830,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     // The test component kept running after the user left the page.
     private void StopTestRun()
     {
-        if (!isRunning || string.IsNullOrEmpty(curRunId)) return;
+        if (!isRunning || string.IsNullOrEmpty(curRunId))
+            return;
         string runId = curRunId;
         ResetTestState();
         _ = ComponentTasksManager.Instance.StopTask(runId);
@@ -863,7 +872,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         if (PageOpenMode == PageOpenModes.EditConfigNoSave)
         {
             var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
-            if (window != null) window.IsOperationExitAskAvailable = false;
+            if (window != null)
+                window.IsOperationExitAskAvailable = false;
             window?.NavigateBackWithParameter(configItem);
             return;
         }
@@ -878,7 +888,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         transl = Regex.Replace(transl, @"\s+", "_");
         transl = Regex.Replace(transl, @"[^A-Za-z0-9_\.-]", "");
         transl = Regex.Replace(transl, "_+", "_").Trim('_');
-        
+
         string errorCode = await ConfigurationService.SaveConfigItem(transl, SharedConstants.LocalUserItemsId, configItem);
         if (!string.IsNullOrEmpty(errorCode))
         {
@@ -909,7 +919,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     {
         if (DesignerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem)?.Id ?? ""))
             return MainPivot.SelectedItem == DefaultDesigner;
-        else return true;
+        else
+            return true;
     }
 
     private void CheckViewType()
@@ -936,7 +947,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             HandleSelectionChange(true);
             DefaultDesigner.IsSelected = true;
             MainPivot.Visibility = Visibility.Collapsed;
-        }        
+        }
     }
 
     private void DisplayNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -1059,7 +1070,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             StartupStringTextBox.Visibility = Visibility.Visible;
             GUIDesignerGrid.Visibility = Visibility.Collapsed;
-            if (!showDefaultOnly) ConvertDesignerLikeSettingsToString();
+            if (!showDefaultOnly)
+                ConvertDesignerLikeSettingsToString();
         }
         else
         {
@@ -1073,8 +1085,10 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     public void ChangeZoom(int zoom)
     {
-        if (zoom == 0) StartupStringTextBox.ZoomFactor = 100;
-        else StartupStringTextBox.ZoomFactor += zoom;
+        if (zoom == 0)
+            StartupStringTextBox.ZoomFactor = 100;
+        else
+            StartupStringTextBox.ZoomFactor += zoom;
     }
 
     public void ChangeBackground(bool showDefaultOnly = false)
@@ -1105,7 +1119,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             CheckHighlight(ElementTheme.Default);
         }
 
-        
+
 
         MainGrid.Style = style;
     }
@@ -1121,7 +1135,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void LoadDesigner()
     {
-        if (ComponentChooseComboBox.SelectedItem == null) return;
+        if (ComponentChooseComboBox.SelectedItem == null)
+            return;
         string id = ((ComponentModel)ComponentChooseComboBox.SelectedItem).Id;
         if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] == id && NowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
         {
@@ -1135,14 +1150,14 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         }
         else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI] == id && NowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI])
         {
-            string dir = DatabaseHelper.Instance.GetItemById(id)?.Directory?? string.Empty;
+            string dir = DatabaseHelper.Instance.GetItemById(id)?.Directory ?? string.Empty;
             string xmlFile = Path.Combine(dir, "edannotationfile.xml");
             if (File.Exists(xmlFile))
             {
                 GraphicDesignerHelper.XML_LoadDesignerConfig(xmlFile, "nodpi", DesignerSettingItemModels, DesignerExclusiveSettingItemModels);
                 NowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI];
             }
-            
+
         }
     }
 
@@ -1160,7 +1175,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
 
             item = DesignerExclusiveSettingItemModels.FirstOrDefault(x => x.Items.FirstOrDefault(y => y.Guid == guid) != null)?.Items.FirstOrDefault(y => y.Guid == guid);
-            
+
             if (item != null)
             {
                 item.Value = value;
@@ -1170,7 +1185,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void HandleGraphicDesignerBoolValueToggled(Tuple<string, bool> tuple)
     {
-        
+
         string guid = tuple.Item1;
         bool _value = tuple.Item2;
 

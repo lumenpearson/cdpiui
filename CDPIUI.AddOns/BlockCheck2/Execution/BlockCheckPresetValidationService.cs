@@ -523,12 +523,12 @@ public sealed class BlockCheckPresetValidationService
         IReadOnlyList<BlockCheckPresetValidationAttempt> attempts,
         BlockCheckSynthesisResult synthesis,
         IReadOnlyList<BlockCheckIssue> issues) => new()
-    {
-        ValidationRequired = validationRequired,
-        Attempts = attempts,
-        FinalSynthesis = synthesis,
-        Issues = issues,
-    };
+        {
+            ValidationRequired = validationRequired,
+            Attempts = attempts,
+            FinalSynthesis = synthesis,
+            Issues = issues,
+        };
 
     private static BlockCheckIssue Error(string code, string message, string? subjectId = null) =>
         new(BlockCheckIssueSeverity.Error, code, message, subjectId);

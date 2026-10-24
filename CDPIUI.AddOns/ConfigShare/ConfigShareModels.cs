@@ -44,7 +44,8 @@ public sealed class ConfigSharePackage : IDisposable
 
     public void Dispose()
     {
-        if (!retainedForSystemShare) ConfigShareService.DeleteTemporaryDirectory(DirectoryPath);
+        if (!retainedForSystemShare)
+            ConfigShareService.DeleteTemporaryDirectory(DirectoryPath);
     }
 }
 

@@ -1,3 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Store;
 using CDPIUI.Core;
@@ -17,21 +32,6 @@ using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -122,7 +122,7 @@ public sealed partial class HomePage : TemplatePage
 
     private ILocalizer localizer = Localizer.Get();
 
-    // Database update started event will be removed. 
+    // Database update started event will be removed.
 
     public HomePage()
     {
@@ -188,7 +188,7 @@ public sealed partial class HomePage : TemplatePage
         if (_isFirstLayout)
         {
             _isFirstLayout = !SetupElementsWidth();
-        } 
+        }
         else
         {
             this.LayoutUpdated -= HomePage_LayoutUpdated;
@@ -197,8 +197,8 @@ public sealed partial class HomePage : TemplatePage
 
     private void HomePage_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        
-        
+
+
     }
 
     private List<UICategoryData> CreateCategoriesList(List<RepoCategoryModel> values)
@@ -218,11 +218,11 @@ public sealed partial class HomePage : TemplatePage
                 {
                     categoryItems.Add(
                         UIHelper.CreateLargeButton(
-                            storeId:repoCategoryItem.store_id,
-                            imageSource:LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
+                            storeId: repoCategoryItem.store_id,
+                            imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
                             price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
-                            backgroundColor:repoCategoryItem.background,
+                            backgroundColor: repoCategoryItem.background,
                             action: StoreItemButton_Click
                         )
                     );
@@ -231,12 +231,12 @@ public sealed partial class HomePage : TemplatePage
                 {
                     categoryItems.Add(
                         UIHelper.CreateSmallButton(
-                            storeId:repoCategoryItem.store_id,
+                            storeId: repoCategoryItem.store_id,
                             imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
                             price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             developer: repoCategoryItem.developer,
-                            backgroundColor:repoCategoryItem.background,
+                            backgroundColor: repoCategoryItem.background,
                             action: StoreItemButton_Click
                         )
                     );
@@ -256,21 +256,21 @@ public sealed partial class HomePage : TemplatePage
 
         return categoryDatas;
     }
-  
+
     private void StoreItemButton_Click(UIElement sender)
     {
         if (sender is StoreItemLargeButton btn && btn.StoreId is string sid)
         {
             PrepareToConnectedForwardAnimate(btn.imageElement);
 
-            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage), 
-                new NameValueCollection() { {"itemId", sid } }, new SuppressNavigationTransitionInfo());
+            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage),
+                new NameValueCollection() { { "itemId", sid } }, new SuppressNavigationTransitionInfo());
         }
         else if (sender is StoreItemSmallButton smallBtn && smallBtn.StoreId is string smallSid)
         {
             PrepareToConnectedForwardAnimate(smallBtn.imageElement);
 
-            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage), 
+            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage),
                 new NameValueCollection() { { "itemId", smallSid } }, new SuppressNavigationTransitionInfo());
         }
     }
@@ -279,7 +279,7 @@ public sealed partial class HomePage : TemplatePage
     {
         PrepareToConnectedForwardAnimate(sender.textElement, new DirectConnectedAnimationConfiguration());
 
-        StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.CategoryViewPage), 
+        StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.CategoryViewPage),
             new NameValueCollection() { { "categoryId", sender.Id } }, new SuppressNavigationTransitionInfo());
 
     }
@@ -334,7 +334,7 @@ public sealed partial class HomePage : TemplatePage
                 Id = cat.StoreId,
             };
             header.Click += CategoryHeaderClick;
-            
+
             StoreStackPanel.Children.Add(header);
 
             var itemsControl = new ItemsControl
@@ -350,7 +350,7 @@ public sealed partial class HomePage : TemplatePage
         }
 
         LargeElementWidth = CalcGrid(MaxTotalWidth);
-        
+
         CurrentPageWidth = totalWidth;
         // StoreViewBundles.Width = CurrentPageWidth;
 
@@ -392,7 +392,7 @@ public sealed partial class HomePage : TemplatePage
                 ErrorScrollViewer.Visibility = Visibility.Collapsed;
                 LoadingGrid.Visibility = Visibility.Collapsed;
                 StoreScrollViewer.Visibility = Visibility.Visible;
-            } 
+            }
             else
             {
                 ErrorScrollViewer.Visibility = Visibility.Visible;
@@ -452,11 +452,11 @@ public sealed partial class HomePage : TemplatePage
 
         double preCalcWidth = totalWidth / (availableColumns);
 
-        if (preCalcWidth < LargeMinW && availableColumns >= 2 )
+        if (preCalcWidth < LargeMinW && availableColumns >= 2)
         {
             availableColumns--;
-        } 
-        else if (preCalcWidth > LargePrefW*1.5)
+        }
+        else if (preCalcWidth > LargePrefW * 1.5)
         {
             if (availableColumns % 2 == 0)
                 availableColumns += 2;
@@ -500,10 +500,10 @@ public sealed partial class HomePage : TemplatePage
                 {
                     panel.MaximumRowsOrColumns = 1;
                 }
-            } 
+            }
             else
             {
-                result = false;     
+                result = false;
             }
         }
         return result;

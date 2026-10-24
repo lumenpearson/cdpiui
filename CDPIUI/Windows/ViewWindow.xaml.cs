@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Controls.Dialogs.Universal;
 using CDPIUI.Core;
@@ -8,9 +11,6 @@ using CDPIUI.Helper.UserExperience;
 using CDPIUI.Helper.WindowHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI;

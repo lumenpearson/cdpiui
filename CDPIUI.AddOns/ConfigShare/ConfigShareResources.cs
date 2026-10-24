@@ -1,6 +1,6 @@
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using System.Security.Cryptography;
 using System.Text;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
 namespace CDPIUI.AddOns.ConfigShare;
 
@@ -19,7 +19,8 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
         foreach (ConfigUsedFile file in config.UsedFiles)
         {
             string source;
-            try { source = config.ResolveFilePath(file.Path, componentDirectory ?? "", packDirectory); }
+            try
+            { source = config.ResolveFilePath(file.Path, componentDirectory ?? "", packDirectory); }
             catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
             {
                 throw new ConfigShareException("SHARE_FILE_MISSING", file.Path, exception);
@@ -29,10 +30,12 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
             // the user's kit is not changed.
             if (!File.Exists(source) && IsRuntimeCreated(file.OptionName))
                 emptyResources.Add(source);
-            if (!File.Exists(source) && !emptyResources.Contains(source)) throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
+            if (!File.Exists(source) && !emptyResources.Contains(source))
+                throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
             if (!Files.TryGetValue(source, out var resource))
             {
-                if (Files.Count >= 4095) throw new ConfigShareException("SHARE_TOO_LARGE", "Too many resource files.");
+                if (Files.Count >= 4095)
+                    throw new ConfigShareException("SHARE_TOO_LARGE", "Too many resource files.");
                 string archivePath = GetArchivePath(source);
                 ConfigShareService.SafeDestination(packDirectory, archivePath);
                 resource = new Resource(archivePath);
@@ -46,8 +49,10 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
         foreach (var metadata in config.configMaker?.resources ?? [])
         {
             string expanded = config.ExpandFileReference(metadata.path);
-            if (!replacements.TryGetValue(expanded, out string? portable)) continue;
-            if (!string.IsNullOrWhiteSpace(metadata.alias)) AddReplacement("preset://" + metadata.alias, portable);
+            if (!replacements.TryGetValue(expanded, out string? portable))
+                continue;
+            if (!string.IsNullOrWhiteSpace(metadata.alias))
+                AddReplacement("preset://" + metadata.alias, portable);
             metadata.isBuiltIn = false;
         }
         MapConfig(config, text => ConfigShareService.ReplaceConfigReferences(text, replacements));
@@ -59,7 +64,8 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
 
     private void AddReplacement(string reference, string portable)
     {
-        if (string.IsNullOrWhiteSpace(reference)) return;
+        if (string.IsNullOrWhiteSpace(reference))
+            return;
         if (reference.StartsWith('%') && reference.EndsWith('%') && reference.IndexOf('%', 1) == reference.Length - 1)
             return;
         replacements[reference] = portable;
@@ -71,7 +77,8 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
     {
         foreach (var (root, category) in new[] { (packDirectory, "preset"), (componentDirectory, "component") })
         {
-            if (string.IsNullOrWhiteSpace(root)) continue;
+            if (string.IsNullOrWhiteSpace(root))
+                continue;
             string prefix = Path.GetFullPath(root).TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
             if (path.TrimEnd('\\', '/').Equals(prefix.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
                 return "resources/" + category;
@@ -89,13 +96,17 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
         string? Map(string? text) => text == null ? null : map(text);
         void MapList(List<string>? list)
         {
-            if (list != null) for (int index = 0; index < list.Count; index++) list[index] = Map(list[index])!;
+            if (list != null)
+                for (int index = 0; index < list.Count; index++)
+                    list[index] = Map(list[index])!;
         }
         item.startup_string = Map(item.startup_string);
         MapList(item.variables);
         if (item.commaVars != null)
-            foreach (string key in item.commaVars.Keys.ToArray()) item.commaVars[key] = Map(item.commaVars[key])!;
-        foreach (var choice in item.availableCommaVarsValues ?? []) MapList(choice.Values);
+            foreach (string key in item.commaVars.Keys.ToArray())
+                item.commaVars[key] = Map(item.commaVars[key])!;
+        foreach (var choice in item.availableCommaVarsValues ?? [])
+            MapList(choice.Values);
         foreach (var variable in item.configMaker?.variables ?? [])
         {
             variable.value = Map(variable.value);
@@ -103,6 +114,7 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
             variable.offValue = Map(variable.offValue);
             MapList(variable.values);
         }
-        foreach (var resource in item.configMaker?.resources ?? []) resource.path = Map(resource.path);
+        foreach (var resource in item.configMaker?.resources ?? [])
+            resource.path = Map(resource.path);
     }
 }

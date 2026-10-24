@@ -1,20 +1,19 @@
-﻿using Microsoft.UI.Xaml.Data;
 using System;
+using Microsoft.UI.Xaml.Data;
 
-namespace CDPIUI.Converters
+namespace CDPIUI.Converters;
+
+public class StringToUpperConverter : IValueConverter
 {
-    public class StringToUpperConverter : IValueConverter
+    public object Convert(object value, Type targetType, object parameter, string language)
     {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            if (value is string s && !string.IsNullOrEmpty(s))
-                return s.ToUpper();
-            return value;
-        }
+        if (value is string s && !string.IsNullOrEmpty(s))
+            return s.ToUpper();
+        return value;
+    }
 
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotSupportedException();
-        }
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotSupportedException();
     }
 }
