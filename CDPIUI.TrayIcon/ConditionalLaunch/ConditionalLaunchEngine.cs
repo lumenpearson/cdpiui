@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CDPIUI.Shared.ConditionalLaunch;
 using CDPIUI.TrayIcon.Helper;
@@ -9,36 +8,33 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch;
 
 internal sealed class ConditionalLaunchEngine : IDisposable
 {
-    private const int WmHotKey = 0x0312;
-    private const uint ModNoRepeat = 0x4000;
-
     private static readonly Lazy<ConditionalLaunchEngine> LazyInstance =
         new(() => new ConditionalLaunchEngine());
 
     private readonly object _sync = new();
-    private readonly Dictionary<int, List<ConditionalTask>> _hotKeyTasks = [];
-    private readonly Dictionary<string, ProcessTriggerState> _processStates =
-        new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _runningTasks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConditionalHotKeyRegistry _hotKeys = new();
+    private readonly ProcessTriggerStates _processStates = new();
+    private readonly ConditionalTaskRunner _runner;
 
     private List<ConditionalTask> _tasks = [];
     private List<ConditionalTask> _loadedTasks = [];
     private Control? _messageWindow;
     private IntPtr _windowHandle;
     private string? _tasksDirectory;
-    private FileSystemWatcher? _watcher;
+    private ConditionalTaskFolderWatcher? _watcher;
     private System.Threading.Timer? _processTimer;
     private System.Threading.Timer? _reloadTimer;
     private int _isPolling;
     // Without process triggers the process list is not read at all.
     private volatile bool _hasProcessTriggers;
-    private const int FirstHotKeyId = 0x4300;
-    private int _nextHotKeyId = FirstHotKeyId;
     private bool _disposed;
 
     public static ConditionalLaunchEngine Instance => LazyInstance.Value;
 
-    private ConditionalLaunchEngine() { }
+    private ConditionalLaunchEngine()
+    {
+        _runner = new ConditionalTaskRunner(_sync);
+    }
 
     public void Start(Control messageWindow)
     {
@@ -120,57 +116,51 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         }
 
         lock (_sync)
+            ApplyLoadedTasks(directory, loadedTasks);
+    }
+
+    // The caller holds _sync.
+    private void ApplyLoadedTasks(string directory, IReadOnlyList<ConditionalTask> loadedTasks)
+    {
+        UnregisterHotKeys();
+
+        // Any write to the folder reloads all tasks: only the states of tasks that were
+        // removed or changed are reset, so a pending delayed action of another task stays.
+        var oldSignatures = _loadedTasks.ToDictionary(task => task.Id, GetSignature, StringComparer.OrdinalIgnoreCase);
+        var unchangedIds = loadedTasks
+            .Where(task => oldSignatures.TryGetValue(task.Id, out var signature) && signature == GetSignature(task))
+            .Select(task => task.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _processStates.ResetExcept(unchangedIds);
+
+        _loadedTasks = loadedTasks.ToList();
+        _tasks = _loadedTasks.Where(task => task.IsEnabled).ToList();
+        _hasProcessTriggers = EnumerateProcessTriggers().Any(binding =>
+            !string.IsNullOrWhiteSpace(binding.Trigger.GetParameter("processName")));
+        RegisterHotKeys();
+
+        var fileCount = Directory.EnumerateFiles(
+            directory,
+            $"*{ConditionalTaskFileService.FileExtension}").Count();
+        Logger.Instance.CreateDebugLog(
+            nameof(ConditionalLaunchEngine),
+            $"Conditional tasks reloaded: {loadedTasks.Count} valid, {_tasks.Count} enabled, {fileCount} files total.");
+        if (fileCount != loadedTasks.Count)
         {
-            UnregisterHotKeys();
-
-            // Any write to the folder reloads all tasks: only the states of tasks that were
-            // removed or changed are reset, so a pending delayed action of another task stays.
-            var oldSignatures = _loadedTasks.ToDictionary(task => task.Id, GetSignature, StringComparer.OrdinalIgnoreCase);
-            var unchangedIds = loadedTasks
-                .Where(task => oldSignatures.TryGetValue(task.Id, out var signature) && signature == GetSignature(task))
-                .Select(task => task.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var key in _processStates.Keys.ToList())
-            {
-                if (unchangedIds.Contains(key.Split('|')[0]))
-                    continue;
-                _processStates[key].CancelPending();
-                _processStates.Remove(key);
-            }
-
-            _loadedTasks = loadedTasks.ToList();
-            _tasks = _loadedTasks.Where(task => task.IsEnabled).ToList();
-            _hasProcessTriggers = EnumerateProcessTriggers().Any(binding =>
-                !string.IsNullOrWhiteSpace(binding.Trigger.GetParameter("processName")));
-            RegisterHotKeys();
-
-            var fileCount = Directory.EnumerateFiles(
-                directory,
-                $"*{ConditionalTaskFileService.FileExtension}").Count();
-            Logger.Instance.CreateDebugLog(
+            Logger.Instance.CreateWarningLog(
                 nameof(ConditionalLaunchEngine),
-                $"Conditional tasks reloaded: {loadedTasks.Count} valid, {_tasks.Count} enabled, {fileCount} files total.");
-            if (fileCount != loadedTasks.Count)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(ConditionalLaunchEngine),
-                    $"Ignored {fileCount - loadedTasks.Count} invalid conditional task file(s).");
-            }
+                $"Ignored {fileCount - loadedTasks.Count} invalid conditional task file(s).");
         }
     }
 
     public bool HandleWindowMessage(ref Message message)
     {
-        if (message.Msg != WmHotKey)
+        if (message.Msg != ConditionalHotKeyRegistry.WmHotKey)
             return false;
 
         List<ConditionalTask>? tasks;
         lock (_sync)
-        {
-            tasks = _hotKeyTasks.TryGetValue(message.WParam.ToInt32(), out var registered)
-                ? registered.ToList()
-                : null;
-        }
+            tasks = _hotKeys.GetTasks(message.WParam.ToInt32());
 
         if (tasks == null || tasks.Count == 0)
             return false;
@@ -178,7 +168,7 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         Logger.Instance.CreateDebugLog(
             nameof(ConditionalLaunchEngine),
             $"Hot key received for {tasks.Count} conditional task(s).");
-        RunHighestPriority(tasks);
+        _runner.RunHighestPriority(tasks);
         return true;
     }
 
@@ -207,61 +197,15 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         Logger.Instance.CreateDebugLog(
             nameof(ConditionalLaunchEngine),
             $"Manual run requested for conditional task '{task.Name}' ({task.Id}).");
-        _ = RunTaskOnceAsync(task);
+        _ = _runner.RunOnceAsync(task);
         return true;
     }
 
-    private void RegisterHotKeys()
-    {
-        // Hot keys need the message window of Start; registered before it, they had no
-        // window to send WM_HOTKEY to.
-        if (_windowHandle == IntPtr.Zero)
-            return;
+    // The caller holds _sync.
+    private void RegisterHotKeys() => _hotKeys.Register(_windowHandle, _tasks);
 
-        var groups = _tasks
-            .SelectMany(task => task.Triggers
-                .Where(trigger => trigger.Type == ConditionalTriggerType.HotKey)
-                .Select(trigger => new TriggerBinding(task, trigger, string.Empty)))
-            .GroupBy(binding => GetHotKeyIdentity(binding.Trigger), StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in groups)
-        {
-            var first = group.First();
-            if (!TryGetHotKey(first.Trigger, out var modifiers, out var virtualKey))
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(ConditionalLaunchEngine),
-                    $"Invalid hot key in task '{first.Task.Name}'.");
-                continue;
-            }
-
-            var id = _nextHotKeyId++;
-            if (!RegisterHotKey(_windowHandle, id, modifiers | ModNoRepeat, virtualKey))
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(ConditionalLaunchEngine),
-                    $"Cannot register hot key for task '{first.Task.Name}'. Win32: {Marshal.GetLastWin32Error()}.");
-                continue;
-            }
-
-            _hotKeyTasks[id] = group
-                .Select(binding => binding.Task)
-                .DistinctBy(task => task.Id, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            Logger.Instance.CreateDebugLog(
-                nameof(ConditionalLaunchEngine),
-                $"Registered hot key '{GetHotKeyIdentity(first.Trigger)}' for {_hotKeyTasks[id].Count} conditional task(s).");
-        }
-    }
-
-    private void UnregisterHotKeys()
-    {
-        foreach (var id in _hotKeyTasks.Keys)
-            UnregisterHotKey(_windowHandle, id);
-        _hotKeyTasks.Clear();
-        // Ids above 0xBFFF are rejected; every reload used new ones.
-        _nextHotKeyId = FirstHotKeyId;
-    }
+    // The caller holds _sync.
+    private void UnregisterHotKeys() => _hotKeys.UnregisterAll(_windowHandle);
 
     private void PollProcesses()
     {
@@ -273,66 +217,11 @@ internal sealed class ConditionalLaunchEngine : IDisposable
 
         try
         {
-            HashSet<string> runningProcessNames = new(StringComparer.OrdinalIgnoreCase);
-            foreach (var process in Process.GetProcesses())
-            {
-                try
-                {
-                    runningProcessNames.Add(process.ProcessName);
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
-                {
-                    // The process exited after the list was taken; it is not running.
-                }
-                finally
-                {
-                    process.Dispose();
-                }
-            }
+            var runningProcessNames = GetRunningProcessNames();
 
-            List<TriggerBinding> newlyMatched = [];
+            List<TriggerBinding> newlyMatched;
             lock (_sync)
-            {
-                foreach (var binding in EnumerateProcessTriggers())
-                {
-                    var task = binding.Task;
-                    var trigger = binding.Trigger;
-                    var rawProcessName = trigger.GetParameter("processName");
-                    if (string.IsNullOrWhiteSpace(rawProcessName))
-                        continue;
-
-                    var processName = Path.GetFileNameWithoutExtension(rawProcessName.Trim());
-                    var isRunning = runningProcessNames.Contains(processName);
-
-                    if (!_processStates.TryGetValue(binding.StateKey, out var state))
-                    {
-                        state = new ProcessTriggerState(isRunning);
-                        _processStates[binding.StateKey] = state;
-                        continue;
-                    }
-
-                    var matched = trigger.Type switch
-                    {
-                        ConditionalTriggerType.ProcessStarted => !state.LastIsRunning && isRunning,
-                        ConditionalTriggerType.ProcessStopped => state.LastIsRunning && !isRunning,
-                        _ => false
-                    };
-
-                    var conditionStillValid = trigger.Type switch
-                    {
-                        ConditionalTriggerType.ProcessStarted => isRunning,
-                        ConditionalTriggerType.ProcessStopped => !isRunning,
-                        _ => true
-                    };
-
-                    if (!conditionStillValid)
-                        state.CancelPending();
-
-                    state.LastIsRunning = isRunning;
-                    if (matched)
-                        newlyMatched.Add(binding);
-                }
-            }
+                newlyMatched = _processStates.Update(EnumerateProcessTriggers(), runningProcessNames);
 
             ScheduleHighestPriority(newlyMatched);
         }
@@ -346,6 +235,27 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         {
             Interlocked.Exchange(ref _isPolling, 0);
         }
+    }
+
+    private static HashSet<string> GetRunningProcessNames()
+    {
+        HashSet<string> runningProcessNames = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var process in Process.GetProcesses())
+        {
+            try
+            {
+                runningProcessNames.Add(process.ProcessName);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+            {
+                // The process exited after the list was taken; it is not running.
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+        return runningProcessNames;
     }
 
     private void ScheduleHighestPriority(IReadOnlyCollection<TriggerBinding> matches)
@@ -363,16 +273,11 @@ internal sealed class ConditionalLaunchEngine : IDisposable
             $"Process condition matched {taskMatches.Count} task(s); scheduling priority {highestPriority}.");
         foreach (var match in taskMatches.Where(match => (int)match.Task.Priority == highestPriority))
         {
-            CancellationTokenSource cancellation;
+            CancellationTokenSource? cancellation;
             lock (_sync)
-            {
-                if (!_processStates.TryGetValue(match.StateKey, out var state))
-                    continue;
-
-                state.CancelPending();
-                state.Pending = new CancellationTokenSource();
-                cancellation = state.Pending;
-            }
+                cancellation = _processStates.BeginPending(match.StateKey);
+            if (cancellation == null)
+                continue;
 
             _ = RunAfterDelayAsync(match, cancellation);
         }
@@ -388,7 +293,7 @@ internal sealed class ConditionalLaunchEngine : IDisposable
                 await Task.Delay(TimeSpan.FromSeconds(match.Trigger.DelaySeconds), cancellation.Token);
 
             if (!cancellation.IsCancellationRequested)
-                await RunTaskOnceAsync(match.Task);
+                await _runner.RunOnceAsync(match.Task);
         }
         catch (OperationCanceledException)
         {
@@ -397,64 +302,8 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         finally
         {
             lock (_sync)
-            {
-                if (_processStates.TryGetValue(match.StateKey, out var state) &&
-                    ReferenceEquals(state.Pending, cancellation))
-                {
-                    state.Pending = null;
-                }
-            }
+                _processStates.EndPending(match.StateKey, cancellation);
             cancellation.Dispose();
-        }
-    }
-
-    private void RunHighestPriority(IReadOnlyCollection<ConditionalTask> tasks)
-    {
-        var highestPriority = tasks.Max(task => (int)task.Priority);
-        foreach (var task in tasks.Where(task => (int)task.Priority == highestPriority))
-            _ = RunTaskOnceAsync(task);
-    }
-
-    private async Task RunTaskOnceAsync(ConditionalTask task)
-    {
-        lock (_sync)
-        {
-            if (!_runningTasks.Add(task.Id))
-                return;
-        }
-
-        try
-        {
-            Logger.Instance.CreateDebugLog(
-                nameof(ConditionalLaunchEngine),
-                $"Starting conditional task '{task.Name}' ({task.Id}).");
-            await ConditionalActionExecutor.ExecuteTaskAsync(task);
-            Logger.Instance.CreateDebugLog(
-                nameof(ConditionalLaunchEngine),
-                $"Conditional task '{task.Name}' ({task.Id}) completed.");
-            if (SettingsManager.Instance.GetValueOrDefault<bool>(
-                "NOTIFICATIONS",
-                "conditionalLaunchActions",
-                defaultValue: true))
-            {
-                NotifyHelper.ShowMessage(
-                    LocaleHelper.GetLocaleString("ConditionalLaunchNotificationTitle"),
-                    string.Format(
-                        LocaleHelper.GetLocaleString("ConditionalLaunchActionCompletedMessage"),
-                        task.Name),
-                    string.Empty);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(
-                nameof(ConditionalLaunchEngine),
-                $"Task '{task.Name}' failed: {ex}");
-        }
-        finally
-        {
-            lock (_sync)
-                _runningTasks.Remove(task.Id);
         }
     }
 
@@ -468,36 +317,14 @@ internal sealed class ConditionalLaunchEngine : IDisposable
             return;
         }
 
-        if (_watcher != null)
-        {
-            _watcher.EnableRaisingEvents = false;
-            _watcher.Changed -= TaskFilesChanged;
-            _watcher.Created -= TaskFilesChanged;
-            _watcher.Deleted -= TaskFilesChanged;
-            _watcher.Renamed -= TaskFilesChanged;
-            _watcher.Error -= TaskWatcherError;
-            _watcher.Dispose();
-        }
+        _watcher?.Dispose();
 
         Directory.CreateDirectory(directory);
         _tasksDirectory = directory;
         Logger.Instance.CreateDebugLog(
             nameof(ConditionalLaunchEngine),
             $"Using conditional tasks directory: '{directory}'.");
-        _watcher = new FileSystemWatcher(
-            directory,
-            $"*{ConditionalTaskFileService.FileExtension}")
-        {
-            NotifyFilter = NotifyFilters.FileName |
-                           NotifyFilters.LastWrite |
-                           NotifyFilters.CreationTime,
-            EnableRaisingEvents = true
-        };
-        _watcher.Changed += TaskFilesChanged;
-        _watcher.Created += TaskFilesChanged;
-        _watcher.Deleted += TaskFilesChanged;
-        _watcher.Renamed += TaskFilesChanged;
-        _watcher.Error += TaskWatcherError;
+        _watcher = new ConditionalTaskFolderWatcher(directory, TaskFilesChanged, TaskWatcherError);
     }
 
     // After a buffer overflow the watcher stops raising events for good: it is created
@@ -533,40 +360,6 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         }
     }
 
-    private static bool TryGetHotKey(
-        ConditionalTrigger trigger,
-        out uint modifiers,
-        out uint virtualKey)
-    {
-        modifiers = 0;
-        virtualKey = 0;
-
-        if (!Enum.TryParse<ConditionalHotKeyModifiers>(
-                trigger.GetParameter("modifiers"),
-                ignoreCase: true,
-                out var parsedModifiers) ||
-            !Enum.TryParse<Keys>(
-                trigger.GetParameter("key"),
-                ignoreCase: true,
-                out var key))
-        {
-            return false;
-        }
-
-        modifiers = (uint)parsedModifiers;
-        virtualKey = (uint)key;
-        return key != Keys.None;
-    }
-
-    // By value: "Control, Alt" and "Alt, Control" are the same hot key and were registered
-    // twice, the second time failing.
-    private static string GetHotKeyIdentity(ConditionalTrigger trigger)
-    {
-        return TryGetHotKey(trigger, out var modifiers, out var virtualKey)
-            ? $"{modifiers}|{virtualKey}"
-            : $"{trigger.GetParameter("modifiers")}|{trigger.GetParameter("key")}";
-    }
-
     private static bool IsProcessTrigger(ConditionalTriggerType type)
     {
         return type != ConditionalTriggerType.HotKey;
@@ -594,53 +387,16 @@ internal sealed class ConditionalLaunchEngine : IDisposable
             _disposed = true;
 
             UnregisterHotKeys();
-            foreach (var state in _processStates.Values)
-                state.CancelPending();
             _processStates.Clear();
             _loadedTasks.Clear();
             _tasks.Clear();
             _hasProcessTriggers = false;
 
-            if (_watcher != null)
-            {
-                _watcher.EnableRaisingEvents = false;
-                _watcher.Changed -= TaskFilesChanged;
-                _watcher.Created -= TaskFilesChanged;
-                _watcher.Deleted -= TaskFilesChanged;
-                _watcher.Renamed -= TaskFilesChanged;
-                _watcher.Dispose();
-            }
+            _watcher?.Dispose();
 
             _processTimer?.Dispose();
             _reloadTimer?.Dispose();
             _messageWindow = null;
         }
     }
-
-    private sealed class ProcessTriggerState(bool lastIsRunning)
-    {
-        public bool LastIsRunning { get; set; } = lastIsRunning;
-        public CancellationTokenSource? Pending { get; set; }
-
-        public void CancelPending()
-        {
-            Pending?.Cancel();
-            Pending = null;
-        }
-    }
-
-    private sealed record TriggerBinding(
-        ConditionalTask Task,
-        ConditionalTrigger Trigger,
-        string StateKey);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(
-        IntPtr windowHandle,
-        int id,
-        uint modifiers,
-        uint virtualKey);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool UnregisterHotKey(IntPtr windowHandle, int id);
 }
