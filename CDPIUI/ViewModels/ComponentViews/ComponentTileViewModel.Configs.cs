@@ -218,6 +218,11 @@ public sealed partial class ComponentTileViewModel
             });
         }
 
+        // The saved selection is applied after the list is filled: the combo box gets the
+        // items through its own CollectionChanged handler, which runs after this view
+        // model's, and it ignores a selected item that is not in its list yet.
+        ApplySavedSelection();
+
         bool hasItems = ConfigItems.Count > 0;
         IsConfigContentVisible = hasItems;
         IsConfigErrorVisible = !hasItems;
