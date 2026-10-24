@@ -53,7 +53,7 @@
                                 l:Uids.Uid="ConfigMakerAddPresetFileButton"
                                 Padding="6"
                                 CornerRadius="0"
-                                Click="AddPresetFileButton_Click"
+                                Command="{x:Bind ViewModel.AddPresetFileCommand}"
                                 Height="29">
                                 <FontIcon Glyph="&#xE710;" FontSize="14" />
                             </Button>
@@ -158,7 +158,10 @@
                             x:Name="EditorInfoBar"
                             Margin="8 0"
                             IsClosable="True"
-                            IsOpen="False" />
+                            Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
+                            Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                            Severity="{x:Bind ViewModel.StatusSeverity, Mode=OneWay}"
+                            IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}" />
                         <navigation:AnimatedSelectorBar
                             x:Name="EditorViewSelector"
                             Grid.Row="1"
@@ -178,6 +181,7 @@
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Top"
                                         Visibility="Collapsed"
+                                        ReplaceEnable="{x:Bind ViewModel.IsEditorWritable, Mode=OneWay}"
                                         Canvas.ZIndex="2" />
                                     <textcontrolbox:TextControlBox
                                         Grid.Row="1"
@@ -200,7 +204,7 @@
                                             x:Name="DesignerExclusiveListView"
                                             SelectionMode="None"
                                             Padding="0"
-                                            ItemsSource="{x:Bind DesignerExclusiveSettingItemModels}">
+                                            ItemsSource="{x:Bind ViewModel.DesignerExclusiveSettingItemModels}">
                                             <ListView.ItemTemplate>
                                                 <DataTemplate x:DataType="views:GraphicDesignerExclusiveSettingItemModel">
                                                     <local:ComponentSettingsExclusiveGroupUserControl
@@ -218,7 +222,7 @@
                                             x:Name="DesignerSettingsListView"
                                             SelectionMode="None"
                                             Padding="0"
-                                            ItemsSource="{x:Bind DesignerSettingItemModels}">
+                                            ItemsSource="{x:Bind ViewModel.DesignerSettingItemModels}">
                                             <ListView.ItemTemplate>
                                                 <DataTemplate x:DataType="views:GraphicDesignerSettingItemModel">
                                                     <legacy:ComponentSettingUserControl
@@ -243,6 +247,7 @@
                                                 x:Name="AdditionalDesignerArgumentsTextBox"
                                                 AcceptsReturn="True"
                                                 TextWrapping="Wrap"
+                                                Text="{x:Bind ViewModel.AdditionalDesignerArguments, Mode=OneWay}"
                                                 TextChanged="AdditionalDesignerArgumentsTextBox_TextChanged" />
                                         </StackPanel>
                                     </StackPanel>
@@ -271,7 +276,7 @@
                                     <ColumnDefinition Width="Auto" MinWidth="30" />
                                 </Grid.ColumnDefinitions>
 
-                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Grid.Column="0" Padding="7,3" Background="Transparent" BorderThickness="0" Click="SearchButton_Click" CornerRadius="0" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" Grid.Column="0" Padding="7,3" Background="Transparent" BorderThickness="0" Command="{x:Bind Search}" CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
                                     <Button.KeyboardAccelerators>
@@ -282,7 +287,7 @@
                                         <ToolTip l:Uids.Uid="ConfigMakerSearchToolTip" />
                                     </ToolTipService.ToolTip>
                                 </Button>
-                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ReplaceEditorButton" Grid.Column="1" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ReplaceButton_Click" 
+                                <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ReplaceEditorButton" Grid.Column="1" Padding="7,3" Background="Transparent" BorderThickness="0" Click="ReplaceButton_Click" IsEnabled="{x:Bind ViewModel.IsEditorWritable, Mode=OneWay}"
                                         CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
@@ -296,7 +301,7 @@
                                 </Button>
                                 <universal:ContentSeparator Grid.Column="2"  Height="18"/>
                                 <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="ConfigMakerZoomOut"  Grid.Column="3" Padding="7,3" Background="Transparent" BorderThickness="0" 
-                                        Click="ZoomOutButton_Click"
+                                        Command="{x:Bind ZoomOut}"
                                         CornerRadius="0" 
                                         VerticalAlignment="Stretch"
                                         HorizontalAlignment="Stretch">
@@ -310,7 +315,7 @@
                                     Padding="5,3"
                                     Background="Transparent"
                                     BorderThickness="0"
-                                    Click="ZoomResetButton_Click"
+                                    Command="{x:Bind ZoomReset}"
                                     CornerRadius="0" 
                                     VerticalAlignment="Stretch"
                                     HorizontalAlignment="Stretch">
@@ -332,10 +337,10 @@
                                     </ToolTipService.ToolTip>
                                     <Button.Flyout>
                                         <MenuFlyout Placement="Top">
-                                            <RadioMenuFlyoutItem x:Name="DefaultBackgroundItem" l:Uids.Uid="DefaultBackgroundMenuItem" GroupName="ConfigMakerBackground" Click="EditorBackgroundItem_Click" />
-                                            <RadioMenuFlyoutItem x:Name="MicaBackgroundItem" l:Uids.Uid="MicaBackgroundMenuItem" GroupName="ConfigMakerBackground" Click="EditorBackgroundItem_Click" />
-                                            <RadioMenuFlyoutItem x:Name="MicaAltBackgroundItem" l:Uids.Uid="MicaAltMenuItem" GroupName="ConfigMakerBackground" Click="EditorBackgroundItem_Click" />
-                                            <RadioMenuFlyoutItem x:Name="MicaSmokeBackgroundItem" l:Uids.Uid="MicaSmokeMenuItem" GroupName="ConfigMakerBackground" Click="EditorBackgroundItem_Click" />
+                                            <RadioMenuFlyoutItem x:Name="DefaultBackgroundItem" l:Uids.Uid="DefaultBackgroundMenuItem" GroupName="ConfigMakerBackground" IsChecked="{x:Bind ViewModel.IsBlackEditorBackground, Mode=OneWay}" Command="{x:Bind ViewModel.SelectEditorBackgroundCommand}" CommandParameter="Black" />
+                                            <RadioMenuFlyoutItem x:Name="MicaBackgroundItem" l:Uids.Uid="MicaBackgroundMenuItem" GroupName="ConfigMakerBackground" IsChecked="{x:Bind ViewModel.IsMicaEditorBackground, Mode=OneWay}" Command="{x:Bind ViewModel.SelectEditorBackgroundCommand}" CommandParameter="Mica" />
+                                            <RadioMenuFlyoutItem x:Name="MicaAltBackgroundItem" l:Uids.Uid="MicaAltMenuItem" GroupName="ConfigMakerBackground" IsChecked="{x:Bind ViewModel.IsMicaTransparentEditorBackground, Mode=OneWay}" Command="{x:Bind ViewModel.SelectEditorBackgroundCommand}" CommandParameter="MicaTransparent" />
+                                            <RadioMenuFlyoutItem x:Name="MicaSmokeBackgroundItem" l:Uids.Uid="MicaSmokeMenuItem" GroupName="ConfigMakerBackground" IsChecked="{x:Bind ViewModel.IsMicaSmokeEditorBackground, Mode=OneWay}" Command="{x:Bind ViewModel.SelectEditorBackgroundCommand}" CommandParameter="MicaSmoke" />
                                         </MenuFlyout>
                                     </Button.Flyout>
                                 </Button>
@@ -352,7 +357,7 @@
                                     HorizontalAlignment="Stretch">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <FontIcon Glyph="&#xEA39;" FontSize="12" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
-                                        <TextBlock x:Name="ErrorCountTextBlock" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="ErrorCountTextBlock" VerticalAlignment="Center" Text="{x:Bind ViewModel.ErrorCountText, Mode=OneWay}" />
                                     </StackPanel>
                                 </Button>
                                 
@@ -367,7 +372,7 @@
                                     Visibility="{x:Bind IsErrorCheckEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <FontIcon Glyph="&#xE7BA;" FontSize="12" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
-                                        <TextBlock x:Name="WarningCountTextBlock" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="WarningCountTextBlock" VerticalAlignment="Center" Text="{x:Bind ViewModel.WarningCountText, Mode=OneWay}" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -397,7 +402,7 @@
                                     x:Name="DiagnosticsListView"
                                     Grid.Row="1"
                                     Margin="0,0"
-                                    ItemsSource="{x:Bind Diagnostics}"
+                                    ItemsSource="{x:Bind ViewModel.Diagnostics}"
                                     ItemContainerTransitions="{x:Null}"
                                     DoubleTapped="DiagnosticsListView_DoubleTapped"
                                     SelectionChanged="DiagnosticsListView_SelectionChanged">
@@ -518,9 +523,10 @@
                                     Grid.Row="0"
                                     l:Uids.Uid="ConfigMakerModuleComboBox"
                                     HorizontalAlignment="Stretch"
-                                    ItemsSource="{x:Bind CommandModules}"
+                                    ItemsSource="{x:Bind ViewModel.CommandModules}"
                                     DisplayMemberPath="DisplayName"
-                                    SelectionChanged="ModuleComboBox_SelectionChanged" />
+                                    Visibility="{x:Bind ViewModel.HasCommandModules, Mode=OneWay}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedCommandModule, Mode=TwoWay}" />
 
                                 <AutoSuggestBox
                                     x:Name="CommandSearchBox"
@@ -532,16 +538,18 @@
                                 <Grid Grid.Row="2">
                                     <TextBlock
                                         x:Name="UsageTextBlock"
+                                        Text="{x:Bind ViewModel.UsageText, Mode=OneWay}"
                                         TextWrapping="Wrap"
                                         Style="{ThemeResource CaptionTextBlockStyle}"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <ProgressRing x:Name="HelpProgressRing" HorizontalAlignment="Right" Width="20" Height="20" IsActive="False" />
+                                    <ProgressRing x:Name="HelpProgressRing" HorizontalAlignment="Right" Width="20" Height="20" IsActive="{x:Bind ViewModel.IsHelpLoading, Mode=OneWay}" />
                                 </Grid>
 
                                 <ListBox
                                     x:Name="CommandListView"
                                     Grid.Row="3"
-                                    ItemsSource="{x:Bind CommandOptions}"
+                                    ItemsSource="{x:Bind ViewModel.CommandOptions}"
+                                    IsEnabled="{x:Bind ViewModel.IsCommandListEnabled, Mode=OneWay}"
                                     SelectionChanged="CommandListView_SelectionChanged"
                                     Grid.RowSpan="2"
                                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
@@ -557,7 +565,7 @@
                                     Grid.Row="4"
                                     Margin="0,4,0,0"
                                     Padding="10"
-                                    Visibility="Collapsed"
+                                    Visibility="{x:Bind ViewModel.HasSelectedCommand, Mode=OneWay}"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     BorderThickness="1"
                                     CornerRadius="0"
@@ -568,15 +576,15 @@
                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
                                         <StackPanel Spacing="7">
-                                            <TextBlock x:Name="SelectedCommandNameTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                            <TextBlock x:Name="SelectedCommandSyntaxTextBlock" FontSize="{x:Bind uexp:ConsoleFontHelper.Instance.FontSize, Mode=OneWay}" FontFamily="{x:Bind uexp:ConsoleFontHelper.Instance.FontFamily, Mode=OneWay}" TextWrapping="Wrap" />
+                                            <TextBlock x:Name="SelectedCommandNameTextBlock" Text="{x:Bind ViewModel.SelectedCommandName, Mode=OneWay}" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                            <TextBlock x:Name="SelectedCommandSyntaxTextBlock" Text="{x:Bind ViewModel.SelectedCommandSyntax, Mode=OneWay}" FontSize="{x:Bind uexp:ConsoleFontHelper.Instance.FontSize, Mode=OneWay}" FontFamily="{x:Bind uexp:ConsoleFontHelper.Instance.FontFamily, Mode=OneWay}" TextWrapping="Wrap" />
                                         </StackPanel>
                                         <ScrollViewer Grid.Row="1" Margin="0 0 -10 0">
                                             <StackPanel Spacing="7" Margin="0 0 15 0">
-                                                <TextBlock x:Name="SelectedCommandDescriptionTextBlock" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <StackPanel x:Name="CommandArgumentPanel" Spacing="4">
-                                                    <TextBlock x:Name="CommandArgumentLabelTextBlock" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                                    <TextBox x:Name="CommandArgumentTextBox" />
+                                                <TextBlock x:Name="SelectedCommandDescriptionTextBlock" Text="{x:Bind ViewModel.SelectedCommandDescription, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <StackPanel x:Name="CommandArgumentPanel" Spacing="4" Visibility="{x:Bind ViewModel.HasCommandArgument, Mode=OneWay}">
+                                                    <TextBlock x:Name="CommandArgumentLabelTextBlock" Text="{x:Bind ViewModel.CommandArgumentLabel, Mode=OneWay}" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                                    <TextBox x:Name="CommandArgumentTextBox" Text="{x:Bind ViewModel.CommandArgumentText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind ViewModel.CommandArgumentPlaceholder, Mode=OneWay}" />
                                                 </StackPanel>
                                             </StackPanel>
                                         </ScrollViewer>
@@ -584,8 +592,8 @@
                                 </Border>
 
                                 <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                                    <Button x:Name="CopyButton" l:Uids.Uid="ConfigMakerCopyCommandButton" Click="CopyCommandButton_Click" CornerRadius="0" Width="150" IsEnabled="False"/>
-                                    <Button x:Name="InsertButton" l:Uids.Uid="ConfigMakerInsertCommandButton" Click="InsertCommandButton_Click" Style="{StaticResource AccentButtonStyle}" CornerRadius="0" Width="150" IsEnabled="False"/>
+                                    <Button x:Name="CopyButton" l:Uids.Uid="ConfigMakerCopyCommandButton" Command="{x:Bind ViewModel.CopyCommandCommand}" CornerRadius="0" Width="150"/>
+                                    <Button x:Name="InsertButton" l:Uids.Uid="ConfigMakerInsertCommandButton" Command="{x:Bind ViewModel.InsertCommandCommand}" Style="{StaticResource AccentButtonStyle}" CornerRadius="0" Width="150"/>
                                 </StackPanel>
                             </Grid>
                         </navigation:AnimatedSelectorBarItem>
@@ -598,7 +606,7 @@
                                 <Button
                                     l:Uids.Uid="ConfigMakerCreateVariableButton"
                                     HorizontalAlignment="Stretch"
-                                    Click="CreateVariableButton_Click">
+                                    Command="{x:Bind ViewModel.CreateVariableCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon Glyph="&#xE710;" FontSize="14" />
                                         <TextBlock l:Uids.Uid="ConfigMakerCreateVariableButtonText" />
@@ -609,7 +617,7 @@
                                     Grid.Row="1"
                                     Margin="0,4,0,0"
                                     SelectionMode="Single"
-                                    ItemsSource="{x:Bind PresetVariables}"
+                                    ItemsSource="{x:Bind ViewModel.PresetVariables}"
                                     ItemContainerStyle="{StaticResource ListBoxListViewStyle}"
                                     DoubleTapped="PresetVariablesListView_DoubleTapped"
                                     Padding="-3 0">

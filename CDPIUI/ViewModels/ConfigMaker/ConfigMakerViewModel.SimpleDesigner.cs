@@ -1,57 +1,71 @@
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Windows.Input;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml.Controls;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
 // The simple graphic designer for GoodbyeDPI, SpoofDPI and NoDPI.
-public sealed partial class ConfigMakerUserControl
+public sealed partial class ConfigMakerViewModel
 {
+    private bool _updatingDesigner;
+    private bool _designerNeedsRefresh = true;
+    private string _additionalDesignerArguments = string.Empty;
+
+    public ObservableCollection<GraphicDesignerSettingItemModel> DesignerSettingItemModels { get; } = [];
+    public ObservableCollection<GraphicDesignerExclusiveSettingItemModel> DesignerExclusiveSettingItemModels { get; } = [];
+    public ICommand DesignerTextValueChangedCommand { get; }
+    public ICommand DesignerBoolValueToggledCommand { get; }
+    public ICommand DesignerSelectedGuidChangedCommand { get; }
+
+    public bool IsSimpleDesignerSupported => IsSimpleDesignerComponent(ComponentId);
+
+    public string AdditionalDesignerArguments
+    {
+        get => _additionalDesignerArguments;
+        private set => SetProperty(ref _additionalDesignerArguments, value ?? string.Empty);
+    }
+
+    /// <summary>Called by the view when the text of the additional arguments box changed.</summary>
+    public void OnAdditionalDesignerArgumentsChanged(string text)
+    {
+        // The box already shows the text: store it without raising a change back to it.
+        _additionalDesignerArguments = text ?? string.Empty;
+        ApplySimpleDesignerToCommand();
+    }
+
+    /// <summary>Called by the view when the editor switches between the code editor and the designer.</summary>
+    public void OnEditorViewChanged(bool leftDesigner, bool enteredDesigner)
+    {
+        if (leftDesigner)
+        {
+            ApplySimpleDesignerToCommand();
+        }
+        if (enteredDesigner && _designerNeedsRefresh)
+        {
+            LoadSimpleDesigner();
+        }
+    }
+
     private static bool IsSimpleDesignerComponent(string componentId) =>
         string.Equals(componentId, HardcodedItemIds.ComponentIds[Components.GoodbyeDPI], StringComparison.OrdinalIgnoreCase) ||
         string.Equals(componentId, HardcodedItemIds.ComponentIds[Components.SpoofDPI], StringComparison.OrdinalIgnoreCase) ||
         string.Equals(componentId, HardcodedItemIds.ComponentIds[Components.NoDPI], StringComparison.OrdinalIgnoreCase);
 
+    // The view shows or hides the designer tab when IsSimpleDesignerSupported is raised.
     private void UpdateSimpleDesignerAvailability()
     {
-        if (EditorViewSelector == null || SimpleDesignerSelectorItem == null)
+        OnPropertyChanged(nameof(IsSimpleDesignerSupported));
+        if (!IsSimpleDesignerSupported)
         {
-            return;
-        }
-        bool supported = IsSimpleDesignerSupported;
-        bool contains = EditorViewSelector.Items.Contains(SimpleDesignerSelectorItem);
-        if (supported && !contains)
-        {
-            EditorViewSelector.Items.Add(SimpleDesignerSelectorItem);
-        }
-        else if (!supported && contains)
-        {
-            if (ReferenceEquals(EditorViewSelector.SelectedItem, SimpleDesignerSelectorItem))
-            {
-                EditorViewSelector.SelectIndex(0);
-            }
-            EditorViewSelector.Items.Remove(SimpleDesignerSelectorItem);
             DesignerSettingItemModels.Clear();
             DesignerExclusiveSettingItemModels.Clear();
-        }
-    }
-
-    private void EditorViewSelector_SelectionChanged(
-        object sender,
-        CDPIUI.Controls.Navigation.AnimatedSelectorBarSelectionChangedEventArgs e)
-    {
-        if (ReferenceEquals(e.OldItem, SimpleDesignerSelectorItem))
-        {
-            ApplySimpleDesignerToCommand();
-        }
-        if (ReferenceEquals(e.NewItem, SimpleDesignerSelectorItem) && _designerNeedsRefresh)
-        {
-            LoadSimpleDesigner();
         }
     }
 
@@ -64,7 +78,7 @@ public sealed partial class ConfigMakerUserControl
         _updatingDesigner = true;
         try
         {
-            AdditionalDesignerArgumentsTextBox.Text = ComponentCommandLineFormatter.ToSingleLine(CommandEditor.Text);
+            AdditionalDesignerArguments = ComponentCommandLineFormatter.ToSingleLine(_view.EditorText);
             DesignerSettingItemModels.Clear();
             DesignerExclusiveSettingItemModels.Clear();
             if (!TryLoadDesignerModels())
@@ -72,18 +86,18 @@ public sealed partial class ConfigMakerUserControl
                 return;
             }
             AttachSimpleDesignerCommands();
-            AdditionalDesignerArgumentsTextBox.Text =
+            AdditionalDesignerArguments =
                 GraphicDesignerHelper.ConvertStringToGraphicDesignerSettings(
                     DesignerSettingItemModels,
                     DesignerExclusiveSettingItemModels,
-                    ComponentCommandLineFormatter.ToSingleLine(CommandEditor.Text));
+                    ComponentCommandLineFormatter.ToSingleLine(_view.EditorText));
             _designerNeedsRefresh = false;
         }
         catch (Exception exception)
         {
             DesignerSettingItemModels.Clear();
             DesignerExclusiveSettingItemModels.Clear();
-            Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
+            Core.Basic.Logger.Instance.CreateWarningLog(LogSource, exception.ToString());
             ShowEditorMessage(
                 string.Format(_localizer.GetLocalizedString("ConfigMakerDesignerLoadFailedMessage"), exception.Message),
                 InfoBarSeverity.Warning);
@@ -187,9 +201,6 @@ public sealed partial class ConfigMakerUserControl
             .SelectMany(group => group.Items)
             .FirstOrDefault(item => string.Equals(item.Guid, id, StringComparison.Ordinal));
 
-    private void AdditionalDesignerArgumentsTextBox_TextChanged(object sender, TextChangedEventArgs e) =>
-        ApplySimpleDesignerToCommand();
-
     private void ApplySimpleDesignerToCommand()
     {
         if (_updatingDesigner || _designerNeedsRefresh || !IsSimpleDesignerSupported)
@@ -202,7 +213,7 @@ public sealed partial class ConfigMakerUserControl
             string command = GraphicDesignerHelper.ConvertGraphicDesignerSettingsToString(
                 DesignerSettingItemModels,
                 DesignerExclusiveSettingItemModels,
-                AdditionalDesignerArgumentsTextBox.Text ?? string.Empty);
+                _additionalDesignerArguments);
             SetEditorText(ComponentCommandLineFormatter.FormatByFlags(command.Trim()));
             _designerNeedsRefresh = false;
         }

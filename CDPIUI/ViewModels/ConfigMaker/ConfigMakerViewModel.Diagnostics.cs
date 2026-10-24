@@ -1,36 +1,31 @@
-using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Helper.CreateConfigHelper;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Dispatching;
 
-namespace CDPIUI.Controls.CreateConfigHelper;
+namespace CDPIUI.ViewModels.ConfigMaker;
 
-// The diagnostics list and the bottom panel tabs.
-public sealed partial class ConfigMakerUserControl
+// The diagnostics of the edited command and their counters in the status bar.
+public sealed partial class ConfigMakerViewModel
 {
-    public void ShowOutputTab()
+    private readonly DispatcherQueueTimer _diagnosticsTimer;
+    private string _errorCountText = string.Empty;
+    private string _warningCountText = string.Empty;
+
+    public ObservableCollection<ConfigMakerDiagnosticViewModel> Diagnostics { get; } = [];
+
+    public string ErrorCountText
     {
-        SetBottomPanelVisible(true);
-        BottomSelector.SelectIndex(0);
+        get => _errorCountText;
+        private set => SetProperty(ref _errorCountText, value);
     }
 
-    public void ShowDiagnosticsTab()
+    public string WarningCountText
     {
-        SetBottomPanelVisible(true);
-        BottomSelector.SelectIndex(1);
-    }
-
-    public void ShowPresetGroupsTab()
-    {
-        if (!HasPresetGroups)
-        {
-            return;
-        }
-        SetBottomPanelVisible(true);
-        BottomSelector.SelectIndex(BottomSelector.Items.IndexOf(PresetGroupsSelectorItem));
+        get => _warningCountText;
+        private set => SetProperty(ref _warningCountText, value);
     }
 
     private void ScheduleDiagnostics()
@@ -39,9 +34,7 @@ public sealed partial class ConfigMakerUserControl
         _diagnosticsTimer.Start();
     }
 
-    private void DiagnosticsTimer_Tick(
-        Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
-        object args)
+    private void DiagnosticsTimer_Tick(DispatcherQueueTimer sender, object args)
     {
         sender.Stop();
         RebuildDiagnostics();
@@ -49,11 +42,12 @@ public sealed partial class ConfigMakerUserControl
 
     private void RebuildDiagnostics()
     {
+        string editorText = _view.EditorText;
         List<ComponentCommandDiagnostic> results = ComponentCommandValidationService
-            .Validate(CommandEditor.Text, _helpDocument.Options)
+            .Validate(editorText, _helpDocument.Options)
             .ToList();
         ConfigMakerPresetReferenceValidator.AddDiagnostics(
-            CommandEditor.Text,
+            editorText,
             _presetDocument.Variables,
             reference => _presetResources.FindAttached(reference) != null,
             results);
@@ -66,13 +60,13 @@ public sealed partial class ConfigMakerUserControl
 
         int errorCount = results.Count(item => item.Severity == ComponentCommandDiagnosticSeverity.Error);
         int warningCount = results.Count - errorCount;
-        ErrorCountTextBlock.Text = string.Format(
+        ErrorCountText = string.Format(
             _localizer.GetLocalizedString("ConfigMakerDiagnosticErrorCount"),
             errorCount);
-        WarningCountTextBlock.Text = string.Format(
+        WarningCountText = string.Format(
             _localizer.GetLocalizedString("ConfigMakerDiagnosticWarningCount"),
             warningCount);
-        ApplyEditorTheme();
+        _view.RefreshEditorHighlighting();
     }
 
     private ConfigMakerDiagnosticViewModel CreateDiagnosticViewModel(ComponentCommandDiagnostic diagnostic) => new()
@@ -99,31 +93,4 @@ public sealed partial class ConfigMakerUserControl
             _ => _localizer.GetLocalizedString("ConfigMakerUnterminatedQuoteDiagnostic"),
         },
     };
-
-    private void DiagnosticsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (DiagnosticsListView.SelectedItem is ConfigMakerDiagnosticViewModel diagnostic)
-        {
-            GoToDiagnostic(diagnostic);
-        }
-    }
-
-    private void DiagnosticsListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        if (DiagnosticsListView.SelectedItem is ConfigMakerDiagnosticViewModel diagnostic)
-        {
-            GoToDiagnostic(diagnostic);
-        }
-    }
-
-    private void GoToDiagnostic(ConfigMakerDiagnosticViewModel diagnostic)
-    {
-        CommandEditor.SetCursorPosition(
-            Math.Max(0, diagnostic.Source.Line - 1),
-            Math.Max(0, diagnostic.Source.Column - 1));
-        CommandEditor.Focus(FocusState.Programmatic);
-    }
-
-    private void DiagnosticsStatusButton_Click(object sender, RoutedEventArgs e) =>
-        ShowDiagnosticsTab();
 }
