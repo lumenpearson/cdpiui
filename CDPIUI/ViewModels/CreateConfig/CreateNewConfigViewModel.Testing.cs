@@ -1,17 +1,47 @@
 using System;
+using System.Threading.Tasks;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.ComponentServices.Configuration;
-using Microsoft.UI.Xaml;
 
-namespace CDPIUI.Views.CreateConfigHelper;
+namespace CDPIUI.ViewModels.CreateConfig;
 
 // The test run of the config in the selected component.
-public sealed partial class CreateNewConfigPage
+public sealed partial class CreateNewConfigViewModel
 {
+    private const string StartTestGlyph = "";
+    private const string StopTestGlyph = "";
+
+    private bool _isRunning;
+    private string _curRunId = string.Empty;
+    private string _testButtonText;
+    private string _testButtonGlyph = StartTestGlyph;
+
+    public string TestButtonText
+    {
+        get => _testButtonText;
+        private set => SetProperty(ref _testButtonText, value);
+    }
+
+    public string TestButtonGlyph
+    {
+        get => _testButtonGlyph;
+        private set => SetProperty(ref _testButtonGlyph, value);
+    }
+
+    /// <summary>Stops the test component that kept running after the user left the page.</summary>
+    public void StopTestRun()
+    {
+        if (!_isRunning || string.IsNullOrEmpty(_curRunId))
+            return;
+        string runId = _curRunId;
+        ResetTestState();
+        _ = ComponentTasksManager.Instance.StopTask(runId);
+    }
+
     private void Instance_onProcessStateChanged(Tuple<string, bool> tuple)
     {
         // The state comes from the pipe thread.
-        DispatcherQueue?.TryEnqueue(() => ApplyProcessState(tuple));
+        _dispatcherQueue?.TryEnqueue(() => ApplyProcessState(tuple));
     }
 
     private void ApplyProcessState(Tuple<string, bool> tuple)
@@ -20,31 +50,31 @@ public sealed partial class CreateNewConfigPage
             return;
         if (tuple.Item2)
         {
-            TestButtonGlyph.Glyph = "\uE71A";
-            TestButtonText.Text = _localizer.GetLocalizedString("StopTest");
+            TestButtonGlyph = StopTestGlyph;
+            TestButtonText = _localizer.GetLocalizedString("StopTest");
             _isRunning = true;
         }
         else
         {
-            TestButtonGlyph.Glyph = "\uE768";
-            TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
+            TestButtonGlyph = StartTestGlyph;
+            TestButtonText = _localizer.GetLocalizedString("TestThis");
             _isRunning = false;
         }
     }
 
-    private async void TestButton_Click(object sender, RoutedEventArgs e)
+    private async Task ToggleTestRunAsync()
     {
         if (!_isRunning)
         {
             _isRunning = true;
             ComponentTasksManager.Instance.TaskStateUpdated += Instance_onProcessStateChanged;
 
-            if (ComponentChooseComboBox.SelectedItem is not ComponentModel model)
+            if (SelectedComponent is not ConfigComponentOption component)
             {
                 ResetTestState();
                 return;
             }
-            _curRunId = model.Id;
+            _curRunId = component.Id;
             await ComponentTasksManager.Instance.StopTask(_curRunId);
             ConvertDesignerLikeSettingsToString();
             var config = CreateConfig(0, saveLocalization: false);
@@ -62,20 +92,10 @@ public sealed partial class CreateNewConfigPage
 
     private void ResetTestState()
     {
-        TestButtonGlyph.Glyph = "\uE768";
-        TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
+        TestButtonGlyph = StartTestGlyph;
+        TestButtonText = _localizer.GetLocalizedString("TestThis");
         _isRunning = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= Instance_onProcessStateChanged;
         _curRunId = string.Empty;
-    }
-
-    // The test component kept running after the user left the page.
-    private void StopTestRun()
-    {
-        if (!_isRunning || string.IsNullOrEmpty(_curRunId))
-            return;
-        string runId = _curRunId;
-        ResetTestState();
-        _ = ComponentTasksManager.Instance.StopTask(runId);
     }
 }

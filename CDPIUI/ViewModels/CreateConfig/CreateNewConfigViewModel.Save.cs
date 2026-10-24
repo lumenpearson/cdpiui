@@ -2,23 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Shared;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Animation;
+using CDPIUI.Views.CreateConfigHelper;
 
-namespace CDPIUI.Views.CreateConfigHelper;
+namespace CDPIUI.ViewModels.CreateConfig;
 
 // Building the config from the page and saving it.
-public sealed partial class CreateNewConfigPage
+public sealed partial class CreateNewConfigViewModel
 {
-    private async void SaveConfigButton_Click(object sender, RoutedEventArgs e)
+    private async Task SaveAsync()
     {
         ConvertDesignerLikeSettingsToString();
         TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
@@ -33,16 +30,13 @@ public sealed partial class CreateNewConfigPage
 
         if (PageOpenMode == PageOpenModes.EditConfigNoSave)
         {
-            var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
-            if (window != null)
-                window.IsOperationExitAskAvailable = false;
-            window?.NavigateBackWithParameter(configItem);
+            _view.ReturnEditedConfig(configItem);
             return;
         }
 
         string src;
         if (_configItem == null || _configItem.packId != SharedConstants.LocalUserItemsId)
-            src = DisplayNameTextBox.Text + $"_{secondsSinceEpoch}.json";
+            src = DisplayName + $"_{secondsSinceEpoch}.json";
         else
             src = _configItem.file_name;
 
@@ -51,7 +45,7 @@ public sealed partial class CreateNewConfigPage
         string errorCode = await ConfigurationService.SaveConfigItem(transl, SharedConstants.LocalUserItemsId, configItem);
         if (!string.IsNullOrEmpty(errorCode))
         {
-            await ShowErrorDialog(
+            await _view.ShowErrorAsync(
                 string.Format(_localizer.GetLocalizedString("CannotSaveConfigMessage"), errorCode),
                 _localizer.GetLocalizedString("SomethingWentWrong")
                 );
@@ -59,16 +53,16 @@ public sealed partial class CreateNewConfigPage
         }
 
         ComponentHelper componentHelper =
-                ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
-                    (ComponentChooseComboBox.SelectedItem as ComponentModel).Id);
+                ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(SelectedComponent.Id);
         componentHelper?.ReInitConfigs();
 
-        await ShowDialog();
+        _view.SetExitAskAvailable(false);
+        await _view.ShowSaveCompletedAsync();
     }
 
     private ConfigItem CreateConfig(int secondsSinceEpoch, bool saveLocalization = true)
     {
-        string componentId = (ComponentChooseComboBox.SelectedItem as ComponentModel).Id;
+        string componentId = SelectedComponent.Id;
         var (jparams, vars) = CreateVariables(secondsSinceEpoch, saveLocalization);
 
         if (jparams == null || vars == null)
@@ -76,7 +70,7 @@ public sealed partial class CreateNewConfigPage
 
         var configItem = CreateConfigPageHelper.CreateConfigItem(
             SharedConstants.LocalUserItemsId,
-            DisplayNameTextBox.Text,
+            DisplayName,
             componentId,
             jparams,
             vars,
@@ -84,7 +78,7 @@ public sealed partial class CreateNewConfigPage
             // the last value wins instead of an exception on save.
             Variables.GroupBy(v => v.Name).ToDictionary(g => g.Key, g => g.Last().Value),
             Variables.Where(v => v.AvailableValues != null).Select(v => v.AvailableValues).ToList(),
-            CreateConfigPageHelper.GetNormalText(StartupStringTextBox.Text, _listDirectory, _binDirectory)
+            CreateConfigPageHelper.GetNormalText(_view.EditorText, _listDirectory, _binDirectory)
             );
 
         return configItem;
@@ -102,31 +96,13 @@ public sealed partial class CreateNewConfigPage
         }
         catch (Exception ex)
         {
-            // ShowErrorDialog catches and logs its own errors.
-            _ = ShowErrorDialog(
+            // ShowErrorAsync catches and logs its own errors.
+            _ = _view.ShowErrorAsync(
                 string.Format(_localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)),
                 _localizer.GetLocalizedString("SomethingWentWrong")
                 );
-            Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), $"{ex}");
+            Logger.Instance.CreateWarningLog(LogSource, $"{ex}");
             return new(null, null);
-        }
-    }
-
-    private async Task ShowDialog()
-    {
-        CreateCompleteDialog dialog = new()
-        {
-            XamlRoot = this.XamlRoot
-        };
-        CreateConfigHelperWindow.Instanse.IsOperationExitAskAvailable = false;
-        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-            CreateConfigHelperWindow.Instanse.Close();
-        else
-        {
-            if (Frame.CanGoBack)
-                Frame.GoBack();
-            else
-                Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
         }
     }
 }
