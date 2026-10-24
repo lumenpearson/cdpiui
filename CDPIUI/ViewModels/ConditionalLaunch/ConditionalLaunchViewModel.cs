@@ -37,12 +37,12 @@ public sealed partial class ConditionalLaunchViewModel : ObservableObject, IDisp
     public ConditionalLaunchViewModel(IConditionalLaunchView view)
     {
         _view = view;
-        NewTaskCommand = new AsyncRelayCommand(() => _view.OpenEditorAsync(null, _tasksDirectory), logSource: LogSource);
-        EditTaskCommand = new AsyncRelayCommand(EditSelectedTaskAsync, () => HasSelection, LogSource);
-        DeleteTaskCommand = new AsyncRelayCommand(DeleteSelectedTaskAsync, () => HasSelection, LogSource);
-        RunTaskCommand = new AsyncRelayCommand(RunSelectedTaskAsync, () => HasSelection, LogSource);
+        NewTaskCommand = new AsyncRelayCommand(() => _view.OpenEditorAsync(null, _tasksDirectory));
+        EditTaskCommand = new AsyncRelayCommand(EditSelectedTaskAsync, () => HasSelection);
+        DeleteTaskCommand = new AsyncRelayCommand(DeleteSelectedTaskAsync, () => HasSelection);
+        RunTaskCommand = new AsyncRelayCommand(RunSelectedTaskAsync, () => HasSelection);
         ExportTaskCommand = new RelayCommand(ExportSelectedTask, () => HasSelection);
-        ImportTaskCommand = new AsyncRelayCommand(ImportTaskAsync, logSource: LogSource);
+        ImportTaskCommand = new AsyncRelayCommand(ImportTaskAsync);
         ReloadCommand = new RelayCommand(() => LoadTasks());
         ToggleTaskEnabledCommand = new RelayCommand(ToggleSelectedTaskEnabled);
 

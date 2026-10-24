@@ -55,9 +55,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
             HandleDesignerSelectedGuidChanged((Tuple<string, string>)parameter));
         CopyCommandCommand = new RelayCommand(CopySelectedCommand, () => HasSelectedCommand);
         InsertCommandCommand = new RelayCommand(InsertSelectedCommand, () => CanInsertCommand);
-        CreateVariableCommand = new AsyncRelayCommand(
-            () => RunReportingErrorsAsync(CreateVariableAsync),
-            logSource: LogSource);
+        CreateVariableCommand = new AsyncRelayCommand(() => RunReportingErrorsAsync(CreateVariableAsync));
         AddPresetFileCommand = new RelayCommand(AddPresetFilesFromPicker);
         SelectEditorBackgroundCommand = new RelayCommand(parameter => SelectEditorBackground(parameter as string));
 

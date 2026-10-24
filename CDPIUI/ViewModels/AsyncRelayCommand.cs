@@ -1,33 +1,31 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using CDPIUI.Core.Basic;
 
 namespace CDPIUI.ViewModels;
 
 /// <summary>
 /// A command that runs an asynchronous action. The command cannot run again until the
-/// action completes. An exception from the action is written to the log, because nothing
-/// awaits the command.
+/// action completes. An exception from the action goes to the application handler for
+/// unhandled exceptions, which logs it and shows it to the user, as it does for an
+/// async event handler.
 /// </summary>
 public class AsyncRelayCommand : ICommand
 {
     private readonly Func<object, Task> _execute;
     private readonly Func<object, bool> _canExecute;
-    private readonly string _logSource;
     private bool _isRunning;
 
     public event EventHandler CanExecuteChanged;
 
-    public AsyncRelayCommand(Func<object, Task> executeAction, Func<object, bool> canExecuteFunc = null, string logSource = nameof(AsyncRelayCommand))
+    public AsyncRelayCommand(Func<object, Task> executeAction, Func<object, bool> canExecuteFunc = null)
     {
         _execute = executeAction;
         _canExecute = canExecuteFunc;
-        _logSource = logSource;
     }
 
-    public AsyncRelayCommand(Func<Task> executeAction, Func<bool> canExecuteFunc = null, string logSource = nameof(AsyncRelayCommand))
-        : this(_ => executeAction(), canExecuteFunc == null ? null : _ => canExecuteFunc(), logSource)
+    public AsyncRelayCommand(Func<Task> executeAction, Func<bool> canExecuteFunc = null)
+        : this(_ => executeAction(), canExecuteFunc == null ? null : _ => canExecuteFunc())
     {
     }
 
@@ -35,11 +33,9 @@ public class AsyncRelayCommand : ICommand
 
     public bool CanExecute(object parameter) => !_isRunning && (_canExecute == null || _canExecute(parameter));
 
-    public async void Execute(object parameter)
-    {
-        // async void: ICommand.Execute is void by contract; the exception is logged below.
-        await ExecuteAsync(parameter);
-    }
+    // async void: ICommand.Execute is void by contract. An exception reaches
+    // Application.UnhandledException on the UI thread, like one from a Click handler.
+    public async void Execute(object parameter) => await ExecuteAsync(parameter);
 
     /// <summary>Runs the action; for callers that must wait for it.</summary>
     public async Task ExecuteAsync(object parameter)
@@ -52,10 +48,6 @@ public class AsyncRelayCommand : ICommand
         try
         {
             await _execute(parameter);
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(_logSource, $"Command failed: {ex}");
         }
         finally
         {
