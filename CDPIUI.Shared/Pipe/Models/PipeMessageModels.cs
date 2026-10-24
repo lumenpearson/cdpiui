@@ -1,113 +1,116 @@
-﻿using CDPIUI.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Web;
+using CDPIUI.Shared.Extensions;
 
-namespace CDPIUI.Shared.Pipe.Models
+namespace CDPIUI.Shared.Pipe.Models;
+
+public class MessageBaseModel<T>(PipeMessageTargetIds target) : IPipeMessageBase<T, NameValueCollection> where T : Enum
 {
-    public class MessageBaseModel<T>(PipeMessageTargetIds target) : IPipeMessageBase<T, NameValueCollection> where T : Enum
+    public PipeMessageTargetIds Target { get; private set; } = target;
+
+    public required T MessageType { get; set; }
+    public int IntMessageType => Convert.ToInt32(MessageType);
+
+    public NameValueCollection? MessageData { get; set; }
+
+    public override string ToString()
     {
-        public PipeMessageTargetIds Target { get; private set; } = target;
+        if (MessageData is null)
+            return $"{SharedConstants.Schema}://{Target}/{MessageType}";
 
-        public required T MessageType { get; set; }
-        public int IntMessageType => Convert.ToInt32(MessageType);
+        string @params = string.Empty;
 
-        public NameValueCollection? MessageData { get; set; }
-
-        public override string ToString()
+        foreach (var name in MessageData.AllKeys)
         {
-            if (MessageData is null)
-                return $"{SharedConstants.Schema}://{Target}/{MessageType}";
+            if (name == null)
+                continue;
 
-            string @params = string.Empty;
-
-            foreach (var name in MessageData.AllKeys)
-            {
-                if (name == null)
-                    continue;
-
-                @params += $"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(MessageData[name] ?? string.Empty)}&";
-            }
-
-            return $"{SharedConstants.Schema}://{Target}/{MessageType}?{@params}";
+            @params += $"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(MessageData[name] ?? string.Empty)}&";
         }
-    }
 
-    public class ServiceMessageModel : MessageBaseModel<ServiceMessageIds>
-    {
-        public ServiceMessageModel() : base(PipeMessageTargetIds.Service) { }
-
-        public static ServiceMessageModel ConnectionSuccessful() =>
-            new() { MessageType = ServiceMessageIds.ConnectOK };
-        public static ServiceMessageModel AuthSuccessful() =>
-            new() { MessageType = ServiceMessageIds.AuthOK };
-        public static ServiceMessageModel AuthFailure() =>
-            new() { MessageType = ServiceMessageIds.AuthFAIL };
-        public static ServiceMessageModel RequestAuth(string guid) =>
-            new() { MessageType = ServiceMessageIds.RequestAuth, MessageData = new()
-            {
-                { "GUID", guid }
-            }};
+        return $"{SharedConstants.Schema}://{Target}/{MessageType}?{@params}";
     }
+}
 
-    public class PresentationMessageModel : MessageBaseModel<PresentationMessageIds>
-    {
-        public PresentationMessageModel() : base(PipeMessageTargetIds.Presentation) { }
-    }
+public class ServiceMessageModel : MessageBaseModel<ServiceMessageIds>
+{
+    public ServiceMessageModel() : base(PipeMessageTargetIds.Service) { }
 
-    public class CONPTYMessageModel : MessageBaseModel<CONPTYMessageIds>
-    {
-        public CONPTYMessageModel() : base(PipeMessageTargetIds.CONPTY) { }
-    }
+    public static ServiceMessageModel ConnectionSuccessful() =>
+        new() { MessageType = ServiceMessageIds.ConnectOK };
+    public static ServiceMessageModel AuthSuccessful() =>
+        new() { MessageType = ServiceMessageIds.AuthOK };
+    public static ServiceMessageModel AuthFailure() =>
+        new() { MessageType = ServiceMessageIds.AuthFAIL };
+    public static ServiceMessageModel RequestAuth(string guid) =>
+        new()
+        {
+            MessageType = ServiceMessageIds.RequestAuth,
+            MessageData = new()
+        {
+            { "GUID", guid }
+        }
+        };
+}
 
-    public class GoodCheckMessageModel : MessageBaseModel<GoodCheckMessageIds>
-    {
-        public GoodCheckMessageModel() : base(PipeMessageTargetIds.GoodCheck) { }
-    }
+public class PresentationMessageModel : MessageBaseModel<PresentationMessageIds>
+{
+    public PresentationMessageModel() : base(PipeMessageTargetIds.Presentation) { }
+}
 
-    public class UtilsMessageModel : MessageBaseModel<UtilsMessageIds>
-    {
-        public UtilsMessageModel() : base(PipeMessageTargetIds.Utils) { }
-    }
+public class CONPTYMessageModel : MessageBaseModel<CONPTYMessageIds>
+{
+    public CONPTYMessageModel() : base(PipeMessageTargetIds.CONPTY) { }
+}
 
-    public class SettingsMessageModel : MessageBaseModel<SettingsMessageIds>
-    {
-        public SettingsMessageModel() : base(PipeMessageTargetIds.Settings) { }
-    }
+public class GoodCheckMessageModel : MessageBaseModel<GoodCheckMessageIds>
+{
+    public GoodCheckMessageModel() : base(PipeMessageTargetIds.GoodCheck) { }
+}
 
-    public class UpdateMessageModel : MessageBaseModel<UpdateMessageIds>
-    {
-        public UpdateMessageModel() : base(PipeMessageTargetIds.Update) { }
-    }
+public class UtilsMessageModel : MessageBaseModel<UtilsMessageIds>
+{
+    public UtilsMessageModel() : base(PipeMessageTargetIds.Utils) { }
+}
 
-    public class MSIInstallationMessageModel : MessageBaseModel<MSIInstallationMessageIds>
-    {
-        public MSIInstallationMessageModel() : base(PipeMessageTargetIds.MSIInstallation) { }
-    }
+public class SettingsMessageModel : MessageBaseModel<SettingsMessageIds>
+{
+    public SettingsMessageModel() : base(PipeMessageTargetIds.Settings) { }
+}
 
-    public class ProxyMessageModel : MessageBaseModel<ProxyMessageIds>
-    {
-        public ProxyMessageModel() : base(PipeMessageTargetIds.Proxy) { }
-    }
+public class UpdateMessageModel : MessageBaseModel<UpdateMessageIds>
+{
+    public UpdateMessageModel() : base(PipeMessageTargetIds.Update) { }
+}
 
-    public class CompatibilityCheckMessageModel : MessageBaseModel<CompatibilityCheckMessageIds>
-    {
-        public CompatibilityCheckMessageModel() : base(PipeMessageTargetIds.CompatibilityCheck) { }
-    }
+public class MSIInstallationMessageModel : MessageBaseModel<MSIInstallationMessageIds>
+{
+    public MSIInstallationMessageModel() : base(PipeMessageTargetIds.MSIInstallation) { }
+}
 
-    public class NotificationsMessageModel : MessageBaseModel<NotificationsMessageIds>
-    {
-        public NotificationsMessageModel() : base(PipeMessageTargetIds.Notifications) { }
-    }
+public class ProxyMessageModel : MessageBaseModel<ProxyMessageIds>
+{
+    public ProxyMessageModel() : base(PipeMessageTargetIds.Proxy) { }
+}
 
-    public class ApplicationMessageModel : MessageBaseModel<ApplicationMessageIds>
-    {
-        public ApplicationMessageModel() : base(PipeMessageTargetIds.Application) { }
-    }
+public class CompatibilityCheckMessageModel : MessageBaseModel<CompatibilityCheckMessageIds>
+{
+    public CompatibilityCheckMessageModel() : base(PipeMessageTargetIds.CompatibilityCheck) { }
+}
 
-    public class ConditionalLaunchMessageModel : MessageBaseModel<ConditionalLaunchMessageIds>
-    {
-        public ConditionalLaunchMessageModel() : base(PipeMessageTargetIds.ConditionalLaunch) { }
-    }
+public class NotificationsMessageModel : MessageBaseModel<NotificationsMessageIds>
+{
+    public NotificationsMessageModel() : base(PipeMessageTargetIds.Notifications) { }
+}
+
+public class ApplicationMessageModel : MessageBaseModel<ApplicationMessageIds>
+{
+    public ApplicationMessageModel() : base(PipeMessageTargetIds.Application) { }
+}
+
+public class ConditionalLaunchMessageModel : MessageBaseModel<ConditionalLaunchMessageIds>
+{
+    public ConditionalLaunchMessageModel() : base(PipeMessageTargetIds.ConditionalLaunch) { }
 }

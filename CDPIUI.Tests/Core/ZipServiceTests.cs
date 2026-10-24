@@ -5,18 +5,18 @@ namespace CDPIUI.Tests.Core;
 
 public sealed class ZipServiceTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-zip-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-zip-" + Guid.NewGuid().ToString("N"));
 
-    public void Dispose() => Directory.Delete(directory, true);
+    public void Dispose() => Directory.Delete(_directory, true);
 
     [Fact]
     public async Task DomainListsAreMergedByWholeLines()
     {
-        string target = Path.Combine(directory, "item");
+        string target = Path.Combine(_directory, "item");
         Directory.CreateDirectory(target);
         File.WriteAllText(Path.Combine(target, "list.txt"), "reddit.com");
 
-        string archivePath = Path.Combine(directory, "pack.zip");
+        string archivePath = Path.Combine(_directory, "pack.zip");
         using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
         using (var writer = new StreamWriter(archive.CreateEntry("list.txt").Open()))
             writer.Write("t.co\nreddit.com\nyoutube.com\n");

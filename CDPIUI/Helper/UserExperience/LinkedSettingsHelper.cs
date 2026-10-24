@@ -1,56 +1,55 @@
-﻿using CDPIUI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CDPIUI.ViewModels;
 using WinUI3Localizer;
 
-namespace CDPIUI.Helper.UserExperience
+namespace CDPIUI.Helper.UserExperience;
+
+public class LinkedSettingsHelper
 {
-    public class LinkedSettingsHelper
+    public enum Pages
     {
-        public enum Pages
-        {
-            TgWsProxyPage,
-
-        }
-        public LinkedSettingsHelper() { }
-
-        private static List<SettingLinkModel> TgWsProxyLinks = new()
-        {
-            new() { DisplayName = "CreateNewConfig", Action = LinkedActions.CreateNewConfigForComponent },
-            new() { DisplayName = "EditConfig", Action = LinkedActions.EditCurrentConfig },
-            new() { DisplayName = "OpenProxyInTelegram", Action = LinkedActions.OpenProxyInTelegram },
-        };
-
-        public static void LoadLinksForPage(Pages page, ObservableCollection<SettingLinkModel> collection)
-        {
-            collection.Clear();
-
-            switch (page)
-            {
-                case Pages.TgWsProxyPage:
-                    AppendListContentToObservableCollection(TgWsProxyLinks, collection);
-                    break;
-            }
-        }
-
-
-        private static void AppendListContentToObservableCollection(List<SettingLinkModel> list, ObservableCollection<SettingLinkModel> collection)
-        {
-            ILocalizer localizer = Localizer.Get();
-            foreach (SettingLinkModel item in list)
-            {
-                collection.Add(new()
-                {
-                    DisplayName = localizer.GetLocalizedString($"/SettingTiles/{item.DisplayName}"),
-                    Action = item.Action,
-                });
-            }
-        }
-
+        TgWsProxyPage,
 
     }
+    public LinkedSettingsHelper() { }
+
+    private static List<SettingLinkModel> _tgWsProxyLinks = new()
+    {
+        new() { DisplayName = "CreateNewConfig", Action = LinkedActions.CreateNewConfigForComponent },
+        new() { DisplayName = "EditConfig", Action = LinkedActions.EditCurrentConfig },
+        new() { DisplayName = "OpenProxyInTelegram", Action = LinkedActions.OpenProxyInTelegram },
+    };
+
+    public static void LoadLinksForPage(Pages page, ObservableCollection<SettingLinkModel> collection)
+    {
+        collection.Clear();
+
+        switch (page)
+        {
+            case Pages.TgWsProxyPage:
+                AppendListContentToObservableCollection(_tgWsProxyLinks, collection);
+                break;
+        }
+    }
+
+
+    private static void AppendListContentToObservableCollection(List<SettingLinkModel> list, ObservableCollection<SettingLinkModel> collection)
+    {
+        ILocalizer localizer = Localizer.Get();
+        foreach (SettingLinkModel item in list)
+        {
+            collection.Add(new()
+            {
+                DisplayName = localizer.GetLocalizedString($"/SettingTiles/{item.DisplayName}"),
+                Action = item.Action,
+            });
+        }
+    }
+
+
 }

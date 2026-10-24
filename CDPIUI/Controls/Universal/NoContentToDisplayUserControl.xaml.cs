@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -12,6 +10,8 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 using WinUI3Localizer;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -21,7 +21,7 @@ namespace CDPIUI.Controls.Universal;
 
 public sealed partial class NoContentToDisplayUserControl : UserControl
 {
-    private static ILocalizer localizer = Localizer.Get();
+    private static ILocalizer _localizer = Localizer.Get();
 
     public NoContentToDisplayUserControl()
     {
@@ -36,6 +36,6 @@ public sealed partial class NoContentToDisplayUserControl : UserControl
 
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.Register(
-            nameof(Text), typeof(string), typeof(NoContentToDisplayUserControl), new PropertyMetadata(localizer.GetLocalizedString("NoContentToDisplay"))
+            nameof(Text), typeof(string), typeof(NoContentToDisplayUserControl), new PropertyMetadata(_localizer.GetLocalizedString("NoContentToDisplay"))
         );
 }

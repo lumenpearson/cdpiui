@@ -4,55 +4,55 @@ namespace CDPIUI.Tests.Shared;
 
 public sealed class FileWritingOptionsTests : IDisposable
 {
-    private readonly string root = Path.Combine(Path.GetTempPath(), "cdpiui-write-" + Guid.NewGuid().ToString("N"));
-    private readonly string outside = Path.Combine(Path.GetTempPath(), "cdpiui-outside-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "cdpiui-write-" + Guid.NewGuid().ToString("N"));
+    private readonly string _outside = Path.Combine(Path.GetTempPath(), "cdpiui-outside-" + Guid.NewGuid().ToString("N"));
 
     public FileWritingOptionsTests()
     {
-        Directory.CreateDirectory(root);
-        Directory.CreateDirectory(outside);
+        Directory.CreateDirectory(_root);
+        Directory.CreateDirectory(_outside);
     }
 
     public void Dispose()
     {
-        Directory.Delete(root, true);
-        Directory.Delete(outside, true);
+        Directory.Delete(_root, true);
+        Directory.Delete(_outside, true);
     }
 
     [Fact]
     public void WriteOutsideTheRootsIsFound()
     {
-        string target = Path.Combine(outside, "hosts");
-        Assert.NotNull(FileWritingOptions.FindOutsideWrite($"--wf-tcp=443 --debug=@\"{target}\"", [root], root));
-        Assert.NotNull(FileWritingOptions.FindOutsideWrite($"--wf-save {target}", [root], root));
+        string target = Path.Combine(_outside, "hosts");
+        Assert.NotNull(FileWritingOptions.FindOutsideWrite($"--wf-tcp=443 --debug=@\"{target}\"", [_root], _root));
+        Assert.NotNull(FileWritingOptions.FindOutsideWrite($"--wf-save {target}", [_root], _root));
     }
 
     [Fact]
     public void RelativeWriteResolvesAgainstTheWorkingDirectory()
     {
-        Assert.Null(FileWritingOptions.FindOutsideWrite("--hostlist-auto=lists/auto.txt", [root], root));
-        Assert.NotNull(FileWritingOptions.FindOutsideWrite("--hostlist-auto=../auto.txt", [root], root));
-        Assert.NotNull(FileWritingOptions.FindOutsideWrite("--hostlist-auto=lists/auto.txt", [root], baseDirectory: null));
+        Assert.Null(FileWritingOptions.FindOutsideWrite("--hostlist-auto=lists/auto.txt", [_root], _root));
+        Assert.NotNull(FileWritingOptions.FindOutsideWrite("--hostlist-auto=../auto.txt", [_root], _root));
+        Assert.NotNull(FileWritingOptions.FindOutsideWrite("--hostlist-auto=lists/auto.txt", [_root], baseDirectory: null));
     }
 
     [Fact]
     public void OptionsThatWriteNothingAreIgnored()
     {
-        Assert.Null(FileWritingOptions.FindOutsideWrite("--debug=1 --hostlist=C:/lists/list.txt --dpi-desync=fake", [root], root));
+        Assert.Null(FileWritingOptions.FindOutsideWrite("--debug=1 --hostlist=C:/lists/list.txt --dpi-desync=fake", [_root], _root));
     }
 
     [Fact]
     public void ArgumentFilesAreFollowed()
     {
-        File.WriteAllText(Path.Combine(root, "args.txt"), $"--wf-save={Path.Combine(outside, "x.bin")}");
-        Assert.Null(FileWritingOptions.FindOutsideWrite("@args.txt", [root], root));
-        Assert.NotNull(FileWritingOptions.FindOutsideWrite("@args.txt", [root], root, followArgumentFiles: true));
+        File.WriteAllText(Path.Combine(_root, "args.txt"), $"--wf-save={Path.Combine(_outside, "x.bin")}");
+        Assert.Null(FileWritingOptions.FindOutsideWrite("@args.txt", [_root], _root));
+        Assert.NotNull(FileWritingOptions.FindOutsideWrite("@args.txt", [_root], _root, followArgumentFiles: true));
     }
 
     [Fact]
     public void ArgumentFileLoopStops()
     {
-        File.WriteAllText(Path.Combine(root, "loop.txt"), "@loop.txt");
-        Assert.Null(FileWritingOptions.FindOutsideWrite("@loop.txt", [root], root, followArgumentFiles: true));
+        File.WriteAllText(Path.Combine(_root, "loop.txt"), "@loop.txt");
+        Assert.Null(FileWritingOptions.FindOutsideWrite("@loop.txt", [_root], _root, followArgumentFiles: true));
     }
 }

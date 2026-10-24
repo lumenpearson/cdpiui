@@ -1,4 +1,16 @@
-﻿using CDPIUI.Core;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.AddOns.GoodCheck;
+using CDPIUI.Controls.Default;
+using CDPIUI.Core;
+using CDPIUI.Core.Basic;
+using CDPIUI.Core.Data;
+using CDPIUI.Core.System;
+using CDPIUI.Default;
+using CDPIUI.Helper.Parsers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -7,25 +19,12 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using TextDecorations = Windows.UI.Text.TextDecorations;
+using WinUI3Localizer;
 using static System.Net.Mime.MediaTypeNames;
 using Application = Microsoft.UI.Xaml.Application;
-using WinUI3Localizer;
-using CDPIUI.Default;
-using CDPIUI.Core.Basic;
-using CDPIUI.AddOns.GoodCheck;
-
-using CDPIUI.Core.Data;
-using CDPIUI.Core.System;
-using CDPIUI.Helper.Parsers;
-using CDPIUI.Controls.Default;
+using TextDecorations = Windows.UI.Text.TextDecorations;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -39,7 +38,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 {
     private DateTime _lastProgressTime = DateTime.MinValue;
     private int _lastProgressCount = 0;
-    private double _speedElementsPerSec = 0.0; 
+    private double _speedElementsPerSec = 0.0;
     private const double _emaAlpha = 0.2;
 
     private double _initialEstimatedSecondsPerOperation = 0.0;
@@ -50,7 +49,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private string FilePath = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     // The service is a singleton, so only the page that is currently shown may stay subscribed.
     private static GoodCheckWorkPage _connectedPage;
@@ -58,8 +57,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
     public GoodCheckWorkPage()
     {
         InitializeComponent();
-        TimeText.Text = localizer.GetLocalizedString("Pending");
-        AllTimeText.Text = localizer.GetLocalizedString("Pending");
+        TimeText.Text = _localizer.GetLocalizedString("Pending");
+        AllTimeText.Text = _localizer.GetLocalizedString("Pending");
 
         _uiDispatcher = DispatcherQueue.GetForCurrentThread();
 
@@ -173,7 +172,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         SetIncorrectCountText(count.ToString());
     }
 
-    
+
     private void CurrentSiteListText(string text)
     {
         if (!_uiDispatcher.HasThreadAccess)
@@ -182,9 +181,9 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             return;
         }
         SiteListProgressText.Text = text;
-        SetSiteListProgressText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
-        SetCorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
-        SetIncorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetSiteListProgressText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetCorrectCountText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetIncorrectCountText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
     }
     private void SetSiteListProgressText(string text)
     {
@@ -234,9 +233,10 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             if (dt > 0.05)
             {
                 int deltaItems = current - _lastProgressCount;
-                double instantSpeed = deltaItems / dt; 
+                double instantSpeed = deltaItems / dt;
 
-                if (instantSpeed < 0) instantSpeed = 0;
+                if (instantSpeed < 0)
+                    instantSpeed = 0;
 
                 if (_speedElementsPerSec <= 0.0)
                     _speedElementsPerSec = instantSpeed;
@@ -288,8 +288,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         }
 
         string speedText = _speedElementsPerSec > 0 ? $"{_speedElementsPerSec:F3} e/s" : "—";
-        string etaCurrentText = double.IsInfinity(etaSecondsCurrent) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((etaSecondsCurrent / 60.0));
-        string allTimeText = double.IsInfinity(allSecondsRemaining) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((allSecondsRemaining / 60.0));
+        string etaCurrentText = double.IsInfinity(etaSecondsCurrent) ? _localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((etaSecondsCurrent / 60.0));
+        string allTimeText = double.IsInfinity(allSecondsRemaining) ? _localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((allSecondsRemaining / 60.0));
 
         TimeText.Text = etaCurrentText;
         AllTimeText.Text = allTimeText;
@@ -305,12 +305,12 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         if (AdditionalInfo.Visibility == Visibility.Visible)
         {
             AdditionalInfo.Visibility = Visibility.Collapsed;
-            ViewMoreText.Text = localizer.GetLocalizedString("ViewMore");
+            ViewMoreText.Text = _localizer.GetLocalizedString("ViewMore");
         }
         else
         {
             AdditionalInfo.Visibility = Visibility.Visible;
-            ViewMoreText.Text = localizer.GetLocalizedString("ViewLess");
+            ViewMoreText.Text = _localizer.GetLocalizedString("ViewLess");
         }
         ViewMoreText.TextDecorations = TextDecorations.Underline;
     }

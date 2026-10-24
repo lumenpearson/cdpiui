@@ -1,177 +1,176 @@
-﻿using CDPIUI.Shared.Basic.Filesystem;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Secrets;
 using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 
-namespace CDPIUI.TrayIcon.Helper
+namespace CDPIUI.TrayIcon.Helper;
+
+/// <summary>
+/// Decides whether the elevated tray may start a program from the data directory of the user.
+/// The user, and every program of the user, can change files there, so a changed component
+/// would otherwise get administrator rights without a UAC prompt.
+/// </summary>
+public static class ExecutableTrust
 {
+    private static readonly SemaphoreSlim StoreLock = new(1, 1);
+
+    // Under the installation directory, which only administrators can change in an MSI installation.
+    private static string ApprovalFile => Path.Combine(Utils.GetDataDirectory(), ".trust", "approved.txt");
+
     /// <summary>
-    /// Decides whether the elevated tray may start a program from the data directory of the user.
-    /// The user, and every program of the user, can change files there, so a changed component
-    /// would otherwise get administrator rights without a UAC prompt.
+    /// Locks the program and the code files next to it, then checks them. Returns null when the
+    /// program must not start. Dispose the result after the process has started.
     /// </summary>
-    public static class ExecutableTrust
+    public static async Task<ExecutableLease?> AcquireAsync(string executable, string operation)
     {
-        private static readonly SemaphoreSlim StoreLock = new(1, 1);
+        if (!TrustedPaths.IsAllowed(executable, operation))
+            return null;
 
-        // Under the installation directory, which only administrators can change in an MSI installation.
-        private static string ApprovalFile => Path.Combine(Utils.GetDataDirectory(), ".trust", "approved.txt");
+        string fullPath = Path.GetFullPath(executable);
 
-        /// <summary>
-        /// Locks the program and the code files next to it, then checks them. Returns null when the
-        /// program must not start. Dispose the result after the process has started.
-        /// </summary>
-        public static async Task<ExecutableLease?> AcquireAsync(string executable, string operation)
+        // In a portable copy the user can change the tray itself, so the check would protect nothing.
+        if (!Utils.IsInstalledByMsi() || TrustedPathValidator.IsInside(fullPath, [Utils.GetDataDirectory()]))
+            return ExecutableLease.None;
+
+        ExecutableLease lease;
+        try
         {
-            if (!TrustedPaths.IsAllowed(executable, operation))
-                return null;
+            lease = ExecutableLease.Open(fullPath);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot lock the files of {fullPath}: {exception.Message}");
+            return null;
+        }
 
-            string fullPath = Path.GetFullPath(executable);
-
-            // In a portable copy the user can change the tray itself, so the check would protect nothing.
-            if (!Utils.IsInstalledByMsi() || TrustedPathValidator.IsInside(fullPath, [Utils.GetDataDirectory()]))
-                return ExecutableLease.None;
-
-            ExecutableLease lease;
+        try
+        {
+            string fingerprint = lease.ComputeFingerprint();
+            await StoreLock.WaitAsync();
             try
             {
-                lease = ExecutableLease.Open(fullPath);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot lock the files of {fullPath}: {exception.Message}");
-                return null;
-            }
-
-            try
-            {
-                string fingerprint = lease.ComputeFingerprint();
-                await StoreLock.WaitAsync();
-                try
-                {
-                    Dictionary<string, string> approved = LoadApprovals();
-                    if (approved.TryGetValue(fullPath, out string? known) && known == fingerprint)
-                        return lease;
-
-                    bool trusted = await IsSignedStoreItemAsync(fullPath) || AskUser(fullPath, lease);
-                    if (!trusted)
-                    {
-                        Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Rejected {operation} for \"{fullPath}\": the files are new or changed and were not approved");
-                        lease.Dispose();
-                        return null;
-                    }
-
-                    approved[fullPath] = fingerprint;
-                    SaveApprovals(approved);
+                Dictionary<string, string> approved = LoadApprovals();
+                if (approved.TryGetValue(fullPath, out string? known) && known == fingerprint)
                     return lease;
-                }
-                finally
+
+                bool trusted = await IsSignedStoreItemAsync(fullPath) || AskUser(fullPath, lease);
+                if (!trusted)
                 {
-                    StoreLock.Release();
+                    Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Rejected {operation} for \"{fullPath}\": the files are new or changed and were not approved");
+                    lease.Dispose();
+                    return null;
                 }
+
+                approved[fullPath] = fingerprint;
+                SaveApprovals(approved);
+                return lease;
             }
-            catch
+            finally
             {
-                lease.Dispose();
-                throw;
+                StoreLock.Release();
             }
         }
-
-        /// <summary>
-        /// A Store item whose signed catalog matches its code files needs no question. Lists and
-        /// other data files are skipped, because the user can edit them.
-        /// </summary>
-        private static async Task<bool> IsSignedStoreItemAsync(string fullPath)
+        catch
         {
-            string? itemDirectory = ExecutableApprovals.GetStoreItemDirectory(fullPath);
-            if (itemDirectory == null)
-                return false;
-
-            string catalog = Path.Combine(itemDirectory, "catalog.cat");
-            if (!File.Exists(catalog))
-                return false;
-
-            var dataFiles = Directory.EnumerateFiles(itemDirectory, "*", SearchOption.AllDirectories)
-                .Where(file => !ExecutableLease.CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-                .Select(Path.GetFileName)
-                .OfType<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-
-            CatalogVerification result = await CatalogVerifier.VerifyAsync(catalog, itemDirectory, Secret.TrustedCertificates, dataFiles);
-            if (result != CatalogVerification.Success)
-                Logger.Instance.CreateInfoLog(nameof(ExecutableTrust), $"Catalog check of {itemDirectory}: {result}");
-            return result == CatalogVerification.Success;
+            lease.Dispose();
+            throw;
         }
+    }
 
-        /// <summary>
-        /// Shows the question in a window of the elevated tray. Programs of the user cannot press
-        /// its buttons, because Windows blocks input from a lower integrity level.
-        /// </summary>
-        private static bool AskUser(string fullPath, ExecutableLease lease)
+    /// <summary>
+    /// A Store item whose signed catalog matches its code files needs no question. Lists and
+    /// other data files are skipped, because the user can edit them.
+    /// </summary>
+    private static async Task<bool> IsSignedStoreItemAsync(string fullPath)
+    {
+        string? itemDirectory = ExecutableApprovals.GetStoreItemDirectory(fullPath);
+        if (itemDirectory == null)
+            return false;
+
+        string catalog = Path.Combine(itemDirectory, "catalog.cat");
+        if (!File.Exists(catalog))
+            return false;
+
+        var dataFiles = Directory.EnumerateFiles(itemDirectory, "*", SearchOption.AllDirectories)
+            .Where(file => !ExecutableLease.CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        CatalogVerification result = await CatalogVerifier.VerifyAsync(catalog, itemDirectory, Secret.TrustedCertificates, dataFiles);
+        if (result != CatalogVerification.Success)
+            Logger.Instance.CreateInfoLog(nameof(ExecutableTrust), $"Catalog check of {itemDirectory}: {result}");
+        return result == CatalogVerification.Success;
+    }
+
+    /// <summary>
+    /// Shows the question in a window of the elevated tray. Programs of the user cannot press
+    /// its buttons, because Windows blocks input from a lower integrity level.
+    /// </summary>
+    private static bool AskUser(string fullPath, ExecutableLease lease)
+    {
+        string text = string.Format(
+            LocaleHelper.GetLocaleString("ExecutableTrustQuestion"),
+            fullPath,
+            lease.GetHash(fullPath),
+            GetSigner(fullPath) ?? LocaleHelper.GetLocaleString("ExecutableTrustNoSignature"));
+
+        DialogResult answer = DialogResult.No;
+        var thread = new Thread(() =>
         {
-            string text = string.Format(
-                LocaleHelper.GetLocaleString("ExecutableTrustQuestion"),
-                fullPath,
-                lease.GetHash(fullPath),
-                GetSigner(fullPath) ?? LocaleHelper.GetLocaleString("ExecutableTrustNoSignature"));
+            answer = MessageBox.Show(
+                text,
+                LocaleHelper.GetLocaleString("ExecutableTrustTitle"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2,
+                MessageBoxOptions.DefaultDesktopOnly);
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        return answer == DialogResult.Yes;
+    }
 
-            DialogResult answer = DialogResult.No;
-            var thread = new Thread(() =>
-            {
-                answer = MessageBox.Show(
-                    text,
-                    LocaleHelper.GetLocaleString("ExecutableTrustTitle"),
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button2,
-                    MessageBoxOptions.DefaultDesktopOnly);
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-            return answer == DialogResult.Yes;
-        }
-
-        private static string? GetSigner(string path)
+    private static string? GetSigner(string path)
+    {
+        try
         {
-            try
-            {
 #pragma warning disable SYSLIB0057 // Only the subject is shown; the signature is not trusted on it.
-                using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
+            using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
 #pragma warning restore SYSLIB0057
-                return certificate.GetNameInfo(X509NameType.SimpleName, false);
-            }
-            catch (CryptographicException)
-            {
-                return null;
-            }
+            return certificate.GetNameInfo(X509NameType.SimpleName, false);
         }
-
-        private static Dictionary<string, string> LoadApprovals()
+        catch (CryptographicException)
         {
-            try
-            {
-                return ExecutableApprovals.Load(ApprovalFile);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot read the approved programs: {exception.Message}");
-                return new(StringComparer.OrdinalIgnoreCase);
-            }
+            return null;
         }
+    }
 
-        private static void SaveApprovals(Dictionary<string, string> approved)
+    private static Dictionary<string, string> LoadApprovals()
+    {
+        try
         {
-            try
-            {
-                ExecutableApprovals.Save(ApprovalFile, approved);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot save the approved programs: {exception.Message}");
-            }
+            return ExecutableApprovals.Load(ApprovalFile);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot read the approved programs: {exception.Message}");
+            return new(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static void SaveApprovals(Dictionary<string, string> approved)
+    {
+        try
+        {
+            ExecutableApprovals.Save(ApprovalFile, approved);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Logger.Instance.CreateWarningLog(nameof(ExecutableTrust), $"Cannot save the approved programs: {exception.Message}");
         }
     }
 }

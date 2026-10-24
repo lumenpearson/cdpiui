@@ -1,7 +1,7 @@
-using CDPIUI.Shared.Pipe;
-using CDPIUI.Shared.Pipe.Models;
 using System.Collections.Concurrent;
 using System.Text;
+using CDPIUI.Shared.Pipe;
+using CDPIUI.Shared.Pipe.Models;
 
 namespace CDPIUI.Core.Communication;
 
@@ -117,17 +117,17 @@ public static class ConPtyHelpCaptureClient
 
     private sealed class PendingCapture
     {
-        private readonly object sync = new();
-        private readonly SortedDictionary<int, byte[]> chunks = [];
+        private readonly object _sync = new();
+        private readonly SortedDictionary<int, byte[]> _chunks = [];
 
         public TaskCompletionSource<ConPtyHelpCaptureResult> Completion { get; } = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
         public void AddChunk(int index, byte[] output)
         {
-            lock (sync)
+            lock (_sync)
             {
-                chunks[index] = output;
+                _chunks[index] = output;
             }
         }
 
@@ -136,20 +136,20 @@ public static class ConPtyHelpCaptureClient
         public void Complete(int totalChunks, int exitCode, bool timedOut, string error)
         {
             byte[] output;
-            lock (sync)
+            lock (_sync)
             {
-                if (totalChunks < 0 || chunks.Count != totalChunks ||
-                    Enumerable.Range(0, totalChunks).Any(index => !chunks.ContainsKey(index)))
+                if (totalChunks < 0 || _chunks.Count != totalChunks ||
+                    Enumerable.Range(0, totalChunks).Any(index => !_chunks.ContainsKey(index)))
                 {
                     Completion.TrySetResult(CreateError(
                         "The help response was incomplete while crossing the application pipe."));
                     return;
                 }
 
-                int length = chunks.Values.Sum(chunk => chunk.Length);
+                int length = _chunks.Values.Sum(chunk => chunk.Length);
                 output = new byte[length];
                 int offset = 0;
-                foreach (byte[] chunk in chunks.OrderBy(item => item.Key).Select(item => item.Value))
+                foreach (byte[] chunk in _chunks.OrderBy(item => item.Key).Select(item => item.Value))
                 {
                     Buffer.BlockCopy(chunk, 0, output, offset, chunk.Length);
                     offset += chunk.Length;

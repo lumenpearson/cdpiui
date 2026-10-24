@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,12 +12,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -41,7 +41,7 @@ public sealed partial class ChooseGroupModeContentDialog : ContentDialog
 
     private ObservableCollection<ByeDPIModeComboBoxItem> _modes = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public List<ByeDPIGroupModes> Result { get; private set; } = [];
 
@@ -55,33 +55,33 @@ public sealed partial class ChooseGroupModeContentDialog : ContentDialog
         {
             Mode = ByeDPIGroupModes.Torst,
             DisplayName = "TORST",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/TORST")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/TORST")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.Redirect,
             DisplayName = "REDIRECT",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/REDIRECT")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/REDIRECT")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.SslErr,
             DisplayName = "SSLERR",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/SSLERR")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/SSLERR")
         });
         _modes.Add(new()
         {
             Mode = ByeDPIGroupModes.None,
             DisplayName = "NONE",
-            DisplayTip = localizer.GetLocalizedString("/Flashlight/NONE")
+            DisplayTip = _localizer.GetLocalizedString("/Flashlight/NONE")
         });
 
         foreach (var mode in modes)
         {
-            ModeTokenView.SelectRange(new ItemIndexRange(_modes.IndexOf(_modes.FirstOrDefault(x=> x.Mode == mode)), 1));
+            ModeTokenView.SelectRange(new ItemIndexRange(_modes.IndexOf(_modes.FirstOrDefault(x => x.Mode == mode)), 1));
         }
 
-        
+
 
         this.Closing += ChooseGroupModeContentDialog_Closing;
     }

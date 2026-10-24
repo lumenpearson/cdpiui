@@ -1,39 +1,38 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CDPIUI.Shared.Extensions
+namespace CDPIUI.Shared.Extensions;
+
+public static class StringExtension
 {
-    public static class StringExtension
+    /// <summary>
+    /// Null for an empty string, so "??" also replaces the empty values the item database
+    /// stores for a missing name or version.
+    /// </summary>
+    public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;
+
+    public static string? SerializeTuples(this List<Tuple<string, string>> list)
     {
-        /// <summary>
-        /// Null for an empty string, so "??" also replaces the empty values the item database
-        /// stores for a missing name or version.
-        /// </summary>
-        public static string? NullIfEmpty(this string? value) => string.IsNullOrEmpty(value) ? null : value;
-
-        public static string? SerializeTuples(this List<Tuple<string, string>> list) 
-        {
-            string result = list == null ? null : string.Join(';', list.Select(t => $"{t.Item1}:{t.Item2}"));
-            return result;
-        }
-
-        public static List<Tuple<string, string>> DeserializeTuples(this string data)
-        {
-            return [.. data.Split(';', StringSplitOptions.RemoveEmptyEntries)
-                       .Select(s => {
-                           var parts = s.Split(':');
-                           return Tuple.Create(parts[0], parts.Length > 1 ? parts[1] : "");
-                       })];
-        }
-
-        public static string FirstCharToUpper(this string input) =>
-        input switch
-        {
-            null => throw new ArgumentNullException(nameof(input)),
-            "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
-            _ => string.Concat(input[0].ToString().ToUpperInvariant(), input.AsSpan(1).ToString())
-        };
+        string result = list == null ? null : string.Join(';', list.Select(t => $"{t.Item1}:{t.Item2}"));
+        return result;
     }
+
+    public static List<Tuple<string, string>> DeserializeTuples(this string data)
+    {
+        return [.. data.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                   .Select(s => {
+                       var parts = s.Split(':');
+                       return Tuple.Create(parts[0], parts.Length > 1 ? parts[1] : "");
+                   })];
+    }
+
+    public static string FirstCharToUpper(this string input) =>
+    input switch
+    {
+        null => throw new ArgumentNullException(nameof(input)),
+        "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
+        _ => string.Concat(input[0].ToString().ToUpperInvariant(), input.AsSpan(1).ToString())
+    };
 }

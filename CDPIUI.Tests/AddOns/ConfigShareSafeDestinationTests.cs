@@ -4,11 +4,11 @@ namespace CDPIUI.Tests.AddOns;
 
 public sealed class ConfigShareSafeDestinationTests : IDisposable
 {
-    private readonly string root = Path.Combine(Path.GetTempPath(), "cdpiui-share-dest-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "cdpiui-share-dest-" + Guid.NewGuid().ToString("N"));
 
-    public ConfigShareSafeDestinationTests() => Directory.CreateDirectory(root);
+    public ConfigShareSafeDestinationTests() => Directory.CreateDirectory(_root);
 
-    public void Dispose() => Directory.Delete(root, true);
+    public void Dispose() => Directory.Delete(_root, true);
 
     [Theory]
     [InlineData("manifest.json")]
@@ -20,17 +20,17 @@ public sealed class ConfigShareSafeDestinationTests : IDisposable
     [InlineData("resources/.hidden")]
     public void PathsInsideTheRootAreAccepted(string relative)
     {
-        string destination = ConfigShareService.SafeDestination(root, relative);
+        string destination = ConfigShareService.SafeDestination(_root, relative);
 
-        Assert.Equal(Path.Combine([root, .. relative.Split('/')]), destination);
+        Assert.Equal(Path.Combine([_root, .. relative.Split('/')]), destination);
     }
 
     [Fact]
     public void RootWithTrailingSeparatorGivesTheSamePath()
     {
         Assert.Equal(
-            ConfigShareService.SafeDestination(root, "a.txt"),
-            ConfigShareService.SafeDestination(root + Path.DirectorySeparatorChar, "a.txt"));
+            ConfigShareService.SafeDestination(_root, "a.txt"),
+            ConfigShareService.SafeDestination(_root + Path.DirectorySeparatorChar, "a.txt"));
     }
 
     [Theory]
@@ -54,7 +54,7 @@ public sealed class ConfigShareSafeDestinationTests : IDisposable
     [InlineData("resources/a\0b.txt")]
     public void UnsafePathsAreRejected(string relative)
     {
-        var exception = Assert.Throws<ConfigShareException>(() => ConfigShareService.SafeDestination(root, relative));
+        var exception = Assert.Throws<ConfigShareException>(() => ConfigShareService.SafeDestination(_root, relative));
 
         Assert.Equal("SHARE_ARCHIVE_INVALID", exception.Code);
     }
@@ -62,14 +62,14 @@ public sealed class ConfigShareSafeDestinationTests : IDisposable
     [Fact]
     public void LinkInsideTheRootIsRejected()
     {
-        string outside = Path.Combine(root + "-outside");
+        string outside = Path.Combine(_root + "-outside");
         Directory.CreateDirectory(outside);
         try
         {
-            Directory.CreateSymbolicLink(Path.Combine(root, "resources"), outside);
+            Directory.CreateSymbolicLink(Path.Combine(_root, "resources"), outside);
 
             var exception = Assert.Throws<ConfigShareException>(() =>
-                ConfigShareService.SafeDestination(root, "resources/a.txt"));
+                ConfigShareService.SafeDestination(_root, "resources/a.txt"));
 
             Assert.Equal("SHARE_DESTINATION_INVALID", exception.Code);
         }
@@ -82,8 +82,8 @@ public sealed class ConfigShareSafeDestinationTests : IDisposable
     [Fact]
     public void ExistingNormalFoldersAreAccepted()
     {
-        Directory.CreateDirectory(Path.Combine(root, "resources", "sub"));
+        Directory.CreateDirectory(Path.Combine(_root, "resources", "sub"));
 
-        Assert.EndsWith("tls.bin", ConfigShareService.SafeDestination(root, "resources/sub/tls.bin"));
+        Assert.EndsWith("tls.bin", ConfigShareService.SafeDestination(_root, "resources/sub/tls.bin"));
     }
 }

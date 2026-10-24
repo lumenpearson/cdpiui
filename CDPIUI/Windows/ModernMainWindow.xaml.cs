@@ -1,7 +1,15 @@
-using CDPIUI.Default;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
-
+using CDPIUI.Default;
 using CDPIUI.ViewModels;
 using CDPIUI.Views;
 using CDPIUI.Views.Main.Components;
@@ -15,17 +23,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using System.Collections.Specialized;
 using Windows.UI.Popups;
 using WinRT.Interop;
 using WinUI3Localizer;
@@ -34,205 +33,205 @@ using WinUIEx;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI
+namespace CDPIUI;
+
+/// <summary>
+/// An empty window that can be used on its own or navigated to within a Frame.
+/// </summary>
+public sealed partial class ModernMainWindow : TemplateWindow
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class ModernMainWindow : TemplateWindow
+    private ILocalizer _localizer = Localizer.Get();
+    public ModernMainWindow()
     {
-        private ILocalizer localizer = Localizer.Get();
-        public ModernMainWindow()
+        InitializeComponent();
+        IconUri = @"Assets/favicon.ico";
+        this.CustomTitleBarUserControl = TitleBarUserControl;
+
+        MainFrame = ContentFrame;
+
+        NavView.SelectedItem = NavView.MenuItems[0];
+        ContentFrame.Navigated += On_Navigated;
+        ContentFrame.Navigate(GetMainPage(), new NameValueCollection());
+        RestartPrompt.Attach(this);
+
+        if (!SettingsManager.Instance.GetValue<bool>("AD", "welcomeToPreview"))
         {
-            InitializeComponent();
-            IconUri = @"Assets/favicon.ico";
-            this.CustomTitleBarUserControl = TitleBarUserControl;
-
-            MainFrame = ContentFrame;
-
-            NavView.SelectedItem = NavView.MenuItems[0];
-            ContentFrame.Navigated += On_Navigated;
-            ContentFrame.Navigate(GetMainPage(), new NameValueCollection());
-            RestartPrompt.Attach(this);
-
-            if (!SettingsManager.Instance.GetValue<bool>("AD", "welcomeToPreview"))
-            {
-                // _ = ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
-                // SettingsManager.Instance.SetValue("AD", "welcomeToPreview", true);
-            }
+            // _ = ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
+            // SettingsManager.Instance.SetValue("AD", "welcomeToPreview", true);
         }
+    }
 
-        internal static Type GetMainPage()
+    internal static Type GetMainPage()
+    {
+        if (MainPageMarkupManager.Instance.CurrentMarkup.Type == MarkupTypes.Classic)
         {
-            if (MainPageMarkupManager.Instance.CurrentMarkup.Type == MarkupTypes.Classic)
-            {
-                return typeof(MainPage);
-            }
-            else
-            {
-                return typeof(ModernMainPage);
-            }
+            return typeof(MainPage);
         }
-
-
-        private async Task ShowDialog(string message, string title)
+        else
         {
-            try
-            {
-                var dlg = new MessageDialog(message, title);
-                InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(this));
-                await dlg.ShowAsync();
-            }
-            catch (Exception exception)
-            {
-                Logger.Instance.CreateWarningLog(nameof(ModernMainWindow), exception.ToString());
-            }
+            return typeof(ModernMainPage);
         }
+    }
 
 
-        private void NavView_Loaded(object sender, RoutedEventArgs e)
+    private async Task ShowDialog(string message, string title)
+    {
+        try
         {
-            if (ContentFrame.CurrentSourcePageType == null)
-                NavView_Navigate(GetMainPage(), null, new EntranceNavigationTransitionInfo());
+            var dlg = new MessageDialog(message, title);
+            InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(this));
+            await dlg.ShowAsync();
         }
-
-        private void NavView_ItemInvoked(NavigationView sender,
-                                         NavigationViewItemInvokedEventArgs args)
+        catch (Exception exception)
         {
-            FrameNavigationOptions navOptions = new FrameNavigationOptions();
-            navOptions.TransitionInfoOverride = args.RecommendedNavigationTransitionInfo;
-
-            if (args.InvokedItemContainer.Tag.ToString() == "AddNewComponent")
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    /*
-                    if (AddNavigationViewFlyout.IsOpen)
-                        AddNavigationViewFlyout.Hide();
-
-                    AddNavigationViewFlyout.ShowAt(AddNaviagationViewItem);
-                    */
-                });
-                Logger.Instance.CreateDebugLog(nameof(MainWindow), "FLY OPEN");
-                return;
-            }
-            if (args.IsSettingsInvoked == true)
-            {
-                // pass
-            }
-            else if (args.InvokedItemContainer != null)
-            {
-                if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPIUI.Views.Components."))
-                {
-                    // string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPIUI.Views.Components.", "");
-
-                    // NavView_Navigate(typeof(ViewComponentSettingsPage), StateHelper.Instance.FindKeyByValue(componentName), args.RecommendedNavigationTransitionInfo);
-
-                    return;
-                }
-                if (args.InvokedItemContainer.Tag.ToString().StartsWith("MAINPAGE"))
-                {
-                    NavView_Navigate(GetMainPage(), null, args.RecommendedNavigationTransitionInfo);
-                    return;
-                }
-
-                Type navPageType = Type.GetType(args.InvokedItemContainer.Tag.ToString());
-                NavView_Navigate(navPageType, null, args.RecommendedNavigationTransitionInfo);
-            }
+            Logger.Instance.CreateWarningLog(nameof(ModernMainWindow), exception.ToString());
         }
+    }
 
-        private void NavView_SelectionChanged(NavigationView sender,
-                                              NavigationViewSelectionChangedEventArgs args)
+
+    private void NavView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (ContentFrame.CurrentSourcePageType == null)
+            NavView_Navigate(GetMainPage(), null, new EntranceNavigationTransitionInfo());
+    }
+
+    private void NavView_ItemInvoked(NavigationView sender,
+                                     NavigationViewItemInvokedEventArgs args)
+    {
+        FrameNavigationOptions navOptions = new FrameNavigationOptions();
+        navOptions.TransitionInfoOverride = args.RecommendedNavigationTransitionInfo;
+
+        if (args.InvokedItemContainer.Tag.ToString() == "AddNewComponent")
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                /*
+                if (AddNavigationViewFlyout.IsOpen)
+                    AddNavigationViewFlyout.Hide();
+
+                AddNavigationViewFlyout.ShowAt(AddNaviagationViewItem);
+                */
+            });
+            Logger.Instance.CreateDebugLog(nameof(MainWindow), "FLY OPEN");
+            return;
+        }
+        if (args.IsSettingsInvoked == true)
         {
             // pass
         }
-
-        public void NavView_Navigate(
-            Type navPageType,
-            object parameter,
-            NavigationTransitionInfo transitionInfo)
+        else if (args.InvokedItemContainer != null)
         {
-            Type preNavPageType = ContentFrame.CurrentSourcePageType;
-
-            if (navPageType is not null)
+            if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPIUI.Views.Components."))
             {
-                if (Type.Equals(navPageType, GetMainPage()) && Type.Equals(preNavPageType, typeof(ViewComponentSettingsPage)))
+                // string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPIUI.Views.Components.", "");
+
+                // NavView_Navigate(typeof(ViewComponentSettingsPage), StateHelper.Instance.FindKeyByValue(componentName), args.RecommendedNavigationTransitionInfo);
+
+                return;
+            }
+            if (args.InvokedItemContainer.Tag.ToString().StartsWith("MAINPAGE"))
+            {
+                NavView_Navigate(GetMainPage(), null, args.RecommendedNavigationTransitionInfo);
+                return;
+            }
+
+            Type navPageType = Type.GetType(args.InvokedItemContainer.Tag.ToString());
+            NavView_Navigate(navPageType, null, args.RecommendedNavigationTransitionInfo);
+        }
+    }
+
+    private void NavView_SelectionChanged(NavigationView sender,
+                                          NavigationViewSelectionChangedEventArgs args)
+    {
+        // pass
+    }
+
+    public void NavView_Navigate(
+        Type navPageType,
+        object parameter,
+        NavigationTransitionInfo transitionInfo)
+    {
+        Type preNavPageType = ContentFrame.CurrentSourcePageType;
+
+        if (navPageType is not null)
+        {
+            if (Type.Equals(navPageType, GetMainPage()) && Type.Equals(preNavPageType, typeof(ViewComponentSettingsPage)))
+            {
+
+                if (!RemoveAndGoBackTo(GetMainPage(), ContentFrame))
                 {
-                    
-                    if (!RemoveAndGoBackTo(GetMainPage(), ContentFrame))
-                    {
-                        ContentFrame.Navigate(GetMainPage(), parameter ?? new NameValueCollection(), new DrillInNavigationTransitionInfo());
-                    }
-                }
-                else if (!Type.Equals(preNavPageType, navPageType) || Type.Equals(navPageType, typeof(ViewComponentSettingsPage)))
-                {
-                    ContentFrame.Navigate(navPageType, parameter ?? new NameValueCollection(), transitionInfo);
+                    ContentFrame.Navigate(GetMainPage(), parameter ?? new NameValueCollection(), new DrillInNavigationTransitionInfo());
                 }
             }
-        }
-
-        private void NavView_BackRequested(NavigationView sender,
-                                           NavigationViewBackRequestedEventArgs args)
-        {
-            TryGoBack();
-        }
-
-        private bool TryGoBack()
-        {
-            if (!ContentFrame.CanGoBack)
-                return false;
-
-            ContentFrame.GoBack();
-            return true;
-        }
-
-        private void On_Navigated(object sender, NavigationEventArgs e)
-        {
-            NavView.IsBackEnabled = ContentFrame.CanGoBack;
-
-            var sourcePageType = ContentFrame.SourcePageType;
-            if (sourcePageType == null) return;
-
-            Debug.WriteLine(sourcePageType.FullName);
-
-            var navigationTag = GetNavigationTag(sourcePageType);
-            var item = NavView.MenuItems
-                .Concat(NavView.FooterMenuItems)
-                .OfType<NavigationViewItem>()
-                .FirstOrDefault(candidate => string.Equals(
-                    candidate.Tag?.ToString(),
-                    navigationTag,
-                    StringComparison.Ordinal));
-
-            if (item != null && !ReferenceEquals(NavView.SelectedItem, item))
-                NavView.SelectedItem = item;
-        }
-
-        private static string GetNavigationTag(Type pageType)
-        {
-            if (pageType == GetMainPage() ||
-                pageType == typeof(ViewComponentSettingsPage))
+            else if (!Type.Equals(preNavPageType, navPageType) || Type.Equals(navPageType, typeof(ViewComponentSettingsPage)))
             {
-                return "MAINPAGE";
+                ContentFrame.Navigate(navPageType, parameter ?? new NameValueCollection(), transitionInfo);
             }
-
-            if (SettingsPage.MainSettingsNavigationSupportedPages.Contains(pageType))
-                return typeof(SettingsPage).FullName;
-
-            return pageType.FullName;
         }
+    }
 
-        public void NavigateSubPage(Type page, SlideNavigationTransitionEffect effect)
+    private void NavView_BackRequested(NavigationView sender,
+                                       NavigationViewBackRequestedEventArgs args)
+    {
+        TryGoBack();
+    }
+
+    private bool TryGoBack()
+    {
+        if (!ContentFrame.CanGoBack)
+            return false;
+
+        ContentFrame.GoBack();
+        return true;
+    }
+
+    private void On_Navigated(object sender, NavigationEventArgs e)
+    {
+        NavView.IsBackEnabled = ContentFrame.CanGoBack;
+
+        var sourcePageType = ContentFrame.SourcePageType;
+        if (sourcePageType == null)
+            return;
+
+        Debug.WriteLine(sourcePageType.FullName);
+
+        var navigationTag = GetNavigationTag(sourcePageType);
+        var item = NavView.MenuItems
+            .Concat(NavView.FooterMenuItems)
+            .OfType<NavigationViewItem>()
+            .FirstOrDefault(candidate => string.Equals(
+                candidate.Tag?.ToString(),
+                navigationTag,
+                StringComparison.Ordinal));
+
+        if (item != null && !ReferenceEquals(NavView.SelectedItem, item))
+            NavView.SelectedItem = item;
+    }
+
+    private static string GetNavigationTag(Type pageType)
+    {
+        if (pageType == GetMainPage() ||
+            pageType == typeof(ViewComponentSettingsPage))
         {
-            try
-            {
-                ContentFrame.Navigate(page, new NameValueCollection(), new SlideNavigationTransitionInfo() { Effect = effect });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-
+            return "MAINPAGE";
         }
+
+        if (SettingsPage.MainSettingsNavigationSupportedPages.Contains(pageType))
+            return typeof(SettingsPage).FullName;
+
+        return pageType.FullName;
+    }
+
+    public void NavigateSubPage(Type page, SlideNavigationTransitionEffect effect)
+    {
+        try
+        {
+            ContentFrame.Navigate(page, new NameValueCollection(), new SlideNavigationTransitionInfo() { Effect = effect });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
+
     }
 }

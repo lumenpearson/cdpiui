@@ -4,8 +4,8 @@ namespace CDPIUI.Helper.Migration;
 
 internal sealed class GoodbyeDpiMigrationCoordinator
 {
-    private readonly object syncRoot = new();
-    private GoodbyeDpiMigrationSession? currentSession;
+    private readonly object _syncRoot = new();
+    private GoodbyeDpiMigrationSession? _currentSession;
 
     public static GoodbyeDpiMigrationCoordinator Instance { get; } = new();
 
@@ -13,13 +13,13 @@ internal sealed class GoodbyeDpiMigrationCoordinator
         GoodbyeDpiMigrationActivationRequest request,
         out GoodbyeDpiMigrationSession? session)
     {
-        lock (syncRoot)
+        lock (_syncRoot)
         {
-            if (currentSession != null && !currentSession.IsTerminal)
+            if (_currentSession != null && !_currentSession.IsTerminal)
             {
-                if (IsSameSession(currentSession.Request, request))
+                if (IsSameSession(_currentSession.Request, request))
                 {
-                    session = currentSession;
+                    session = _currentSession;
                     _ = session.ReannounceAsync();
                     return true;
                 }
@@ -31,16 +31,16 @@ internal sealed class GoodbyeDpiMigrationCoordinator
                 return false;
             }
 
-            if (currentSession != null && IsSameSession(currentSession.Request, request))
+            if (_currentSession != null && IsSameSession(_currentSession.Request, request))
             {
-                session = currentSession;
+                session = _currentSession;
                 _ = session.ReannounceAsync();
                 return true;
             }
 
-            currentSession?.Dispose();
-            currentSession = new GoodbyeDpiMigrationSession(request);
-            session = currentSession;
+            _currentSession?.Dispose();
+            _currentSession = new GoodbyeDpiMigrationSession(request);
+            session = _currentSession;
             _ = session.UpdateAsync(MigrationSessionState.Accepted, 0);
             session.BeginPreparation();
             return true;

@@ -1,11 +1,3 @@
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +7,14 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Forms;
 using System.Windows.Input;
+using CDPIUI.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -50,7 +50,7 @@ public sealed partial class SelectAppContentDialog : ContentDialog
     public ICommand RemoveAppClickCommand { get; }
     public ObservableCollection<SelectedApplicationInfo> _applications { get; private set; } = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public SelectAppContentDialog(List<SelectedApplicationInfo> applications)
     {
         InitializeComponent();
@@ -179,9 +179,9 @@ public sealed partial class SelectAppContentDialog : ContentDialog
         string filePath = string.Empty;
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("ChooseExeFile");
+            openFileDialog.Title = _localizer.GetLocalizedString("ChooseExeFile");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)

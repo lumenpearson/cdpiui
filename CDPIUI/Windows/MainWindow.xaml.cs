@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store;
@@ -17,14 +25,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -33,341 +33,341 @@ using WinRT.Interop;
 using WinUIEx;
 
 
-namespace CDPIUI
+namespace CDPIUI;
+
+/// <summary>
+/// An empty window that can be used on its own or navigated to within a Frame.
+/// </summary>
+
+public sealed partial class MainWindow : WindowEx
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    
-    public sealed partial class MainWindow : WindowEx
+    private const int WM_GETMINMAXINFO = 0x0024;
+    private IntPtr _hwnd;
+    private WindowProc _newWndProc;
+    private IntPtr _oldWndProc;
+
+    public static MainWindow Instance { get; private set; }
+
+    public MainWindow()
     {
-        private const int WM_GETMINMAXINFO = 0x0024;
-        private IntPtr _hwnd;
-        private WindowProc _newWndProc;
-        private IntPtr _oldWndProc;
+        this.InitializeComponent();
+        ApplyDarkThemeToSystemMenu();
+        InitializeWindow();
 
-        public static MainWindow Instance { get; private set; }
+        Instance = this;
 
-        public MainWindow()
+        ((App)Application.Current).OpenWindows.Add(this);
+
+        if (this.Content is FrameworkElement rootElement)
         {
-            this.InitializeComponent();
-            ApplyDarkThemeToSystemMenu();
-            InitializeWindow();
-
-            Instance = this;
-
-            ((App)Application.Current).OpenWindows.Add(this);
-
-            if (this.Content is FrameworkElement rootElement)
-            {
-                rootElement.RequestedTheme = ((App)Application.Current).CurrentTheme;
-            }
-
-            ExtendsContentIntoTitleBar = true;
-
-            NavView.SelectedItem = NavView.MenuItems[0];
-            ContentFrame.Navigated += On_Navigated;
-            ContentFrame.Navigate(typeof(Views.MainPage));
-            SetTitleBar(WindowMoveAera);
-            NavView.SelectionChanged += NavView_SelectionChanged;
-
-            StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
-            StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
-            // StoreHelper outlives the window; each reopened window added handlers.
-            this.Closed += (_, _) =>
-            {
-                StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
-                StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
-            };
-            RestartPrompt.Attach(this);
-
-            AuditNavigationItems();
+            rootElement.RequestedTheme = ((App)Application.Current).CurrentTheme;
         }
 
-        public double GetContentHeight()
+        ExtendsContentIntoTitleBar = true;
+
+        NavView.SelectedItem = NavView.MenuItems[0];
+        ContentFrame.Navigated += On_Navigated;
+        ContentFrame.Navigate(typeof(Views.MainPage));
+        SetTitleBar(WindowMoveAera);
+        NavView.SelectionChanged += NavView_SelectionChanged;
+
+        StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
+        StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
+        // StoreHelper outlives the window; each reopened window added handlers.
+        this.Closed += (_, _) =>
         {
-            return ContentFrame.ActualHeight;
+            StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
+            StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
+        };
+        RestartPrompt.Attach(this);
+
+        AuditNavigationItems();
+    }
+
+    public double GetContentHeight()
+    {
+        return ContentFrame.ActualHeight;
+    }
+    public double GetContentWidth()
+    {
+        return ContentFrame.ActualWidth;
+    }
+
+    private void AuditNavigationItems()
+    {
+        ZapretNavigationViewItem.Visibility = Visibility.Collapsed;
+        ByeDPINavigationViewItem.Visibility = Visibility.Collapsed;
+        GoodbyeDPINavigationViewItem.Visibility = Visibility.Collapsed;
+        SpoofDPINavigationViewItem.Visibility = Visibility.Collapsed;
+
+        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]))
+        {
+            ZapretNavigationViewItem.Visibility = Visibility.Visible;
         }
-        public double GetContentWidth()
+        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]))
         {
-            return ContentFrame.ActualWidth;
+            ByeDPINavigationViewItem.Visibility = Visibility.Visible;
         }
-
-        private void AuditNavigationItems()
+        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]))
         {
-            ZapretNavigationViewItem.Visibility = Visibility.Collapsed;
-            ByeDPINavigationViewItem.Visibility = Visibility.Collapsed;
-            GoodbyeDPINavigationViewItem.Visibility = Visibility.Collapsed;
-            SpoofDPINavigationViewItem.Visibility = Visibility.Collapsed;
-
-            if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.Zapret]))
-            {
-                ZapretNavigationViewItem.Visibility = Visibility.Visible;
-            }
-            if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI]))
-            {
-                ByeDPINavigationViewItem.Visibility = Visibility.Visible;
-            }
-            if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI]))
-            {
-                GoodbyeDPINavigationViewItem.Visibility = Visibility.Visible;
-            }
-            if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI]))
-            {
-                SpoofDPINavigationViewItem.Visibility = Visibility.Visible;
-            }
-            
-            if (ContentFrame.CurrentSourcePageType == typeof(ViewComponentSettingsPage))
-            {
-                ContentFrame.Navigate(typeof(MainPage));
-            }
+            GoodbyeDPINavigationViewItem.Visibility = Visibility.Visible;
         }
-
-        private void Instance_ItemActionsStopped(string obj)
+        if (DatabaseHelper.Instance.IsItemInstalled(HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI]))
         {
-            AuditNavigationItems();
-        }
-
-        private void Instance_ItemRemoved(string obj)
-        {
-            AuditNavigationItems();
-        }
-
-
-        private void InitializeWindow()
-        {
-            _hwnd = WindowNative.GetWindowHandle(this);
-            _newWndProc = new WindowProc(NewWindowProc);
-            _oldWndProc = SetWindowLongPtr(_hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_newWndProc));
+            SpoofDPINavigationViewItem.Visibility = Visibility.Visible;
         }
 
-        private void NavigationViewControl_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+        if (ContentFrame.CurrentSourcePageType == typeof(ViewComponentSettingsPage))
         {
-            AppTitleBar.Margin = new Thickness()
-            {
-                Left = AppTitleBar.Margin.Left,
-                Top = AppTitleBar.Margin.Top,
-                Right = AppTitleBar.Margin.Right,
-                Bottom = AppTitleBar.Margin.Bottom
-            };
+            ContentFrame.Navigate(typeof(MainPage));
         }
-        private double NavViewCompactModeThresholdWidth { get { return NavView.CompactModeThresholdWidth; } }
+    }
 
-        private void NavView_Loaded(object sender, RoutedEventArgs e)
+    private void Instance_ItemActionsStopped(string obj)
+    {
+        AuditNavigationItems();
+    }
+
+    private void Instance_ItemRemoved(string obj)
+    {
+        AuditNavigationItems();
+    }
+
+
+    private void InitializeWindow()
+    {
+        _hwnd = WindowNative.GetWindowHandle(this);
+        _newWndProc = new WindowProc(NewWindowProc);
+        _oldWndProc = SetWindowLongPtr(_hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_newWndProc));
+    }
+
+    private void NavigationViewControl_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+    {
+        AppTitleBar.Margin = new Thickness()
         {
-            if (ContentFrame.CurrentSourcePageType == null)
-                NavView_Navigate(typeof(Views.MainPage), null, new EntranceNavigationTransitionInfo());
-        }
+            Left = AppTitleBar.Margin.Left,
+            Top = AppTitleBar.Margin.Top,
+            Right = AppTitleBar.Margin.Right,
+            Bottom = AppTitleBar.Margin.Bottom
+        };
+    }
+    private double NavViewCompactModeThresholdWidth { get { return NavView.CompactModeThresholdWidth; } }
 
-        private void NavView_ItemInvoked(NavigationView sender,
-                                         NavigationViewItemInvokedEventArgs args)
+    private void NavView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (ContentFrame.CurrentSourcePageType == null)
+            NavView_Navigate(typeof(Views.MainPage), null, new EntranceNavigationTransitionInfo());
+    }
+
+    private void NavView_ItemInvoked(NavigationView sender,
+                                     NavigationViewItemInvokedEventArgs args)
+    {
+        if (args.InvokedItemContainer.Tag.ToString() == "AddNewComponent")
         {
-            if (args.InvokedItemContainer.Tag.ToString() == "AddNewComponent")
+            DispatcherQueue.TryEnqueue(() =>
             {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (AddNavigationViewFlyout.IsOpen)
-                        AddNavigationViewFlyout.Hide();
+                if (AddNavigationViewFlyout.IsOpen)
+                    AddNavigationViewFlyout.Hide();
 
-                    AddNavigationViewFlyout.ShowAt(AddNaviagationViewItem);
-                });
-                Logger.Instance.CreateDebugLog(nameof(MainWindow), "FLY OPEN");
-                return;
-            }
-            if (args.IsSettingsInvoked == true)
-            {
-                // pass
-            }
-            else if (args.InvokedItemContainer != null)
-            {
-                if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPIUI.Views.Components."))
-                {
-                    //string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPIUI.Views.Components.", "");
-
-                    //NavView_Navigate(typeof(ViewComponentSettingsPage), StateHelper.Instance.FindKeyByValue(componentName), args.RecommendedNavigationTransitionInfo);
-
-                    return;
-                }
-                    
-
-                Type navPageType = Type.GetType(args.InvokedItemContainer.Tag.ToString());
-                NavView_Navigate(navPageType, null, args.RecommendedNavigationTransitionInfo);
-            }
+                AddNavigationViewFlyout.ShowAt(AddNaviagationViewItem);
+            });
+            Logger.Instance.CreateDebugLog(nameof(MainWindow), "FLY OPEN");
+            return;
         }
-
-        private void NavView_SelectionChanged(NavigationView sender,
-                                              NavigationViewSelectionChangedEventArgs args)
+        if (args.IsSettingsInvoked == true)
         {
             // pass
         }
-
-        public void NavView_Navigate(
-            Type navPageType,
-            object parameter,
-            NavigationTransitionInfo transitionInfo)
+        else if (args.InvokedItemContainer != null)
         {
-            Type preNavPageType = ContentFrame.CurrentSourcePageType;
-
-            if (navPageType is not null && (!Type.Equals(preNavPageType, navPageType) || Type.Equals(navPageType, typeof(ViewComponentSettingsPage))))
+            if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPIUI.Views.Components."))
             {
-                ContentFrame.Navigate(navPageType, parameter, transitionInfo);
-            }
-        }
+                //string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPIUI.Views.Components.", "");
 
-        private void NavView_BackRequested(NavigationView sender,
-                                           NavigationViewBackRequestedEventArgs args)
-        {
-            TryGoBack();
-        }
+                //NavView_Navigate(typeof(ViewComponentSettingsPage), StateHelper.Instance.FindKeyByValue(componentName), args.RecommendedNavigationTransitionInfo);
 
-        private bool TryGoBack()
-        {
-            if (!ContentFrame.CanGoBack)
-                return false;
-
-            ContentFrame.GoBack();
-            return true;
-        }
-
-        private void On_Navigated(object sender, NavigationEventArgs e)
-        {
-            NavView.IsBackEnabled = ContentFrame.CanGoBack;
-
-            var sourcePageType = ContentFrame.SourcePageType;
-            if (sourcePageType == null) return;
-
-            Debug.WriteLine(sourcePageType.FullName);
-
-            var navigationPageType = SettingsPage.MainSettingsNavigationSupportedPages.Contains(sourcePageType)
-                ? typeof(SettingsPage)
-                : sourcePageType;
-
-            var item = NavView.MenuItems
-                .Concat(NavView.FooterMenuItems)
-                .OfType<NavigationViewItem>()
-                .FirstOrDefault(candidate => string.Equals(
-                    candidate.Tag?.ToString(),
-                    navigationPageType.FullName,
-                    StringComparison.Ordinal));
-
-            if (item != null && !ReferenceEquals(NavView.SelectedItem, item))
-                NavView.SelectedItem = item;
-
-            BackButton.Visibility = item == null
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-        }
-
-        public void NavigateSubPage(Type page, SlideNavigationTransitionEffect effect)
-        {
-            try
-            {
-                ContentFrame.Navigate(page, null, new SlideNavigationTransitionInfo() { Effect = effect });
-                BackButton.Visibility = Visibility.Visible;
-            }
-            catch (Exception ex) 
-            { 
-            Debug.WriteLine(ex);
+                return;
             }
 
+
+            Type navPageType = Type.GetType(args.InvokedItemContainer.Tag.ToString());
+            NavView_Navigate(navPageType, null, args.RecommendedNavigationTransitionInfo);
         }
-
-        private void SetWindowSize(int width, int height)
-        {
-            var hwnd = WindowNative.GetWindowHandle(this);
-
-            Microsoft.UI.WindowId windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-
-            AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
-
-            appWindow.Resize(new Windows.Graphics.SizeInt32(width, height));
-        }
-
-        private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            AnimatedIcon.SetState(this.SearchAnimatedIcon, "PointerOver");
-        }
-
-        private void BackButton_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            AnimatedIcon.SetState(this.SearchAnimatedIcon, "Normal");
-        }
-
-        private void BackButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ContentFrame.CanGoBack)
-            {
-                ContentFrame.GoBack();
-            }
-        }
-        private void StoreCard_Click(object sender, RoutedEventArgs e)
-        {
-            _ = ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
-        }
-
-        #region WINAPI
-
-        private delegate IntPtr WindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-        private IntPtr NewWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
-        {
-            if (msg == WM_GETMINMAXINFO)
-            {
-                MINMAXINFO minMaxInfo = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-                minMaxInfo.ptMinTrackSize.x = 484;
-                minMaxInfo.ptMinTrackSize.y = 300;
-                Marshal.StructureToPtr(minMaxInfo, lParam, true);
-            }
-            return CallWindowProc(_oldWndProc, hWnd, msg, wParam, lParam);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT
-        {
-            public int x;
-            public int y;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct MINMAXINFO
-        {
-            public POINT ptReserved;
-            public POINT ptMaxSize;
-            public POINT ptMaxPosition;
-            public POINT ptMinTrackSize;
-            public POINT ptMaxTrackSize;
-        }
-
-        private const int GWLP_WNDPROC = -4;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-        private void ApplyDarkThemeToSystemMenu()
-        {
-            // Undocumented uxtheme exports: #135 is SetPreferredAppMode since Windows 10 1903 and
-            // AllowDarkModeForApp(BOOL) on 1809, where 2 also means "allow". Older systems lack them.
-            try
-            {
-                SetPreferredAppMode(2);
-                FlushMenuThemes();
-            }
-            // The exports are missing on older systems: the system menu keeps its light theme.
-            catch (EntryPointNotFoundException) { }
-            catch (DllNotFoundException) { }
-        }
-
-        [DllImport("uxtheme.dll", EntryPoint = "#135", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int SetPreferredAppMode(int preferredAppMode);
-
-        [DllImport("uxtheme.dll", EntryPoint = "#136", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern void FlushMenuThemes();
-
-        #endregion
-
-        
     }
+
+    private void NavView_SelectionChanged(NavigationView sender,
+                                          NavigationViewSelectionChangedEventArgs args)
+    {
+        // pass
+    }
+
+    public void NavView_Navigate(
+        Type navPageType,
+        object parameter,
+        NavigationTransitionInfo transitionInfo)
+    {
+        Type preNavPageType = ContentFrame.CurrentSourcePageType;
+
+        if (navPageType is not null && (!Type.Equals(preNavPageType, navPageType) || Type.Equals(navPageType, typeof(ViewComponentSettingsPage))))
+        {
+            ContentFrame.Navigate(navPageType, parameter, transitionInfo);
+        }
+    }
+
+    private void NavView_BackRequested(NavigationView sender,
+                                       NavigationViewBackRequestedEventArgs args)
+    {
+        TryGoBack();
+    }
+
+    private bool TryGoBack()
+    {
+        if (!ContentFrame.CanGoBack)
+            return false;
+
+        ContentFrame.GoBack();
+        return true;
+    }
+
+    private void On_Navigated(object sender, NavigationEventArgs e)
+    {
+        NavView.IsBackEnabled = ContentFrame.CanGoBack;
+
+        var sourcePageType = ContentFrame.SourcePageType;
+        if (sourcePageType == null)
+            return;
+
+        Debug.WriteLine(sourcePageType.FullName);
+
+        var navigationPageType = SettingsPage.MainSettingsNavigationSupportedPages.Contains(sourcePageType)
+            ? typeof(SettingsPage)
+            : sourcePageType;
+
+        var item = NavView.MenuItems
+            .Concat(NavView.FooterMenuItems)
+            .OfType<NavigationViewItem>()
+            .FirstOrDefault(candidate => string.Equals(
+                candidate.Tag?.ToString(),
+                navigationPageType.FullName,
+                StringComparison.Ordinal));
+
+        if (item != null && !ReferenceEquals(NavView.SelectedItem, item))
+            NavView.SelectedItem = item;
+
+        BackButton.Visibility = item == null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    public void NavigateSubPage(Type page, SlideNavigationTransitionEffect effect)
+    {
+        try
+        {
+            ContentFrame.Navigate(page, null, new SlideNavigationTransitionInfo() { Effect = effect });
+            BackButton.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
+
+    }
+
+    private void SetWindowSize(int width, int height)
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+
+        Microsoft.UI.WindowId windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+
+        AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+
+        appWindow.Resize(new Windows.Graphics.SizeInt32(width, height));
+    }
+
+    private void BackButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        AnimatedIcon.SetState(this.SearchAnimatedIcon, "PointerOver");
+    }
+
+    private void BackButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        AnimatedIcon.SetState(this.SearchAnimatedIcon, "Normal");
+    }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ContentFrame.CanGoBack)
+        {
+            ContentFrame.GoBack();
+        }
+    }
+    private void StoreCard_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
+    }
+
+    #region WINAPI
+
+    private delegate IntPtr WindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private IntPtr NewWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            MINMAXINFO minMaxInfo = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+            minMaxInfo.ptMinTrackSize.x = 484;
+            minMaxInfo.ptMinTrackSize.y = 300;
+            Marshal.StructureToPtr(minMaxInfo, lParam, true);
+        }
+        return CallWindowProc(_oldWndProc, hWnd, msg, wParam, lParam);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int x;
+        public int y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    private const int GWLP_WNDPROC = -4;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private void ApplyDarkThemeToSystemMenu()
+    {
+        // Undocumented uxtheme exports: #135 is SetPreferredAppMode since Windows 10 1903 and
+        // AllowDarkModeForApp(BOOL) on 1809, where 2 also means "allow". Older systems lack them.
+        try
+        {
+            SetPreferredAppMode(2);
+            FlushMenuThemes();
+        }
+        // The exports are missing on older systems: the system menu keeps its light theme.
+        catch (EntryPointNotFoundException) { }
+        catch (DllNotFoundException) { }
+    }
+
+    [DllImport("uxtheme.dll", EntryPoint = "#135", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern int SetPreferredAppMode(int preferredAppMode);
+
+    [DllImport("uxtheme.dll", EntryPoint = "#136", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern void FlushMenuThemes();
+
+    #endregion
+
+
 }

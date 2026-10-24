@@ -1,26 +1,25 @@
-﻿namespace CDPIUI.Core.Store.Network
+namespace CDPIUI.Core.Store.Network;
+
+/// <summary>
+/// Store internal proxy settings helper.
+/// </summary>
+public static class StoreProxyHelper
 {
     /// <summary>
-    /// Store internal proxy settings helper.
+    /// Use proxy for GitHub connections.
+    /// Do not applies to other version controls.
     /// </summary>
-    public static class StoreProxyHelper
+    public static bool UseProxyForStoreConnections
     {
-        /// <summary>
-        /// Use proxy for GitHub connections.
-        /// Do not applies to other version controls.
-        /// </summary>
-        public static bool UseProxyForStoreConnections 
+        get
         {
-            get
-            {
-                return
-                    StoreHelper.Instance.VersionControl == Repository.SupportedVersionControls.GitHub &&
-                    SettingsManager.Instance.GetValueOrDefault<bool>("STORE", "ProxyEnable", defaultValue: false);
-            }
-            set
-            {
-                SettingsManager.Instance.SetValue<bool>("STORE", "ProxyEnable", value);
-            }
+            return
+                StoreHelper.Instance.VersionControl == Repository.SupportedVersionControls.GitHub &&
+                SettingsManager.Instance.GetValueOrDefault<bool>("STORE", "ProxyEnable", defaultValue: false);
+        }
+        set
+        {
+            SettingsManager.Instance.SetValue<bool>("STORE", "ProxyEnable", value);
         }
     }
 }

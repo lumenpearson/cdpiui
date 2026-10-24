@@ -1,4 +1,4 @@
-﻿using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
 namespace CDPIUI.Tests.Core;
 

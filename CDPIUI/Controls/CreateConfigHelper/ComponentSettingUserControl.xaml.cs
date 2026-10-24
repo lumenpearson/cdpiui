@@ -1,7 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Windows.Forms;
+using System.Windows.Input;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Core;
 using CDPIUI.Core.System;
-
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,14 +19,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.VisualBasic.Devices;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Windows.Forms;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using UserControl = Microsoft.UI.Xaml.Controls.UserControl;
@@ -131,7 +130,8 @@ public sealed partial class ComponentSettingUserControl : UserControl
     public string TextValue
     {
         get { return (string)GetValue(TextValueProperty); }
-        set {
+        set
+        {
             if (Type == "file_path" && !string.IsNullOrEmpty(value))
             {
                 value = $"\"{value.Replace("\"", "")}\"";
@@ -142,10 +142,13 @@ public sealed partial class ComponentSettingUserControl : UserControl
             {
                 SetValue(TextValueProperty, value);
             }
-            
-            if (value != MainTextBox.Text) MainTextBox.Text = value;
-            if (Type == "enum") SetValueToEnum();
-            if (Type == "file_path") CheckFileOpenButtons();
+
+            if (value != MainTextBox.Text)
+                MainTextBox.Text = value;
+            if (Type == "enum")
+                SetValueToEnum();
+            if (Type == "file_path")
+                CheckFileOpenButtons();
         }
     }
 
@@ -156,7 +159,8 @@ public sealed partial class ComponentSettingUserControl : UserControl
     public string Type
     {
         get { return (string)GetValue(TypeProperty); }
-        set { 
+        set
+        {
             SetValue(TypeProperty, value);
             CheckType();
         }
@@ -169,7 +173,8 @@ public sealed partial class ComponentSettingUserControl : UserControl
     public List<EnumModel> AvailableEnumValues
     {
         get { return (List<EnumModel>)GetValue(AvailableEnumValuesProperty); }
-        set { 
+        set
+        {
             SetValue(AvailableEnumValuesProperty, value ?? new List<EnumModel>());
             SetValueToEnum();
         }
@@ -182,7 +187,8 @@ public sealed partial class ComponentSettingUserControl : UserControl
     public bool EnableTextInput
     {
         get { return (bool)GetValue(EnableTextInputProperty); }
-        set { 
+        set
+        {
             SetValue(EnableTextInputProperty, value);
             // CheckSettingType();
         }
@@ -195,10 +201,13 @@ public sealed partial class ComponentSettingUserControl : UserControl
     public bool IsSettingChecked
     {
         get { return (bool)GetValue(IsSettingCheckedProperty); }
-        set { 
+        set
+        {
             SetValue(IsSettingCheckedProperty, value);
-            if (MainCheckBox.IsChecked != value) MainCheckBox.IsChecked = value;
-            if (MainToggleSwitch.IsOn != value) MainToggleSwitch.IsOn = value;
+            if (MainCheckBox.IsChecked != value)
+                MainCheckBox.IsChecked = value;
+            if (MainToggleSwitch.IsOn != value)
+                MainToggleSwitch.IsOn = value;
         }
     }
 
@@ -207,7 +216,7 @@ public sealed partial class ComponentSettingUserControl : UserControl
             nameof(IsSettingChecked), typeof(bool), typeof(ComponentSettingUserControl), new PropertyMetadata(false)
         );
 
-    
+
     private void CheckType()
     {
         MainCheckBox.Visibility = Visibility.Collapsed;
@@ -232,9 +241,10 @@ public sealed partial class ComponentSettingUserControl : UserControl
             case "file_path":
                 MainCheckBox.Visibility = Visibility.Visible;
                 FilePathStackPanel.Visibility = Visibility.Visible;
-                
+
                 CheckFileOpenButtons();
-                if (!string.IsNullOrEmpty(TextValue)) TextValue = $"\"{TextValue.Replace("\"", "")}\"";
+                if (!string.IsNullOrEmpty(TextValue))
+                    TextValue = $"\"{TextValue.Replace("\"", "")}\"";
                 break;
             case "enum":
                 EnumPropertyComboBox.Visibility = Visibility.Visible;
@@ -307,7 +317,7 @@ public sealed partial class ComponentSettingUserControl : UserControl
 
     private void EnumPropertyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        string val = ((EnumModel)EnumPropertyComboBox.SelectedItem)?.ActualValue?? TextValue;
+        string val = ((EnumModel)EnumPropertyComboBox.SelectedItem)?.ActualValue ?? TextValue;
         if (val != TextValue)
         {
             TextValue = val;
@@ -334,7 +344,7 @@ public sealed partial class ComponentSettingUserControl : UserControl
             SelectedFileText.Text = Path.GetFileName(TextValue.Replace("\"", ""));
         }
 
-        
+
     }
 
     private void SelectFileButton_Click(object sender, RoutedEventArgs e)
@@ -379,7 +389,7 @@ public sealed partial class ComponentSettingUserControl : UserControl
         {
             ShellHelper.OpenFile(TextValue.Replace("\"", ""));
         }
-        
+
     }
 
     private void RemoveFileButton_Click(object sender, RoutedEventArgs e)

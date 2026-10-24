@@ -22,7 +22,7 @@ public sealed class ConfigShareResource
 /// <summary>Owns temporary files; system shares can transfer cleanup to the next export dialog.</summary>
 public sealed class ConfigSharePackage : IDisposable
 {
-    private bool retainedForSystemShare;
+    private bool _retainedForSystemShare;
     public string DirectoryPath { get; }
     public string ArchivePath { get; }
     public ConfigShareManifest Manifest { get; }
@@ -39,12 +39,13 @@ public sealed class ConfigSharePackage : IDisposable
     public void RetainForSystemShare()
     {
         File.WriteAllText(Path.Combine(DirectoryPath, ConfigShareService.SystemShareMarker), "");
-        retainedForSystemShare = true;
+        _retainedForSystemShare = true;
     }
 
     public void Dispose()
     {
-        if (!retainedForSystemShare) ConfigShareService.DeleteTemporaryDirectory(DirectoryPath);
+        if (!_retainedForSystemShare)
+            ConfigShareService.DeleteTemporaryDirectory(DirectoryPath);
     }
 }
 

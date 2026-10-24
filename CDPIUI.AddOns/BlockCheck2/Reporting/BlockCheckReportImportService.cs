@@ -424,21 +424,21 @@ public sealed class BlockCheckReportImportService
     private static BlockCheckReport CopyWithIssues(
         BlockCheckReport source,
         IReadOnlyList<BlockCheckIssue> issues) => new()
-    {
-        SchemaVersion = source.SchemaVersion,
-        CreatedAtUtc = source.CreatedAtUtc,
-        CatalogVersion = source.CatalogVersion,
-        RunPreset = source.RunPreset,
-        Success = source.Success,
-        WasCanceled = source.WasCanceled,
-        IsBestEffort = source.IsBestEffort,
-        Targets = source.Targets,
-        Probes = source.Probes,
-        Profiles = source.Profiles,
-        ValidationAttempts = source.ValidationAttempts,
-        Issues = issues,
-        PresetArguments = source.PresetArguments,
-    };
+        {
+            SchemaVersion = source.SchemaVersion,
+            CreatedAtUtc = source.CreatedAtUtc,
+            CatalogVersion = source.CatalogVersion,
+            RunPreset = source.RunPreset,
+            Success = source.Success,
+            WasCanceled = source.WasCanceled,
+            IsBestEffort = source.IsBestEffort,
+            Targets = source.Targets,
+            Probes = source.Probes,
+            Profiles = source.Profiles,
+            ValidationAttempts = source.ValidationAttempts,
+            Issues = issues,
+            PresetArguments = source.PresetArguments,
+        };
 
     private static BlockCheckIssue Warning(string code, string message, string? subjectId = null) =>
         new(BlockCheckIssueSeverity.Warning, code, message, subjectId);

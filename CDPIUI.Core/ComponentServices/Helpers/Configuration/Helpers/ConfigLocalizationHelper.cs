@@ -1,82 +1,81 @@
-﻿using CDPIUI.Core.JSON;
 using System.Diagnostics;
+using CDPIUI.Core.JSON;
 
-namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers
+namespace CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
+
+internal class LocaleModel
 {
-    internal class LocaleModel
-    {
-        public string? LocaleName;
-        public Dictionary<string, string>? keyValuePairs;
-    }
+    public string? LocaleName;
+    public Dictionary<string, string>? keyValuePairs;
+}
 
-    internal static class ConfigLocalizationHelper
-    {
+internal static class ConfigLocalizationHelper
+{
 
-        public static string GetLocalizedConfigNameString(
-            string name, 
-            string langCode, 
-            string directory, 
-            Dictionary<string, string> locPaths, 
-            LocaleModel localeHelper)
+    public static string GetLocalizedConfigNameString(
+        string name,
+        string langCode,
+        string directory,
+        Dictionary<string, string> locPaths,
+        LocaleModel localeHelper)
+    {
+        string localizedString = $"clocale:{name}";
+
+        try
         {
-            string localizedString = $"clocale:{name}";
-
-            try
+            if (localeHelper.LocaleName != langCode)
             {
-                if (localeHelper.LocaleName != langCode)
-                {
-                    
-                        InitLocaleHelper(localeHelper, locPaths, directory, langCode);
-                }
-                if (localeHelper.keyValuePairs != null && localeHelper.keyValuePairs.TryGetValue(name, out string? value))
-                    localizedString = value;
 
+                InitLocaleHelper(localeHelper, locPaths, directory, langCode);
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Cannot get locale {name}, error is {ex}");
-            }
+            if (localeHelper.keyValuePairs != null && localeHelper.keyValuePairs.TryGetValue(name, out string? value))
+                localizedString = value;
 
-
-            return localizedString;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Cannot get locale {name}, error is {ex}");
         }
 
-        public static void InitLocaleHelper(
-            LocaleModel localeHelper, 
-            Dictionary<string, string> locPaths, 
-            string directory, 
-            string langCode)
+
+        return localizedString;
+    }
+
+    public static void InitLocaleHelper(
+        LocaleModel localeHelper,
+        Dictionary<string, string> locPaths,
+        string directory,
+        string langCode)
+    {
+        try
         {
-            try
+            string locFilePath;
+            if (!locPaths.ContainsKey(langCode))
             {
-                string locFilePath;
-                if (!locPaths.ContainsKey(langCode))
-                {
-                    locFilePath = Path.Combine(directory, locPaths["EN"]);
-                }
-                else
-                {
-                    locFilePath = Path.Combine(directory, locPaths[langCode]);
-                }
-                using (StreamReader r = new StreamReader(locFilePath))
-                {
-                    string json = r.ReadToEnd();
-                    Dictionary<string, string> localizationDict = 
-                        JSONConvertor.DeserializeObject<Dictionary<string, string>>(json);
-
-                    localeHelper.LocaleName = langCode;
-                    localeHelper.keyValuePairs = localizationDict;
-                }
-
+                locFilePath = Path.Combine(directory, locPaths["EN"]);
             }
-            catch (Exception ex)
+            else
             {
-                // The language is marked as loaded even without strings: every name lookup
-                // opened the file again and failed again.
+                locFilePath = Path.Combine(directory, locPaths[langCode]);
+            }
+            using (StreamReader r = new StreamReader(locFilePath))
+            {
+                string json = r.ReadToEnd();
+                Dictionary<string, string> localizationDict =
+                    JSONConvertor.DeserializeObject<Dictionary<string, string>>(json);
+
                 localeHelper.LocaleName = langCode;
-                localeHelper.keyValuePairs = null;
-                Debug.WriteLine($"Cannot init locale, error is {ex}");
+                localeHelper.keyValuePairs = localizationDict;
             }
+
+        }
+        catch (Exception ex)
+        {
+            // The language is marked as loaded even without strings: every name lookup
+            // opened the file again and failed again.
+            localeHelper.LocaleName = langCode;
+            localeHelper.keyValuePairs = null;
+            Debug.WriteLine($"Cannot init locale, error is {ex}");
         }
     }
 }

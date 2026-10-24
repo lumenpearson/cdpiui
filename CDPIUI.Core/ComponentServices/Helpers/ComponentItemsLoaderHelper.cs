@@ -1,65 +1,65 @@
-﻿using CDPIUI.Core.Store.Database;
+using CDPIUI.Core.Store.Database;
 
-namespace CDPIUI.Core.ComponentServices.Helpers
+namespace CDPIUI.Core.ComponentServices.Helpers;
+
+public class ComponentItemsLoaderHelper
 {
-    public class ComponentItemsLoaderHelper
+
+    // Replaced as a whole, never changed in place: Init runs on the startup path and after every
+    // Store change while other threads look components up.
+    private volatile List<ComponentHelper> _components = [];
+
+    public Action? InitRequested;
+
+    private static ComponentItemsLoaderHelper? _instance;
+    private static readonly object SyncRoot = new();
+    public static ComponentItemsLoaderHelper Instance
     {
-
-        // Replaced as a whole, never changed in place: Init runs on the startup path and after every
-        // Store change while other threads look components up.
-        private volatile List<ComponentHelper> Components = [];
-
-        public Action? InitRequested;
-
-        private static ComponentItemsLoaderHelper? _instance;
-        private static readonly object _lock = new();
-        public static ComponentItemsLoaderHelper Instance
+        get
         {
-            get
+            lock (SyncRoot)
             {
-                lock (_lock)
-                {
-                    _instance ??= new ComponentItemsLoaderHelper();
-                    return _instance;
-                }
+                _instance ??= new ComponentItemsLoaderHelper();
+                return _instance;
             }
         }
+    }
 
-        private ComponentItemsLoaderHelper()
+    private ComponentItemsLoaderHelper()
+    {
+        Init();
+    }
+
+    public void Init(bool forse = true)
+    {
+        List<ComponentHelper> current = _components;
+        if (!forse && current.Count != 0)
+            return;
+
+        List<DatabaseStoreItem> configItems =
+            DatabaseHelper.Instance.GetItemsByType("component");
+
+        List<ComponentHelper> components = [];
+        foreach (DatabaseStoreItem item in configItems)
         {
-            Init();
+            if (!Path.Exists(item.Directory) ||
+                !File.Exists(Path.Combine(item.Directory!, item.Executable + ".exe")))
+                continue;
+
+            // New helpers: an installed or updated pack changes the preset lists they cache.
+            components.Add(new ComponentHelper(item));
         }
+        _components = components;
+        InitRequested?.Invoke();
+    }
 
-        public void Init(bool forse = true)
-        {
-            List<ComponentHelper> current = Components;
-            if (!forse && current.Count != 0) return;
+    public List<ComponentHelper> GetComponentHelpers()
+    {
+        return [.. _components];
+    }
 
-            List<DatabaseStoreItem> configItems = 
-                DatabaseHelper.Instance.GetItemsByType("component");
-
-            List<ComponentHelper> components = [];
-            foreach (DatabaseStoreItem item in configItems)
-            {
-                if (!Path.Exists(item.Directory) || 
-                    !File.Exists(Path.Combine(item.Directory!, item.Executable + ".exe")))
-                    continue;
-
-                // New helpers: an installed or updated pack changes the preset lists they cache.
-                components.Add(new ComponentHelper(item));
-            }
-            Components = components;
-            InitRequested?.Invoke();
-        }
-
-        public List<ComponentHelper> GetComponentHelpers()
-        {
-            return [.. Components];
-        }
-
-        public ComponentHelper? GetComponentHelperFromId(string id)
-        {
-            return Components.FirstOrDefault(componentHelper => componentHelper.Id == id);
-        }
+    public ComponentHelper? GetComponentHelperFromId(string id)
+    {
+        return _components.FirstOrDefault(componentHelper => componentHelper.Id == id);
     }
 }

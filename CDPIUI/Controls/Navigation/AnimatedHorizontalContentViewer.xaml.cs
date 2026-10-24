@@ -1,12 +1,12 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Reflection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Reflection;
 using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Navigation;
@@ -21,7 +21,7 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
     private Storyboard _transitionStoryboard;
     private int _selectedIndex = -1;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public AnimatedHorizontalContentItem SelectedItem
     {
@@ -37,8 +37,8 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
         Items.CollectionChanged += Items_CollectionChanged;
         this.Loaded += AnimatedHorizontalContentViewer_Loaded;
         // The localizer outlives the control: subscribe only while it is loaded.
-        this.Loaded += (_, _) => localizer.LanguageChanged += Localizer_LanguageChanged;
-        this.Unloaded += (_, _) => localizer.LanguageChanged -= Localizer_LanguageChanged;
+        this.Loaded += (_, _) => _localizer.LanguageChanged += Localizer_LanguageChanged;
+        this.Unloaded += (_, _) => _localizer.LanguageChanged -= Localizer_LanguageChanged;
     }
 
     private void Localizer_LanguageChanged(object sender, LanguageChangedEventArgs e)
@@ -167,7 +167,7 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
             return;
         }
 
-        
+
 
         var direction = newIndex > _selectedIndex ? 1d : -1d;
         _selectedIndex = newIndex;

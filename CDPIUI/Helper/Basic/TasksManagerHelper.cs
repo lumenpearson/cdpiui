@@ -1,17 +1,17 @@
-﻿using CDPIUI.Core;
+using System;
+using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using System;
 
 namespace CDPIUI.Helper.Basic;
 
 public sealed class TasksManagerHelper
 {
-    private static TasksManagerHelper instance;
-    public static TasksManagerHelper Instance => instance ??= new TasksManagerHelper();
-    private readonly DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+    private static TasksManagerHelper _instance;
+    public static TasksManagerHelper Instance => _instance ??= new TasksManagerHelper();
+    private readonly DispatcherQueue _dispatcher = DispatcherQueue.GetForCurrentThread();
 
     private TasksManagerHelper()
     {
@@ -20,13 +20,15 @@ public sealed class TasksManagerHelper
 
     private void HandleErrorMessage(string id)
     {
-        if (!SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true)) return;
-        dispatcher.TryEnqueue(async () =>
+        if (!SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true))
+            return;
+        _dispatcher.TryEnqueue(async () =>
         {
             try
             {
                 var process = (await ComponentTasksManager.Instance.GetTaskFromId(id))?.ProcessManager;
-                if (process?.IsErrorHappens != true) return;
+                if (process?.IsErrorHappens != true)
+                    return;
                 var window = await ((App)Application.Current).UnsafeCreateNewWindow<ComponentErrorWindow>(activate: false, id: id);
                 window.SetError(id, process.LastError);
                 App.ActivateWindow(window);

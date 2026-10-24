@@ -1,4 +1,10 @@
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Core.Store;
 using CDPIUI.Shared;
 using Microsoft.UI.Xaml;
@@ -8,12 +14,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Popups;
@@ -27,14 +27,14 @@ namespace CDPIUI.Controls.MainPage;
 
 public sealed partial class WelcomePlaceholderUserControl : UserControl
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public WelcomePlaceholderUserControl()
     {
         InitializeComponent();
 
-        LearnMoreAboutUIHyperlink.Content = localizer.GetLocalizedString("/Help/LearnMoreAboutUI");
-        FirstStepsHyperlink.Content = localizer.GetLocalizedString("/Help/FirstSteps");
-        AddingCustomSiteListsToConfigHyperlink.Content = localizer.GetLocalizedString("/Help/AddingCustomSiteListsToConfig");
+        LearnMoreAboutUIHyperlink.Content = _localizer.GetLocalizedString("/Help/LearnMoreAboutUI");
+        FirstStepsHyperlink.Content = _localizer.GetLocalizedString("/Help/FirstSteps");
+        AddingCustomSiteListsToConfigHyperlink.Content = _localizer.GetLocalizedString("/Help/AddingCustomSiteListsToConfig");
 
         StoreHelper.Instance.QueueUpdated += Store_QueueUpdated;
         Unloaded += WelcomePlaceholderUserControl_Unloaded;
