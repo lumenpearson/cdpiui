@@ -4,35 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Update;
-
-public enum InstallState
-{
-    None,
-    Prepare,
-    Unpack,
-    Copy,
-    Finalize,
-    Completed,
-    Error
-}
-
-public enum InstallError
-{
-    None,
-    PermissionDenied,
-    FileNotFound,
-    ExtractingFile,
-    UnexpectedError,
-    LaunchingApp,
-    NoOldVersion,
-    OK
-}
 
 public class InstallHelper
 {
@@ -84,71 +59,7 @@ public class InstallHelper
         {
             try
             {
-                InstallationStateChanged?.Invoke(InstallState.Prepare);
-                Log("Starting extraction process");
-                if (!StopApplication())
-                    FinishStatus = InstallError.PermissionDenied;
-
-                InstallationStateChanged?.Invoke(InstallState.Unpack);
-                List<string> stagedFiles = FinishStatus == InstallError.None ? await StageAsync() : null;
-
-                bool applied = false;
-                if (FinishStatus == InstallError.None && stagedFiles != null)
-                {
-                    InstallationStateChanged?.Invoke(InstallState.Copy);
-                    applied = ApplyStaged(stagedFiles);
-                }
-
-                if (applied)
-                {
-                    InstallationStateChanged?.Invoke(InstallState.Finalize);
-                    Cleanup();
-                    FinishStatus = InstallError.OK;
-                    bool launched = LaunchApplication(false);
-                    if (launched)
-                    {
-                        InstallationStateChanged?.Invoke(InstallState.Completed);
-                        ProgressChanged?.Invoke(1.0);
-                        Log("Update applied successfully and application launched.");
-                    }
-                    else
-                    {
-                        // The window stays open with the error; it was closed at once and
-                        // the user never saw why the application did not start.
-                        InstallationStateChanged?.Invoke(InstallState.Error);
-                        return;
-                    }
-                    Application.Exit();
-                }
-                else if (FinishStatus == InstallError.NoOldVersion)
-                {
-                    // The rollback failed and the error box is open: the application is not
-                    // started, and the window closes when the user confirms the error.
-                    Log("Update was not applied and the previous version was not restored.");
-                    Cleanup();
-                    InstallationStateChanged?.Invoke(InstallState.Error);
-                }
-                else
-                {
-                    Log("Update was not applied. The previous version is kept.");
-                    Cleanup();
-                    FinishStatus = InstallError.OK;
-                    bool launched = LaunchApplication(true);
-                    if (launched)
-                    {
-                        InstallationStateChanged?.Invoke(InstallState.Completed);
-                        ProgressChanged?.Invoke(1.0);
-                    }
-                    else
-                    {
-                        // The window stays open with the error; it was closed at once and
-                        // the user never saw why the application did not start.
-                        InstallationStateChanged?.Invoke(InstallState.Error);
-                        return;
-                    }
-
-                    Application.Exit();
-                }
+                await RunInstallAsync();
             }
             catch (Exception ex)
             {
@@ -160,6 +71,64 @@ public class InstallHelper
         });
     }
 
+    private async Task RunInstallAsync()
+    {
+        InstallationStateChanged?.Invoke(InstallState.Prepare);
+        Log("Starting extraction process");
+        if (!ApplicationProcessCloser.StopApplication())
+            FinishStatus = InstallError.PermissionDenied;
+
+        InstallationStateChanged?.Invoke(InstallState.Unpack);
+        List<string> stagedFiles = FinishStatus == InstallError.None ? await StageAsync() : null;
+
+        bool applied = false;
+        if (FinishStatus == InstallError.None && stagedFiles != null)
+        {
+            InstallationStateChanged?.Invoke(InstallState.Copy);
+            applied = ApplyStaged(stagedFiles);
+        }
+
+        if (applied)
+        {
+            InstallationStateChanged?.Invoke(InstallState.Finalize);
+            Cleanup();
+            LaunchAndExit(afterFailedUpdate: false, "Update applied successfully and application launched.");
+        }
+        else if (FinishStatus == InstallError.NoOldVersion)
+        {
+            // The rollback failed and the error box is open: the application is not
+            // started, and the window closes when the user confirms the error.
+            Log("Update was not applied and the previous version was not restored.");
+            Cleanup();
+            InstallationStateChanged?.Invoke(InstallState.Error);
+        }
+        else
+        {
+            Log("Update was not applied. The previous version is kept.");
+            Cleanup();
+            LaunchAndExit(afterFailedUpdate: true, successMessage: null);
+        }
+    }
+
+    private void LaunchAndExit(bool afterFailedUpdate, string successMessage)
+    {
+        FinishStatus = InstallError.OK;
+        bool launched = LaunchApplication(afterFailedUpdate);
+        if (!launched)
+        {
+            // The window stays open with the error; it was closed at once and
+            // the user never saw why the application did not start.
+            InstallationStateChanged?.Invoke(InstallState.Error);
+            return;
+        }
+
+        InstallationStateChanged?.Invoke(InstallState.Completed);
+        ProgressChanged?.Invoke(1.0);
+        if (successMessage != null)
+            Log(successMessage);
+        Application.Exit();
+    }
+
     private string StagingFolder => Path.Combine(_targetFolder, ".update-staging");
     private string BackupFolder => Path.Combine(_targetFolder, ".update-backup");
     // Files written by the last update, so files dropped from a newer version can be removed.
@@ -167,146 +136,6 @@ public class InstallHelper
     // missing from it is not a removed file. Removing such files (by a manifest of the previous
     // update) deleted files that an earlier patch had brought and this one did not change.
     private string ObsoleteManifestPath => Path.Combine(_targetFolder, ".update-manifest");
-
-    private static readonly string[] ApplicationProcesses = { "goodbyeDPI", "CDPIUI", "CDPIUI_TrayIcon" };
-    private const string TrayShutdownEventName = @"Global\CDPIUI_TrayShutdown";
-
-    /// <summary>
-    /// Closes the application and checks that no process that holds its files is left
-    /// </summary>
-    private bool StopApplication()
-    {
-        EventWaitHandle shutdownEvent = null;
-        try
-        {
-            // Let the tray exit as from its menu first: it then stops the components and
-            // restores the system proxy settings, which a killed tray leaves behind.
-            bool opened;
-            try
-            { opened = EventWaitHandle.TryOpenExisting(TrayShutdownEventName, out shutdownEvent); }
-            catch (Exception ex)
-            {
-                Log($"Cannot ask the tray to exit: {ex.Message}");
-                opened = false;
-            }
-            if (opened)
-            {
-                shutdownEvent.Set();
-                WaitForExit("CDPIUI_TrayIcon", TimeSpan.FromSeconds(20));
-            }
-
-            foreach (string name in ApplicationProcesses)
-                CloseProcessIfRunning(name);
-
-            foreach (string name in ApplicationProcesses)
-            {
-                if (!WaitForExit(name, TimeSpan.FromSeconds(10)))
-                {
-                    Log($"{name}.exe is still running. Update aborted.");
-                    return false;
-                }
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Log($"Cannot close the application: {ex}");
-            return false;
-        }
-        finally
-        {
-            try
-            { shutdownEvent?.Reset(); }
-            catch (Exception ex)
-            {
-                // The event belongs to the tray. If it cannot be reset, the next tray creates it again.
-                Log($"Cannot reset the tray shutdown event: {ex.Message}");
-            }
-            shutdownEvent?.Dispose();
-        }
-    }
-
-    private static bool WaitForExit(string processName, TimeSpan timeout)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        // An exited process can stay in the list for a moment while handles to it are open.
-        var exitedIds = new HashSet<int>();
-        while (true)
-        {
-            Process[] processes = Process.GetProcessesByName(processName);
-            try
-            {
-                var running = processes.Where(p => !exitedIds.Contains(p.Id)).ToList();
-                if (running.Count == 0)
-                    return true;
-
-                bool waited = false;
-                foreach (var process in running)
-                {
-                    TimeSpan remaining = timeout - stopwatch.Elapsed;
-                    if (remaining <= TimeSpan.Zero)
-                        return false;
-
-                    // Wait on the process handle: the wait ends as soon as the process exits.
-                    try
-                    {
-                        if (process.WaitForExit((int)Math.Ceiling(remaining.TotalMilliseconds)))
-                            exitedIds.Add(process.Id);
-                        waited = true;
-                    }
-                    catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-                    {
-                        // No access to the handle, or the process exited before the wait.
-                    }
-                }
-
-                // Without access to any handle the only way left is to check the list again.
-                if (!waited)
-                {
-                    TimeSpan remaining = timeout - stopwatch.Elapsed;
-                    if (remaining <= TimeSpan.Zero)
-                        return false;
-                    Thread.Sleep(Math.Min(250, (int)Math.Ceiling(remaining.TotalMilliseconds)));
-                }
-            }
-            finally
-            {
-                foreach (var process in processes)
-                    process.Dispose();
-            }
-        }
-    }
-
-    private void CloseProcessIfRunning(string processNameWithoutExt)
-    {
-        try
-        {
-            var procs = Process.GetProcessesByName(processNameWithoutExt);
-            foreach (var p in procs)
-            {
-                try
-                {
-                    p.Kill();
-                    p.WaitForExit(2000);
-                    Log($"process {processNameWithoutExt}.exe terminated (pid {p.Id})");
-                }
-                catch (Exception ex)
-                {
-                    // The process can exit before the kill, or it can belong to another user.
-                    // StopApplication checks after this that no process is left.
-                    Log($"Cannot terminate {processNameWithoutExt}.exe: {ex.Message}");
-                }
-                finally
-                {
-                    p.Dispose();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log($"Error while trying to close process {processNameWithoutExt}: {ex}");
-        }
-    }
 
     /// <summary>
     /// Extracts the update into the staging folder without touching the installed files.
@@ -331,14 +160,7 @@ public class InstallHelper
 
             using (var zip = ZipFile.OpenRead(_archiveFilePath))
             {
-                // Entries with the path relative to the installation, layer by layer: a later
-                // layer overwrites the files of an earlier one.
-                var fileEntries = GetLayerPrefixes(zip)
-                    .SelectMany(prefix => zip.Entries
-                        .Select(e => new { Entry = e, Name = e.FullName.Replace('\\', '/') })
-                        .Where(e => e.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !e.Name.EndsWith("/"))
-                        .Select(e => new { e.Entry, RelativePath = e.Name.Substring(prefix.Length) }))
-                    .ToList();
+                var fileEntries = GetFileEntries(zip);
 
                 int totalFiles = fileEntries.Count;
                 if (totalFiles == 0)
@@ -351,10 +173,8 @@ public class InstallHelper
                 var staged = new List<string>();
                 var stagedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 int extracted = 0;
-                foreach (var item in fileEntries)
+                foreach (var (entry, relativePath) in fileEntries)
                 {
-                    var entry = item.Entry;
-                    var relativePath = item.RelativePath;
                     string destPath;
                     string stagedPath;
                     if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
@@ -376,12 +196,7 @@ public class InstallHelper
                     }
 
                     CurrentFileChanged?.Invoke($"Extracting {relativePath}");
-                    Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
-                    using (var stream = entry.Open())
-                    using (var outFile = new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        await stream.CopyToAsync(outFile);
-                    }
+                    await ExtractEntryAsync(entry, stagedPath);
 
                     if (stagedSet.Add(relativePath))
                         staged.Add(relativePath);
@@ -402,6 +217,28 @@ public class InstallHelper
             Log($"Extraction failed: {ex}");
             FinishStatus = InstallError.ExtractingFile;
             return null;
+        }
+    }
+
+    private static List<(ZipArchiveEntry Entry, string RelativePath)> GetFileEntries(ZipArchive zip)
+    {
+        // Entries with the path relative to the installation, layer by layer: a later
+        // layer overwrites the files of an earlier one.
+        return GetLayerPrefixes(zip)
+            .SelectMany(prefix => zip.Entries
+                .Select(e => new { Entry = e, Name = e.FullName.Replace('\\', '/') })
+                .Where(e => e.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !e.Name.EndsWith("/"))
+                .Select(e => (e.Entry, RelativePath: e.Name.Substring(prefix.Length))))
+            .ToList();
+    }
+
+    private static async Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
+        using (var stream = entry.Open())
+        using (var outFile = new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await stream.CopyToAsync(outFile);
         }
     }
 
@@ -595,18 +432,5 @@ public class InstallHelper
         return true;
     }
 
-    private void Log(string text)
-    {
-        try
-        {
-            string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {text}{Environment.NewLine}";
-            // In a single-file application, AppContext.BaseDirectory is the folder of Update.exe.
-            File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "update.log"), logLine);
-        }
-        catch (Exception)
-        {
-            // The log is optional. A failed write (for example, the file is locked) must not
-            // stop the update, and there is no other place to report it.
-        }
-    }
+    private static void Log(string text) => UpdateLog.Write(text);
 }
