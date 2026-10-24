@@ -1,52 +1,36 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CDPIUI.AddOns.ConfigImport;
-using CDPIUI.AddOns.ConfigShare;
-using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Universal;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Store;
-using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.AddOns.ConfigImport;
-using CDPIUI.Helper.AddOns.ConfigShare;
-using CDPIUI.Shared.Extensions;
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
-using WinUI3Localizer;
+using CDPIUI.Views.ConfigImportUtil;
 
-namespace CDPIUI.Views.ConfigImportUtil;
+namespace CDPIUI.ViewModels.ConfigImport;
 
-public sealed partial class MainPage
+public sealed partial class ConfigImportPageViewModel
 {
-    private async void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: ConfigImportPresetViewModel item } ||
-            item.SelectedComponent == null ||
-            !item.Result.IsSuccessful)
-        {
-            return;
-        }
-        if (await SaveItemAsync(item))
-            _results.Remove(item);
+    private ConfigImportPresetViewModel _activeTestItem;
+    private string _activeTestComponentId = string.Empty;
+    private ConfigImportTestPlaceholder _activeTestPlaceholder;
 
-        if (_results.Count == 0)
+    /// <summary>Saves one converted preset; the last saved preset ends the wizard.</summary>
+    public async Task SaveAsync(ConfigImportPresetViewModel item)
+    {
+        if (item.SelectedComponent == null || !item.Result.IsSuccessful)
+            return;
+
+        if (await SaveItemAsync(item))
+            Results.Remove(item);
+
+        if (Results.Count == 0)
         {
-            NextButton.Visibility = Visibility.Collapsed;
-            MainContent.GoTo(WorkDoneStep);
+            IsNextVisible = false;
+            GoToStep(ConfigImportStep.WorkDone);
         }
     }
 
@@ -92,14 +76,11 @@ public sealed partial class MainPage
         }
     }
 
-    private async void TestButton_Click(object sender, RoutedEventArgs e)
+    /// <summary>Starts the component with the converted preset, or stops the running test of this preset.</summary>
+    public async Task ToggleTestAsync(ConfigImportPresetViewModel item)
     {
-        if (sender is not Button { Tag: ConfigImportPresetViewModel item } ||
-            item.SelectedComponent == null ||
-            !item.Result.IsSuccessful)
-        {
+        if (item.SelectedComponent == null || !item.Result.IsSuccessful)
             return;
-        }
 
         if (ReferenceEquals(_activeTestItem, item))
         {
@@ -169,7 +150,7 @@ public sealed partial class MainPage
         if (!string.Equals(state.Item1, _activeTestComponentId, StringComparison.OrdinalIgnoreCase) || state.Item2)
             return;
 
-        DispatcherQueue.TryEnqueue(CompleteTestSession);
+        _dispatcherQueue.TryEnqueue(CompleteTestSession);
     }
 
     private async Task StopActiveTestAsync()
@@ -184,7 +165,7 @@ public sealed partial class MainPage
             }
             catch (Exception exception)
             {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
+                Logger.Instance.CreateWarningLog(LogSource, exception.ToString());
             }
         }
         CompleteTestSession();
