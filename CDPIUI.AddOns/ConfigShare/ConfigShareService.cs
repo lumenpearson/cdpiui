@@ -153,48 +153,9 @@ public sealed class ConfigShareService
         try
         {
             using var archive = ZipFile.OpenRead(path);
-            if (archive.Entries.Count == 0 || archive.Entries.Count > MaxEntries)
-                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Invalid archive file count.");
-            var entries = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
-            long total = 0;
-            foreach (var entry in archive.Entries)
-            {
-                SafeDestination(directory, entry.FullName);
-                if (!entries.TryAdd(entry.FullName, entry) || entry.Length > MaxTotalBytes || (total += entry.Length) > MaxTotalBytes)
-                    throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Duplicate entries or excessive archive size.");
-                if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
-                    throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Symbolic links are not supported.");
-                // Site lists compress well, but not a thousand times: a small file that unpacks to
-                // the size limit only fills memory and disk.
-                if (entry.Length > 1024 * 1024 && entry.Length > entry.CompressedLength * MaxCompressionRatio)
-                    throw new ConfigShareException("SHARE_ARCHIVE_INVALID", $"The entry {entry.FullName} is compressed too strongly.");
-            }
-            if (!entries.TryGetValue(ManifestName, out var manifestEntry) || manifestEntry.Length > MaxManifestBytes)
-                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The archive has no valid manifest.");
-            string json = Encoding.UTF8.GetString(ReadEntry(manifestEntry, MaxManifestBytes));
-            var manifest = JSONConvertor.DeserializeObject<ConfigShareManifest>(json)
-                ?? throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The manifest is empty.");
-            if (manifest.Version != 1)
-                throw new ConfigShareException("SHARE_VERSION_UNSUPPORTED", $"Unsupported format version: {manifest.Version}.");
-            if (string.IsNullOrWhiteSpace(manifest.Name) || string.IsNullOrWhiteSpace(manifest.Developer) ||
-                manifest.Config?.target is not { Count: > 0 } || string.IsNullOrWhiteSpace(manifest.Config.target[0]) ||
-                string.IsNullOrWhiteSpace(manifest.Config.startup_string) || manifest.Resources == null ||
-                entries.Count != manifest.Resources.Count + 1)
-                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The preset metadata or resource list is invalid.");
-            var references = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var resource in manifest.Resources)
-            {
-                if (resource == null || !resource.Path.StartsWith("resources/", StringComparison.Ordinal) ||
-                    !entries.TryGetValue(resource.Path, out var entry) || resource.Length != entry.Length ||
-                    !references.TryAdd(ReferencePrefix + resource.Path, SafeDestination(directory, resource.Path).Replace('\\', '/')))
-                    throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Invalid or missing resource entry.");
-                byte[] data = ReadEntry(entry, MaxTotalBytes);
-                if (!Convert.ToHexString(SHA256.HashData(data)).Equals(resource.Sha256, StringComparison.OrdinalIgnoreCase))
-                    throw new ConfigShareException("SHARE_CHECKSUM_FAILED", $"Resource checksum mismatch: {resource.Path}");
-                string destination = SafeDestination(directory, resource.Path);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                File.WriteAllBytes(destination, data);
-            }
+            var entries = IndexEntries(archive, directory);
+            var manifest = ReadManifest(entries);
+            var references = ExtractResources(manifest, entries, directory);
             ConfigItem config = Clone(manifest.Config);
             config.jparams ??= [];
             config.variables ??= [];
@@ -220,6 +181,72 @@ public sealed class ConfigShareService
             DeleteTemporaryDirectory(directory);
             throw Report("SHARE_IMPORT_FAILED", exception);
         }
+    }
+
+    /// <summary>
+    /// Checks the count, paths, sizes, links and compression ratio of every entry before
+    /// anything is read, and indexes the entries by name.
+    /// </summary>
+    private static Dictionary<string, ZipArchiveEntry> IndexEntries(ZipArchive archive, string directory)
+    {
+        if (archive.Entries.Count == 0 || archive.Entries.Count > MaxEntries)
+            throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Invalid archive file count.");
+        var entries = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
+        long total = 0;
+        foreach (var entry in archive.Entries)
+        {
+            SafeDestination(directory, entry.FullName);
+            if (!entries.TryAdd(entry.FullName, entry) || entry.Length > MaxTotalBytes || (total += entry.Length) > MaxTotalBytes)
+                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Duplicate entries or excessive archive size.");
+            if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
+                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Symbolic links are not supported.");
+            // Site lists compress well, but not a thousand times: a small file that unpacks to
+            // the size limit only fills memory and disk.
+            if (entry.Length > 1024 * 1024 && entry.Length > entry.CompressedLength * MaxCompressionRatio)
+                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", $"The entry {entry.FullName} is compressed too strongly.");
+        }
+        return entries;
+    }
+
+    private static ConfigShareManifest ReadManifest(Dictionary<string, ZipArchiveEntry> entries)
+    {
+        if (!entries.TryGetValue(ManifestName, out var manifestEntry) || manifestEntry.Length > MaxManifestBytes)
+            throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The archive has no valid manifest.");
+        string json = Encoding.UTF8.GetString(ReadEntry(manifestEntry, MaxManifestBytes));
+        var manifest = JSONConvertor.DeserializeObject<ConfigShareManifest>(json)
+            ?? throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The manifest is empty.");
+        if (manifest.Version != 1)
+            throw new ConfigShareException("SHARE_VERSION_UNSUPPORTED", $"Unsupported format version: {manifest.Version}.");
+        if (string.IsNullOrWhiteSpace(manifest.Name) || string.IsNullOrWhiteSpace(manifest.Developer) ||
+            manifest.Config?.target is not { Count: > 0 } || string.IsNullOrWhiteSpace(manifest.Config.target[0]) ||
+            string.IsNullOrWhiteSpace(manifest.Config.startup_string) || manifest.Resources == null ||
+            entries.Count != manifest.Resources.Count + 1)
+            throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "The preset metadata or resource list is invalid.");
+        return manifest;
+    }
+
+    /// <summary>
+    /// Writes each listed resource after its size and checksum match, and returns the map
+    /// from its share:// reference to the extracted file.
+    /// </summary>
+    private static Dictionary<string, string> ExtractResources(
+        ConfigShareManifest manifest, Dictionary<string, ZipArchiveEntry> entries, string directory)
+    {
+        var references = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var resource in manifest.Resources)
+        {
+            if (resource == null || !resource.Path.StartsWith("resources/", StringComparison.Ordinal) ||
+                !entries.TryGetValue(resource.Path, out var entry) || resource.Length != entry.Length ||
+                !references.TryAdd(ReferencePrefix + resource.Path, SafeDestination(directory, resource.Path).Replace('\\', '/')))
+                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Invalid or missing resource entry.");
+            byte[] data = ReadEntry(entry, MaxTotalBytes);
+            if (!Convert.ToHexString(SHA256.HashData(data)).Equals(resource.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new ConfigShareException("SHARE_CHECKSUM_FAILED", $"Resource checksum mismatch: {resource.Path}");
+            string destination = SafeDestination(directory, resource.Path);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.WriteAllBytes(destination, data);
+        }
+        return references;
     }
 
     public async Task<ConfigShareInstallResult> InstallAsync(ConfigSharePackage package, string displayName,
@@ -261,31 +288,8 @@ public sealed class ConfigShareService
             string relativeRoot = "Shared/" + Guid.NewGuid().ToString("N");
             resourceDirectory = SafeDestination(packDirectory, relativeRoot);
             Directory.CreateDirectory(resourceDirectory);
-            var runtimeReferences = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var libraryReferences = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var resource in package.Manifest.Resources)
-            {
-                string source = SafeDestination(package.DirectoryPath, resource.Path);
-                string target = SafeDestination(resourceDirectory, resource.Path);
-                runtimeReferences[source] = "$GETCURRENTDIR()/" + relativeRoot + "/" + resource.Path;
-                runtimeReferences[source.Replace('\\', '/')] = runtimeReferences[source];
-                runtimeReferences[ReferencePrefix + resource.Path] = runtimeReferences[source];
-                libraryReferences[source] = target.Replace('\\', '/');
-                libraryReferences[source.Replace('\\', '/')] = libraryReferences[source];
-                libraryReferences[ReferencePrefix + resource.Path] = libraryReferences[source];
-            }
-            AddParentReferences(runtimeReferences);
-            AddParentReferences(libraryReferences);
-            foreach (var resource in package.Manifest.Resources)
-            {
-                string source = SafeDestination(package.DirectoryPath, resource.Path);
-                string destination = SafeDestination(resourceDirectory, resource.Path);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                if (resource.RewriteReferences)
-                    File.WriteAllText(destination, ReplaceReferences(File.ReadAllText(source), libraryReferences), new UTF8Encoding(false));
-                else
-                    File.Copy(source, destination, false);
-            }
+            var (runtimeReferences, libraryReferences) = BuildInstallReferences(package, resourceDirectory, relativeRoot);
+            CopyResources(package, resourceDirectory, libraryReferences);
             ConfigItem config = Clone(editedConfig ?? package.Config);
             ConfigShareResources.MapConfig(config, text => ReplaceConfigReferences(text, runtimeReferences));
             config.name = config.not_converted_name = name.Trim();
@@ -299,21 +303,7 @@ public sealed class ConfigShareService
                 using var output = new StreamWriter(stream, new UTF8Encoding(false));
                 output.Write(JSONConvertor.SerializeObject(config));
             }
-            if (createPack && !DatabaseHelper.Instance.AddOrUpdateItem(new DatabaseStoreItem
-            {
-                Id = packId,
-                Type = "configlist",
-                Directory = packDirectory,
-                Name = newPackName!.Trim(),
-                ShortName = newPackName.Trim(),
-                Developer = package.Manifest.Developer,
-                VersionControlType = "local",
-                CurrentVersion = "1.0",
-                IconPath = "$STATICIMAGE(Store/empty.png)",
-                BackgroundColor = "",
-                RequiredItemIds = [Tuple.Create(config.target![0], config.target.ElementAtOrDefault(1) ?? "0.0")],
-                DependentItemIds = []
-            }))
+            if (createPack && !DatabaseHelper.Instance.AddOrUpdateItem(CreatePackItem(packId, packDirectory, newPackName!, package, config)))
                 throw new ConfigShareException("SHARE_DATABASE_FAILED", "Cannot register the new kit.");
             Log($"Installed shared preset in {packId}/{filename}.");
             return new ConfigShareInstallResult(filename, packId);
@@ -329,6 +319,64 @@ public sealed class ConfigShareService
             throw Report("SHARE_INSTALL_FAILED", exception);
         }
     }
+
+    /// <summary>
+    /// Maps every form of a packaged resource path (temporary file, slash form, share://
+    /// reference and their parents) to its runtime path for the preset and to its installed
+    /// file for the copied resources.
+    /// </summary>
+    private static (Dictionary<string, string> Runtime, Dictionary<string, string> Library) BuildInstallReferences(
+        ConfigSharePackage package, string resourceDirectory, string relativeRoot)
+    {
+        var runtimeReferences = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var libraryReferences = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var resource in package.Manifest.Resources)
+        {
+            string source = SafeDestination(package.DirectoryPath, resource.Path);
+            string target = SafeDestination(resourceDirectory, resource.Path);
+            runtimeReferences[source] = "$GETCURRENTDIR()/" + relativeRoot + "/" + resource.Path;
+            runtimeReferences[source.Replace('\\', '/')] = runtimeReferences[source];
+            runtimeReferences[ReferencePrefix + resource.Path] = runtimeReferences[source];
+            libraryReferences[source] = target.Replace('\\', '/');
+            libraryReferences[source.Replace('\\', '/')] = libraryReferences[source];
+            libraryReferences[ReferencePrefix + resource.Path] = libraryReferences[source];
+        }
+        AddParentReferences(runtimeReferences);
+        AddParentReferences(libraryReferences);
+        return (runtimeReferences, libraryReferences);
+    }
+
+    private static void CopyResources(ConfigSharePackage package, string resourceDirectory,
+        IReadOnlyDictionary<string, string> libraryReferences)
+    {
+        foreach (var resource in package.Manifest.Resources)
+        {
+            string source = SafeDestination(package.DirectoryPath, resource.Path);
+            string destination = SafeDestination(resourceDirectory, resource.Path);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            if (resource.RewriteReferences)
+                File.WriteAllText(destination, ReplaceReferences(File.ReadAllText(source), libraryReferences), new UTF8Encoding(false));
+            else
+                File.Copy(source, destination, false);
+        }
+    }
+
+    private static DatabaseStoreItem CreatePackItem(string packId, string packDirectory, string newPackName,
+        ConfigSharePackage package, ConfigItem config) => new()
+    {
+        Id = packId,
+        Type = "configlist",
+        Directory = packDirectory,
+        Name = newPackName.Trim(),
+        ShortName = newPackName.Trim(),
+        Developer = package.Manifest.Developer,
+        VersionControlType = "local",
+        CurrentVersion = "1.0",
+        IconPath = "$STATICIMAGE(Store/empty.png)",
+        BackgroundColor = "",
+        RequiredItemIds = [Tuple.Create(config.target![0], config.target.ElementAtOrDefault(1) ?? "0.0")],
+        DependentItemIds = []
+    };
 
     internal static ConfigItem Clone(ConfigItem config) => JSONConvertor.DeserializeObject<ConfigItem>(JSONConvertor.SerializeObject(config))!;
 
