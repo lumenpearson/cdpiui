@@ -98,13 +98,13 @@
                         </Rectangle>
                         <Grid>
                             <Image x:Name="PART_Image" Source="{x:Bind CardImageSource, Mode=OneWay}" Width="30" Height="30"/>
-                            <Grid x:Name="StatusGrid" Height="20" Width="20">
+                            <Grid x:Name="StatusGrid" Height="20" Width="20" ToolTipService.ToolTip="{x:Bind ViewModel.StatusToolTip, Mode=OneWay}">
                                 <Grid.RenderTransform>
                                     <TranslateTransform X="10" Y="10"/>
                                 </Grid.RenderTransform>
-                                <FontIcon x:Name="BackgroundStatusFontIcon" Glyph="&#xE91F;" Foreground="{ThemeResource SystemFillColorSuccessBrush}" FontSize="18"/>
-                                <FontIcon x:Name="ForegroundStatusFontIcon" Glyph="&#xF13E;" Foreground="Black" FontSize="10" Margin="1 0 0 0" FontWeight="Bold"/>
-                                <FontIcon x:Name="ForegroundStopStatusFontIcon" Glyph="&#xE7E8;" Foreground="Black" FontSize="14" Margin="0 0 0 0" FontWeight="Bold"/>
+                                <FontIcon x:Name="BackgroundStatusFontIcon" Glyph="&#xE91F;" Foreground="{x:Bind StatusBrush(ViewModel.StatusBrushKey), Mode=OneWay}" FontSize="18"/>
+                                <FontIcon x:Name="ForegroundStatusFontIcon" Glyph="&#xF13E;" Foreground="Black" FontSize="{x:Bind ViewModel.RunningGlyphFontSize, Mode=OneWay}" Margin="1 0 0 0" FontWeight="Bold" Visibility="{x:Bind ViewModel.IsRunningGlyphVisible, Mode=OneWay}"/>
+                                <FontIcon x:Name="ForegroundStopStatusFontIcon" Glyph="{x:Bind ViewModel.StopGlyph, Mode=OneWay}" Foreground="Black" FontSize="14" Margin="0 0 0 0" FontWeight="Bold" Visibility="{x:Bind ViewModel.IsStopGlyphVisible, Mode=OneWay}"/>
                                 <FontIcon Glyph="&#xEA3A;" Foreground="Black" FontSize="20"/>
                             </Grid>
                         </Grid>
@@ -116,8 +116,8 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="{x:Bind CardTitle, Mode=OneWay}" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="1" Spacing="10">
-                            <CheckBox x:Name="AutorunCheckBox" l:Uids.Uid="AutorunCheckBox" Click="AutorunCheckBox_Click"/>
-                            <StackPanel x:Name="ProxyStackPanel" Orientation="Horizontal" Spacing="10">
+                            <CheckBox x:Name="AutorunCheckBox" l:Uids.Uid="AutorunCheckBox" IsChecked="{x:Bind ViewModel.IsAutorunChecked, Mode=TwoWay}" Command="{x:Bind ViewModel.SaveAutorunCommand}"/>
+                            <StackPanel x:Name="ProxyStackPanel" Orientation="Horizontal" Spacing="10" Visibility="{x:Bind ViewModel.IsProxyButtonVisible, Mode=OneWay}">
                                 <ucontrol:ContentSeparator Height="20"/>
                                 <Button x:Name="ProxyButton" Background="Transparent" BorderBrush="Transparent" 
                                         HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" Padding="6" Click="ProxyButton_Click">
@@ -137,19 +137,19 @@
             </controls:SettingsCard.Header>
             <Grid Grid.Column="4" Margin="0 0 20 0">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <ToggleButton x:Name="PlayButton" Padding="6" Click="PlayButton_Click">
+                    <ToggleButton x:Name="PlayButton" Padding="6" IsChecked="{x:Bind ViewModel.IsRunning, Mode=OneWay}" Command="{x:Bind ViewModel.ToggleProcessCommand}">
                         <ToolTipService.ToolTip>
-                            <TextBlock x:Name="PlayToolTip"/>
+                            <TextBlock x:Name="PlayToolTip" Text="{x:Bind ViewModel.PlayToolTip, Mode=OneWay}"/>
                         </ToolTipService.ToolTip>
-                        <FontIcon x:Name="PlayGlyph" Glyph="&#xE768;" FontSize="16"/>
+                        <FontIcon x:Name="PlayGlyph" Glyph="{x:Bind ViewModel.PlayGlyph, Mode=OneWay}" FontSize="16"/>
                     </ToggleButton>
-                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ViewOutputButton" l:Uids.Uid="ViewOutputButton" Padding="6" Click="ViewOutputButton_Click">
+                    <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ViewOutputButton" l:Uids.Uid="ViewOutputButton" Padding="6" Command="{x:Bind ViewModel.ViewOutputCommand}">
                         <FontIcon Glyph="&#xE721;" FontSize="16"/>
                     </Button>
                     <Button x:Name="ShowMoreSettingsButton" Padding="6" Click="ShowMoreSettingsButton_Click">
                         <FontIcon x:Name="ShowMoreSettingsGlyph" Glyph="&#xE70D;" FontSize="16"/>
                         <ToolTipService.ToolTip>
-                            <TextBlock x:Name="ShowMoreSettingsToolTip"/>
+                            <TextBlock x:Name="ShowMoreSettingsToolTip" Text="{x:Bind ViewModel.ShowMoreSettingsToolTip, Mode=OneWay}"/>
                         </ToolTipService.ToolTip>
                     </Button>
                 </StackPanel>
