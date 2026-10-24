@@ -76,7 +76,7 @@
                     VerticalScrollMode="Auto">
             <StackPanel Spacing="10" Margin="20 20 20 20">
                 <TextBlock x:Name="PageTitleTextBlock" l:Uids.Uid="EditConfigKitMenuItem" FontWeight="Light" FontSize="28"/>
-                <ListView x:Name="ConfigsListView" ItemContainerStyle="{StaticResource ListViewItemStretchStyle}" Visibility="Visible">
+                <ListView x:Name="ConfigsListView" ItemsSource="{x:Bind ViewModel.Configs}" ItemContainerStyle="{StaticResource ListViewItemStretchStyle}" Visibility="Visible">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="viewmodels:ViewConfigInKitModel">
                             <lcontrols:ConfigUserControl
@@ -86,10 +86,10 @@
                                 UsedSiteLists="{x:Bind UsedSiteLists, Mode=OneWay}"
                                 ExcludedSiteLists="{x:Bind ExcludedSiteLists, Mode=OneWay}"
                                 LastEditTime="{x:Bind LastEditTime, Mode=OneWay}"
-                                RemoveCommand="{Binding RemoveConfigCommand, ElementName=MainPage}"
-                                RenameCommand="{Binding RenameConfigCommand, ElementName=MainPage}"
-                                EditCommand="{Binding EditConfigCommand, ElementName=MainPage}"
-                                OpenFileDirectoryCommand="{Binding OpenDirectoryCommand, ElementName=MainPage}"
+                                RemoveCommand="{Binding ViewModel.RemoveConfigCommand, ElementName=MainPage}"
+                                RenameCommand="{Binding ViewModel.RenameConfigCommand, ElementName=MainPage}"
+                                EditCommand="{Binding ViewModel.EditConfigCommand, ElementName=MainPage}"
+                                OpenFileDirectoryCommand="{Binding ViewModel.OpenDirectoryCommand, ElementName=MainPage}"
                                 />
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -127,13 +127,13 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="SaveAsButton" MinWidth="150" Click="SaveAsButton_Click" Style="{ThemeResource AccentButtonStyle}">
+                    <Button x:Name="SaveAsButton" MinWidth="150" Command="{x:Bind ViewModel.SaveAsCommand}" Style="{ThemeResource AccentButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE792;" FontSize="16"/>
                             <TextBlock l:Uids.Uid="SaveMenuItem"/>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="SaveButton" MinWidth="150" Grid.Column="2">
+                    <Button x:Name="SaveButton" MinWidth="150" Grid.Column="2" IsEnabled="{x:Bind ViewModel.IsSaveEnabled, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE74E;" FontSize="16"/>
                             <TextBlock l:Uids.Uid="SaveTextBlock"/>
