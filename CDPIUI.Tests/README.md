@@ -51,6 +51,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Core` | `ConfigCommandLineTests` | Tokenization of preset command lines |
 | `Core` | `ConfigFileReferencesTests` | File references in preset arguments (blob offsets, LUA files) |
 | `Core` | `ConfigItemContentTests` | Variables of presets: expansion, cycles, file references, stored form |
+| `Core` | `DownloadFileNameTests` | Target file names of Store downloads: plain names only, no paths |
 | `Core` | `DownloadHashTests` | SHA-256 check of Store downloads |
 | `Core` | `IniDocumentTests` | Read and change of INI files with `IniDocument` |
 | `Core` | `LScriptCoreTests` | LScript conditions, nested arguments and the parse of condition strings |

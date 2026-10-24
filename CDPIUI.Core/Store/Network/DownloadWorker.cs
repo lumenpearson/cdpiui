@@ -118,6 +118,10 @@ namespace CDPIUI.Core.Store.Network
                 {
                     if (!string.IsNullOrEmpty(executableFileName))
                     {
+                        // target_executable_file comes from the catalogue: "..\..\x" wrote the
+                        // download outside the item folder.
+                        if (!IsPlainFileName(executableFileName))
+                            throw new InvalidDataException($"Invalid target file name: {executableFileName}");
                         string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
                         File.Copy(tempDestination, copiedPath, true);
                         _extractedFiles.Add(copiedPath);
@@ -218,6 +222,13 @@ namespace CDPIUI.Core.Store.Network
         {
             return await DownloadAndExtractAsync(url, destinationPath, extractArchive, extractSkipFiletypes, extractRootFolder, executableFileName, filetype.ToString(), removeAfterAction, filename, expectedSha256);
         }
+
+        internal static bool IsPlainFileName(string name) =>
+            !string.IsNullOrWhiteSpace(name) &&
+            name == Path.GetFileName(name) &&
+            name != "." && name != ".." &&
+            name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
+            !name.Contains('\\') && !name.Contains('/');
 
         internal static bool HasSha256(string file, string expectedSha256)
         {

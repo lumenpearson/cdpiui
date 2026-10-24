@@ -51,6 +51,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Core` | `ConfigCommandLineTests` | Разбиение командных строк пресетов на токены |
 | `Core` | `ConfigFileReferencesTests` | Ссылки на файлы в аргументах пресетов (смещения blob, файлы LUA) |
 | `Core` | `ConfigItemContentTests` | Переменные пресетов: подстановка, циклы, ссылки на файлы, форма для хранения |
+| `Core` | `DownloadFileNameTests` | Имена файлов загрузок Магазина: только имя, без путей |
 | `Core` | `DownloadHashTests` | Проверка SHA-256 загрузок Магазина |
 | `Core` | `IniDocumentTests` | Чтение и изменение INI-файлов через `IniDocument` |
 | `Core` | `LScriptCoreTests` | Условия LScript, вложенные аргументы и разбор строк условий |

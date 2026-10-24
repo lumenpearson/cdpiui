@@ -224,7 +224,7 @@ namespace CDPIUI.TrayIcon.Helper
                     throw new InvalidOperationException(
                         $"Cannot start process, error: {Marshal.GetLastWin32Error()}");
                 }
-                lease.Dispose();
+                // Kept until the process exits (finally below), like the lease of a component start.
 
                 ChildProcessJob.Assign(processInfo.hProcess);
                 CloseHandle(processInfo.hThread);
@@ -535,7 +535,9 @@ namespace CDPIUI.TrayIcon.Helper
                     // reach the GUI as such instead of an unknown error.
                     throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot start process.");
                 }
-                lease.Dispose();
+                // The lease stays until the process exits (finally below): the child maps its DLLs
+                // after CreateProcess returns and can load more later, and a user process could
+                // replace them in the item folder the moment the lease was released.
 
                 _processInfo = pi;
                 ChildProcessJob.Assign(pi.hProcess);

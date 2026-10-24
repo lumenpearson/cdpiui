@@ -183,7 +183,7 @@ The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck 
 5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.txt`, one line per program: the fingerprint, a tab and the path. Only administrators can change this folder.
 
 `ExecutableLease` (the locks and the fingerprint) and `ExecutableApprovals` (the approval file and the Store item folder) are in `CDPIUI.Shared/Security`, so `CDPIUI.Tests` can test them. `ExecutableTrust` in the tray decides and asks the user.
-6. The tray releases the handles after the process starts.
+6. The tray keeps the handles until the process exits. The process loads its DLLs after it starts and can load more later, so the files must stay locked for the whole run. An update of the item stops the component first, so the handles do not block it.
 
 A portable copy does not do steps 3 and 4, because the user can change the tray itself.
 
