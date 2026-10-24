@@ -60,15 +60,7 @@ public sealed class BlockCheckSynthesisService
             selection,
             baselineProbeResults,
             options);
-        CoverageSelectionResult profileSelection = bestEffortAssignments.Count == 0
-            ? selection
-            : new CoverageSelectionResult
-            {
-                Assignments = selection.Assignments
-                    .Concat(bestEffortAssignments)
-                    .ToArray(),
-                UncoveredTargetIds = selection.UncoveredTargetIds,
-            };
+        CoverageSelectionResult profileSelection = WithBestEffortAssignments(selection, bestEffortAssignments);
 
         AddUncoveredTargetIssues(selection, targetsRequiringProfile, allEvaluations, options, issues);
 
@@ -82,23 +74,12 @@ public sealed class BlockCheckSynthesisService
             issues.Add(BuildBestEffortIssue(bestEffortAssignments));
         }
 
-        Zapret2WriteResult configuration = profiles.Count == 0
-            ? new Zapret2WriteResult
-            {
-                Issues =
-                [
-                    BuildNoProfilesIssue(
-                        targetsRequiringProfile,
-                        selection,
-                        allEvaluations,
-                        options),
-                ],
-            }
-            : _writer.Write(profiles, new Zapret2WriterOptions
-            {
-                CircularFailureThreshold = options.CircularFailureThreshold,
-                MakeLastFallbackFinal = options.MakeLastFallbackFinal,
-            });
+        Zapret2WriteResult configuration = WriteConfiguration(
+            profiles,
+            targetsRequiringProfile,
+            selection,
+            allEvaluations,
+            options);
 
         issues.AddRange(configuration.Issues);
         return new BlockCheckSynthesisResult
@@ -159,6 +140,43 @@ public sealed class BlockCheckSynthesisService
                 options)
             : [];
     }
+
+    private static CoverageSelectionResult WithBestEffortAssignments(
+        CoverageSelectionResult selection,
+        IReadOnlyList<StrategyAssignment> bestEffortAssignments) =>
+        bestEffortAssignments.Count == 0
+            ? selection
+            : new CoverageSelectionResult
+            {
+                Assignments = selection.Assignments
+                    .Concat(bestEffortAssignments)
+                    .ToArray(),
+                UncoveredTargetIds = selection.UncoveredTargetIds,
+            };
+
+    private Zapret2WriteResult WriteConfiguration(
+        IReadOnlyList<Zapret2ProfilePlan> profiles,
+        IReadOnlyList<BlockCheckTarget> targetsRequiringProfile,
+        CoverageSelectionResult selection,
+        IReadOnlyList<CandidateEvaluation> allEvaluations,
+        BlockCheckSynthesisOptions options) =>
+        profiles.Count == 0
+            ? new Zapret2WriteResult
+            {
+                Issues =
+                [
+                    BuildNoProfilesIssue(
+                        targetsRequiringProfile,
+                        selection,
+                        allEvaluations,
+                        options),
+                ],
+            }
+            : _writer.Write(profiles, new Zapret2WriterOptions
+            {
+                CircularFailureThreshold = options.CircularFailureThreshold,
+                MakeLastFallbackFinal = options.MakeLastFallbackFinal,
+            });
 
     private static void AddUncoveredTargetIssues(
         CoverageSelectionResult selection,

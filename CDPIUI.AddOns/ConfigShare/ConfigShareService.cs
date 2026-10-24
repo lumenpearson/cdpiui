@@ -269,13 +269,7 @@ public sealed class ConfigShareService
         bool configCreated = false;
         try
         {
-            if (!IsWritablePackId(packId))
-                throw new ConfigShareException("SHARE_DESTINATION_INVALID", "Store kits cannot receive shared presets.");
-            if (string.IsNullOrWhiteSpace(name) || (createPack && string.IsNullOrWhiteSpace(newPackName)))
-                throw new ConfigShareException("SHARE_NAME_REQUIRED", "A preset and kit name are required.");
-            string packDirectory = ConfigurationService.GetItemFolderFromPackId(packId);
-            if (!createPack && DatabaseHelper.Instance.GetItemById(packId)?.Type != "configlist")
-                throw new ConfigShareException("SHARE_DESTINATION_INVALID", "The selected kit is not installed.");
+            string packDirectory = GetInstallPackDirectory(packId, name, newPackName);
             if (createPack)
             {
                 if (Directory.Exists(packDirectory))
@@ -318,6 +312,23 @@ public sealed class ConfigShareService
                 TryCleanup(() => Directory.Delete(newPackDirectory, true));
             throw Report("SHARE_INSTALL_FAILED", exception);
         }
+    }
+
+    /// <summary>
+    /// Checks the destination kit and the names, and returns the kit folder. A null
+    /// <paramref name="newPackName"/> means an existing kit receives the preset.
+    /// </summary>
+    private static string GetInstallPackDirectory(string packId, string name, string? newPackName)
+    {
+        bool createPack = newPackName != null;
+        if (!IsWritablePackId(packId))
+            throw new ConfigShareException("SHARE_DESTINATION_INVALID", "Store kits cannot receive shared presets.");
+        if (string.IsNullOrWhiteSpace(name) || (createPack && string.IsNullOrWhiteSpace(newPackName)))
+            throw new ConfigShareException("SHARE_NAME_REQUIRED", "A preset and kit name are required.");
+        string packDirectory = ConfigurationService.GetItemFolderFromPackId(packId);
+        if (!createPack && DatabaseHelper.Instance.GetItemById(packId)?.Type != "configlist")
+            throw new ConfigShareException("SHARE_DESTINATION_INVALID", "The selected kit is not installed.");
+        return packDirectory;
     }
 
     /// <summary>
