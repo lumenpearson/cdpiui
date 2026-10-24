@@ -241,10 +241,10 @@ public class ConPTYHelper
     // caller closes them when CreatePseudoConsole fails.
     private void CreatePseudoConsoleWithPipes(ref IntPtr hInputRead, ref IntPtr hOutputWrite)
     {
+        // Each handle is stored before the next call, so the cleanup closes it if that call throws.
         CreatePipe(out hInputRead, out IntPtr hInputWrite, false);
-        CreatePipe(out IntPtr hOutputRead, out hOutputWrite, false);
-
         _hInputWrite = hInputWrite;
+        CreatePipe(out IntPtr hOutputRead, out hOutputWrite, false);
         _hOutputRead = hOutputRead;
 
         var size = new COORD { X = 80, Y = 25 };
