@@ -168,7 +168,7 @@ public sealed partial class CreateConfigUtilWindow : TemplateWindow
     }
 
     private bool IsBlockCheck2Running =>
-        ContentFrame.Content is BlockCheck2MainPage page && page.ViewModel.IsRunning;
+        ContentFrame.Content is BlockCheck2MainPage page && page.ViewModel.Session.IsRunning;
 
     private bool IsSelectionRunning =>
         GoodCheckProcessService.Instance.IsRunning() || IsBlockCheck2Running;
