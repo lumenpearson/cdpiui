@@ -1,33 +1,16 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
+using System.ComponentModel;
 using System.Windows.Input;
 using CDPIUI.Controls.Dialogs.Universal;
-using CDPIUI.Core.Store;
-using CDPIUI.Helper.Parsers;
-using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.Views.Store;
+using CDPIUI.ViewModels.Store;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI;
 using WinUI3Localizer;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace CDPIUI.Controls.Store;
 
@@ -71,23 +54,35 @@ public sealed partial class StoreDownloadItemButton : UserControl
 
     private ILocalizer _localizer = Localizer.Get();
 
+    public StoreDownloadItemButtonViewModel ViewModel { get; }
+
     public StoreDownloadItemButton()
     {
+        ViewModel = new StoreDownloadItemButtonViewModel(ExecuteClickCommand);
+        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+
         InitializeComponent();
         _config = new MarkdownConfig();
 
         this.Loaded += StoreDownloadItemButton_Loaded;
-
-        BigStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
     }
 
-    private void CheckCurrentStatus()
+    private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
-        if (!string.IsNullOrEmpty(operationId))
+        switch (e.PropertyName)
         {
-            string status = StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadStage;
-            PreferItemDownloadingStateActions(status);
+            case nameof(StoreDownloadItemButtonViewModel.ActionGlyph):
+                ActionGlyph = ViewModel.ActionGlyph;
+                break;
+            case nameof(StoreDownloadItemButtonViewModel.Tooltip):
+                Tooltip = ViewModel.Tooltip;
+                break;
+            case nameof(StoreDownloadItemButtonViewModel.IsProgressCritical):
+                // The brushes come from the application resources, so the view sets them.
+                ProgressBar.Foreground = ViewModel.IsProgressCritical
+                    ? new SolidColorBrush((Color)Application.Current.Resources["SystemFillColorCritical"])
+                    : (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+                break;
         }
     }
 
@@ -106,20 +101,20 @@ public sealed partial class StoreDownloadItemButton : UserControl
         set
         {
             SetValue(StoreIdProperty, value);
-            if (IsErrorHappens)
-            {
-                ErrorActions(StoreHelper.Instance.GetFailedToInstallItems().FirstOrDefault(x => x.ItemId == StoreId)?.ErrorCode ?? string.Empty);
-            }
-            RemoveHandlers();
-            ConnectHandlers();
-            CheckCurrentStatus();
+            ViewModel.OnStoreIdSet(IsErrorHappens);
         }
     }
 
     public static readonly DependencyProperty StoreIdProperty =
         DependencyProperty.Register(
-            nameof(StoreId), typeof(string), typeof(StoreDownloadItemButton), new PropertyMetadata(string.Empty)
+            nameof(StoreId), typeof(string), typeof(StoreDownloadItemButton), new PropertyMetadata(string.Empty, OnStoreIdChanged)
         );
+
+    private static void OnStoreIdChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        // Also runs when the value is set without the CLR setter.
+        ((StoreDownloadItemButton)d).ViewModel.StoreId = (string)e.NewValue;
+    }
 
     public string OperationId
     {
@@ -220,29 +215,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
         set
         {
             SetValue(IsUpdateLikeButtonProperty, value);
-            if (value)
-            {
-                StatusStackPanel.Visibility = Visibility.Collapsed;
-                ProgressBar.Visibility = Visibility.Collapsed;
-                CancelButton.Visibility = Visibility.Collapsed;
-                DescriptionStackPanel.Visibility = Visibility.Visible;
-                UpdateGrid.Visibility = Visibility.Visible;
-                BigUpdateGrid.Visibility = Visibility.Visible;
-                VersionStackPanel.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                StatusStackPanel.Visibility = Visibility.Visible;
-                CancelButton.Visibility = Visibility.Visible;
-
-                if (StoreHelper.Instance.GetCurrentQueueOperationId() == OperationId)
-                    ProgressBar.Visibility = Visibility.Visible;
-
-                DescriptionStackPanel.Visibility = Visibility.Collapsed;
-                UpdateGrid.Visibility = Visibility.Collapsed;
-                BigUpdateGrid.Visibility = Visibility.Collapsed;
-                VersionStackPanel.Visibility = Visibility.Collapsed;
-            }
+            ViewModel.SetUpdateLike(value, OperationId);
         }
     }
 
@@ -259,7 +232,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
 
     public static readonly DependencyProperty ActionGlyphProperty =
         DependencyProperty.Register(
-            nameof(ActionGlyph), typeof(string), typeof(StoreDownloadItemButton), new PropertyMetadata("\uE894")
+            nameof(ActionGlyph), typeof(string), typeof(StoreDownloadItemButton), new PropertyMetadata(StoreDownloadItemButtonViewModel.CancelGlyph)
         );
     public bool IsErrorHappens
     {
@@ -267,14 +240,7 @@ public sealed partial class StoreDownloadItemButton : UserControl
         set
         {
             SetValue(IsErrorHappensProperty, value);
-            if (value)
-            {
-                ErrorActions(StoreHelper.Instance.GetFailedToInstallItems().FirstOrDefault(x => x.ItemId == StoreId)?.ErrorCode ?? string.Empty);
-            }
-            else
-            {
-                ClearErrorActions();
-            }
+            ViewModel.SetErrorHappens(value);
         }
     }
 
@@ -312,172 +278,10 @@ public sealed partial class StoreDownloadItemButton : UserControl
             new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
         );
 
-    private void ConnectHandlers()
+    private void ExecuteClickCommand()
     {
-
-
-        StoreHelper.Instance.ItemDownloadStageChanged += StoreHelper_ItemDownloadStageChanged;
-        StoreHelper.Instance.ItemDownloadProgressChanged += StoreHelper_ItemDownloadProgressChanged;
-        StoreHelper.Instance.ItemTimeRemainingChanged += StoreHelper_ItemTimeRemainingChanged;
-        StoreHelper.Instance.ItemDownloadSpeedChanged += StoreHelper_ItemDownloadSpeedChanged;
-        StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
-        StoreHelper.Instance.ItemInstallingErrorHappens += StoreHelper_ItemInstallingErrorHappens;
-    }
-
-
-    private void RemoveHandlers()
-    {
-        StoreHelper.Instance.ItemDownloadStageChanged -= StoreHelper_ItemDownloadStageChanged;
-        StoreHelper.Instance.ItemDownloadProgressChanged -= StoreHelper_ItemDownloadProgressChanged;
-        StoreHelper.Instance.ItemTimeRemainingChanged -= StoreHelper_ItemTimeRemainingChanged;
-        StoreHelper.Instance.ItemDownloadSpeedChanged -= StoreHelper_ItemDownloadSpeedChanged;
-        StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
-        StoreHelper.Instance.ItemInstallingErrorHappens -= StoreHelper_ItemInstallingErrorHappens;
-    }
-
-    private void StoreHelper_ItemInstallingErrorHappens(Tuple<string, ErrorModel> obj)
-    {
-        string operationId = obj.Item1;
-        string errorCode = obj.Item2.ErrorCode;
-
-        if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-            return;
-
-        ErrorActions(errorCode);
-    }
-
-    private void ClearErrorActions()
-    {
-        ErrorTextBlock.Text = "";
-        ActionGlyph = "\uE894";
-        BigStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
-
-        ProgressBar.IsIndeterminate = true;
-        ProgressBar.Value = 0;
-
-        Tooltip = _localizer.GetLocalizedString("Cancel");
-
-        ProgressBar.Foreground = (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"];
-        CheckCurrentStatus();
-    }
-
-    private void ErrorActions(string errorCode)
-    {
-        ActionGlyph = "\uE777";
-        ErrorTextBlock.Text = errorCode;
-        SpeedTextBlock.Text = "";
-        TimeTextBlock.Text = "";
-        BigStatusTextBlock.Text = _localizer.GetLocalizedString("ErrorHappens");
-
-        ProgressBar.IsIndeterminate = false;
-        ProgressBar.Value = 100;
-
-        Tooltip = _localizer.GetLocalizedString("Retry");
-
-        ProgressBar.Foreground = new SolidColorBrush((Color)Application.Current.Resources["SystemFillColorCritical"]);
-        RemoveHandlers();
-    }
-
-    private void StoreHelper_ItemActionsStopped(string obj)
-    {
-        if (obj == StoreId)
-            RemoveHandlers();
-    }
-
-    private void StoreHelper_ItemDownloadSpeedChanged(Tuple<string, double> obj)
-    {
-        string operationId = obj.Item1;
-        double speed = obj.Item2;
-
-        if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-            return;
-
-        SpeedTextBlock.Text = $"{UnitsParser.FormatSpeed(speed)}, ";
-    }
-
-    private void StoreHelper_ItemDownloadProgressChanged(Tuple<string, double> obj)
-    {
-        string operationId = obj.Item1;
-        double progress = obj.Item2;
-
-        if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-            return;
-
-        ProgressBar.IsIndeterminate = false;
-        ProgressBar.Value = progress;
-    }
-
-    private void StoreHelper_ItemTimeRemainingChanged(Tuple<string, TimeSpan> obj)
-    {
-        string operationId = obj.Item1;
-        TimeSpan time = obj.Item2;
-
-        if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-            return;
-
-        TimeTextBlock.Text = UnitsParser.ConvertMinutesToPrettyText(time.TotalMinutes);
-    }
-
-    private void PreferItemDownloadingStateActions(string state)
-    {
-        ProgressBar.Visibility = Visibility.Visible;
-        string stageHeaderText;
-        switch (state)
-        {
-            case "GETR":
-                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "END":
-                stageHeaderText = _localizer.GetLocalizedString("Finishing");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "Downloading":
-                stageHeaderText = _localizer.GetLocalizedString("Downloading");
-                ProgressBar.IsIndeterminate = false;
-                break;
-            case "Extracting":
-                stageHeaderText = _localizer.GetLocalizedString("Installing");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "ErrorHappens":
-                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
-                break;
-            case "Completed":
-                stageHeaderText = _localizer.GetLocalizedString("Finishing");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "CANC":
-                stageHeaderText = _localizer.GetLocalizedString("Cancel");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "ConnectingToService":
-                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
-                ProgressBar.IsIndeterminate = true;
-                break;
-            case "":
-                stageHeaderText = _localizer.GetLocalizedString("QueueWaiting");
-                ProgressBar.IsIndeterminate = false;
-                ProgressBar.Value = 0;
-                break;
-            default:
-                stageHeaderText = _localizer.GetLocalizedString(state);
-                ProgressBar.IsIndeterminate = true;
-                break;
-        }
-
-        BigStatusTextBlock.Text = stageHeaderText;
-    }
-
-    private void StoreHelper_ItemDownloadStageChanged(Tuple<string, string> obj)
-    {
-        string operationId = obj.Item1;
-        string stage = obj.Item2;
-
-        if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-            return;
-
-        PreferItemDownloadingStateActions(stage);
+        if (ClickCommand != null && ClickCommand.CanExecute(ClickCommandParameter))
+            ClickCommand.Execute(ClickCommandParameter);
     }
 
     private void Button_Click(object sender, RoutedEventArgs e)
@@ -486,20 +290,6 @@ public sealed partial class StoreDownloadItemButton : UserControl
             .PrepareToAnimate("ForwardConnectedAnimation", PART_Image);
 
         StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage), new NameValueCollection() { { "itemId", StoreId } }, new SuppressNavigationTransitionInfo());
-    }
-
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!StoreHelper.Instance.RemoveItemFromQueue(StoreId))
-        {
-            StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
-            if (ClickCommand != null && ClickCommand.CanExecute(ClickCommandParameter))
-            {
-                ClickCommand.Execute(ClickCommandParameter);
-                return;
-            }
-        }
-
     }
 
     private async void ViewMoreButton_Click(object sender, RoutedEventArgs e)
@@ -516,10 +306,6 @@ public sealed partial class StoreDownloadItemButton : UserControl
 
     private void UpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ClickCommand != null && ClickCommand.CanExecute(ClickCommandParameter))
-        {
-            ClickCommand.Execute(ClickCommandParameter);
-            return;
-        }
+        ExecuteClickCommand();
     }
 }
