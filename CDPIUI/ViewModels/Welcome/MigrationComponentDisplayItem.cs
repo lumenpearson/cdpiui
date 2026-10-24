@@ -1,4 +1,4 @@
-namespace CDPIUI;
+namespace CDPIUI.ViewModels.Welcome;
 
 public sealed class MigrationComponentDisplayItem
 {

@@ -1,65 +1,184 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using CDPIUI.Commands;
-using CDPIUI.Controls.Dialogs.Store;
-using CDPIUI.Controls.Store;
-using CDPIUI.Controls.Universal;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Data;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
-using CDPIUI.Core.Store.Queue;
-using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.ViewModels;
-using CDPIUI.Core.System;
-using CDPIUI.Default;
-using CDPIUI.Extensions;
-using CDPIUI.Helper;
 using CDPIUI.Helper.Items;
 using CDPIUI.Helper.Migration;
-using CDPIUI.Shared;
-using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.ViewModels;
-using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using WinUI3Localizer;
 
+namespace CDPIUI.ViewModels.Welcome;
 
-namespace CDPIUI;
-
-public sealed partial class WelcomeWindow
+public sealed partial class WelcomeViewModel
 {
+    private GoodbyeDpiMigrationSession? _migrationSession;
+    private CancellationTokenSource _migrationCancellation = new();
+    private List<RepoItemModel> _migrationComponents = [];
+    private readonly Dictionary<string, double> _migrationComponentProgress = new(StringComparer.OrdinalIgnoreCase);
+    private bool _migrationFlowStarted;
+    private bool _migrationImportInProgress;
+    private bool _migrationReadyToContinue;
+
+    private bool _isMigrationMode;
+    private string _migrationStatusTitle = string.Empty;
+    private string _migrationStatusMessage = string.Empty;
+    private InfoBarSeverity _migrationStatusSeverity = InfoBarSeverity.Informational;
+    private double _migrationProgress;
+    private IReadOnlyList<MigrationComponentDisplayItem>? _migrationComponentItems;
+    private bool _isMigrationComponentsListVisible = true;
+    private string _migrationSummaryText = string.Empty;
+    private bool _isRetryMigrationVisible;
+
+    /// <summary>True when the wizard runs the GoodbyeDPI migration instead of the ready kits.</summary>
+    public bool IsMigrationMode
+    {
+        get => _isMigrationMode;
+        private set
+        {
+            if (SetProperty(ref _isMigrationMode, value))
+                OnPropertyChanged(nameof(IsReadyBundlesContentVisible));
+        }
+    }
+
+    public bool IsReadyBundlesContentVisible => !_isMigrationMode;
+
+    public bool IsMigrationReadyToContinue => _migrationReadyToContinue;
+
+    public string MigrationStatusTitle
+    {
+        get => _migrationStatusTitle;
+        private set => SetProperty(ref _migrationStatusTitle, value);
+    }
+
+    public string MigrationStatusMessage
+    {
+        get => _migrationStatusMessage;
+        private set => SetProperty(ref _migrationStatusMessage, value);
+    }
+
+    public InfoBarSeverity MigrationStatusSeverity
+    {
+        get => _migrationStatusSeverity;
+        private set => SetProperty(ref _migrationStatusSeverity, value);
+    }
+
+    /// <summary>Overall migration progress from 0 to 100.</summary>
+    public double MigrationProgress
+    {
+        get => _migrationProgress;
+        private set => SetProperty(ref _migrationProgress, value);
+    }
+
+    public IReadOnlyList<MigrationComponentDisplayItem>? MigrationComponentItems
+    {
+        get => _migrationComponentItems;
+        private set => SetProperty(ref _migrationComponentItems, value);
+    }
+
+    public bool IsMigrationComponentsListVisible
+    {
+        get => _isMigrationComponentsListVisible;
+        private set => SetProperty(ref _isMigrationComponentsListVisible, value);
+    }
+
+    public string MigrationSummaryText
+    {
+        get => _migrationSummaryText;
+        private set => SetProperty(ref _migrationSummaryText, value);
+    }
+
+    public bool IsRetryMigrationVisible
+    {
+        get => _isRetryMigrationVisible;
+        private set => SetProperty(ref _isRetryMigrationVisible, value);
+    }
+
+    /// <summary>
+    /// Attaches the migration session. Returns false when the session was already attached;
+    /// its state is then shown again.
+    /// </summary>
+    internal bool SetMigrationSession(GoodbyeDpiMigrationSession session)
+    {
+        if (ReferenceEquals(_migrationSession, session))
+        {
+            ApplyMigrationSessionState();
+            return false;
+        }
+
+        if (_migrationSession != null)
+            _migrationSession.Changed -= MigrationSession_Changed;
+        DisconnectMigrationQueueHandlers();
+        _migrationCancellation.Cancel();
+        _migrationCancellation.Dispose();
+        _migrationCancellation = new CancellationTokenSource();
+
+        _migrationSession = session;
+        _migrationSession.Changed += MigrationSession_Changed;
+        _migrationFlowStarted = false;
+        _migrationImportInProgress = false;
+        _migrationReadyToContinue = false;
+        _migrationComponents = [];
+        _migrationComponentProgress.Clear();
+
+        IsMigrationMode = true;
+        UpdateMigrationComponentList();
+        ApplyMigrationSessionState();
+        return true;
+    }
+
+    /// <summary>Called when the user opens the Store step in migration mode.</summary>
+    public void EnterMigrationStep()
+    {
+        IsNextEnabled = _migrationReadyToContinue;
+        _ = TryStartMigrationFlowAsync(); // TryStartMigrationFlowAsync catches and logs its own errors.
+    }
+
+    public void OnLanguageChanged()
+    {
+        if (_migrationSession != null)
+            UpdateMigrationComponentList();
+        ApplyMigrationSessionState();
+    }
+
+    /// <summary>Stops the migration work and marks an unfinished session failed.</summary>
+    public void OnWindowClosed()
+    {
+        DisconnectMigrationQueueHandlers();
+        _migrationCancellation.Cancel();
+        _migrationCancellation.Dispose();
+        if (_migrationSession != null)
+        {
+            _migrationSession.Changed -= MigrationSession_Changed;
+            if (!_migrationSession.IsTerminal)
+                _ = _migrationSession.UpdateAsync(
+                    MigrationSessionState.Failed,
+                    MigrationProgress,
+                    "The migration wizard was closed before completion.",
+                    "MIGRATION_WINDOW_CLOSED");
+        }
+    }
+
+    private string Localized(string key) =>
+        _localizer.GetLocalizedString($"/WelcomeWizard/{key}");
+
     private void MigrationSession_Changed(object? sender, EventArgs e)
     {
-        if (DispatcherQueue.HasThreadAccess)
+        if (_dispatcherQueue.HasThreadAccess)
             ApplyMigrationSessionState();
         else
-            DispatcherQueue.TryEnqueue(ApplyMigrationSessionState);
+            _dispatcherQueue.TryEnqueue(ApplyMigrationSessionState);
     }
 
     private void ApplyMigrationSessionState()
     {
         if (_migrationSession == null)
             return;
-        MigrationProgressBar.Value = Math.Max(MigrationProgressBar.Value, _migrationSession.Progress);
+        MigrationProgress = Math.Max(MigrationProgress, _migrationSession.Progress);
         switch (_migrationSession.State)
         {
             case MigrationSessionState.Accepted:
@@ -68,8 +187,8 @@ public sealed partial class WelcomeWindow
                 break;
             case MigrationSessionState.ReadyForComponents:
                 ShowMigrationStatus("MigrationComponentsTitle", "MigrationComponentsReadyMessage", InfoBarSeverity.Informational);
-                if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
-                    _ = TryStartMigrationFlow(); // TryStartMigrationFlow catches and logs its own errors.
+                if (_view.CurrentStep == WelcomeStep.Store)
+                    _ = TryStartMigrationFlowAsync(); // TryStartMigrationFlowAsync catches and logs its own errors.
                 break;
             case MigrationSessionState.WaitingForLicense:
                 ShowMigrationStatus("MigrationComponentLicenseTitle", "MigrationComponentLicenseMessage", InfoBarSeverity.Warning);
@@ -94,8 +213,8 @@ public sealed partial class WelcomeWindow
                     completedWithWarnings ? "MigrationCompletedWithWarningsTitle" : "MigrationCompletedTitle",
                     completedWithWarnings ? "MigrationImportIncompleteMessage" : "MigrationCompletedMessage",
                     completedWithWarnings ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
-                RetryMigrationButton.Visibility = Visibility.Collapsed;
-                MigrationProgressBar.Value = 100;
+                IsRetryMigrationVisible = false;
+                MigrationProgress = 100;
                 break;
             case MigrationSessionState.Failed:
                 ShowMigrationError(
@@ -103,11 +222,11 @@ public sealed partial class WelcomeWindow
                     _migrationSession.ErrorCode ?? "MIGRATION_FAILED");
                 break;
         }
-        if (AnimatedHorizontalContentViewer.SelectedItem == StoreItem)
-            NextButton.IsEnabled = _migrationReadyToContinue;
+        if (_view.CurrentStep == WelcomeStep.Store)
+            IsNextEnabled = _migrationReadyToContinue;
     }
 
-    private async Task TryStartMigrationFlow()
+    private async Task TryStartMigrationFlowAsync()
     {
         try
         {
@@ -127,14 +246,14 @@ public sealed partial class WelcomeWindow
             VerifiedMigrationPackage package = _migrationSession.Package;
             if (MigrationImportService.IsAlreadyCompleted(package))
             {
-                MigrationSummaryTextBlock.Text = Localized("MigrationAlreadyCompleted");
+                MigrationSummaryText = Localized("MigrationAlreadyCompleted");
                 await _migrationSession.UpdateAsync(MigrationSessionState.Completed, 100);
                 return;
             }
 
             _migrationFlowStarted = true;
-            RetryMigrationButton.Visibility = Visibility.Collapsed;
-            MigrationComponentsListView.Visibility = Visibility.Visible;
+            IsRetryMigrationVisible = false;
+            IsMigrationComponentsListVisible = true;
             await _migrationSession.UpdateAsync(MigrationSessionState.LoadingComponents, 22);
             if (!await LoadMigrationComponentsAsync(package))
                 return;
@@ -156,7 +275,7 @@ public sealed partial class WelcomeWindow
         }
         catch (Exception exception)
         {
-            Logger.Instance.CreateWarningLog(nameof(WelcomeWindow), exception.ToString());
+            Logger.Instance.CreateWarningLog(LogSource, exception.ToString());
         }
     }
 
@@ -207,17 +326,12 @@ public sealed partial class WelcomeWindow
         if (licenses.Count == 0)
             return true;
 
-        await _migrationSession.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
-        AcceptLicenseContentDialog dialog = new()
-        {
-            Licenses = licenses,
-            XamlRoot = ContentRoot.XamlRoot
-        };
-        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
+        await _migrationSession!.UpdateAsync(MigrationSessionState.WaitingForLicense, 25);
+        if (!await _view.AcceptLicensesAsync(licenses))
         {
             _migrationFlowStarted = false;
-            RetryMigrationButton.Visibility = Visibility.Visible;
-            MigrationSummaryTextBlock.Text = Localized("MigrationComponentLicenseDeclined");
+            IsRetryMigrationVisible = true;
+            MigrationSummaryText = Localized("MigrationComponentLicenseDeclined");
             return false;
         }
         return true;
@@ -232,14 +346,14 @@ public sealed partial class WelcomeWindow
             StoreHelper.Instance.RemoveItemFromQueue(item.store_id!);
             StoreHelper.Instance.AddItemToQueue(item.store_id!, string.Empty);
         }
-        await _migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
+        await _migrationSession!.UpdateAsync(MigrationSessionState.DownloadingComponents, 25);
         UpdateMigrationComponentList();
         UpdateMigrationComponentProgress();
     }
 
-    private bool IsItemSupported(RepoItemModel item)
+    private static bool IsItemSupported(RepoItemModel item)
     {
-        Logger.Instance.CreateDebugLog(nameof(WelcomeWindow), $"Checking is item supported for {item.store_id} ({item.short_name})");
+        Logger.Instance.CreateDebugLog(LogSource, $"Checking is item supported for {item.store_id} ({item.short_name})");
 
         return VersionHelper.IsVersionInRange(ApplicationInfo.Version, item.target_minversion, item.target_maxversion);
     }
@@ -252,20 +366,20 @@ public sealed partial class WelcomeWindow
         ShowMigrationError(message, errorCode);
         if (_migrationSession != null)
             await _migrationSession.UpdateAsync(MigrationSessionState.Failed,
-                MigrationProgressBar.Value, message, errorCode);
+                MigrationProgress, message, errorCode);
     }
 
-    private async void RetryMigrationButton_Click(object sender, RoutedEventArgs e)
+    private async Task RetryMigrationAsync()
     {
         if (_migrationSession == null || _migrationImportInProgress)
             return;
-        RetryMigrationButton.Visibility = Visibility.Collapsed;
-        MigrationSummaryTextBlock.Text = string.Empty;
+        IsRetryMigrationVisible = false;
+        MigrationSummaryText = string.Empty;
         _migrationFlowStarted = false;
         if (_migrationSession.Package == null)
             await _migrationSession.RetryPreparationAsync();
         if (_migrationSession.Package != null)
-            await TryStartMigrationFlow();
+            await TryStartMigrationFlowAsync();
     }
 
     private void ShowMigrationStatus(
@@ -273,10 +387,9 @@ public sealed partial class WelcomeWindow
         string messageKey,
         InfoBarSeverity severity)
     {
-        MigrationStatusInfoBar.Title = Localized(titleKey);
-        MigrationStatusInfoBar.Message = Localized(messageKey);
-        MigrationStatusInfoBar.Severity = severity;
-        MigrationStatusInfoBar.IsOpen = true;
+        MigrationStatusTitle = Localized(titleKey);
+        MigrationStatusMessage = Localized(messageKey);
+        MigrationStatusSeverity = severity;
     }
 
     private void ShowMigrationError(string message, string errorCode)
@@ -285,20 +398,10 @@ public sealed partial class WelcomeWindow
         string localizedMessage = _localizer.GetLocalizedString($"/WelcomeWizard/MigrationError_{errorCode}");
         if (!string.IsNullOrWhiteSpace(localizedMessage))
             message = localizedMessage;
-        MigrationStatusInfoBar.Title = Localized("MigrationFailedTitle");
-        MigrationStatusInfoBar.Message = $"{message}\n\n{errorCode}";
-        MigrationStatusInfoBar.Severity = InfoBarSeverity.Error;
-        MigrationStatusInfoBar.IsOpen = true;
-        RetryMigrationButton.Visibility = Visibility.Visible;
-        NextButton.IsEnabled = false;
-    }
-
-    private void UpdateMigrationLocalizedText()
-    {
-        if (_migrationSession == null)
-            return;
-        StoreItem.Header = Localized("MigrationAnimatedHorizontalContentItemHeader");
-        StoreItem.Description = Localized("MigrationAnimatedHorizontalContentItemDescription");
-        UpdateMigrationComponentList();
+        MigrationStatusTitle = Localized("MigrationFailedTitle");
+        MigrationStatusMessage = $"{message}\n\n{errorCode}";
+        MigrationStatusSeverity = InfoBarSeverity.Error;
+        IsRetryMigrationVisible = true;
+        IsNextEnabled = false;
     }
 }
