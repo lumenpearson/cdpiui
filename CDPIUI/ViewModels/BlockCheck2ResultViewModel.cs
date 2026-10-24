@@ -161,46 +161,11 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
 
     public void ApplyStrategyView(string? searchText, int sortMode, int filterMode)
     {
-        string search = (searchText ?? string.Empty).Trim();
-        IEnumerable<BlockCheck2StrategyEvidenceItem> query = _allStrategyEvidence;
-        if (search.Length > 0)
-        {
-            query = query.Where(item =>
-                item.SiteUrl.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
-                item.ConnectionDetails.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
-                item.StrategyArguments.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
-                item.StrategyName.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||
-                item.StrategyId.Contains(search, StringComparison.OrdinalIgnoreCase));
-        }
-
-        query = filterMode switch
-        {
-            1 => query.Where(item => item.Status == BlockCheckEvidenceStatus.Successful),
-            2 => query.Where(item => item.Status == BlockCheckEvidenceStatus.Partial),
-            3 => query.Where(item => item.Status == BlockCheckEvidenceStatus.Failed),
-            _ => query,
-        };
-        query = sortMode switch
-        {
-            1 => query.OrderBy(item => item.SuccessRate)
-                .ThenBy(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase),
-            2 => query.OrderBy(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase)
-                .ThenByDescending(item => item.SuccessRate),
-            3 => query.OrderByDescending(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase)
-                .ThenByDescending(item => item.SuccessRate),
-            4 => query.OrderBy(item => item.ResponseTimeSortValue)
-                .ThenByDescending(item => item.SuccessRate),
-            5 => query.OrderByDescending(item => item.ResponseTimeSortValue)
-                .ThenByDescending(item => item.SuccessRate),
-            6 => query.OrderBy(item => item.StrategyArguments, StringComparer.Ordinal)
-                .ThenBy(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase),
-            7 => query.OrderByDescending(item => item.StrategyArguments, StringComparer.Ordinal)
-                .ThenBy(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase),
-            _ => query.OrderByDescending(item => item.SuccessRate)
-                .ThenByDescending(item => item.SuccessCount)
-                .ThenBy(item => item.ResponseTimeSortValue)
-                .ThenBy(item => item.SiteUrl, StringComparer.CurrentCultureIgnoreCase),
-        };
+        IEnumerable<BlockCheck2StrategyEvidenceItem> query = BlockCheck2StrategyEvidenceView.Apply(
+            _allStrategyEvidence,
+            searchText,
+            sortMode,
+            filterMode);
 
         StrategyEvidence.Clear();
         StrategyGroups.Clear();
@@ -465,7 +430,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         }
 
         BlockCheck2ManualAssignmentItem? scopeAssignment = ManualAssignments.FirstOrDefault(item =>
-            string.Equals(ManualScopeKey(item), subjectId, StringComparison.OrdinalIgnoreCase));
+            string.Equals(BlockCheck2ManualAssignmentRules.ManualScopeKey(item), subjectId, StringComparison.OrdinalIgnoreCase));
         if (scopeAssignment != null)
         {
             return $"{scopeAssignment.Scope} · {scopeAssignment.ConnectionDetails}";
@@ -475,7 +440,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
             string.Equals(item.Assignment.StrategyId, subjectId, StringComparison.OrdinalIgnoreCase));
         if (assignment != null)
         {
-            return DescribeStrategySubject(assignment, subjectId);
+            return BlockCheck2ManualAssignmentRules.DescribeStrategySubject(assignment, subjectId);
         }
 
         string[] strategyIds = subjectId.Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -491,7 +456,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
                             StringComparison.OrdinalIgnoreCase));
                     return item == null
                         ? strategyId
-                        : DescribeStrategySubject(item, strategyId);
+                        : BlockCheck2ManualAssignmentRules.DescribeStrategySubject(item, strategyId);
                 })
                 .ToArray();
             return string.Join(" / ", strategyNames);
@@ -499,22 +464,6 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
 
         return subjectId;
     }
-
-    private static string DescribeStrategySubject(
-        BlockCheck2ManualAssignmentItem assignment,
-        string strategyId) =>
-        string.Equals(
-            assignment.StrategyName,
-            strategyId,
-            StringComparison.CurrentCultureIgnoreCase)
-            ? strategyId
-            : $"{assignment.StrategyName} ({strategyId})";
-
-    private static string ManualScopeKey(BlockCheck2ManualAssignmentItem item) =>
-        $"{item.Target.IpVersion}|{item.Target.Transport}|{item.Target.Port}|{item.Target.Layer7Protocol}|" +
-        (item.Assignment.ScopeKind == BlockCheckManualScopeKind.Site
-            ? $"site:{BlockCheckTarget.NormalizeHost(item.Target.Host)}"
-            : $"list:{Path.GetFullPath(item.Assignment.SiteListPath ?? string.Empty)}");
 
     private IEnumerable<BlockCheckTarget> FindCompatibleSiteListTargets(
         BlockCheck2StrategyEvidenceItem item)
@@ -528,18 +477,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         string host = BlockCheckTarget.NormalizeHost(source.Host);
         return _session.Targets.Where(target =>
             !_session.RunResult.Scan.IgnoredTargetIds.Contains(target.Id) &&
-            target.HostListPaths.Count > 0 &&
-            string.Equals(
-                BlockCheckTarget.NormalizeHost(target.Host),
-                host,
-                StringComparison.OrdinalIgnoreCase) &&
-            target.IpVersion == source.IpVersion &&
-            target.Transport == source.Transport &&
-            target.Port == source.Port &&
-            string.Equals(
-                target.Layer7Protocol,
-                source.Layer7Protocol,
-                StringComparison.Ordinal));
+            BlockCheck2ManualAssignmentRules.IsCompatibleSiteListTarget(target, source, host));
     }
 
     private void SeedAutomaticAssignments(BlockCheckResultSession value)
@@ -559,18 +497,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
                 .Cast<BlockCheckTarget>()
                 .ToArray();
             IEnumerable<(BlockCheckTarget Target, BlockCheckManualScopeKind Scope, string? Path)> scopes =
-                profile.HostListPaths.Count > 0
-                    ? profile.HostListPaths.Select(path => (
-                        profileTargets.FirstOrDefault(target => target.HostListPaths.Contains(
-                            path,
-                            StringComparer.OrdinalIgnoreCase)) ?? profileTargets.FirstOrDefault(),
-                        BlockCheckManualScopeKind.SiteList,
-                        (string?)path))
-                        .Where(scope => scope.Item1 != null)
-                        .Select(scope => (scope.Item1!, scope.Item2, scope.Item3))
-                    : profileTargets
-                        .DistinctBy(target => BlockCheckTarget.NormalizeHost(target.Host), StringComparer.OrdinalIgnoreCase)
-                        .Select(target => (target, BlockCheckManualScopeKind.Site, (string?)null));
+                BlockCheck2ManualAssignmentRules.GetAutomaticScopes(profile, profileTargets);
 
             foreach ((BlockCheckTarget target, BlockCheckManualScopeKind scope, string? path) in scopes)
             {
@@ -585,7 +512,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
                     if (!duplicate)
                     {
                         AddAssignmentCore(assignment, strategy, target);
-                        _automaticAssignmentKeys.Add(AssignmentKey(assignment));
+                        _automaticAssignmentKeys.Add(BlockCheck2ManualAssignmentRules.AssignmentKey(assignment));
                     }
                 }
             }
@@ -602,41 +529,14 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         foreach (BlockCheck2StrategyEvidenceItem evidence in _allStrategyEvidence)
         {
             BlockCheck2ManualAssignmentItem[] selectedAssignments = ManualAssignments
-                .Where(item => AssignmentMatchesEvidence(item, evidence))
+                .Where(item => BlockCheck2ManualAssignmentRules.AssignmentMatchesEvidence(item, evidence))
                 .ToArray();
             bool selected = selectedAssignments.Length > 0;
             bool automatic = selectedAssignments.Any(item =>
-                _automaticAssignmentKeys.Contains(AssignmentKey(item.Assignment)));
+                _automaticAssignmentKeys.Contains(BlockCheck2ManualAssignmentRules.AssignmentKey(item.Assignment)));
             evidence.SetSelection(selected, automatic);
         }
     }
-
-    private static bool AssignmentMatchesEvidence(
-        BlockCheck2ManualAssignmentItem item,
-        BlockCheck2StrategyEvidenceItem evidence) =>
-        string.Equals(item.Assignment.StrategyId, evidence.StrategyId, StringComparison.OrdinalIgnoreCase) &&
-        (item.Assignment.ScopeKind == BlockCheckManualScopeKind.Site
-            ? string.Equals(
-                BlockCheckTarget.NormalizeHost(item.Target.Host),
-                BlockCheckTarget.NormalizeHost(evidence.Evidence.Target.Host),
-                StringComparison.OrdinalIgnoreCase)
-            : evidence.Evidence.Target.HostListPaths.Contains(
-                  item.Assignment.SiteListPath ?? string.Empty,
-                  StringComparer.OrdinalIgnoreCase) ||
-              (string.Equals(
-                   BlockCheckTarget.NormalizeHost(item.Target.Host),
-                   BlockCheckTarget.NormalizeHost(evidence.Evidence.Target.Host),
-                   StringComparison.OrdinalIgnoreCase) &&
-               item.Target.IpVersion == evidence.Evidence.Target.IpVersion &&
-               item.Target.Transport == evidence.Evidence.Target.Transport &&
-               item.Target.Port == evidence.Evidence.Target.Port &&
-               string.Equals(
-                   item.Target.Layer7Protocol,
-                   evidence.Evidence.Target.Layer7Protocol,
-                   StringComparison.Ordinal)));
-
-    private static string AssignmentKey(BlockCheckManualAssignment assignment) =>
-        $"{assignment.StrategyId}|{assignment.AnchorTargetId}|{assignment.ScopeKind}|{assignment.SiteListPath}";
 
     private void RefreshAssignmentIndexes()
     {
@@ -666,80 +566,4 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
 
     private void Notify([CallerMemberName] string? propertyName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-}
-
-public sealed class BlockCheck2ResultProbeItem
-{
-    public BlockCheck2ResultProbeItem(
-        BlockCheckReportProbe probe,
-        BlockCheckReportTarget? target = null)
-    {
-        Kind = probe.Kind;
-        StrategyId = string.IsNullOrWhiteSpace(probe.StrategyId) ? "baseline" : probe.StrategyId;
-        TargetId = probe.TargetId;
-        TargetUrl = target == null
-            ? probe.TargetId
-            : BlockCheckTargetDisplayFormatter.FormatUrl(
-                target.Host,
-                target.Path,
-                target.Protocol,
-                target.Port);
-        ConnectionDetails = target == null
-            ? string.Empty
-            : BlockCheckTargetDisplayFormatter.FormatConnectionDetails(
-                target.Protocol,
-                target.IpVersion,
-                target.Transport,
-                target.Port);
-        Attempts = probe.AttemptCount;
-        Successes = probe.SuccessCount;
-        SuccessRate = $"{probe.SuccessRate:P0}";
-        Median = probe.MedianTimeToFirstByteMs.HasValue
-            ? $"{probe.MedianTimeToFirstByteMs.Value:0} ms"
-            : "—";
-        string status = probe.HttpStatusCodes.Count > 0
-            ? $" · HTTP {string.Join('/', probe.HttpStatusCodes)}"
-            : string.Empty;
-        string failures = probe.FailureCodes.Count > 0
-            ? $" · {string.Join(", ", probe.FailureCodes)}"
-            : string.Empty;
-        Summary = $"{Successes}/{Attempts} · {SuccessRate} · {Median}{status}{failures}";
-    }
-
-    public string Kind { get; }
-    public string StrategyId { get; }
-    public string TargetId { get; }
-    public string TargetUrl { get; }
-    public string ConnectionDetails { get; }
-    public int Attempts { get; }
-    public int Successes { get; }
-    public string SuccessRate { get; }
-    public string Median { get; }
-    public string Summary { get; }
-}
-
-public sealed class BlockCheck2ResultProfileItem
-{
-    public BlockCheck2ResultProfileItem(BlockCheckReportProfile profile)
-    {
-        Name = profile.Name;
-        Route = $"{profile.Layer7Protocol}/{profile.Transport}/{profile.IpVersion}:{profile.Port}";
-        Domains = string.Join(", ", profile.Domains);
-        SiteLists = string.Join(", ", profile.HostListPaths);
-        Sources = string.Join(", ", profile.HostListPaths.Concat(profile.Domains));
-        PrimaryStrategy = profile.PrimaryStrategyId;
-        FallbackStrategies = string.Join(", ", profile.FallbackStrategyIds);
-        TargetCount = profile.TargetIds.Count;
-        IsBestEffort = profile.IsBestEffort;
-    }
-
-    public string Name { get; }
-    public string Route { get; }
-    public string Domains { get; }
-    public string SiteLists { get; }
-    public string Sources { get; }
-    public string PrimaryStrategy { get; }
-    public string FallbackStrategies { get; }
-    public int TargetCount { get; }
-    public bool IsBestEffort { get; }
 }
