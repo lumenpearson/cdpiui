@@ -121,11 +121,8 @@ namespace CDPIUI.TrayIcon.Helper
                     HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
                     return false;
                 }
-                finally
-                {
-                    // The started process has mapped its files; the lock is no longer needed.
-                    lease.Dispose();
-                }
+                // The lease (using above) stays until the run ends: the process maps its DLLs after
+                // Start returns and can load more later, so they must not be replaceable meanwhile.
 
                 if (!AssignProcessToJobObject(job, process.Handle))
                 {

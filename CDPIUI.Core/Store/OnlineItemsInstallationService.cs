@@ -63,6 +63,8 @@ namespace CDPIUI.Core.Store
                     if (_p.Length < 2) continue;
                     string url = _p[0];
                     string filename = _p[1];
+                    // A third part is the SHA-256 of the file; the download is rejected when it differs.
+                    string? expectedSha256 = _p.Length > 2 && !string.IsNullOrWhiteSpace(_p[2]) ? _p[2].Trim() : null;
 
                     // Both come from item metadata: download only over HTTPS and only into the item folder.
                     if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
@@ -87,7 +89,8 @@ namespace CDPIUI.Core.Store
                             string.Empty, 
                             extension, 
                             false, 
-                            filename);
+                            filename,
+                            expectedSha256);
                     if (!result) return false;
                 }
             }

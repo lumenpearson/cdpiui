@@ -198,7 +198,7 @@ $<NAME>(<command>, <argument 1>, <argument 2>);$<NAME>(<command>, ...)
 |---|---|---|
 | `finish_component_setup` | имя компонента | Вызывает `ComponentTasksManager.UpdateTaskList`. Для `byedpi`, `spoofdpi` или `nodpi` отправляет уведомление `ProxySetupRequired`, если `PROXY/proxyType` равно `None`. |
 | `install_msi` | путь, `true`/`false` | Устанавливает MSI через трей. Второй аргумент указывает, удаляет ли библиотека MSI после установки. |
-| `download_easy_designer_annotation_file` | URL HTTPS | Добавляет `DOWNLOAD=<url>$SEPARATORedannotationfile;` к результату `RunScript`. |
+| `download_easy_designer_annotation_file` | URL HTTPS, необязательный SHA-256 | Добавляет `DOWNLOAD=<url>$SEPARATORedannotationfile;` к результату `RunScript`. С SHA-256 добавляет `DOWNLOAD=<url>$SEPARATORedannotationfile$SEPARATOR<sha256>;`, и установка отклоняет файл с другим хешем. |
 | `apply_config` | любые | Ничего не делает. Её пишут старые сборщики наборов. Списки пресетов загружаются заново после каждой установки. |
 
 Имена в первом столбце учитывают регистр и пишутся в нижнем регистре.

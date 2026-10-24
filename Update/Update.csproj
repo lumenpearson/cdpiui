@@ -20,6 +20,9 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- The tool has no manifest of its own: the default manifest (asInvoker) gives it the rights of the tray. -->
+      <!-- Runs elevated: DOTNET_STARTUP_HOOKS set by a user process must not load code into it.
+         Debug keeps startup hooks for Hot Reload. -->
+    <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
   </PropertyGroup>
 
   <PropertyGroup>

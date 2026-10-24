@@ -126,7 +126,7 @@ The field names must have this spelling, also `preffered_to_download_file_name`.
 | `preffered_to_download_file_name` | String | No | Text that the release asset name must contain (case-sensitive). |
 | `sha256` | String | No | SHA-256 of the downloaded file (64 hex digits). See [SHA-256 of a download](#sha-256-of-a-download). |
 | `archive_root_folder` | String | No | The folder in the archive to extract. See [Extraction root](#extraction-root). |
-| `target_executable_file` | String | No | The file name without extension for a file that is not extracted. For a component, the GUI starts `<item folder>\<target_executable_file>.exe`. |
+| `target_executable_file` | String | No | The file name without extension for a file that is not extracted. For a component, the GUI starts `<item folder>\<target_executable_file>.exe`. It must be a file name only: a value with `\`, `/` or `..` stops the download. |
 | `files_to_download` | List of download entries | For `several_repos` | See [Download entry](#download-entry-files_to_download). |
 | `before_install_actions` | String | No | LScript actions before the database registration. |
 | `after_install_actions` | String | No | LScript actions after the database registration. |
@@ -214,7 +214,7 @@ An update is available when the latest release tag is newer than the installed v
 
 `RequestWorker` and `DownloadWorker` apply these checks to each download:
 
-- The URL must be an absolute HTTPS URL. This also applies to the `DOWNLOAD=` requests of the install actions.
+- The URL must be an absolute HTTPS URL. This also applies to the `DOWNLOAD=` requests of the install actions. A `DOWNLOAD=` request can also have a SHA-256: see `download_easy_designer_annotation_file` in [LScript/README.md](../LScript/README.md).
 - The client sends the Store token only to `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` and `gitlab.com`.
 - If the server gives the file size, the drive must have enough free space.
 - A download stops when no data arrives for 60 seconds.
@@ -272,7 +272,7 @@ A file that is not extracted gets the name `<name><extension>`:
 
 For `msi` and `elmsi`, the GUI always sends `<item folder>\<URL file name without extension><extension>` to the tray.
 
-CAUTION: Do not set `target_executable_file` for an `msi` or `elmsi` item. The copied file then has a different name, and the tray does not find the installer.
+NOTE: For an `msi` or `elmsi` item, the installer is started from the copied file, so `target_executable_file` also sets the name of the installer.
 
 If an `msi` or `elmsi` installation fails, the client deletes the copied installer.
 

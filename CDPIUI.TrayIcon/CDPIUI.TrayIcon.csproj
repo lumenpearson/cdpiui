@@ -16,6 +16,9 @@
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
     <AssemblyName>CDPIUI_TrayIcon</AssemblyName>
+      <!-- Runs elevated: DOTNET_STARTUP_HOOKS set by a user process must not load code into it.
+         Debug keeps startup hooks for Hot Reload. -->
+    <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
   </PropertyGroup>
 
   <ItemGroup>
