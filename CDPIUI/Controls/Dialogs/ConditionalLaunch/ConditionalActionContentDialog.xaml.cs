@@ -1,402 +1,176 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
+using System.ComponentModel;
 using CDPIUI.ConditionalLaunch;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Helper;
 using CDPIUI.Shared.ConditionalLaunch;
-using CDPIUI.Shared.Extensions;
-using CDPIUI.ViewModels;
+using CDPIUI.ViewModels.ConditionalLaunch;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Dialogs.ConditionalLaunch;
 
+/// <summary>
+/// Adds or edits a conditional action. The parameter editors depend on the action type, so the
+/// dialog creates their controls from <see cref="ConditionalActionEditorViewModel.Parameters"/>
+/// and writes the entered values back to the parameter view models.
+/// </summary>
 public sealed partial class ConditionalActionContentDialog : ContentDialog
 {
-    public ConditionalAction? ResultAction { get; private set; }
+    private ComboBox? _presetComboBox;
+    private bool _updatingPresetComboBox;
 
-    private readonly ILocalizer _localizer = Localizer.Get();
-    private readonly List<ConditionalActionDefinition> _definitions;
-    private readonly List<ConditionalParameterChoice> _componentChoices = [];
-    private readonly List<ConditionalParameterChoice> _configKitChoices = [];
-    private readonly Dictionary<string, FrameworkElement> _parameterControls =
-        new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, ConditionalParameterDefinition> _parameterDefinitions =
-        new(StringComparer.OrdinalIgnoreCase);
-    private ConditionalAction? _existingAction;
-    private bool _loading;
+    public ConditionalActionEditorViewModel ViewModel { get; }
+
+    public ConditionalAction? ResultAction => ViewModel.ResultAction;
 
     public ConditionalActionContentDialog(ConditionalAction? action)
     {
+        ViewModel = new ConditionalActionEditorViewModel(action);
         InitializeComponent();
-        _definitions = ConditionalLaunchUiCatalog.CreateActionDefinitions(_localizer);
-        LoadInstalledComponents(action?.GetParameter("componentId"));
-        LoadInstalledConfigKits(action?.GetParameter("kitId"));
-        ActionTypeComboBox.ItemsSource = _definitions;
+        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ActionTypeComboBox.ItemsSource = ViewModel.Definitions;
 
-        Title = Text(action == null ? "CL_AddActionDialogTitle" : "CL_EditActionDialogTitle");
-        PrimaryButtonText = Text("CL_OkButtonText");
-        CloseButtonText = Text("CL_CancelButtonText");
+        Title = ViewModel.Title;
+        PrimaryButtonText = ViewModel.PrimaryButtonText;
+        CloseButtonText = ViewModel.CloseButtonText;
         DefaultButton = ContentDialogButton.Primary;
 
-        _existingAction = action;
-        if (action != null)
-            ActionTypeComboBox.SelectedItem = _definitions.FirstOrDefault(item => item.Type == action.Type) ?? _definitions.FirstOrDefault();
-    }
-
-    private void LoadInstalledComponents(string? existingComponentId)
-    {
-        ObservableCollection<ViewComponentModel> components = [];
-        UIHelper.LoadInstalledComponentsList(components);
-        _componentChoices.AddRange(components.Select(component =>
-            new ConditionalParameterChoice(component.DisplayName, component.StoreId)));
-
-        if (!string.IsNullOrWhiteSpace(existingComponentId) &&
-            !_componentChoices.Any(item => string.Equals(
-                item.Value, existingComponentId, StringComparison.OrdinalIgnoreCase)))
-        {
-            _componentChoices.Add(new ConditionalParameterChoice(existingComponentId, existingComponentId));
-        }
-    }
-
-    private void LoadInstalledConfigKits(string? existingKitId)
-    {
-        try
-        {
-            _configKitChoices.AddRange(DatabaseHelper.Instance
-                .GetItemsByType("configlist")
-                .Where(item => !string.IsNullOrWhiteSpace(item.Id))
-                .Select(item => new ConditionalParameterChoice(
-                    item.ShortName.NullIfEmpty() ?? item.Id!,
-                    item.Id!)));
-        }
-        catch (Exception ex)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConditionalActionContentDialog), $"Cannot load installed config kits: {ex.Message}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(existingKitId) &&
-            !_configKitChoices.Any(item => string.Equals(
-                item.Value, existingKitId, StringComparison.OrdinalIgnoreCase)))
-        {
-            _configKitChoices.Add(new ConditionalParameterChoice(
-                ResolveStoreItemName(existingKitId),
-                existingKitId));
-        }
+        if (ViewModel.InitialDefinition != null)
+            ActionTypeComboBox.SelectedItem = ViewModel.InitialDefinition;
     }
 
     private void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_loading || ActionTypeComboBox.SelectedItem is not ConditionalActionDefinition definition)
-            return;
-
-        var existing = _existingAction?.Type == definition.Type ? _existingAction : null;
-        BuildParameterEditor(definition, existing);
-        _existingAction = null;
+        ViewModel.SelectDefinition(ActionTypeComboBox.SelectedItem);
     }
 
-    private void BuildParameterEditor(
-        ConditionalActionDefinition definition,
-        ConditionalAction? existingAction)
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        _loading = true;
+        if (e.PropertyName == nameof(ConditionalActionEditorViewModel.Parameters))
+            BuildParameterControls();
+        else if (e.PropertyName == nameof(ConditionalActionEditorViewModel.PresetChoices))
+            UpdatePresetComboBox();
+    }
+
+    private void BuildParameterControls()
+    {
         ActionParametersPanel.Children.Clear();
-        _parameterControls.Clear();
-        _parameterDefinitions.Clear();
+        _presetComboBox = null;
 
-        if (definition.Type == ConditionalActionType.ApplyPreset)
+        if (ViewModel.IsPresetEditor)
         {
-            BuildPresetEditor(existingAction);
-            _loading = false;
+            BuildPresetControls();
             return;
         }
 
-        foreach (var parameter in definition.Parameters)
-        {
-            var control = CreateParameterControl(parameter, existingAction?.GetParameter(parameter.Name));
-            _parameterControls[parameter.Name] = control;
-            _parameterDefinitions[parameter.Name] = parameter;
-            ActionParametersPanel.Children.Add(control);
-
-            if (parameter.Name == "target" && control is ComboBox targetComboBox)
-                targetComboBox.SelectionChanged += TargetComboBox_SelectionChanged;
-        }
-
-        UpdateParameterVisibility();
-        _loading = false;
+        foreach (ConditionalActionParameterViewModel parameter in ViewModel.Parameters)
+            ActionParametersPanel.Children.Add(CreateParameterControl(parameter));
     }
 
-    private FrameworkElement CreateParameterControl(
-        ConditionalParameterDefinition parameter,
-        string? existingValue)
+    private static FrameworkElement CreateParameterControl(ConditionalActionParameterViewModel parameter)
     {
-        IReadOnlyList<ConditionalParameterChoice> choices = parameter.UseInstalledComponentSelector
-            ? _componentChoices
-            : parameter.UseInstalledConfigKitSelector
-                ? _configKitChoices
-                : parameter.Choices;
-
-        if (choices.Count > 0 || parameter.UseInstalledComponentSelector ||
-            parameter.UseInstalledConfigKitSelector)
+        FrameworkElement control;
+        switch (parameter.Kind)
         {
-            ComboBox comboBox = new()
-            {
-                Header = parameter.Label,
-                ItemsSource = choices,
-                DisplayMemberPath = nameof(ConditionalParameterChoice.Name),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Tag = parameter.Name
-            };
-            comboBox.SelectedItem = choices.FirstOrDefault(choice =>
-                string.Equals(choice.Value, existingValue, StringComparison.OrdinalIgnoreCase))
-                ?? choices.FirstOrDefault();
-            return comboBox;
+            case ConditionalActionParameterKind.Choice:
+                ComboBox comboBox = new()
+                {
+                    Header = parameter.Label,
+                    ItemsSource = parameter.Choices,
+                    DisplayMemberPath = nameof(ConditionalParameterChoice.Name),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Tag = parameter.Name
+                };
+                comboBox.SelectedItem = parameter.SelectedChoice;
+                comboBox.SelectionChanged += (_, _) =>
+                    parameter.SelectedChoice = comboBox.SelectedItem as ConditionalParameterChoice;
+                control = comboBox;
+                break;
+            case ConditionalActionParameterKind.Number:
+                NumberBox numberBox = new()
+                {
+                    Header = parameter.Label,
+                    Minimum = parameter.Minimum,
+                    Maximum = parameter.Maximum,
+                    SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+                    Tag = parameter.Name
+                };
+                numberBox.Value = parameter.Number;
+                // The number box clamps the value to its range.
+                parameter.Number = numberBox.Value;
+                numberBox.ValueChanged += (_, _) => parameter.Number = numberBox.Value;
+                control = numberBox;
+                break;
+            default:
+                TextBox textBox = new()
+                {
+                    Header = parameter.Label,
+                    Text = parameter.Text,
+                    Tag = parameter.Name
+                };
+                textBox.TextChanged += (_, _) => parameter.Text = textBox.Text;
+                control = textBox;
+                break;
         }
 
-        if (parameter.IsNumber)
+        control.Visibility = parameter.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+        parameter.PropertyChanged += (_, e) =>
         {
-            NumberBox numberBox = new()
-            {
-                Header = parameter.Label,
-                Minimum = parameter.Minimum,
-                Maximum = parameter.Maximum,
-                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-                Tag = parameter.Name
-            };
-            numberBox.Value = double.TryParse(existingValue ?? parameter.DefaultValue, out var number)
-                ? number
-                : parameter.Minimum;
-            return numberBox;
-        }
-
-        return new TextBox
-        {
-            Header = parameter.Label,
-            Text = existingValue ?? parameter.DefaultValue ?? string.Empty,
-            Tag = parameter.Name
+            if (e.PropertyName == nameof(ConditionalActionParameterViewModel.IsVisible))
+                control.Visibility = parameter.IsVisible ? Visibility.Visible : Visibility.Collapsed;
         };
+        return control;
     }
 
-    private void BuildPresetEditor(ConditionalAction? existingAction)
+    private void BuildPresetControls()
     {
         ComboBox componentComboBox = new()
         {
-            Header = Text("CL_ParameterComponent"),
-            ItemsSource = _componentChoices,
+            Header = ViewModel.PresetComponentHeader,
+            ItemsSource = ViewModel.PresetComponentChoices,
             DisplayMemberPath = nameof(ConditionalParameterChoice.Name),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Tag = "componentId"
         };
-        var componentId = existingAction?.GetParameter("componentId");
-        componentComboBox.SelectedItem = _componentChoices.FirstOrDefault(choice =>
-            string.Equals(choice.Value, componentId, StringComparison.OrdinalIgnoreCase))
-            ?? _componentChoices.FirstOrDefault();
+        componentComboBox.SelectedItem = ViewModel.SelectedPresetComponent;
 
-        ComboBox presetComboBox = new()
+        _presetComboBox = new()
         {
-            Header = Text("CL_ParameterPreset"),
+            Header = ViewModel.PresetHeader,
             ItemTemplate = (DataTemplate)Resources["ConditionalPresetChoiceTemplate"],
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Tag = "preset",
             Height = 80
         };
+        _presetComboBox.SelectionChanged += PresetComboBox_SelectionChanged;
 
-        _parameterControls["componentId"] = componentComboBox;
-        _parameterControls["preset"] = presetComboBox;
         ActionParametersPanel.Children.Add(componentComboBox);
-        ActionParametersPanel.Children.Add(presetComboBox);
+        ActionParametersPanel.Children.Add(_presetComboBox);
 
-        componentComboBox.SelectionChanged += (_, _) => LoadPresetChoices(
-            componentComboBox,
-            presetComboBox,
-            null,
-            null);
-        LoadPresetChoices(
-            componentComboBox,
-            presetComboBox,
-            existingAction?.GetParameter("packId"),
-            existingAction?.GetParameter("fileName"));
+        componentComboBox.SelectionChanged += (_, _) =>
+            ViewModel.SelectedPresetComponent = componentComboBox.SelectedItem as ConditionalParameterChoice;
+        UpdatePresetComboBox();
     }
 
-    private static List<PresetChoice> GetPresetChoices(string componentId)
+    private void UpdatePresetComboBox()
     {
-        try
-        {
-            ComponentItemsLoaderHelper.Instance.Init();
-            var componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(componentId);
-            var configuration = componentHelper?.GetConfigHelper();
-            if (configuration == null)
-                return [];
-
-            return configuration.GetConfigItems()
-                .Where(item => item != null && !item.MarkAsRemoved)
-                .Select(item => new PresetChoice(
-                    item.name ?? item.not_converted_name ?? item.file_name ?? item.packId ?? string.Empty,
-                    ResolveStoreItemName(item.packId),
-                    item.packId ?? string.Empty,
-                    item.file_name ?? string.Empty))
-                .Where(item => !string.IsNullOrWhiteSpace(item.FileName))
-                .ToList();
-        }
-        catch
-        {
-            return [];
-        }
+        if (_presetComboBox == null)
+            return;
+        _updatingPresetComboBox = true;
+        _presetComboBox.ItemsSource = ViewModel.PresetChoices;
+        _presetComboBox.SelectedItem = ViewModel.SelectedPreset;
+        _updatingPresetComboBox = false;
     }
 
-    private static void LoadPresetChoices(
-        ComboBox componentComboBox,
-        ComboBox presetComboBox,
-        string? selectedPackId,
-        string? selectedFileName)
+    private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var componentId = (componentComboBox.SelectedItem as ConditionalParameterChoice)?.Value;
-        var presets = string.IsNullOrWhiteSpace(componentId)
-            ? []
-            : GetPresetChoices(componentId);
-
-        if (!string.IsNullOrWhiteSpace(selectedFileName) &&
-            !presets.Any(item =>
-                string.Equals(item.PackId, selectedPackId, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(item.FileName, selectedFileName, StringComparison.OrdinalIgnoreCase)))
-        {
-            presets.Add(new PresetChoice(
-                selectedFileName,
-                ResolveStoreItemName(selectedPackId),
-                selectedPackId ?? string.Empty,
-                selectedFileName));
-        }
-
-        presetComboBox.ItemsSource = presets;
-        presetComboBox.SelectedItem = presets.FirstOrDefault(item =>
-            string.Equals(item.PackId, selectedPackId, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(item.FileName, selectedFileName, StringComparison.OrdinalIgnoreCase))
-            ?? presets.FirstOrDefault();
-    }
-
-    private void TargetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading)
-            UpdateParameterVisibility();
-    }
-
-    private void UpdateParameterVisibility()
-    {
-        var values = ReadParameterValues();
-        foreach (var pair in _parameterControls)
-        {
-            if (_parameterDefinitions.TryGetValue(pair.Key, out var definition))
-            {
-                pair.Value.Visibility = definition.IsVisible(values)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
-        }
-    }
-
-    private Dictionary<string, string> ReadParameterValues()
-    {
-        Dictionary<string, string> values = new(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in _parameterControls)
-        {
-            values[pair.Key] = pair.Value switch
-            {
-                TextBox textBox => textBox.Text.Trim(),
-                NumberBox numberBox when !double.IsNaN(numberBox.Value) =>
-                    ((long)numberBox.Value).ToString(),
-                ComboBox comboBox when comboBox.SelectedItem is ConditionalParameterChoice choice =>
-                    choice.Value,
-                _ => string.Empty
-            };
-        }
-        return values;
+        if (!_updatingPresetComboBox)
+            ViewModel.SelectedPreset = _presetComboBox?.SelectedItem as ConditionalPresetChoice;
     }
 
     private void ContentDialog_PrimaryButtonClick(
         ContentDialog sender,
         ContentDialogButtonClickEventArgs args)
     {
-        try
-        {
-            ResultAction = CreateAction();
-        }
-        catch (Exception ex)
-        {
+        if (!ViewModel.TryCreateAction())
             args.Cancel = true;
-            StatusInfoBar.Message = ex.Message;
-            StatusInfoBar.IsOpen = true;
-        }
     }
-
-    private ConditionalAction CreateAction()
-    {
-        if (ActionTypeComboBox.SelectedItem is not ConditionalActionDefinition definition)
-            throw new InvalidDataException(Text("CL_ChooseAction"));
-
-        ConditionalAction action = new() { Type = definition.Type };
-        if (definition.Type == ConditionalActionType.ApplyPreset)
-        {
-            var componentId = (_parameterControls["componentId"] as ComboBox)?.SelectedItem
-                as ConditionalParameterChoice;
-            var preset = (_parameterControls["preset"] as ComboBox)?.SelectedItem as PresetChoice;
-            if (componentId == null)
-                throw new InvalidDataException(Text("CL_ErrorComponentRequired"));
-            if (preset == null)
-                throw new InvalidDataException(Text("CL_ErrorPresetRequired"));
-
-            action.SetParameter("componentId", componentId.Value);
-            action.SetParameter("packId", preset.PackId);
-            action.SetParameter("fileName", preset.FileName);
-            return action;
-        }
-
-        var values = ReadParameterValues();
-        foreach (var parameter in definition.Parameters)
-        {
-            if (!parameter.IsVisible(values))
-                continue;
-            if (parameter.IsRequired(values) &&
-                (!values.TryGetValue(parameter.Name, out var value) || string.IsNullOrWhiteSpace(value)))
-            {
-                throw new InvalidDataException(string.Format(
-                    Text("CL_ErrorParameterRequiredFormat"), parameter.Label));
-            }
-        }
-
-        foreach (var parameter in definition.Parameters.Where(parameter => parameter.IsVisible(values)))
-        {
-            if (values.TryGetValue(parameter.Name, out var value) && !string.IsNullOrWhiteSpace(value))
-                action.SetParameter(parameter.Name, value);
-        }
-        return action;
-    }
-
-    private string Text(string resourceKey) => _localizer.GetLocalizedString(resourceKey);
-
-    private static string ResolveStoreItemName(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id))
-            return string.Empty;
-        try
-        {
-            return DatabaseHelper.Instance.GetItemById(id)?.ShortName.NullIfEmpty() ?? id;
-        }
-        catch
-        {
-            return id;
-        }
-    }
-
-    private sealed record PresetChoice(
-        string Name,
-        string PackName,
-        string PackId,
-        string FileName);
 }

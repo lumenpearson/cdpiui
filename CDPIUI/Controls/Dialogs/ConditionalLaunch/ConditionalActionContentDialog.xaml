@@ -22,7 +22,12 @@
 
     <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
         <StackPanel MinWidth="560" Spacing="12">
-            <InfoBar x:Name="StatusInfoBar" IsOpen="False" IsClosable="False" Severity="Warning" />
+            <InfoBar
+                x:Name="StatusInfoBar"
+                IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=OneWay}"
+                Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                IsClosable="False"
+                Severity="Warning" />
             <ComboBox
                 x:Name="ActionTypeComboBox"
                 l:Uids.Uid="CL_ActionTypeComboBox"
