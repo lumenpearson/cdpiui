@@ -1,3 +1,4 @@
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.JSON;
@@ -467,9 +468,10 @@ public sealed partial class ConfigImportInstaller
             if (fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase) && Directory.Exists(fullPath))
                 Directory.Delete(fullPath, recursive: true);
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort rollback; the original error is more useful to the caller.
+            Logger.Instance.CreateWarningLog(nameof(ConfigImportInstaller), $"Cannot remove the import directory \"{path}\": {ex.Message}");
         }
     }
 
@@ -482,9 +484,10 @@ public sealed partial class ConfigImportInstaller
             if (fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase) && File.Exists(fullPath))
                 File.Delete(fullPath);
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort rollback.
+            Logger.Instance.CreateWarningLog(nameof(ConfigImportInstaller), $"Cannot remove the config file \"{path}\": {ex.Message}");
         }
     }
 

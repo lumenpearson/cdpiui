@@ -5,6 +5,7 @@ using CDPIUI.Core.System;
 using Microsoft.UI.Xaml;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace CDPIUI.Helper.AddOns;
 
@@ -16,7 +17,8 @@ public class HostsFileEditHelper
             !SettingsManager.Instance.GetValueOrDefault("FILEOPENACTIONS", "doNotRemindAgain", 
             defaultValue: true))
         {
-            ShowEditAskDialog(Path.Combine(Environment.GetFolderPath(
+            // ShowEditAskDialog catches and logs its own errors.
+            _ = ShowEditAskDialog(Path.Combine(Environment.GetFolderPath(
                 Environment.SpecialFolder.Windows), "System32/drivers/etc/hosts"), xamlRoot);
         }
         else
@@ -26,17 +28,24 @@ public class HostsFileEditHelper
         }
     }
 
-    private static async void ShowEditAskDialog(string file, XamlRoot xamlRoot)
+    private static async Task ShowEditAskDialog(string file, XamlRoot xamlRoot)
     {
-        EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
+        try
         {
-            XamlRoot = xamlRoot,
-            FilePath = file,
-            UseUAC = true,
-            UseNotepadAsDefault = true,
-        };
-        await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
-        if (editSitelistAskApplicationContentDialog.IsSuccess)
-            SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
+            EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
+            {
+                XamlRoot = xamlRoot,
+                FilePath = file,
+                UseUAC = true,
+                UseNotepadAsDefault = true,
+            };
+            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
+            if (editSitelistAskApplicationContentDialog.IsSuccess)
+                SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(HostsFileEditHelper), exception.ToString());
+        }
     }
 }

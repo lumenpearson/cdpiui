@@ -83,6 +83,7 @@ public sealed class ConfigImportGoldenTests : IDisposable
         Assert.NotNull(config);
         Assert.Equal(expected.Single("name"), config.name);
         Assert.Equal(expected.Lines("target"), config.target);
+        Assert.NotNull(config.variables);
         Assert.Equal(
             expected.Lines("variables").Order(StringComparer.Ordinal),
             config.variables.Order(StringComparer.Ordinal));

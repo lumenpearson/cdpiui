@@ -70,7 +70,7 @@ namespace CDPIUI.Views.CreateConfigHelper
 
         private void EditConfigKitPage_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadedActions();
+            _ = LoadedActions(); // LoadedActions catches and logs its own errors.
             Loaded -= EditConfigKitPage_Loaded;
         }
 
@@ -94,20 +94,27 @@ namespace CDPIUI.Views.CreateConfigHelper
             }
             window?.ClearNavigateBackParameter();
 
-            if (IsLoaded) LoadedActions();
+            if (IsLoaded) _ = LoadedActions(); // LoadedActions catches and logs its own errors.
             else Loaded += EditConfigKitPage_Loaded;
         }
 
-        private async void LoadedActions()
+        private async Task LoadedActions()
         {
-            if (Parameter != null && Parameter.Get("kitId") != KitId)
+            try
             {
-                KitId = Parameter.Get("kitId");
-                await Task.Run(() => LoadConfigItems());
+                if (Parameter != null && Parameter.Get("kitId") != KitId)
+                {
+                    KitId = Parameter.Get("kitId");
+                    await Task.Run(() => LoadConfigItems());
+                }
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
             }
         }
 
-        private async void LoadConfigItems()
+        private async Task LoadConfigItems()
         {
             ToggleLoadingMode(true, localizer.GetLocalizedString("LoadingConfigs"));
 
@@ -243,7 +250,8 @@ namespace CDPIUI.Views.CreateConfigHelper
                         ConfigHelper.RemoveConfig(configItem.file_name, configItem.packId, true);
                     if (!string.IsNullOrEmpty(errorCode))
                     {
-                        ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                        // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
+                        _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
                         SaveButton.IsEnabled = true;
                         SaveAsButton.IsEnabled = true;
                         return;
@@ -254,7 +262,8 @@ namespace CDPIUI.Views.CreateConfigHelper
                     string errorCode = await ConfigurationService.SaveConfigItem(configItem.file_name, configItem.packId, configItem);
                     if (!string.IsNullOrEmpty(errorCode)) 
                     {
-                        ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                        // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
+                        _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
                         SaveButton.IsEnabled = true;
                         SaveAsButton.IsEnabled = true;
                         return;
@@ -270,15 +279,22 @@ namespace CDPIUI.Views.CreateConfigHelper
             else Frame.Navigate(typeof(CreateConfigHelper.MainPage), new NameValueCollection(), new DrillInNavigationTransitionInfo());
         }
 
-        private async void ShowErrorDialog(string message, string title)
+        private async Task ShowErrorDialog(string message, string title)
         {
-            var dlg = new MessageDialog(message, title);
-            InitializeWithWindow.Initialize(
-                dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
-                );
-            await dlg.ShowAsync();
+            try
+            {
+                var dlg = new MessageDialog(message, title);
+                InitializeWithWindow.Initialize(
+                    dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
+                    );
+                await dlg.ShowAsync();
 
             
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
+            }
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)

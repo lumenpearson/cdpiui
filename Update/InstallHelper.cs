@@ -214,7 +214,12 @@ namespace Update
             }
             finally
             {
-                try { shutdownEvent?.Reset(); } catch { }
+                try { shutdownEvent?.Reset(); }
+                catch (Exception ex)
+                {
+                    // The event belongs to the tray. If it cannot be reset, the next tray creates it again.
+                    Log($"Cannot reset the tray shutdown event: {ex.Message}");
+                }
                 shutdownEvent?.Dispose();
             }
         }
@@ -245,7 +250,7 @@ namespace Update
                                 exitedIds.Add(process.Id);
                             waited = true;
                         }
-                        catch (Exception)
+                        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
                         {
                             // No access to the handle, or the process exited before the wait.
                         }
@@ -279,7 +284,16 @@ namespace Update
                         p.WaitForExit(2000);
                         Log($"process {processNameWithoutExt}.exe terminated (pid {p.Id})");
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // The process can exit before the kill, or it can belong to another user.
+                        // StopApplication checks after this that no process is left.
+                        Log($"Cannot terminate {processNameWithoutExt}.exe: {ex.Message}");
+                    }
+                    finally
+                    {
+                        p.Dispose();
+                    }
                 }
             }
             catch (Exception ex)
@@ -292,7 +306,7 @@ namespace Update
         /// Extracts the update into the staging folder without touching the installed files.
         /// </summary>
         /// <returns>Relative paths of the staged files, or null if the update cannot be applied</returns>
-        private async Task<List<string>> StageAsync()
+        internal async Task<List<string>> StageAsync()
         {
             try
             {
@@ -389,7 +403,7 @@ namespace Update
         /// Prefixes of the archive folders to apply, in order: layers/0/, layers/1/, ... in packages
         /// made by the application, or CDPIUI/ in a single published patch.
         /// </summary>
-        private static List<string> GetLayerPrefixes(ZipArchive zip)
+        internal static List<string> GetLayerPrefixes(ZipArchive zip)
         {
             var layers = zip.Entries
                 .Select(e => e.FullName.Replace('\\', '/'))
@@ -409,7 +423,7 @@ namespace Update
         /// Moves the staged files into place. Replaced files are kept in the backup folder
         /// and moved back if any file cannot be applied.
         /// </summary>
-        private bool ApplyStaged(List<string> stagedFiles)
+        internal bool ApplyStaged(List<string> stagedFiles)
         {
             // Relative path and whether an installed file was moved to the backup folder.
             var applied = new List<KeyValuePair<string, bool>>();
@@ -556,7 +570,7 @@ namespace Update
             }
         }
 
-        private static bool TryGetDestination(string root, string relativePath, out string destination)
+        internal static bool TryGetDestination(string root, string relativePath, out string destination)
         {
             destination = null;
             if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
@@ -579,11 +593,13 @@ namespace Update
             try
             {
                 string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {text}{Environment.NewLine}";
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update.log"), logLine);
+                // In a single-file application, AppContext.BaseDirectory is the folder of Update.exe.
+                File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "update.log"), logLine);
             }
-            catch
+            catch (Exception)
             {
-                // pass
+                // The log is optional. A failed write (for example, the file is locked) must not
+                // stop the update, and there is no other place to report it.
             }
         }
     }

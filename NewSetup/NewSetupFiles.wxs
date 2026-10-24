@@ -210,9 +210,6 @@
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.DataTable.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.HeaderedControls.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CommunityToolkit.WinUI.Controls.MarkdownTextBlock.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
@@ -802,9 +799,6 @@
         <File Source="$(var.SourceDir)\Microsoft.WinUI.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Source="$(var.SourceDir)\Microsoft.Xaml.Interactions.dll" KeyPath="yes" />
-      </Component>
-      <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Microsoft.Xaml.Interactivity.dll" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
@@ -920,6 +914,9 @@
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\System.ServiceProcess.ServiceController.dll" KeyPath="yes" />
+      </Component>
+      <Component Directory="INSTALLLOCATION" Subdirectory="Template\PresetTest">
+        <File Source="$(var.SourceDir)\Template\PresetTest\test_targets.txt" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="Template\Settings">
         <File Source="$(var.SourceDir)\Template\Settings\Settings.xml" KeyPath="yes" />

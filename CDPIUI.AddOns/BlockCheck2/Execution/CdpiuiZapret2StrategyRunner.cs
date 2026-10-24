@@ -246,7 +246,7 @@ public sealed class CdpiuiZapret2StrategyRunner : IBlockCheckStrategyRunner
 
             if (!addRequested)
             {
-                _tasksManager.AddNewTask(_options.ComponentId);
+                await _tasksManager.AddNewTask(_options.ComponentId).ConfigureAwait(false);
                 addRequested = true;
             }
 

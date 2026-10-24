@@ -1,3 +1,4 @@
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
 using CDPIUI.Core.JSON;
@@ -42,9 +43,10 @@ public sealed class ConfigImportAutoCorrector
                 return Path.GetFullPath(candidate);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // No suggestion is preferable to blocking the import page.
+            Logger.Instance.CreateWarningLog(nameof(ConfigImportAutoCorrector), $"Cannot suggest a replacement for \"{fullMissingPath}\": {ex.Message}");
         }
 
         return null;

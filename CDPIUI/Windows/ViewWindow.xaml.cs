@@ -163,12 +163,12 @@ public sealed partial class ViewWindow : TemplateWindow
 
     private void ShowFontSettingsDialog()
     {
-        ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(Content.XamlRoot);
+        _ = ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(Content.XamlRoot); // ShowFontSettingsDialogForXamlRoot catches and logs its own errors.
     }
 
     private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e) => ShowFontSettingsDialog();
 
-    private void SupportButton_Click(object sender, RoutedEventArgs e) => UrlOpenHelper.LaunchReportUrl();
+    private void SupportButton_Click(object sender, RoutedEventArgs e) => _ = UrlOpenHelper.LaunchReportUrl();
 
     private async void CopyButton_Click(object sender, RoutedEventArgs e)
     {

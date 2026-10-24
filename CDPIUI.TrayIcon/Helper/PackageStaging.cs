@@ -51,7 +51,11 @@ namespace CDPIUI.TrayIcon.Helper
                 if (Directory.Exists(Root))
                     Directory.Delete(Root, true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // An installer from an earlier run can still use the files; the next start tries again.
+                Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot remove old packages: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -109,7 +113,11 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
-                try { if (Directory.Exists(verifyDirectory)) Directory.Delete(verifyDirectory, true); } catch { }
+                try { if (Directory.Exists(verifyDirectory)) Directory.Delete(verifyDirectory, true); }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot delete the verification folder: {ex.Message}");
+                }
             }
         }
 

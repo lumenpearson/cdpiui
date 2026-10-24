@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
@@ -112,62 +113,69 @@ namespace CDPIUI.Messages
 
         
 
-        public async void SetPackFilePath(string packFile)
+        public async Task SetPackFilePath(string packFile)
         {
-            if (!string.IsNullOrEmpty(PackFilePath)) return; // TODO: Show notification : "Only one operation..."
-            
-            PackFilePath = packFile;
-            ConnectHandlers();
-            var model = await LocalItemsInstallerHelper.Instance.ImportStoreItemPackFile(PackFilePath, LocalItemsInstallerHelper_ErrorHappens);
-            if (isClosed) return;
-
             try
             {
+                if (!string.IsNullOrEmpty(PackFilePath)) return; // TODO: Show notification : "Only one operation..."
+            
+                PackFilePath = packFile;
+                ConnectHandlers();
+                var model = await LocalItemsInstallerHelper.Instance.ImportStoreItemPackFile(PackFilePath, LocalItemsInstallerHelper_ErrorHappens);
+                if (isClosed) return;
 
-                if (model != null)
+                try
                 {
-                    StoreId = model.StoreId;
-                    bool isInstalled = DatabaseHelper.Instance.IsItemInstalled(StoreId);
 
-                    Name = model.ShortName ?? StoreHelper.Instance.GetLocalizedStoreItemName(model.Name, StoreLocalizationHelper.GetStoreLikeLocale());
-
-                    ItemNameTextBlock.Text = string.Format(isInstalled ? localizer.GetLocalizedString("StoreSmallUpdateItemName") : localizer.GetLocalizedString("StoreSmallInstallItemName"), Name);
-                    ItemImage.Source = new BitmapImage(UIHelper.GetUriFromString(model.ReadyToUseIcon ?? LScriptLangHelper.ExecuteScript(model.Icon)));
-                    DeveloperTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), model.Developer);
-                    CategoryTextBlock.Text = string.Format(localizer.GetLocalizedString("Source"), packFile);
-                    VersionTextBlock.Text = string.Format(localizer.GetLocalizedString("Version"), model.Version);
-
-                    if (!string.IsNullOrEmpty(model.Color))
-                        ItemColorRectangle.Fill = UIHelper.HexToSolidColorBrushConverter(model.Color);
-
-                    ToggleItemLoadingMode(false);
-                    DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-
-                    if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+                    if (model != null)
                     {
-                        string curV = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion ?? "0.0.0.0";
-                        string iV = model.Version;
+                        StoreId = model.StoreId;
+                        bool isInstalled = DatabaseHelper.Instance.IsItemInstalled(StoreId);
 
-                        if (!string.IsNullOrEmpty(curV) && !string.IsNullOrEmpty(iV))
+                        Name = model.ShortName.NullIfEmpty() ?? StoreHelper.Instance.GetLocalizedStoreItemName(model.Name, StoreLocalizationHelper.GetStoreLikeLocale());
+
+                        ItemNameTextBlock.Text = string.Format(isInstalled ? localizer.GetLocalizedString("StoreSmallUpdateItemName") : localizer.GetLocalizedString("StoreSmallInstallItemName"), Name);
+                        ItemImage.Source = new BitmapImage(UIHelper.GetUriFromString(model.ReadyToUseIcon ?? LScriptLangHelper.ExecuteScript(model.Icon)));
+                        DeveloperTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), model.Developer);
+                        CategoryTextBlock.Text = string.Format(localizer.GetLocalizedString("Source"), packFile);
+                        VersionTextBlock.Text = string.Format(localizer.GetLocalizedString("Version"), model.Version);
+
+                        if (!string.IsNullOrEmpty(model.Color))
+                            ItemColorRectangle.Fill = UIHelper.HexToSolidColorBrushConverter(model.Color);
+
+                        ToggleItemLoadingMode(false);
+                        DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
+
+                        if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
                         {
-                            if (VersionHelper.CompareVersionStrings(curV, iV) >= 0)
+                            string curV = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion.NullIfEmpty() ?? "0.0.0.0";
+                            string iV = model.Version;
+
+                            if (!string.IsNullOrEmpty(curV) && !string.IsNullOrEmpty(iV))
+                            {
+                                if (VersionHelper.CompareVersionStrings(curV, iV) >= 0)
+                                {
+                                    ErrorHappens(localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
+                                }
+                            }
+                            else
                             {
                                 ErrorHappens(localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
                             }
-                        }
-                        else
-                        {
-                            ErrorHappens(localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
-                        }
 
                         
-                    }
+                        }
 
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorHappens($"{ex.Message}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                ErrorHappens($"{ex.Message}");
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreLocalItemInstallingDialog), exception.ToString());
             }
         }
 
@@ -227,7 +235,7 @@ namespace CDPIUI.Messages
 
             ErrorCodeTextBlock.Text = message;
 
-            CancelButton.Content = "OK";
+            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
         }
 
         private void GetReadyUI()
@@ -320,7 +328,7 @@ namespace CDPIUI.Messages
 
                 ErrorCodeTextBlock.Text = errorCode;
 
-                CancelButton.Content = "OK";
+                CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
             });
             StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
@@ -386,7 +394,7 @@ namespace CDPIUI.Messages
         private void ShowItemAfterInstallActions()
         {
             DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-            CancelButton.Content = "OK";
+            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
 
             ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemNameComplete"), Name);
         }

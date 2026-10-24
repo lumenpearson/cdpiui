@@ -226,7 +226,8 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
                     result.PresetName,
                     result.CopiedFileCount));
 
-            ShowDialog();
+            // Not awaited: the configs are refreshed while the dialog is open. ShowDialog logs its own errors.
+            _ = ShowDialog();
 
             try
             {
@@ -259,23 +260,30 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         
     }
 
-    private async void ShowDialog()
+    private async Task ShowDialog()
     {
-        CreateCompleteDialog dialog = new()
+        try
         {
-            XamlRoot = this.XamlRoot
-        };
-        BlockCheck2ResultWindow window = ((App)Application.Current).GetCurrentWindowFromType<BlockCheck2ResultWindow>();
-        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-            window?.Close();
-        else
-        {
-            if (Frame.CanGoBack)
-                Frame.GoBack();
+            CreateCompleteDialog dialog = new()
+            {
+                XamlRoot = this.XamlRoot
+            };
+            BlockCheck2ResultWindow window = ((App)Application.Current).GetCurrentWindowFromType<BlockCheck2ResultWindow>();
+            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
+                window?.Close();
             else
-                Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
-        }
+            {
+                if (Frame.CanGoBack)
+                    Frame.GoBack();
+                else
+                    Frame.Navigate(typeof(MainPage), null, new DrillInNavigationTransitionInfo());
+            }
 
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(PresetReviewPage), exception.ToString());
+        }
     }
 
     private string PresetSaveErrorMessage(BlockCheck2PresetStorageResult result) =>

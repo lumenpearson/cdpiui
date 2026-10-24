@@ -48,7 +48,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
 
             CreateBreadcrumbBarNavigation();
 
-            CalcSize();
+            _ = CalcSize(); // CalcSize catches and logs its own errors.
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -67,6 +67,7 @@ namespace CDPIUI.Views.Store.Settings.Memory
                     PrepareToConnectedBackwardAnimate(NavGrid);
                 }
             }
+            // The connected animation is cosmetic; the navigation goes on without it.
             catch { }
         }
 
@@ -124,11 +125,18 @@ namespace CDPIUI.Views.Store.Settings.Memory
             RemoveFlyout.Hide();
         }
 
-        private async void CalcSize()
+        private async Task CalcSize()
         {
-            MemoryTextBlock.Text = UnitsParser.FormatSize(
-                await FileSystemService.GetDirectorySize(CDPIUI.Core.Data.Directories.SettingsDirectory,
-                Logger.Instance));
+            try
+            {
+                MemoryTextBlock.Text = UnitsParser.FormatSize(
+                    await FileSystemService.GetDirectorySize(CDPIUI.Core.Data.Directories.SettingsDirectory,
+                    Logger.Instance));
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(MemoryViewSettingsDetailsPage), exception.ToString());
+            }
         }
     }
 }

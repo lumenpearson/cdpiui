@@ -148,6 +148,7 @@ public sealed partial class AutorunPage : TemplatePage
                 PrepareToConnectedForwardAnimate(NavGrid);
             }
         }
+        // The connected animation is cosmetic; the navigation goes on without it.
         catch { }
     }
 

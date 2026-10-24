@@ -72,6 +72,6 @@ public sealed partial class StoreItemLinkButton : UserControl
     private void Button_Click(object sender, RoutedEventArgs e)
     {
         // The link comes from the store manifest: only web links are opened.
-        global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(Url);
+        _ = global::CDPIUI.Helper.UrlOpenHelper.LaunchUrl(Url);
     }
 }

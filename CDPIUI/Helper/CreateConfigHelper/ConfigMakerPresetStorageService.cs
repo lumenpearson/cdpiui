@@ -266,9 +266,10 @@ public sealed class ConfigMakerPresetStorageService
                     .GetComponentHelperFromId(document.ComponentId)?
                     .ReInitConfigs();
             }
-            catch
+            catch (Exception ex)
             {
                 // The config and its resources are already safely stored. A later reload will pick them up.
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), $"Cannot reload the configs: {ex.Message}");
             }
 
             return new ConfigMakerPresetSaveResult
@@ -489,9 +490,10 @@ public sealed class ConfigMakerPresetStorageService
                 File.WriteAllText(localePath, System.Text.Json.JsonSerializer.Serialize(values));
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Variable localization is editor metadata. It must not make the preset unusable.
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), $"Cannot save variable descriptions: {ex.Message}");
         }
     }
 
@@ -554,8 +556,9 @@ public sealed class ConfigMakerPresetStorageService
                     File.Delete(file);
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), exception.ToString());
             }
         }
         foreach (string root in roots.OrderByDescending(path => path.Length))
@@ -567,8 +570,9 @@ public sealed class ConfigMakerPresetStorageService
                     Directory.Delete(root, recursive: true);
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerPresetStorageService), exception.ToString());
             }
         }
     }

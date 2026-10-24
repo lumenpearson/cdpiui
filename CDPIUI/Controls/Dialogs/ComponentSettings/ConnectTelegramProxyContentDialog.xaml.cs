@@ -99,7 +99,7 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings
 
         private void ConnectUrl_Click(Microsoft.UI.Xaml.Documents.Hyperlink sender, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs args)
         {
-            UrlOpenHelper.LaunchTelegramProxyUrl(IpValue.DisplayText, PortValue.DisplayText, KeyValue.DisplayText);
+            _ = UrlOpenHelper.LaunchTelegramProxyUrl(IpValue.DisplayText, PortValue.DisplayText, KeyValue.DisplayText);
         }
 
         private async void GoToComponentSettings_Click(object sender, RoutedEventArgs e)

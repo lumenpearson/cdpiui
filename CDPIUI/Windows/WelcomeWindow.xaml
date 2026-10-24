@@ -177,7 +177,7 @@
                 <ncontrols:AnimatedHorizontalContentItem
                     x:Name="StoreItem"
                     l:Uids.Uid="/WelcomeWizard/StoreAnimatedHorizontalContentItem">
-                    <Grid x:Name="Content">
+                    <Grid x:Name="ContentRoot">
                         <Grid x:Name="ReadyBundlesContent">
                             <StackPanel x:Name="ErrorStackPanel" Spacing="10" Margin="20 0">
                                 <ucontrols:NoContentToDisplayUserControl l:Uids.Uid="NoBundlesAvailableNoContentToDisplayUserControl" Margin="20"/>

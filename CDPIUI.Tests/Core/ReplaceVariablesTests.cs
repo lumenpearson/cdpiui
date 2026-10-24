@@ -37,7 +37,7 @@ public class ReplaceVariablesTests
 
 public class ReplaceFilesPathTests
 {
-    private static string Replace(string startup, Dictionary<string, string> files)
+    private static string? Replace(string startup, Dictionary<string, string> files)
     {
         var item = new CDPIUI.Core.ComponentServices.Helpers.Configuration.ConfigItem { startup_string = startup };
         return ConfigurationService.ReplaceFilesPath(item, files).startup_string;

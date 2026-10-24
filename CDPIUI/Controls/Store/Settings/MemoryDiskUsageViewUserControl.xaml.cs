@@ -117,7 +117,7 @@ namespace CDPIUI.Controls.Store.Settings
             get { return (string)GetValue(DiskLetterProperty); }
             set { 
                 SetValue(DiskLetterProperty, value);
-                Init();
+                _ = Init(); // Init catches and logs its own errors.
             }
         }
 
@@ -126,66 +126,73 @@ namespace CDPIUI.Controls.Store.Settings
                 nameof(DiskLetter), typeof(string), typeof(MemoryDiskUsageViewUserControl), new PropertyMetadata(string.Empty)
             );
 
-        public async void Init()
+        public async Task Init()
         {
-            MemoryViewItemModels.Clear();
-            string appDir = CDPIUI.Core.Data.Directories.CurrentDirectory;
-            string dataDir = CDPIUI.Core.Data.Directories.DataDirectory;
-
-            DriveInfo appDirDriveInfo = new(appDir);
-            DriveInfo dataDirDriveInfo = new(dataDir);
-
-            DriveInfo usedDriveInfo;
-            string usedDir;
-
-            long appDirSize;
-
-            if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.Name == DiskLetter)
+            try
             {
-                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
-                usedDriveInfo = appDirDriveInfo;
-                usedDir = appDir;
+                MemoryViewItemModels.Clear();
+                string appDir = CDPIUI.Core.Data.Directories.CurrentDirectory;
+                string dataDir = CDPIUI.Core.Data.Directories.DataDirectory;
+
+                DriveInfo appDirDriveInfo = new(appDir);
+                DriveInfo dataDirDriveInfo = new(dataDir);
+
+                DriveInfo usedDriveInfo;
+                string usedDir;
+
+                long appDirSize;
+
+                if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.Name == DiskLetter)
+                {
+                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
+                    usedDriveInfo = appDirDriveInfo;
+                    usedDir = appDir;
+                }
+                else if (appDirDriveInfo.Name == dataDirDriveInfo.Name && appDirDriveInfo.Name == DiskLetter)
+                {
+                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance) + await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
+                    usedDriveInfo = appDirDriveInfo;
+                    usedDir = dataDir;
+                    long oldSize = await FileSystemService.GetDirectorySize(MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, Logger.Instance);
+                    CreateTileForMemoryUsageCategory(oldSize, appDirSize, MemoryUsageCategories.PreviousVersions);
+                    CreateTileForMemoryUsageCategory(await FileSystemService.GetDirectorySize(appDir, Logger.Instance) - oldSize, appDirSize, MemoryUsageCategories.Application);
+                }
+                else if (appDirDriveInfo.Name == DiskLetter)
+                {
+                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
+                    usedDriveInfo = appDirDriveInfo;
+                    usedDir = appDir;
+                }
+                else if (dataDirDriveInfo.Name == DiskLetter)
+                {
+                    appDirSize = await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
+                    usedDriveInfo = dataDirDriveInfo;
+                    usedDir = dataDir;
+                }
+                else
+                {
+                    return;
+                }
+
+                long totalFreeMemory = usedDriveInfo.AvailableFreeSpace;
+
+                DiskNameTextBlock.Text = string.Format(
+                    localizer.GetLocalizedString("MemoryDiskName"),
+                    string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel, 
+                    usedDriveInfo.Name);
+
+                Logger.Instance.CreateInfoLog(nameof(MemoryDiskUsageViewUserControl), $"Disk is {usedDriveInfo.Name}, {string.IsNullOrEmpty(usedDriveInfo.Name)}");
+
+                CreateTotalStatistic(appDirSize, totalFreeMemory);
+
+                await CreateTilesForCategories(usedDir, appDirSize);
+
+                MemoryViewItemModels.Sort();
             }
-            else if (appDirDriveInfo.Name == dataDirDriveInfo.Name && appDirDriveInfo.Name == DiskLetter)
+            catch (Exception exception)
             {
-                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance) + await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
-                usedDriveInfo = appDirDriveInfo;
-                usedDir = dataDir;
-                long oldSize = await FileSystemService.GetDirectorySize(MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, Logger.Instance);
-                CreateTileForMemoryUsageCategory(oldSize, appDirSize, MemoryUsageCategories.PreviousVersions);
-                CreateTileForMemoryUsageCategory(await FileSystemService.GetDirectorySize(appDir, Logger.Instance) - oldSize, appDirSize, MemoryUsageCategories.Application);
+                Logger.Instance.CreateWarningLog(nameof(MemoryDiskUsageViewUserControl), exception.ToString());
             }
-            else if (appDirDriveInfo.Name == DiskLetter)
-            {
-                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
-                usedDriveInfo = appDirDriveInfo;
-                usedDir = appDir;
-            }
-            else if (dataDirDriveInfo.Name == DiskLetter)
-            {
-                appDirSize = await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
-                usedDriveInfo = dataDirDriveInfo;
-                usedDir = dataDir;
-            }
-            else
-            {
-                return;
-            }
-
-            long totalFreeMemory = usedDriveInfo.AvailableFreeSpace;
-
-            DiskNameTextBlock.Text = string.Format(
-                localizer.GetLocalizedString("MemoryDiskName"),
-                string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel, 
-                usedDriveInfo.Name);
-
-            Logger.Instance.CreateInfoLog(nameof(MemoryDiskUsageViewUserControl), $"Disk is {usedDriveInfo.Name}, {string.IsNullOrEmpty(usedDriveInfo.Name)}");
-
-            CreateTotalStatistic(appDirSize, totalFreeMemory);
-
-            await CreateTilesForCategories(usedDir, appDirSize);
-
-            MemoryViewItemModels.Sort();
         }
 
         public void CreateTotalStatistic(long dirSize, long totalFreeMemory)

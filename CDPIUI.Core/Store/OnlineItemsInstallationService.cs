@@ -57,12 +57,14 @@ namespace CDPIUI.Core.Store
             string[] _sActions = actions.Split(';');
             foreach (var _sAction in _sActions)
             {
-                if (_sAction.StartsWith("DOWNLOAD="))
+                if (_sAction.StartsWith("DOWNLOAD=", StringComparison.Ordinal))
                 {
                     var _p = _sAction.Substring(9).Split("$SEPARATOR");
                     if (_p.Length < 2) continue;
                     string url = _p[0];
                     string filename = _p[1];
+                    // A third part is the SHA-256 of the file; the download is rejected when it differs.
+                    string? expectedSha256 = _p.Length > 2 && !string.IsNullOrWhiteSpace(_p[2]) ? _p[2].Trim() : null;
 
                     // Both come from item metadata: download only over HTTPS and only into the item folder.
                     if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
@@ -73,7 +75,7 @@ namespace CDPIUI.Core.Store
 
                     if (DownloadWorker == null)
                     {
-                        throw new NullReferenceException(nameof(DownloadWorker));
+                        throw new InvalidOperationException("The download worker is not created.");
                     }
 
                     string extension = Path.GetExtension(FileSystemService.GetFileNameFromUrl(url));
@@ -81,13 +83,14 @@ namespace CDPIUI.Core.Store
                         await DownloadWorker.DownloadAndExtractAsync(
                             url, 
                             destDir, 
-                            extractArchive: url.EndsWith(".zip"), 
+                            extractArchive: string.Equals(extension, ".zip", StringComparison.OrdinalIgnoreCase), 
                             null, 
                             null, 
                             string.Empty, 
                             extension, 
                             false, 
-                            filename);
+                            filename,
+                            expectedSha256);
                     if (!result) return false;
                 }
             }
@@ -139,6 +142,7 @@ namespace CDPIUI.Core.Store
                         archive_root_folder = item.archive_root_folder,
                         actions = "keep",
                         target_executable_file = item.target_executable_file,
+                        sha256 = item.sha256,
                     };
                 }
                 else if (downloadLink is DownloadLinkModel m)
@@ -161,7 +165,8 @@ namespace CDPIUI.Core.Store
                     extractRootFolder: downloadLinkModel.archive_root_folder,
                     executableFileName: downloadLinkModel.target_executable_file,
                     filetype: filetype,
-                    removeAfterAction: downloadLinkModel.actions == "remove"
+                    removeAfterAction: downloadLinkModel.actions == "remove",
+                    expectedSha256: downloadLinkModel.sha256
                 );
 
                 if (DownloadWorker.IsRestartNeeded)

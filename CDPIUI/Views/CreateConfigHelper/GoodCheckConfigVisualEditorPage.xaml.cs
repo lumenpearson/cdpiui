@@ -251,8 +251,9 @@ namespace CDPIUI.Views.CreateConfigHelper
                     }
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
             }
             finally
             {
@@ -299,8 +300,9 @@ namespace CDPIUI.Views.CreateConfigHelper
                     }
                 }
             }
-            catch
+            catch (Exception exception)
             {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckConfigVisualEditorPage), exception.ToString());
             }
             finally
             {

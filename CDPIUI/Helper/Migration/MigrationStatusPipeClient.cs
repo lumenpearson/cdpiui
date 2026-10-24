@@ -42,9 +42,10 @@ internal static class MigrationStatusPipeClient
             };
             await writer.WriteLineAsync(json).WaitAsync(timeout.Token);
         }
-        catch
+        catch (Exception ex)
         {
             // Status delivery is best effort. The UI remains the source of truth.
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MigrationStatusPipeClient), $"Cannot send the migration status: {ex.Message}");
         }
     }
 }

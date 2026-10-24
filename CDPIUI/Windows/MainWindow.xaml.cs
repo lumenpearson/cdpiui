@@ -73,21 +73,13 @@ namespace CDPIUI
 
             StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
             StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
-            CoreEvents.Instance.RestartRequired += CoreEvents_RestartRequired;
-            // StoreHelper and CoreEvents outlive the window; each reopened window added handlers.
+            // StoreHelper outlives the window; each reopened window added handlers.
             this.Closed += (_, _) =>
             {
                 StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
                 StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
-                CoreEvents.Instance.RestartRequired -= CoreEvents_RestartRequired;
             };
-            if (Content is FrameworkElement root)
-            {
-                root.Loaded += (_, _) =>
-                {
-                    if (CoreEvents.Instance.IsRestartPending) CoreEvents_RestartRequired(string.Empty);
-                };
-            }
+            RestartPrompt.Attach(this);
 
             AuditNavigationItems();
         }
@@ -134,46 +126,6 @@ namespace CDPIUI
         private void Instance_ItemActionsStopped(string obj)
         {
             AuditNavigationItems();
-        }
-
-        private bool restartDialogShown = false;
-
-        // A driver or runtime package asked for a system restart; the request was only logged.
-        private void CoreEvents_RestartRequired(string itemId)
-        {
-            DispatcherQueue?.TryEnqueue(async () =>
-            {
-                if (restartDialogShown || Content?.XamlRoot == null || !CoreEvents.Instance.IsRestartPending)
-                    return;
-                restartDialogShown = true;
-                CoreEvents.Instance.AcknowledgeRestart();
-                var localizer = WinUI3Localizer.Localizer.Get();
-                ContentDialog dialog = new()
-                {
-                    XamlRoot = Content.XamlRoot,
-                    Title = localizer.GetLocalizedString("RestartRequiredTitle"),
-                    Content = localizer.GetLocalizedString("RestartRequiredMessage"),
-                    PrimaryButtonText = localizer.GetLocalizedString("RestartNow"),
-                    CloseButtonText = localizer.GetLocalizedString("RestartLater"),
-                    DefaultButton = ContentDialogButton.Close,
-                };
-                try
-                {
-                    if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-                    {
-                        string shutdown = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "shutdown.exe");
-                        Process.Start(new ProcessStartInfo(shutdown, "/r /t 0") { UseShellExecute = false, CreateNoWindow = true });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.CreateWarningLog(nameof(MainWindow), $"Restart request failed: {ex.Message}");
-                }
-                finally
-                {
-                    restartDialogShown = false;
-                }
-            });
         }
 
         private void Instance_ItemRemoved(string obj)
@@ -228,9 +180,9 @@ namespace CDPIUI
             }
             else if (args.InvokedItemContainer != null)
             {
-                if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPI_UI.Views.Components."))
+                if (args.InvokedItemContainer.Tag.ToString().StartsWith("CDPIUI.Views.Components."))
                 {
-                    //string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPI_UI.Views.Components.", "");
+                    //string componentName = args.InvokedItemContainer.Tag.ToString().Replace("CDPIUI.Views.Components.", "");
 
                     //NavView_Navigate(typeof(ViewComponentSettingsPage), StateHelper.Instance.FindKeyByValue(componentName), args.RecommendedNavigationTransitionInfo);
 
@@ -294,7 +246,7 @@ namespace CDPIUI
                 .Concat(NavView.FooterMenuItems)
                 .OfType<NavigationViewItem>()
                 .FirstOrDefault(candidate => string.Equals(
-                    candidate.Tag?.ToString().Replace("CDPI_UI.", "CDPIUI."),
+                    candidate.Tag?.ToString(),
                     navigationPageType.FullName,
                     StringComparison.Ordinal));
 
@@ -403,6 +355,7 @@ namespace CDPIUI
                 SetPreferredAppMode(2);
                 FlushMenuThemes();
             }
+            // The exports are missing on older systems: the system menu keeps its light theme.
             catch (EntryPointNotFoundException) { }
             catch (DllNotFoundException) { }
         }

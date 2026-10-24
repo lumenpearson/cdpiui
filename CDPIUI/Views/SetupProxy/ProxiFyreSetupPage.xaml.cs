@@ -16,6 +16,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -46,9 +47,15 @@ namespace CDPIUI.Views.SetupProxy
     {
         public List<string> appNames { get; set; }
         public string socks5ProxyEndpoint { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string username { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string password { get; set; }
         public List<string> supportedProtocols { get; set; }
+
+        // Keys this page does not know are written back unchanged.
+        [JsonExtensionData]
+        public IDictionary<string, JToken> extensionData { get; set; }
     }
 
     public class ProxiFyreSettings
@@ -56,6 +63,10 @@ namespace CDPIUI.Views.SetupProxy
         public string logLevel { get; set; } = "Error";
         public List<ProxiFyreProxyGroup> proxies { get; set; } = [];
         public List<string> excludes { get; set; } = [];
+
+        // Keys this page does not know are written back unchanged.
+        [JsonExtensionData]
+        public IDictionary<string, JToken> extensionData { get; set; }
     }
 
     public sealed partial class ProxiFyreSetupPage : TemplatePage
@@ -301,10 +312,11 @@ namespace CDPIUI.Views.SetupProxy
             {
                 logLevel = settings.logLevel ?? "Error",
                 proxies = settings.proxies,
-                excludes = GetAppNamesFromModel(BlackList)
+                excludes = GetAppNamesFromModel(BlackList),
+                extensionData = settings.extensionData
             };
 
-            string jsonString = System.Text.Json.JsonSerializer.Serialize(readyToSaveSettigs);
+            string jsonString = JsonConvert.SerializeObject(readyToSaveSettigs);
             Logger.Instance.CreateDebugLog(nameof(ProxiFyreSetupPage), jsonString);
             File.WriteAllText(settingsFile, jsonString);
 

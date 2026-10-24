@@ -62,7 +62,9 @@ namespace CDPIUI.Shared.Pipe
                         continue;
                     }
 
-                    RunStringMessageActions(message);
+                    // Not awaited: a handler can run for minutes. It runs on this thread up to its
+                    // first await, so a handler can keep the order of arrival there.
+                    _ = RunStringMessageActions(message);
                 }
                 catch (EndOfStreamException)
                 {
@@ -79,14 +81,20 @@ namespace CDPIUI.Shared.Pipe
             System.Text.RegularExpressions.Regex.Replace(message, "(GUID=)[^&]*", "$1***",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        public async void SendMessage(string message)
+        // Catches and logs its own errors, so a caller can start it without waiting for it.
+        public async Task SendMessage(string message)
         {
-            await SendMessageAsync(message);
+            try
+            {
+                await SendMessageAsync(message);
+            }
+            catch (Exception ex)
+            {
+                Logger?.CreateWarningLog(nameof(PipeServiceBase), $"Cannot send a message: {ex.Message}");
+            }
         }
         public async Task<bool> SendMessageAsync(string message)
         {
-            if (!CanSend(message))
-                return false;
             return await SendStringMessageToPipe(message);
         }
 
@@ -102,7 +110,8 @@ namespace CDPIUI.Shared.Pipe
             await SendMessageAsync(ServiceMessageModel.ConnectionSuccessful().ToString());
         }
 
-        private async void RunStringMessageActions(string message)
+        // Catches and logs its own errors; the read loop does not wait for it.
+        private async Task RunStringMessageActions(string message)
         {
             try
             {
@@ -130,17 +139,24 @@ namespace CDPIUI.Shared.Pipe
         {
             Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Message \"{RedactSecrets(message)}\" added to send queue");
 
-            if (PipeStream == null || !PipeStream.IsConnected || StreamString == null)
-            {
-                Logger?.CreateInfoLog(nameof(PipeServiceBase), "Cannot send any message. Connect PIPE first!");
-                return false;
-            }
-
             await SendLock.WaitAsync();
 
             try
             {
-                await StreamString.WriteStringAsync(message, default);
+                // Checked under the lock: the client can change while the message waits, and the
+                // listener clears the streams when the client leaves.
+                if (!CanSend(message))
+                    return false;
+
+                var pipeStream = PipeStream;
+                var streamString = StreamString;
+                if (pipeStream == null || !pipeStream.IsConnected || streamString == null)
+                {
+                    Logger?.CreateInfoLog(nameof(PipeServiceBase), "Cannot send any message. Connect PIPE first!");
+                    return false;
+                }
+
+                await streamString.WriteStringAsync(message, default);
                 return true;
             }
             catch (Exception ex)
@@ -165,7 +181,10 @@ namespace CDPIUI.Shared.Pipe
                 if (PipeStream?.IsConnected == true)
                     PipeStream.WaitForPipeDrain();
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException) { }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+            {
+                // The other side has already closed the pipe; there is nothing left to drain.
+            }
             PipeStream?.Dispose();
             StreamString = null;
 

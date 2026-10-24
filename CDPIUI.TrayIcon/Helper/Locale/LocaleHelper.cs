@@ -107,10 +107,8 @@ namespace CDPIUI.TrayIcon.Helper
         {
             try
             {
-                var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-                return culture switch
+                return GetLanguage() switch
                 {
-                    "en" => English.ContainsKey(key) ? English[key] : key,
                     "ru" => Russian.ContainsKey(key) ? Russian[key] : (English.ContainsKey(key) ? English[key] : key),
                     _ => English.ContainsKey(key) ? English[key] : key,
                 };
@@ -119,6 +117,33 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 return key;
             }
+        }
+
+        /// <summary>
+        /// Returns the language that the user selected in the app ("SYSTEM/language" in Settings.xml).
+        /// Without a usable value, the Windows display language is used, as in the app.
+        /// </summary>
+        internal static string GetLanguage()
+        {
+            string? language = null;
+            try
+            {
+                // The setting is only read: a missing key must not write a default into the user's file.
+                language = SettingsManager.Instance.GetValue<string>("SYSTEM", "language", raiseExceptionIfNotExits: true);
+            }
+            catch (Exception)
+            {
+                language = null;
+            }
+            return ToTrayLanguage(language, System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName);
+        }
+
+        internal static string ToTrayLanguage(string? appLanguage, string windowsLanguage)
+        {
+            string value = (appLanguage ?? string.Empty).Trim().ToLowerInvariant();
+            if (value.StartsWith("ru", StringComparison.Ordinal)) return "ru";
+            if (value.StartsWith("en", StringComparison.Ordinal)) return "en";
+            return windowsLanguage == "ru" ? "ru" : "en";
         }
     }
 }

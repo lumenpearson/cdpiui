@@ -86,9 +86,10 @@ namespace CDPIUI.Views.Main.Components
             Loaded += PresetPage_Loaded;
             Unloaded += PresetPage_Unloaded;
 
-            TgWsProxyEditCommand = new RelayCommand(p => EditElement((string)p));
+            // EditElement and LinkedSettingClicked catch and log their own errors.
+            TgWsProxyEditCommand = new RelayCommand(p => _ = EditElement((string)p));
             TgWsProxyRemoveCommand = new RelayCommand(p => RemoveElement((string)p));
-            LinkedSettingClickCommand = new RelayCommand(p => LinkedSettingClicked(p));
+            LinkedSettingClickCommand = new RelayCommand(p => _ = LinkedSettingClicked(p));
 
             DataCentersListView.ItemsSource = TelegramDataCenterModels;
             LinkedSettingsUserControl.SettingModelsList = LinkedSettings;
@@ -228,7 +229,8 @@ namespace CDPIUI.Views.Main.Components
                             break;
                         case "--dc-ip":
                             var matchResult = FindSupportedString().Match(item.Value);
-                            if (matchResult.Groups.Count >= 3)
+                            // Groups.Count is the same with or without a match.
+                            if (matchResult.Success)
                             {
                                 TelegramDataCenterModels.Add(new()
                                 {
@@ -265,23 +267,30 @@ namespace CDPIUI.Views.Main.Components
             TelegramDataCenterModels.Remove(TelegramDataCenterModels.FirstOrDefault(x => x.Guid == guid));
         }
 
-        private async void EditElement(string guid)
+        private async Task EditElement(string guid)
         {
-            var el = TelegramDataCenterModels.FirstOrDefault(x => x.Guid == guid);
-            var dialog = new TgWsDataCenterEditContentDialog()
+            try
             {
-                XamlRoot = this.XamlRoot,
-                Number = el?.Number,
-                Ip = el?.Ip,
-                Title = localizer.GetLocalizedString("EditDataCenter")
-            };
+                var el = TelegramDataCenterModels.FirstOrDefault(x => x.Guid == guid);
+                var dialog = new TgWsDataCenterEditContentDialog()
+                {
+                    XamlRoot = this.XamlRoot,
+                    Number = el?.Number,
+                    Ip = el?.Ip,
+                    Title = localizer.GetLocalizedString("EditDataCenter")
+                };
 
-            await dialog.ShowQueuedAsync();
+                await dialog.ShowQueuedAsync();
 
-            if (dialog.Result)
+                if (dialog.Result)
+                {
+                    el.Number = dialog.Number;
+                    el.Ip = dialog.Ip;
+                }
+            }
+            catch (Exception exception)
             {
-                el.Number = dialog.Number;
-                el.Ip = dialog.Ip;
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
             }
         }
 
@@ -421,53 +430,67 @@ namespace CDPIUI.Views.Main.Components
 
         private void HandleCreatePlCommand(AvailableConfigCreationActios action)
         {
-            if (action == AvailableConfigCreationActios.CreateFromTemplate) CreatePlConfig();
+            if (action == AvailableConfigCreationActios.CreateFromTemplate) _ = CreatePlConfig(); // CreatePlConfig catches and logs its own errors.
         }
 
-        private async void CreatePlConfig()
+        private async Task CreatePlConfig()
         {
-            var item = CreateConfigPageHelper.CreateConfigItem(
-                SharedConstants.LocalUserItemsId, localizer.GetLocalizedString("DefaultConfigPlaceholder"), ComponentId, [], [], [], [], DefaultTgWsProxyStartString
-                );
-            string fileName = $"{Guid.NewGuid()}.json";
-            string errorCode = await ConfigurationService.SaveConfigItem(fileName, SharedConstants.LocalUserItemsId, item);
-
-            if (!string.IsNullOrEmpty(errorCode))
+            try
             {
-                ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
-                return;
+                var item = CreateConfigPageHelper.CreateConfigItem(
+                    SharedConstants.LocalUserItemsId, localizer.GetLocalizedString("DefaultConfigPlaceholder"), ComponentId, [], [], [], [], DefaultTgWsProxyStartString
+                    );
+                string fileName = $"{Guid.NewGuid()}.json";
+                string errorCode = await ConfigurationService.SaveConfigItem(fileName, SharedConstants.LocalUserItemsId, item);
+
+                if (!string.IsNullOrEmpty(errorCode))
+                {
+                    await ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                    return;
+                }
+
+                SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configFile", fileName);
+                SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configId", SharedConstants.LocalUserItemsId);
+
+                ComponentHelper componentHelper =
+                    ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
+                componentHelper.ReInitConfigs();
             }
-
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configFile", fileName);
-            SettingsManager.Instance.SetValue<string>(["CONFIGS", ComponentId], "configId", SharedConstants.LocalUserItemsId);
-
-            ComponentHelper componentHelper =
-                ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-            componentHelper.ReInitConfigs();
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
+            }
         }
 
-        private async void CreateConfig()
+        private async Task CreateConfig()
         {
-            var dialog = new CreateNewConfigForComponentContentDialog()
+            try
             {
-                XamlRoot = this.XamlRoot,
-            };
+                var dialog = new CreateNewConfigForComponentContentDialog()
+                {
+                    XamlRoot = this.XamlRoot,
+                };
 
-            await dialog.ShowQueuedAsync();
+                await dialog.ShowQueuedAsync();
 
-            if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.FromTemplate)
-            {
-                CreatePlConfig();
+                if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.FromTemplate)
+                {
+                    await CreatePlConfig();
+                }
+                else if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.Manual)
+                {
+                    await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
+                }
             }
-            else if (dialog.Result == CreateNewConfigForComponentContentDialog.ConfigCreationVariants.Manual)
+            catch (Exception exception)
             {
-                await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
             }
         }
 
         private void CreateConfigButton_Click(object sender, RoutedEventArgs e)
         {
-            CreateConfig();
+            _ = CreateConfig(); // CreateConfig catches and logs its own errors.
         }
 
         private void SetValueToGraphicDesignerItemsList(string key, string value, ObservableCollection<GraphicDesignerSettingItemModel> list, bool isChecked = true)
@@ -542,14 +565,14 @@ namespace CDPIUI.Views.Main.Components
             string errorCode = await ConfigurationService.SaveConfigItem(sel.FileName, sel.PackId, item);
             if (!string.IsNullOrEmpty(errorCode))
             {
-                ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
+                await ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
                 return;
             }
 
             componentHelper.ReInitConfigs();
         }
 
-        private async void ShowErrorDialog(string message, string title)
+        private async Task ShowErrorDialog(string message, string title)
         {
             var dlg = new MessageDialog(message, title);
             InitializeWithWindow.Initialize(
@@ -560,30 +583,37 @@ namespace CDPIUI.Views.Main.Components
 
         }
 
-        private async void LinkedSettingClicked(object param)
+        private async Task LinkedSettingClicked(object param)
         {
-            if (param is LinkedActions action)
+            try
             {
-                switch (action)
+                if (param is LinkedActions action)
                 {
-                    case LinkedActions.EditCurrentConfig:
-                        ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-                        var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
+                    switch (action)
+                    {
+                        case LinkedActions.EditCurrentConfig:
+                            ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
+                            var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
 
-                        if (componentHelper != null && item != null)
-                            ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
-                        break;
-                    case LinkedActions.CreateNewConfigForComponent:
-                        CreateConfig();
-                        break;
-                    case LinkedActions.OpenProxyInTelegram:
-                        ConnectTelegramProxyContentDialog dialog = new()
-                        {
-                            XamlRoot = this.XamlRoot,
-                        };
-                        await dialog.ShowQueuedAsync();
-                        break;
+                            if (componentHelper != null && item != null)
+                                await ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
+                            break;
+                        case LinkedActions.CreateNewConfigForComponent:
+                            await CreateConfig();
+                            break;
+                        case LinkedActions.OpenProxyInTelegram:
+                            ConnectTelegramProxyContentDialog dialog = new()
+                            {
+                                XamlRoot = this.XamlRoot,
+                            };
+                            await dialog.ShowQueuedAsync();
+                            break;
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(TgWsProxyComponentPage), exception.ToString());
             }
         }
 
