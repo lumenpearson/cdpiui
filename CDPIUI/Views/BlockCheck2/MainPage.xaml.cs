@@ -26,9 +26,9 @@ namespace CDPIUI.Views.BlockCheck2;
 
 public sealed partial class MainPage : TemplatePage
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private bool handlersConnected;
-    private BlockCheck2PreparationPreview? preparationPreview;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private bool _handlersConnected;
+    private BlockCheck2PreparationPreview? _preparationPreview;
 
     public BlockCheck2ViewModel ViewModel { get; } = new();
 
@@ -53,11 +53,11 @@ public sealed partial class MainPage : TemplatePage
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if (!handlersConnected)
+        if (!_handlersConnected)
         {
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-            localizer.LanguageChanged += Localizer_LanguageChanged;
-            handlersConnected = true;
+            _localizer.LanguageChanged += Localizer_LanguageChanged;
+            _handlersConnected = true;
         }
 
         UpdateLocalizedText();
@@ -79,14 +79,14 @@ public sealed partial class MainPage : TemplatePage
         {
             ViewModel.CleanupGeneratedSiteListsIfUnviewable();
         }
-        if (!handlersConnected)
+        if (!_handlersConnected)
         {
             return;
         }
 
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        localizer.LanguageChanged -= Localizer_LanguageChanged;
-        handlersConnected = false;
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
+        _handlersConnected = false;
     }
 
     private void Localizer_LanguageChanged(object? sender, LanguageChangedEventArgs e) =>
@@ -122,9 +122,9 @@ public sealed partial class MainPage : TemplatePage
             : "ViewMore");
         UpdateNavigationButtons();
         UpdateProgressText();
-        if (MainContent.SelectedItem == ReviewStep && preparationPreview != null)
+        if (MainContent.SelectedItem == ReviewStep && _preparationPreview != null)
         {
-            UpdateReviewSummary(preparationPreview);
+            UpdateReviewSummary(_preparationPreview);
         }
     }
 
@@ -497,10 +497,10 @@ public sealed partial class MainPage : TemplatePage
                 return;
             }
 
-            preparationPreview = await ViewModel.BuildPreparationPreviewAsync();
-            if (!preparationPreview.Success)
+            _preparationPreview = await ViewModel.BuildPreparationPreviewAsync();
+            if (!_preparationPreview.Success)
             {
-                ShowInputIssue(FormatIssues(preparationPreview.Issues));
+                ShowInputIssue(FormatIssues(_preparationPreview.Issues));
                 return;
             }
 
@@ -519,16 +519,16 @@ public sealed partial class MainPage : TemplatePage
 
         if (MainContent.SelectedItem == AdvancedStep)
         {
-            preparationPreview = await ViewModel.BuildPreparationPreviewAsync();
-            if (!preparationPreview.Success)
+            _preparationPreview = await ViewModel.BuildPreparationPreviewAsync();
+            if (!_preparationPreview.Success)
             {
                 MainContent.GoTo(SiteListsStep);
-                ShowInputIssue(FormatIssues(preparationPreview.Issues));
+                ShowInputIssue(FormatIssues(_preparationPreview.Issues));
                 UpdateNavigationButtons();
                 return;
             }
 
-            UpdateReviewSummary(preparationPreview);
+            UpdateReviewSummary(_preparationPreview);
             MainContent.GoTo(ReviewStep);
             UpdateNavigationButtons();
             return;
@@ -814,7 +814,7 @@ public sealed partial class MainPage : TemplatePage
             : Text("BlockCheck2NextButton");
     }
 
-    private string Text(string key) => localizer.GetLocalizedString(key);
+    private string Text(string key) => _localizer.GetLocalizedString(key);
 
     private void RadioButton_Click(object sender, RoutedEventArgs e)
     {

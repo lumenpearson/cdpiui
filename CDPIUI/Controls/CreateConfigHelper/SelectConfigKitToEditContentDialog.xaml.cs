@@ -29,12 +29,12 @@ public sealed partial class SelectConfigKitToEditContentDialog : ContentDialog
 {
     public string Result { get; private set; } = string.Empty;
 
-    private readonly ObservableCollection<ViewStoreItemModel> ConfigKits = [];
+    private readonly ObservableCollection<ViewStoreItemModel> _configKits = [];
     public SelectConfigKitToEditContentDialog()
     {
         InitializeComponent();
 
-        ConfigKitListView.ItemsSource = ConfigKits;
+        ConfigKitListView.ItemsSource = _configKits;
 
         _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
     }
@@ -43,12 +43,12 @@ public sealed partial class SelectConfigKitToEditContentDialog : ContentDialog
     {
         try
         {
-            ConfigKits.Clear();
+            _configKits.Clear();
             List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
             foreach (DatabaseStoreItem item in items)
             {
-                ConfigKits.Add(new()
+                _configKits.Add(new()
                 {
                     StoreId = item.Id,
                     Name = item.ShortName,

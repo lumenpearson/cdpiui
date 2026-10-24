@@ -35,9 +35,9 @@ public class MemoryDiskViewModel
 }
 public sealed partial class MemoryViewPage : TemplatePage
 {
-    private ObservableCollection<MemoryDiskViewModel> MemoryDisks = [];
+    private ObservableCollection<MemoryDiskViewModel> _memoryDisks = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MemoryViewPage()
     {
         InitializeComponent();
@@ -47,8 +47,8 @@ public sealed partial class MemoryViewPage : TemplatePage
         IsBackwardAnimationToPageAvailable = true;
         ElementToAnimateBackwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
-        DiskInfoListView.ItemsSource = MemoryDisks;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
+        DiskInfoListView.ItemsSource = _memoryDisks;
 
         CreateBreadcrumbBarNavigation();
     }
@@ -74,25 +74,25 @@ public sealed partial class MemoryViewPage : TemplatePage
         catch { }
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryUsage"),
+            DisplayName = _localizer.GetLocalizedString("MemoryUsage"),
             Tag = this.GetType()
         });
     }
 
     public void CreateDiskView()
     {
-        MemoryDisks.Clear();
+        _memoryDisks.Clear();
 
         string appDir = CDPIUI.Core.Data.Directories.CurrentDirectory;
         string dataDir = CDPIUI.Core.Data.Directories.DataDirectory;
@@ -101,11 +101,11 @@ public sealed partial class MemoryViewPage : TemplatePage
         DriveInfo dataDirDriveInfo = new(dataDir);
 
         if (appDirDriveInfo.Name == dataDirDriveInfo.Name)
-            MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
+            _memoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
         else
         {
-            MemoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
-            MemoryDisks.Add(new() { DiskLetter = dataDirDriveInfo.Name });
+            _memoryDisks.Add(new() { DiskLetter = appDirDriveInfo.Name });
+            _memoryDisks.Add(new() { DiskLetter = dataDirDriveInfo.Name });
         }
     }
 

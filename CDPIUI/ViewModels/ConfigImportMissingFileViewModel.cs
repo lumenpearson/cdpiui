@@ -9,11 +9,11 @@ namespace CDPIUI.ViewModels;
 
 public sealed class ConfigImportMissingFileViewModel : INotifyPropertyChanged
 {
-    private readonly ConfigImportPresetViewModel owner;
-    private readonly ILocalizer localizer = Localizer.Get();
-    private bool isResolved;
-    private string? replacementPath;
-    private string resolutionText;
+    private readonly ConfigImportPresetViewModel _owner;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private bool _isResolved;
+    private string? _replacementPath;
+    private string _resolutionText;
 
     public ConfigImportMissingFileViewModel(
         ConfigImportPresetViewModel owner,
@@ -21,16 +21,16 @@ public sealed class ConfigImportMissingFileViewModel : INotifyPropertyChanged
         string? suggestedPath,
         bool suggestEmptyFile)
     {
-        this.owner = owner;
+        _owner = owner;
         MissingPath = Path.GetFullPath(missingPath);
         SuggestedPath = string.IsNullOrWhiteSpace(suggestedPath) ? null : Path.GetFullPath(suggestedPath);
         SuggestEmptyFile = suggestEmptyFile;
-        resolutionText = localizer.GetLocalizedString("ConfigImportMissingFileUnresolved");
+        _resolutionText = _localizer.GetLocalizedString("ConfigImportMissingFileUnresolved");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string ConfigName => owner.Name;
+    public string ConfigName => _owner.Name;
 
     public string MissingPath { get; }
 
@@ -39,14 +39,14 @@ public sealed class ConfigImportMissingFileViewModel : INotifyPropertyChanged
     public bool SuggestEmptyFile { get; }
 
     public string SuggestionText => SuggestEmptyFile
-        ? localizer.GetLocalizedString("ConfigImportMissingFileEmptySuggestion")
+        ? _localizer.GetLocalizedString("ConfigImportMissingFileEmptySuggestion")
         : SuggestedPath ?? string.Empty;
 
     public bool HasSuggestion => SuggestEmptyFile || !string.IsNullOrWhiteSpace(SuggestedPath);
 
-    public bool IsResolved => isResolved;
+    public bool IsResolved => _isResolved;
 
-    public string ResolutionText => resolutionText;
+    public string ResolutionText => _resolutionText;
 
     public void UseSuggestion()
     {
@@ -62,24 +62,24 @@ public sealed class ConfigImportMissingFileViewModel : INotifyPropertyChanged
 
     public void UseReplacement(string path)
     {
-        replacementPath = Path.GetFullPath(path);
-        resolutionText = string.Format(
-            localizer.GetLocalizedString("ConfigImportMissingFileReplacementSelected"),
-            replacementPath);
+        _replacementPath = Path.GetFullPath(path);
+        _resolutionText = string.Format(
+            _localizer.GetLocalizedString("ConfigImportMissingFileReplacementSelected"),
+            _replacementPath);
         CompleteResolution();
     }
 
     public void UseEmptyFile()
     {
-        replacementPath = null;
-        resolutionText = localizer.GetLocalizedString("ConfigImportMissingFileEmptySelected");
+        _replacementPath = null;
+        _resolutionText = _localizer.GetLocalizedString("ConfigImportMissingFileEmptySelected");
         CompleteResolution();
     }
 
     private void CompleteResolution()
     {
-        isResolved = true;
-        owner.SetMissingFileResolution(MissingPath, replacementPath);
+        _isResolved = true;
+        _owner.SetMissingFileResolution(MissingPath, _replacementPath);
         Notify(nameof(IsResolved));
         Notify(nameof(ResolutionText));
     }

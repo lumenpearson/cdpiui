@@ -49,7 +49,7 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
 
     private string FilePath = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     // The service is a singleton, so only the page that is currently shown may stay subscribed.
     private static GoodCheckWorkPage _connectedPage;
@@ -57,8 +57,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
     public GoodCheckWorkPage()
     {
         InitializeComponent();
-        TimeText.Text = localizer.GetLocalizedString("Pending");
-        AllTimeText.Text = localizer.GetLocalizedString("Pending");
+        TimeText.Text = _localizer.GetLocalizedString("Pending");
+        AllTimeText.Text = _localizer.GetLocalizedString("Pending");
 
         _uiDispatcher = DispatcherQueue.GetForCurrentThread();
 
@@ -181,9 +181,9 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
             return;
         }
         SiteListProgressText.Text = text;
-        SetSiteListProgressText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
-        SetCorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
-        SetIncorrectCountText(localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetSiteListProgressText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetCorrectCountText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
+        SetIncorrectCountText(_localizer.GetLocalizedString("/Troubleshooting/Preparing"));
     }
     private void SetSiteListProgressText(string text)
     {
@@ -288,8 +288,8 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         }
 
         string speedText = _speedElementsPerSec > 0 ? $"{_speedElementsPerSec:F3} e/s" : "—";
-        string etaCurrentText = double.IsInfinity(etaSecondsCurrent) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((etaSecondsCurrent / 60.0));
-        string allTimeText = double.IsInfinity(allSecondsRemaining) ? localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((allSecondsRemaining / 60.0));
+        string etaCurrentText = double.IsInfinity(etaSecondsCurrent) ? _localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((etaSecondsCurrent / 60.0));
+        string allTimeText = double.IsInfinity(allSecondsRemaining) ? _localizer.GetLocalizedString("Calculating") : UnitsParser.ConvertMinutesToPrettyText((allSecondsRemaining / 60.0));
 
         TimeText.Text = etaCurrentText;
         AllTimeText.Text = allTimeText;
@@ -305,12 +305,12 @@ public sealed partial class GoodCheckWorkPage : TemplatePage
         if (AdditionalInfo.Visibility == Visibility.Visible)
         {
             AdditionalInfo.Visibility = Visibility.Collapsed;
-            ViewMoreText.Text = localizer.GetLocalizedString("ViewMore");
+            ViewMoreText.Text = _localizer.GetLocalizedString("ViewMore");
         }
         else
         {
             AdditionalInfo.Visibility = Visibility.Visible;
-            ViewMoreText.Text = localizer.GetLocalizedString("ViewLess");
+            ViewMoreText.Text = _localizer.GetLocalizedString("ViewLess");
         }
         ViewMoreText.TextDecorations = TextDecorations.Underline;
     }

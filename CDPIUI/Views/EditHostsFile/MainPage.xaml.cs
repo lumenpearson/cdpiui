@@ -32,7 +32,7 @@ namespace CDPIUI.Views.EditHostsFile;
 /// </summary>
 public sealed partial class MainPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MainPage()
     {
         InitializeComponent();
@@ -49,16 +49,16 @@ public sealed partial class MainPage : TemplatePage
         bool isBackupAvailable = SettingsManager.Instance.GetValueOrDefault<bool>("HOSTS", "isBackupAvailable", defaultValue: false);
 
         StatusFontIcon.Glyph = isFileChanged ? "\uEC61" : "\uEB90";
-        StatusTextBlock.Text = isFileChanged ? localizer.GetLocalizedString("HostsFileStatusEnabled") : localizer.GetLocalizedString("HostsFileStatusDisabled");
+        StatusTextBlock.Text = isFileChanged ? _localizer.GetLocalizedString("HostsFileStatusEnabled") : _localizer.GetLocalizedString("HostsFileStatusDisabled");
 
         ReplaceHostsFileSettingsCard.IsEnabled = !isFileChanged;
-        ReplaceHostsFileSettingsCard.Description = isFileChanged ? localizer.GetLocalizedString("HostsFileAreAllreadyEdited") : "";
+        ReplaceHostsFileSettingsCard.Description = isFileChanged ? _localizer.GetLocalizedString("HostsFileAreAllreadyEdited") : "";
 
         RemoveHostsFileSettingsCard.IsEnabled = isFileChanged;
-        RemoveHostsFileSettingsCard.Description = isFileChanged ? "" : localizer.GetLocalizedString("HostsFileNotEdited");
+        RemoveHostsFileSettingsCard.Description = isFileChanged ? "" : _localizer.GetLocalizedString("HostsFileNotEdited");
 
         RecoverHostsFileSettingsCard.IsEnabled = isBackupAvailable;
-        RecoverHostsFileSettingsCard.Description = isBackupAvailable ? "" : localizer.GetLocalizedString("NoBackupAvailable");
+        RecoverHostsFileSettingsCard.Description = isBackupAvailable ? "" : _localizer.GetLocalizedString("NoBackupAvailable");
     }
 
     private void SetLoadingMode(bool isLoading)
@@ -148,7 +148,7 @@ public sealed partial class MainPage : TemplatePage
             else if (!result.StartsWith("HOSTEDIT_OPERATION_CANCELLED_BY_USER"))
             {
                 ErrorContentDialog dialog = new();
-                await dialog.ShowErrorDialogAsync(localizer.GetLocalizedString("ErrorHappensWhenTryingAddDomainsToHostsFile"), result, this.XamlRoot);
+                await dialog.ShowErrorDialogAsync(_localizer.GetLocalizedString("ErrorHappensWhenTryingAddDomainsToHostsFile"), result, this.XamlRoot);
             }
 
             SetLoadingMode(false);
@@ -176,7 +176,7 @@ public sealed partial class MainPage : TemplatePage
             else if (!result.StartsWith("HOSTEDIT_OPERATION_CANCELLED_BY_USER"))
             {
                 ErrorContentDialog dialog = new();
-                await dialog.ShowErrorDialogAsync(localizer.GetLocalizedString("ErrorHappensWhenTryingRemoveDomainsToHostsFile"), result, this.XamlRoot);
+                await dialog.ShowErrorDialogAsync(_localizer.GetLocalizedString("ErrorHappensWhenTryingRemoveDomainsToHostsFile"), result, this.XamlRoot);
             }
 
             SetLoadingMode(false);
@@ -205,7 +205,7 @@ public sealed partial class MainPage : TemplatePage
             else if (!result.StartsWith("HOSTEDIT_OPERATION_CANCELLED_BY_USER"))
             {
                 ErrorContentDialog dialog = new();
-                await dialog.ShowErrorDialogAsync(localizer.GetLocalizedString("ErrorHappensWhenTryingRecoverHostsFile"), result, this.XamlRoot);
+                await dialog.ShowErrorDialogAsync(_localizer.GetLocalizedString("ErrorHappensWhenTryingRecoverHostsFile"), result, this.XamlRoot);
             }
 
             SetLoadingMode(false);

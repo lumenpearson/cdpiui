@@ -7,13 +7,13 @@ namespace CDPIUI.Core.Basic;
 public class Logger : LoggerBase, ILogger
 {
     private static Logger? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static Logger Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new Logger();
                 return _instance;

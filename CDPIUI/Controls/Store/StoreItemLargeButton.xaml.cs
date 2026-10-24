@@ -26,7 +26,7 @@ public sealed partial class StoreItemLargeButton : UserControl
     private TranslateTransform _translate;
     private Button _button;
     private Rectangle _bottomRect;
-    private Vector3 shadowVector = new Vector3(0, 0, 20);
+    private Vector3 _shadowVector = new Vector3(0, 0, 20);
 
     public Action<StoreItemLargeButton> Click;
     public UIElement imageElement;
@@ -62,7 +62,7 @@ public sealed partial class StoreItemLargeButton : UserControl
         AnimateTranslateY(-3, durationMs: 200);
 
         _bottomRect.Style = (Style)Resources["BackgroundRectangleHoverStyle"];
-        PART_Button.Translation += shadowVector;
+        PART_Button.Translation += _shadowVector;
     }
 
     private void OnButtonPointerExited(object sender, PointerRoutedEventArgs e)
@@ -71,7 +71,7 @@ public sealed partial class StoreItemLargeButton : UserControl
         AnimateTranslateY(0, durationMs: 200);
 
         _bottomRect.Style = (Style)Resources["BackgroundRectangleDefaultStyle"];
-        PART_Button.Translation -= shadowVector;
+        PART_Button.Translation -= _shadowVector;
     }
 
     private void AnimateTranslateY(double to, double durationMs)

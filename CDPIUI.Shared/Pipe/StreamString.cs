@@ -9,9 +9,9 @@ namespace CDPIUI.Shared.Pipe;
 
 public class StreamString(Stream ioStream)
 {
-    private readonly Stream ioStream =
+    private readonly Stream _ioStream =
         ioStream ?? throw new ArgumentNullException(nameof(ioStream));
-    private readonly Encoding streamEncoding = Encoding.Unicode;
+    private readonly Encoding _streamEncoding = Encoding.Unicode;
 
     // Messages shorter than 0xFFFF bytes keep the original two-byte length. Longer ones, which were
     // cut off in the middle of a character before, send 0xFFFF followed by a four-byte length.
@@ -36,7 +36,7 @@ public class StreamString(Stream ioStream)
         byte[] inBuffer = new byte[len];
         await ReadExactlyAsync(inBuffer, token).ConfigureAwait(false);
 
-        return streamEncoding.GetString(inBuffer);
+        return _streamEncoding.GetString(inBuffer);
     }
 
     private async Task ReadExactlyAsync(byte[] buffer, CancellationToken token)
@@ -44,7 +44,7 @@ public class StreamString(Stream ioStream)
         int offset = 0;
         while (offset < buffer.Length)
         {
-            int bytesRead = await ioStream
+            int bytesRead = await _ioStream
                 .ReadAsync(buffer, offset, buffer.Length - offset, token)
                 .ConfigureAwait(false);
             if (bytesRead == 0)
@@ -58,7 +58,7 @@ public class StreamString(Stream ioStream)
 
     public async Task<int> WriteStringAsync(string outString, CancellationToken token = default)
     {
-        byte[] outBuffer = streamEncoding.GetBytes(outString ?? string.Empty);
+        byte[] outBuffer = _streamEncoding.GetBytes(outString ?? string.Empty);
         int len = outBuffer.Length;
         if (len > MaxMessageLength)
             throw new InvalidDataException("The pipe message is too long.");
@@ -67,9 +67,9 @@ public class StreamString(Stream ioStream)
             ? new byte[] { (byte)(len / 256), (byte)(len & 255) }
             : new byte[] { 0xFF, 0xFF, (byte)(len >> 24), (byte)(len >> 16), (byte)(len >> 8), (byte)len };
 
-        await ioStream.WriteAsync(header, 0, header.Length, token).ConfigureAwait(false);
-        await ioStream.WriteAsync(outBuffer, 0, len, token).ConfigureAwait(false);
-        await ioStream.FlushAsync(token).ConfigureAwait(false);
+        await _ioStream.WriteAsync(header, 0, header.Length, token).ConfigureAwait(false);
+        await _ioStream.WriteAsync(outBuffer, 0, len, token).ConfigureAwait(false);
+        await _ioStream.FlushAsync(token).ConfigureAwait(false);
 
         return len + header.Length;
     }

@@ -48,22 +48,22 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
 {
     public ObservableCollection<ComponentTileModel> TileModels = [];
 
-    private double ElementWidthProperty = 210;
+    private double _elementWidthProperty = 210;
     public double ElementWidth
     {
         get
         {
-            return ElementWidthProperty;
+            return _elementWidthProperty;
         }
         set
         {
-            SetField(ref ElementWidthProperty, value);
+            SetField(ref _elementWidthProperty, value);
         }
     }
     public double ElementHeight { get; set; } = 250;
     public double Spacing { get; set; } = 0;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public ModernMainPage()
     {
         InitializeComponent();
@@ -88,22 +88,22 @@ public sealed partial class ModernMainPage : TemplatePage, INotifyPropertyChange
     }
 
     // The services are singletons: a page that is not shown must not keep receiving their events.
-    private bool eventsConnected;
+    private bool _eventsConnected;
 
     private void ConnectEvents()
     {
-        if (eventsConnected)
+        if (_eventsConnected)
             return;
-        eventsConnected = true;
+        _eventsConnected = true;
         StoreHelper.Instance.ItemActionsStopped += Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved += Instance_ItemRemoved;
     }
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected)
+        if (!_eventsConnected)
             return;
-        eventsConnected = false;
+        _eventsConnected = false;
         StoreHelper.Instance.ItemActionsStopped -= Instance_ItemActionsStopped;
         StoreHelper.Instance.ItemRemoved -= Instance_ItemRemoved;
     }

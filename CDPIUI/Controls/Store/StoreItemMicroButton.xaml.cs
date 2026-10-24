@@ -23,7 +23,7 @@ namespace CDPIUI;
 
 public sealed partial class StoreItemMicroButton : UserControl
 {
-    private bool IsReady = false;
+    private bool _isReady = false;
     public StoreItemMicroButton()
     {
         InitializeComponent();
@@ -80,7 +80,7 @@ public sealed partial class StoreItemMicroButton : UserControl
     {
         try
         {
-            IsReady = false;
+            _isReady = false;
             TextShimmer.Visibility = Visibility.Visible;
             ImageShimmer.Visibility = Visibility.Visible;
             PART_Image.Visibility = Visibility.Collapsed;
@@ -108,7 +108,7 @@ public sealed partial class StoreItemMicroButton : UserControl
             ImageShimmer.Visibility = Visibility.Collapsed;
             PART_Image.Visibility = Visibility.Visible;
             TextGrid.Visibility = Visibility.Visible;
-            IsReady = true;
+            _isReady = true;
             string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
 
             RemoveHandlers();
@@ -199,7 +199,7 @@ public sealed partial class StoreItemMicroButton : UserControl
 
     private void PART_Button_Click(object sender, RoutedEventArgs e)
     {
-        if (IsReady)
+        if (_isReady)
         {
             if (DatabaseHelper.Instance.IsItemInstalled(StoreId) || StoreHelper.Instance.GetOperationIdFromItemId(StoreId) != null)
                 return;

@@ -14,20 +14,20 @@ namespace CDPIUI;
 // https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/applifecycle/applifecycle-single-instance
 public class Program
 {
-    private static SynchronizationContext uiContext;
-    private static readonly object activationSyncRoot = new();
-    private static readonly Queue<AppActivationArguments> pendingActivations = new();
-    private static int migrationActivationPending;
+    private static SynchronizationContext _uiContext;
+    private static readonly object ActivationSyncRoot = new();
+    private static readonly Queue<AppActivationArguments> PendingActivations = new();
+    private static int _migrationActivationPending;
 
     internal static AppActivationArguments InitialActivationArguments { get; private set; }
     internal static bool IsMigrationActivationPending =>
-        Volatile.Read(ref migrationActivationPending) != 0;
+        Volatile.Read(ref _migrationActivationPending) != 0;
 
     internal static void MarkMigrationActivationPending() =>
-        Interlocked.Exchange(ref migrationActivationPending, 1);
+        Interlocked.Exchange(ref _migrationActivationPending, 1);
 
     internal static void CompleteMigrationActivation() =>
-        Interlocked.Exchange(ref migrationActivationPending, 0);
+        Interlocked.Exchange(ref _migrationActivationPending, 0);
 
     [STAThread]
     static int Main(string[] args)
@@ -43,9 +43,9 @@ public class Program
                 var context = new DispatcherQueueSynchronizationContext(
                     DispatcherQueue.GetForCurrentThread());
                 SynchronizationContext.SetSynchronizationContext(context);
-                lock (activationSyncRoot)
+                lock (ActivationSyncRoot)
                 {
-                    uiContext = context;
+                    _uiContext = context;
                 }
                 _ = new App();
                 DispatchPendingActivations();
@@ -100,12 +100,12 @@ public class Program
     private static void DispatchOrQueueActivation(AppActivationArguments args)
     {
         SynchronizationContext context;
-        lock (activationSyncRoot)
+        lock (ActivationSyncRoot)
         {
-            context = uiContext;
+            context = _uiContext;
             if (context == null)
             {
-                pendingActivations.Enqueue(args);
+                PendingActivations.Enqueue(args);
                 return;
             }
         }
@@ -116,10 +116,10 @@ public class Program
     private static void DispatchPendingActivations()
     {
         AppActivationArguments[] activations;
-        lock (activationSyncRoot)
+        lock (ActivationSyncRoot)
         {
-            activations = pendingActivations.ToArray();
-            pendingActivations.Clear();
+            activations = PendingActivations.ToArray();
+            PendingActivations.Clear();
         }
 
         foreach (AppActivationArguments activation in activations)
@@ -185,7 +185,7 @@ public class Program
     [DllImport("user32.dll")]
     private static extern bool AllowSetForegroundWindow(uint dwProcessId);
 
-    private static IntPtr redirectEventHandle = IntPtr.Zero;
+    private static IntPtr _redirectEventHandle = IntPtr.Zero;
 
     // Do the redirection on another thread, and use a non-blocking
     // wait method to wait for the redirection to complete.
@@ -193,7 +193,7 @@ public class Program
     public static bool RedirectActivationTo(AppActivationArguments args,
                                             AppInstance keyInstance)
     {
-        redirectEventHandle = CreateEvent(IntPtr.Zero, true, false, null);
+        _redirectEventHandle = CreateEvent(IntPtr.Zero, true, false, null);
         AllowSetForegroundWindow(keyInstance.ProcessId);
         bool redirected = false;
         // Main runs before the UI thread and its dispatcher exist, so this method must block
@@ -214,7 +214,7 @@ public class Program
             finally
             {
                 // Without the event the wait below never ends and the process stays without a window.
-                SetEvent(redirectEventHandle);
+                SetEvent(_redirectEventHandle);
             }
         });
 
@@ -222,7 +222,7 @@ public class Program
         uint RedirectTimeoutMs = 30000;
         _ = CoWaitForMultipleObjects(
            CWMO_DEFAULT, RedirectTimeoutMs, 1,
-           [redirectEventHandle], out uint handleIndex);
+           [_redirectEventHandle], out uint handleIndex);
 
         return Volatile.Read(ref redirected);
     }

@@ -16,7 +16,7 @@ namespace CDPIUI.TrayIcon.Controls;
 
 public partial class IconButtonUserControl : UserControl
 {
-    private Color AccentColor = GetAccentColor();
+    private Color _accentColor = GetAccentColor();
 
     private string _glyph = string.Empty;
     public string Glyph
@@ -62,7 +62,7 @@ public partial class IconButtonUserControl : UserControl
         {
             _isHighlighted = value;
             if (_isHighlighted)
-                IconGlyph.ForeColor = AccentColor;
+                IconGlyph.ForeColor = _accentColor;
             else
                 IconGlyph.ForeColor = Color.White;
         }
@@ -175,7 +175,7 @@ public partial class IconButtonUserControl : UserControl
         if (!Enabled)
             return;
         if (!IsHighlighted)
-            IconGlyph.ForeColor = AccentColor;
+            IconGlyph.ForeColor = _accentColor;
         this.BackColor = Color.FromArgb(50, 50, 50);
 
         Point pnt = PointToClient(PointToScreen(Point.Empty));
@@ -186,10 +186,10 @@ public partial class IconButtonUserControl : UserControl
 
     }
 
-    private static Windows.UI.ViewManagement.UISettings uiSettings = new Windows.UI.ViewManagement.UISettings();
+    private static Windows.UI.ViewManagement.UISettings _uiSettings = new Windows.UI.ViewManagement.UISettings();
     private static System.Drawing.Color GetAccentColor()
     {
-        Windows.UI.Color c = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent);
+        Windows.UI.Color c = _uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent);
         return Color.FromArgb(c.A, c.R, c.G, c.B);
     }
 

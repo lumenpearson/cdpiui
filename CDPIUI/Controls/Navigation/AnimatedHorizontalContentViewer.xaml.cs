@@ -21,7 +21,7 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
     private Storyboard _transitionStoryboard;
     private int _selectedIndex = -1;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public AnimatedHorizontalContentItem SelectedItem
     {
@@ -37,8 +37,8 @@ public sealed partial class AnimatedHorizontalContentViewer : UserControl
         Items.CollectionChanged += Items_CollectionChanged;
         this.Loaded += AnimatedHorizontalContentViewer_Loaded;
         // The localizer outlives the control: subscribe only while it is loaded.
-        this.Loaded += (_, _) => localizer.LanguageChanged += Localizer_LanguageChanged;
-        this.Unloaded += (_, _) => localizer.LanguageChanged -= Localizer_LanguageChanged;
+        this.Loaded += (_, _) => _localizer.LanguageChanged += Localizer_LanguageChanged;
+        this.Unloaded += (_, _) => _localizer.LanguageChanged -= Localizer_LanguageChanged;
     }
 
     private void Localizer_LanguageChanged(object sender, LanguageChangedEventArgs e)

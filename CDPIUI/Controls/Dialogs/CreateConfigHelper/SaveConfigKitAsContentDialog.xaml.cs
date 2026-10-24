@@ -46,16 +46,16 @@ public class SaveConfigKitDialogResultModel
 
 public sealed partial class SaveConfigKitAsContentDialog : ContentDialog
 {
-    private string DisplayNameProperty = string.Empty;
+    private string _displayNameProperty = string.Empty;
     public string DisplayName
     {
         get
         {
-            return DisplayNameProperty;
+            return _displayNameProperty;
         }
         set
         {
-            DisplayNameProperty = value;
+            _displayNameProperty = value;
             if (!string.IsNullOrEmpty(value))
             {
                 DisplayNameTextBox.Text = value;
@@ -63,7 +63,7 @@ public sealed partial class SaveConfigKitAsContentDialog : ContentDialog
             }
         }
     }
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public SaveConfigKitDialogResultModel Result { get; private set; } = new();
 
@@ -158,7 +158,7 @@ public sealed partial class SaveConfigKitAsContentDialog : ContentDialog
         string filePath;
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("ChooseAnImage");
+            openFileDialog.Title = _localizer.GetLocalizedString("ChooseAnImage");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             openFileDialog.FilterIndex = 4;
 

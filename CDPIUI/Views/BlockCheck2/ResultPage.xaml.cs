@@ -30,10 +30,10 @@ namespace CDPIUI.Views.BlockCheck2;
 
 public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource, INotifyPropertyChanged
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly BlockCheckReportSerializer reportSerializer = new();
-    private bool languageHandlerConnected;
-    private bool strategyTestRunning;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly BlockCheckReportSerializer _reportSerializer = new();
+    private bool _languageHandlerConnected;
+    private bool _strategyTestRunning;
 
     public BlockCheck2ResultViewModel ViewModel { get; private set; } = new();
     public event EventHandler<StatusNotificationRequestedEventArgs>? StatusNotificationRequested;
@@ -45,7 +45,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     public bool CanCopySelectedStrategy => SelectedStrategy != null;
     public bool CanTestSelectedStrategy => TestStrategyButton.IsEnabled;
     public bool CanToggleComponentManualTest => ComponentManualTestButton.IsEnabled;
-    public bool IsComponentManualTestRunning => isManualTestRunning;
+    public bool IsComponentManualTestRunning => _isManualTestRunning;
     public bool CanAddSelectedStrategyForSite => AddForSiteButton.IsEnabled;
     public bool CanAddSelectedStrategyForList => AddForListButton.IsEnabled;
     public bool IsStrategyOverviewViewActive => !StrategySemanticZoom.IsZoomedInViewActive;
@@ -123,10 +123,10 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     private void ResultPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if (!languageHandlerConnected)
+        if (!_languageHandlerConnected)
         {
-            localizer.LanguageChanged += Localizer_LanguageChanged;
-            languageHandlerConnected = true;
+            _localizer.LanguageChanged += Localizer_LanguageChanged;
+            _languageHandlerConnected = true;
         }
         UpdateView();
     }
@@ -136,12 +136,12 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
         // Leaving the page or closing the window kept the test preset running and the user's
         // Zapret2 was never restored.
         _ = StopTestOnLeaveAsync();
-        if (!languageHandlerConnected)
+        if (!_languageHandlerConnected)
         {
             return;
         }
-        localizer.LanguageChanged -= Localizer_LanguageChanged;
-        languageHandlerConnected = false;
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
+        _languageHandlerConnected = false;
     }
 
     private void Localizer_LanguageChanged(object? sender, LanguageChangedEventArgs e) => UpdateView();
@@ -301,10 +301,10 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     {
         BlockCheck2StrategyEvidenceItem? item = SelectedStrategy;
         bool selected = item != null && ViewModel.HasSession;
-        StrategyDetailsGrid.IsHitTestVisible = selected && !strategyTestRunning;
-        TestStrategyButton.IsEnabled = selected && !strategyTestRunning;
-        ComponentManualTestButton.IsEnabled = selected && (!strategyTestRunning || isManualTestRunning);
-        ComponentManualTestButton.IsChecked = selected && isManualTestRunning;
+        StrategyDetailsGrid.IsHitTestVisible = selected && !_strategyTestRunning;
+        TestStrategyButton.IsEnabled = selected && !_strategyTestRunning;
+        ComponentManualTestButton.IsEnabled = selected && (!_strategyTestRunning || _isManualTestRunning);
+        ComponentManualTestButton.IsChecked = selected && _isManualTestRunning;
 
         ComponentManualTestButton.Label = ComponentManualTestButton.IsChecked == true
             ? Text("StopTest")
@@ -313,10 +313,10 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             ? "\uE769"
             : "\uE768";
 
-        AddForSiteButton.IsEnabled = selected && !strategyTestRunning;
+        AddForSiteButton.IsEnabled = selected && !_strategyTestRunning;
         AddForListButton.IsEnabled = selected &&
             ViewModel.CanAddForSiteList(item!) &&
-            !strategyTestRunning;
+            !_strategyTestRunning;
         RaiseMenuStateChanged();
         if (item == null)
         {
@@ -344,12 +344,12 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     private async void TestStrategyButton_Click(object sender, RoutedEventArgs e)
     {
         BlockCheck2StrategyEvidenceItem? item = SelectedStrategy;
-        if (item == null || strategyTestRunning)
+        if (item == null || _strategyTestRunning)
         {
             return;
         }
 
-        strategyTestRunning = true;
+        _strategyTestRunning = true;
         StrategyTestProgressRing.Visibility = Visibility.Visible;
         UpdateSelectedStrategy();
         try
@@ -392,7 +392,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
         }
         finally
         {
-            strategyTestRunning = false;
+            _strategyTestRunning = false;
             StrategyTestProgressRing.Visibility = Visibility.Collapsed;
             UpdateSelectedStrategy();
             UpdateAssignmentView();
@@ -413,21 +413,21 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     #region ManualTesting
 
-    private bool isStartingTest = false;
-    private bool isManualTestRunning = false;
-    private bool restoreComponentAfterTest = false;
+    private bool _isStartingTest = false;
+    private bool _isManualTestRunning = false;
+    private bool _restoreComponentAfterTest = false;
 
     public async Task StopTestAsync(bool showCompletionMessage = false)
     {
         UpdateSelectedStrategy();
-        if (!isManualTestRunning)
+        if (!_isManualTestRunning)
         {
             return;
         }
 
-        bool restore = restoreComponentAfterTest;
-        isManualTestRunning = false;
-        isStartingTest = false;
+        bool restore = _restoreComponentAfterTest;
+        _isManualTestRunning = false;
+        _isStartingTest = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
 
 
@@ -440,7 +440,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             }
         }
 
-        restoreComponentAfterTest = false;
+        _restoreComponentAfterTest = false;
         if (showCompletionMessage)
         {
             ShowActionMessage(
@@ -455,15 +455,15 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     private async Task StopTestOnLeaveAsync()
     {
-        if (!isManualTestRunning)
+        if (!_isManualTestRunning)
         {
             return;
         }
 
-        bool restore = restoreComponentAfterTest;
-        isManualTestRunning = false;
-        isStartingTest = false;
-        restoreComponentAfterTest = false;
+        bool restore = _restoreComponentAfterTest;
+        _isManualTestRunning = false;
+        _isStartingTest = false;
+        _restoreComponentAfterTest = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
 
         string componentId = HardcodedItemIds.ComponentIds[Components.Zapret2];
@@ -488,7 +488,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     public async Task StartTestAsync()
     {
         BlockCheck2StrategyEvidenceItem? item = SelectedStrategy;
-        if (item == null || isManualTestRunning || strategyTestRunning)
+        if (item == null || _isManualTestRunning || _strategyTestRunning)
         {
             return;
         }
@@ -513,10 +513,10 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             ContentDialog confirmation = new()
             {
                 XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Continue"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                Title = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
+                Content = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
+                PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
+                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
@@ -525,11 +525,11 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             }
         }
 
-        restoreComponentAfterTest = componentWasRunning;
+        _restoreComponentAfterTest = componentWasRunning;
         await ComponentTasksManager.Instance.StopTask(HardcodedItemIds.ComponentIds[Components.Zapret2]);
 
-        isManualTestRunning = true;
-        isStartingTest = true;
+        _isManualTestRunning = true;
+        _isStartingTest = true;
         ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
         UpdateSelectedStrategy();
 
@@ -541,11 +541,11 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
         try
         {
             await ComponentTasksManager.Instance.CreateAndRunNewTask(HardcodedItemIds.ComponentIds[Components.Zapret2], result.Result);
-            isStartingTest = false;
+            _isStartingTest = false;
         }
         catch (Exception exception)
         {
-            isStartingTest = false;
+            _isStartingTest = false;
             ShowActionMessage(
                 InfoBarSeverity.Error,
                 Text("ManualTesting"),
@@ -558,7 +558,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
     {
-        if (!isManualTestRunning || isStartingTest ||
+        if (!_isManualTestRunning || _isStartingTest ||
             !string.Equals(state.Item1, HardcodedItemIds.ComponentIds[Components.Zapret2], StringComparison.OrdinalIgnoreCase) ||
             state.Item2)
         {
@@ -570,7 +570,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             ShowActionMessage(
                 InfoBarSeverity.Warning,
                 Text("ManualTesting"),
-                localizer.GetLocalizedString("ConfigMakerTestExitedMessage"));
+                _localizer.GetLocalizedString("ConfigMakerTestExitedMessage"));
             await StopTestAsync();
         });
     }
@@ -771,7 +771,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
 
     private async void ComponentManualTestMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (isManualTestRunning)
+        if (_isManualTestRunning)
         {
             await StopTestAsync(showCompletionMessage: true);
         }
@@ -800,7 +800,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             Text("BlockCheck2JsonFileFilter"));
         if (dialog.ShowDialog() == true)
         {
-            await SaveAsync(() => reportSerializer.SaveJsonAsync(dialog.FileName, ViewModel.Report));
+            await SaveAsync(() => _reportSerializer.SaveJsonAsync(dialog.FileName, ViewModel.Report));
         }
     }
 
@@ -816,7 +816,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             Text("BlockCheck2TextFileFilter"));
         if (dialog.ShowDialog() == true)
         {
-            await SaveAsync(() => reportSerializer.SaveTextAsync(dialog.FileName, ViewModel.Report));
+            await SaveAsync(() => _reportSerializer.SaveTextAsync(dialog.FileName, ViewModel.Report));
         }
     }
 
@@ -876,7 +876,7 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
     private BlockCheck2ManualAssignmentItem? SelectedAssignment =>
         ManualAssignmentsListView.SelectedItem as BlockCheck2ManualAssignmentItem;
 
-    private string Text(string key) => localizer.GetLocalizedString(key);
+    private string Text(string key) => _localizer.GetLocalizedString(key);
 
     private void CopyViewAppBarButton_Click(object sender, RoutedEventArgs e)
     {

@@ -38,27 +38,27 @@ public enum ConfigMakerResourceKind
 public sealed class ConfigMakerVariableDefinition : INotifyPropertyChanged
 {
     private string name = string.Empty;
-    private ConfigMakerVariableKind kind;
-    private ConfigMakerVariableStorageKind storageKind;
-    private string value = string.Empty;
-    private string description = string.Empty;
-    private string onValue = string.Empty;
-    private string offValue = string.Empty;
-    private string internalParameterName = string.Empty;
-    private bool isSwitchEnabled;
+    private ConfigMakerVariableKind _kind;
+    private ConfigMakerVariableStorageKind _storageKind;
+    private string _value = string.Empty;
+    private string _description = string.Empty;
+    private string _onValue = string.Empty;
+    private string _offValue = string.Empty;
+    private string _internalParameterName = string.Empty;
+    private bool _isSwitchEnabled;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public ObservableCollection<string> Values { get; } = [];
 
     public string Name { get => name; set => SetField(ref name, value ?? string.Empty); }
-    public ConfigMakerVariableKind Kind { get => kind; set => SetField(ref kind, value); }
-    public ConfigMakerVariableStorageKind StorageKind { get => storageKind; set => SetField(ref storageKind, value); }
-    public string Value { get => value; set => SetField(ref this.value, value ?? string.Empty); }
-    public string Description { get => description; set => SetField(ref description, value ?? string.Empty); }
-    public string OnValue { get => onValue; set => SetField(ref onValue, value ?? string.Empty); }
-    public string OffValue { get => offValue; set => SetField(ref offValue, value ?? string.Empty); }
-    public string InternalParameterName { get => internalParameterName; set => SetField(ref internalParameterName, value ?? string.Empty); }
-    public bool IsSwitchEnabled { get => isSwitchEnabled; set => SetField(ref isSwitchEnabled, value); }
+    public ConfigMakerVariableKind Kind { get => _kind; set => SetField(ref _kind, value); }
+    public ConfigMakerVariableStorageKind StorageKind { get => _storageKind; set => SetField(ref _storageKind, value); }
+    public string Value { get => _value; set => SetField(ref _value, value ?? string.Empty); }
+    public string Description { get => _description; set => SetField(ref _description, value ?? string.Empty); }
+    public string OnValue { get => _onValue; set => SetField(ref _onValue, value ?? string.Empty); }
+    public string OffValue { get => _offValue; set => SetField(ref _offValue, value ?? string.Empty); }
+    public string InternalParameterName { get => _internalParameterName; set => SetField(ref _internalParameterName, value ?? string.Empty); }
+    public bool IsSwitchEnabled { get => _isSwitchEnabled; set => SetField(ref _isSwitchEnabled, value); }
 
     public string Reference => $"%{Name}%";
     public string DisplayValue => Kind == ConfigMakerVariableKind.Switch
@@ -89,15 +89,15 @@ public sealed class ConfigMakerVariableDefinition : INotifyPropertyChanged
 
 public sealed class ConfigMakerPresetResource : INotifyPropertyChanged
 {
-    private string alias = string.Empty;
-    private string path = string.Empty;
-    private ConfigMakerResourceKind kind;
-    private bool isBuiltIn;
+    private string _alias = string.Empty;
+    private string _path = string.Empty;
+    private ConfigMakerResourceKind _kind;
+    private bool _isBuiltIn;
 
-    public string Alias { get => alias; set => SetField(ref alias, value ?? string.Empty); }
-    public string Path { get => path; set => SetField(ref path, value ?? string.Empty); }
-    public ConfigMakerResourceKind Kind { get => kind; set => SetField(ref kind, value); }
-    public bool IsBuiltIn { get => isBuiltIn; set => SetField(ref isBuiltIn, value); }
+    public string Alias { get => _alias; set => SetField(ref _alias, value ?? string.Empty); }
+    public string Path { get => _path; set => SetField(ref _path, value ?? string.Empty); }
+    public ConfigMakerResourceKind Kind { get => _kind; set => SetField(ref _kind, value); }
+    public bool IsBuiltIn { get => _isBuiltIn; set => SetField(ref _isBuiltIn, value); }
     public string Reference => $"preset://{Alias}";
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -122,11 +122,11 @@ public sealed class ConfigMakerPresetDocument : INotifyPropertyChanged
     private static readonly Regex VariableNameRegex = new(
         "^[A-Za-z][A-Za-z0-9_]*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private string componentId = string.Empty;
+    private string _componentId = string.Empty;
     private string name = string.Empty;
-    private string commandText = string.Empty;
-    private readonly HashSet<ConfigMakerVariableDefinition> subscribedVariables = [];
-    private readonly HashSet<ConfigMakerPresetResource> subscribedResources = [];
+    private string _commandText = string.Empty;
+    private readonly HashSet<ConfigMakerVariableDefinition> _subscribedVariables = [];
+    private readonly HashSet<ConfigMakerPresetResource> _subscribedResources = [];
 
     public ConfigMakerPresetDocument()
     {
@@ -138,9 +138,9 @@ public sealed class ConfigMakerPresetDocument : INotifyPropertyChanged
     public string? FileName { get; set; }
     public string? Meta { get; set; }
     public string? TargetVersion { get; set; }
-    public string ComponentId { get => componentId; set => SetField(ref componentId, value ?? string.Empty); }
+    public string ComponentId { get => _componentId; set => SetField(ref _componentId, value ?? string.Empty); }
     public string Name { get => name; set => SetField(ref name, value ?? string.Empty); }
-    public string CommandText { get => commandText; set => SetField(ref commandText, value ?? string.Empty); }
+    public string CommandText { get => _commandText; set => SetField(ref _commandText, value ?? string.Empty); }
     public ObservableCollection<ConfigMakerVariableDefinition> Variables { get; } = [];
     public ObservableCollection<ConfigMakerPresetResource> Resources { get; } = [];
     public bool HasVariables => Variables.Count > 0;
@@ -438,7 +438,7 @@ public sealed class ConfigMakerPresetDocument : INotifyPropertyChanged
         UpdateItemSubscriptions(
             e,
             Variable_PropertyChanged,
-            subscribedVariables,
+            _subscribedVariables,
             Variables);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasVariables)));
         ContentChanged?.Invoke(this, EventArgs.Empty);
@@ -449,7 +449,7 @@ public sealed class ConfigMakerPresetDocument : INotifyPropertyChanged
         UpdateItemSubscriptions(
             e,
             Resource_PropertyChanged,
-            subscribedResources,
+            _subscribedResources,
             Resources);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasResources)));
         ContentChanged?.Invoke(this, EventArgs.Empty);

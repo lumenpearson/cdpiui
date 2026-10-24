@@ -35,7 +35,7 @@ namespace CDPIUI.Views.Store.Settings.Memory;
 /// </summary>
 public sealed partial class MemoryViewSettingsDetailsPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MemoryViewSettingsDetailsPage()
     {
         InitializeComponent();
@@ -43,7 +43,7 @@ public sealed partial class MemoryViewSettingsDetailsPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
 
         CreateBreadcrumbBarNavigation();
 
@@ -70,23 +70,23 @@ public sealed partial class MemoryViewSettingsDetailsPage : TemplatePage
         catch { }
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryUsage"),
+            DisplayName = _localizer.GetLocalizedString("MemoryUsage"),
             Tag = typeof(MemoryViewPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryViewSettingsDetails"),
+            DisplayName = _localizer.GetLocalizedString("MemoryViewSettingsDetails"),
             Tag = this.GetType()
         });
 
@@ -113,7 +113,7 @@ public sealed partial class MemoryViewSettingsDetailsPage : TemplatePage
         catch (Exception ex)
         {
             ErrorStackPanel.Visibility = Visibility.Visible;
-            ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("ErrorHappensWhileCleanup"), ErrorsHelper.Convertor.GetPrettyErrorCode("DIR_CLEANUP", ex));
+            ErrorTextBlock.Text = string.Format(_localizer.GetLocalizedString("ErrorHappensWhileCleanup"), ErrorsHelper.Convertor.GetPrettyErrorCode("DIR_CLEANUP", ex));
             ResetButton.IsEnabled = true;
         }
         await Task.CompletedTask;

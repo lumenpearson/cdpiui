@@ -114,7 +114,7 @@ public sealed partial class ComponentSettingsExclusiveGroupUserControl : UserCon
     public ICommand GraphicDesignerTextValueChangedCommand { get; }
     public ICommand GraphicDesignerBoolValueToggledCommand { get; }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public ComponentSettingsExclusiveGroupUserControl()
     {
         InitializeComponent();
@@ -217,7 +217,7 @@ public sealed partial class ComponentSettingsExclusiveGroupUserControl : UserCon
 
         foreach (var item in AvailableVariants)
         {
-            string locText = localizer.GetLocalizedString($"/GraphicDesignerDescriptions/{item.Value}");
+            string locText = _localizer.GetLocalizedString($"/GraphicDesignerDescriptions/{item.Value}");
             SelectorBar.Items.Add(new()
             {
                 Text = string.IsNullOrEmpty(locText) ? item.DisplayName : locText,

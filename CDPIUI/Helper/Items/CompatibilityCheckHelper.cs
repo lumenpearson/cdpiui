@@ -18,12 +18,12 @@ namespace CDPIUI.Helper.Items;
 public class CompatibilityCheckHelper
 {
     private static CompatibilityCheckHelper _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static CompatibilityCheckHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new CompatibilityCheckHelper();

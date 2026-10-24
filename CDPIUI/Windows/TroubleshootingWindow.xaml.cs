@@ -30,13 +30,13 @@ namespace CDPIUI;
 /// </summary>
 public sealed partial class TroubleshootingWindow : TemplateWindow
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public TroubleshootingWindow()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("TroubleshootingWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("TroubleshootingWindowTitle");
 
         DisableResizeFeature();
 

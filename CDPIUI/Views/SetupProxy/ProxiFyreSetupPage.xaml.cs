@@ -69,10 +69,10 @@ public class ProxiFyreSettings
 
 public sealed partial class ProxiFyreSetupPage : TemplatePage
 {
-    private List<SelectedApplicationInfo> WhiteList = [];
-    private List<SelectedApplicationInfo> BlackList = [];
+    private List<SelectedApplicationInfo> _whiteList = [];
+    private List<SelectedApplicationInfo> _blackList = [];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     private const string AddOnId = "ASPEWK002";
 
@@ -88,7 +88,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         public ProxiFyreModes Mode { get; set; }
     }
 
-    private ObservableCollection<ProxiFyreModeElement> proxiFyreModes = [];
+    private ObservableCollection<ProxiFyreModeElement> _proxiFyreModes = [];
 
     public ProxiFyreSetupPage()
     {
@@ -98,22 +98,22 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = ActionButtonsGrid;
 
-        proxiFyreModes.Add(new ProxiFyreModeElement()
+        _proxiFyreModes.Add(new ProxiFyreModeElement()
         {
             DisplayName = "TCP",
             Mode = ProxiFyreModes.TCP,
         });
-        proxiFyreModes.Add(new ProxiFyreModeElement()
+        _proxiFyreModes.Add(new ProxiFyreModeElement()
         {
             DisplayName = "UDP",
             Mode = ProxiFyreModes.UDP,
         });
-        proxiFyreModes.Add(new ProxiFyreModeElement()
+        _proxiFyreModes.Add(new ProxiFyreModeElement()
         {
             DisplayName = "TCP+UDP",
             Mode = ProxiFyreModes.Both
         });
-        ProxiFyreModeComboBox.ItemsSource = proxiFyreModes;
+        ProxiFyreModeComboBox.ItemsSource = _proxiFyreModes;
         ProxiFyreModeComboBox.SelectionChanged += ProxiFyreModeComboBox_SelectionChanged;
         SetDescription();
         GetSettings();
@@ -183,7 +183,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
 
         if (!File.Exists(settingsFile))
         {
-            ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.Both);
+            ProxiFyreModeComboBox.SelectedItem = _proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.Both);
 
             IPValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
             PortValue.Text = SettingsManager.Instance.GetValue<string>("PROXY", "port");
@@ -199,7 +199,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
 
             foreach (string app in proxyGroup?.appNames ?? [])
             {
-                WhiteList.Add(new()
+                _whiteList.Add(new()
                 {
                     DisplayName = Path.GetFileNameWithoutExtension(app),
                     FullPath = app,
@@ -210,20 +210,20 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
             var protocols = proxyGroup?.supportedProtocols;
             if (protocols == null || (protocols.Contains("UDP") && protocols.Contains("TCP")))
             {
-                ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.Both);
+                ProxiFyreModeComboBox.SelectedItem = _proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.Both);
             }
             else if (protocols.Contains("UDP"))
             {
-                ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.UDP);
+                ProxiFyreModeComboBox.SelectedItem = _proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.UDP);
             }
             else
             {
-                ProxiFyreModeComboBox.SelectedItem = proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.TCP);
+                ProxiFyreModeComboBox.SelectedItem = _proxiFyreModes.FirstOrDefault(x => x.Mode == ProxiFyreModes.TCP);
             }
 
             foreach (string app in settings?.excludes ?? [])
             {
-                BlackList.Add(new()
+                _blackList.Add(new()
                 {
                     DisplayName = Path.GetFileNameWithoutExtension(app),
                     FullPath = app,
@@ -291,7 +291,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
                 if (proxyGroup.socks5ProxyEndpoint == readyToCompareIpAddr)
                 {
                     proxyGroup.supportedProtocols = GetProtocolFromProxiFyreMode(((ProxiFyreModeElement)ProxiFyreModeComboBox.SelectedItem).Mode);
-                    proxyGroup.appNames = GetAppNamesFromModel(WhiteList);
+                    proxyGroup.appNames = GetAppNamesFromModel(_whiteList);
                     flag = true;
                 }
             }
@@ -301,7 +301,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
             settings.proxies.Add(new()
             {
                 socks5ProxyEndpoint = readyToCompareIpAddr,
-                appNames = GetAppNamesFromModel(WhiteList),
+                appNames = GetAppNamesFromModel(_whiteList),
                 supportedProtocols = GetProtocolFromProxiFyreMode(((ProxiFyreModeElement)ProxiFyreModeComboBox.SelectedItem).Mode)
             });
         }
@@ -310,7 +310,7 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         {
             logLevel = settings.logLevel ?? "Error",
             proxies = settings.proxies,
-            excludes = GetAppNamesFromModel(BlackList),
+            excludes = GetAppNamesFromModel(_blackList),
             extensionData = settings.extensionData
         };
 
@@ -358,71 +358,71 @@ public sealed partial class ProxiFyreSetupPage : TemplatePage
         string whiteListApps = string.Empty;
 
         int i = 0;
-        foreach (var app in WhiteList)
+        foreach (var app in _whiteList)
         {
             if (i < 3)
-                if (WhiteList.Count <= 1 || i == 0)
+                if (_whiteList.Count <= 1 || i == 0)
                     whiteListApps += $"{app.DisplayName}";
                 else
                     whiteListApps += $", {app.DisplayName}";
             else
             {
-                whiteListApps += " " + string.Format(localizer.GetLocalizedString("AndMore"), WhiteList.Count - 3);
+                whiteListApps += " " + string.Format(_localizer.GetLocalizedString("AndMore"), _whiteList.Count - 3);
                 break;
             }
             i++;
         }
 
-        string whiteListDescription = string.Format(localizer.GetLocalizedString("SelectedAppsSettingsCardDescription"), whiteListApps);
-        if (WhiteList.Count > 0)
+        string whiteListDescription = string.Format(_localizer.GetLocalizedString("SelectedAppsSettingsCardDescription"), whiteListApps);
+        if (_whiteList.Count > 0)
             ApplicationWhiteListCard.Description = whiteListDescription;
         else
-            ApplicationWhiteListCard.Description = localizer.GetLocalizedString("ApplicationListIsEmpty");
+            ApplicationWhiteListCard.Description = _localizer.GetLocalizedString("ApplicationListIsEmpty");
 
         string blackListApps = string.Empty;
 
         int j = 0;
-        foreach (var app in BlackList)
+        foreach (var app in _blackList)
         {
             if (j < 3)
-                if (BlackList.Count <= 1 || j == 0)
+                if (_blackList.Count <= 1 || j == 0)
                     blackListApps += $"{app.DisplayName}";
                 else
                     blackListApps += $", {app.DisplayName}";
             else
             {
-                blackListApps += " " + string.Format(localizer.GetLocalizedString("AndMore"), BlackList.Count - 3);
+                blackListApps += " " + string.Format(_localizer.GetLocalizedString("AndMore"), _blackList.Count - 3);
                 break;
             }
             j++;
         }
 
-        string blackListDescription = string.Format(localizer.GetLocalizedString("SelectedAppsSettingsCardDescription"), blackListApps);
-        if (BlackList.Count > 0)
+        string blackListDescription = string.Format(_localizer.GetLocalizedString("SelectedAppsSettingsCardDescription"), blackListApps);
+        if (_blackList.Count > 0)
             ApplicationBlackListCard.Description = blackListDescription;
         else
-            ApplicationBlackListCard.Description = localizer.GetLocalizedString("ApplicationListIsEmpty");
+            ApplicationBlackListCard.Description = _localizer.GetLocalizedString("ApplicationListIsEmpty");
     }
 
     private async void ApplicationBlackListCard_Click(object sender, RoutedEventArgs e)
     {
-        SelectAppContentDialog dialog = new SelectAppContentDialog(BlackList);
+        SelectAppContentDialog dialog = new SelectAppContentDialog(_blackList);
         dialog.XamlRoot = this.XamlRoot;
-        dialog.Title = string.Format(localizer.GetLocalizedString("EditApplicationListDialogTitle"), localizer.GetLocalizedString("ApplicationBlackList"));
+        dialog.Title = string.Format(_localizer.GetLocalizedString("EditApplicationListDialogTitle"), _localizer.GetLocalizedString("ApplicationBlackList"));
         await dialog.ShowQueuedAsync();
 
-        BlackList = dialog._applications.ToList();
+        _blackList = dialog._applications.ToList();
         SetDescription();
     }
 
     private async void ApplicationWhiteListCard_Click(object sender, RoutedEventArgs e)
     {
-        SelectAppContentDialog dialog = new SelectAppContentDialog(WhiteList);
+        SelectAppContentDialog dialog = new SelectAppContentDialog(_whiteList);
         dialog.XamlRoot = this.XamlRoot;
-        dialog.Title = string.Format(localizer.GetLocalizedString("EditApplicationListDialogTitle"), localizer.GetLocalizedString("ApplicationWhiteList"));
+        dialog.Title = string.Format(_localizer.GetLocalizedString("EditApplicationListDialogTitle"), _localizer.GetLocalizedString("ApplicationWhiteList"));
         await dialog.ShowQueuedAsync();
 
-        WhiteList = dialog._applications.ToList();
+        _whiteList = dialog._applications.ToList();
         SetDescription();
     }
 }

@@ -40,7 +40,7 @@ public class PipeServiceBase : IDisposable
 
     }
 
-    private readonly SemaphoreSlim SendLock = new(1, 1);
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
 
     public async Task HandleConnectionAsync()
     {
@@ -142,7 +142,7 @@ public class PipeServiceBase : IDisposable
     {
         Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Message \"{RedactSecrets(message)}\" added to send queue");
 
-        await SendLock.WaitAsync();
+        await _sendLock.WaitAsync();
 
         try
         {
@@ -169,7 +169,7 @@ public class PipeServiceBase : IDisposable
         }
         finally
         {
-            SendLock.Release();
+            _sendLock.Release();
         }
     }
 

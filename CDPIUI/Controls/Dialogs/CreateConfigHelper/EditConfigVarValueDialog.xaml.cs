@@ -24,16 +24,16 @@ public sealed partial class EditConfigVarValueDialog : ContentDialog
 {
     public string VarValue { get; private set; } = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public EditConfigVarValueDialog(string varName, string varValue, AvailableVarValues varValues)
     {
         InitializeComponent();
-        this.Title = string.Format(localizer.GetLocalizedString("EditVariableContentDialogTitle"), varName);
+        this.Title = string.Format(_localizer.GetLocalizedString("EditVariableContentDialogTitle"), varName);
         VarValueTextBox.Text = varValue;
 
         DescriptionTextBlock.Text = string.IsNullOrWhiteSpace(varValues?.Comment)
-            ? localizer.GetLocalizedString("DescriptionNotProvided")
+            ? _localizer.GetLocalizedString("DescriptionNotProvided")
             : varValues.Comment;
 
         if (varValues?.Values is { Count: > 0 })

@@ -11,13 +11,13 @@ namespace CDPIUI.TrayIcon.Helper.Basic;
 public static class ErrorHelper
 {
     private static CustomErrorConvertor? _convertor;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static CustomErrorConvertor Convertor
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _convertor ??= new CustomErrorConvertor();
                 return _convertor;

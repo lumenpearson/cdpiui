@@ -16,12 +16,12 @@ internal class CommandsHandler
 {
     #region UI link handle
     private static CommandsHandler _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static CommandsHandler Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new CommandsHandler();
                 return _instance;

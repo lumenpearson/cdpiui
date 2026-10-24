@@ -18,7 +18,7 @@ public class LinkedSettingsHelper
     }
     public LinkedSettingsHelper() { }
 
-    private static List<SettingLinkModel> TgWsProxyLinks = new()
+    private static List<SettingLinkModel> _tgWsProxyLinks = new()
     {
         new() { DisplayName = "CreateNewConfig", Action = LinkedActions.CreateNewConfigForComponent },
         new() { DisplayName = "EditConfig", Action = LinkedActions.EditCurrentConfig },
@@ -32,7 +32,7 @@ public class LinkedSettingsHelper
         switch (page)
         {
             case Pages.TgWsProxyPage:
-                AppendListContentToObservableCollection(TgWsProxyLinks, collection);
+                AppendListContentToObservableCollection(_tgWsProxyLinks, collection);
                 break;
         }
     }

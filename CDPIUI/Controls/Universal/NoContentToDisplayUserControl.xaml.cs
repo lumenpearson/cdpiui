@@ -21,7 +21,7 @@ namespace CDPIUI.Controls.Universal;
 
 public sealed partial class NoContentToDisplayUserControl : UserControl
 {
-    private static ILocalizer localizer = Localizer.Get();
+    private static ILocalizer _localizer = Localizer.Get();
 
     public NoContentToDisplayUserControl()
     {
@@ -36,6 +36,6 @@ public sealed partial class NoContentToDisplayUserControl : UserControl
 
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.Register(
-            nameof(Text), typeof(string), typeof(NoContentToDisplayUserControl), new PropertyMetadata(localizer.GetLocalizedString("NoContentToDisplay"))
+            nameof(Text), typeof(string), typeof(NoContentToDisplayUserControl), new PropertyMetadata(_localizer.GetLocalizedString("NoContentToDisplay"))
         );
 }

@@ -107,20 +107,20 @@ public sealed partial class HomePage : TemplatePage
     private void OnPropertyChanged([CallerMemberName] string name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    private int availableColumns = 6;
+    private int _availableColumns = 6;
 
 
     private readonly List<(ItemsControl Panel, UICategoryData Data)> _panels
         = new List<(ItemsControl, UICategoryData)>();
 
-    private double LargeMinW, LargePrefW;
+    private double _largeMinW, _largePrefW;
 
     private const int DefaultLargeColumns = 8;
     private const double MaxTotalWidth = 1860;
 
     private IEnumerable<UICategoryData> _lastCategories;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     // Database update started event will be removed.
 
@@ -220,7 +220,7 @@ public sealed partial class HomePage : TemplatePage
                         UIHelper.CreateLargeButton(
                             storeId: repoCategoryItem.store_id,
                             imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? _localizer.GetLocalizedString("Installed") : _localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             backgroundColor: repoCategoryItem.background,
                             action: StoreItemButton_Click
@@ -233,7 +233,7 @@ public sealed partial class HomePage : TemplatePage
                         UIHelper.CreateSmallButton(
                             storeId: repoCategoryItem.store_id,
                             imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? _localizer.GetLocalizedString("Installed") : _localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             developer: repoCategoryItem.developer,
                             backgroundColor: repoCategoryItem.background,
@@ -320,8 +320,8 @@ public sealed partial class HomePage : TemplatePage
                                       MaxTotalWidth);
 
         var sampleLarge = new StoreItemLargeButton();
-        LargeMinW = sampleLarge.MinWidth;
-        LargePrefW = sampleLarge.PreferredWidth;
+        _largeMinW = sampleLarge.MinWidth;
+        _largePrefW = sampleLarge.PreferredWidth;
 
         LoadReadyKits();
 
@@ -438,38 +438,38 @@ public sealed partial class HomePage : TemplatePage
             newWidth - StoreScrollViewer.Padding.Left - StoreScrollViewer.Padding.Right,
             MaxTotalWidth);
 
-        int availableColumnsFloor = (int)Math.Floor(totalWidth / (LargeMinW + 15 + 15));
-        int availableColumnsRound = (int)Math.Round(totalWidth / (LargeMinW + 15 + 15));
+        int availableColumnsFloor = (int)Math.Floor(totalWidth / (_largeMinW + 15 + 15));
+        int availableColumnsRound = (int)Math.Round(totalWidth / (_largeMinW + 15 + 15));
 
         if (availableColumnsFloor == availableColumnsRound)
         {
-            availableColumns = availableColumnsFloor;
+            _availableColumns = availableColumnsFloor;
         }
         else
         {
-            availableColumns = availableColumnsRound;
+            _availableColumns = availableColumnsRound;
         }
 
-        double preCalcWidth = totalWidth / (availableColumns);
+        double preCalcWidth = totalWidth / (_availableColumns);
 
-        if (preCalcWidth < LargeMinW && availableColumns >= 2)
+        if (preCalcWidth < _largeMinW && _availableColumns >= 2)
         {
-            availableColumns--;
+            _availableColumns--;
         }
-        else if (preCalcWidth > LargePrefW * 1.5)
+        else if (preCalcWidth > _largePrefW * 1.5)
         {
-            if (availableColumns % 2 == 0)
-                availableColumns += 2;
+            if (_availableColumns % 2 == 0)
+                _availableColumns += 2;
             else
-                availableColumns++;
+                _availableColumns++;
         }
 
-        if (availableColumns % 2 != 0 && availableColumns > 2)
+        if (_availableColumns % 2 != 0 && _availableColumns > 2)
         {
-            availableColumns--;
+            _availableColumns--;
         }
 
-        largeElementWidth = totalWidth / (availableColumns);
+        largeElementWidth = totalWidth / (_availableColumns);
 
         return largeElementWidth;
     }

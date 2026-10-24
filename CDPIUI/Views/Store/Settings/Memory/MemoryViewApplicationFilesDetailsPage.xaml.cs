@@ -32,7 +32,7 @@ namespace CDPIUI.Views.Store.Settings.Memory;
 /// </summary>
 public sealed partial class MemoryViewApplicationFilesDetailsPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MemoryViewApplicationFilesDetailsPage()
     {
         InitializeComponent();
@@ -40,7 +40,7 @@ public sealed partial class MemoryViewApplicationFilesDetailsPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
 
         CreateBreadcrumbBarNavigation();
     }
@@ -69,23 +69,23 @@ public sealed partial class MemoryViewApplicationFilesDetailsPage : TemplatePage
         catch { }
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryUsage"),
+            DisplayName = _localizer.GetLocalizedString("MemoryUsage"),
             Tag = typeof(MemoryViewPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryViewApplicationFilesDetails"),
+            DisplayName = _localizer.GetLocalizedString("MemoryViewApplicationFilesDetails"),
             Tag = this.GetType()
         });
 

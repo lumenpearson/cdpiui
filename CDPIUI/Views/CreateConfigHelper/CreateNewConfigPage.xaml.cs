@@ -90,25 +90,25 @@ public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
         set => SetField(ref _value, value);
     }
 
-    private bool isChecked = false;
+    private bool _isChecked = false;
     public bool IsChecked
     {
-        get => isChecked;
-        set => SetField(ref isChecked, value);
+        get => _isChecked;
+        set => SetField(ref _isChecked, value);
     }
 
-    private ICommand designerTextValueChangedCommand;
+    private ICommand _designerTextValueChangedCommand;
     public ICommand DesignerTextValueChangedCommand
     {
-        get => designerTextValueChangedCommand;
-        set => SetField(ref designerTextValueChangedCommand, value);
+        get => _designerTextValueChangedCommand;
+        set => SetField(ref _designerTextValueChangedCommand, value);
     }
 
-    private ICommand designerBoolValueToggledCommand;
+    private ICommand _designerBoolValueToggledCommand;
     public ICommand DesignerBoolValueToggledCommand
     {
-        get => designerBoolValueToggledCommand;
-        set => SetField(ref designerBoolValueToggledCommand, value);
+        get => _designerBoolValueToggledCommand;
+        set => SetField(ref _designerBoolValueToggledCommand, value);
     }
 
     protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -147,32 +147,32 @@ public partial class GraphicDesignerExclusiveSettingItemModel : INotifyPropertyC
         set => SetField(ref _value, value);
     }
 
-    private bool isChecked = false;
+    private bool _isChecked = false;
     public bool IsChecked
     {
-        get => isChecked;
-        set => SetField(ref isChecked, value);
+        get => _isChecked;
+        set => SetField(ref _isChecked, value);
     }
 
-    private ICommand designerTextValueChangedCommand;
+    private ICommand _designerTextValueChangedCommand;
     public ICommand DesignerTextValueChangedCommand
     {
-        get => designerTextValueChangedCommand;
-        set => SetField(ref designerTextValueChangedCommand, value);
+        get => _designerTextValueChangedCommand;
+        set => SetField(ref _designerTextValueChangedCommand, value);
     }
 
-    private ICommand designerBoolValueToggledCommand;
+    private ICommand _designerBoolValueToggledCommand;
     public ICommand DesignerBoolValueToggledCommand
     {
-        get => designerBoolValueToggledCommand;
-        set => SetField(ref designerBoolValueToggledCommand, value);
+        get => _designerBoolValueToggledCommand;
+        set => SetField(ref _designerBoolValueToggledCommand, value);
     }
 
-    private ICommand designerSelectedGuidChangedCommand;
+    private ICommand _designerSelectedGuidChangedCommand;
     public ICommand DesignerSelectedGuidChangedCommand
     {
-        get => designerSelectedGuidChangedCommand;
-        set => SetField(ref designerSelectedGuidChangedCommand, value);
+        get => _designerSelectedGuidChangedCommand;
+        set => SetField(ref _designerSelectedGuidChangedCommand, value);
     }
 
     protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -210,7 +210,7 @@ public enum PageOpenModes
 
 public sealed partial class CreateNewConfigPage : TemplatePage
 {
-    private List<string> DesignerSupportedComponentIds = ["CSSIXC048", "CSGIVS036", "CSNIG9025"];
+    private List<string> _designerSupportedComponentIds = ["CSSIXC048", "CSGIVS036", "CSNIG9025"];
 
     private class ComponentModel
     {
@@ -231,9 +231,9 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     public ObservableCollection<GraphicDesignerSettingItemModel> DesignerSettingItemModels { get; } = [];
     public ObservableCollection<GraphicDesignerExclusiveSettingItemModel> DesignerExclusiveSettingItemModels { get; } = [];
 
-    private ConfigItem ConfigItem;
+    private ConfigItem _configItem;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public string EditItemId = string.Empty;
     public PageOpenModes PageOpenMode = PageOpenModes.None;
@@ -368,7 +368,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         if (args is NameValueCollection collection)
         {
             string operationType = collection.Get("type");
-            ConfigItem = JSONConvertor.DeserializeObject<ConfigItem>(collection.Get("configItem"));
+            _configItem = JSONConvertor.DeserializeObject<ConfigItem>(collection.Get("configItem"));
             Debug.WriteLine(operationType);
             if (operationType == "CFGSTRING")
             {
@@ -382,13 +382,13 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 PageOpenMode = PageOpenModes.CreateConfigFromString;
                 AddWrap(startupString);
 
-                ConfigItem = new()
+                _configItem = new()
                 {
                     startup_string = startupString,
                 };
                 // AskAutoFillFiles catches and logs its own errors.
                 _ = AskAutoFillFiles(
-                    ConfigItem,
+                    _configItem,
                     LScriptLangHelper.ExecuteScript(
                         "$GETCURRENTDIR()",
                     callItemId: SharedConstants.LocalUserItemsId),
@@ -399,53 +399,53 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 bool errorHappens = bool.Parse(collection.Get("errorHappens"));
                 string filePath = collection.Get("filePath");
 
-                PageTitleTextBlock.Text = localizer.GetLocalizedString("ImportConfigFromFile");
-                if (ConfigItem.target?.Count > 0)
+                PageTitleTextBlock.Text = _localizer.GetLocalizedString("ImportConfigFromFile");
+                if (_configItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
-                        .FirstOrDefault(c => c.Id == ConfigItem.target[0]);
+                        .FirstOrDefault(c => c.Id == _configItem.target[0]);
                 }
 
                 AddWrap();
 
-                LoadVars(ConfigItem);
+                LoadVars(_configItem);
 
-                _ = AskAutoFillFiles(ConfigItem, filePath); // AskAutoFillFiles catches and logs its own errors.
+                _ = AskAutoFillFiles(_configItem, filePath); // AskAutoFillFiles catches and logs its own errors.
             }
             else if (operationType == "CFGEDIT")
             {
-                PageTitleTextBlock.Text = localizer.GetLocalizedString("EditConfig");
-                if (ConfigItem.target?.Count > 0)
+                PageTitleTextBlock.Text = _localizer.GetLocalizedString("EditConfig");
+                if (_configItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
-                        .FirstOrDefault(c => c.Id == ConfigItem.target[0]);
+                        .FirstOrDefault(c => c.Id == _configItem.target[0]);
                 }
                 ComponentChooseComboBox.IsEnabled = false;
 
                 PageOpenMode = PageOpenModes.EditConfig;
-                if (ConfigItem.packId != SharedConstants.LocalUserItemsId)
+                if (_configItem.packId != SharedConstants.LocalUserItemsId)
                 {
-                    DisplayNameTextBox.Text = $"{ConfigItem.name} ({localizer.GetLocalizedString("Edited")})";
-                    SaveButtonText.Text = localizer.GetLocalizedString("SaveAsACopy");
+                    DisplayNameTextBox.Text = $"{_configItem.name} ({_localizer.GetLocalizedString("Edited")})";
+                    SaveButtonText.Text = _localizer.GetLocalizedString("SaveAsACopy");
                 }
                 else
                 {
-                    DisplayNameTextBox.Text = $"{ConfigItem.name}";
+                    DisplayNameTextBox.Text = $"{_configItem.name}";
                 }
 
-                if (ConfigItem.packId != SharedConstants.LocalUserItemsId)
+                if (_configItem.packId != SharedConstants.LocalUserItemsId)
                 {
                     // AskAutoFillFiles catches and logs its own errors.
                     _ = AskAutoFillFiles(
-                        ConfigItem,
+                        _configItem,
                         LScriptLangHelper.ExecuteScript("$GETCURRENTDIR()",
-                        callItemId: ConfigItem.packId), AskAutoFillMode.Quiet);
+                        callItemId: _configItem.packId), AskAutoFillMode.Quiet);
                 }
 
-                LoadVars(ConfigItem);
-                LoadConditions(ConfigItem);
+                LoadVars(_configItem);
+                LoadConditions(_configItem);
 
                 AddWrap();
             }
@@ -459,23 +459,23 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             }
             else if (operationType == "CFGRETURNEDITED")
             {
-                PageTitleTextBlock.Text = localizer.GetLocalizedString("EditConfig");
-                if (ConfigItem.target?.Count > 0)
+                PageTitleTextBlock.Text = _localizer.GetLocalizedString("EditConfig");
+                if (_configItem.target?.Count > 0)
                 {
                     ComponentChooseComboBox.SelectedItem = ComponentChooseComboBox.Items
                         .Cast<ComponentModel>()
-                        .FirstOrDefault(c => c.Id == ConfigItem.target[0]);
+                        .FirstOrDefault(c => c.Id == _configItem.target[0]);
                 }
                 ComponentChooseComboBox.IsEnabled = false;
 
                 PageOpenMode = PageOpenModes.EditConfigNoSave;
-                EditItemId = ConfigItem.packId;
+                EditItemId = _configItem.packId;
 
-                DisplayNameTextBox.Text = ConfigItem.name;
-                SaveButtonText.Text = localizer.GetLocalizedString("Save");
+                DisplayNameTextBox.Text = _configItem.name;
+                SaveButtonText.Text = _localizer.GetLocalizedString("Save");
 
-                LoadVars(ConfigItem);
-                LoadConditions(ConfigItem);
+                LoadVars(_configItem);
+                LoadConditions(_configItem);
 
                 AddWrap();
             }
@@ -496,7 +496,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             var result = await dialog.ShowQueuedAsync();
             if (dialog.Result == CreateConfigResult.Selected)
             {
-                ConfigItem = ConfigurationService.ReplaceFilesPath(ConfigItem, dialog.Files);
+                _configItem = ConfigurationService.ReplaceFilesPath(_configItem, dialog.Files);
                 AddWrap();
 
                 LoadVars(configItem);
@@ -614,10 +614,10 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
         AuditSaveAvailable();
 
-        SaveButtonText.Text = localizer.GetLocalizedString("Save");
-        PageTitleTextBlock.Text = localizer.GetLocalizedString("CreateNewConfig");
-        TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-        ExpandToolTip.Content = localizer.GetLocalizedString("HideConfigSettings");
+        SaveButtonText.Text = _localizer.GetLocalizedString("Save");
+        PageTitleTextBlock.Text = _localizer.GetLocalizedString("CreateNewConfig");
+        TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
+        ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
     }
 
     private bool IsSaveAvailable()
@@ -655,7 +655,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     {
         if (!IsVarAddAvailable())
         {
-            ConditionPreviewTextBlock.Text = localizer.GetLocalizedString("NothingToPreview");
+            ConditionPreviewTextBlock.Text = _localizer.GetLocalizedString("NothingToPreview");
             return;
         }
         ConditionPreviewTextBlock.Text =
@@ -682,7 +682,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         DescriptionTextBox.Text = "";
         OnValueTextBox.Text = "";
         OffValueTextBox.Text = "";
-        ConditionPreviewTextBlock.Text = localizer.GetLocalizedString("NothingToPreview");
+        ConditionPreviewTextBlock.Text = _localizer.GetLocalizedString("NothingToPreview");
     }
 
     private Tuple<Dictionary<string, bool>, List<string>> CreateVariables(int secondsSinceEpoch, bool saveLocalization)
@@ -731,8 +731,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         {
             // ShowErrorDialog catches and logs its own errors.
             _ = ShowErrorDialog(
-                string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)),
-                localizer.GetLocalizedString("SomethingWentWrong")
+                string.Format(_localizer.GetLocalizedString("CannotSaveConfigMessage"), ErrorsHelper.Convertor.GetPrettyErrorCode("CREATE_CONFIG", ex)),
+                _localizer.GetLocalizedString("SomethingWentWrong")
                 );
             Logger.Instance.CreateWarningLog(nameof(CreateNewConfigPage), $"{ex}");
             return new(null, null);
@@ -756,14 +756,14 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             // the last value wins instead of an exception on save.
             Variables.GroupBy(v => v.Name).ToDictionary(g => g.Key, g => g.Last().Value),
             Variables.Where(v => v.AvailableValues != null).Select(v => v.AvailableValues).ToList(),
-            CreateConfigPageHelper.GetNormalText(StartupStringTextBox.Text, ListDirectory, BinDirectory)
+            CreateConfigPageHelper.GetNormalText(StartupStringTextBox.Text, _listDirectory, _binDirectory)
             );
 
         return configItem;
     }
 
-    private bool isRunning = false;
-    private string curRunId = string.Empty;
+    private bool _isRunning = false;
+    private string _curRunId = string.Empty;
 
     private void Instance_onProcessStateChanged(Tuple<string, bool> tuple)
     {
@@ -773,27 +773,27 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void ApplyProcessState(Tuple<string, bool> tuple)
     {
-        if (string.IsNullOrEmpty(curRunId) || tuple.Item1 != curRunId)
+        if (string.IsNullOrEmpty(_curRunId) || tuple.Item1 != _curRunId)
             return;
         if (tuple.Item2)
         {
             TestButtonGlyph.Glyph = "\uE71A";
-            TestButtonText.Text = localizer.GetLocalizedString("StopTest");
-            isRunning = true;
+            TestButtonText.Text = _localizer.GetLocalizedString("StopTest");
+            _isRunning = true;
         }
         else
         {
             TestButtonGlyph.Glyph = "\uE768";
-            TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-            isRunning = false;
+            TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
+            _isRunning = false;
         }
     }
 
     private async void TestButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!isRunning)
+        if (!_isRunning)
         {
-            isRunning = true;
+            _isRunning = true;
             ComponentTasksManager.Instance.TaskStateUpdated += Instance_onProcessStateChanged;
 
 
@@ -802,18 +802,18 @@ public sealed partial class CreateNewConfigPage : TemplatePage
                 ResetTestState();
                 return;
             }
-            curRunId = model.Id;
-            await ComponentTasksManager.Instance.StopTask(curRunId);
+            _curRunId = model.Id;
+            await ComponentTasksManager.Instance.StopTask(_curRunId);
             ConvertDesignerLikeSettingsToString();
             var config = CreateConfig(0, saveLocalization: false);
             if (config != null)
-                _ = ComponentTasksManager.Instance.CreateAndRunNewTask(curRunId, ConfigurationService.GetStartupParametersByConfigItem(config));
+                _ = ComponentTasksManager.Instance.CreateAndRunNewTask(_curRunId, ConfigurationService.GetStartupParametersByConfigItem(config));
             else
                 ResetTestState();
         }
         else
         {
-            await ComponentTasksManager.Instance.StopTask(curRunId);
+            await ComponentTasksManager.Instance.StopTask(_curRunId);
             ResetTestState();
         }
     }
@@ -821,18 +821,18 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     private void ResetTestState()
     {
         TestButtonGlyph.Glyph = "\uE768";
-        TestButtonText.Text = localizer.GetLocalizedString("TestThis");
-        isRunning = false;
+        TestButtonText.Text = _localizer.GetLocalizedString("TestThis");
+        _isRunning = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= Instance_onProcessStateChanged;
-        curRunId = string.Empty;
+        _curRunId = string.Empty;
     }
 
     // The test component kept running after the user left the page.
     private void StopTestRun()
     {
-        if (!isRunning || string.IsNullOrEmpty(curRunId))
+        if (!_isRunning || string.IsNullOrEmpty(_curRunId))
             return;
-        string runId = curRunId;
+        string runId = _curRunId;
         ResetTestState();
         _ = ComponentTasksManager.Instance.StopTask(runId);
     }
@@ -879,10 +879,10 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         }
 
         string src;
-        if (ConfigItem == null || ConfigItem.packId != SharedConstants.LocalUserItemsId)
+        if (_configItem == null || _configItem.packId != SharedConstants.LocalUserItemsId)
             src = DisplayNameTextBox.Text + $"_{secondsSinceEpoch}.json";
         else
-            src = ConfigItem.file_name;
+            src = _configItem.file_name;
 
         string transl = src.Unidecode();
         transl = Regex.Replace(transl, @"\s+", "_");
@@ -893,8 +893,8 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         if (!string.IsNullOrEmpty(errorCode))
         {
             await ShowErrorDialog(
-                string.Format(localizer.GetLocalizedString("CannotSaveConfigMessage"), errorCode),
-                localizer.GetLocalizedString("SomethingWentWrong")
+                string.Format(_localizer.GetLocalizedString("CannotSaveConfigMessage"), errorCode),
+                _localizer.GetLocalizedString("SomethingWentWrong")
                 );
             return;
         }
@@ -917,7 +917,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private bool IsSearchAvailable()
     {
-        if (DesignerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem)?.Id ?? ""))
+        if (_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem)?.Id ?? ""))
             return MainPivot.SelectedItem == DefaultDesigner;
         else
             return true;
@@ -936,7 +936,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             AdditionalSettingsPanel.Visibility = Visibility.Visible;
             NotReadyErrorGrid.Visibility = Visibility.Collapsed;
         }
-        if (DesignerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
+        if (_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
         {
             DesignerItem.IsSelected = true;
             MainPivot.Visibility = Visibility.Visible;
@@ -1009,17 +1009,17 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         }
     }
 
-    private bool isOpened = true;
+    private bool _isOpened = true;
 
     private void ExpandButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!isOpened)
+        if (!_isOpened)
         {
             ShowInfoPanel.Begin();
             HideInfoPanel.Stop();
             InfoPanelDefinition.Width = new GridLength(350);
             ShowButtonFontIcon.Glyph = "\uE76C";
-            ExpandToolTip.Content = localizer.GetLocalizedString("HideConfigSettings");
+            ExpandToolTip.Content = _localizer.GetLocalizedString("HideConfigSettings");
         }
         else
         {
@@ -1027,20 +1027,20 @@ public sealed partial class CreateNewConfigPage : TemplatePage
             HideInfoPanel.Begin();
             InfoPanelDefinition.Width = new GridLength(0);
             ShowButtonFontIcon.Glyph = "\uE76B";
-            ExpandToolTip.Content = localizer.GetLocalizedString("ShowConfigSettings");
+            ExpandToolTip.Content = _localizer.GetLocalizedString("ShowConfigSettings");
         }
-        isOpened = !isOpened;
+        _isOpened = !_isOpened;
     }
 
-    private string ListDirectory = string.Empty;
-    private string BinDirectory = string.Empty;
+    private string _listDirectory = string.Empty;
+    private string _binDirectory = string.Empty;
 
     private string GetPrettyLookText(string text)
     {
         var result = CreateConfigPageHelper.ApplyPrettyFilesReplacement(text);
 
-        ListDirectory = result.ListDirectory;
-        BinDirectory = result.BinDirectory;
+        _listDirectory = result.ListDirectory;
+        _binDirectory = result.BinDirectory;
 
         CheckFolderOpenButtonsVisibility();
 
@@ -1049,9 +1049,9 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void AddWrap()
     {
-        if (ConfigItem != null)
+        if (_configItem != null)
         {
-            string text = CreateConfigPageHelper.ApplyWrappingToString(ConfigItem.startup_string);
+            string text = CreateConfigPageHelper.ApplyWrappingToString(_configItem.startup_string);
             StartupStringTextBox.Text = GetPrettyLookText(text);
             StartupStringTextBox.SetCursorPosition(0, 0);
         }
@@ -1131,31 +1131,31 @@ public sealed partial class CreateNewConfigPage : TemplatePage
         HandleSelectionChange();
     }
 
-    private string NowConfigLoadedId = string.Empty;
+    private string _nowConfigLoadedId = string.Empty;
 
     private void LoadDesigner()
     {
         if (ComponentChooseComboBox.SelectedItem == null)
             return;
         string id = ((ComponentModel)ComponentChooseComboBox.SelectedItem).Id;
-        if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] == id && NowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
+        if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI] == id && _nowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
         {
             GraphicDesignerHelper.LoadGoodbyeDPIDesignerConfig(DesignerSettingItemModels, DesignerExclusiveSettingItemModels);
-            NowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI];
+            _nowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI];
         }
-        else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI] == id && NowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI])
+        else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI] == id && _nowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI])
         {
             GraphicDesignerHelper.LoadSpoofDPIDesignerConfig(DesignerSettingItemModels, DesignerExclusiveSettingItemModels);
-            NowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI];
+            _nowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.SpoofDPI];
         }
-        else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI] == id && NowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI])
+        else if (HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI] == id && _nowConfigLoadedId != HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI])
         {
             string dir = DatabaseHelper.Instance.GetItemById(id)?.Directory ?? string.Empty;
             string xmlFile = Path.Combine(dir, "edannotationfile.xml");
             if (File.Exists(xmlFile))
             {
                 GraphicDesignerHelper.XML_LoadDesignerConfig(xmlFile, "nodpi", DesignerSettingItemModels, DesignerExclusiveSettingItemModels);
-                NowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI];
+                _nowConfigLoadedId = HardcodedItemIds.ComponentIds[Core.Store.Data.Components.NoDPI];
             }
 
         }
@@ -1223,7 +1223,7 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     }
     private void ConvertDesignerLikeSettingsToString()
     {
-        if (ComponentChooseComboBox.SelectedItem != null && !DesignerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
+        if (ComponentChooseComboBox.SelectedItem != null && !_designerSupportedComponentIds.Contains(((ComponentModel)ComponentChooseComboBox.SelectedItem).Id))
         {
             return;
         }
@@ -1240,11 +1240,11 @@ public sealed partial class CreateNewConfigPage : TemplatePage
     {
         OpenBinsConfigDirectory.Visibility = Visibility.Collapsed;
         OpenListsConfigDirectory.Visibility = Visibility.Collapsed;
-        if (!string.IsNullOrEmpty(ListDirectory) && ConfigItem != null)
+        if (!string.IsNullOrEmpty(_listDirectory) && _configItem != null)
         {
             OpenListsConfigDirectory.Visibility = Visibility.Visible;
         }
-        if (!string.IsNullOrEmpty(BinDirectory) && ConfigItem != null)
+        if (!string.IsNullOrEmpty(_binDirectory) && _configItem != null)
         {
             OpenBinsConfigDirectory.Visibility = Visibility.Visible;
         }
@@ -1252,17 +1252,17 @@ public sealed partial class CreateNewConfigPage : TemplatePage
 
     private void OpenListsConfigDirectory_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(ListDirectory) && ConfigItem != null)
+        if (!string.IsNullOrEmpty(_listDirectory) && _configItem != null)
         {
-            ShellHelper.LookupDirectory(LScriptLangHelper.ExecuteScript(ListDirectory, callItemId: SharedConstants.LocalUserItemsId));
+            ShellHelper.LookupDirectory(LScriptLangHelper.ExecuteScript(_listDirectory, callItemId: SharedConstants.LocalUserItemsId));
         }
     }
 
     private void OpenBinsConfigDirectory_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(BinDirectory) && ConfigItem != null)
+        if (!string.IsNullOrEmpty(_binDirectory) && _configItem != null)
         {
-            ShellHelper.LookupDirectory(LScriptLangHelper.ExecuteScript(BinDirectory, callItemId: SharedConstants.LocalUserItemsId));
+            ShellHelper.LookupDirectory(LScriptLangHelper.ExecuteScript(_binDirectory, callItemId: SharedConstants.LocalUserItemsId));
         }
     }
     #endregion

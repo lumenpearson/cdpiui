@@ -63,9 +63,9 @@ public sealed partial class SettingsPage : TemplatePage
         typeof(MemoryViewConditionalLaunchDetailsPage),
         typeof(MemoryViewPreviousVersionsPage)];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
-    private readonly ObservableCollection<VersionControlModel> VersionControlModels = [];
+    private readonly ObservableCollection<VersionControlModel> _versionControlModels = [];
     public SettingsPage()
     {
         InitializeComponent();
@@ -75,20 +75,20 @@ public sealed partial class SettingsPage : TemplatePage
         IsBackwardAnimationToPageAvailable = true;
         ElementToAnimateBackwardConnectedAnimation = NavGrid;
 
-        VersionControlTypeComboBox.ItemsSource = VersionControlModels;
+        VersionControlTypeComboBox.ItemsSource = _versionControlModels;
         LoadVersionControlInfo();
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
         CreateBreadcrumbBarNavigation();
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = this.GetType()
         });
     }
@@ -105,24 +105,24 @@ public sealed partial class SettingsPage : TemplatePage
 
     private void LoadVersionControlInfo()
     {
-        VersionControlModels.Clear();
+        _versionControlModels.Clear();
 
         BitmapImage githubImage = new BitmapImage(new Uri("ms-appx:///Assets/Icons/github.png"));
-        VersionControlModels.Add(new VersionControlModel
+        _versionControlModels.Add(new VersionControlModel
         {
             DisplayImage = githubImage,
-            DisplayName = localizer.GetLocalizedString("VersionControlGitHub"),
+            DisplayName = _localizer.GetLocalizedString("VersionControlGitHub"),
             Id = SupportedVersionControls.GitHub
         });
         BitmapImage gitlabImage = new BitmapImage(new Uri("ms-appx:///Assets/Icons/Gitlab.png"));
-        VersionControlModels.Add(new VersionControlModel
+        _versionControlModels.Add(new VersionControlModel
         {
             DisplayImage = gitlabImage,
-            DisplayName = localizer.GetLocalizedString("VersionControlGitLab"),
+            DisplayName = _localizer.GetLocalizedString("VersionControlGitLab"),
             Id = SupportedVersionControls.GitLab
         });
 
-        VersionControlTypeComboBox.SelectedItem = VersionControlModels.FirstOrDefault(x => x.Id.ToString() == SettingsManager.Instance.GetValueOrDefault("STORE", "versionControlType", defaultValue: "GitHub"));
+        VersionControlTypeComboBox.SelectedItem = _versionControlModels.FirstOrDefault(x => x.Id.ToString() == SettingsManager.Instance.GetValueOrDefault("STORE", "versionControlType", defaultValue: "GitHub"));
         StoryProxySettingCard.Visibility = ((VersionControlModel)VersionControlTypeComboBox.SelectedItem).Id == SupportedVersionControls.GitHub ? Visibility.Visible : Visibility.Collapsed;
 
         VersionControlTypeComboBox.SelectionChanged += VersionControlTypeComboBox_SelectionChanged;
@@ -152,13 +152,13 @@ public sealed partial class SettingsPage : TemplatePage
             string filePath;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Title = localizer.GetLocalizedString("SelectLocalPackToInstall");
+                openFileDialog.Title = _localizer.GetLocalizedString("SelectLocalPackToInstall");
                 openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-                openFileDialog.Filter = $"{localizer.GetLocalizedString("SignedPack")} (*.cdpisignedpack)|*.cdpisignedpack|" +
-                    $"{localizer.GetLocalizedString("ConfigPack")} (*.cdpiconfigpack)|*.cdpiconfigpack|" +
-                    $"{localizer.GetLocalizedString("Patch")} (*.cdpipatch)|*.cdpipatch|" +
-                    $"{localizer.GetLocalizedString("AllSupported")} (*.cdpiconfigpack, *.cdpipatch, *.cdpisignedpack)|*.cdpiconfigpack;*.cdpipatch;*.cdpisignedpack";
+                openFileDialog.Filter = $"{_localizer.GetLocalizedString("SignedPack")} (*.cdpisignedpack)|*.cdpisignedpack|" +
+                    $"{_localizer.GetLocalizedString("ConfigPack")} (*.cdpiconfigpack)|*.cdpiconfigpack|" +
+                    $"{_localizer.GetLocalizedString("Patch")} (*.cdpipatch)|*.cdpipatch|" +
+                    $"{_localizer.GetLocalizedString("AllSupported")} (*.cdpiconfigpack, *.cdpipatch, *.cdpisignedpack)|*.cdpiconfigpack;*.cdpipatch;*.cdpisignedpack";
                 openFileDialog.FilterIndex = 4;
                 openFileDialog.RestoreDirectory = true;
 

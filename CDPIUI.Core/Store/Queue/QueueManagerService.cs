@@ -2,7 +2,7 @@ namespace CDPIUI.Core.Store.Queue;
 
 internal class QueueManagerService : IQueueManagerService
 {
-    private readonly Queue<QueueItemModel> Queue = new();
+    private readonly Queue<QueueItemModel> _queue = new();
     private readonly object _queueLock = new();
 
     public event Action? QueueUpdated;
@@ -24,7 +24,7 @@ internal class QueueManagerService : IQueueManagerService
                 return;
 
             var opId = Guid.NewGuid().ToString();
-            Queue.Enqueue(new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile, isSignedPack: isSignedPack));
+            _queue.Enqueue(new QueueItemModel(itemId, opId, version, cleanDirectoryBeforeInstalling, packFilePath: packFile, isSignedPack: isSignedPack));
         }
         TryProcessNext();
     }
@@ -34,13 +34,13 @@ internal class QueueManagerService : IQueueManagerService
         bool removed;
         lock (_queueLock)
         {
-            var items = Queue.ToList();
+            var items = _queue.ToList();
             removed = items.RemoveAll(i => i.ItemId == itemId) > 0;
             if (removed)
             {
-                Queue.Clear();
+                _queue.Clear();
                 foreach (var i in items)
-                    Queue.Enqueue(i);
+                    _queue.Enqueue(i);
             }
         }
         if (removed)
@@ -68,7 +68,7 @@ internal class QueueManagerService : IQueueManagerService
     public Queue<QueueItemModel> GetQueue()
     {
         lock (_queueLock)
-            return new Queue<QueueItemModel>(Queue);
+            return new Queue<QueueItemModel>(_queue);
     }
 
     public string GetCurrentQueueOperationId()
@@ -84,7 +84,7 @@ internal class QueueManagerService : IQueueManagerService
             var current = CurrentDownloadingItem;
             if (current != null && current.ItemId == storeId)
                 return current.OperationId;
-            return Queue.FirstOrDefault(item => item.ItemId == storeId)?.OperationId;
+            return _queue.FirstOrDefault(item => item.ItemId == storeId)?.OperationId;
         }
     }
 
@@ -100,7 +100,7 @@ internal class QueueManagerService : IQueueManagerService
             var current = CurrentDownloadingItem;
             if (current != null && current.OperationId == operationId)
                 return current;
-            return Queue.FirstOrDefault(item => item.OperationId == operationId);
+            return _queue.FirstOrDefault(item => item.OperationId == operationId);
         }
     }
 
@@ -109,9 +109,9 @@ internal class QueueManagerService : IQueueManagerService
         QueueItemModel? next = null;
         lock (_queueLock)
         {
-            if (CurrentDownloadingItem == null && Queue.Count > 0)
+            if (CurrentDownloadingItem == null && _queue.Count > 0)
             {
-                next = Queue.Dequeue();
+                next = _queue.Dequeue();
                 CurrentDownloadingItem = next;
             }
         }
@@ -125,7 +125,7 @@ internal class QueueManagerService : IQueueManagerService
     }
 
 
-    private readonly List<QueueItemModel> FailedToInstallItems = new();
+    private readonly List<QueueItemModel> _failedToInstallItems = new();
     private readonly object _failedToInstallItemsLock = new();
 
     public event Action? ErrorListUpdated;
@@ -134,27 +134,27 @@ internal class QueueManagerService : IQueueManagerService
     {
         lock (_failedToInstallItemsLock)
         {
-            var extstItem = FailedToInstallItems.FirstOrDefault(x => x.ItemId == itemId);
+            var extstItem = _failedToInstallItems.FirstOrDefault(x => x.ItemId == itemId);
             if (extstItem != null)
             {
-                FailedToInstallItems.Remove(extstItem);
+                _failedToInstallItems.Remove(extstItem);
                 ErrorListUpdated?.Invoke();
             }
         }
     }
     public List<QueueItemModel> GetFailedToInstallItems()
     {
-        return FailedToInstallItems;
+        return _failedToInstallItems;
     }
 
     public void AddItemToDownloadFailureList(string itemId, string operationId, string? version, string errorCode)
     {
         lock (_failedToInstallItemsLock)
         {
-            var extstItem = FailedToInstallItems.FirstOrDefault(x => x.ItemId == itemId);
+            var extstItem = _failedToInstallItems.FirstOrDefault(x => x.ItemId == itemId);
             if (extstItem != null)
-                FailedToInstallItems.Remove(extstItem);
-            FailedToInstallItems.Add(new(itemId, operationId, version, false)
+                _failedToInstallItems.Remove(extstItem);
+            _failedToInstallItems.Add(new(itemId, operationId, version, false)
             {
                 ErrorCode = errorCode
             });

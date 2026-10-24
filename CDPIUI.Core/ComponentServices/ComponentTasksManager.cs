@@ -11,13 +11,13 @@ namespace CDPIUI.Core.ComponentServices;
 public class ComponentTasksManager : TasksManageService<ProcessService>
 {
     private static ComponentTasksManager? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static ComponentTasksManager Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new ComponentTasksManager();
                 return _instance;
@@ -132,13 +132,13 @@ public class ComponentTasksManager : TasksManageService<ProcessService>
 
 
     // TODO: Remove hardcoded Ids
-    List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
+    List<string> _serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
 
     public async Task StopService()
     {
         foreach (var task in Tasks)
         {
-            if (serviceUsedComponentsIds.Contains(task.Id))
+            if (_serviceUsedComponentsIds.Contains(task.Id))
             {
                 await task.ProcessManager.StopProcess();
             }

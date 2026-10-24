@@ -79,9 +79,9 @@ public class GoodCheckProcessService
     private static readonly string AddonId = HardcodedItemIds.AddOnsIds[Core.Store.Data.AddOns.GoodCheck];
     private const string CheckLists = "CheckLists";
 
-    private string ExeFileName = "";
-    private string DirName = "";
-    private string ComponentName = "";
+    private string _exeFileName = "";
+    private string _dirName = "";
+    private string _componentName = "";
     private string ComponentId = "";
 
 
@@ -89,23 +89,23 @@ public class GoodCheckProcessService
     private const string GetStrategyCountRegex = @"worst result for this strategy: (\d{1,})/(\d{1,})\n{1,}Terminating program\.\.\.";
     private const string AnalyzeRegex = @"Launching '[a-zA-Z]{1,}', strategy (\d{1,})/(\d{1,}): \[(.*?)\](?:.*?)worst result for this strategy: (\d{1,})/(\d{1,})(\n||This strategy has no successes){1,}Terminating program\.\.\.";
 
-    private CancellationTokenSource? CancellationTokenSource;
-    private CancellationToken CancellationToken;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private CancellationToken _cancellationToken;
 
     private GoodCheckProcessMode _mode;
     private List<GoodCheckSiteListModel> _siteList = [];
 
     private static GoodCheckProcessService? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public int CurrentOperationId { get; private set; } = 0;
-    private List<GoodCheckOperationModel> Operations = new List<GoodCheckOperationModel>();
+    private List<GoodCheckOperationModel> _operations = new List<GoodCheckOperationModel>();
 
     public static GoodCheckProcessService Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new GoodCheckProcessService();
                 return _instance;
@@ -143,13 +143,13 @@ public class GoodCheckProcessService
 
         DatabaseStoreItem item = DatabaseHelper.Instance.GetItemById(AddonId);
 
-        DirName = GetAddOnDirectory();
+        _dirName = GetAddOnDirectory();
 
-        ExeFileName = Path.Combine(
-            DirName,
+        _exeFileName = Path.Combine(
+            _dirName,
             item.Executable + ".exe");
 
-        return File.Exists(ExeFileName);
+        return File.Exists(_exeFileName);
     }
 
     public static void MergeUniquePreserveOrder(
@@ -195,7 +195,7 @@ public class GoodCheckProcessService
         )
     {
         _siteList.Clear();
-        Operations.Clear();
+        _operations.Clear();
 
         CurrentOperationId = 0;
 
@@ -203,7 +203,7 @@ public class GoodCheckProcessService
         // check then ran with the wrong component.
         if (!IsComponentSupported(componentId))
             throw new NotSupportedException($"GoodCheck does not support the component {componentId}.");
-        ComponentName = GoodCheckResultViewHelper.ComponentNormalNames[HardcodedItemIds.ComponentIds.GetKeyByValue(componentId)];
+        _componentName = GoodCheckResultViewHelper.ComponentNormalNames[HardcodedItemIds.ComponentIds.GetKeyByValue(componentId)];
 
         ComponentId = componentId;
         _mode = checkMode;
@@ -228,7 +228,7 @@ public class GoodCheckProcessService
             };
             _siteList.Add(model);
             CancellationTokenSource cancellationTokenSource = new();
-            Operations.Add(new()
+            _operations.Add(new()
             {
                 OperationId = 0,
                 SiteListName = Path.GetFileName(siteList),
@@ -260,7 +260,7 @@ public class GoodCheckProcessService
 
                 CancellationTokenSource cancellationTokenSource = new();
 
-                Operations.Add(new()
+                _operations.Add(new()
                 {
                     OperationId = i,
                     SiteListName = model.SiteListPath,
@@ -298,9 +298,9 @@ public class GoodCheckProcessService
 
     public void Start()
     {
-        CancellationTokenSource = new();
-        CancellationToken = CancellationTokenSource.Token;
-        _ = StartCheck(CancellationToken);
+        _cancellationTokenSource = new();
+        _cancellationToken = _cancellationTokenSource.Token;
+        _ = StartCheck(_cancellationToken);
     }
 
     public static bool IsComponentSupported(string componentId) =>
@@ -310,7 +310,7 @@ public class GoodCheckProcessService
     public void Stop()
     {
         // Stop before the first Start had no source to cancel.
-        CancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Cancel();
         _ = PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Stop);
     }
 
@@ -330,7 +330,7 @@ public class GoodCheckProcessService
                 for (int i = 0; i < _siteList.Count; i++)
                 {
                     CurrentOperationId = i;
-                    Operations[CurrentOperationId].OperationType = GoodCheckOperationType.WorkInProgress;
+                    _operations[CurrentOperationId].OperationType = GoodCheckOperationType.WorkInProgress;
                     OperationTypeChanged?.Invoke(Tuple.Create(CurrentOperationId, GoodCheckOperationType.WorkInProgress));
 
                     var site = _siteList[i];
@@ -339,18 +339,18 @@ public class GoodCheckProcessService
 
                     CurrentSiteListIndex = Tuple.Create(i + 1, _siteList.Count);
 
-                    if (cancellationToken.IsCancellationRequested || CancellationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested || _cancellationToken.IsCancellationRequested)
                         break;
 
                     bool ok = await StartProcessAsync(site, cancellationToken).ConfigureAwait(false);
                     if (ok)
                     {
                         ProcessCompleted?.Invoke(site);
-                        Operations[CurrentOperationId].OperationType = GoodCheckOperationType.SuccessFinish;
+                        _operations[CurrentOperationId].OperationType = GoodCheckOperationType.SuccessFinish;
                         OperationTypeChanged?.Invoke(Tuple.Create(CurrentOperationId, GoodCheckOperationType.SuccessFinish));
                     }
 
-                    if (cancellationToken.IsCancellationRequested || CancellationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested || _cancellationToken.IsCancellationRequested)
                         break;
                 }
 
@@ -371,7 +371,7 @@ public class GoodCheckProcessService
         finally
         {
             // A stopped or failed check left its operation shown as running.
-            foreach (var operation in Operations.Where(o => o.OperationType == GoodCheckOperationType.WorkInProgress).ToList())
+            foreach (var operation in _operations.Where(o => o.OperationType == GoodCheckOperationType.WorkInProgress).ToList())
             {
                 operation.OperationType = GoodCheckOperationType.UserInterrupt;
                 OperationTypeChanged?.Invoke(Tuple.Create(operation.OperationId, GoodCheckOperationType.UserInterrupt));
@@ -384,7 +384,7 @@ public class GoodCheckProcessService
         IncorrectCount = 0;
         CorrectCount = 0;
 
-        if (string.IsNullOrEmpty(ExeFileName) || !File.Exists(ExeFileName))
+        if (string.IsNullOrEmpty(_exeFileName) || !File.Exists(_exeFileName))
         {
             HandleProcessException("ERR_EXE_NOT_FOUND", CurrentOperationId);
             return false;
@@ -397,7 +397,7 @@ public class GoodCheckProcessService
         string args =
             $"-q " +
             $"-p {passCount} " +
-            $"-f {ComponentName} " +
+            $"-f {_componentName} " +
             $"-m {resolver} " +
             $"-c \"{siteList.SiteListPath}\" " +
             $"-s \"{siteList.StrategyListPath}\" ";
@@ -405,10 +405,10 @@ public class GoodCheckProcessService
         _ = PipeHelper.SendGoodCheckPacket(
             Shared.Pipe.Models.GoodCheckMessageIds.Start,
             CurrentOperationId.ToString(),
-            ExeFileName,
+            _exeFileName,
             args);
 
-        string logsDirectory = Path.Combine(DirName, "Logs");
+        string logsDirectory = Path.Combine(_dirName, "Logs");
         var monitorTask = MonitorProcessAndLogsAsync(logsDirectory, cancellationToken);
 
         try
@@ -419,12 +419,12 @@ public class GoodCheckProcessService
 
             GoodCheckOperationModel model = GetOperationById(CurrentOperationId);
 
-            if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
+            if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !_cancellationToken.IsCancellationRequested)
             {
                 // The process ended by itself: the result comes from its complete log.
                 return result;
             }
-            if (cancellationToken.IsCancellationRequested || model.CancellationToken.IsCancellationRequested || CancellationToken.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested || model.CancellationToken.IsCancellationRequested || _cancellationToken.IsCancellationRequested)
             {
                 _ = PipeHelper.SendGoodCheckPacket(Shared.Pipe.Models.GoodCheckMessageIds.Stop);
                 return false;
@@ -444,7 +444,7 @@ public class GoodCheckProcessService
 
     }
 
-    string? goodStrategyCountString;
+    string? _goodStrategyCountString;
 
     private void AddOutput(string output)
     {
@@ -465,13 +465,13 @@ public class GoodCheckProcessService
 
         if (output.Contains("worst result for this strategy:"))
         {
-            goodStrategyCountString = output;
+            _goodStrategyCountString = output;
         }
 
-        if (!string.IsNullOrEmpty(goodStrategyCountString))
+        if (!string.IsNullOrEmpty(_goodStrategyCountString))
         {
-            goodStrategyCountString += $"\n{output}";
-            Match resultMatch = Regex.Match(goodStrategyCountString, GetStrategyCountRegex);
+            _goodStrategyCountString += $"\n{output}";
+            Match resultMatch = Regex.Match(_goodStrategyCountString, GetStrategyCountRegex);
             if (resultMatch.Success)
             {
                 string current = resultMatch.Groups[1].Value;
@@ -495,12 +495,12 @@ public class GoodCheckProcessService
                     IncorrectCount++;
                     IncorrectCountChanged?.Invoke(IncorrectCount);
                 }
-                goodStrategyCountString = null;
+                _goodStrategyCountString = null;
             }
         }
 
         OperationOutputAdded?.Invoke(Tuple.Create(CurrentOperationId, $"{output}"));
-        Operations[CurrentOperationId].AppendOutputLine(output);
+        _operations[CurrentOperationId].AppendOutputLine(output);
     }
 
     private async Task<bool> MonitorProcessAndLogsAsync(string logsDirectory, CancellationToken cancellationToken)
@@ -538,7 +538,7 @@ public class GoodCheckProcessService
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && !model.CancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested && !model.CancellationToken.IsCancellationRequested && !_cancellationToken.IsCancellationRequested)
             {
                 string newest = GetNewestLogFile(logsDirectory, logPattern, runStartUtc);
 
@@ -573,7 +573,7 @@ public class GoodCheckProcessService
                 await Task.Delay(500, cancellationToken).ConfigureAwait(false);
             }
 
-            if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !CancellationToken.IsCancellationRequested)
+            if (model.ProcessExited && !cancellationToken.IsCancellationRequested && !_cancellationToken.IsCancellationRequested)
             {
                 // The process ended: read what it wrote last, and a run without "All Done",
                 // such as a failed connectivity check, is no success.
@@ -587,7 +587,7 @@ public class GoodCheckProcessService
         }
         catch (OperationCanceledException)
         {
-            Operations[CurrentOperationId].OperationType = GoodCheckOperationType.UserInterrupt;
+            _operations[CurrentOperationId].OperationType = GoodCheckOperationType.UserInterrupt;
             OperationTypeChanged?.Invoke(Tuple.Create(CurrentOperationId, GoodCheckOperationType.UserInterrupt));
             return false;
         }
@@ -628,8 +628,8 @@ public class GoodCheckProcessService
 
     public void HandleProcessException(string errorCode, int operationId)
     {
-        Operations[operationId].OperationType = GoodCheckOperationType.ErrorHappens;
-        Operations[operationId].ErrorCode = errorCode;
+        _operations[operationId].OperationType = GoodCheckOperationType.ErrorHappens;
+        _operations[operationId].ErrorCode = errorCode;
         OperationTypeChanged?.Invoke(Tuple.Create(operationId, GoodCheckOperationType.ErrorHappens));
         ErrorHappens?.Invoke(errorCode);
     }
@@ -686,7 +686,7 @@ public class GoodCheckProcessService
         doc.Add(root);
 
         int opIndex = 0;
-        foreach (var operation in Operations)
+        foreach (var operation in _operations)
         {
             opIndex++;
             // Both are set by InitGoodCheck; XAttribute does not take null.
@@ -720,28 +720,28 @@ public class GoodCheckProcessService
     }
     public List<GoodCheckOperationModel> GetCurrentOperations()
     {
-        return Operations;
+        return _operations;
     }
     public GoodCheckOperationModel? GetOperationById(int id)
     {
         try
         {
-            return Operations[id];
+            return _operations[id];
         }
         catch { return null; }
     }
 
     public bool IsRunning()
     {
-        return CancellationTokenSource != null && !CancellationTokenSource.IsCancellationRequested;
+        return _cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested;
     }
 
     public void Kill()
     {
         try
         {
-            CancellationTokenSource?.Cancel();
-            CancellationTokenSource?.Dispose();
+            _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
         }
         catch (ObjectDisposedException)
         {

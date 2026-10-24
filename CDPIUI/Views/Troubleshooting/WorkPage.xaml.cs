@@ -55,11 +55,11 @@ public class DiagnosticResultModel
 
 public sealed partial class WorkPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
-    private ObservableCollection<DiagnosticResultModel> DisplayDiagnosticResultsCollection = [];
-    private ObservableCollection<DiagnosticResultModel> FixResults = [];
-    private NavigationParameters navigationParameter = NavigationParameters.None;
+    private ObservableCollection<DiagnosticResultModel> _displayDiagnosticResultsCollection = [];
+    private ObservableCollection<DiagnosticResultModel> _fixResults = [];
+    private NavigationParameters _navigationParameter = NavigationParameters.None;
     public WorkPage()
     {
         InitializeComponent();
@@ -67,8 +67,8 @@ public sealed partial class WorkPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = ActionButtonsGrid;
 
-        DiagnosticResultListView.ItemsSource = DisplayDiagnosticResultsCollection;
-        FixResultListView.ItemsSource = FixResults;
+        DiagnosticResultListView.ItemsSource = _displayDiagnosticResultsCollection;
+        FixResultListView.ItemsSource = _fixResults;
 
         ConnectEvents();
         Loaded += (_, _) => ConnectEvents();
@@ -76,21 +76,21 @@ public sealed partial class WorkPage : TemplatePage
     }
 
     // The services are singletons: a page that is not shown must not keep receiving their events.
-    private bool eventsConnected;
+    private bool _eventsConnected;
 
     private void ConnectEvents()
     {
-        if (eventsConnected)
+        if (_eventsConnected)
             return;
-        eventsConnected = true;
+        _eventsConnected = true;
         TroubleshootingService.Instance.CurrentStateChanged += TroubleshootingHelper_BasicDialogStateChanged;
     }
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected)
+        if (!_eventsConnected)
             return;
-        eventsConnected = false;
+        _eventsConnected = false;
         TroubleshootingService.Instance.CurrentStateChanged -= TroubleshootingHelper_BasicDialogStateChanged;
     }
 
@@ -114,8 +114,8 @@ public sealed partial class WorkPage : TemplatePage
         {
             NavigationParameters navp = Parameter.Get("action").ToEnum<NavigationParameters>(NavigationParameters.None);
 
-            navigationParameter = navp;
-            switch (navigationParameter)
+            _navigationParameter = navp;
+            switch (_navigationParameter)
             {
                 // The checks catch and log their own errors.
                 case NavigationParameters.BeginBasicCheck:
@@ -133,17 +133,17 @@ public sealed partial class WorkPage : TemplatePage
     {
         if (state.ToString() == "Preparing" || state.ToString() == "Completed")
         {
-            CurrentStateTextBlock.Text = localizer.GetLocalizedString($"/Troubleshooting/{state}");
+            CurrentStateTextBlock.Text = _localizer.GetLocalizedString($"/Troubleshooting/{state}");
         }
         else
         {
-            CurrentStateTextBlock.Text = string.Format(localizer.GetLocalizedString("/Troubleshooting/WorkingOn"), localizer.GetLocalizedString($"/Troubleshooting/{state}"));
+            CurrentStateTextBlock.Text = string.Format(_localizer.GetLocalizedString("/Troubleshooting/WorkingOn"), _localizer.GetLocalizedString($"/Troubleshooting/{state}"));
         }
     }
 
     private string GetHelpFor(string key)
     {
-        string result = localizer.GetLocalizedString($"/Flashlight/{key}");
+        string result = _localizer.GetLocalizedString($"/Flashlight/{key}");
 
         return LScriptLangHelper.ExecuteScript(result, scriptArgs: "/Flashlight/");
     }
@@ -156,8 +156,8 @@ public sealed partial class WorkPage : TemplatePage
         FixStackPanel.Visibility = Visibility.Collapsed;
         FixResultStackPanel.Visibility = Visibility.Collapsed;
 
-        DisplayDiagnosticResultsCollection.Clear();
-        FixResults.Clear();
+        _displayDiagnosticResultsCollection.Clear();
+        _fixResults.Clear();
 
         ForwardButton.Visibility = Visibility.Collapsed;
         CancelButton.Visibility = Visibility.Visible;
@@ -205,7 +205,7 @@ public sealed partial class WorkPage : TemplatePage
         ((App)Application.Current).MakeWindowNormal(((App)Application.Current).GetCurrentWindowFromType<TroubleshootingWindow>());
     }
 
-    private object DiagnosticResults = null;
+    private object _diagnosticResults = null;
 
     private async Task BeginBasicCheck()
     {
@@ -213,11 +213,11 @@ public sealed partial class WorkPage : TemplatePage
         {
             GetReadyForCheck();
 
-            DiagnosticResults = await TroubleshootingService.Instance.RunBasicDiagnostic();
+            _diagnosticResults = await TroubleshootingService.Instance.RunBasicDiagnostic();
 
             CheckViewResultActions();
 
-            DisplayDiagnosticResults<RunBasicDialogStates>((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults, TroubleshootingService.BasicDiagnosticStateModelPairs);
+            DisplayDiagnosticResults<RunBasicDialogStates>((Dictionary<RunBasicDialogStates, bool>)_diagnosticResults, TroubleshootingService.BasicDiagnosticStateModelPairs);
 
             CheckCompleteActions();
         }
@@ -233,7 +233,7 @@ public sealed partial class WorkPage : TemplatePage
         {
             GetReadyForFix();
 
-            var result = await TroubleshootingService.Instance.FixAllBasicErrors((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults);
+            var result = await TroubleshootingService.Instance.FixAllBasicErrors((Dictionary<RunBasicDialogStates, bool>)_diagnosticResults);
 
             FixViewResultActions();
 
@@ -253,11 +253,11 @@ public sealed partial class WorkPage : TemplatePage
         {
             GetReadyForCheck();
 
-            DiagnosticResults = await TroubleshootingService.Instance.RunStoreDiagnostic();
+            _diagnosticResults = await TroubleshootingService.Instance.RunStoreDiagnostic();
 
             CheckViewResultActions();
 
-            DisplayDiagnosticResults<StoreCheckStates>((Dictionary<StoreCheckStates, bool>)DiagnosticResults, TroubleshootingService.StoreDiagnosticStateModelPairs);
+            DisplayDiagnosticResults<StoreCheckStates>((Dictionary<StoreCheckStates, bool>)_diagnosticResults, TroubleshootingService.StoreDiagnosticStateModelPairs);
 
             CheckCompleteActions();
         }
@@ -273,7 +273,7 @@ public sealed partial class WorkPage : TemplatePage
         {
             GetReadyForFix();
 
-            var result = await TroubleshootingService.Instance.FixAllStoreErrors((Dictionary<StoreCheckStates, bool>)DiagnosticResults);
+            var result = await TroubleshootingService.Instance.FixAllStoreErrors((Dictionary<StoreCheckStates, bool>)_diagnosticResults);
 
             FixViewResultActions();
 
@@ -295,12 +295,12 @@ public sealed partial class WorkPage : TemplatePage
             bool isCorrect = diagnosticStatesPair.GetValueOrDefault(criterion.Key, null)?.CorrectState == criterion.Value;
             string correctText = diagnosticStatesPair.GetValueOrDefault(criterion.Key, null)?.CorrectValueDisplayText ?? string.Empty;
             string inCorrectText = diagnosticStatesPair.GetValueOrDefault(criterion.Key, null)?.InCorrectValueDisplayText ?? string.Empty;
-            DisplayDiagnosticResultsCollection.Add(new()
+            _displayDiagnosticResultsCollection.Add(new()
             {
                 IsHighlighted = !isCorrect,
-                CriterionName = localizer.GetLocalizedString($"/Troubleshooting/{criterion.Key}"),
-                CurrentValue = isCorrect ? localizer.GetLocalizedString($"/Troubleshooting/{correctText}") : localizer.GetLocalizedString($"/Troubleshooting/{inCorrectText}"),
-                TargetValue = localizer.GetLocalizedString($"/Troubleshooting/{correctText}"),
+                CriterionName = _localizer.GetLocalizedString($"/Troubleshooting/{criterion.Key}"),
+                CurrentValue = isCorrect ? _localizer.GetLocalizedString($"/Troubleshooting/{correctText}") : _localizer.GetLocalizedString($"/Troubleshooting/{inCorrectText}"),
+                TargetValue = _localizer.GetLocalizedString($"/Troubleshooting/{correctText}"),
                 IconGlyph = isCorrect ? "\uE930" : "\uEA39",
                 IsFixAvailable = false,
                 IsHelpAvailable = true,
@@ -314,13 +314,13 @@ public sealed partial class WorkPage : TemplatePage
 
         if (isErrorHappens)
         {
-            ResultTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultErrorTitle");
-            ResultTipTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultErrorTip");
+            ResultTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultErrorTitle");
+            ResultTipTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultErrorTip");
         }
         else
         {
-            ResultTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultTitle");
-            ResultTipTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultTip");
+            ResultTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultTitle");
+            ResultTipTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/DiagnosticResultTip");
 
         }
     }
@@ -337,12 +337,12 @@ public sealed partial class WorkPage : TemplatePage
 
             string correctText = diagnosticStatesPair.GetValueOrDefault(crit.Key, null)?.CorrectValueDisplayText ?? string.Empty;
             string inCorrectText = diagnosticStatesPair.GetValueOrDefault(crit.Key, null)?.InCorrectValueDisplayText ?? string.Empty;
-            FixResults.Add(new()
+            _fixResults.Add(new()
             {
                 IsHighlighted = !isCorrect,
-                CriterionName = localizer.GetLocalizedString($"/Troubleshooting/{crit.Key}"),
-                CurrentValue = localizer.GetLocalizedString($"/Troubleshooting/{inCorrectText}"),
-                TargetValue = localizer.GetLocalizedString($"/Troubleshooting/{correctText}"),
+                CriterionName = _localizer.GetLocalizedString($"/Troubleshooting/{crit.Key}"),
+                CurrentValue = _localizer.GetLocalizedString($"/Troubleshooting/{inCorrectText}"),
+                TargetValue = _localizer.GetLocalizedString($"/Troubleshooting/{correctText}"),
                 IconGlyph = isCorrect ? "\uE930" : "\uEA39",
                 IsFixAvailable = false,
                 IsHelpAvailable = true,
@@ -357,13 +357,13 @@ public sealed partial class WorkPage : TemplatePage
 
         if (isErrorHappens)
         {
-            ResultTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/FixResultErrorTitle");
-            ResultTipTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/FixResultErrorTip");
+            ResultTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/FixResultErrorTitle");
+            ResultTipTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/FixResultErrorTip");
         }
         else
         {
-            ResultTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/FixResultTitle");
-            ResultTipTextBlock.Text = localizer.GetLocalizedString("/Troubleshooting/FixResultTip");
+            ResultTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/FixResultTitle");
+            ResultTipTextBlock.Text = _localizer.GetLocalizedString("/Troubleshooting/FixResultTip");
             FixResultListView.Visibility = Visibility.Collapsed;
         }
     }
@@ -371,11 +371,11 @@ public sealed partial class WorkPage : TemplatePage
     private string GetUrl(string key)
     {
 
-        string url = localizer.GetLocalizedString($"/Flashlight/URL_{key}");
+        string url = _localizer.GetLocalizedString($"/Flashlight/URL_{key}");
         if (string.IsNullOrEmpty(url))
         {
-            string name = localizer.GetLocalizedString($"/Troubleshooting/{key}");
-            url = string.Format(localizer.GetLocalizedString("/Flashlight/NetSearchPlaceholder"), name);
+            string name = _localizer.GetLocalizedString($"/Troubleshooting/{key}");
+            url = string.Format(_localizer.GetLocalizedString("/Flashlight/NetSearchPlaceholder"), name);
         }
         if (url == "$EMPTY")
             return string.Empty;
@@ -391,11 +391,11 @@ public sealed partial class WorkPage : TemplatePage
     private void ForwardButton_Click(object sender, RoutedEventArgs e)
     {
         // The fixes catch and log their own errors.
-        if (navigationParameter == NavigationParameters.BeginBasicCheck)
+        if (_navigationParameter == NavigationParameters.BeginBasicCheck)
         {
             _ = BeginBasicFix();
         }
-        else if (navigationParameter == NavigationParameters.BeginStoreRepoCheck)
+        else if (_navigationParameter == NavigationParameters.BeginStoreRepoCheck)
         {
             _ = BeginStoreFix();
         }

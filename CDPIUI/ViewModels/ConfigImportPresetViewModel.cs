@@ -16,15 +16,15 @@ namespace CDPIUI.Views.ConfigImportUtil;
 
 public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly bool targetWasDetected;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly bool _targetWasDetected;
     private string name;
-    private DatabaseStoreItem? selectedComponent;
-    private bool isSaving;
-    private bool isSaved;
-    private bool isTesting;
-    private string? operationError;
-    private readonly Dictionary<string, ConfigImportMissingFileResolution> missingFileResolutions =
+    private DatabaseStoreItem? _selectedComponent;
+    private bool _isSaving;
+    private bool _isSaved;
+    private bool _isTesting;
+    private string? _operationError;
+    private readonly Dictionary<string, ConfigImportMissingFileResolution> _missingFileResolutions =
         new(StringComparer.OrdinalIgnoreCase);
 
     public ConfigImportPresetViewModel(
@@ -35,9 +35,9 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
     {
         Result = result;
         Components = components;
-        this.targetWasDetected = targetWasDetected;
+        _targetWasDetected = targetWasDetected;
         name = result.SharedPackage?.Manifest.Name ?? Path.GetFileNameWithoutExtension(result.SourcePath);
-        selectedComponent = initialComponent;
+        _selectedComponent = initialComponent;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -54,13 +54,13 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
     // so the user sees what the component will be started with before testing or saving it.
     public string Arguments => Result.Config?.startup_string ?? string.Empty;
 
-    public string ArgumentsHeader => localizer.GetLocalizedString("ConfigImportArguments");
+    public string ArgumentsHeader => _localizer.GetLocalizedString("ConfigImportArguments");
 
     public Visibility ArgumentsVisibility =>
         string.IsNullOrWhiteSpace(Arguments) ? Visibility.Collapsed : Visibility.Visible;
 
     public IReadOnlyCollection<ConfigImportMissingFileResolution> MissingFileResolutions =>
-        missingFileResolutions.Values;
+        _missingFileResolutions.Values;
 
     public string Name
     {
@@ -70,7 +70,7 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
             if (name == value)
                 return;
             name = value;
-            isSaved = false;
+            _isSaved = false;
             Notify();
             NotifyActionState();
         }
@@ -78,13 +78,13 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
 
     public DatabaseStoreItem? SelectedComponent
     {
-        get => selectedComponent;
+        get => _selectedComponent;
         set
         {
-            if (ReferenceEquals(selectedComponent, value))
+            if (ReferenceEquals(_selectedComponent, value))
                 return;
-            selectedComponent = value;
-            isSaved = false;
+            _selectedComponent = value;
+            _isSaved = false;
             Notify();
             Notify(nameof(IsUnsuitable));
             Notify(nameof(SuitabilityMessage));
@@ -94,77 +94,77 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
 
     public bool IsUnsuitable =>
         Result.IsSuccessful &&
-        targetWasDetected &&
-        selectedComponent != null &&
-        !ExecutablesEqual(Result.Target.Executable, selectedComponent.Executable);
+        _targetWasDetected &&
+        _selectedComponent != null &&
+        !ExecutablesEqual(Result.Target.Executable, _selectedComponent.Executable);
 
     public string SuitabilityMessage => IsUnsuitable
-        ? localizer.GetLocalizedString("ConfigImportComponentMismatchMessage")
+        ? _localizer.GetLocalizedString("ConfigImportComponentMismatchMessage")
         : string.Empty;
 
-    public string? OperationError => operationError;
+    public string? OperationError => _operationError;
 
-    public bool HasDetails => Result.Issues.Count > 0 || !string.IsNullOrWhiteSpace(operationError);
+    public bool HasDetails => Result.Issues.Count > 0 || !string.IsNullOrWhiteSpace(_operationError);
 
     public Visibility DetailsVisibility => HasDetails ? Visibility.Visible : Visibility.Collapsed;
 
-    public string StatusText => Result.IsSuccessful && string.IsNullOrWhiteSpace(operationError)
+    public string StatusText => Result.IsSuccessful && string.IsNullOrWhiteSpace(_operationError)
         ? Result.Issues.Count > 0
-            ? localizer.GetLocalizedString("ConfigImportItemWarningStatus")
-            : localizer.GetLocalizedString("ConfigImportItemSuccessStatus")
-        : localizer.GetLocalizedString("ConfigImportItemFailedStatus");
+            ? _localizer.GetLocalizedString("ConfigImportItemWarningStatus")
+            : _localizer.GetLocalizedString("ConfigImportItemSuccessStatus")
+        : _localizer.GetLocalizedString("ConfigImportItemFailedStatus");
 
-    public string StatusGlyph => Result.IsSuccessful && string.IsNullOrWhiteSpace(operationError)
+    public string StatusGlyph => Result.IsSuccessful && string.IsNullOrWhiteSpace(_operationError)
         ? Result.Issues.Count > 0 ? "\uE7BA" : "\uE930"
         : "\uEA39";
 
-    public Brush StatusForeground => new SolidColorBrush(Result.IsSuccessful && string.IsNullOrWhiteSpace(operationError)
+    public Brush StatusForeground => new SolidColorBrush(Result.IsSuccessful && string.IsNullOrWhiteSpace(_operationError)
         ? Result.Issues.Count > 0 ? ColorHelper.FromArgb(255, 157, 93, 0) : ColorHelper.FromArgb(255, 16, 124, 16)
         : ColorHelper.FromArgb(255, 196, 43, 28));
 
-    public Brush StatusBackground => new SolidColorBrush(Result.IsSuccessful && string.IsNullOrWhiteSpace(operationError)
+    public Brush StatusBackground => new SolidColorBrush(Result.IsSuccessful && string.IsNullOrWhiteSpace(_operationError)
         ? Result.Issues.Count > 0 ? ColorHelper.FromArgb(28, 255, 185, 0) : ColorHelper.FromArgb(28, 16, 124, 16)
         : ColorHelper.FromArgb(28, 196, 43, 28));
 
     public bool CanSave => Result.IsSuccessful &&
-                           selectedComponent != null &&
+                           _selectedComponent != null &&
                            !string.IsNullOrWhiteSpace(name) &&
-                           !isSaving &&
-                           !isSaved;
+                           !_isSaving &&
+                           !_isSaved;
 
-    public bool CanTest => Result.IsSuccessful && selectedComponent != null && !isSaving;
+    public bool CanTest => Result.IsSuccessful && _selectedComponent != null && !_isSaving;
 
-    public string SaveButtonText => isSaved
-        ? localizer.GetLocalizedString("ConfigImportSavedButtonText")
-        : localizer.GetLocalizedString("ConfigImportSaveButtonText");
+    public string SaveButtonText => _isSaved
+        ? _localizer.GetLocalizedString("ConfigImportSavedButtonText")
+        : _localizer.GetLocalizedString("ConfigImportSaveButtonText");
 
-    public string TestButtonText => isTesting
-        ? localizer.GetLocalizedString("StopTest")
-        : localizer.GetLocalizedString("ConfigImportTestButtonText");
+    public string TestButtonText => _isTesting
+        ? _localizer.GetLocalizedString("StopTest")
+        : _localizer.GetLocalizedString("ConfigImportTestButtonText");
 
-    public string TestButtonGlyph => isTesting
+    public string TestButtonGlyph => _isTesting
         ? (SharedUtils.IsOsSupportedNewGlyph() ? "\uF8AE" : "\uE769")
         : "\uF5B0";
 
     public void SetSaving(bool value)
     {
-        isSaving = value;
+        _isSaving = value;
         NotifyActionState();
     }
 
     public void SetSaved()
     {
-        isSaving = false;
-        isSaved = true;
-        operationError = null;
+        _isSaving = false;
+        _isSaved = true;
+        _operationError = null;
         NotifyStatus();
         NotifyActionState();
     }
 
     public void SetOperationError(string error)
     {
-        isSaving = false;
-        operationError = error;
+        _isSaving = false;
+        _operationError = error;
         Notify(nameof(OperationError));
         NotifyStatus();
         NotifyActionState();
@@ -172,7 +172,7 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
 
     public void SetTesting(bool value)
     {
-        isTesting = value;
+        _isTesting = value;
         Notify(nameof(TestButtonText));
         Notify(nameof(TestButtonGlyph));
         Notify(nameof(CanTest));
@@ -181,7 +181,7 @@ public sealed class ConfigImportPresetViewModel : INotifyPropertyChanged
     public void SetMissingFileResolution(string missingPath, string? replacementPath)
     {
         string fullMissingPath = Path.GetFullPath(missingPath);
-        missingFileResolutions[fullMissingPath] = new ConfigImportMissingFileResolution(
+        _missingFileResolutions[fullMissingPath] = new ConfigImportMissingFileResolution(
             fullMissingPath,
             string.IsNullOrWhiteSpace(replacementPath) ? null : Path.GetFullPath(replacementPath));
     }

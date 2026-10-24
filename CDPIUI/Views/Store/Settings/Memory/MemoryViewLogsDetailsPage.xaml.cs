@@ -36,7 +36,7 @@ namespace CDPIUI.Views.Store.Settings.Memory;
 /// </summary>
 public sealed partial class MemoryViewLogsDetailsPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MemoryViewLogsDetailsPage()
     {
         InitializeComponent();
@@ -44,7 +44,7 @@ public sealed partial class MemoryViewLogsDetailsPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
 
         CreateBreadcrumbBarNavigation();
 
@@ -71,23 +71,23 @@ public sealed partial class MemoryViewLogsDetailsPage : TemplatePage
         catch { }
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryUsage"),
+            DisplayName = _localizer.GetLocalizedString("MemoryUsage"),
             Tag = typeof(MemoryViewPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("MemoryViewLogsDetails"),
+            DisplayName = _localizer.GetLocalizedString("MemoryViewLogsDetails"),
             Tag = this.GetType()
         });
 
@@ -101,7 +101,7 @@ public sealed partial class MemoryViewLogsDetailsPage : TemplatePage
 
     private void ViewAppDirButton_Click(object sender, RoutedEventArgs e)
     {
-        ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("ErrorHappensWhileCleanup"), "DIR_CLEANUP_UNKNOWN");
+        ErrorTextBlock.Text = string.Format(_localizer.GetLocalizedString("ErrorHappensWhileCleanup"), "DIR_CLEANUP_UNKNOWN");
         ShellHelper.LookupDirectory(Path.Combine(CDPIUI.Core.Data.Directories.DataDirectory, "Logs"));
     }
 
@@ -117,7 +117,7 @@ public sealed partial class MemoryViewLogsDetailsPage : TemplatePage
         catch (Exception ex)
         {
             ErrorStackPanel.Visibility = Visibility.Visible;
-            ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("ErrorHappensWhileCleanup"), ErrorsHelper.Convertor.GetPrettyErrorCode("DIR_CLEANUP", ex));
+            ErrorTextBlock.Text = string.Format(_localizer.GetLocalizedString("ErrorHappensWhileCleanup"), ErrorsHelper.Convertor.GetPrettyErrorCode("DIR_CLEANUP", ex));
             CleanupDirButton.IsEnabled = true;
         }
         await Task.CompletedTask;

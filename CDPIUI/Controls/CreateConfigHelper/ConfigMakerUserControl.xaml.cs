@@ -160,33 +160,33 @@ public sealed partial class ConfigMakerUserControl : UserControl
         typeof(ConfigMakerUserControl),
         new PropertyMetadata(true, OnIsErrorCheckEnabled));
 
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly ComponentCommandHelpService helpService = new();
-    private readonly ConfigMakerPresetDocument presetDocument = new();
-    private ComponentCommandHelpDocument helpDocument = new();
-    private CancellationTokenSource helpCancellation;
-    private ConfigMakerCommandOptionViewModel selectedCommand;
-    private bool updatingComponent;
-    private bool updatingEditor;
-    private bool isTesting;
-    private bool isStartingTest;
-    private bool restoreComponentAfterTest;
-    private string testComponentId = string.Empty;
-    private bool layoutInitialized;
-    private bool updatingLayoutBounds;
-    private bool hasPresetFiles;
-    private bool hasPresetGroups;
-    private bool usesExplicitPresetStructure;
-    private ConfigMakerPresetFileInfo[] explicitPresetFiles = [];
-    private ConfigMakerPresetGroupInfo[] explicitPresetGroups = [];
-    private double savedEditorWidth = 620;
-    private double savedEditorHeight = 420;
-    private string highlightSignature = string.Empty;
-    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer diagnosticsTimer;
-    private string editorBackground = "Black";
-    private bool updatingDesigner;
-    private bool designerNeedsRefresh = true;
-    private string presetBaseDirectory = string.Empty;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly ComponentCommandHelpService _helpService = new();
+    private readonly ConfigMakerPresetDocument _presetDocument = new();
+    private ComponentCommandHelpDocument _helpDocument = new();
+    private CancellationTokenSource _helpCancellation;
+    private ConfigMakerCommandOptionViewModel _selectedCommand;
+    private bool _updatingComponent;
+    private bool _updatingEditor;
+    private bool _isTesting;
+    private bool _isStartingTest;
+    private bool _restoreComponentAfterTest;
+    private string _testComponentId = string.Empty;
+    private bool _layoutInitialized;
+    private bool _updatingLayoutBounds;
+    private bool _hasPresetFiles;
+    private bool _hasPresetGroups;
+    private bool _usesExplicitPresetStructure;
+    private ConfigMakerPresetFileInfo[] _explicitPresetFiles = [];
+    private ConfigMakerPresetGroupInfo[] _explicitPresetGroups = [];
+    private double _savedEditorWidth = 620;
+    private double _savedEditorHeight = 420;
+    private string _highlightSignature = string.Empty;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _diagnosticsTimer;
+    private string _editorBackground = "Black";
+    private bool _updatingDesigner;
+    private bool _designerNeedsRefresh = true;
+    private string _presetBaseDirectory = string.Empty;
 
     public ICommand ZoomIn { get; }
     public ICommand ZoomOut { get; }
@@ -216,11 +216,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
         CommandEditor.UseSpacesInsteadTabs = true;
         CommandEditor.NumberOfSpacesForTab = 4;
-        diagnosticsTimer = DispatcherQueue.CreateTimer();
-        diagnosticsTimer.Interval = TimeSpan.FromMilliseconds(300);
-        diagnosticsTimer.IsRepeating = false;
-        diagnosticsTimer.Tick += DiagnosticsTimer_Tick;
-        presetDocument.ContentChanged += PresetDocument_ContentChanged;
+        _diagnosticsTimer = DispatcherQueue.CreateTimer();
+        _diagnosticsTimer.Interval = TimeSpan.FromMilliseconds(300);
+        _diagnosticsTimer.IsRepeating = false;
+        _diagnosticsTimer.Tick += DiagnosticsTimer_Tick;
+        _presetDocument.ContentChanged += PresetDocument_ContentChanged;
         ApplyEditorTheme();
 
         Loaded += ConfigMakerUserControl_Loaded;
@@ -233,9 +233,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
     public ObservableCollection<ConfigMakerDiagnosticViewModel> Diagnostics { get; } = [];
     public ObservableCollection<GraphicDesignerSettingItemModel> DesignerSettingItemModels { get; } = [];
     public ObservableCollection<GraphicDesignerExclusiveSettingItemModel> DesignerExclusiveSettingItemModels { get; } = [];
-    public ObservableCollection<ConfigMakerVariableDefinition> PresetVariables => presetDocument.Variables;
-    public ObservableCollection<ConfigMakerPresetResource> PresetResources => presetDocument.Resources;
-    public ConfigMakerPresetDocument PresetDocument => presetDocument;
+    public ObservableCollection<ConfigMakerVariableDefinition> PresetVariables => _presetDocument.Variables;
+    public ObservableCollection<ConfigMakerPresetResource> PresetResources => _presetDocument.Resources;
+    public ConfigMakerPresetDocument PresetDocument => _presetDocument;
 
 
 
@@ -273,14 +273,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
     public event EventHandler<StatusNotificationRequestedEventArgs> StatusNotificationRequested;
     public event EventHandler DocumentStateChanged;
 
-    public bool IsTesting => isTesting;
+    public bool IsTesting => _isTesting;
     public bool IsCommandPanelVisible => CommandPanel.Visibility == Visibility.Visible;
     public bool IsBottomPanelVisible => BottomPanel.Visibility == Visibility.Visible;
     public bool IsPresetFilesPanelVisible => PresetFilesPanel.Visibility == Visibility.Visible;
-    public bool IsPresetStructureVisible => hasPresetFiles || HasPresetGroups;
-    public bool HasPresetFiles => hasPresetFiles;
-    public bool HasPresetGroups => hasPresetGroups || !usesExplicitPresetStructure;
-    public bool HasVariables => presetDocument.HasVariables;
+    public bool IsPresetStructureVisible => _hasPresetFiles || HasPresetGroups;
+    public bool HasPresetFiles => _hasPresetFiles;
+    public bool HasPresetGroups => _hasPresetGroups || !_usesExplicitPresetStructure;
+    public bool HasVariables => _presetDocument.HasVariables;
     public bool CanExportText => !HasVariables;
     public bool IsSimpleDesignerSupported => IsSimpleDesignerComponent(ComponentId);
 
@@ -291,21 +291,21 @@ public sealed partial class ConfigMakerUserControl : UserControl
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(groups);
 
-        explicitPresetFiles = files
+        _explicitPresetFiles = files
             .Where(file => !string.IsNullOrWhiteSpace(file.Path))
             .DistinctBy(file => (file.Kind, file.Path), PresetFileKeyComparer.Instance)
             .ToArray();
-        explicitPresetGroups = groups.ToArray();
-        usesExplicitPresetStructure = true;
+        _explicitPresetGroups = groups.ToArray();
+        _usesExplicitPresetStructure = true;
         RebuildPresetStructure();
-        SetPresetFilesPanelVisible(hasPresetFiles);
+        SetPresetFilesPanelVisible(_hasPresetFiles);
     }
 
     public void ClearPresetStructure()
     {
-        usesExplicitPresetStructure = false;
-        explicitPresetFiles = [];
-        explicitPresetGroups = [];
+        _usesExplicitPresetStructure = false;
+        _explicitPresetFiles = [];
+        _explicitPresetGroups = [];
         RebuildPresetStructure();
     }
 
@@ -313,10 +313,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         bool filesPanelWasVisible = IsPresetFilesPanelVisible;
         ConfigMakerPresetFileInfo[] detectedFiles = ExtractPresetFiles(CommandText).ToArray();
-        ConfigMakerPresetFileInfo[] baseFiles = usesExplicitPresetStructure
-            ? EnrichExplicitPresetFiles(explicitPresetFiles, detectedFiles)
+        ConfigMakerPresetFileInfo[] baseFiles = _usesExplicitPresetStructure
+            ? EnrichExplicitPresetFiles(_explicitPresetFiles, detectedFiles)
             : detectedFiles;
-        ConfigMakerPresetFileInfo[] attachedFiles = presetDocument.Resources
+        ConfigMakerPresetFileInfo[] attachedFiles = _presetDocument.Resources
             .Select(resource => new ConfigMakerPresetFileInfo(
                 resource.Alias,
                 resource.Reference,
@@ -332,10 +332,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
         RebuildPresetFilesTree(files);
         RebuildPresetGroupsTree(ParseCommandOptions(CommandText));
 
-        bool filesAvailabilityChanged = hasPresetFiles != (files.Length > 0);
-        bool groupsAvailabilityChanged = hasPresetGroups != (PresetGroupsTreeView.RootNodes.Count > 0);
-        hasPresetFiles = files.Length > 0;
-        hasPresetGroups = PresetGroupsTreeView.RootNodes.Count > 0;
+        bool filesAvailabilityChanged = _hasPresetFiles != (files.Length > 0);
+        bool groupsAvailabilityChanged = _hasPresetGroups != (PresetGroupsTreeView.RootNodes.Count > 0);
+        _hasPresetFiles = files.Length > 0;
+        _hasPresetGroups = PresetGroupsTreeView.RootNodes.Count > 0;
 
         UpdatePresetGroupsTab();
         if (filesAvailabilityChanged || groupsAvailabilityChanged)
@@ -394,7 +394,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                         DisplayName = file.Name,
                         ToolTip = isMissing
                             ? string.Format(
-                                localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"),
+                                _localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"),
                                 resolvedPath ?? file.Path)
                             : file.IsAttachedResource
                                 ? $"{file.Path}{Environment.NewLine}{resolvedPath}"
@@ -425,11 +425,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
             .First();
         IReadOnlyList<ParsedPresetOption> common = options.Take(firstProfileOption).ToArray();
         AddPresetOptionGroup(
-            localizer.GetLocalizedString("ConfigMakerPresetCommonFiltersGroup"),
+            _localizer.GetLocalizedString("ConfigMakerPresetCommonFiltersGroup"),
             common.Where(option => IsCommonFilter(option.Name)),
             "ConfigMakerZapret2CommonFiltersDescription");
         AddPresetOptionGroup(
-            localizer.GetLocalizedString("ConfigMakerPresetCommonOptionsGroup"),
+            _localizer.GetLocalizedString("ConfigMakerPresetCommonOptionsGroup"),
             common.Where(option => !IsCommonFilter(option.Name)),
             "ConfigMakerZapret2CommonOptionsDescription");
 
@@ -469,15 +469,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string parsedName = options
             .FirstOrDefault(option => string.Equals(option.Name, "--name", StringComparison.OrdinalIgnoreCase))
             ?.Value;
-        string explicitName = profileIndex < explicitPresetGroups.Length
-            ? explicitPresetGroups[profileIndex].Name
+        string explicitName = profileIndex < _explicitPresetGroups.Length
+            ? _explicitPresetGroups[profileIndex].Name
             : string.Empty;
         string name = !string.IsNullOrWhiteSpace(explicitName)
             ? explicitName
             : !string.IsNullOrWhiteSpace(parsedName)
                 ? UnquoteOptionValue(parsedName)
                 : string.Format(
-                    localizer.GetLocalizedString("ConfigMakerPresetProfileFallbackName"),
+                    _localizer.GetLocalizedString("ConfigMakerPresetProfileFallbackName"),
                     profileIndex + 1);
 
         TreeViewNode profileNode = new()
@@ -488,11 +488,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
             IsExpanded = true,
         };
         TreeViewNode filtersNode = CreateOptionNode(
-            localizer.GetLocalizedString("ConfigMakerPresetProfileFiltersGroup"),
+            _localizer.GetLocalizedString("ConfigMakerPresetProfileFiltersGroup"),
             options.Where(option => IsProfileFilter(option.Name)),
             "ConfigMakerZapret2ProfileFiltersDescription");
         TreeViewNode actionsNode = CreateOptionNode(
-            localizer.GetLocalizedString("ConfigMakerPresetProfileActionsGroup"),
+            _localizer.GetLocalizedString("ConfigMakerPresetProfileActionsGroup"),
             options.Where(option => !IsProfileFilter(option.Name)),
             "ConfigMakerZapret2ProfileActionsDescription");
         if (filtersNode != null)
@@ -567,7 +567,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private string GetZapret2Description(string resourceKey) => IsZapret2Component &&
         !string.IsNullOrWhiteSpace(resourceKey)
-            ? localizer.GetLocalizedString(resourceKey)
+            ? _localizer.GetLocalizedString(resourceKey)
             : string.Empty;
 
     private string GetPresetOptionDescription(ParsedPresetOption option)
@@ -586,12 +586,12 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
         else if (!string.IsNullOrWhiteSpace(resourceKey))
         {
-            descriptions.Add(localizer.GetLocalizedString(resourceKey));
+            descriptions.Add(_localizer.GetLocalizedString(resourceKey));
             string value = GetReadableOptionValue(option.Value);
             if (!string.IsNullOrWhiteSpace(value))
             {
                 descriptions.Add(string.Format(
-                    localizer.GetLocalizedString("ConfigMakerZapret2CurrentValueDescription"),
+                    _localizer.GetLocalizedString("ConfigMakerZapret2CurrentValueDescription"),
                     value));
             }
         }
@@ -601,20 +601,20 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 .GetLuaFunctionResourceKey(option.Value);
             if (!string.IsNullOrWhiteSpace(functionResourceKey))
             {
-                descriptions.Add(localizer.GetLocalizedString(functionResourceKey));
+                descriptions.Add(_localizer.GetLocalizedString(functionResourceKey));
             }
         }
 
         if (descriptions.Count == 0)
         {
-            string helpDescription = helpDocument.Options
+            string helpDescription = _helpDocument.Options
                 .FirstOrDefault(item => item.Matches(option.Name))
                 ?.Description
                 ?.Trim()
                 .TrimStart(';')
                 .Trim();
             descriptions.Add(string.IsNullOrWhiteSpace(helpDescription)
-                ? localizer.GetLocalizedString("ConfigMakerZapret2NoFlagDescription")
+                ? _localizer.GetLocalizedString("ConfigMakerZapret2NoFlagDescription")
                 : helpDescription);
         }
         return string.Join(' ', descriptions.Where(value => !string.IsNullOrWhiteSpace(value)));
@@ -632,15 +632,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
         return optionName switch
         {
             "--filter-l3" => string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2FilterL3SpecificDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2FilterL3SpecificDescription"),
                 NormalizeIpVersion(value)),
             "--wf-l3" => string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2WinDivertL3SpecificDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2WinDivertL3SpecificDescription"),
                 NormalizeIpVersion(value)),
             "--filter-tcp" => FormatTransportFilterDescription("TCP", value),
             "--filter-udp" => FormatTransportFilterDescription("UDP", value),
             "--filter-l7" => string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2FilterL7SpecificDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2FilterL7SpecificDescription"),
                 FormatListValue(value)),
             "--hostlist" => FormatSpecificDescription(
                 "ConfigMakerZapret2HostListFileSpecificDescription",
@@ -702,11 +702,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (!excludes && ports == "*")
         {
             return string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2TransportFilterAllSpecificDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2TransportFilterAllSpecificDescription"),
                 protocol);
         }
         return string.Format(
-            localizer.GetLocalizedString(excludes
+            _localizer.GetLocalizedString(excludes
                 ? "ConfigMakerZapret2TransportFilterExcludedSpecificDescription"
                 : "ConfigMakerZapret2TransportFilterIncludedSpecificDescription"),
             protocol,
@@ -723,7 +723,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string blobName = value[..separator];
         string source = value[(separator + 1)..].TrimStart('@', '$');
         return string.Format(
-            localizer.GetLocalizedString("ConfigMakerZapret2BlobSpecificDescription"),
+            _localizer.GetLocalizedString("ConfigMakerZapret2BlobSpecificDescription"),
             source,
             blobName);
     }
@@ -734,29 +734,29 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string functionName = parts.FirstOrDefault() ?? value;
         return parts.Length > 1
             ? string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2LuaInvocationWithArgumentsDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2LuaInvocationWithArgumentsDescription"),
                 functionName,
                 string.Join(", ", parts.Skip(1)))
             : string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2LuaInvocationDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2LuaInvocationDescription"),
                 functionName);
     }
 
     private string FormatRangeDescription(string value, bool isOutgoing)
     {
-        string direction = localizer.GetLocalizedString(isOutgoing
+        string direction = _localizer.GetLocalizedString(isOutgoing
             ? "ConfigMakerZapret2RangeOutgoingDirection"
             : "ConfigMakerZapret2RangeIncomingDirection");
         if (string.Equals(value, "a", StringComparison.OrdinalIgnoreCase))
         {
             return string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeAlwaysDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeAlwaysDescription"),
                 direction);
         }
         if (string.Equals(value, "x", StringComparison.OrdinalIgnoreCase))
         {
             return string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeNeverDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeNeverDescription"),
                 direction);
         }
         if (!TryParseRange(value, out Zapret2Range range))
@@ -777,14 +777,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (range.Lower is Zapret2RangeBoundary lower)
         {
             conditions.Add(string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeLowerCondition"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeLowerCondition"),
                 GetRangeCounterDescription(lower.Mode),
                 lower.Value));
         }
         if (range.Upper is Zapret2RangeBoundary upper)
         {
             conditions.Add(string.Format(
-                localizer.GetLocalizedString(range.UpperExclusive
+                _localizer.GetLocalizedString(range.UpperExclusive
                     ? "ConfigMakerZapret2RangeUpperExclusiveCondition"
                     : "ConfigMakerZapret2RangeUpperInclusiveCondition"),
                 GetRangeCounterDescription(upper.Mode),
@@ -799,10 +799,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 value);
         }
         return string.Format(
-            localizer.GetLocalizedString("ConfigMakerZapret2RangeConditionsDescription"),
+            _localizer.GetLocalizedString("ConfigMakerZapret2RangeConditionsDescription"),
             direction,
             string.Join(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeConditionSeparator"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeConditionSeparator"),
                 conditions));
     }
 
@@ -820,10 +820,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
             return false;
         }
 
-        string singularUnit = localizer.GetLocalizedString(mode == 'n'
+        string singularUnit = _localizer.GetLocalizedString(mode == 'n'
             ? "ConfigMakerZapret2RangePacketSingular"
             : "ConfigMakerZapret2RangeDataPacketSingular");
-        string pluralUnit = localizer.GetLocalizedString(mode == 'n'
+        string pluralUnit = _localizer.GetLocalizedString(mode == 'n'
             ? "ConfigMakerZapret2RangePacketPlural"
             : "ConfigMakerZapret2RangeDataPacketPlural");
         long? first = range.Lower?.Value;
@@ -835,14 +835,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (last < 1 || first > last)
         {
             description = string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeNeverDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeNeverDescription"),
                 direction);
             return true;
         }
         if (!first.HasValue && last == 1)
         {
             description = string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeFirstPacketDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeFirstPacketDescription"),
                 singularUnit,
                 direction);
             return true;
@@ -850,7 +850,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (!first.HasValue && last.HasValue)
         {
             description = string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeFirstPacketsDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeFirstPacketsDescription"),
                 last.Value,
                 pluralUnit,
                 direction);
@@ -859,7 +859,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (first.HasValue && !last.HasValue)
         {
             description = string.Format(
-                localizer.GetLocalizedString("ConfigMakerZapret2RangeFromPacketDescription"),
+                _localizer.GetLocalizedString("ConfigMakerZapret2RangeFromPacketDescription"),
                 singularUnit,
                 first.Value,
                 direction);
@@ -867,7 +867,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
 
         description = string.Format(
-            localizer.GetLocalizedString("ConfigMakerZapret2RangePacketIntervalDescription"),
+            _localizer.GetLocalizedString("ConfigMakerZapret2RangePacketIntervalDescription"),
             pluralUnit,
             first,
             last,
@@ -876,7 +876,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     }
 
     private string GetRangeCounterDescription(char mode) =>
-        localizer.GetLocalizedString(mode switch
+        _localizer.GetLocalizedString(mode switch
         {
             'b' => "ConfigMakerZapret2RangeByteCounter",
             's' => "ConfigMakerZapret2RangeSequenceStartCounter",
@@ -933,7 +933,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     }
 
     private string FormatSpecificDescription(string resourceKey, string value) => string.Format(
-        localizer.GetLocalizedString(resourceKey),
+        _localizer.GetLocalizedString(resourceKey),
         value);
 
     private static string GetReadableOptionValue(string value) =>
@@ -956,7 +956,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void AddExplicitPresetGroupsFallback()
     {
-        foreach (ConfigMakerPresetGroupInfo group in explicitPresetGroups)
+        foreach (ConfigMakerPresetGroupInfo group in _explicitPresetGroups)
         {
             TreeViewNode node = new() { Content = CreatePresetTreeItem(group.Name) };
             foreach (string detail in group.Details.Where(value => !string.IsNullOrWhiteSpace(value)))
@@ -976,14 +976,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
         PresetFilesContentSizer.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         PresetFilesColumn.Width = visible ? GridLength.Auto : new GridLength(0);
         PresetFilesSizerColumn.Width = visible ? new GridLength(12) : new GridLength(0);
-        layoutInitialized = false;
+        _layoutInitialized = false;
         UpdateLayoutBounds();
         PanelStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void UpdatePresetGroupsTab()
     {
-        bool shouldShow = hasPresetGroups || !usesExplicitPresetStructure;
+        bool shouldShow = _hasPresetGroups || !_usesExplicitPresetStructure;
         bool containsItem = BottomSelector.Items.Contains(PresetGroupsSelectorItem);
         if (shouldShow && !containsItem)
         {
@@ -1000,7 +1000,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     }
 
     private string PresetFileCategoryName(ConfigMakerPresetFileKind kind) =>
-        localizer.GetLocalizedString(kind switch
+        _localizer.GetLocalizedString(kind switch
         {
             ConfigMakerPresetFileKind.Library => "ConfigMakerPresetFileCategoryLibraries",
             ConfigMakerPresetFileKind.Payload => "ConfigMakerPresetFileCategoryPayloads",
@@ -1021,7 +1021,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             if (string.IsNullOrWhiteSpace(missingPath))
             {
                 ShowEditorMessage(
-                    localizer.GetLocalizedString("ConfigMakerPresetFileInvalidPathMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerPresetFileInvalidPathMessage"),
                     InfoBarSeverity.Error);
                 return;
             }
@@ -1034,11 +1034,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
             ContentDialog dialog = new()
             {
                 XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerPresetFileReplaceDialogTitle"),
+                Title = _localizer.GetLocalizedString("ConfigMakerPresetFileReplaceDialogTitle"),
                 Content = CreateReplacementDialogContent(missingPath),
-                PrimaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileApplyAutoCorrectionButton"),
-                SecondaryButtonText = localizer.GetLocalizedString("ConfigMakerPresetFileChooseManuallyButton"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                PrimaryButtonText = _localizer.GetLocalizedString("ConfigMakerPresetFileApplyAutoCorrectionButton"),
+                SecondaryButtonText = _localizer.GetLocalizedString("ConfigMakerPresetFileChooseManuallyButton"),
+                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
             };
             ContentDialogResult result = await dialog.ShowQueuedAsync();
@@ -1063,7 +1063,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     }
 
                     ShowEditorMessage(
-                        localizer.GetLocalizedString("ConfigMakerPresetFileNoSuggestionMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerPresetFileNoSuggestionMessage"),
                         InfoBarSeverity.Warning);
                     string selectedPath = ChoosePresetFileReplacement(missingPath);
                     if (!string.IsNullOrWhiteSpace(selectedPath))
@@ -1124,13 +1124,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
         content.Children.Add(new TextBlock
         {
             Text = string.Format(
-                localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"),
+                _localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"),
                 missingPath),
             TextWrapping = TextWrapping.Wrap,
         });
         content.Children.Add(new TextBlock
         {
-            Text = localizer.GetLocalizedString("ConfigMakerPresetFileReplacementChoiceMessage"),
+            Text = _localizer.GetLocalizedString("ConfigMakerPresetFileReplacementChoiceMessage"),
             TextWrapping = TextWrapping.Wrap,
         });
         return content;
@@ -1141,11 +1141,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string extension = Path.GetExtension(missingPath);
         using System.Windows.Forms.OpenFileDialog dialog = new()
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
+            Title = _localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
-                ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
-                : $"{extension.TrimStart('.').ToUpperInvariant()} (*{extension})|*{extension}|{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*",
+                ? $"{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
+                : $"{extension.TrimStart('.').ToUpperInvariant()} (*{extension})|*{extension}|{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*",
             FilterIndex = 1,
             RestoreDirectory = true,
         };
@@ -1175,7 +1175,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 ShowEditorMessage(
                     string.Format(
-                        localizer.GetLocalizedString("ConfigMakerPresetFileEmptyCreatedMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerPresetFileEmptyCreatedMessage"),
                         missingPath),
                     InfoBarSeverity.Success);
             }
@@ -1187,7 +1187,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 ShowEditorMessage(
                     string.Format(
-                        localizer.GetLocalizedString("ConfigMakerPresetFileReplaceFailedMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerPresetFileReplaceFailedMessage"),
                         ex.Message),
                     InfoBarSeverity.Error);
             }
@@ -1221,7 +1221,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 {
                     ShowEditorMessage(
                         string.Format(
-                            localizer.GetLocalizedString("ConfigMakerPresetFileReplacedMessage"),
+                            _localizer.GetLocalizedString("ConfigMakerPresetFileReplacedMessage"),
                             fullReplacementPath),
                         InfoBarSeverity.Success);
                 }
@@ -1246,15 +1246,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 if (resourceAdded)
                 {
-                    presetDocument.Resources.Remove(replacementResource);
+                    _presetDocument.Resources.Remove(replacementResource);
                 }
                 throw new InvalidOperationException(
-                    localizer.GetLocalizedString("ConfigMakerPresetFileReferenceNotFoundMessage"));
+                    _localizer.GetLocalizedString("ConfigMakerPresetFileReferenceNotFoundMessage"));
             }
 
-            if (usesExplicitPresetStructure)
+            if (_usesExplicitPresetStructure)
             {
-                explicitPresetFiles = explicitPresetFiles
+                _explicitPresetFiles = _explicitPresetFiles
                     .Select(item => ReferenceEquals(item, file) ||
                         (item.Kind == file.Kind && PresetPathsEqual(item.Path, file.Path))
                             ? item with
@@ -1281,7 +1281,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 ShowEditorMessage(
                     string.Format(
-                        localizer.GetLocalizedString("ConfigMakerPresetFileReplacedMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerPresetFileReplacedMessage"),
                         fullReplacementPath),
                     InfoBarSeverity.Success);
             }
@@ -1293,7 +1293,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 ShowEditorMessage(
                     string.Format(
-                        localizer.GetLocalizedString("ConfigMakerPresetFileReplaceFailedMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerPresetFileReplaceFailedMessage"),
                         ex.Message),
                     InfoBarSeverity.Error);
             }
@@ -1306,7 +1306,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string replacementPath)
     {
         bool replaced = false;
-        foreach (ConfigMakerVariableDefinition variable in presetDocument.Variables)
+        foreach (ConfigMakerVariableDefinition variable in _presetDocument.Variables)
         {
             variable.Value = ReplacePresetFileInVariableValue(
                 variable.Value,
@@ -1373,7 +1373,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             if (!File.Exists(path))
             {
                 ShowEditorMessage(
-                    string.Format(localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
+                    string.Format(_localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
                     InfoBarSeverity.Warning);
                 return;
             }
@@ -1435,7 +1435,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (!File.Exists(path))
         {
             ShowEditorMessage(
-                string.Format(localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
+                string.Format(_localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
                 InfoBarSeverity.Warning);
             return;
         }
@@ -1446,9 +1446,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         using System.Windows.Forms.OpenFileDialog dialog = new()
         {
-            Title = localizer.GetLocalizedString("ConfigMakerAddPresetFileDialogTitle"),
+            Title = _localizer.GetLocalizedString("ConfigMakerAddPresetFileDialogTitle"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            Filter = localizer.GetLocalizedString("ConfigMakerPresetResourceFileFilter"),
+            Filter = _localizer.GetLocalizedString("ConfigMakerPresetResourceFileFilter"),
             Multiselect = true,
             RestoreDirectory = true,
         };
@@ -1470,7 +1470,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 continue;
             }
             string fullPath = Path.GetFullPath(sourcePath);
-            if (presetDocument.Resources.Any(resource =>
+            if (_presetDocument.Resources.Any(resource =>
                     string.Equals(
                         TryResolvePresetFilePath(resource.Reference),
                         fullPath,
@@ -1479,7 +1479,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 continue;
             }
             string alias = CreateUniqueResourceAlias(Path.GetFileName(fullPath));
-            presetDocument.Resources.Add(new ConfigMakerPresetResource
+            _presetDocument.Resources.Add(new ConfigMakerPresetResource
             {
                 Alias = alias,
                 Path = fullPath,
@@ -1495,7 +1495,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             SetPresetFilesPanelVisible(true);
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerPresetFilesAddedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerPresetFilesAddedMessage"),
                     added),
                 InfoBarSeverity.Success);
         }
@@ -1510,7 +1510,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
 
         e.AcceptedOperation = DataPackageOperation.Copy;
-        e.DragUIOverride.Caption = localizer.GetLocalizedString("ConfigMakerAddPresetFileDialogTitle");
+        e.DragUIOverride.Caption = _localizer.GetLocalizedString("ConfigMakerAddPresetFileDialogTitle");
         e.DragUIOverride.IsCaptionVisible = true;
         e.Handled = true;
     }
@@ -1551,7 +1551,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 return;
             }
             bool isReferenced = CommandText.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase) ||
-                presetDocument.Variables
+                _presetDocument.Variables
                     .SelectMany(GetPresetVariableCandidateValues)
                     .Any(value => value.Contains(resource.Reference, StringComparison.OrdinalIgnoreCase));
             if (isReferenced)
@@ -1559,10 +1559,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 ContentDialog confirmation = new()
                 {
                     XamlRoot = XamlRoot,
-                    Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
-                    Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
-                    PrimaryButtonText = localizer.GetLocalizedString("Remove"),
-                    CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                    Title = _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
+                    Content = _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
+                    PrimaryButtonText = _localizer.GetLocalizedString("Remove"),
+                    CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                     DefaultButton = ContentDialogButton.Close,
                 };
                 if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
@@ -1570,7 +1570,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     return;
                 }
             }
-            presetDocument.Resources.Remove(resource);
+            _presetDocument.Resources.Remove(resource);
             RebuildPresetStructure();
             ScheduleDiagnostics();
         }
@@ -1595,7 +1595,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             if (!string.IsNullOrWhiteSpace(resolvedPath) && File.Exists(resolvedPath))
             {
                 string fullPath = Path.GetFullPath(resolvedPath);
-                ConfigMakerPresetResource resource = presetDocument.Resources.FirstOrDefault(candidate =>
+                ConfigMakerPresetResource resource = _presetDocument.Resources.FirstOrDefault(candidate =>
                     string.Equals(
                         TryResolvePresetFilePath(candidate.Reference),
                         fullPath,
@@ -1609,7 +1609,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                         Kind = ToConfigMakerResourceKind(item.File.Kind),
                         IsBuiltIn = IsPathInsideComponent(fullPath),
                     };
-                    presetDocument.Resources.Add(resource);
+                    _presetDocument.Resources.Add(resource);
                     RebuildPresetStructure();
                 }
                 reference = resource.Reference;
@@ -1634,7 +1634,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string extension = Path.GetExtension(normalized);
         string candidate = normalized;
         int suffix = 2;
-        while (presetDocument.Resources.Any(resource =>
+        while (_presetDocument.Resources.Any(resource =>
                    string.Equals(resource.Alias, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             candidate = $"{stem}_{suffix++}{extension}";
@@ -1699,9 +1699,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private string GetPresetBaseDirectory()
     {
-        if (!string.IsNullOrWhiteSpace(presetBaseDirectory))
+        if (!string.IsNullOrWhiteSpace(_presetBaseDirectory))
         {
-            return presetBaseDirectory;
+            return _presetBaseDirectory;
         }
         return DatabaseHelper.Instance.GetItemById(ComponentId)?.Directory ?? string.Empty;
     }
@@ -1726,7 +1726,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             alias = alias["preset://".Length..];
         }
-        return presetDocument.Resources.FirstOrDefault(resource =>
+        return _presetDocument.Resources.FirstOrDefault(resource =>
             string.Equals(resource.Alias, alias, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -1756,7 +1756,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private ConfigItem CreateResourceConfigSnapshot(string commandText = null)
     {
-        ConfigItem snapshot = presetDocument.ToConfigItem(string.Empty, presetDocument.Name);
+        ConfigItem snapshot = _presetDocument.ToConfigItem(string.Empty, _presetDocument.Name);
         snapshot.startup_string = commandText ?? CommandText;
         return snapshot;
     }
@@ -1861,22 +1861,22 @@ public sealed partial class ConfigMakerUserControl : UserControl
     public void LoadPresetDocument(ConfigMakerPresetDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        presetBaseDirectory = string.Empty;
-        presetDocument.Name = document.Name;
-        presetDocument.ComponentId = document.ComponentId;
-        presetDocument.PackId = document.PackId;
-        presetDocument.FileName = document.FileName;
-        presetDocument.Meta = document.Meta;
-        presetDocument.TargetVersion = document.TargetVersion;
-        presetDocument.Variables.Clear();
+        _presetBaseDirectory = string.Empty;
+        _presetDocument.Name = document.Name;
+        _presetDocument.ComponentId = document.ComponentId;
+        _presetDocument.PackId = document.PackId;
+        _presetDocument.FileName = document.FileName;
+        _presetDocument.Meta = document.Meta;
+        _presetDocument.TargetVersion = document.TargetVersion;
+        _presetDocument.Variables.Clear();
         foreach (ConfigMakerVariableDefinition variable in document.Variables)
         {
-            presetDocument.Variables.Add(CloneVariable(variable));
+            _presetDocument.Variables.Add(CloneVariable(variable));
         }
-        presetDocument.Resources.Clear();
+        _presetDocument.Resources.Clear();
         foreach (ConfigMakerPresetResource resource in document.Resources)
         {
-            presetDocument.Resources.Add(new ConfigMakerPresetResource
+            _presetDocument.Resources.Add(new ConfigMakerPresetResource
             {
                 Alias = resource.Alias,
                 Path = resource.Path,
@@ -1897,7 +1897,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         ArgumentNullException.ThrowIfNull(item);
         LoadPresetDocument(ConfigMakerPresetDocument.FromConfigItem(item));
-        presetBaseDirectory = GetConfigItemBaseDirectory(item);
+        _presetBaseDirectory = GetConfigItemBaseDirectory(item);
         RebuildPresetStructure();
         if (applyAutoCorrectorSilently)
         {
@@ -1962,7 +1962,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 if (resourceAdded)
                 {
-                    presetDocument.Resources.Remove(resource);
+                    _presetDocument.Resources.Remove(resource);
                 }
                 continue;
             }
@@ -2005,7 +2005,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         out bool resourceAdded)
     {
         resourceAdded = false;
-        ConfigMakerPresetResource resource = presetDocument.Resources.FirstOrDefault(candidate =>
+        ConfigMakerPresetResource resource = _presetDocument.Resources.FirstOrDefault(candidate =>
             string.Equals(
                 TryResolvePresetFilePath(candidate.Reference),
                 fullPath,
@@ -2022,14 +2022,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
             Kind = ToConfigMakerResourceKind(kind),
             IsBuiltIn = IsPathInsideComponent(fullPath),
         };
-        presetDocument.Resources.Add(resource);
+        _presetDocument.Resources.Add(resource);
         resourceAdded = true;
         return resource;
     }
 
     private void AttachExistingPresetFilesInVariables()
     {
-        foreach (ConfigMakerVariableDefinition variable in presetDocument.Variables)
+        foreach (ConfigMakerVariableDefinition variable in _presetDocument.Variables)
         {
             variable.Value = AttachExistingPresetFilesInVariableValue(variable.Value);
             variable.OnValue = AttachExistingPresetFilesInVariableValue(variable.OnValue);
@@ -2071,7 +2071,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 if (resourceAdded)
                 {
-                    presetDocument.Resources.Remove(resource);
+                    _presetDocument.Resources.Remove(resource);
                 }
                 continue;
             }
@@ -2091,7 +2091,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     public ConfigItem CreateConfigItem(string packId, string presetName)
     {
         SyncDocumentFromEditor();
-        return presetDocument.ToConfigItem(packId, presetName);
+        return _presetDocument.ToConfigItem(packId, presetName);
     }
 
     public async Task<ConfigMakerPresetSaveResult> SaveToApplicationAsync()
@@ -2099,11 +2099,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
         SyncDocumentFromEditor();
         AttachExistingPresetFiles();
         SyncDocumentFromEditor();
-        ConfigMakerSavePresetContentDialog dialog = new(presetDocument.Name)
+        ConfigMakerSavePresetContentDialog dialog = new(_presetDocument.Name)
         {
             XamlRoot = XamlRoot,
-            OverwriteEnable = !string.IsNullOrWhiteSpace(presetDocument.PackId) &&
-                              !string.IsNullOrWhiteSpace(presetDocument.FileName),
+            OverwriteEnable = !string.IsNullOrWhiteSpace(_presetDocument.PackId) &&
+                              !string.IsNullOrWhiteSpace(_presetDocument.FileName),
         };
         if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
         {
@@ -2113,17 +2113,17 @@ public sealed partial class ConfigMakerUserControl : UserControl
         ConfigMakerPresetStorageService storageService = new();
         bool overwrite = dialog.Result == ConfigMakerSavePresetContentDialogResult.Overwrite;
         ConfigMakerPresetSaveResult result = overwrite
-            ? await storageService.OverwriteAsync(presetDocument)
-            : await storageService.SaveAsync(dialog.PresetName, presetDocument);
+            ? await storageService.OverwriteAsync(_presetDocument)
+            : await storageService.SaveAsync(dialog.PresetName, _presetDocument);
         if (result.Success)
         {
             if (!overwrite)
             {
-                presetDocument.Name = dialog.PresetName;
+                _presetDocument.Name = dialog.PresetName;
             }
-            presetDocument.PackId = result.PackId;
-            presetDocument.FileName = result.ConfigFileName;
-            foreach (ConfigMakerPresetResource resource in presetDocument.Resources)
+            _presetDocument.PackId = result.PackId;
+            _presetDocument.FileName = result.ConfigFileName;
+            foreach (ConfigMakerPresetResource resource in _presetDocument.Resources)
             {
                 ConfigMakerResourceMetadata? storedResource = result.StoredResources.FirstOrDefault(candidate =>
                     string.Equals(candidate.alias, resource.Alias, StringComparison.OrdinalIgnoreCase));
@@ -2136,15 +2136,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
             }
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerPresetSavedMessage"),
-                    presetDocument.Name),
+                    _localizer.GetLocalizedString("ConfigMakerPresetSavedMessage"),
+                    _presetDocument.Name),
                 InfoBarSeverity.Success);
         }
         else if (!string.Equals(result.ErrorCode, "CANCELED", StringComparison.Ordinal))
         {
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerPresetSaveFailedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerPresetSaveFailedMessage"),
                     string.IsNullOrWhiteSpace(result.ErrorDetails)
                         ? result.ErrorCode
                         : result.ErrorDetails),
@@ -2157,14 +2157,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         try
         {
-            ConfigMakerVariableContentDialog dialog = new(presetDocument)
+            ConfigMakerVariableContentDialog dialog = new(_presetDocument)
             {
                 XamlRoot = XamlRoot,
             };
             if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary &&
                 dialog.ResultVariable != null)
             {
-                presetDocument.Variables.Add(dialog.ResultVariable);
+                _presetDocument.Variables.Add(dialog.ResultVariable);
                 AttachExistingPresetFiles();
                 ToolsSelector.SelectIndex(1);
                 RebuildPresetStructure();
@@ -2195,7 +2195,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async Task EditVariableAsync(ConfigMakerVariableDefinition variable)
     {
-        ConfigMakerVariableContentDialog dialog = new(presetDocument, variable)
+        ConfigMakerVariableContentDialog dialog = new(_presetDocument, variable)
         {
             XamlRoot = XamlRoot,
         };
@@ -2204,19 +2204,19 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             return;
         }
-        int index = presetDocument.Variables.IndexOf(variable);
+        int index = _presetDocument.Variables.IndexOf(variable);
         if (index < 0)
         {
             return;
         }
         if (!string.Equals(dialog.OriginalName, dialog.ResultVariable.Name, StringComparison.Ordinal))
         {
-            presetDocument.ReplaceVariableReference(
+            _presetDocument.ReplaceVariableReference(
                 dialog.OriginalName,
                 dialog.ResultVariable.Name);
-            SetEditorText(presetDocument.CommandText);
+            SetEditorText(_presetDocument.CommandText);
         }
-        presetDocument.Variables[index] = dialog.ResultVariable;
+        _presetDocument.Variables[index] = dialog.ResultVariable;
         AttachExistingPresetFiles();
         RebuildPresetStructure();
         ScheduleDiagnostics();
@@ -2236,10 +2236,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 ContentDialog confirmation = new()
                 {
                     XamlRoot = XamlRoot,
-                    Title = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogTitle"),
-                    Content = localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogMessage"),
-                    PrimaryButtonText = localizer.GetLocalizedString("Remove"),
-                    CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                    Title = _localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogTitle"),
+                    Content = _localizer.GetLocalizedString("ConfigMakerRemoveReferencedVariableDialogMessage"),
+                    PrimaryButtonText = _localizer.GetLocalizedString("Remove"),
+                    CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                     DefaultButton = ContentDialogButton.Close,
                 };
                 if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
@@ -2247,7 +2247,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     return;
                 }
             }
-            presetDocument.Variables.Remove(variable);
+            _presetDocument.Variables.Remove(variable);
             RebuildPresetStructure();
             ScheduleDiagnostics();
         }
@@ -2273,8 +2273,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void SyncDocumentFromEditor()
     {
-        presetDocument.ComponentId = ComponentId;
-        presetDocument.CommandText = CommandEditor.Text ?? string.Empty;
+        _presetDocument.ComponentId = ComponentId;
+        _presetDocument.CommandText = CommandEditor.Text ?? string.Empty;
     }
 
     private static ConfigMakerVariableDefinition CloneVariable(ConfigMakerVariableDefinition source)
@@ -2336,7 +2336,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             ApplySimpleDesignerToCommand();
         }
-        if (ReferenceEquals(e.NewItem, SimpleDesignerSelectorItem) && designerNeedsRefresh)
+        if (ReferenceEquals(e.NewItem, SimpleDesignerSelectorItem) && _designerNeedsRefresh)
         {
             LoadSimpleDesigner();
         }
@@ -2348,7 +2348,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             return;
         }
-        updatingDesigner = true;
+        _updatingDesigner = true;
         try
         {
             AdditionalDesignerArgumentsTextBox.Text = ComponentCommandLineFormatter.ToSingleLine(CommandEditor.Text);
@@ -2379,7 +2379,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 if (!File.Exists(annotationPath))
                 {
                     ShowEditorMessage(
-                        localizer.GetLocalizedString("ConfigMakerSimpleDesignerAnnotationMissingMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerSimpleDesignerAnnotationMissingMessage"),
                         InfoBarSeverity.Warning);
                     return;
                 }
@@ -2395,7 +2395,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     DesignerSettingItemModels,
                     DesignerExclusiveSettingItemModels,
                     ComponentCommandLineFormatter.ToSingleLine(CommandEditor.Text));
-            designerNeedsRefresh = false;
+            _designerNeedsRefresh = false;
         }
         catch (Exception exception)
         {
@@ -2403,12 +2403,12 @@ public sealed partial class ConfigMakerUserControl : UserControl
             DesignerExclusiveSettingItemModels.Clear();
             Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
             ShowEditorMessage(
-                string.Format(localizer.GetLocalizedString("ConfigMakerDesignerLoadFailedMessage"), exception.Message),
+                string.Format(_localizer.GetLocalizedString("ConfigMakerDesignerLoadFailedMessage"), exception.Message),
                 InfoBarSeverity.Warning);
         }
         finally
         {
-            updatingDesigner = false;
+            _updatingDesigner = false;
         }
     }
 
@@ -2469,11 +2469,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ApplySimpleDesignerToCommand()
     {
-        if (updatingDesigner || designerNeedsRefresh || !IsSimpleDesignerSupported)
+        if (_updatingDesigner || _designerNeedsRefresh || !IsSimpleDesignerSupported)
         {
             return;
         }
-        updatingDesigner = true;
+        _updatingDesigner = true;
         try
         {
             string command = GraphicDesignerHelper.ConvertGraphicDesignerSettingsToString(
@@ -2481,11 +2481,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 DesignerExclusiveSettingItemModels,
                 AdditionalDesignerArgumentsTextBox.Text ?? string.Empty);
             SetEditorText(ComponentCommandLineFormatter.FormatByFlags(command.Trim()));
-            designerNeedsRefresh = false;
+            _designerNeedsRefresh = false;
         }
         finally
         {
-            updatingDesigner = false;
+            _updatingDesigner = false;
         }
     }
 
@@ -2496,7 +2496,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         ConfigMakerUserControl control = (ConfigMakerUserControl)dependencyObject;
         bool isReadOnly = (bool)args.NewValue;
         control.ReplaceEditorButton.IsEnabled = !isReadOnly;
-        control.InsertButton.IsEnabled = !isReadOnly && control.selectedCommand != null;
+        control.InsertButton.IsEnabled = !isReadOnly && control._selectedCommand != null;
         control.EditorReadOnlyChanged?.Invoke(control, EventArgs.Empty);
         control.EditorSearchControl.ReplaceEnable = !isReadOnly;
     }
@@ -2510,15 +2510,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     public async Task StopTestAsync(bool showCompletionMessage = false)
     {
-        if (!isTesting)
+        if (!_isTesting)
         {
             return;
         }
 
-        string componentId = testComponentId;
-        bool restore = restoreComponentAfterTest;
-        isTesting = false;
-        isStartingTest = false;
+        string componentId = _testComponentId;
+        bool restore = _restoreComponentAfterTest;
+        _isTesting = false;
+        _isStartingTest = false;
         ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
         UpdateTestButtons();
 
@@ -2531,12 +2531,12 @@ public sealed partial class ConfigMakerUserControl : UserControl
             }
         }
 
-        testComponentId = string.Empty;
-        restoreComponentAfterTest = false;
+        _testComponentId = string.Empty;
+        _restoreComponentAfterTest = false;
         if (showCompletionMessage)
         {
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerTestStoppedMessage"),
+                _localizer.GetLocalizedString("ConfigMakerTestStoppedMessage"),
                 InfoBarSeverity.Informational);
         }
     }
@@ -2547,10 +2547,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             return;
         }
-        control.presetDocument.ComponentId = (string)args.NewValue;
-        control.designerNeedsRefresh = true;
+        control._presetDocument.ComponentId = (string)args.NewValue;
+        control._designerNeedsRefresh = true;
         control.UpdateSimpleDesignerAvailability();
-        if (!control.updatingComponent && control.IsLoaded)
+        if (!control._updatingComponent && control.IsLoaded)
         {
             _ = control.SetComponentAsync((string)args.NewValue);
         }
@@ -2558,13 +2558,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private static void OnCommandTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
     {
-        if (dependencyObject is not ConfigMakerUserControl control || control.updatingEditor)
+        if (dependencyObject is not ConfigMakerUserControl control || control._updatingEditor)
         {
             return;
         }
 
-        control.presetDocument.CommandText = (string)args.NewValue;
-        control.designerNeedsRefresh = true;
+        control._presetDocument.CommandText = (string)args.NewValue;
+        control._designerNeedsRefresh = true;
         control.SetEditorText((string)args.NewValue, updateProperty: false);
     }
 
@@ -2583,7 +2583,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             else
             {
                 ShowEditorMessage(
-                    localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
                     InfoBarSeverity.Informational);
             }
         }
@@ -2595,8 +2595,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ConfigMakerUserControl_Unloaded(object sender, RoutedEventArgs e)
     {
-        helpCancellation?.Cancel();
-        diagnosticsTimer.Stop();
+        _helpCancellation?.Cancel();
+        _diagnosticsTimer.Stop();
         EditorSearchControl.Close();
         _ = StopTestAsync();
     }
@@ -2605,7 +2605,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ApplyEditorTheme()
     {
-        bool usesForcedDarkBackground = editorBackground is "Black" or "MicaSmoke";
+        bool usesForcedDarkBackground = _editorBackground is "Black" or "MicaSmoke";
         bool isLight = !usesForcedDarkBackground &&
             (ActualTheme == ElementTheme.Light ||
              (ActualTheme == ElementTheme.Default && ((App)Application.Current).CurrentTheme == ElementTheme.Light));
@@ -2617,13 +2617,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
             .Where(item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Warning)
             .Select(item => item.Source.Token)
             .ToArray();
-        string newSignature = $"{editorBackground}|{isLight}|{string.Join(',', errorTokens)}|{string.Join(',', warningTokens)}";
-        if (string.Equals(highlightSignature, newSignature, StringComparison.Ordinal))
+        string newSignature = $"{_editorBackground}|{isLight}|{string.Join(',', errorTokens)}|{string.Join(',', warningTokens)}";
+        if (string.Equals(_highlightSignature, newSignature, StringComparison.Ordinal))
         {
             return;
         }
 
-        highlightSignature = newSignature;
+        _highlightSignature = newSignature;
         CommandEditor.SyntaxHighlighting = isLight
             ? new LightDefaultHighlighter(errorTokens, warningTokens)
             : new DarkDefaultHighlighter(errorTokens, warningTokens);
@@ -2640,15 +2640,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
             return;
         }
 
-        if (isTesting && !string.Equals(testComponentId, componentId, StringComparison.OrdinalIgnoreCase))
+        if (_isTesting && !string.Equals(_testComponentId, componentId, StringComparison.OrdinalIgnoreCase))
         {
             await StopTestAsync();
         }
 
-        updatingComponent = true;
+        _updatingComponent = true;
         ComponentId = componentId;
-        updatingComponent = false;
-        presetDocument.ComponentId = componentId;
+        _updatingComponent = false;
+        _presetDocument.ComponentId = componentId;
         ConfigOutput.ComponentId = componentId;
         UpdateSimpleDesignerAvailability();
         RebuildPresetStructure();
@@ -2657,17 +2657,17 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private async Task LoadHelpAsync(string componentId, bool forceRefresh)
     {
-        helpCancellation?.Cancel();
-        helpCancellation?.Dispose();
-        helpCancellation = new CancellationTokenSource();
-        CancellationToken cancellationToken = helpCancellation.Token;
+        _helpCancellation?.Cancel();
+        _helpCancellation?.Dispose();
+        _helpCancellation = new CancellationTokenSource();
+        CancellationToken cancellationToken = _helpCancellation.Token;
 
         HelpProgressRing.IsActive = true;
         CommandListView.IsEnabled = false;
-        UsageTextBlock.Text = localizer.GetLocalizedString("ConfigMakerLoadingHelpMessage");
+        UsageTextBlock.Text = _localizer.GetLocalizedString("ConfigMakerLoadingHelpMessage");
         try
         {
-            ComponentCommandHelpDocument document = await helpService.LoadAsync(
+            ComponentCommandHelpDocument document = await _helpService.LoadAsync(
                 componentId,
                 cancellationToken,
                 forceRefresh);
@@ -2677,11 +2677,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 return;
             }
 
-            helpDocument = document;
+            _helpDocument = document;
             UsageTextBlock.Text = !string.IsNullOrWhiteSpace(document.Usage)
                 ? document.Usage
                 : string.Format(
-                    localizer.GetLocalizedString("ConfigMakerHelpOptionsLoadedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerHelpOptionsLoadedMessage"),
                     document.Options.Count);
             RebuildCommandModules();
             RebuildCommandOptions();
@@ -2692,14 +2692,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 ShowEditorMessage(
                     string.Format(
-                        localizer.GetLocalizedString("ConfigMakerHelpLoadFailedMessage"),
+                        _localizer.GetLocalizedString("ConfigMakerHelpLoadFailedMessage"),
                         document.Error),
                     InfoBarSeverity.Warning);
             }
             else if (document.Options.Count == 0)
             {
                 ShowEditorMessage(
-                    localizer.GetLocalizedString("ConfigMakerHelpParseEmptyMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerHelpParseEmptyMessage"),
                     InfoBarSeverity.Warning);
             }
             else
@@ -2724,7 +2724,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     private void RebuildCommandOptions()
     {
         string query = CommandSearchBox.Text?.Trim() ?? string.Empty;
-        IEnumerable<ComponentCommandHelpOption> filtered = helpDocument.Options;
+        IEnumerable<ComponentCommandHelpOption> filtered = _helpDocument.Options;
         if (ModuleComboBox.SelectedItem is ConfigMakerCommandModuleViewModel module && !module.IsAll)
         {
             filtered = filtered.Where(option =>
@@ -2747,7 +2747,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             {
                 Source = option,
                 Description = string.IsNullOrWhiteSpace(option.Description)
-                    ? localizer.GetLocalizedString("ConfigMakerNoDescriptionMessage")
+                    ? _localizer.GetLocalizedString("ConfigMakerNoDescriptionMessage")
                     : option.Description,
             });
         }
@@ -2757,7 +2757,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         string previousGroup = (ModuleComboBox.SelectedItem as ConfigMakerCommandModuleViewModel)?.GroupName;
         bool previousWasAll = (ModuleComboBox.SelectedItem as ConfigMakerCommandModuleViewModel)?.IsAll != false;
-        List<string> namedGroups = helpDocument.Options
+        List<string> namedGroups = _helpDocument.Options
             .Select(option => option.GroupName)
             .Where(group => !string.IsNullOrWhiteSpace(group))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -2766,15 +2766,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
         CommandModules.Clear();
         CommandModules.Add(new ConfigMakerCommandModuleViewModel
         {
-            DisplayName = localizer.GetLocalizedString("ConfigMakerAllModules"),
+            DisplayName = _localizer.GetLocalizedString("ConfigMakerAllModules"),
             IsAll = true,
         });
 
-        if (namedGroups.Count > 0 && helpDocument.Options.Any(option => string.IsNullOrWhiteSpace(option.GroupName)))
+        if (namedGroups.Count > 0 && _helpDocument.Options.Any(option => string.IsNullOrWhiteSpace(option.GroupName)))
         {
             CommandModules.Add(new ConfigMakerCommandModuleViewModel
             {
-                DisplayName = localizer.GetLocalizedString("ConfigMakerGeneralModule"),
+                DisplayName = _localizer.GetLocalizedString("ConfigMakerGeneralModule"),
                 GroupName = string.Empty,
             });
         }
@@ -2809,8 +2809,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void CommandListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        selectedCommand = CommandListView.SelectedItem as ConfigMakerCommandOptionViewModel;
-        if (selectedCommand == null)
+        _selectedCommand = CommandListView.SelectedItem as ConfigMakerCommandOptionViewModel;
+        if (_selectedCommand == null)
         {
             CommandDetailsBorder.Visibility = Visibility.Collapsed;
             CopyButton.IsEnabled = false;
@@ -2819,10 +2819,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
             return;
         }
 
-        ComponentCommandHelpOption option = selectedCommand.Source;
+        ComponentCommandHelpOption option = _selectedCommand.Source;
         SelectedCommandNameTextBlock.Text = option.DisplayName;
         SelectedCommandSyntaxTextBlock.Text = option.Syntax;
-        SelectedCommandDescriptionTextBlock.Text = selectedCommand.Description;
+        SelectedCommandDescriptionTextBlock.Text = _selectedCommand.Description;
 
         bool hasArgument = !string.IsNullOrWhiteSpace(option.ArgumentPlaceholder);
         CommandArgumentPanel.Visibility = hasArgument ? Visibility.Visible : Visibility.Collapsed;
@@ -2833,7 +2833,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         CommandArgumentTextBox.PlaceholderText = option.ArgumentPlaceholder;
         CommandArgumentLabelTextBlock.Text = hasArgument
             ? string.Format(
-                localizer.GetLocalizedString(
+                _localizer.GetLocalizedString(
                     option.IsArgumentRequired
                         ? "ConfigMakerRequiredArgumentLabel"
                         : "ConfigMakerOptionalArgumentLabel"),
@@ -2881,12 +2881,12 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private string BuildSelectedCommand()
     {
-        if (selectedCommand == null)
+        if (_selectedCommand == null)
         {
             return string.Empty;
         }
 
-        ComponentCommandHelpOption option = selectedCommand.Source;
+        ComponentCommandHelpOption option = _selectedCommand.Source;
         string command = option.DisplayName;
         if (string.IsNullOrWhiteSpace(option.ArgumentPlaceholder))
         {
@@ -2902,7 +2902,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             }
 
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerRequiredArgumentMissingMessage"),
+                _localizer.GetLocalizedString("ConfigMakerRequiredArgumentMissingMessage"),
                 InfoBarSeverity.Warning);
             return string.Empty;
         }
@@ -2948,16 +2948,16 @@ public sealed partial class ConfigMakerUserControl : UserControl
             return;
         }
         if (!string.IsNullOrWhiteSpace(CommandEditor.Text) ||
-            presetDocument.HasVariables ||
-            presetDocument.HasResources)
+            _presetDocument.HasVariables ||
+            _presetDocument.HasResources)
         {
             ContentDialog dialog = new()
             {
                 XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Continue"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                Title = _localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
+                Content = _localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
+                PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
+                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
@@ -2967,10 +2967,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
 
         SetEditorText(string.Empty);
-        presetBaseDirectory = string.Empty;
-        presetDocument.Name = string.Empty;
-        presetDocument.Variables.Clear();
-        presetDocument.Resources.Clear();
+        _presetBaseDirectory = string.Empty;
+        _presetDocument.Name = string.Empty;
+        _presetDocument.Variables.Clear();
+        _presetDocument.Resources.Clear();
         ClearPresetStructure();
         CommandEditor.ClearUndoRedoHistory();
     }
@@ -2986,7 +2986,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 OverwritePrompt = true,
                 FileName = "config.cdpiconfig",
                 DefaultExt = ".cdpiconfig",
-                Filter = (!HasVariables ? localizer.GetLocalizedString("ConfigMakerTextFileFilter") + "|" : "") + localizer.GetLocalizedString("ConfigMakerCCFileFilter"),
+                Filter = (!HasVariables ? _localizer.GetLocalizedString("ConfigMakerTextFileFilter") + "|" : "") + _localizer.GetLocalizedString("ConfigMakerCCFileFilter"),
             };
             dialog.FilterIndex = dialog.Filter.Split('|').Length / 2;
             if (dialog.ShowDialog() != true)
@@ -2997,14 +2997,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
             SyncDocumentFromEditor();
             string exportText = ConfigMakerPresetStorageService
-                .CreateResolvedCommandForTextExport(presetDocument);
+                .CreateResolvedCommandForTextExport(_presetDocument);
 
             if (string.Equals(Path.GetExtension(filePath), ".cdpiconfig", StringComparison.OrdinalIgnoreCase))
             {
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 using var package = await new ConfigShareService()
                     .ExportAsync(
-                    presetDocument.ToConfigItem(Guid.NewGuid().ToString(), fileName),
+                    _presetDocument.ToConfigItem(Guid.NewGuid().ToString(), fileName),
                     fileName,
                     SettingsManager.Instance.GetValueOrDefault("CONFIGKIT", "lastUsedDevName", defaultValue: Environment.UserName));
                 await FileSystemService.CopyFileAsync(package.ArchivePath, filePath);
@@ -3013,14 +3013,14 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 await File.WriteAllTextAsync(filePath, exportText);
 
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerTextSavedMessage"),
+                _localizer.GetLocalizedString("ConfigMakerTextSavedMessage"),
                 InfoBarSeverity.Success);
         }
         catch (Exception exception)
         {
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerTextSaveFailedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerTextSaveFailedMessage"),
                     exception.Message),
                 InfoBarSeverity.Error);
         }
@@ -3042,7 +3042,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (string.IsNullOrWhiteSpace(ComponentId))
         {
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
+                _localizer.GetLocalizedString("ConfigMakerSelectComponentMessage"),
                 InfoBarSeverity.Warning);
             return;
         }
@@ -3052,13 +3052,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
         {
             SyncDocumentFromEditor();
             arguments = ComponentCommandLineFormatter.ToSingleLine(
-                ConfigMakerPresetStorageService.CreateResolvedCommandForTest(presetDocument));
+                ConfigMakerPresetStorageService.CreateResolvedCommandForTest(_presetDocument));
         }
         catch (Exception exception)
         {
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerResolvePresetFailedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerResolvePresetFailedMessage"),
                     exception.Message),
                 InfoBarSeverity.Error);
             return;
@@ -3066,7 +3066,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         if (string.IsNullOrWhiteSpace(arguments))
         {
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerEmptyArgumentsMessage"),
+                _localizer.GetLocalizedString("ConfigMakerEmptyArgumentsMessage"),
                 InfoBarSeverity.Warning);
             return;
         }
@@ -3078,10 +3078,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
             ContentDialog confirmation = new()
             {
                 XamlRoot = XamlRoot,
-                Title = localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
-                Content = localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Continue"),
-                CloseButtonText = localizer.GetLocalizedString("Cancel"),
+                Title = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentTitle"),
+                Content = _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
+                PrimaryButtonText = _localizer.GetLocalizedString("Continue"),
+                CloseButtonText = _localizer.GetLocalizedString("Cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await confirmation.ShowQueuedAsync() != ContentDialogResult.Primary)
@@ -3090,40 +3090,40 @@ public sealed partial class ConfigMakerUserControl : UserControl
             }
         }
 
-        restoreComponentAfterTest = componentWasRunning;
+        _restoreComponentAfterTest = componentWasRunning;
         await ComponentTasksManager.Instance.StopTask(ComponentId);
 
-        testComponentId = ComponentId;
-        isTesting = true;
-        isStartingTest = true;
+        _testComponentId = ComponentId;
+        _isTesting = true;
+        _isStartingTest = true;
         ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
         UpdateTestButtons();
 
-        if (!DatabaseHelper.Instance.IsItemInstalled(testComponentId))
+        if (!DatabaseHelper.Instance.IsItemInstalled(_testComponentId))
         {
             ShowEditorMessage(
-                localizer.GetLocalizedString("TargetComponentNotInstalled"),
+                _localizer.GetLocalizedString("TargetComponentNotInstalled"),
                 InfoBarSeverity.Error);
             await StopTestAsync();
             return;
         }
 
         ShowEditorMessage(
-            localizer.GetLocalizedString("ConfigMakerTestStartedMessage"),
+            _localizer.GetLocalizedString("ConfigMakerTestStartedMessage"),
             InfoBarSeverity.Informational);
 
         try
         {
-            await ComponentTasksManager.Instance.CreateAndRunNewTask(testComponentId, arguments);
-            isStartingTest = false;
+            await ComponentTasksManager.Instance.CreateAndRunNewTask(_testComponentId, arguments);
+            _isStartingTest = false;
             await ConfigOutput.RefreshComponentAsync();
         }
         catch (Exception exception)
         {
-            isStartingTest = false;
+            _isStartingTest = false;
             ShowEditorMessage(
                 string.Format(
-                    localizer.GetLocalizedString("ConfigMakerTestStartFailedMessage"),
+                    _localizer.GetLocalizedString("ConfigMakerTestStartFailedMessage"),
                     exception.Message),
                 InfoBarSeverity.Error);
             await StopTestAsync();
@@ -3132,8 +3132,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
     {
-        if (!isTesting || isStartingTest ||
-            !string.Equals(state.Item1, testComponentId, StringComparison.OrdinalIgnoreCase) ||
+        if (!_isTesting || _isStartingTest ||
+            !string.Equals(state.Item1, _testComponentId, StringComparison.OrdinalIgnoreCase) ||
             state.Item2)
         {
             return;
@@ -3142,7 +3142,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         DispatcherQueue.TryEnqueue(async () =>
         {
             ShowEditorMessage(
-                localizer.GetLocalizedString("ConfigMakerTestExitedMessage"),
+                _localizer.GetLocalizedString("ConfigMakerTestExitedMessage"),
                 InfoBarSeverity.Warning);
             await StopTestAsync();
         });
@@ -3155,7 +3155,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void CommandEditor_TextChanged(TextControlBox sender)
     {
-        if (updatingEditor)
+        if (_updatingEditor)
         {
             return;
         }
@@ -3165,11 +3165,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
             return;
         }
 
-        updatingEditor = true;
+        _updatingEditor = true;
         CommandText = sender.Text ?? string.Empty;
-        updatingEditor = false;
-        presetDocument.CommandText = CommandText;
-        designerNeedsRefresh = true;
+        _updatingEditor = false;
+        _presetDocument.CommandText = CommandText;
+        _designerNeedsRefresh = true;
         RebuildPresetStructure();
         CommandTextChanged?.Invoke(CommandText);
         ScheduleDiagnostics();
@@ -3177,15 +3177,15 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void SetEditorText(string text, bool updateProperty = true)
     {
-        updatingEditor = true;
+        _updatingEditor = true;
         CommandEditor.Text = text ?? string.Empty;
         if (updateProperty)
         {
             CommandText = CommandEditor.Text;
         }
-        presetDocument.CommandText = CommandEditor.Text;
-        designerNeedsRefresh = true;
-        updatingEditor = false;
+        _presetDocument.CommandText = CommandEditor.Text;
+        _designerNeedsRefresh = true;
+        _updatingEditor = false;
         RebuildPresetStructure();
         RebuildDiagnostics();
         CommandTextChanged?.Invoke(CommandEditor.Text);
@@ -3193,8 +3193,8 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ScheduleDiagnostics()
     {
-        diagnosticsTimer.Stop();
-        diagnosticsTimer.Start();
+        _diagnosticsTimer.Stop();
+        _diagnosticsTimer.Start();
     }
 
     private void DiagnosticsTimer_Tick(
@@ -3208,7 +3208,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     private void RebuildDiagnostics()
     {
         List<ComponentCommandDiagnostic> results = ComponentCommandValidationService
-            .Validate(CommandEditor.Text, helpDocument.Options)
+            .Validate(CommandEditor.Text, _helpDocument.Options)
             .ToList();
         AddPresetReferenceDiagnostics(CommandEditor.Text, results);
 
@@ -3218,25 +3218,25 @@ public sealed partial class ConfigMakerUserControl : UserControl
             Diagnostics.Add(new ConfigMakerDiagnosticViewModel
             {
                 Source = diagnostic,
-                SeverityText = localizer.GetLocalizedString(
+                SeverityText = _localizer.GetLocalizedString(
                     diagnostic.Severity == ComponentCommandDiagnosticSeverity.Error
                         ? "ConfigMakerDiagnosticErrorSeverity"
                         : "ConfigMakerDiagnosticWarningSeverity"),
                 Description = diagnostic.Kind switch
                 {
                     ComponentCommandDiagnosticKind.UnknownFlag => string.Format(
-                        localizer.GetLocalizedString("ConfigMakerUnknownFlagDiagnostic"),
+                        _localizer.GetLocalizedString("ConfigMakerUnknownFlagDiagnostic"),
                         diagnostic.Token),
                     ComponentCommandDiagnosticKind.MissingRequiredArgument => string.Format(
-                        localizer.GetLocalizedString("ConfigMakerMissingArgumentDiagnostic"),
+                        _localizer.GetLocalizedString("ConfigMakerMissingArgumentDiagnostic"),
                         diagnostic.Token),
                     ComponentCommandDiagnosticKind.UnresolvedVariable => string.Format(
-                        localizer.GetLocalizedString("ConfigMakerUnresolvedVariableDiagnostic"),
+                        _localizer.GetLocalizedString("ConfigMakerUnresolvedVariableDiagnostic"),
                         diagnostic.Token),
                     ComponentCommandDiagnosticKind.UnresolvedResource => string.Format(
-                        localizer.GetLocalizedString("ConfigMakerUnresolvedResourceDiagnostic"),
+                        _localizer.GetLocalizedString("ConfigMakerUnresolvedResourceDiagnostic"),
                         diagnostic.Token),
-                    _ => localizer.GetLocalizedString("ConfigMakerUnterminatedQuoteDiagnostic"),
+                    _ => _localizer.GetLocalizedString("ConfigMakerUnterminatedQuoteDiagnostic"),
                 },
             });
         }
@@ -3244,10 +3244,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
         int errorCount = results.Count(item => item.Severity == ComponentCommandDiagnosticSeverity.Error);
         int warningCount = results.Count - errorCount;
         ErrorCountTextBlock.Text = string.Format(
-            localizer.GetLocalizedString("ConfigMakerDiagnosticErrorCount"),
+            _localizer.GetLocalizedString("ConfigMakerDiagnosticErrorCount"),
             errorCount);
         WarningCountTextBlock.Text = string.Format(
-            localizer.GetLocalizedString("ConfigMakerDiagnosticWarningCount"),
+            _localizer.GetLocalizedString("ConfigMakerDiagnosticWarningCount"),
             warningCount);
         ApplyEditorTheme();
     }
@@ -3268,7 +3268,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
                          RegexOptions.CultureInvariant))
             {
                 string name = match.Value.Trim('%');
-                bool known = presetDocument.Variables.Any(variable =>
+                bool known = _presetDocument.Variables.Any(variable =>
                     string.Equals(variable.Name, name, StringComparison.OrdinalIgnoreCase));
                 if (known ||
                     string.Equals(name, "CURRENT", StringComparison.OrdinalIgnoreCase) ||
@@ -3407,23 +3407,23 @@ public sealed partial class ConfigMakerUserControl : UserControl
         string savedBackground = SettingsManager.Instance.GetValue<string>(
             "APPEARANCE",
             "configEditorBackground");
-        editorBackground = savedBackground switch
+        _editorBackground = savedBackground switch
         {
             "Mica" => "Mica",
             "MicaTransparent" => "MicaTransparent",
             "MicaSmoke" => "MicaSmoke",
             _ => "Black",
         };
-        DefaultBackgroundItem.IsChecked = editorBackground == "Black";
-        MicaBackgroundItem.IsChecked = editorBackground == "Mica";
-        MicaAltBackgroundItem.IsChecked = editorBackground == "MicaTransparent";
-        MicaSmokeBackgroundItem.IsChecked = editorBackground == "MicaSmoke";
+        DefaultBackgroundItem.IsChecked = _editorBackground == "Black";
+        MicaBackgroundItem.IsChecked = _editorBackground == "Mica";
+        MicaAltBackgroundItem.IsChecked = _editorBackground == "MicaTransparent";
+        MicaSmokeBackgroundItem.IsChecked = _editorBackground == "MicaSmoke";
         ApplyEditorBackground();
     }
 
     private void EditorBackgroundItem_Click(object sender, RoutedEventArgs e)
     {
-        editorBackground = sender switch
+        _editorBackground = sender switch
         {
             RadioMenuFlyoutItem item when ReferenceEquals(item, MicaBackgroundItem) => "Mica",
             RadioMenuFlyoutItem item when ReferenceEquals(item, MicaAltBackgroundItem) => "MicaTransparent",
@@ -3433,20 +3433,20 @@ public sealed partial class ConfigMakerUserControl : UserControl
         SettingsManager.Instance.SetValue(
             "APPEARANCE",
             "configEditorBackground",
-            editorBackground);
+            _editorBackground);
         ApplyEditorBackground();
     }
 
     private void ApplyEditorBackground()
     {
-        EditorPanel.Background = editorBackground switch
+        EditorPanel.Background = _editorBackground switch
         {
             "Mica" => GetApplicationBrush("LayerFillColorDefaultBrush"),
             "MicaTransparent" => new SolidColorBrush(Color.FromArgb(0, 0, 0, 0)),
             "MicaSmoke" => GetApplicationBrush("SmokeFillColorDefaultBrush"),
             _ => new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)),
         };
-        highlightSignature = string.Empty;
+        _highlightSignature = string.Empty;
         ApplyEditorTheme();
     }
 
@@ -3464,13 +3464,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
         if (!visible)
         {
-            savedEditorWidth = EditorWorkspace.ActualWidth;
+            _savedEditorWidth = EditorWorkspace.ActualWidth;
         }
 
         CommandPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         VerticalContentSizer.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         VerticalSizerColumn.Width = visible ? new GridLength(12) : new GridLength(0);
-        layoutInitialized = false;
+        _layoutInitialized = false;
         UpdateLayoutBounds();
         PanelStateChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -3484,13 +3484,13 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
         if (!visible)
         {
-            savedEditorHeight = EditorPanel.ActualHeight;
+            _savedEditorHeight = EditorPanel.ActualHeight;
         }
 
         BottomPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         HorizontalContentSizer.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         HorizontalSizerRow.Height = visible ? new GridLength(12) : new GridLength(0);
-        layoutInitialized = false;
+        _layoutInitialized = false;
         UpdateLayoutBounds();
         PanelStateChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -3499,7 +3499,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void ResizablePanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (!updatingLayoutBounds)
+        if (!_updatingLayoutBounds)
         {
             UpdateLayoutBounds();
         }
@@ -3507,12 +3507,12 @@ public sealed partial class ConfigMakerUserControl : UserControl
 
     private void UpdateLayoutBounds()
     {
-        if (updatingLayoutBounds || RootGrid.ActualWidth <= 0 || RootGrid.ActualHeight <= 0)
+        if (_updatingLayoutBounds || RootGrid.ActualWidth <= 0 || RootGrid.ActualHeight <= 0)
         {
             return;
         }
 
-        updatingLayoutBounds = true;
+        _updatingLayoutBounds = true;
         try
         {
             const double editorMinWidth = 360;
@@ -3546,9 +3546,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     editorMinWidth,
                     availableMainWidth - commandMinWidth - VerticalSizerColumn.Width.Value);
                 EditorWorkspace.MaxWidth = maxEditorWidth;
-                double requestedWidth = layoutInitialized
+                double requestedWidth = _layoutInitialized
                     ? EditorWorkspace.Width
-                    : Math.Min(savedEditorWidth, maxEditorWidth);
+                    : Math.Min(_savedEditorWidth, maxEditorWidth);
                 EditorWorkspace.Width = maxEditorWidth;
             }
             else
@@ -3565,9 +3565,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     editorMinHeight,
                     availableMainHeight - bottomMinHeight - HorizontalSizerRow.Height.Value);
                 EditorPanel.MaxHeight = maxEditorHeight;
-                double requestedHeight = layoutInitialized
+                double requestedHeight = _layoutInitialized
                     ? EditorPanel.Height
-                    : Math.Min(savedEditorHeight, maxEditorHeight);
+                    : Math.Min(_savedEditorHeight, maxEditorHeight);
                 EditorPanel.Height = Math.Clamp(requestedHeight, editorMinHeight, maxEditorHeight);
             }
             else
@@ -3576,11 +3576,11 @@ public sealed partial class ConfigMakerUserControl : UserControl
                 EditorPanel.Height = availableMainHeight;
             }
 
-            layoutInitialized = true;
+            _layoutInitialized = true;
         }
         finally
         {
-            updatingLayoutBounds = false;
+            _updatingLayoutBounds = false;
         }
     }
 
@@ -3588,9 +3588,9 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         string title = severity switch
         {
-            InfoBarSeverity.Error => localizer.GetLocalizedString("SomethingWentWrong"),
-            InfoBarSeverity.Warning => localizer.GetLocalizedString("Attention"),
-            _ => localizer.GetLocalizedString("Information"),
+            InfoBarSeverity.Error => _localizer.GetLocalizedString("SomethingWentWrong"),
+            InfoBarSeverity.Warning => _localizer.GetLocalizedString("Attention"),
+            _ => _localizer.GetLocalizedString("Information"),
         };
         StatusNotificationRequested?.Invoke(
             this,
@@ -3612,7 +3612,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
     {
         Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), exception.ToString());
         ShowEditorMessage(
-            string.Format(localizer.GetLocalizedString("ConfigMakerActionFailedMessage"), exception.Message),
+            string.Format(_localizer.GetLocalizedString("ConfigMakerActionFailedMessage"), exception.Message),
             InfoBarSeverity.Error);
     }
 

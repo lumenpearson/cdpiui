@@ -56,7 +56,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
 
     public string ComponentId { get; private set; }
 
-    private ObservableCollection<GoodCheckReportHeaderModel> HeaderModels = [];
+    private ObservableCollection<GoodCheckReportHeaderModel> _headerModels = [];
 
     GoodCheckReportHeaderButton _storeditem;
     public ViewGoodCheckReportPage()
@@ -65,7 +65,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
         this.DataContext = this;
         this.NavigationCacheMode = NavigationCacheMode.Enabled;
 
-        HeadersListView.ItemsSource = HeaderModels;
+        HeadersListView.ItemsSource = _headerModels;
 
         HeaderClickCommand = new RelayCommand(p => OpenHeader((GoodCheckReportHeaderButton)p));
 
@@ -95,7 +95,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
                     if (_storeditem != null)
                     {
                         _storeditem.FlagsCount = flags.ToString();
-                        var m = HeaderModels.FirstOrDefault(b => b.Id == _storeditem.Id);
+                        var m = _headerModels.FirstOrDefault(b => b.Id == _storeditem.Id);
                         if (m != null)
                         {
                             m.Strategies = strategyModels;
@@ -116,7 +116,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
 
     private void LoadHeadersFromFile(string fileName)
     {
-        HeaderModels.Clear();
+        _headerModels.Clear();
 
         var (groups, componentId) = GoodCheckResultViewHelper.LoadGroupsFromFile(fileName);
         ComponentId = componentId;
@@ -158,7 +158,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
 
             }
             string dir = Path.GetDirectoryName(group.FullPath);
-            HeaderModels.Add(new()
+            _headerModels.Add(new()
             {
                 Id = ids,
                 Directory = string.IsNullOrEmpty(dir) ? group.FullPath : dir,
@@ -181,7 +181,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
 
         if (button.Id != null)
         {
-            strategies = HeaderModels.FirstOrDefault(b => b.Id == button.Id).Strategies;
+            strategies = _headerModels.FirstOrDefault(b => b.Id == button.Id).Strategies;
         }
 
         ElementToAnimateBackwardConnectedAnimation = _storeditem;
@@ -208,7 +208,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
 
     private void GoForwardButton_Click(object sender, RoutedEventArgs e)
     {
-        if (HeaderModels.FirstOrDefault(m => m.FlagsCount == "0") != null)
+        if (_headerModels.FirstOrDefault(m => m.FlagsCount == "0") != null)
         {
             GoForwardButtonTeachingTip.IsOpen = true;
             return;
@@ -238,7 +238,7 @@ public sealed partial class ViewGoodCheckReportPage : TemplatePage
     private List<DragItem> CreateDragList()
     {
         List<DragItem> list = [];
-        foreach (var item in HeaderModels)
+        foreach (var item in _headerModels)
         {
             string sitelistName = item.FileName;
             foreach (var strategy in item.Strategies)

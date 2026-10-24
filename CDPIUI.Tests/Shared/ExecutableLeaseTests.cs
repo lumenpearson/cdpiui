@@ -5,15 +5,15 @@ namespace CDPIUI.Tests.Shared;
 
 public sealed class ExecutableLeaseTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-lease-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-lease-" + Guid.NewGuid().ToString("N"));
 
-    public ExecutableLeaseTests() => Directory.CreateDirectory(directory);
+    public ExecutableLeaseTests() => Directory.CreateDirectory(_directory);
 
-    public void Dispose() => Directory.Delete(directory, true);
+    public void Dispose() => Directory.Delete(_directory, true);
 
     private string Write(string relative, string content)
     {
-        string path = Path.Combine(directory, relative);
+        string path = Path.Combine(_directory, relative);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, content);
         return path;
@@ -81,11 +81,11 @@ public sealed class ExecutableLeaseTests : IDisposable
     public void ApprovalsSurviveASaveAndDropMissingPrograms()
     {
         string program = Write("bin/winws.exe", "program");
-        string file = Path.Combine(directory, ".trust", "approved.txt");
+        string file = Path.Combine(_directory, ".trust", "approved.txt");
         var approved = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             [program] = "AAAA",
-            [Path.Combine(directory, "missing.exe")] = "BBBB",
+            [Path.Combine(_directory, "missing.exe")] = "BBBB",
         };
 
         ExecutableApprovals.Save(file, approved);
@@ -99,7 +99,7 @@ public sealed class ExecutableLeaseTests : IDisposable
     [Fact]
     public void MissingApprovalFileGivesNoApprovals()
     {
-        Assert.Empty(ExecutableApprovals.Load(Path.Combine(directory, "none.txt")));
+        Assert.Empty(ExecutableApprovals.Load(Path.Combine(_directory, "none.txt")));
     }
 
     [Theory]
@@ -108,15 +108,15 @@ public sealed class ExecutableLeaseTests : IDisposable
     [InlineData("Tools/winws.exe", null)]
     public void StoreItemFolderIsFound(string program, string? expected)
     {
-        string? folder = ExecutableApprovals.GetStoreItemDirectory(Path.Combine(directory, program));
-        Assert.Equal(expected == null ? null : Path.GetFullPath(Path.Combine(directory, expected)), folder);
+        string? folder = ExecutableApprovals.GetStoreItemDirectory(Path.Combine(_directory, program));
+        Assert.Equal(expected == null ? null : Path.GetFullPath(Path.Combine(_directory, expected)), folder);
     }
 
     [Fact]
     public void PipeKeyIsReadFromTheSessionFolder()
     {
-        Assert.Null(PipeSessionKey.TryRead(directory));
+        Assert.Null(PipeSessionKey.TryRead(_directory));
         Write(".session/pipe.key", " ABCDEF \r\n");
-        Assert.Equal("ABCDEF", PipeSessionKey.TryRead(directory));
+        Assert.Equal("ABCDEF", PipeSessionKey.TryRead(_directory));
     }
 }

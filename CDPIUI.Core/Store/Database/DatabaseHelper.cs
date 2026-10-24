@@ -11,18 +11,18 @@ namespace CDPIUI.Core.Store.Database;
 
 public class DatabaseHelper
 {
-    private readonly object databaseRequestLock = new();
+    private readonly object _databaseRequestLock = new();
 
-    private readonly string LocalDatabaseConnectionString;
+    private readonly string _localDatabaseConnectionString;
 
     private static DatabaseHelper? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
 
     public static DatabaseHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new DatabaseHelper();
                 return _instance;
@@ -34,14 +34,14 @@ public class DatabaseHelper
         Directory.CreateDirectory(Directories.StoreLocalCacheDirectory);
         string DatabaseFilePath = Path.Combine(Directories.StoreLocalCacheDirectory, SharedConstants.DatabaseFileName);
 
-        LocalDatabaseConnectionString = new SqliteConnectionStringBuilder { DataSource = DatabaseFilePath }.ConnectionString;
+        _localDatabaseConnectionString = new SqliteConnectionStringBuilder { DataSource = DatabaseFilePath }.ConnectionString;
 
         InitializeDatabase();
     }
 
     public void InitializeDatabase()
     {
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         var cmd = connection.CreateCommand();
@@ -64,7 +64,7 @@ public class DatabaseHelper
                     Developer TEXT,
                     BackgroundColor TEXT
                 );";
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             try
             {
@@ -82,13 +82,13 @@ public class DatabaseHelper
 
     public bool AddOrUpdateItem(DatabaseStoreItem item)
     {
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         var cmd = connection.CreateCommand();
         SetUpsertCommand(cmd, item);
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             try
             {
@@ -143,7 +143,7 @@ public class DatabaseHelper
         if (items.Count == 0)
             return;
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             try
             {
@@ -178,14 +178,14 @@ public class DatabaseHelper
 
     public DatabaseStoreItem? GetItemById(string id)
     {
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM Items WHERE Id = @Id";
         cmd.Parameters.AddWithValue("@Id", id);
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             using var reader = cmd.ExecuteReader();
             if (!reader.Read())
@@ -200,14 +200,14 @@ public class DatabaseHelper
     {
         var items = new List<DatabaseStoreItem>();
 
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM Items WHERE Type = @Type";
         cmd.Parameters.AddWithValue("@Type", type);
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -224,13 +224,13 @@ public class DatabaseHelper
     {
         var items = new List<DatabaseStoreItem>();
 
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM Items";
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -258,14 +258,14 @@ public class DatabaseHelper
 
     internal void DeleteItemById(string id)
     {
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
 
         var cmd = connection.CreateCommand();
         cmd.CommandText = "DELETE FROM Items WHERE Id = @Id";
         cmd.Parameters.AddWithValue("@Id", id);
 
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             try
             {
@@ -404,14 +404,14 @@ public class DatabaseHelper
     {
         string baseDir = Directories.DataDirectory;
 
-        using var connection = new SqliteConnection(LocalDatabaseConnectionString);
+        using var connection = new SqliteConnection(_localDatabaseConnectionString);
         connection.Open();
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM Items";
 
         // Read under the lock like the other queries; the items are checked after it.
         List<DatabaseStoreItem> allItems = [];
-        lock (databaseRequestLock)
+        lock (_databaseRequestLock)
         {
             using var reader = cmd.ExecuteReader();
             while (reader.Read())

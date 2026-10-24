@@ -10,9 +10,9 @@ namespace CDPIUI.Core.Store.Network;
 /// </summary>
 internal sealed class RequestWorker : IDisposable
 {
-    private readonly Lazy<HttpClient> directClient;
-    private readonly Lazy<HttpClient> proxyClient;
-    private int disposed;
+    private readonly Lazy<HttpClient> _directClient;
+    private readonly Lazy<HttpClient> _proxyClient;
+    private int _disposed;
 
     // A client per request leaves a connection pool and sockets behind every time; the workers
     // created for single requests share these instead.
@@ -21,8 +21,8 @@ internal sealed class RequestWorker : IDisposable
 
     public RequestWorker(HttpClient? client = null)
     {
-        directClient = client != null ? new(() => client) : SharedDirectClient;
-        proxyClient = client != null ? new(() => client) : SharedProxyClient;
+        _directClient = client != null ? new(() => client) : SharedDirectClient;
+        _proxyClient = client != null ? new(() => client) : SharedProxyClient;
     }
 
     private static HttpClientHandler CreateHandler(bool proxyEnable)
@@ -41,11 +41,11 @@ internal sealed class RequestWorker : IDisposable
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         bool proxyEnable = StoreProxyHelper.UseProxyForStoreConnections;
         using var request = CreateRequest(url, token, authenticationScheme, useStoreUserAgent, proxyEnable);
         request.Headers.Range = range;
-        var client = proxyEnable ? proxyClient.Value : directClient.Value;
+        var client = proxyEnable ? _proxyClient.Value : _directClient.Value;
         return await client.SendAsync(request, completionOption, cancellationToken);
     }
 
@@ -192,5 +192,5 @@ internal sealed class RequestWorker : IDisposable
     }
 
     // The clients are shared or owned by the caller, so only this worker is marked as disposed.
-    public void Dispose() => Interlocked.Exchange(ref disposed, 1);
+    public void Dispose() => Interlocked.Exchange(ref _disposed, 1);
 }

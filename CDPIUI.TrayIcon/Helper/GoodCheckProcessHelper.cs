@@ -15,13 +15,13 @@ namespace CDPIUI.TrayIcon.Helper;
 public class GoodCheckProcessHelper
 {
     private static GoodCheckProcessHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static GoodCheckProcessHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new GoodCheckProcessHelper();
@@ -35,7 +35,7 @@ public class GoodCheckProcessHelper
     private readonly SemaphoreSlim _runLock = new(1, 1);
     private CancellationTokenSource? _cancellationTokenSource;
 
-    private Process? Process;
+    private Process? _process;
 
     public GoodCheckProcessHelper()
     {
@@ -105,7 +105,7 @@ public class GoodCheckProcessHelper
             job = CreateKillOnCloseJob();
 
             process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-            Process = process;
+            _process = process;
 
             try
             {
@@ -153,7 +153,7 @@ public class GoodCheckProcessHelper
             {
                 CloseHandle(job);
             }
-            Process = null;
+            _process = null;
             process?.Dispose();
             _cancellationTokenSource = null;
             cancellationTokenSource.Dispose();
@@ -164,7 +164,7 @@ public class GoodCheckProcessHelper
     // The run that owns the process and the token source disposes them when it ends.
     public void Stop()
     {
-        var process = Process;
+        var process = _process;
         if (process != null)
             TryKillProcess(process);
         try

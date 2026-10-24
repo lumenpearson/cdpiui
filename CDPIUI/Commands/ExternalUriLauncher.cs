@@ -8,12 +8,12 @@ internal class ExternalUriLauncher
 {
     #region UI link handle
     private static ExternalUriLauncher _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static ExternalUriLauncher Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new ExternalUriLauncher();
                 return _instance;

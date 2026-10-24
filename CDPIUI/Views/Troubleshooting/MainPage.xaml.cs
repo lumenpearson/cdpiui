@@ -22,7 +22,7 @@ namespace CDPIUI.Views.Troubleshooting;
 /// </summary>
 public sealed partial class MainPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MainPage()
     {
         InitializeComponent();

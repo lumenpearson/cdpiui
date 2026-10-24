@@ -25,12 +25,12 @@ namespace CDPIUI;
 /// </summary>
 public sealed partial class EditHostFileWindow : TemplateWindow
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public EditHostFileWindow()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("EditHostsFileWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("EditHostsFileWindowTitle");
 
         DisableResizeFeature();
 

@@ -18,12 +18,12 @@ namespace CDPIUI.Helper.UserExperience;
 internal sealed class LocalizationHelper : INotifyPropertyChanged
 {
     private static LocalizationHelper _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static LocalizationHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new LocalizationHelper();
                 return _instance;
@@ -31,20 +31,20 @@ internal sealed class LocalizationHelper : INotifyPropertyChanged
         }
     }
 
-    private readonly ILocalizer localizer;
-    private LanguageSelectModel currentLanguage;
+    private readonly ILocalizer _localizer;
+    private LanguageSelectModel _currentLanguage;
 
     public ObservableCollection<LanguageSelectModel> Languages { get; } = [];
 
     public LanguageSelectModel CurrentLanguage
     {
-        get => currentLanguage;
+        get => _currentLanguage;
         private set
         {
-            if (ReferenceEquals(currentLanguage, value))
+            if (ReferenceEquals(_currentLanguage, value))
                 return;
 
-            currentLanguage = value;
+            _currentLanguage = value;
             PropertyChanged?.Invoke(
                 this,
                 new PropertyChangedEventArgs(nameof(CurrentLanguage)));
@@ -55,22 +55,22 @@ internal sealed class LocalizationHelper : INotifyPropertyChanged
 
     private LocalizationHelper()
     {
-        localizer = Localizer.Get();
+        _localizer = Localizer.Get();
 
         Languages.Add(new()
         {
             Id = "en-us",
-            DisplayName = localizer.GetLocalizedString("en-us")
+            DisplayName = _localizer.GetLocalizedString("en-us")
         });
 
         Languages.Add(new()
         {
             Id = "ru",
-            DisplayName = localizer.GetLocalizedString("ru")
+            DisplayName = _localizer.GetLocalizedString("ru")
         });
 
-        CurrentLanguage = FindLanguage(localizer.GetCurrentLanguage());
-        localizer.LanguageChanged += Localizer_LanguageChanged;
+        CurrentLanguage = FindLanguage(_localizer.GetCurrentLanguage());
+        _localizer.LanguageChanged += Localizer_LanguageChanged;
     }
 
     // Falls back to the first language: an unknown id left CurrentLanguage null and the
@@ -98,13 +98,13 @@ internal sealed class LocalizationHelper : INotifyPropertyChanged
     {
         if (string.Equals(
             id,
-            localizer.GetCurrentLanguage(),
+            _localizer.GetCurrentLanguage(),
             StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        await localizer.SetLanguage(id);
+        await _localizer.SetLanguage(id);
         SettingsManager.Instance.SetValue<string>("SYSTEM", "language", id);
     }
 

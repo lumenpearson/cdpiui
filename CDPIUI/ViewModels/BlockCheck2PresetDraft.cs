@@ -20,12 +20,12 @@ public enum BlockCheck2PresetDraftOrigin
 
 public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
 {
-    private string automaticArguments = string.Empty;
-    private string structuredArguments = string.Empty;
-    private string expertArguments = string.Empty;
-    private bool isExpertEditingEnabled;
-    private bool hasExpertChanges;
-    private BlockCheck2PresetDraftOrigin origin = BlockCheck2PresetDraftOrigin.Manual;
+    private string _automaticArguments = string.Empty;
+    private string _structuredArguments = string.Empty;
+    private string _expertArguments = string.Empty;
+    private bool _isExpertEditingEnabled;
+    private bool _hasExpertChanges;
+    private BlockCheck2PresetDraftOrigin _origin = BlockCheck2PresetDraftOrigin.Manual;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -33,31 +33,31 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
     public ObservableCollection<BlockCheck2PresetFileItem> Files { get; } = [];
     public ObservableCollection<BlockCheck2PresetGroupItem> Groups { get; } = [];
 
-    public BlockCheck2PresetDraftOrigin Origin => origin;
-    public bool HasAutomaticSource => !string.IsNullOrWhiteSpace(automaticArguments);
-    public bool IsAutomatic => origin == BlockCheck2PresetDraftOrigin.Automatic;
-    public bool IsModifiedAutomatic => origin == BlockCheck2PresetDraftOrigin.ModifiedAutomatic;
-    public bool IsExpertEditingEnabled => isExpertEditingEnabled;
-    public bool HasExpertChanges => hasExpertChanges;
-    public string StructuredArguments => structuredArguments;
-    public string EffectiveArguments => isExpertEditingEnabled ? expertArguments : structuredArguments;
+    public BlockCheck2PresetDraftOrigin Origin => _origin;
+    public bool HasAutomaticSource => !string.IsNullOrWhiteSpace(_automaticArguments);
+    public bool IsAutomatic => _origin == BlockCheck2PresetDraftOrigin.Automatic;
+    public bool IsModifiedAutomatic => _origin == BlockCheck2PresetDraftOrigin.ModifiedAutomatic;
+    public bool IsExpertEditingEnabled => _isExpertEditingEnabled;
+    public bool HasExpertChanges => _hasExpertChanges;
+    public string StructuredArguments => _structuredArguments;
+    public string EffectiveArguments => _isExpertEditingEnabled ? _expertArguments : _structuredArguments;
     public bool CanUseConfig => !string.IsNullOrWhiteSpace(EffectiveArguments);
 
     public void LoadAutomatic(
         string? arguments,
         IEnumerable<BlockCheckReportProfile> profiles)
     {
-        automaticArguments = arguments?.Trim() ?? string.Empty;
-        structuredArguments = automaticArguments;
-        expertArguments = string.Empty;
-        isExpertEditingEnabled = false;
-        hasExpertChanges = false;
-        origin = HasAutomaticSource
+        _automaticArguments = arguments?.Trim() ?? string.Empty;
+        _structuredArguments = _automaticArguments;
+        _expertArguments = string.Empty;
+        _isExpertEditingEnabled = false;
+        _hasExpertChanges = false;
+        _origin = HasAutomaticSource
             ? BlockCheck2PresetDraftOrigin.Automatic
             : BlockCheck2PresetDraftOrigin.Manual;
         ReplaceDetails(
             profiles.Select(BlockCheck2PresetGroupItem.FromReport),
-            structuredArguments);
+            _structuredArguments);
         NotifyAll();
     }
 
@@ -65,42 +65,42 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
         string? arguments,
         IEnumerable<Zapret2ProfilePlan>? profiles)
     {
-        structuredArguments = arguments?.Trim() ?? string.Empty;
-        origin = HasAutomaticSource
+        _structuredArguments = arguments?.Trim() ?? string.Empty;
+        _origin = HasAutomaticSource
             ? BlockCheck2PresetDraftOrigin.ModifiedAutomatic
             : BlockCheck2PresetDraftOrigin.Manual;
         DiscardExpertChanges(notify: false);
         ReplaceDetails(
             (profiles ?? []).Select(BlockCheck2PresetGroupItem.FromPlan),
-            structuredArguments);
+            _structuredArguments);
         NotifyAll();
     }
 
     public void BeginExpertEditing()
     {
-        if (isExpertEditingEnabled)
+        if (_isExpertEditingEnabled)
         {
             return;
         }
-        expertArguments = structuredArguments;
-        isExpertEditingEnabled = true;
-        hasExpertChanges = false;
+        _expertArguments = _structuredArguments;
+        _isExpertEditingEnabled = true;
+        _hasExpertChanges = false;
         NotifyAll();
     }
 
     public void SetExpertArguments(string? arguments)
     {
-        if (!isExpertEditingEnabled)
+        if (!_isExpertEditingEnabled)
         {
             return;
         }
-        expertArguments = arguments ?? string.Empty;
+        _expertArguments = arguments ?? string.Empty;
         bool filesChanged = ReplaceFiles(
-            expertArguments,
+            _expertArguments,
             Groups.SelectMany(group => group.HostListPaths));
-        hasExpertChanges = !string.Equals(
-            expertArguments,
-            structuredArguments,
+        _hasExpertChanges = !string.Equals(
+            _expertArguments,
+            _structuredArguments,
             StringComparison.Ordinal);
         Notify(nameof(EffectiveArguments));
         Notify(nameof(HasExpertChanges));
@@ -117,18 +117,18 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
         string replacementPath)
     {
         string updatedArguments = arguments?.Trim() ?? string.Empty;
-        if (isExpertEditingEnabled)
+        if (_isExpertEditingEnabled)
         {
-            expertArguments = updatedArguments;
-            hasExpertChanges = !string.Equals(
-                expertArguments,
-                structuredArguments,
+            _expertArguments = updatedArguments;
+            _hasExpertChanges = !string.Equals(
+                _expertArguments,
+                _structuredArguments,
                 StringComparison.Ordinal);
         }
         else
         {
-            structuredArguments = updatedArguments;
-            origin = HasAutomaticSource
+            _structuredArguments = updatedArguments;
+            _origin = HasAutomaticSource
                 ? BlockCheck2PresetDraftOrigin.ModifiedAutomatic
                 : BlockCheck2PresetDraftOrigin.Manual;
             BlockCheck2PresetGroupItem[] updatedGroups = Groups
@@ -141,8 +141,8 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
             }
         }
         ReplaceFiles(
-            isExpertEditingEnabled ? expertArguments : structuredArguments,
-            isExpertEditingEnabled
+            _isExpertEditingEnabled ? _expertArguments : _structuredArguments,
+            _isExpertEditingEnabled
                 ? []
                 : Groups.SelectMany(group => group.HostListPaths));
         NotifyAll();
@@ -152,11 +152,11 @@ public sealed class BlockCheck2PresetDraft : INotifyPropertyChanged
 
     private void DiscardExpertChanges(bool notify)
     {
-        expertArguments = string.Empty;
-        isExpertEditingEnabled = false;
-        hasExpertChanges = false;
+        _expertArguments = string.Empty;
+        _isExpertEditingEnabled = false;
+        _hasExpertChanges = false;
         ReplaceFiles(
-            structuredArguments,
+            _structuredArguments,
             Groups.SelectMany(group => group.HostListPaths));
         if (notify)
         {

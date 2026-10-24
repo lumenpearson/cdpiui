@@ -12,13 +12,13 @@ namespace CDPIUI.TrayIcon.Helper.Basic;
 public class Logger : LoggerBase, ILogger
 {
     private static Logger? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
 
     public static Logger Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 if (_instance == null)
                     _instance = new Logger();

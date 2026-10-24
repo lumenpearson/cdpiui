@@ -39,10 +39,10 @@ namespace CDPIUI.Views.Settings;
 /// </summary>
 public sealed partial class AutorunPage : TemplatePage
 {
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
-    private readonly ObservableCollection<ViewComponentModel> ComponentModels = new();
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
+    private readonly ObservableCollection<ViewComponentModel> _componentModels = new();
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public AutorunPage()
     {
@@ -53,10 +53,10 @@ public sealed partial class AutorunPage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
         CreateBreadcrumbBarNavigation();
 
-        ComponentSettingsExpander.ItemsSource = ComponentModels;
+        ComponentSettingsExpander.ItemsSource = _componentModels;
 
 
         AutorunToggleSwitch.IsOn = SettingsManager.Instance.GetValue<bool>("SYSTEM", "autorun");
@@ -77,12 +77,12 @@ public sealed partial class AutorunPage : TemplatePage
 
     private void LoadComponents()
     {
-        ComponentModels.Clear();
+        _componentModels.Clear();
         try
         {
-            UIHelper.LoadInstalledComponentsList(ComponentModels);
+            UIHelper.LoadInstalledComponentsList(_componentModels);
 
-            if (ComponentModels.Count > 0)
+            if (_componentModels.Count > 0)
             {
                 NoComponentInstalledTextBlock.Visibility = Visibility.Collapsed;
             }
@@ -99,12 +99,12 @@ public sealed partial class AutorunPage : TemplatePage
 
     private void CheckComponentsAutorunState()
     {
-        foreach (var item in ComponentModels)
+        foreach (var item in _componentModels)
         {
             item.IsUsedForAutorun = SettingsManager.Instance.GetValue<bool>(["CONFIGS", item.StoreId], "usedForAutorun");
         }
 
-        AutorunWarningInfoBar.IsOpen = !ComponentModels.Any(x => x.IsUsedForAutorun);
+        AutorunWarningInfoBar.IsOpen = !_componentModels.Any(x => x.IsUsedForAutorun);
     }
 
     private void StoreHelper_ItemActionsStopped(string obj)
@@ -155,15 +155,15 @@ public sealed partial class AutorunPage : TemplatePage
 
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Autorun"),
+            DisplayName = _localizer.GetLocalizedString("Autorun"),
             Tag = this.GetType()
         });
     }

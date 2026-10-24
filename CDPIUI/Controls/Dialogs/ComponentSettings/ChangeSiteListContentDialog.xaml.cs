@@ -48,7 +48,7 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
         set
         {
             _listTitle = value;
-            this.Title = string.Format(localizer.GetLocalizedString("ChangeListContentDialogTitle"), ListTitle.ToLower());
+            this.Title = string.Format(_localizer.GetLocalizedString("ChangeListContentDialogTitle"), ListTitle.ToLower());
         }
     }
     public string PackId = string.Empty;
@@ -56,33 +56,33 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
     public string NewFileName { get; private set; } = string.Empty;
     public FileSelectionType SelectionType { get; private set; } = FileSelectionType.None;
 
-    private bool isIpSet = false;
+    private bool _isIpSet = false;
     public bool IsIpSet
     {
         get
         {
-            return isIpSet;
+            return _isIpSet;
         }
         set
         {
-            isIpSet = value;
+            _isIpSet = value;
             Init();
         }
     }
 
     public bool IsDialogFinishedSuccessfully = false;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
-    private ObservableCollection<ViewSiteListModel> SiteListModels = [];
-    private ObservableCollection<ViewSiteListModel> ManualSiteListModels = [];
+    private ObservableCollection<ViewSiteListModel> _siteListModels = [];
+    private ObservableCollection<ViewSiteListModel> _manualSiteListModels = [];
 
     public ChangeSiteListContentDialog()
     {
         InitializeComponent();
 
-        StoreListView.ItemsSource = SiteListModels;
-        ManualListView.ItemsSource = ManualSiteListModels;
+        StoreListView.ItemsSource = _siteListModels;
+        ManualListView.ItemsSource = _manualSiteListModels;
         MainSelectorBar.SelectedItem = FromTheStoreSelectorBarItem;
 
         AuditIsApplyButtonAvailable();
@@ -90,8 +90,8 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
 
     private void Init()
     {
-        SiteListModels.Clear();
-        ManualSiteListModels.Clear();
+        _siteListModels.Clear();
+        _manualSiteListModels.Clear();
 
         var items = DatabaseHelper.Instance.GetItemsByType(IsIpSet ? "isubscription" : "lsubscription");
 
@@ -104,7 +104,7 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
                     !extension.Equals(".json", StringComparison.OrdinalIgnoreCase) &&
                     !extension.Equals(".cat", StringComparison.OrdinalIgnoreCase))
                 {
-                    SiteListModels.Add(new()
+                    _siteListModels.Add(new()
                     {
                         Title = Path.GetFileName(file),
                         Developer = $"{item.ShortName} – {item.Developer}",
@@ -115,14 +115,14 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
             }
         }
 
-        StoreNoItemsPlaceholder.Visibility = SiteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        StoreNoItemsPlaceholder.Visibility = _siteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
         var localItems = SettingsManager.Instance.GetValue<List<string>>("USERCHOISES", IsIpSet ? "ipSets" : "siteLists");
         foreach (var item in localItems)
         {
             if (!Path.Exists(item))
                 continue;
-            ManualSiteListModels.Add(new()
+            _manualSiteListModels.Add(new()
             {
                 Title = Path.GetFileName(item),
                 Developer = Path.GetFullPath(item),
@@ -130,7 +130,7 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
                 Size = UnitsParser.FormatSize(FileSystemService.GetFileSize(item, Logger.Instance))
             });
         }
-        RecentFilesNotFoundPlaceholder.Visibility = ManualSiteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecentFilesNotFoundPlaceholder.Visibility = _manualSiteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void ViewInStoreButton_Click(object sender, RoutedEventArgs e)
@@ -148,10 +148,10 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
         string filePath;
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = IsIpSet ? localizer.GetLocalizedString("ChooseIpList") : localizer.GetLocalizedString("ChooseSiteList");
+            openFileDialog.Title = IsIpSet ? _localizer.GetLocalizedString("ChooseIpList") : _localizer.GetLocalizedString("ChooseSiteList");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-            openFileDialog.Filter = $"{localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -163,7 +163,7 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
                 return;
             }
         }
-        var model = ManualSiteListModels.FirstOrDefault(x => x.FileName == filePath);
+        var model = _manualSiteListModels.FirstOrDefault(x => x.FileName == filePath);
         if (model != null)
         {
             ManualListView.SelectedItem = model;
@@ -177,12 +177,12 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
             FileName = filePath,
             Size = UnitsParser.FormatSize(FileSystemService.GetFileSize(filePath, Logger.Instance))
         };
-        ManualSiteListModels.Add(model);
+        _manualSiteListModels.Add(model);
 
         ManualListView.SelectedItem = model;
 
         List<string> localItems = [];
-        foreach (var item in ManualSiteListModels)
+        foreach (var item in _manualSiteListModels)
         {
             localItems.Add(item.FileName);
         }
@@ -190,7 +190,7 @@ public sealed partial class ChangeSiteListContentDialog : ContentDialog
         if (localItems.Count > 0)
             SettingsManager.Instance.SetValue<List<string>>("USERCHOISES", IsIpSet ? "ipSets" : "siteLists", localItems);
 
-        RecentFilesNotFoundPlaceholder.Visibility = ManualSiteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecentFilesNotFoundPlaceholder.Visibility = _manualSiteListModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void AuditIsApplyButtonAvailable()

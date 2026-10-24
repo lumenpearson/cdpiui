@@ -71,10 +71,10 @@ public enum PlacementModes
 public sealed partial class StatusNotificationControl : UserControl
 {
     private const int MaximumNotifications = 50;
-    private readonly DispatcherQueueTimer toastTimer;
-    private Storyboard showStoryboard;
-    private Storyboard hideStoryboard;
-    private int unreadCount;
+    private readonly DispatcherQueueTimer _toastTimer;
+    private Storyboard _showStoryboard;
+    private Storyboard _hideStoryboard;
+    private int _unreadCount;
 
     public static readonly DependencyProperty PlacementModeProperty =
         DependencyProperty.Register(
@@ -96,10 +96,10 @@ public sealed partial class StatusNotificationControl : UserControl
 
         this.DataContext = this;
 
-        toastTimer = DispatcherQueue.CreateTimer();
-        toastTimer.Interval = TimeSpan.FromSeconds(5);
-        toastTimer.IsRepeating = false;
-        toastTimer.Tick += ToastTimer_Tick;
+        _toastTimer = DispatcherQueue.CreateTimer();
+        _toastTimer.Interval = TimeSpan.FromSeconds(5);
+        _toastTimer.IsRepeating = false;
+        _toastTimer.Tick += ToastTimer_Tick;
         UpdateNotificationState();
     }
 
@@ -158,7 +158,7 @@ public sealed partial class StatusNotificationControl : UserControl
         {
             Notifications.RemoveAt(Notifications.Count - 1);
         }
-        unreadCount = Math.Min(999, unreadCount + 1);
+        _unreadCount = Math.Min(999, _unreadCount + 1);
         UpdateNotificationState();
         ShowToast(item);
     }
@@ -166,16 +166,16 @@ public sealed partial class StatusNotificationControl : UserControl
     public void Clear()
     {
         Notifications.Clear();
-        unreadCount = 0;
+        _unreadCount = 0;
         HideToast();
         UpdateNotificationState();
     }
 
     private void ShowToast(StatusNotificationItem item)
     {
-        toastTimer.Stop();
-        StopStoryboard(ref showStoryboard);
-        StopStoryboard(ref hideStoryboard);
+        _toastTimer.Stop();
+        StopStoryboard(ref _showStoryboard);
+        StopStoryboard(ref _hideStoryboard);
 
         ToastTitleTextBlock.Text = item.Title;
         ToastMessageTextBlock.Text = item.Message;
@@ -185,28 +185,28 @@ public sealed partial class StatusNotificationControl : UserControl
         ToastCard.Opacity = 0;
         ToastTranslateTransform.X = 32;
 
-        showStoryboard = new Storyboard();
-        AddAnimation(showStoryboard, ToastCard, nameof(UIElement.Opacity), 0, 1, 160);
-        AddAnimation(showStoryboard, ToastTranslateTransform, nameof(TranslateTransform.X), 32, 0, 190);
-        showStoryboard.Begin();
-        toastTimer.Start();
+        _showStoryboard = new Storyboard();
+        AddAnimation(_showStoryboard, ToastCard, nameof(UIElement.Opacity), 0, 1, 160);
+        AddAnimation(_showStoryboard, ToastTranslateTransform, nameof(TranslateTransform.X), 32, 0, 190);
+        _showStoryboard.Begin();
+        _toastTimer.Start();
     }
 
     private void HideToast()
     {
-        toastTimer.Stop();
-        StopStoryboard(ref showStoryboard);
-        StopStoryboard(ref hideStoryboard);
+        _toastTimer.Stop();
+        StopStoryboard(ref _showStoryboard);
+        StopStoryboard(ref _hideStoryboard);
         if (ToastCard.Visibility != Visibility.Visible)
         {
             return;
         }
 
-        hideStoryboard = new Storyboard();
-        AddAnimation(hideStoryboard, ToastCard, nameof(UIElement.Opacity), ToastCard.Opacity, 0, 130);
-        AddAnimation(hideStoryboard, ToastTranslateTransform, nameof(TranslateTransform.X), ToastTranslateTransform.X, 36, 160);
-        hideStoryboard.Completed += HideStoryboard_Completed;
-        hideStoryboard.Begin();
+        _hideStoryboard = new Storyboard();
+        AddAnimation(_hideStoryboard, ToastCard, nameof(UIElement.Opacity), ToastCard.Opacity, 0, 130);
+        AddAnimation(_hideStoryboard, ToastTranslateTransform, nameof(TranslateTransform.X), ToastTranslateTransform.X, 36, 160);
+        _hideStoryboard.Completed += HideStoryboard_Completed;
+        _hideStoryboard.Begin();
     }
 
     private static void AddAnimation(
@@ -231,11 +231,11 @@ public sealed partial class StatusNotificationControl : UserControl
 
     private void HideStoryboard_Completed(object sender, object e)
     {
-        if (hideStoryboard != null)
+        if (_hideStoryboard != null)
         {
-            hideStoryboard.Completed -= HideStoryboard_Completed;
+            _hideStoryboard.Completed -= HideStoryboard_Completed;
         }
-        StopStoryboard(ref hideStoryboard);
+        StopStoryboard(ref _hideStoryboard);
         ToastCard.Visibility = Visibility.Collapsed;
         ToastCard.Opacity = 0;
         ToastTranslateTransform.X = 32;
@@ -253,7 +253,7 @@ public sealed partial class StatusNotificationControl : UserControl
 
     private void NotificationFlyout_Opened(object sender, object e)
     {
-        unreadCount = 0;
+        _unreadCount = 0;
         HideToast();
         UpdateNotificationState();
     }
@@ -266,8 +266,8 @@ public sealed partial class StatusNotificationControl : UserControl
 
     private void UpdateNotificationState()
     {
-        UnreadBadge.Visibility = unreadCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        UnreadCountTextBlock.Text = unreadCount > 99 ? "99+" : unreadCount.ToString();
+        UnreadBadge.Visibility = _unreadCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        UnreadCountTextBlock.Text = _unreadCount > 99 ? "99+" : _unreadCount.ToString();
         EmptyNotificationsTextBlock.Visibility = Notifications.Count == 0
             ? Visibility.Visible
             : Visibility.Collapsed;

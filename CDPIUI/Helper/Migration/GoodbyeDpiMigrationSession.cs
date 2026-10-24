@@ -23,10 +23,10 @@ internal enum MigrationSessionState
 
 internal sealed class GoodbyeDpiMigrationSession : IDisposable
 {
-    private readonly object syncRoot = new();
-    private readonly MigrationArchiveInspectionService inspectionService = new();
-    private readonly CancellationTokenSource cancellation = new();
-    private Task? preparationTask;
+    private readonly object _syncRoot = new();
+    private readonly MigrationArchiveInspectionService _inspectionService = new();
+    private readonly CancellationTokenSource _cancellation = new();
+    private Task? _preparationTask;
 
     public GoodbyeDpiMigrationActivationRequest Request { get; }
     public VerifiedMigrationPackage? Package { get; private set; }
@@ -45,24 +45,24 @@ internal sealed class GoodbyeDpiMigrationSession : IDisposable
 
     public void BeginPreparation()
     {
-        lock (syncRoot)
+        lock (_syncRoot)
         {
-            if (preparationTask is { IsCompleted: false })
+            if (_preparationTask is { IsCompleted: false })
                 return;
-            preparationTask = PrepareAsync();
+            _preparationTask = PrepareAsync();
         }
     }
 
     public async Task RetryPreparationAsync()
     {
-        lock (syncRoot)
+        lock (_syncRoot)
         {
-            if (preparationTask is { IsCompleted: false })
+            if (_preparationTask is { IsCompleted: false })
                 return;
             Package = null;
-            preparationTask = PrepareAsync();
+            _preparationTask = PrepareAsync();
         }
-        await preparationTask;
+        await _preparationTask;
     }
 
     public Task UpdateAsync(
@@ -84,8 +84,8 @@ internal sealed class GoodbyeDpiMigrationSession : IDisposable
         try
         {
             VerifiedMigrationPackage package = await Task.Run(
-                () => inspectionService.InspectAndStage(Request, cancellation.Token),
-                cancellation.Token);
+                () => _inspectionService.InspectAndStage(Request, _cancellation.Token),
+                _cancellation.Token);
             Package = package;
             await UpdateAsync(MigrationSessionState.ReadyForComponents, 20);
         }
@@ -113,7 +113,7 @@ internal sealed class GoodbyeDpiMigrationSession : IDisposable
         string? message,
         string? errorCode)
     {
-        lock (syncRoot)
+        lock (_syncRoot)
         {
             State = state;
             Progress = Math.Clamp(progress, 0, 100);
@@ -125,7 +125,7 @@ internal sealed class GoodbyeDpiMigrationSession : IDisposable
 
     public void Dispose()
     {
-        cancellation.Cancel();
-        cancellation.Dispose();
+        _cancellation.Cancel();
+        _cancellation.Dispose();
     }
 }

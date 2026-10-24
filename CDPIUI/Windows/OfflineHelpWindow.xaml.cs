@@ -52,13 +52,13 @@ public sealed partial class OfflineHelpWindow : TemplateWindow
         set => _config = value;
     }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public OfflineHelpWindow()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("OfflineHelpWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("OfflineHelpWindowTitle");
         IconUri = @"Assets/Icons/Help.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 
@@ -133,7 +133,7 @@ public sealed partial class OfflineHelpWindow : TemplateWindow
         if (!TryNavigateToPage(uri))
         {
             HelpNavigationView.SelectedItem = null;
-            MarkdownTextBlock.Text = string.Format(localizer.GetLocalizedString("/Help/NotFoundTemplate"), uri);
+            MarkdownTextBlock.Text = string.Format(_localizer.GetLocalizedString("/Help/NotFoundTemplate"), uri);
         }
     }
 
@@ -228,7 +228,7 @@ public sealed partial class OfflineHelpWindow : TemplateWindow
         }
         else if (tag == "AboutHelp")
         {
-            MarkdownTextBlock.Text = localizer.GetLocalizedString("/Help/AboutTemplate");
+            MarkdownTextBlock.Text = _localizer.GetLocalizedString("/Help/AboutTemplate");
         }
     }
 

@@ -47,8 +47,8 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
     private readonly ObservableCollection<UIElement> _tiles = new();
 
-    private bool ShowAnim = true;
-    private ILocalizer localizer = Localizer.Get();
+    private bool _showAnim = true;
+    private ILocalizer _localizer = Localizer.Get();
     public DefaultComponentSettingsPage()
     {
         InitializeComponent();
@@ -117,8 +117,8 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             SettingsTile variablesItem = new()
             {
                 IconGlyph = "\uE713",
-                Title = localizer.GetLocalizedString("/SettingTiles/AvailableSettings"),
-                Description = localizer.GetLocalizedString("/SettingTiles/SetupConfig")
+                Title = _localizer.GetLocalizedString("/SettingTiles/AvailableSettings"),
+                Description = _localizer.GetLocalizedString("/SettingTiles/SetupConfig")
             };
 
             _flag = false;
@@ -155,8 +155,8 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             SettingsTile sitelistTile = new()
             {
                 IconGlyph = "\uE7C3",
-                Title = localizer.GetLocalizedString("/SettingTiles/UsedSiteLists"),
-                Description = localizer.GetLocalizedString("/SettingTiles/UsedSiteListsTip")
+                Title = _localizer.GetLocalizedString("/SettingTiles/UsedSiteLists"),
+                Description = _localizer.GetLocalizedString("/SettingTiles/UsedSiteListsTip")
             };
 
             _flag = false;
@@ -168,7 +168,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 string hardLinkTargetFile = FileSystemLinksManager.IsFileLinked(sel.PackId, item.FilePath);
 
                 string title =
-                    localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
+                    _localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
                     $" {item.Name}" + (string.IsNullOrEmpty(hardLinkTargetFile) ? "" : $" ({Path.GetFileName(hardLinkTargetFile)})");
 
                 SettingsTileItem settingsTileItem = new()
@@ -202,8 +202,8 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             SettingsTile sitelistTile = new()
             {
                 IconGlyph = "\uE7C3",
-                Title = localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteLists"),
-                Description = localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteListsTip")
+                Title = _localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteLists"),
+                Description = _localizer.GetLocalizedString("/SettingTiles/UsedExcludedSiteListsTip")
             };
 
             _flag = false;
@@ -215,7 +215,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 string hardLinkTargetFile = FileSystemLinksManager.IsFileLinked(sel.PackId, item.FilePath);
 
                 string title =
-                    localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
+                    _localizer.GetLocalizedString($"/SettingTiles/{item.Type}") +
                     $" {item.Name}" + (string.IsNullOrEmpty(hardLinkTargetFile) ? "" : $" ({Path.GetFileName(hardLinkTargetFile)})");
 
                 SettingsTileItem settingsTileItem = new()
@@ -249,8 +249,8 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             SettingsTile commaVariablesWidget = new()
             {
                 IconGlyph = "\uEC7A",
-                Title = localizer.GetLocalizedString("/SettingTiles/AdvancedSettings"),
-                Description = localizer.GetLocalizedString("/SettingTiles/ConfigVariablesTip"),
+                Title = _localizer.GetLocalizedString("/SettingTiles/AdvancedSettings"),
+                Description = _localizer.GetLocalizedString("/SettingTiles/ConfigVariablesTip"),
             };
 
             _flag = false;
@@ -283,13 +283,13 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
         SettingsTile helpTile = new()
         {
             IconGlyph = "\uE754",
-            Title = localizer.GetLocalizedString("/Flashlight/Title"),
-            Description = localizer.GetLocalizedString("/Flashlight/DefaultTip")
+            Title = _localizer.GetLocalizedString("/Flashlight/Title"),
+            Description = _localizer.GetLocalizedString("/Flashlight/DefaultTip")
         };
 
         SettingsTileItem helpTileItem = new()
         {
-            Title = localizer.GetLocalizedString("/Flashlight/OpenOfflineHelp"),
+            Title = _localizer.GetLocalizedString("/Flashlight/OpenOfflineHelp"),
             ShowTopRectangle = false,
         };
         helpTileItem.Contents.Add(new SettingTileContentDefinition
@@ -302,7 +302,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
         SettingsTileItem whatConfigChooseHelpTileItem = new()
         {
-            Title = localizer.GetLocalizedString("/Flashlight/WhatConfigChooseHelp"),
+            Title = _localizer.GetLocalizedString("/Flashlight/WhatConfigChooseHelp"),
             ShowTopRectangle = true,
         };
         whatConfigChooseHelpTileItem.Contents.Add(new SettingTileContentDefinition
@@ -338,7 +338,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             case ActionIds.ViewButtonClicked:
                 Controls.Dialogs.ViewApplyArgsContentDialog dialog = new()
                 {
-                    Title = localizer.GetLocalizedString("AppliedFlagsDialogTitle"),
+                    Title = _localizer.GetLocalizedString("AppliedFlagsDialogTitle"),
                     DialogTitle = arguments[0],
                     Args = contentDefinition.PrettyViewParams,
                     XamlRoot = this.XamlRoot,
@@ -375,7 +375,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 bool.TryParse(arguments[0], out bool result);
                 componentHelper.GetConfigHelper().ChangeVariableValue(contentDefinition.FileName, contentDefinition.PackId, contentDefinition.VariableName, result);
 
-                ShowAnim = false;
+                _showAnim = false;
                 var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
                 Task.Run(() => InitSettingsTiles(item));
                 _ = RestartComponentIfRunning();
@@ -423,7 +423,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             contentDefinition.VariableName,
             dialog.VarValue);
 
-        ShowAnim = false;
+        _showAnim = false;
         var selectedConfig = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
         _ = Task.Run(() => InitSettingsTiles(selectedConfig));
         if (await ComponentTasksManager.Instance.IsTaskRunning(ComponentId))
@@ -442,7 +442,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             {
                 ErrorContentDialog dialog = new();
                 await dialog.ShowErrorDialogAsync(
-                    string.Format(localizer.GetLocalizedString("ReplaceSiteListException"),
+                    string.Format(_localizer.GetLocalizedString("ReplaceSiteListException"),
                     Path.GetFileName(linkName),
                     Path.GetFileName(fileName),
                     result.Error.ErrorCode),
@@ -453,7 +453,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
             else
             {
 
-                ShowAnim = false;
+                _showAnim = false;
                 var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
                 _ = Task.Run(() => InitSettingsTiles(item));
             }
@@ -494,14 +494,14 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 {
                     ErrorContentDialog dialog = new();
                     await dialog.ShowErrorDialogAsync(
-                        string.Format(localizer.GetLocalizedString("ReplaceSiteListException"), Path.GetFileName(fileName), Path.GetFileName(changeListContentDialog.NewFileName), result.Error.ErrorCode),
+                        string.Format(_localizer.GetLocalizedString("ReplaceSiteListException"), Path.GetFileName(fileName), Path.GetFileName(changeListContentDialog.NewFileName), result.Error.ErrorCode),
                         result.Error.FriendlyDescription,
                         this.XamlRoot
                         );
                 }
                 else
                 {
-                    ShowAnim = false;
+                    _showAnim = false;
                     var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
                     _ = Task.Run(() => InitSettingsTiles(item));
                 }
@@ -571,24 +571,24 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
         }
     }
 
-    private ComponentPresetListSubscription presetListSubscription;
-    private bool updatingConfigList;
+    private ComponentPresetListSubscription _presetListSubscription;
+    private bool _updatingConfigList;
 
     private void PresetPage_Loaded(object sender, RoutedEventArgs e)
     {
-        presetListSubscription?.Dispose();
-        presetListSubscription = new(ComponentId, DispatcherQueue, ApplyPresetItems);
+        _presetListSubscription?.Dispose();
+        _presetListSubscription = new(ComponentId, DispatcherQueue, ApplyPresetItems);
     }
 
     private void PresetPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        presetListSubscription?.Dispose();
-        presetListSubscription = null;
+        _presetListSubscription?.Dispose();
+        _presetListSubscription = null;
     }
 
     private void ApplyPresetItems(IReadOnlyList<ConfigSelectorItem> items)
     {
-        updatingConfigList = true;
+        _updatingConfigList = true;
         try
         {
             _configItems.Clear();
@@ -596,7 +596,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 _configItems.Add(item);
             ToggleVisibility(_configItems.Count > 0);
         }
-        finally { updatingConfigList = false; }
+        finally { _updatingConfigList = false; }
         ApplySavedSelection();
     }
 
@@ -608,7 +608,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
     private async void ConfigChooseCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (updatingConfigList || !IsLoaded)
+        if (_updatingConfigList || !IsLoaded)
             return;
         if (ConfigChooseCombobox.SelectedItem is ConfigSelectorItem sel)
         {
@@ -638,7 +638,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
             _ = Task.Run(() => InitSettingsTiles(sel));
         }
-        ShowAnim = true;
+        _showAnim = true;
 
     }
 
@@ -667,7 +667,7 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
 
         ElementCompositionPreview.SetIsTranslationEnabled(element, true);
 
-        if (ShowAnim)
+        if (_showAnim)
             visual.Properties.InsertVector3("Translation", new Vector3(0, 50, 0));
 
         visual.Opacity = 0f;
@@ -682,18 +682,18 @@ public sealed partial class DefaultComponentSettingsPage : TemplatePage
                 translationAnim.InsertKeyFrame(1f, Vector3.Zero);
                 translationAnim.Duration = TimeSpan.FromMilliseconds(300);
 
-                if (ShowAnim)
+                if (_showAnim)
                     visual.StartAnimation("Translation", translationAnim);
 
 
                 var fadeAnim = compositor.CreateScalarKeyFrameAnimation();
                 fadeAnim.Target = "Opacity";
-                if (ShowAnim)
+                if (_showAnim)
                     fadeAnim.InsertKeyFrame(0f, 0f);
                 else
                     fadeAnim.InsertKeyFrame(0.5f, 0.5f);
                 fadeAnim.InsertKeyFrame(1f, 1f);
-                fadeAnim.Duration = TimeSpan.FromMilliseconds(ShowAnim ? 300 : 150);
+                fadeAnim.Duration = TimeSpan.FromMilliseconds(_showAnim ? 300 : 150);
 
                 visual.StartAnimation("Opacity", fadeAnim);
 

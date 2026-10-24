@@ -25,7 +25,7 @@ namespace CDPIUI.Controls.MainPage;
 public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 {
 
-    private List<string> Tips = [];
+    private List<string> _tips = [];
 
     private int _currentIndex = 0;
     private bool _isAnimating = false;
@@ -33,7 +33,7 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
     private int _targetIndex = 0;
     private double _slideInFromX = 0;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public FlashlightTipsWidgetUserControl()
     {
@@ -67,21 +67,21 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 
     private void LoadTips()
     {
-        if (!FlashlightHelper.LoadFlashlightTips(Tips))
+        if (!FlashlightHelper.LoadFlashlightTips(_tips))
         {
-            Tips.Add(localizer.GetLocalizedString("FlashlightBad"));
-            Tips.Add(":(");
-            TipTitleTextBlock.Text = localizer.GetLocalizedString("FlashlightBadTitle");
+            _tips.Add(_localizer.GetLocalizedString("FlashlightBad"));
+            _tips.Add(":(");
+            TipTitleTextBlock.Text = _localizer.GetLocalizedString("FlashlightBadTitle");
         }
         else
         {
-            TipTitleTextBlock.Text = localizer.GetLocalizedString("/Flashlight/AreYouKnow");
+            TipTitleTextBlock.Text = _localizer.GetLocalizedString("/Flashlight/AreYouKnow");
         }
 
         // The first tip is shown directly: starting from Tips.Count skipped tip 0, and with a
         // single tip MoveNext did nothing and the widget stayed empty.
         _currentIndex = 0;
-        TipDescriptionTextBlock.Text = Tips.Count > 0 ? Tips[0] : string.Empty;
+        TipDescriptionTextBlock.Text = _tips.Count > 0 ? _tips[0] : string.Empty;
     }
 
     private void PreviousTipButton_Click(object sender, RoutedEventArgs e)
@@ -103,19 +103,19 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
 
     public void MoveNext()
     {
-        if (_isAnimating || Tips.Count <= 1)
+        if (_isAnimating || _tips.Count <= 1)
             return;
 
-        _targetIndex = (_currentIndex + 1) % Tips.Count;
+        _targetIndex = (_currentIndex + 1) % _tips.Count;
         StartTransition(slideOutToX: -200, slideInFromX: 200);
     }
 
     public void MovePrevious()
     {
-        if (_isAnimating || Tips.Count <= 1)
+        if (_isAnimating || _tips.Count <= 1)
             return;
 
-        _targetIndex = (_currentIndex - 1 + Tips.Count) % Tips.Count;
+        _targetIndex = (_currentIndex - 1 + _tips.Count) % _tips.Count;
         StartTransition(slideOutToX: 200, slideInFromX: -200);
     }
 
@@ -133,7 +133,7 @@ public sealed partial class FlashlightTipsWidgetUserControl : UserControl
     private void SlideOutStoryboard_Completed(object sender, object e)
     {
         _currentIndex = _targetIndex;
-        TipDescriptionTextBlock.Text = Tips[_currentIndex];
+        TipDescriptionTextBlock.Text = _tips[_currentIndex];
 
         TextTransform.X = _slideInFromX;
 

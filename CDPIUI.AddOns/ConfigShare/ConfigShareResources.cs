@@ -8,11 +8,11 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
 {
     internal sealed record Resource(string ArchivePath);
     internal Dictionary<string, Resource> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> emptyResources = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _replacements = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _emptyResources = new(StringComparer.OrdinalIgnoreCase);
 
     // A list that the component creates while it runs and that does not exist yet.
-    internal bool IsEmptyResource(string source) => emptyResources.Contains(source);
+    internal bool IsEmptyResource(string source) => _emptyResources.Contains(source);
 
     internal void Collect()
     {
@@ -29,8 +29,8 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
             // no file and the preset could not be shared. It is shared as an empty list;
             // the user's kit is not changed.
             if (!File.Exists(source) && IsRuntimeCreated(file.OptionName))
-                emptyResources.Add(source);
-            if (!File.Exists(source) && !emptyResources.Contains(source))
+                _emptyResources.Add(source);
+            if (!File.Exists(source) && !_emptyResources.Contains(source))
                 throw new ConfigShareException("SHARE_FILE_MISSING", file.Path);
             if (!Files.TryGetValue(source, out var resource))
             {
@@ -49,13 +49,13 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
         foreach (var metadata in config.configMaker?.resources ?? [])
         {
             string expanded = config.ExpandFileReference(metadata.path);
-            if (!replacements.TryGetValue(expanded, out string? portable))
+            if (!_replacements.TryGetValue(expanded, out string? portable))
                 continue;
             if (!string.IsNullOrWhiteSpace(metadata.alias))
                 AddReplacement("preset://" + metadata.alias, portable);
             metadata.isBuiltIn = false;
         }
-        MapConfig(config, text => ConfigShareService.ReplaceConfigReferences(text, replacements));
+        MapConfig(config, text => ConfigShareService.ReplaceConfigReferences(text, _replacements));
     }
 
     private static bool IsRuntimeCreated(string? optionName) =>
@@ -68,9 +68,9 @@ internal sealed class ConfigShareResources(ConfigItem config, string packDirecto
             return;
         if (reference.StartsWith('%') && reference.EndsWith('%') && reference.IndexOf('%', 1) == reference.Length - 1)
             return;
-        replacements[reference] = portable;
-        replacements[reference.Replace('\\', '/')] = portable;
-        replacements[reference.Replace('/', '\\')] = portable;
+        _replacements[reference] = portable;
+        _replacements[reference.Replace('\\', '/')] = portable;
+        _replacements[reference.Replace('/', '\\')] = portable;
     }
 
     private string GetArchivePath(string path)

@@ -35,22 +35,22 @@ public sealed partial class ViewConfigOutput : UserControl
     private const int MaxPendingLineLength = 64 * 1024;
 
     // Shown text of finished lines.
-    private readonly StringBuilder outputBuffer = new();
+    private readonly StringBuilder _outputBuffer = new();
     // Output text as read from the process service, before path replacement.
-    private readonly StringBuilder sourceBuffer = new();
+    private readonly StringBuilder _sourceBuffer = new();
     // Finished text of the last run.
-    private readonly StringBuilder blockText = new();
-    private readonly SolidColorBrush outputBrush = new(Colors.LightGray);
-    private readonly ILocalizer localizer = Localizer.Get();
-    private ProcessService processManager;
-    private int attachmentVersion;
-    private bool isLoaded;
+    private readonly StringBuilder _blockText = new();
+    private readonly SolidColorBrush _outputBrush = new(Colors.LightGray);
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private ProcessService _processManager;
+    private int _attachmentVersion;
+    private bool _isLoaded;
     // The last line can still get the rest of a path, so it is replaced again with each chunk.
-    private string pendingLine = string.Empty;
-    private string pendingDisplay = string.Empty;
-    private Run lastRun;
+    private string _pendingLine = string.Empty;
+    private string _pendingDisplay = string.Empty;
+    private Run _lastRun;
     // Number of the last output change shown (ProcessService numbers each change under its lock).
-    private long shownSequence;
+    private long _shownSequence;
 
     public ViewConfigOutput()
     {
@@ -68,63 +68,63 @@ public sealed partial class ViewConfigOutput : UserControl
         set => SetValue(ComponentIdProperty, value);
     }
 
-    public bool IsProcessRunning => processManager?.IsProcessRunning ?? false;
-    public string OutputText => outputBuffer.ToString() + pendingDisplay;
+    public bool IsProcessRunning => _processManager?.IsProcessRunning ?? false;
+    public string OutputText => _outputBuffer.ToString() + _pendingDisplay;
 
     public event Action<bool> RunningStateChanged;
 
     public async Task RefreshComponentAsync()
     {
-        int version = ++attachmentVersion;
+        int version = ++_attachmentVersion;
         DisconnectHandlers();
         ClearOutput();
         UpdateComponentLabel();
 
-        if (!isLoaded || string.IsNullOrWhiteSpace(ComponentId))
+        if (!_isLoaded || string.IsNullOrWhiteSpace(ComponentId))
         {
             UpdateRunningState(false, showMessage: false);
             return;
         }
 
         ProcessService candidate = (await ComponentTasksManager.Instance.GetTaskFromId(ComponentId))?.ProcessManager;
-        if (version != attachmentVersion)
+        if (version != _attachmentVersion)
         {
             return;
         }
 
-        processManager = candidate;
-        if (processManager == null)
+        _processManager = candidate;
+        if (_processManager == null)
         {
             UpdateRunningState(false, showMessage: false);
             return;
         }
 
-        processManager.OutputAppended += ProcessManager_OutputAppended;
-        processManager.OutputReset += ProcessManager_OutputReset;
-        processManager.ProcessStateChanged += ProcessManager_ProcessStateChanged;
-        processManager.ErrorHappens += ProcessManager_ErrorHappens;
-        processManager.ProcessNameChanged += ProcessManager_ProcessNameChanged;
+        _processManager.OutputAppended += ProcessManager_OutputAppended;
+        _processManager.OutputReset += ProcessManager_OutputReset;
+        _processManager.ProcessStateChanged += ProcessManager_ProcessStateChanged;
+        _processManager.ErrorHappens += ProcessManager_ErrorHappens;
+        _processManager.ProcessNameChanged += ProcessManager_ProcessNameChanged;
 
         RefreshOutput();
-        UpdateRunningState(processManager.IsProcessRunning, showMessage: false);
-        await processManager.GetReady(true);
+        UpdateRunningState(_processManager.IsProcessRunning, showMessage: false);
+        await _processManager.GetReady(true);
     }
 
     public void RefreshOutput()
     {
-        string text = GetSourceOutput(out shownSequence);
+        string text = GetSourceOutput(out _shownSequence);
         ClearOutput();
         AppendOutput(text);
     }
 
     public void ClearOutput()
     {
-        outputBuffer.Clear();
-        sourceBuffer.Clear();
-        blockText.Clear();
-        pendingLine = string.Empty;
-        pendingDisplay = string.Empty;
-        lastRun = null;
+        _outputBuffer.Clear();
+        _sourceBuffer.Clear();
+        _blockText.Clear();
+        _pendingLine = string.Empty;
+        _pendingDisplay = string.Empty;
+        _lastRun = null;
         OutputParagraph.Inlines.Clear();
     }
 
@@ -145,30 +145,30 @@ public sealed partial class ViewConfigOutput : UserControl
 
     private void ViewConfigOutput_Loaded(object sender, RoutedEventArgs e)
     {
-        isLoaded = true;
+        _isLoaded = true;
         _ = RefreshComponentAsync();
     }
 
     private void ViewConfigOutput_Unloaded(object sender, RoutedEventArgs e)
     {
-        isLoaded = false;
-        ++attachmentVersion;
+        _isLoaded = false;
+        ++_attachmentVersion;
         DisconnectHandlers();
     }
 
     private void DisconnectHandlers()
     {
-        if (processManager == null)
+        if (_processManager == null)
         {
             return;
         }
 
-        processManager.OutputAppended -= ProcessManager_OutputAppended;
-        processManager.OutputReset -= ProcessManager_OutputReset;
-        processManager.ProcessStateChanged -= ProcessManager_ProcessStateChanged;
-        processManager.ErrorHappens -= ProcessManager_ErrorHappens;
-        processManager.ProcessNameChanged -= ProcessManager_ProcessNameChanged;
-        processManager = null;
+        _processManager.OutputAppended -= ProcessManager_OutputAppended;
+        _processManager.OutputReset -= ProcessManager_OutputReset;
+        _processManager.ProcessStateChanged -= ProcessManager_ProcessStateChanged;
+        _processManager.ErrorHappens -= ProcessManager_ErrorHappens;
+        _processManager.ProcessNameChanged -= ProcessManager_ProcessNameChanged;
+        _processManager = null;
     }
 
     private void ProcessManager_OutputAppended(string output, long sequence) =>
@@ -178,10 +178,10 @@ public sealed partial class ViewConfigOutput : UserControl
 
     private void QueueRefresh(Action action)
     {
-        int version = attachmentVersion;
+        int version = _attachmentVersion;
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (isLoaded && version == attachmentVersion)
+            if (_isLoaded && version == _attachmentVersion)
                 action();
         });
     }
@@ -189,14 +189,14 @@ public sealed partial class ViewConfigOutput : UserControl
     private void AppendReceivedOutput(string output, long sequence)
     {
         // The chunk is already part of a snapshot that was shown.
-        if (sequence <= shownSequence)
+        if (sequence <= _shownSequence)
         {
             return;
         }
 
         // A chunk is missing or came out of order (pipe messages run concurrently): the buffer
         // has the right order.
-        if (sequence != shownSequence + 1)
+        if (sequence != _shownSequence + 1)
         {
             SynchronizeOutput();
             return;
@@ -210,23 +210,23 @@ public sealed partial class ViewConfigOutput : UserControl
         }
 
         // The tray dropped the older half of its buffer: show what it keeps now.
-        if (sourceBuffer.Length + output.Length > SourceOutputLimit)
+        if (_sourceBuffer.Length + output.Length > SourceOutputLimit)
         {
             RefreshOutput();
             return;
         }
 
-        shownSequence = sequence;
+        _shownSequence = sequence;
         AppendOutput(output);
     }
 
     private void SynchronizeOutput()
     {
         // Read the current snapshot: queued output and full-buffer replies may overlap.
-        string text = GetSourceOutput(out shownSequence);
-        if (text.Length >= sourceBuffer.Length && sourceBuffer.Equals(text.AsSpan(0, sourceBuffer.Length)))
+        string text = GetSourceOutput(out _shownSequence);
+        if (text.Length >= _sourceBuffer.Length && _sourceBuffer.Equals(text.AsSpan(0, _sourceBuffer.Length)))
         {
-            AppendOutput(text[sourceBuffer.Length..]);
+            AppendOutput(text[_sourceBuffer.Length..]);
         }
         else
         {
@@ -270,55 +270,55 @@ public sealed partial class ViewConfigOutput : UserControl
             return;
         }
 
-        sourceBuffer.Append(text);
+        _sourceBuffer.Append(text);
         bool prettyPaths = SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "prettyPathView");
 
         // Paths never span lines, so finished lines are replaced once and only the last line again.
-        string pending = pendingLine + text;
+        string pending = _pendingLine + text;
         int lineEnd = pending.AsSpan().LastIndexOfAny('\r', '\n') + 1;
         if (lineEnd == 0 && pending.Length > MaxPendingLineLength)
         {
             lineEnd = pending.Length;
         }
 
-        if (lastRun != null && blockText.Length >= RunBlockLength)
+        if (_lastRun != null && _blockText.Length >= RunBlockLength)
         {
             // The run is full: keep its finished text and continue in a new run.
-            lastRun.Text = blockText.ToString();
-            lastRun = null;
-            blockText.Clear();
+            _lastRun.Text = _blockText.ToString();
+            _lastRun = null;
+            _blockText.Clear();
         }
 
         if (lineEnd > 0)
         {
             string finished = PrettifyPaths(pending[..lineEnd], prettyPaths);
-            outputBuffer.Append(finished);
-            blockText.Append(finished);
+            _outputBuffer.Append(finished);
+            _blockText.Append(finished);
         }
 
-        pendingLine = pending[lineEnd..];
-        pendingDisplay = PrettifyPaths(pendingLine, prettyPaths);
+        _pendingLine = pending[lineEnd..];
+        _pendingDisplay = PrettifyPaths(_pendingLine, prettyPaths);
 
-        if (lastRun == null)
+        if (_lastRun == null)
         {
-            lastRun = new Run { Foreground = outputBrush };
-            OutputParagraph.Inlines.Add(lastRun);
+            _lastRun = new Run { Foreground = _outputBrush };
+            OutputParagraph.Inlines.Add(_lastRun);
         }
-        lastRun.Text = blockText.ToString() + pendingDisplay;
+        _lastRun.Text = _blockText.ToString() + _pendingDisplay;
         OutputScrollViewer.ChangeView(null, OutputScrollViewer.ScrollableHeight, null, disableAnimation: true);
     }
 
     private string GetSourceOutput(out long sequence)
     {
-        if (processManager == null)
+        if (_processManager == null)
         {
             sequence = 0;
             return string.Empty;
         }
 
         return IsCleanOutputMode()
-            ? processManager.GetProcessOutput(out sequence)
-            : processManager.GetDefaultProcessOutput(out sequence);
+            ? _processManager.GetProcessOutput(out sequence)
+            : _processManager.GetDefaultProcessOutput(out sequence);
     }
 
     private static bool IsCleanOutputMode() => SettingsManager.Instance.GetValue<bool>("PSEUDOCONSOLE", "outputMode");
@@ -336,37 +336,37 @@ public sealed partial class ViewConfigOutput : UserControl
             ? null
             : DatabaseHelper.Instance.GetItemById(ComponentId);
         SelectedComponentTextBlock.Text = item == null
-            ? localizer.GetLocalizedString("NoComponent")
+            ? _localizer.GetLocalizedString("NoComponent")
             : string.Format(
-                localizer.GetLocalizedString("NowViewOutputFromComponent"),
+                _localizer.GetLocalizedString("NowViewOutputFromComponent"),
                 item.ShortName.NullIfEmpty() ?? item.Name.NullIfEmpty() ?? item.Id);
     }
 
     private void UpdateRunningState(bool isRunning, bool showMessage)
     {
-        bool hasError = processManager?.IsErrorHappens == true;
+        bool hasError = _processManager?.IsErrorHappens == true;
         isRunning = isRunning && !hasError;
         StatusIcon.Glyph = isRunning ? "\uEC61" : "\uEB90";
         StatusIcon.Foreground = new SolidColorBrush((Color)Application.Current.Resources[
             isRunning ? "SystemFillColorSuccess" : "SystemFillColorCritical"]);
-        StatusTextBlock.Text = localizer.GetLocalizedString(hasError ? "ErrorHappens" : isRunning ? "ProcessStarted" : "ProcessStopped");
+        StatusTextBlock.Text = _localizer.GetLocalizedString(hasError ? "ErrorHappens" : isRunning ? "ProcessStarted" : "ProcessStopped");
 
         if (hasError)
         {
-            StatusInfoBar.Title = localizer.GetLocalizedString("ComponentFailureTitle");
-            StatusInfoBar.Message = processManager.LastError?.ErrorCode ?? "UNKNOWN_ERROR";
+            StatusInfoBar.Title = _localizer.GetLocalizedString("ComponentFailureTitle");
+            StatusInfoBar.Message = _processManager.LastError?.ErrorCode ?? "UNKNOWN_ERROR";
             StatusInfoBar.Severity = InfoBarSeverity.Error;
             StatusInfoBar.IsOpen = true;
         }
         else if (showMessage)
         {
             string processName = GetProcessName();
-            StatusInfoBar.Title = localizer.GetLocalizedString(
+            StatusInfoBar.Title = _localizer.GetLocalizedString(
                 isRunning ? "ProcessStartedMessageTitle" : "ProcessStoppedMessageTitle");
             StatusInfoBar.Message = string.IsNullOrWhiteSpace(processName)
                 ? string.Empty
                 : string.Format(
-                    localizer.GetLocalizedString(
+                    _localizer.GetLocalizedString(
                         isRunning ? "ProcessStartedMessageMessage" : "ProcessStoppedMessageMessage"),
                     processName);
             StatusInfoBar.Severity = isRunning
@@ -384,9 +384,9 @@ public sealed partial class ViewConfigOutput : UserControl
 
     private string GetProcessName()
     {
-        if (!string.IsNullOrWhiteSpace(processManager?.ProcessName))
+        if (!string.IsNullOrWhiteSpace(_processManager?.ProcessName))
         {
-            return processManager.ProcessName;
+            return _processManager.ProcessName;
         }
 
         DatabaseStoreItem item = string.IsNullOrWhiteSpace(ComponentId)

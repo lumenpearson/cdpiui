@@ -36,11 +36,11 @@ public sealed partial class StoreWindow : TemplateWindow
     public static StoreWindow Instance { get; private set; }
     private bool _isSynchronizingNavigationSelection;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public StoreWindow()
     {
         this.InitializeComponent();
-        WindowTitle = localizer.GetLocalizedString("StoreWindowsTitle");
+        WindowTitle = _localizer.GetLocalizedString("StoreWindowsTitle");
         IconUri = "Assets/Icons/Store.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 

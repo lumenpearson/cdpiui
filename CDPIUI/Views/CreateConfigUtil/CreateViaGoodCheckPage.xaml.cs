@@ -71,12 +71,12 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
     private States _currentState = States.None;
 
-    private List<GoodCheckStrategiesList> StrategiesLists = [];
-    private List<GoodCheckSitelistButton> SitelistButtons = [];
+    private List<GoodCheckStrategiesList> _strategiesLists = [];
+    private List<GoodCheckSitelistButton> _sitelistButtons = [];
 
-    private List<OneSiteListOneStrategyModeElement> OneSiteListOneStrategyModeElements = [];
+    private List<OneSiteListOneStrategyModeElement> _oneSiteListOneStrategyModeElements = [];
 
-    private ObservableCollection<ComboBoxModel> resolverItems = [];
+    private ObservableCollection<ComboBoxModel> _resolverItems = [];
 
     private IniSettingsHelper IniSettingsHelper { get; set; }
 
@@ -84,21 +84,21 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
     private string ComponentId = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public CreateViaGoodCheck()
     {
         InitializeComponent();
-        ResolverComboBox.ItemsSource = resolverItems;
+        ResolverComboBox.ItemsSource = _resolverItems;
         InitResolverComboBox();
         _uiDispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
     private void InitResolverComboBox()
     {
-        resolverItems.Clear();
-        resolverItems.Add(new ComboBoxModel() { DisplayName = localizer.GetLocalizedString("/GoodCheckAdditionalSettings/NativeResolver"), Id = "native" });
-        resolverItems.Add(new ComboBoxModel() { DisplayName = localizer.GetLocalizedString("/GoodCheckAdditionalSettings/Curl"), Id = "curl" });
+        _resolverItems.Clear();
+        _resolverItems.Add(new ComboBoxModel() { DisplayName = _localizer.GetLocalizedString("/GoodCheckAdditionalSettings/NativeResolver"), Id = "native" });
+        _resolverItems.Add(new ComboBoxModel() { DisplayName = _localizer.GetLocalizedString("/GoodCheckAdditionalSettings/Curl"), Id = "curl" });
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -198,7 +198,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
     private async Task InitGoodCheckSiteListsPage()
     {
 
-        SetLoadingMode(true, isIndeterminate: true, cancellationAvailable: false, headerText: localizer.GetLocalizedString("WorkingOnIt"));
+        SetLoadingMode(true, isIndeterminate: true, cancellationAvailable: false, headerText: _localizer.GetLocalizedString("WorkingOnIt"));
 
         List<SiteListElement> siteLists = await SiteListHelper.GetAllAvailableSiteListTemplatesAsync();
 
@@ -208,9 +208,9 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         SwitchState(States.SiteListsSettings);
         GoForwardButton.IsEnabled = false;
 
-        StrategiesLists = GoodCheckResultViewHelper.GetAvailableStrategiesLists(ComponentId);
+        _strategiesLists = GoodCheckResultViewHelper.GetAvailableStrategiesLists(ComponentId);
 
-        StrategiesListCombobox.ItemsSource = StrategiesLists; // TODO: rase exception if elements count zero
+        StrategiesListCombobox.ItemsSource = _strategiesLists; // TODO: rase exception if elements count zero
 
         SetLoadingMode(false);
 
@@ -219,42 +219,42 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
     public void InitGoodCheckStrategiesListsPage()
     {
-        SitelistButtons.Clear();
-        OneSiteListOneStrategyModeElements.Clear();
+        _sitelistButtons.Clear();
+        _oneSiteListOneStrategyModeElements.Clear();
 
         foreach (GoodCheckSitelistButton button in SelectedSitelistStackPanel.Children.OfType<GoodCheckSitelistButton>())
         {
-            SitelistButtons.Add(button);
+            _sitelistButtons.Add(button);
         }
         OneListOneStrategyStackPanel.Children.Clear();
 
-        if (StrategiesLists.Count == 0)
+        if (_strategiesLists.Count == 0)
         {
             // The add-on is installed: it has no strategy lists for this component.
-            _ = ShowErrorDialog(localizer.GetLocalizedString("GoodCheckNoStrategyLists")); // ShowErrorDialog catches and logs its own errors.
+            _ = ShowErrorDialog(_localizer.GetLocalizedString("GoodCheckNoStrategyLists")); // ShowErrorDialog catches and logs its own errors.
             return;
         }
 
-        foreach (GoodCheckSitelistButton button in SitelistButtons)
+        foreach (GoodCheckSitelistButton button in _sitelistButtons)
         {
             GoodCheckSitelistStrategyChooserControl checkListChooseControl = new()
             {
                 Title = button.Title,
                 PackName = button.PackName,
                 FilePath = button.FilePath,
-                StrategiesLists = StrategiesLists
+                StrategiesLists = _strategiesLists
             };
             checkListChooseControl.StrategyChanged += (tuple) =>
             {
                 string filePath = tuple.Item1;
                 string strategyFilePath = tuple.Item2;
 
-                var existing = OneSiteListOneStrategyModeElements
+                var existing = _oneSiteListOneStrategyModeElements
                     .FirstOrDefault(x => x.SiteListFilePath == filePath);
 
                 if (existing == null)
                 {
-                    OneSiteListOneStrategyModeElements.Add(new OneSiteListOneStrategyModeElement
+                    _oneSiteListOneStrategyModeElements.Add(new OneSiteListOneStrategyModeElement
                     {
                         SiteListFilePath = filePath,
                         StrategiesListFilePath = strategyFilePath
@@ -266,10 +266,10 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
                 }
             };
 
-            OneSiteListOneStrategyModeElements.Add(new OneSiteListOneStrategyModeElement
+            _oneSiteListOneStrategyModeElements.Add(new OneSiteListOneStrategyModeElement
             {
                 SiteListFilePath = button.FilePath,
-                StrategiesListFilePath = StrategiesLists[0].FilePath,
+                StrategiesListFilePath = _strategiesLists[0].FilePath,
             });
 
             OneListOneStrategyStackPanel.Children.Add(checkListChooseControl);
@@ -289,7 +289,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         {
             // Installed, but the files are incomplete: reinstalling fixes it, unlike installing.
             // ShowErrorDialog catches and logs its own errors.
-            _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
+            _ = ShowErrorDialog(string.Format(_localizer.GetLocalizedString("AddOnFilesMissing"),
                 HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), targetFolder));
             return;
         }
@@ -297,8 +297,8 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         if (IniSettingsHelper is null)
             IniSettingsHelper = new(targetFolder, System.Text.Encoding.UTF8);
 
-        if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] && resolverItems.FirstOrDefault(x => x.Id != "curl") != null)
-            resolverItems.Remove(resolverItems.FirstOrDefault(x => x.Id != "curl"));
+        if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] && _resolverItems.FirstOrDefault(x => x.Id != "curl") != null)
+            _resolverItems.Remove(_resolverItems.FirstOrDefault(x => x.Id != "curl"));
 
         PValue.Text = SettingsManager.Instance.GetValue<string>(["ADDONS", AddOnId], "passesValue");
         ResolverComboBox.SelectedIndex = ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.ByeDPI] ? 0 :
@@ -384,7 +384,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         catch (Exception ex)
         {
             Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessService), $"Cannot set settings. Exception is {ex}");
-            _ = ShowErrorDialog(localizer.GetLocalizedString("GoodCheckComponentDirsSetException")); // ShowErrorDialog catches and logs its own errors.
+            _ = ShowErrorDialog(_localizer.GetLocalizedString("GoodCheckComponentDirsSetException")); // ShowErrorDialog catches and logs its own errors.
         }
         IniSettingsHelper.Save();
     }
@@ -411,7 +411,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         else
         {
             foreach (
-                OneSiteListOneStrategyModeElement element in OneSiteListOneStrategyModeElements)
+                OneSiteListOneStrategyModeElement element in _oneSiteListOneStrategyModeElements)
             {
                 GoodCheckSiteListModel model = new()
                 {
@@ -533,9 +533,9 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
         using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            openFileDialog.Title = localizer.GetLocalizedString("ChooseSiteList");
+            openFileDialog.Title = _localizer.GetLocalizedString("ChooseSiteList");
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            openFileDialog.Filter = $"{localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
             openFileDialog.RestoreDirectory = true;
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -567,7 +567,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
             Directory = newFilePath,
             Name = Path.GetFileName(newFilePath),
             PackId = SharedConstants.LocalUserItemsId,
-            PackName = localizer.GetLocalizedString("LocalData"),
+            PackName = _localizer.GetLocalizedString("LocalData"),
         };
 
         AddSiteListElement(siteListElement);
@@ -891,11 +891,11 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         {
             ContentDialog dialog = new ContentDialog
             {
-                Title = localizer.GetLocalizedString("ContinuationImpossible"),
+                Title = _localizer.GetLocalizedString("ContinuationImpossible"),
                 Content = string.IsNullOrEmpty(message) ?
-                    string.Format(localizer.GetLocalizedString("AddOnNotInstalled"),
+                    string.Format(_localizer.GetLocalizedString("AddOnNotInstalled"),
                     HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), AddOnId) : message,
-                PrimaryButtonText = localizer.GetLocalizedString("OkButtonText"),
+                PrimaryButtonText = _localizer.GetLocalizedString("OkButtonText"),
                 XamlRoot = this.XamlRoot,
             };
             await dialog.ShowQueuedAsync();

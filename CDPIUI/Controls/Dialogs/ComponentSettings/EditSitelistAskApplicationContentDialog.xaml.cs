@@ -33,7 +33,7 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings;
 
 public sealed partial class EditSitelistAskApplicationContentDialog : ContentDialog
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public string FilePath { get; set; } = string.Empty;
     public bool UseUAC { get; set; } = false;
     public bool UseNotepadAsDefault { get; set; } = false;
@@ -70,11 +70,11 @@ public sealed partial class EditSitelistAskApplicationContentDialog : ContentDia
     {
         string appPath;
         using OpenFileDialog openFileDialog = new OpenFileDialog();
-        openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseExecutable");
+        openFileDialog.Title = _localizer.GetLocalizedString("FileDialogChooseExecutable");
         openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         openFileDialog.FilterIndex = 4;
 
-        openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
+        openFileDialog.Filter = $"{_localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
         openFileDialog.RestoreDirectory = true;
 
         if (openFileDialog.ShowDialog() == DialogResult.OK)

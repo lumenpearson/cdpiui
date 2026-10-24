@@ -11,11 +11,11 @@ public class ComponentHelper
 {
     public readonly string Id;
 
-    private string? ExecutablePath;
+    private string? _executablePath;
     private string? Directory;
-    private DatabaseStoreItem? DatabaseStoreItem;
+    private DatabaseStoreItem? _databaseStoreItem;
 
-    private readonly Lazy<ConfigurationService> ConfigHelper;
+    private readonly Lazy<ConfigurationService> _configHelper;
 
     public Action? ConfigListUpdated;
 
@@ -36,14 +36,14 @@ public class ComponentHelper
     {
         Id = id;
 
-        DatabaseStoreItem = item;
+        _databaseStoreItem = item;
 
-        Directory = DatabaseStoreItem.Directory;
-        ExecutablePath = Path.Combine(
-            DatabaseStoreItem.Directory!,
-            DatabaseStoreItem.Executable + ".exe");
+        Directory = _databaseStoreItem.Directory;
+        _executablePath = Path.Combine(
+            _databaseStoreItem.Directory!,
+            _databaseStoreItem.Executable + ".exe");
 
-        ConfigHelper = new Lazy<ConfigurationService>(
+        _configHelper = new Lazy<ConfigurationService>(
             CreateConfigHelper,
             LazyThreadSafetyMode.ExecutionAndPublication);
     }
@@ -76,26 +76,26 @@ public class ComponentHelper
 
     public void ReInitConfigs()
     {
-        if (ConfigHelper.IsValueCreated)
-            ConfigHelper.Value.Init();
+        if (_configHelper.IsValueCreated)
+            _configHelper.Value.Init();
         else
-            _ = ConfigHelper.Value;
+            _ = _configHelper.Value;
 
         ConfigListUpdated?.Invoke();
     }
 
     /// <summary>The executable name from the row this helper was built from.</summary>
-    public string? ExecutableName => DatabaseStoreItem?.Executable;
+    public string? ExecutableName => _databaseStoreItem?.Executable;
 
     public ConfigurationService GetConfigHelper()
     {
-        return ConfigHelper.Value;
+        return _configHelper.Value;
     }
 
     public string? GetExecutablePath()
     {
-        if (File.Exists(ExecutablePath))
-            return ExecutablePath;
+        if (File.Exists(_executablePath))
+            return _executablePath;
 
         return TryGetNewPath();
     }
@@ -116,8 +116,8 @@ public class ComponentHelper
         string configFile =
             SettingsManager.Instance.GetValue<string>(["CONFIGS", Id], "configFile");
 
-        ConfigItem? config = ConfigHelper.IsValueCreated
-            ? ConfigHelper.Value.GetConfigItem(configFile!, configId!)
+        ConfigItem? config = _configHelper.IsValueCreated
+            ? _configHelper.Value.GetConfigItem(configFile!, configId!)
             : null;
 
         config ??= ConfigurationService.LoadConfigItemFromPack(
@@ -143,7 +143,7 @@ public class ComponentHelper
             return;
         }
 
-        ConfigItem? config = ConfigHelper.Value.GetConfigItem(configFile, configId);
+        ConfigItem? config = _configHelper.Value.GetConfigItem(configFile, configId);
         if (config == null || !config.IsLegacy)
         {
             return;
@@ -156,12 +156,12 @@ public class ComponentHelper
     private string? TryGetNewPath()
     {
         string localItemsFolder = Directories.StoreItemsDirectory;
-        ExecutablePath = Path.Combine(
+        _executablePath = Path.Combine(
             localItemsFolder,
             Id,
-            DatabaseStoreItem.Executable + ".exe");
+            _databaseStoreItem.Executable + ".exe");
 
-        return File.Exists(ExecutablePath) ? ExecutablePath : null;
+        return File.Exists(_executablePath) ? _executablePath : null;
     }
     private string? TryGetNewDirectory()
     {

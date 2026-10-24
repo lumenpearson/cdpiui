@@ -88,20 +88,20 @@ internal static class BlockCheckTargetGroupBuilder
 
     private sealed class DisjointSet
     {
-        private readonly int[] parent;
+        private readonly int[] _parent;
 
         public DisjointSet(int count)
         {
-            parent = Enumerable.Range(0, count).ToArray();
+            _parent = Enumerable.Range(0, count).ToArray();
         }
 
         public int Find(int value)
         {
-            if (parent[value] != value)
+            if (_parent[value] != value)
             {
-                parent[value] = Find(parent[value]);
+                _parent[value] = Find(_parent[value]);
             }
-            return parent[value];
+            return _parent[value];
         }
 
         public void Union(int left, int right)
@@ -110,7 +110,7 @@ internal static class BlockCheckTargetGroupBuilder
             int rightRoot = Find(right);
             if (leftRoot != rightRoot)
             {
-                parent[rightRoot] = leftRoot;
+                _parent[rightRoot] = leftRoot;
             }
         }
     }

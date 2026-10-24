@@ -7,17 +7,17 @@ public class ComponentItemsLoaderHelper
 
     // Replaced as a whole, never changed in place: Init runs on the startup path and after every
     // Store change while other threads look components up.
-    private volatile List<ComponentHelper> Components = [];
+    private volatile List<ComponentHelper> _components = [];
 
     public Action? InitRequested;
 
     private static ComponentItemsLoaderHelper? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
     public static ComponentItemsLoaderHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new ComponentItemsLoaderHelper();
                 return _instance;
@@ -32,7 +32,7 @@ public class ComponentItemsLoaderHelper
 
     public void Init(bool forse = true)
     {
-        List<ComponentHelper> current = Components;
+        List<ComponentHelper> current = _components;
         if (!forse && current.Count != 0)
             return;
 
@@ -49,17 +49,17 @@ public class ComponentItemsLoaderHelper
             // New helpers: an installed or updated pack changes the preset lists they cache.
             components.Add(new ComponentHelper(item));
         }
-        Components = components;
+        _components = components;
         InitRequested?.Invoke();
     }
 
     public List<ComponentHelper> GetComponentHelpers()
     {
-        return [.. Components];
+        return [.. _components];
     }
 
     public ComponentHelper? GetComponentHelperFromId(string id)
     {
-        return Components.FirstOrDefault(componentHelper => componentHelper.Id == id);
+        return _components.FirstOrDefault(componentHelper => componentHelper.Id == id);
     }
 }

@@ -46,9 +46,9 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
 {
     private string StoreId = string.Empty;
     private string Name = string.Empty;
-    private string PackFilePath = string.Empty;
+    private string _packFilePath = string.Empty;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
     private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
@@ -58,14 +58,14 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
     private Action<string> _itemActionsStoppedHandler;
 
     private bool IsErrorHappens = false;
-    private bool isClosed;
-    private readonly System.Threading.CancellationTokenSource installCancellation = new();
+    private bool _isClosed;
+    private readonly System.Threading.CancellationTokenSource _installCancellation = new();
 
     public StoreLocalItemInstallingDialog()
     {
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("StoreWindowsTitle");
+        WindowTitle = _localizer.GetLocalizedString("StoreWindowsTitle");
         IconUri = @"Assets/Icons/Store.ico";
         this.CustomTitleBarUserControl = TitleBarUserControl;
 
@@ -74,7 +74,7 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
         ((App)Application.Current).OpenWindows.Add(this);
 
         ToggleItemLoadingMode(true);
-        SetLoadingState(true, localizer.GetLocalizedString("SatusGettingPackInfo"));
+        SetLoadingState(true, _localizer.GetLocalizedString("SatusGettingPackInfo"));
 
         this.Closed += StoreLocalItemInstallingDialog_Closed;
         this.Activated += StoreLocalItemInstallingDialog_Activated;
@@ -88,8 +88,8 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
 
     private void StoreLocalItemInstallingDialog_Closed(object sender, WindowEventArgs args)
     {
-        isClosed = true;
-        installCancellation.Cancel();
+        _isClosed = true;
+        _installCancellation.Cancel();
 
         if (_itemDownloadStageChangedHandler != null)
             StoreHelper.Instance.ItemDownloadStageChanged -= _itemDownloadStageChangedHandler;
@@ -116,13 +116,13 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
     {
         try
         {
-            if (!string.IsNullOrEmpty(PackFilePath))
+            if (!string.IsNullOrEmpty(_packFilePath))
                 return; // TODO: Show notification : "Only one operation..."
 
-            PackFilePath = packFile;
+            _packFilePath = packFile;
             ConnectHandlers();
-            var model = await LocalItemsInstallerHelper.Instance.ImportStoreItemPackFile(PackFilePath, LocalItemsInstallerHelper_ErrorHappens);
-            if (isClosed)
+            var model = await LocalItemsInstallerHelper.Instance.ImportStoreItemPackFile(_packFilePath, LocalItemsInstallerHelper_ErrorHappens);
+            if (_isClosed)
                 return;
 
             try
@@ -135,11 +135,11 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
 
                     Name = model.ShortName.NullIfEmpty() ?? StoreHelper.Instance.GetLocalizedStoreItemName(model.Name, StoreLocalizationHelper.GetStoreLikeLocale());
 
-                    ItemNameTextBlock.Text = string.Format(isInstalled ? localizer.GetLocalizedString("StoreSmallUpdateItemName") : localizer.GetLocalizedString("StoreSmallInstallItemName"), Name);
+                    ItemNameTextBlock.Text = string.Format(isInstalled ? _localizer.GetLocalizedString("StoreSmallUpdateItemName") : _localizer.GetLocalizedString("StoreSmallInstallItemName"), Name);
                     ItemImage.Source = new BitmapImage(UIHelper.GetUriFromString(model.ReadyToUseIcon ?? LScriptLangHelper.ExecuteScript(model.Icon)));
-                    DeveloperTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), model.Developer);
-                    CategoryTextBlock.Text = string.Format(localizer.GetLocalizedString("Source"), packFile);
-                    VersionTextBlock.Text = string.Format(localizer.GetLocalizedString("Version"), model.Version);
+                    DeveloperTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallDeveloperText"), model.Developer);
+                    CategoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("Source"), packFile);
+                    VersionTextBlock.Text = string.Format(_localizer.GetLocalizedString("Version"), model.Version);
 
                     if (!string.IsNullOrEmpty(model.Color))
                         ItemColorRectangle.Fill = UIHelper.HexToSolidColorBrushConverter(model.Color);
@@ -156,12 +156,12 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
                         {
                             if (VersionHelper.CompareVersionStrings(curV, iV) >= 0)
                             {
-                                ErrorHappens(localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
+                                ErrorHappens(_localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
                             }
                         }
                         else
                         {
-                            ErrorHappens(localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
+                            ErrorHappens(_localizer.GetLocalizedString("ItemAlreadyInstalledWarn"));
                         }
 
 
@@ -221,9 +221,9 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
         GetButton.IsEnabled = false;
         IsErrorHappens = false;
         GetReadyUI();
-        CurrentStatusTextBlock.Text = localizer.GetLocalizedString("GettingReady");
+        CurrentStatusTextBlock.Text = _localizer.GetLocalizedString("GettingReady");
         await LocalItemsInstallerHelper.Instance.BeginLocalItemInstalling(
-            PackFilePath, LocalItemsInstallerHelper_ErrorHappens, installCancellation.Token);
+            _packFilePath, LocalItemsInstallerHelper_ErrorHappens, _installCancellation.Token);
     }
 
     private void ErrorHappens(string message)
@@ -237,7 +237,7 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
 
         ErrorCodeTextBlock.Text = message;
 
-        CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+        CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
     }
 
     private void GetReadyUI()
@@ -259,7 +259,7 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
                 return;
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!isClosed)
+                if (!_isClosed)
                     action(data);
             });
         };
@@ -334,7 +334,7 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
 
             ErrorCodeTextBlock.Text = errorCode;
 
-            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+            CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
         });
         StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
 
@@ -344,7 +344,7 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
                 return;
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!isClosed && !IsErrorHappens && DatabaseHelper.Instance.IsItemInstalled(StoreId))
+                if (!_isClosed && !IsErrorHappens && DatabaseHelper.Instance.IsItemInstalled(StoreId))
                     ShowItemAfterInstallActions();
             });
         };
@@ -359,39 +359,39 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
         switch (state)
         {
             case "GETR":
-                stageHeaderText = localizer.GetLocalizedString("GettingReady");
+                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "END":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "Downloading":
-                stageHeaderText = localizer.GetLocalizedString("Downloading");
+                stageHeaderText = _localizer.GetLocalizedString("Downloading");
                 StatusProgressbar.IsIndeterminate = false;
                 CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
                 break;
             case "Extracting":
-                stageHeaderText = localizer.GetLocalizedString("Installing");
+                stageHeaderText = _localizer.GetLocalizedString("Installing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "ErrorHappens":
-                stageHeaderText = localizer.GetLocalizedString("ErrorHappens");
+                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
                 break;
             case "Completed":
-                stageHeaderText = localizer.GetLocalizedString("Finishing");
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "CANC":
-                stageHeaderText = localizer.GetLocalizedString("Cancel");
+                stageHeaderText = _localizer.GetLocalizedString("Cancel");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             case "ConnectingToService":
-                stageHeaderText = localizer.GetLocalizedString("ConnectingToService");
+                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
                 StatusProgressbar.IsIndeterminate = true;
                 break;
             default:
-                stageHeaderText = localizer.GetLocalizedString(state);
+                stageHeaderText = _localizer.GetLocalizedString(state);
                 StatusProgressbar.IsIndeterminate = true;
                 break;
         }
@@ -401,16 +401,16 @@ public sealed partial class StoreLocalItemInstallingDialog : TemplateWindow
     private void ShowItemAfterInstallActions()
     {
         DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-        CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
+        CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
 
-        ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemNameComplete"), Name);
+        ItemNameTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallItemNameComplete"), Name);
     }
 
     private void LocalItemsInstallerHelper_ErrorHappens(string errorCode)
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!isClosed)
+            if (!_isClosed)
                 ErrorHappens(errorCode);
         });
     }

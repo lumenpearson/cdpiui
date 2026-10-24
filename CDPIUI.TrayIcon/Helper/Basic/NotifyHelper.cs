@@ -15,13 +15,13 @@ namespace CDPIUI.TrayIcon.Helper.Basic;
 public class NotifyHelper : IDisposable
 {
     private static NotifyHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static NotifyHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new NotifyHelper();
                 return _instance;

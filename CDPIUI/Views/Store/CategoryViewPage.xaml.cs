@@ -36,11 +36,11 @@ namespace CDPIUI.Views.Store;
 /// </summary>
 public sealed partial class CategoryViewPage : TemplatePage
 {
-    private string CategoryId = string.Empty;
+    private string _categoryId = string.Empty;
 
     private ObservableCollection<UIElement> _tiles = new ObservableCollection<UIElement>();
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public CategoryViewPage()
     {
         InitializeComponent();
@@ -60,7 +60,7 @@ public sealed partial class CategoryViewPage : TemplatePage
             var categoryId = Parameter.Get("categoryId");
             if (!string.IsNullOrEmpty(categoryId))
             {
-                CategoryId = categoryId;
+                _categoryId = categoryId;
                 _ = LoadCategory(); // LoadCategory catches and logs its own errors.
             }
         }
@@ -84,7 +84,7 @@ public sealed partial class CategoryViewPage : TemplatePage
                 LoadingProgressGrid.Visibility = Visibility.Collapsed;
                 StoreScrollViewer.Visibility = Visibility.Collapsed;
                 ErrorGrid.Visibility = Visibility.Visible;
-                ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
+                ErrorTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreCategoryLoadFailed"), _categoryId);
             }
         }
         catch (Exception exception)
@@ -95,12 +95,12 @@ public sealed partial class CategoryViewPage : TemplatePage
 
     private bool CreateCategoriesList(List<RepoCategoryModel> values)
     {
-        var category = values.FirstOrDefault(c => c.store_id == CategoryId);
+        var category = values.FirstOrDefault(c => c.store_id == _categoryId);
 
         if (category == null)
         {
             ErrorGrid.Visibility = Visibility.Visible;
-            ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
+            ErrorTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreCategoryLoadFailed"), _categoryId);
             return false;
         }
 
@@ -116,7 +116,7 @@ public sealed partial class CategoryViewPage : TemplatePage
                 UIHelper.CreateLargeButton(
                     storeId: repoCategoryItem.store_id,
                     imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                    price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                    price: installedIds.Contains(repoCategoryItem.store_id) ? _localizer.GetLocalizedString("Installed") : _localizer.GetLocalizedString("Get"),
                     title: repoCategoryItem.short_name,
                     backgroundColor: repoCategoryItem.background,
                     action: StoreItemButton_Click,

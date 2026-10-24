@@ -54,7 +54,7 @@ public class ThemeSelectModel
 
 public sealed partial class SettingsPage : TemplatePage
 {
-    private ObservableCollection<ComboBoxModel> components = [];
+    private ObservableCollection<ComboBoxModel> _components = [];
 
     public static readonly List<Type> MainSettingsNavigationSupportedPages = [
         typeof(SettingsPage),
@@ -62,7 +62,7 @@ public sealed partial class SettingsPage : TemplatePage
         typeof(AutorunPage)
         ];
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public SettingsPage()
     {
         InitializeComponent();
@@ -94,17 +94,17 @@ public sealed partial class SettingsPage : TemplatePage
 
         UpdateTextFileOpenSettings();
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
         CreateBreadcrumbBarNavigation();
     }
 
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = this.GetType()
         });
     }
@@ -119,9 +119,9 @@ public sealed partial class SettingsPage : TemplatePage
         int mode = SettingsManager.Instance.GetValue<int>("FILEOPENACTIONS", "mode");
         string appPath = SettingsManager.Instance.GetValue<string>("FILEOPENACTIONS", "applicationPath");
         OpenComponentSiteListToEditCard.Description =
-            string.Format(localizer.GetLocalizedString(
+            string.Format(_localizer.GetLocalizedString(
                 "OpenComponentSiteListToEditCardDescription"),
-                mode == (int)TextFileOpenModes.UserChoose ? Path.GetFileNameWithoutExtension(appPath).FirstCharToUpper() : localizer.GetLocalizedString("FollowSystem"));
+                mode == (int)TextFileOpenModes.UserChoose ? Path.GetFileNameWithoutExtension(appPath).FirstCharToUpper() : _localizer.GetLocalizedString("FollowSystem"));
     }
 
 

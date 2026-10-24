@@ -23,29 +23,29 @@ namespace CDPIUI.Core.Store;
 public partial class StoreHelper :
     IUserExperienceService, IRepositoryLoaderService, ILocalizationService, IQueueManagerService, IAPIWorker
 {
-    private readonly UserExperienceService UserExperienceService;
-    private readonly RepositoryLoaderService RepositoryLoaderService = new();
-    private readonly LocalizationService LocalizationService = new();
-    private readonly QueueManagerService QueueManagerService = new();
-    private readonly APIWorker APIWorker = new();
-    private readonly OnlineItemsInstallationService OnlineItemsInstallationService;
+    private readonly UserExperienceService _userExperienceService;
+    private readonly RepositoryLoaderService _repositoryLoaderService = new();
+    private readonly LocalizationService _localizationService = new();
+    private readonly QueueManagerService _queueManagerService = new();
+    private readonly APIWorker _apiWorker = new();
+    private readonly OnlineItemsInstallationService _onlineItemsInstallationService;
 
-    private ApplicationUpdateService? ApplicationUpdateService;
-
-
+    private ApplicationUpdateService? _applicationUpdateService;
 
 
-    private CancellationTokenSource? cancellationTokenSource;
-    private CancellationToken? cancellationToken;
+
+
+    private CancellationTokenSource? _cancellationTokenSource;
+    private CancellationToken? _cancellationToken;
 
     private static StoreHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static StoreHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new StoreHelper();
                 return _instance;
@@ -77,25 +77,25 @@ public partial class StoreHelper :
 
     private StoreHelper()
     {
-        OnlineItemsInstallationService = new() { APIWorker = APIWorker };
-        UserExperienceService = new(this);
+        _onlineItemsInstallationService = new() { APIWorker = _apiWorker };
+        _userExperienceService = new(this);
 
-        OnlineItemsInstallationService.DownloadStageChanged += OnlineItemsInstallationService_DownloadStageChanged;
-        OnlineItemsInstallationService.DownloadProgressChanged += OnlineItemsInstallationService_DownloadProgressChanged;
-        OnlineItemsInstallationService.TimeRemainingChanged += OnlineItemsInstallationService_TimeRemainingChanged;
-        OnlineItemsInstallationService.DownloadSpeedChanged += OnlineItemsInstallationService_DownloadSpeedChanged;
+        _onlineItemsInstallationService.DownloadStageChanged += OnlineItemsInstallationService_DownloadStageChanged;
+        _onlineItemsInstallationService.DownloadProgressChanged += OnlineItemsInstallationService_DownloadProgressChanged;
+        _onlineItemsInstallationService.TimeRemainingChanged += OnlineItemsInstallationService_TimeRemainingChanged;
+        _onlineItemsInstallationService.DownloadSpeedChanged += OnlineItemsInstallationService_DownloadSpeedChanged;
 
-        OnlineItemsInstallationService.DownloadWorkerErrorHappens += OnlineItemsInstallationService_DownloadWorkerErrorHappens;
+        _onlineItemsInstallationService.DownloadWorkerErrorHappens += OnlineItemsInstallationService_DownloadWorkerErrorHappens;
 
-        RepositoryLoaderService.InternalErrorHappens += RepositoryLoaderService_InternalErrorHappens;
+        _repositoryLoaderService.InternalErrorHappens += RepositoryLoaderService_InternalErrorHappens;
 
-        QueueManagerService.CurrentItemRemovedFromQueue += QueueManagerService_CurrentItemRemovedFromQueue;
-        QueueManagerService.ProcessItem += QueueManagerService_ProcessItem;
-        QueueManagerService.QueueUpdated += QueueUpdated; // Possible action issue.
-        QueueManagerService.ErrorListUpdated += ErrorListUpdated; // Possible action issue.
+        _queueManagerService.CurrentItemRemovedFromQueue += QueueManagerService_CurrentItemRemovedFromQueue;
+        _queueManagerService.ProcessItem += QueueManagerService_ProcessItem;
+        _queueManagerService.QueueUpdated += QueueUpdated; // Possible action issue.
+        _queueManagerService.ErrorListUpdated += ErrorListUpdated; // Possible action issue.
 
-        APIWorker.VersionControl = RepositoryLoaderService.VersionControl;
-        APIWorker.Token = RepositoryLoaderService.GetToken();
+        _apiWorker.VersionControl = _repositoryLoaderService.VersionControl;
+        _apiWorker.Token = _repositoryLoaderService.GetToken();
     }
 
     private void RepositoryLoaderService_InternalErrorHappens(Shared.PrettyErrorConversionService.ErrorModel obj)
@@ -105,17 +105,17 @@ public partial class StoreHelper :
 
     #region API
     public async Task<OperationResultModel<ReleaseInfoModel>> GetLastVersionAndVersionNotes(string url) =>
-        await APIWorker.GetLastVersionAndVersionNotes(url);
+        await _apiWorker.GetLastVersionAndVersionNotes(url);
 
     #endregion
 
     #region UserExperience
 
     public List<Tuple<string, string>>? GetItemRequiredItemsById(string storeId) =>
-        UserExperienceService.GetItemRequiredItemsById(storeId);
+        _userExperienceService.GetItemRequiredItemsById(storeId);
 
     public List<RepoItemModel> GetSimilarItemsForStoreId(string storeId) =>
-        UserExperienceService.GetSimilarItemsForStoreId(storeId);
+        _userExperienceService.GetSimilarItemsForStoreId(storeId);
 
     /// <summary>
     /// Is current version control available.
@@ -136,28 +136,28 @@ public partial class StoreHelper :
 
     #region Database
 
-    public SupportedVersionControls VersionControl => RepositoryLoaderService.VersionControl;
-    public List<RepoCategoryModel>? FormattedStoreDatabase => RepositoryLoaderService.FormattedStoreDatabase;
-    public Dictionary<string, string>? StoreLocalizationPaths => RepositoryLoaderService.StoreLocalizationPaths;
-    public List<RepoItemModel> ItemsList => RepositoryLoaderService.ItemsList;
+    public SupportedVersionControls VersionControl => _repositoryLoaderService.VersionControl;
+    public List<RepoCategoryModel>? FormattedStoreDatabase => _repositoryLoaderService.FormattedStoreDatabase;
+    public Dictionary<string, string>? StoreLocalizationPaths => _repositoryLoaderService.StoreLocalizationPaths;
+    public List<RepoItemModel> ItemsList => _repositoryLoaderService.ItemsList;
 
-    public List<ReadyKitModel> ReadyKits => RepositoryLoaderService.ReadyKits;
+    public List<ReadyKitModel> ReadyKits => _repositoryLoaderService.ReadyKits;
 
     public static async Task<bool> TryLoadDatabaseForVersionControl(SupportedVersionControls versionControl) =>
         await RepositoryLoaderService.TryLoadDatabaseForVersionControl(versionControl);
 
     public async Task<bool> LoadAllStoreDatabase(bool forseSync = true, SupportedVersionControls versionControl = SupportedVersionControls.None) =>
-        await RepositoryLoaderService.LoadAllStoreDatabase(forseSync, versionControl);
+        await _repositoryLoaderService.LoadAllStoreDatabase(forseSync, versionControl);
 
 
     public RepoItemModel? GetItemInfoFromStoreId(string? storeId) =>
-        RepositoryLoaderService.GetItemInfoFromStoreId(storeId);
+        _repositoryLoaderService.GetItemInfoFromStoreId(storeId);
 
     public ReadyKitModel? GetReadyKitFromStoreId(string? storeId) =>
-        string.IsNullOrWhiteSpace(storeId) ? null : RepositoryLoaderService.GetReadyKitFromStoreId(storeId);
+        string.IsNullOrWhiteSpace(storeId) ? null : _repositoryLoaderService.GetReadyKitFromStoreId(storeId);
 
     public RepoCategoryModel? GetCategoryFromStoreId(string storeId) =>
-        RepositoryLoaderService.GetCategoryFromStoreId(storeId);
+        _repositoryLoaderService.GetCategoryFromStoreId(storeId);
 
     public static void ClearRepoCache() =>
         RepositoryLoaderService.ClearRepoCache();
@@ -171,51 +171,51 @@ public partial class StoreHelper :
     {
         // The setter clears the cached strings, so it runs only after a repository sync
         // replaced the paths; before, every item name re-read the localization file.
-        var paths = RepositoryLoaderService.StoreLocalizationPaths ?? NoLocalizationPaths;
-        if (!ReferenceEquals(LocalizationService.StoreLocalizationPaths, paths))
-            LocalizationService.StoreLocalizationPaths = paths;
-        return LocalizationService.GetLocalizedStoreItemName(name, langCode);
+        var paths = _repositoryLoaderService.StoreLocalizationPaths ?? NoLocalizationPaths;
+        if (!ReferenceEquals(_localizationService.StoreLocalizationPaths, paths))
+            _localizationService.StoreLocalizationPaths = paths;
+        return _localizationService.GetLocalizedStoreItemName(name, langCode);
     }
     #endregion
 
     #region Failure items list
     public List<QueueItemModel> GetFailedToInstallItems() =>
-        QueueManagerService.GetFailedToInstallItems();
+        _queueManagerService.GetFailedToInstallItems();
 
     public void RemoveItemFromDownloadFailureList(string itemId) =>
-        QueueManagerService.RemoveItemFromDownloadFailureList(itemId);
+        _queueManagerService.RemoveItemFromDownloadFailureList(itemId);
 
     private void AddItemToDownloadFailureList(string itemId, string operationId, string? version, string errorCode) =>
-        QueueManagerService.AddItemToDownloadFailureList(itemId, operationId, version, errorCode);
+        _queueManagerService.AddItemToDownloadFailureList(itemId, operationId, version, errorCode);
     #endregion
 
     #region Queue
     public void AddItemToQueue(string itemId, string? version = null, bool cleanDirectoryBeforeInstalling = false, string? packFile = null, bool isSignedPack = false) =>
-        QueueManagerService.AddItemToQueue(itemId, version, cleanDirectoryBeforeInstalling, packFile, isSignedPack);
+        _queueManagerService.AddItemToQueue(itemId, version, cleanDirectoryBeforeInstalling, packFile, isSignedPack);
 
     public bool RemoveItemFromQueue(string itemId) =>
-        QueueManagerService.RemoveItemFromQueue(itemId);
+        _queueManagerService.RemoveItemFromQueue(itemId);
 
     public string GetCurrentQueueOperationId() =>
-        QueueManagerService.GetCurrentQueueOperationId();
+        _queueManagerService.GetCurrentQueueOperationId();
 
     public string? GetItemIdFromOperationId(string operationId) =>
-        QueueManagerService.GetItemIdFromOperationId(operationId);
+        _queueManagerService.GetItemIdFromOperationId(operationId);
 
     public string? GetOperationIdFromItemId(string storeId) =>
-        QueueManagerService.GetOperationIdFromItemId(storeId);
+        _queueManagerService.GetOperationIdFromItemId(storeId);
 
     public Queue<QueueItemModel> GetQueue() =>
-        QueueManagerService.GetQueue();
+        _queueManagerService.GetQueue();
 
     public QueueItemModel? GetQueueItemFromOperationId(string operationId) =>
-        QueueManagerService.GetQueueItemFromOperationId(operationId);
+        _queueManagerService.GetQueueItemFromOperationId(operationId);
 
     private void QueueManagerService_CurrentItemRemovedFromQueue()
     {
         ItemDownloadStageChanged?.Invoke(
-            Tuple.Create(QueueManagerService.CurrentDownloadingItem.OperationId, QueueManagerService.CurrentDownloadingItem.Status));
-        cancellationTokenSource?.Cancel();
+            Tuple.Create(_queueManagerService.CurrentDownloadingItem.OperationId, _queueManagerService.CurrentDownloadingItem.Status));
+        _cancellationTokenSource?.Cancel();
     }
 
     private void QueueManagerService_ProcessItem(QueueItemModel obj)
@@ -228,8 +228,8 @@ public partial class StoreHelper :
     private async Task ProcessAsync(QueueItemModel qi)
     {
         using var operationSource = new CancellationTokenSource();
-        cancellationTokenSource = operationSource;
-        cancellationToken = operationSource.Token;
+        _cancellationTokenSource = operationSource;
+        _cancellationToken = operationSource.Token;
 
         bool installed = false;
         try
@@ -253,9 +253,9 @@ public partial class StoreHelper :
         }
         finally
         {
-            OnlineItemsInstallationService.CompleteWork();
-            cancellationTokenSource = null;
-            cancellationToken = null;
+            _onlineItemsInstallationService.CompleteWork();
+            _cancellationTokenSource = null;
+            _cancellationToken = null;
         }
         ItemActionsStopped?.Invoke(qi.ItemId);
 
@@ -266,10 +266,10 @@ public partial class StoreHelper :
             UpdatesAvailableList.Remove(_item);
         }
 
-        lock (_lock)
+        lock (SyncRoot)
         {
-            QueueManagerService.CurrentDownloadingItem = null;
-            QueueManagerService.TryProcessNext();
+            _queueManagerService.CurrentDownloadingItem = null;
+            _queueManagerService.TryProcessNext();
         }
     }
 
@@ -417,7 +417,7 @@ public partial class StoreHelper :
                     await requestSlots.WaitAsync().ConfigureAwait(false);
                     try
                     {
-                        return await APIWorker.GetLastVersionAndVersionNotes(x.RepoUrl).ConfigureAwait(false);
+                        return await _apiWorker.GetLastVersionAndVersionNotes(x.RepoUrl).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -498,7 +498,7 @@ public partial class StoreHelper :
         bool wasInstalled = DatabaseHelper.Instance.IsItemInstalled(qi.ItemId);
         var result = await InstallItemWorker(qi);
 
-        if (cancellationToken?.IsCancellationRequested == true)
+        if (_cancellationToken?.IsCancellationRequested == true)
             return false;
 
         if (!result.Success)
@@ -584,7 +584,7 @@ public partial class StoreHelper :
         }
         else
         {
-            OnlineItemsInstallationService.CreateDownloadWorker(qi.OperationId, cancellationTokenSource!);
+            _onlineItemsInstallationService.CreateDownloadWorker(qi.OperationId, _cancellationTokenSource!);
 
             var offlineCopyResult = GetReadyLocalItem(qi);
 
@@ -596,7 +596,7 @@ public partial class StoreHelper :
             downloadUrl = offlineCopyResult.Result.Item2;
         }
 
-        if (cancellationToken?.IsCancellationRequested ?? false)
+        if (_cancellationToken?.IsCancellationRequested ?? false)
             return OperationResultModel<EmptyResult>
                 .UnSuccessResult();
 
@@ -606,13 +606,13 @@ public partial class StoreHelper :
             if (State.IsApplicationBuildAsMsi)
                 return OperationResultModel<EmptyResult>.SuccessResult();
 
-            ApplicationUpdateService = new();
-            var gettingPatchReadyResult = await ApplicationUpdateService
+            _applicationUpdateService = new();
+            var gettingPatchReadyResult = await _applicationUpdateService
                 .GetPatchReadyToInstall(
                 Path.Combine(itemFolder, "patch.cdpipatch"),
-                OnlineItemsInstallationService.DownloadWorker);
+                _onlineItemsInstallationService.DownloadWorker);
 
-            ApplicationUpdateService = null;
+            _applicationUpdateService = null;
             return gettingPatchReadyResult;
         }
 
@@ -637,7 +637,7 @@ public partial class StoreHelper :
         }
 
         // Set by ProcessAsync for the whole installation.
-        var result = await OnlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, cancellationTokenSource!);
+        var result = await _onlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, _cancellationTokenSource!);
 
         if (!result.Success && result.ErrorHappens)
         {
@@ -879,8 +879,8 @@ public partial class StoreHelper :
 
         try
         {
-            if (!await OnlineItemsInstallationService.LaunchBeforeInstallActions(
-                    await LScriptCore.RunScript(item.before_install_actions, extraArgs: extraArgs, cancellationToken: cancellationToken),
+            if (!await _onlineItemsInstallationService.LaunchBeforeInstallActions(
+                    await LScriptCore.RunScript(item.before_install_actions, extraArgs: extraArgs, cancellationToken: _cancellationToken),
                     itemFolder))
                 return OperationResultModel<EmptyResult>
                     .UnSuccessResult();
@@ -896,8 +896,8 @@ public partial class StoreHelper :
                     .FailureResult(ErrorModel.OnlyErrorCode(HandleException(new IOException($"Cannot save {item.store_id} to the item database."))));
 
             // download_easy_designer_annotation_file returns a download request; it was dropped.
-            string? afterDownloads = await LScriptCore.RunScript(item.after_install_actions, extraArgs: extraArgs, cancellationToken: cancellationToken);
-            if (!await OnlineItemsInstallationService.LaunchBeforeInstallActions(afterDownloads, itemFolder))
+            string? afterDownloads = await LScriptCore.RunScript(item.after_install_actions, extraArgs: extraArgs, cancellationToken: _cancellationToken);
+            if (!await _onlineItemsInstallationService.LaunchBeforeInstallActions(afterDownloads, itemFolder))
                 Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Downloads after the installation of {item.store_id} failed.");
 
             Logger.Instance.CreateDebugLog(nameof(StoreHelper), $"Adding item {item.name}... COMPLETE");

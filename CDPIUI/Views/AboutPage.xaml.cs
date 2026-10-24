@@ -53,9 +53,9 @@ public sealed partial class AboutPage : TemplatePage
         Error
     }
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
-    private ObservableCollection<AcknowledgmentsModel> AcknowledgmentsList = new ObservableCollection<AcknowledgmentsModel>()
+    private ObservableCollection<AcknowledgmentsModel> _acknowledgmentsList = new ObservableCollection<AcknowledgmentsModel>()
     {
         new () { Name = "MMaxX_ON" },
         new () { Name = "StafiLynx" },
@@ -69,7 +69,7 @@ public sealed partial class AboutPage : TemplatePage
         new () { Name = "🔭" },
     };
 
-    private ObservableCollection<AcknowledgmentsModel> RequrementsList = new ObservableCollection<AcknowledgmentsModel>()
+    private ObservableCollection<AcknowledgmentsModel> _requrementsList = new ObservableCollection<AcknowledgmentsModel>()
     {
         new () { Name = "TextControlBox-WinUI by FrozenAssassine" },
         new () { Name = "WinUI3Localizer by Andrew KeepCoding" },
@@ -105,18 +105,18 @@ public sealed partial class AboutPage : TemplatePage
 
         RepoRun.Text = UrlOpenHelper.MainRepoUrl;
 
-        AcknowledgmentsListView.ItemsSource = AcknowledgmentsList;
-        RequirementsListView.ItemsSource = RequrementsList;
+        AcknowledgmentsListView.ItemsSource = _acknowledgmentsList;
+        RequirementsListView.ItemsSource = _requrementsList;
     }
 
     // The services are singletons: a page that is not shown must not keep receiving their events.
-    private bool eventsConnected;
+    private bool _eventsConnected;
 
     private void ConnectEvents()
     {
-        if (eventsConnected)
+        if (_eventsConnected)
             return;
-        eventsConnected = true;
+        _eventsConnected = true;
         ApplicationUpdate.Instance.ErrorHappens += ApplicationUpdateHelper_ErrorHappens;
         ApplicationUpdate.Instance.CheckForUpdatesCompleted += ApplicationUpdateHelper_CheckForUpdatesCompleted;
         ApplicationUpdate.Instance.CheckForUpdatesStarted += ApplicationUpdateHelper_CheckForUpdatesStarted;
@@ -124,9 +124,9 @@ public sealed partial class AboutPage : TemplatePage
 
     private void DisconnectEvents()
     {
-        if (!eventsConnected)
+        if (!_eventsConnected)
             return;
-        eventsConnected = false;
+        _eventsConnected = false;
         ApplicationUpdate.Instance.ErrorHappens -= ApplicationUpdateHelper_ErrorHappens;
         ApplicationUpdate.Instance.CheckForUpdatesCompleted -= ApplicationUpdateHelper_CheckForUpdatesCompleted;
         ApplicationUpdate.Instance.CheckForUpdatesStarted -= ApplicationUpdateHelper_CheckForUpdatesStarted;
@@ -188,14 +188,14 @@ public sealed partial class AboutPage : TemplatePage
         switch (status)
         {
             case UpdateButtonStatus.Ready:
-                UpdateButtonTextBlock.Text = localizer.GetLocalizedString("CheckForUpdates");
+                UpdateButtonTextBlock.Text = _localizer.GetLocalizedString("CheckForUpdates");
                 break;
             case UpdateButtonStatus.Work:
                 UpdateButtonTextBlock.Opacity = 0;
                 UpdateProgressRing.Visibility = Visibility.Visible;
                 break;
             case UpdateButtonStatus.ActionInstallAsk:
-                UpdateButtonTextBlock.Text = localizer.GetLocalizedString("InstallUpdates");
+                UpdateButtonTextBlock.Text = _localizer.GetLocalizedString("InstallUpdates");
                 break;
         }
     }
@@ -207,22 +207,22 @@ public sealed partial class AboutPage : TemplatePage
         {
             case BadgeStatus.NewestInstalled:
                 UpdateBadgeGlyph.Glyph = "\uE73E";
-                UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("NewestVersionInstalled").ToUpper();
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("NewestVersionInstalled").ToUpper();
                 UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
                 break;
             case BadgeStatus.NewVersionAvailable:
                 UpdateBadgeGlyph.Glyph = "\uE752";
-                UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("NewVersionAvailable").ToUpper();
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("NewVersionAvailable").ToUpper();
                 UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#FFEB3B");
                 break;
             case BadgeStatus.Work:
                 UpdateBadgeGlyph.Glyph = "\uE895";
-                UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("CheckingForUpdates").ToUpper();
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("CheckingForUpdates").ToUpper();
                 UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
                 break;
             case BadgeStatus.Error:
                 UpdateBadgeGlyph.Glyph = "\uE783";
-                UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("ErrorOccurred").ToUpper();
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("ErrorOccurred").ToUpper();
                 UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#F44336");
                 break;
         }
@@ -230,7 +230,7 @@ public sealed partial class AboutPage : TemplatePage
 
     private void SetCurrentVersion(string version)
     {
-        CurrentVersionTextBlock.Text = string.Format(localizer.GetLocalizedString("CurrentVersion"), version) + (State.IsApplicationBuildAsMsi ? " MSI-BUILD" : " PORTABLE-BUILD");
+        CurrentVersionTextBlock.Text = string.Format(_localizer.GetLocalizedString("CurrentVersion"), version) + (State.IsApplicationBuildAsMsi ? " MSI-BUILD" : " PORTABLE-BUILD");
     }
     private void SetServerVersion(string version)
     {
@@ -241,12 +241,12 @@ public sealed partial class AboutPage : TemplatePage
         else if (version.StartsWith("ERR_"))
         {
             ServerVersionTextBlock.Visibility = Visibility.Visible;
-            ServerVersionTextBlock.Text = localizer.GetLocalizedString("ErrorOccurred") + " " + version;
+            ServerVersionTextBlock.Text = _localizer.GetLocalizedString("ErrorOccurred") + " " + version;
         }
         else
         {
             ServerVersionTextBlock.Visibility = Visibility.Visible;
-            ServerVersionTextBlock.Text = string.Format(localizer.GetLocalizedString("ServerVersion"), version);
+            ServerVersionTextBlock.Text = string.Format(_localizer.GetLocalizedString("ServerVersion"), version);
         }
 
 

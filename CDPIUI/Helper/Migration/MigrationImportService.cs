@@ -21,7 +21,7 @@ namespace CDPIUI.Helper.Migration;
 internal sealed class MigrationImportService
 {
     private const long MaximumPresetSize = 8L * 1024L * 1024L;
-    private readonly MigrationArchiveInspectionService inspectionService = new();
+    private readonly MigrationArchiveInspectionService _inspectionService = new();
 
     public static bool IsAlreadyCompleted(VerifiedMigrationPackage package)
     {
@@ -54,7 +54,7 @@ internal sealed class MigrationImportService
     {
         ArgumentNullException.ThrowIfNull(suppliedPackage);
         progress?.Report(2);
-        VerifiedMigrationPackage package = inspectionService.InspectAndStage(
+        VerifiedMigrationPackage package = _inspectionService.InspectAndStage(
             suppliedPackage.Request, cancellationToken);
         progress?.Report(12);
 

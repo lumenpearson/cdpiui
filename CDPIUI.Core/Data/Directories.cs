@@ -65,13 +65,13 @@ public static class Directories
 public class DirectoriesHelper
 {
     private static DirectoriesHelper? _instance;
-    private static readonly object _lock = new();
+    private static readonly object SyncRoot = new();
 
     public static DirectoriesHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new DirectoriesHelper();
                 return _instance;
@@ -83,45 +83,45 @@ public class DirectoriesHelper
 
     public string DataDirectory { get => TryGetDataDirectory(); }
 
-    private string? DataDirectoryProperty;
+    private string? _dataDirectoryProperty;
     private string TryGetDataDirectory()
     {
-        if (DataDirectoryProperty != null)
-            return DataDirectoryProperty;
+        if (_dataDirectoryProperty != null)
+            return _dataDirectoryProperty;
         var result = DirectoriesManager.GetDataDirectory(Environment.ProcessPath, false, State.IsApplicationBuildAsMsi);
 
         if (result.Success)
         {
-            DataDirectoryProperty = result.Result;
+            _dataDirectoryProperty = result.Result;
             return result.Result!;
         }
         else
         {
             // An empty path made every file go to the current working directory.
-            DataDirectoryProperty = Path.Combine(
+            _dataDirectoryProperty = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CDPIUI");
             CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(result.Error ?? new UnknownException());
-            return DataDirectoryProperty;
+            return _dataDirectoryProperty;
         }
     }
 
     public string CurrentDirectory { get => TryGetCurrentDirectory(); }
 
-    private string? CurrentDirectoryProperty;
+    private string? _currentDirectoryProperty;
     private string TryGetCurrentDirectory()
     {
-        if (CurrentDirectoryProperty != null)
-            return CurrentDirectoryProperty;
+        if (_currentDirectoryProperty != null)
+            return _currentDirectoryProperty;
         var result = DirectoriesManager.GetDataDirectory(Environment.ProcessPath, true);
 
         if (result.Success)
         {
-            CurrentDirectoryProperty = result.Result;
+            _currentDirectoryProperty = result.Result;
             return result.Result!;
         }
         else
         {
-            CurrentDirectoryProperty = string.Empty;
+            _currentDirectoryProperty = string.Empty;
             CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(result.Error ?? new UnknownException());
             return string.Empty;
         }

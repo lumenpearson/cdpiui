@@ -27,8 +27,8 @@ internal interface IUserExperienceService
 
 internal class UserExperienceService : IUserExperienceService
 {
-    private readonly StoreHelper Store;
-    public UserExperienceService(StoreHelper store) { Store = store; }
+    private readonly StoreHelper _store;
+    public UserExperienceService(StoreHelper store) { _store = store; }
 
     public List<Tuple<string, string>>? GetItemRequiredItemsById(string storeId)
     {
@@ -46,9 +46,9 @@ internal class UserExperienceService : IUserExperienceService
     public List<RepoItemModel> GetSimilarItemsForStoreId(string storeId)
     {
         List<RepoItemModel> items = [];
-        RepoItemModel item = Store.GetItemInfoFromStoreId(storeId);
+        RepoItemModel item = _store.GetItemInfoFromStoreId(storeId);
 
-        foreach (RepoItemModel itemToCheck in Store.ItemsList)
+        foreach (RepoItemModel itemToCheck in _store.ItemsList)
         {
             if (itemToCheck.store_id is null || itemToCheck.dependencies is null)
                 continue;
@@ -70,7 +70,7 @@ internal class UserExperienceService : IUserExperienceService
             HardcodedItemIds.ComponentIds.ContainsValue(storeId) &&
             HardcodedItemIds.GoodCheckSupportedComponents.Contains(HardcodedItemIds.ComponentIds.GetKeyByValue(storeId)))
         {
-            RepoItemModel? goodCheck = Store.GetItemInfoFromStoreId(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value);
+            RepoItemModel? goodCheck = _store.GetItemInfoFromStoreId(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value);
             if (goodCheck != null)
                 items.Add(goodCheck);
         }

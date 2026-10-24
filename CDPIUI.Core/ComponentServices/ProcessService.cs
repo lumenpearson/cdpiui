@@ -40,7 +40,7 @@ public partial class ProcessService : IProcessService
 
     private readonly StringBuilder _outputBuffer;
     private readonly StringBuilder _outputDefaultBuffer;
-    private readonly object outputLock = new();
+    private readonly object _outputLock = new();
 
     public ProcessService()
     {
@@ -260,7 +260,7 @@ public partial class ProcessService : IProcessService
     /// <summary>The raw output and the number of the last change it holds.</summary>
     public string GetDefaultProcessOutput(out long sequence)
     {
-        lock (outputLock)
+        lock (_outputLock)
         {
             sequence = _outputSequence;
             return _outputDefaultBuffer.ToString();
@@ -270,7 +270,7 @@ public partial class ProcessService : IProcessService
     /// <summary>The cleaned output and the number of the last change it holds.</summary>
     public string GetProcessOutput(out long sequence)
     {
-        lock (outputLock)
+        lock (_outputLock)
         {
             sequence = _outputSequence;
             return _outputBuffer.ToString();
@@ -279,12 +279,12 @@ public partial class ProcessService : IProcessService
 
     public string GetDefaultProcessOutput()
     {
-        lock (outputLock)
+        lock (_outputLock)
             return _outputDefaultBuffer.ToString();
     }
     public string GetProcessOutput()
     {
-        lock (outputLock)
+        lock (_outputLock)
             return _outputBuffer.ToString();
     }
 
@@ -363,7 +363,7 @@ public partial class ProcessService : IProcessService
     {
         string prettyOutput;
         long sequence;
-        lock (outputLock)
+        lock (_outputLock)
         {
             sequence = ++_outputSequence;
             string chunk = _pendingEscape + output;
@@ -386,7 +386,7 @@ public partial class ProcessService : IProcessService
 
     public void SetOutput(string output)
     {
-        lock (outputLock)
+        lock (_outputLock)
         {
             ++_outputSequence;
             _outputDefaultBuffer.Clear().Append(output);

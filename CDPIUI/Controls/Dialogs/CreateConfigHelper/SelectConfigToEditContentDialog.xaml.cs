@@ -58,14 +58,14 @@ public sealed partial class SelectConfigToEditContentDialog : ContentDialog
     public ConfigItem SelectedConfigItem { get; private set; }
     public SelectResult SelectedConfigResult { get; private set; } = SelectResult.Nothing;
 
-    private ObservableCollection<ConfigToEditModel> ConfigModels = new();
+    private ObservableCollection<ConfigToEditModel> _configModels = new();
     public SelectConfigToEditContentDialog()
     {
         InitializeComponent();
         this.DataContext = this;
 
         SelectConfigCommand = new RelayCommand(p => ConfigSelected((Tuple<string, string>)p));
-        ConfigsListView.ItemsSource = ConfigModels;
+        ConfigsListView.ItemsSource = _configModels;
 
         InitDialog();
 
@@ -90,7 +90,7 @@ public sealed partial class SelectConfigToEditContentDialog : ContentDialog
 
     private void InitModel(string componentId)
     {
-        ConfigModels.Clear();
+        _configModels.Clear();
         ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
                 componentId);
@@ -102,7 +102,7 @@ public sealed partial class SelectConfigToEditContentDialog : ContentDialog
             PackNameLookup packNames = new();
             foreach (var item in items)
             {
-                ConfigModels.Add(
+                _configModels.Add(
                     new()
                     {
                         DisplayName = item.name,
@@ -113,7 +113,7 @@ public sealed partial class SelectConfigToEditContentDialog : ContentDialog
             }
         }
 
-        if (ConfigModels.Count == 0)
+        if (_configModels.Count == 0)
         {
             SelectText.Visibility = Visibility.Collapsed;
             ConfigsScrollViewer.Visibility = Visibility.Collapsed;

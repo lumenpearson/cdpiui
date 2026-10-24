@@ -37,29 +37,29 @@ namespace CDPIUI.Views.CreateConfigUtil;
 /// </summary>
 public sealed partial class MainPage : TemplatePage
 {
-    private readonly ObservableCollection<ViewComponentModel> items = [];
-    private readonly HashSet<string> supportedComponents =
+    private readonly ObservableCollection<ViewComponentModel> _items = [];
+    private readonly HashSet<string> _supportedComponents =
     [
         .. HardcodedItemIds.GoodCheckSupportedComponents
             .Select(component => HardcodedItemIds.ComponentIds[component]),
         HardcodedItemIds.ComponentIds[Components.Zapret2],
     ];
-    private readonly HashSet<string> configTestUnsupportedComponents =
+    private readonly HashSet<string> _configTestUnsupportedComponents =
     [
         HardcodedItemIds.ComponentIds[Components.TgWsProxy],
     ];
-    private readonly ILocalizer localizer = Localizer.Get();
-    private bool navigationActionHandled;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private bool _navigationActionHandled;
 
-    private string TargetId = string.Empty;
+    private string _targetId = string.Empty;
     public MainPage()
     {
         InitializeComponent();
-        ComponentChooseComboBox.ItemsSource = items;
+        ComponentChooseComboBox.ItemsSource = _items;
         GetReadyVariants();
 
         StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
-        localizer.LanguageChanged += Localizer_LanguageChanged;
+        _localizer.LanguageChanged += Localizer_LanguageChanged;
 
 
         IsBackwardAnimationToPageAvailable = true;
@@ -79,17 +79,17 @@ public sealed partial class MainPage : TemplatePage
     {
         base.OnNavigatedTo(e);
 
-        if (Parameter != null && items.Count > 0)
+        if (Parameter != null && _items.Count > 0)
         {
-            TargetId = Parameter.Get("componentId");
-            if (!string.IsNullOrEmpty(TargetId))
+            _targetId = Parameter.Get("componentId");
+            if (!string.IsNullOrEmpty(_targetId))
                 ComponentChooseComboBox.SelectedItem =
-                    items.FirstOrDefault(x => x.StoreId == TargetId) ?? items.First();
+                    _items.FirstOrDefault(x => x.StoreId == _targetId) ?? _items.First();
 
             string action = Parameter.Get("action");
-            if (!navigationActionHandled && !string.IsNullOrWhiteSpace(action))
+            if (!_navigationActionHandled && !string.IsNullOrWhiteSpace(action))
             {
-                navigationActionHandled = true;
+                _navigationActionHandled = true;
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     if (string.Equals(action, "BlockCheck2", StringComparison.OrdinalIgnoreCase))
@@ -112,18 +112,18 @@ public sealed partial class MainPage : TemplatePage
         base.OnNavigatedFrom(e);
 
         StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
-        localizer.LanguageChanged -= Localizer_LanguageChanged;
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
     }
 
 
     private void GetReadyVariants()
     {
-        items?.Clear();
-        UIHelper.LoadInstalledComponentsList(items);
-        if (items.Count > 0)
+        _items?.Clear();
+        UIHelper.LoadInstalledComponentsList(_items);
+        if (_items.Count > 0)
         {
             string lastSelection = SettingsManager.Instance.GetValue<string>("AUTOSELECTION", "lastComponentSelectedId");
-            ComponentChooseComboBox.SelectedItem = items.FirstOrDefault(x => x.StoreId == TargetId) ?? items.FirstOrDefault(x => x.StoreId == lastSelection) ?? items.First();
+            ComponentChooseComboBox.SelectedItem = _items.FirstOrDefault(x => x.StoreId == _targetId) ?? _items.FirstOrDefault(x => x.StoreId == lastSelection) ?? _items.First();
 
 
             PlaceholderGrid.Visibility = Visibility.Collapsed;
@@ -195,20 +195,20 @@ public sealed partial class MainPage : TemplatePage
         }
 
         bool isZapret2 = IsZapret2(component);
-        BeginNewSelectionButton.Visibility = supportedComponents.Contains(component.StoreId)
+        BeginNewSelectionButton.Visibility = _supportedComponents.Contains(component.StoreId)
             ? Visibility.Visible
             : Visibility.Collapsed;
         BlockCheck2ReportsSettingsCard.Visibility = isZapret2
             ? Visibility.Visible
             : Visibility.Collapsed;
-        TestBestConfigSettingsCard.Visibility = configTestUnsupportedComponents.Contains(component.StoreId)
+        TestBestConfigSettingsCard.Visibility = _configTestUnsupportedComponents.Contains(component.StoreId)
             ? Visibility.Collapsed
             : Visibility.Visible;
 
-        BeginNewSelectionButton.Header = localizer.GetLocalizedString(isZapret2
+        BeginNewSelectionButton.Header = _localizer.GetLocalizedString(isZapret2
             ? "BlockCheck2StartSelectionCardTitle"
             : "CreateNewViaGoodCheckSettingsCardTitle");
-        BeginNewSelectionButton.Description = localizer.GetLocalizedString(isZapret2
+        BeginNewSelectionButton.Description = _localizer.GetLocalizedString(isZapret2
             ? "BlockCheck2StartSelectionCardDescription"
             : "CreateNewViaGoodCheckSettingsCardDescription");
     }

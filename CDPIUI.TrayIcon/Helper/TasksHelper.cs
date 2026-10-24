@@ -6,13 +6,13 @@ namespace CDPIUI.TrayIcon.Helper;
 public class TasksHelper : TasksManageService<ProcessManager>
 {
     private static TasksHelper? _instance;
-    private static readonly object _lock = new object();
+    private static readonly object SyncRoot = new object();
 
     public static TasksHelper Instance
     {
         get
         {
-            lock (_lock)
+            lock (SyncRoot)
             {
                 _instance ??= new TasksHelper();
                 return _instance;
@@ -86,13 +86,13 @@ public class TasksHelper : TasksManageService<ProcessManager>
 
     // GoodbyeDPI, Zapret and Zapret2 use the WinDivert driver; Zapret2 was missing, so the
     // service could be deleted under a running winws2.
-    List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
+    List<string> _serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
 
     // Each stop joins its component's queue before the first await, so it runs after the
     // commands for that component that came first and does not cut into a start or restart.
     public async Task StopService()
     {
-        await Task.WhenAll(serviceUsedComponentsIds.Select(id =>
+        await Task.WhenAll(_serviceUsedComponentsIds.Select(id =>
             ComponentCommandQueue.Run(id, () => StopTask(id))));
         await ProcessManager.StopService();
     }
