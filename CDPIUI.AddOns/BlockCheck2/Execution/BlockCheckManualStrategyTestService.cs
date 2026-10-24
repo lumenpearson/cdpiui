@@ -27,6 +27,85 @@ public sealed class BlockCheckManualStrategyTestService
         ArgumentNullException.ThrowIfNull(strategyRunner);
         ArgumentNullException.ThrowIfNull(probeRunner);
         options ??= new BlockCheckManualStrategyTestOptions();
+        List<BlockCheckIssue> issues = ValidateTest(strategy, target, options);
+        if (issues.Count > 0)
+        {
+            return new BlockCheckManualStrategyTestResult { Issues = issues };
+        }
+
+        Zapret2WriteResult configuration = _writer.Write([CreateTestProfile(strategy, target)], options.WriterOptions);
+        issues.AddRange(configuration.Issues);
+        if (!configuration.Success)
+        {
+            return new BlockCheckManualStrategyTestResult
+            {
+                CommandLine = configuration.CommandLine,
+                Issues = issues,
+            };
+        }
+
+        List<ProbeAttempt> attempts = await ProbeWithStrategyAsync(
+                strategy,
+                target,
+                configuration.CommandLine,
+                strategyRunner,
+                probeRunner,
+                options.Attempts,
+                issues,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return new BlockCheckManualStrategyTestResult
+        {
+            CommandLine = configuration.CommandLine,
+            ProbeResult = new ProbeResult
+            {
+                StrategyId = strategy.Id,
+                TargetId = target.Id,
+                Attempts = attempts,
+            },
+            Issues = issues,
+        };
+    }
+
+    public OperationResultModel<string> GetFullStrategyArguments(
+        StrategyDefinition strategy,
+        BlockCheckTarget target,
+        BlockCheckManualStrategyTestOptions? options = null)
+    {
+        options ??= new BlockCheckManualStrategyTestOptions();
+        List<BlockCheckIssue> issues = [];
+
+        Zapret2WriteResult configuration = _writer.Write([CreateTestProfile(strategy, target)], options.WriterOptions);
+        issues.AddRange(configuration.Issues);
+        if (!configuration.Success)
+        {
+            return OperationResultModel<string>.FailureResult(ErrorModel.OnlyErrorCode(issues.First().Code));
+        }
+
+        return OperationResultModel<string>.SuccessResult(configuration.CommandLine);
+    }
+
+    public Task<BlockCheckManualStrategyTestResult> TestWithCdpiuiAdaptersAsync(
+        StrategyDefinition strategy,
+        BlockCheckTarget target,
+        BlockCheckManualStrategyTestOptions? options = null,
+        CdpiuiZapret2StrategyRunnerOptions? strategyRunnerOptions = null,
+        CurlBlockCheckProbeRunnerOptions? probeRunnerOptions = null,
+        CancellationToken cancellationToken = default) =>
+        TestAsync(
+            strategy,
+            target,
+            new CdpiuiZapret2StrategyRunner(strategyRunnerOptions),
+            new CurlBlockCheckProbeRunner(probeRunnerOptions),
+            options,
+            cancellationToken);
+
+    private static List<BlockCheckIssue> ValidateTest(
+        StrategyDefinition strategy,
+        BlockCheckTarget target,
+        BlockCheckManualStrategyTestOptions options)
+    {
         List<BlockCheckIssue> issues = [];
         if (options.Attempts < 1)
         {
@@ -41,36 +120,39 @@ public sealed class BlockCheckManualStrategyTestService
                 "The selected strategy does not support this connection.",
                 strategy.Id));
         }
-        if (issues.Count > 0)
-        {
-            return new BlockCheckManualStrategyTestResult { Issues = issues };
-        }
+        return issues;
+    }
 
-        Zapret2ProfilePlan profile = new()
+    private static Zapret2ProfilePlan CreateTestProfile(StrategyDefinition strategy, BlockCheckTarget target) => new()
+    {
+        Name = "bc_manual_test",
+        Filter = new Zapret2ProfileFilter
         {
-            Name = "bc_manual_test",
-            Filter = new Zapret2ProfileFilter
-            {
-                IpVersion = target.IpVersion,
-                Transport = target.Transport,
-                Port = target.Port,
-                Layer7Protocol = target.Layer7Protocol,
-                Domains = [BlockCheckTarget.NormalizeHost(target.Host)],
-            },
-            Primary = strategy,
-            TargetIds = new HashSet<string>([target.Id], StringComparer.Ordinal),
-        };
-        Zapret2WriteResult configuration = _writer.Write([profile], options.WriterOptions);
-        issues.AddRange(configuration.Issues);
-        if (!configuration.Success)
-        {
-            return new BlockCheckManualStrategyTestResult
-            {
-                CommandLine = configuration.CommandLine,
-                Issues = issues,
-            };
-        }
+            IpVersion = target.IpVersion,
+            Transport = target.Transport,
+            Port = target.Port,
+            Layer7Protocol = target.Layer7Protocol,
+            Domains = [BlockCheckTarget.NormalizeHost(target.Host)],
+        },
+        Primary = strategy,
+        TargetIds = new HashSet<string>([target.Id], StringComparer.Ordinal),
+    };
 
+    /// <summary>
+    /// Starts the strategy, probes the target and always stops the strategy and restores the
+    /// previous component state for the steps that were reached. Failures become issues;
+    /// cancellation is rethrown after the cleanup.
+    /// </summary>
+    private static async Task<List<ProbeAttempt>> ProbeWithStrategyAsync(
+        StrategyDefinition strategy,
+        BlockCheckTarget target,
+        string commandLine,
+        IBlockCheckStrategyRunner strategyRunner,
+        IBlockCheckProbeRunner probeRunner,
+        int attemptCount,
+        List<BlockCheckIssue> issues,
+        CancellationToken cancellationToken)
+    {
         List<ProbeAttempt> attempts = [];
         bool prepareAttempted = false;
         bool startAttempted = false;
@@ -79,9 +161,9 @@ public sealed class BlockCheckManualStrategyTestService
             prepareAttempted = true;
             await strategyRunner.PrepareAsync(cancellationToken).ConfigureAwait(false);
             startAttempted = true;
-            await strategyRunner.StartAsync(configuration.CommandLine, cancellationToken)
+            await strategyRunner.StartAsync(commandLine, cancellationToken)
                 .ConfigureAwait(false);
-            for (int attempt = 0; attempt < options.Attempts; attempt++)
+            for (int attempt = 0; attempt < attemptCount; attempt++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 attempts.Add(await probeRunner.ProbeAsync(target, cancellationToken)
@@ -131,65 +213,8 @@ public sealed class BlockCheckManualStrategyTestService
             }
         }
 
-        return new BlockCheckManualStrategyTestResult
-        {
-            CommandLine = configuration.CommandLine,
-            ProbeResult = new ProbeResult
-            {
-                StrategyId = strategy.Id,
-                TargetId = target.Id,
-                Attempts = attempts,
-            },
-            Issues = issues,
-        };
+        return attempts;
     }
-
-    public OperationResultModel<string> GetFullStrategyArguments(
-        StrategyDefinition strategy,
-        BlockCheckTarget target,
-        BlockCheckManualStrategyTestOptions? options = null)
-    {
-        options ??= new BlockCheckManualStrategyTestOptions();
-        List<BlockCheckIssue> issues = [];
-
-        Zapret2ProfilePlan profile = new()
-        {
-            Name = "bc_manual_test",
-            Filter = new Zapret2ProfileFilter
-            {
-                IpVersion = target.IpVersion,
-                Transport = target.Transport,
-                Port = target.Port,
-                Layer7Protocol = target.Layer7Protocol,
-                Domains = [BlockCheckTarget.NormalizeHost(target.Host)],
-            },
-            Primary = strategy,
-            TargetIds = new HashSet<string>([target.Id], StringComparer.Ordinal),
-        };
-        Zapret2WriteResult configuration = _writer.Write([profile], options.WriterOptions);
-        issues.AddRange(configuration.Issues);
-        if (!configuration.Success)
-        {
-            return OperationResultModel<string>.FailureResult(ErrorModel.OnlyErrorCode(issues.First().Code));
-        }
-
-        return OperationResultModel<string>.SuccessResult(configuration.CommandLine);
-    }
-
-    public Task<BlockCheckManualStrategyTestResult> TestWithCdpiuiAdaptersAsync(
-        StrategyDefinition strategy,
-        BlockCheckTarget target,
-        BlockCheckManualStrategyTestOptions? options = null,
-        CdpiuiZapret2StrategyRunnerOptions? strategyRunnerOptions = null,
-        CurlBlockCheckProbeRunnerOptions? probeRunnerOptions = null,
-        CancellationToken cancellationToken = default) =>
-        TestAsync(
-            strategy,
-            target,
-            new CdpiuiZapret2StrategyRunner(strategyRunnerOptions),
-            new CurlBlockCheckProbeRunner(probeRunnerOptions),
-            options,
-            cancellationToken);
 
     private static BlockCheckIssue Error(string code, string message, string? subjectId = null) =>
         new(BlockCheckIssueSeverity.Error, code, message, subjectId);

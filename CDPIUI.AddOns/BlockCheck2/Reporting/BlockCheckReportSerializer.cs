@@ -40,6 +40,38 @@ public sealed class BlockCheckReportSerializer
     {
         ArgumentNullException.ThrowIfNull(report);
         StringBuilder output = new();
+        AppendHeader(output, report);
+
+        Dictionary<string, string> targetUrls = report.Targets.ToDictionary(
+            target => target.Id,
+            TargetUrl,
+            StringComparer.Ordinal);
+        Dictionary<string, string> targetConnectionDetails = report.Targets.ToDictionary(
+            target => target.Id,
+            TargetConnectionDetails,
+            StringComparer.Ordinal);
+        AppendTargets(output, report.Targets);
+
+        foreach (BlockCheckReportProfile profile in report.Profiles)
+        {
+            AppendProfile(output, profile);
+        }
+
+        AppendProbes(output, report.Probes, targetUrls, targetConnectionDetails);
+        AppendIssues(output, report.Issues);
+
+        if (!string.IsNullOrWhiteSpace(report.PresetArguments))
+        {
+            output.AppendLine();
+            output.AppendLine("Preset arguments:");
+            output.AppendLine(report.PresetArguments);
+        }
+
+        return output.ToString();
+    }
+
+    private static void AppendHeader(StringBuilder output, BlockCheckReport report)
+    {
         output.AppendLine("CDPIUI BlockCheck2 report");
         output.AppendLine($"Created (UTC): {report.CreatedAtUtc:O}");
         output.AppendLine($"Catalog: {report.CatalogVersion}");
@@ -50,97 +82,99 @@ public sealed class BlockCheckReportSerializer
         output.AppendLine($"Targets: {report.Targets.Count}");
         output.AppendLine($"Profiles: {report.Profiles.Count}");
         output.AppendLine($"Validation candidates: {report.ValidationAttempts.Count}");
+    }
 
-        Dictionary<string, string> targetUrls = report.Targets.ToDictionary(
-            target => target.Id,
-            TargetUrl,
-            StringComparer.Ordinal);
-        Dictionary<string, string> targetConnectionDetails = report.Targets.ToDictionary(
-            target => target.Id,
-            TargetConnectionDetails,
-            StringComparer.Ordinal);
-        if (report.Targets.Count > 0)
+    private static void AppendTargets(StringBuilder output, IReadOnlyList<BlockCheckReportTarget> targets)
+    {
+        if (targets.Count == 0)
         {
-            output.AppendLine();
-            output.AppendLine("Targets:");
-            foreach (BlockCheckReportTarget target in report.Targets)
-            {
-                output.AppendLine($"- {TargetUrl(target)}");
-                output.AppendLine($"  Connection: {TargetConnectionDetails(target)}");
-            }
+            return;
         }
 
-        foreach (BlockCheckReportProfile profile in report.Profiles)
+        output.AppendLine();
+        output.AppendLine("Targets:");
+        foreach (BlockCheckReportTarget target in targets)
         {
-            output.AppendLine();
-            string bestEffort = profile.IsBestEffort ? " [best effort]" : string.Empty;
-            output.AppendLine($"[{profile.Name}]{bestEffort} {profile.Layer7Protocol}/{profile.Transport}/{profile.IpVersion}:{profile.Port}");
-            if (profile.Domains.Count > 0)
-            {
-                output.AppendLine($"Domains: {string.Join(", ", profile.Domains)}");
-            }
-            if (profile.HostListPaths.Count > 0)
-            {
-                output.AppendLine($"Site lists: {string.Join(", ", profile.HostListPaths)}");
-            }
-            output.AppendLine($"Primary: {profile.PrimaryStrategyId}");
-            if (profile.FallbackStrategyIds.Count > 0)
-            {
-                output.AppendLine($"Fallbacks: {string.Join(", ", profile.FallbackStrategyIds)}");
-            }
+            output.AppendLine($"- {TargetUrl(target)}");
+            output.AppendLine($"  Connection: {TargetConnectionDetails(target)}");
+        }
+    }
+
+    private static void AppendProfile(StringBuilder output, BlockCheckReportProfile profile)
+    {
+        output.AppendLine();
+        string bestEffort = profile.IsBestEffort ? " [best effort]" : string.Empty;
+        output.AppendLine($"[{profile.Name}]{bestEffort} {profile.Layer7Protocol}/{profile.Transport}/{profile.IpVersion}:{profile.Port}");
+        if (profile.Domains.Count > 0)
+        {
+            output.AppendLine($"Domains: {string.Join(", ", profile.Domains)}");
+        }
+        if (profile.HostListPaths.Count > 0)
+        {
+            output.AppendLine($"Site lists: {string.Join(", ", profile.HostListPaths)}");
+        }
+        output.AppendLine($"Primary: {profile.PrimaryStrategyId}");
+        if (profile.FallbackStrategyIds.Count > 0)
+        {
+            output.AppendLine($"Fallbacks: {string.Join(", ", profile.FallbackStrategyIds)}");
+        }
+    }
+
+    private static void AppendProbes(
+        StringBuilder output,
+        IReadOnlyList<BlockCheckReportProbe> probes,
+        IReadOnlyDictionary<string, string> targetUrls,
+        IReadOnlyDictionary<string, string> targetConnectionDetails)
+    {
+        if (probes.Count == 0)
+        {
+            return;
         }
 
-        if (report.Probes.Count > 0)
+        output.AppendLine();
+        output.AppendLine("Probe results:");
+        foreach (BlockCheckReportProbe probe in probes)
         {
-            output.AppendLine();
-            output.AppendLine("Probe results:");
-            foreach (BlockCheckReportProbe probe in report.Probes)
+            string strategy = string.IsNullOrWhiteSpace(probe.StrategyId)
+                ? "baseline"
+                : probe.StrategyId;
+            string timing = probe.MedianTimeToFirstByteMs.HasValue
+                ? $", median={probe.MedianTimeToFirstByteMs.Value:0} ms"
+                : string.Empty;
+            string statuses = probe.HttpStatusCodes.Count > 0
+                ? $", HTTP={string.Join('/', probe.HttpStatusCodes)}"
+                : string.Empty;
+            string failures = probe.FailureCodes.Count > 0
+                ? $", failures={string.Join(',', probe.FailureCodes)}"
+                : string.Empty;
+            output.AppendLine(
+                $"- {probe.Kind} {strategy} / " +
+                $"{targetUrls.GetValueOrDefault(probe.TargetId, probe.TargetId)}: " +
+                $"{probe.SuccessCount}/{probe.AttemptCount} ({probe.SuccessRate:P0})" +
+                $"{timing}{statuses}{failures}");
+            if (targetConnectionDetails.TryGetValue(probe.TargetId, out string? connectionDetails))
             {
-                string strategy = string.IsNullOrWhiteSpace(probe.StrategyId)
-                    ? "baseline"
-                    : probe.StrategyId;
-                string timing = probe.MedianTimeToFirstByteMs.HasValue
-                    ? $", median={probe.MedianTimeToFirstByteMs.Value:0} ms"
-                    : string.Empty;
-                string statuses = probe.HttpStatusCodes.Count > 0
-                    ? $", HTTP={string.Join('/', probe.HttpStatusCodes)}"
-                    : string.Empty;
-                string failures = probe.FailureCodes.Count > 0
-                    ? $", failures={string.Join(',', probe.FailureCodes)}"
-                    : string.Empty;
-                output.AppendLine(
-                    $"- {probe.Kind} {strategy} / " +
-                    $"{targetUrls.GetValueOrDefault(probe.TargetId, probe.TargetId)}: " +
-                    $"{probe.SuccessCount}/{probe.AttemptCount} ({probe.SuccessRate:P0})" +
-                    $"{timing}{statuses}{failures}");
-                if (targetConnectionDetails.TryGetValue(probe.TargetId, out string? connectionDetails))
-                {
-                    output.AppendLine($"  Connection: {connectionDetails}");
-                }
+                output.AppendLine($"  Connection: {connectionDetails}");
             }
         }
+    }
 
-        if (report.Issues.Count > 0)
+    private static void AppendIssues(StringBuilder output, IReadOnlyList<BlockCheckIssue> issues)
+    {
+        if (issues.Count == 0)
         {
-            output.AppendLine();
-            output.AppendLine("Issues:");
-            foreach (var issue in report.Issues)
-            {
-                string subject = string.IsNullOrWhiteSpace(issue.SubjectId)
-                    ? string.Empty
-                    : $" [{issue.SubjectId}]";
-                output.AppendLine($"- {issue.Severity} {issue.Code}{subject}: {issue.Message}");
-            }
+            return;
         }
 
-        if (!string.IsNullOrWhiteSpace(report.PresetArguments))
+        output.AppendLine();
+        output.AppendLine("Issues:");
+        foreach (var issue in issues)
         {
-            output.AppendLine();
-            output.AppendLine("Preset arguments:");
-            output.AppendLine(report.PresetArguments);
+            string subject = string.IsNullOrWhiteSpace(issue.SubjectId)
+                ? string.Empty
+                : $" [{issue.SubjectId}]";
+            output.AppendLine($"- {issue.Severity} {issue.Code}{subject}: {issue.Message}");
         }
-
-        return output.ToString();
     }
 
     public Task SaveJsonAsync(

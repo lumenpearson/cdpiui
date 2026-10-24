@@ -41,45 +41,25 @@ public sealed class BlockCheckSynthesisService
             baselineProbeResults,
             options,
             issues);
-        // The units are the same as in the optimizers: an emitted --hostlist covers the whole
-        // file, so a site from the list that passed the baseline stays in the unit and the chosen
-        // strategy must not break it.
-        BlockCheckTarget[] targetsRequiringProfile = BlockCheckTargetGroupBuilder.Build(targetArray)
-            .Where(group => group.Targets.Any(target => !baselineAccessibleTargetIds.Contains(target.Id)))
-            .SelectMany(group => group.Targets)
-            .ToArray();
+        BlockCheckTarget[] targetsRequiringProfile = GetTargetsRequiringProfile(
+            targetArray,
+            baselineAccessibleTargetIds);
 
         if (targetsRequiringProfile.Length == 0)
         {
-            issues.Add(new BlockCheckIssue(
-                BlockCheckIssueSeverity.Info,
-                "NO_BYPASS_REQUIRED",
-                "All requested transport routes passed the curl baseline, so no Zapret2 profile " +
-                "is required for those exact routes. This does not verify browser rendering or a " +
-                "different protocol such as HTTPS after an HTTP redirect."));
-            return new BlockCheckSynthesisResult
-            {
-                BaselineAccessibleTargetIds = baselineAccessibleTargetIds,
-                Configuration = new Zapret2WriteResult(),
-                Issues = issues,
-            };
+            return NoBypassRequired(baselineAccessibleTargetIds, issues);
         }
 
         IReadOnlyList<CandidateEvaluation> allEvaluations =
             ProbeResultAnalyzer.BuildEvaluations(catalog, probeResults, issues);
         IReadOnlyList<CandidateEvaluation> reduced = _paretoReducer.Reduce(allEvaluations, options);
         CoverageSelectionResult selection = _coverageOptimizer.Select(targetsRequiringProfile, reduced, options);
-        IReadOnlyDictionary<string, ProbeSummary> baselineSummaries = BuildProbeSummaries(
-            baselineProbeResults);
-        IReadOnlyList<StrategyAssignment> bestEffortAssignments =
-            options.EnableBestEffort && selection.UncoveredTargetIds.Count > 0
-                ? _bestEffortOptimizer.Select(
-                    targetsRequiringProfile,
-                    allEvaluations,
-                    selection.UncoveredTargetIds,
-                    baselineSummaries,
-                    options)
-                : [];
+        IReadOnlyList<StrategyAssignment> bestEffortAssignments = SelectBestEffortAssignments(
+            targetsRequiringProfile,
+            allEvaluations,
+            selection,
+            baselineProbeResults,
+            options);
         CoverageSelectionResult profileSelection = bestEffortAssignments.Count == 0
             ? selection
             : new CoverageSelectionResult
@@ -90,30 +70,7 @@ public sealed class BlockCheckSynthesisService
                 UncoveredTargetIds = selection.UncoveredTargetIds,
             };
 
-        if (selection.UncoveredTargetIds.Count > 0)
-        {
-            issues.Add(new BlockCheckIssue(
-                BlockCheckIssueSeverity.Warning,
-                "TARGETS_UNCOVERED",
-                $"No compatible strategy covers {selection.UncoveredTargetIds.Count} test target(s)."));
-
-            HashSet<string> uncovered = selection.UncoveredTargetIds
-                .ToHashSet(StringComparer.Ordinal);
-            bool hasAtomicSiteListGap = targetsRequiringProfile
-                .Where(target => uncovered.Contains(target.Id))
-                .Any(target => target.HostListPaths.Count > 0) &&
-                uncovered.Any(targetId =>
-                    allEvaluations.Any(candidate => candidate.IsSuccessful(targetId, options)));
-            if (hasAtomicSiteListGap)
-            {
-                issues.Add(new BlockCheckIssue(
-                    BlockCheckIssueSeverity.Warning,
-                    "NO_COMMON_SITE_LIST_STRATEGY",
-                    "Some domains passed with different strategies, but no single strategy " +
-                    "passed the strict threshold for the complete selected site list. The list " +
-                    "was kept atomic; a best-effort profile may therefore remain only partially effective."));
-            }
-        }
+        AddUncoveredTargetIssues(selection, targetsRequiringProfile, allEvaluations, options, issues);
 
         IReadOnlyList<Zapret2ProfilePlan> profiles = _profilePlanner.Plan(
             profileSelection,
@@ -122,16 +79,7 @@ public sealed class BlockCheckSynthesisService
 
         if (bestEffortAssignments.Count > 0)
         {
-            int targetCount = bestEffortAssignments
-                .SelectMany(assignment => assignment.TargetIds)
-                .Distinct(StringComparer.Ordinal)
-                .Count();
-            issues.Add(new BlockCheckIssue(
-                BlockCheckIssueSeverity.Warning,
-                "BEST_EFFORT_CONFIG",
-                $"No strategy passed the strict threshold for {targetCount} target(s). " +
-                "A best-effort config was generated from the strategy with the strongest " +
-                "observed improvement. It is not a fully validated result and some sites may remain unavailable."));
+            issues.Add(BuildBestEffortIssue(bestEffortAssignments));
         }
 
         Zapret2WriteResult configuration = profiles.Count == 0
@@ -162,6 +110,103 @@ public sealed class BlockCheckSynthesisService
             Issues = issues,
             IsBestEffort = bestEffortAssignments.Count > 0,
         };
+    }
+
+    // The units are the same as in the optimizers: an emitted --hostlist covers the whole
+    // file, so a site from the list that passed the baseline stays in the unit and the chosen
+    // strategy must not break it.
+    private static BlockCheckTarget[] GetTargetsRequiringProfile(
+        IReadOnlyList<BlockCheckTarget> targets,
+        IReadOnlySet<string> baselineAccessibleTargetIds) =>
+        BlockCheckTargetGroupBuilder.Build(targets)
+            .Where(group => group.Targets.Any(target => !baselineAccessibleTargetIds.Contains(target.Id)))
+            .SelectMany(group => group.Targets)
+            .ToArray();
+
+    private static BlockCheckSynthesisResult NoBypassRequired(
+        HashSet<string> baselineAccessibleTargetIds,
+        List<BlockCheckIssue> issues)
+    {
+        issues.Add(new BlockCheckIssue(
+            BlockCheckIssueSeverity.Info,
+            "NO_BYPASS_REQUIRED",
+            "All requested transport routes passed the curl baseline, so no Zapret2 profile " +
+            "is required for those exact routes. This does not verify browser rendering or a " +
+            "different protocol such as HTTPS after an HTTP redirect."));
+        return new BlockCheckSynthesisResult
+        {
+            BaselineAccessibleTargetIds = baselineAccessibleTargetIds,
+            Configuration = new Zapret2WriteResult(),
+            Issues = issues,
+        };
+    }
+
+    private IReadOnlyList<StrategyAssignment> SelectBestEffortAssignments(
+        IReadOnlyList<BlockCheckTarget> targetsRequiringProfile,
+        IReadOnlyList<CandidateEvaluation> allEvaluations,
+        CoverageSelectionResult selection,
+        IEnumerable<ProbeResult>? baselineProbeResults,
+        BlockCheckSynthesisOptions options)
+    {
+        IReadOnlyDictionary<string, ProbeSummary> baselineSummaries = BuildProbeSummaries(
+            baselineProbeResults);
+        return options.EnableBestEffort && selection.UncoveredTargetIds.Count > 0
+            ? _bestEffortOptimizer.Select(
+                targetsRequiringProfile,
+                allEvaluations,
+                selection.UncoveredTargetIds,
+                baselineSummaries,
+                options)
+            : [];
+    }
+
+    private static void AddUncoveredTargetIssues(
+        CoverageSelectionResult selection,
+        IReadOnlyList<BlockCheckTarget> targetsRequiringProfile,
+        IReadOnlyList<CandidateEvaluation> allEvaluations,
+        BlockCheckSynthesisOptions options,
+        List<BlockCheckIssue> issues)
+    {
+        if (selection.UncoveredTargetIds.Count == 0)
+        {
+            return;
+        }
+
+        issues.Add(new BlockCheckIssue(
+            BlockCheckIssueSeverity.Warning,
+            "TARGETS_UNCOVERED",
+            $"No compatible strategy covers {selection.UncoveredTargetIds.Count} test target(s)."));
+
+        HashSet<string> uncovered = selection.UncoveredTargetIds
+            .ToHashSet(StringComparer.Ordinal);
+        bool hasAtomicSiteListGap = targetsRequiringProfile
+            .Where(target => uncovered.Contains(target.Id))
+            .Any(target => target.HostListPaths.Count > 0) &&
+            uncovered.Any(targetId =>
+                allEvaluations.Any(candidate => candidate.IsSuccessful(targetId, options)));
+        if (hasAtomicSiteListGap)
+        {
+            issues.Add(new BlockCheckIssue(
+                BlockCheckIssueSeverity.Warning,
+                "NO_COMMON_SITE_LIST_STRATEGY",
+                "Some domains passed with different strategies, but no single strategy " +
+                "passed the strict threshold for the complete selected site list. The list " +
+                "was kept atomic; a best-effort profile may therefore remain only partially effective."));
+        }
+    }
+
+    private static BlockCheckIssue BuildBestEffortIssue(IReadOnlyList<StrategyAssignment> bestEffortAssignments)
+    {
+        int targetCount = bestEffortAssignments
+            .SelectMany(assignment => assignment.TargetIds)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        return new BlockCheckIssue(
+            BlockCheckIssueSeverity.Warning,
+            "BEST_EFFORT_CONFIG",
+            $"No strategy passed the strict threshold for {targetCount} target(s). " +
+            "A best-effort config was generated from the strategy with the strongest " +
+            "observed improvement. It is not a fully validated result and some sites may remain unavailable.");
     }
 
     private static HashSet<string> GetBaselineAccessibleTargetIds(

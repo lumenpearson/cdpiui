@@ -110,47 +110,11 @@ public sealed class BlockCheckManualPresetService
 
         foreach (BlockCheckManualAssignment assignment in assignments)
         {
-            if (!strategies.TryGetValue(assignment.StrategyId, out StrategyDefinition? strategy))
+            ResolvedAssignment? item = TryResolveAssignment(assignment, strategies, targetsById, targetArray, issues);
+            if (item != null)
             {
-                issues.Add(Error(
-                    "MANUAL_STRATEGY_UNKNOWN",
-                    "The selected strategy is absent from the active catalog.",
-                    assignment.StrategyId));
-                continue;
+                resolved.Add(item);
             }
-            if (!targetsById.TryGetValue(assignment.AnchorTargetId, out BlockCheckTarget? anchor))
-            {
-                issues.Add(Error(
-                    "MANUAL_TARGET_UNKNOWN",
-                    "The selected site is absent from this BlockCheck session.",
-                    assignment.AnchorTargetId));
-                continue;
-            }
-
-            BlockCheckTarget[] scopeTargets = ResolveScopeTargets(
-                targetArray,
-                anchor,
-                assignment,
-                issues);
-            if (scopeTargets.Length == 0)
-            {
-                continue;
-            }
-            if (scopeTargets.Any(target => !strategy.AppliesTo(target)))
-            {
-                issues.Add(Error(
-                    "MANUAL_STRATEGY_INAPPLICABLE",
-                    "The selected strategy does not support every connection in this scope.",
-                    strategy.Id));
-                continue;
-            }
-
-            resolved.Add(new ResolvedAssignment(
-                assignment,
-                strategy,
-                anchor,
-                scopeTargets,
-                ScopeKey(anchor, assignment)));
         }
 
         List<Zapret2ProfilePlan> profiles = [];
@@ -158,53 +122,11 @@ public sealed class BlockCheckManualPresetService
                      item => item.ScopeKey,
                      StringComparer.OrdinalIgnoreCase))
         {
-            ResolvedAssignment first = group.First();
-            ResolvedAssignment[] unique = group
-                .DistinctBy(item => CandidateNormalizer.GetPlanSignature(item.Strategy), StringComparer.Ordinal)
-                .ToArray();
-            if (unique.Length != group.Count())
+            Zapret2ProfilePlan? profile = TryBuildProfile(group, summaries, options, issues);
+            if (profile != null)
             {
-                issues.Add(new BlockCheckIssue(
-                    BlockCheckIssueSeverity.Warning,
-                    "MANUAL_DUPLICATE_STRATEGY",
-                    "A duplicate strategy in the same scope was ignored.",
-                    first.ScopeKey));
+                profiles.Add(profile);
             }
-            if (unique.Length > 1 && unique.Any(item => !item.Strategy.SupportsCircular))
-            {
-                issues.Add(Error(
-                    "MANUAL_CIRCULAR_UNSUPPORTED",
-                    "At least one selected strategy cannot be used in a circular combination.",
-                    first.ScopeKey));
-                continue;
-            }
-
-            WarnAboutEvidence(unique, summaries, options, issues);
-            Zapret2ProfilePlan profile = new()
-            {
-                Filter = new Zapret2ProfileFilter
-                {
-                    IpVersion = first.Anchor.IpVersion,
-                    Transport = first.Anchor.Transport,
-                    Port = first.Anchor.Port,
-                    Layer7Protocol = first.Anchor.Layer7Protocol,
-                    Domains = first.Assignment.ScopeKind == BlockCheckManualScopeKind.Site
-                        ? [BlockCheckTarget.NormalizeHost(first.Anchor.Host)]
-                        : [],
-                    HostListPaths = first.Assignment.ScopeKind == BlockCheckManualScopeKind.SiteList
-                        ? [Path.GetFullPath(first.Assignment.SiteListPath!)]
-                        : [],
-                },
-                Primary = unique[0].Strategy,
-                TargetIds = first.ScopeTargets
-                    .Select(target => target.Id)
-                    .ToHashSet(StringComparer.Ordinal),
-            };
-            foreach (ResolvedAssignment fallback in unique.Skip(1))
-            {
-                profile.Fallbacks.Add(fallback.Strategy);
-            }
-            profiles.Add(profile);
         }
 
         WarnAboutOverlap(profiles, issues);
@@ -225,6 +147,119 @@ public sealed class BlockCheckManualPresetService
             Configuration = configuration,
             Issues = issues,
         };
+    }
+
+    /// <summary>
+    /// Resolves the strategy, anchor site and scope of one assignment, or returns null after
+    /// adding the issue that rejects it.
+    /// </summary>
+    private static ResolvedAssignment? TryResolveAssignment(
+        BlockCheckManualAssignment assignment,
+        IReadOnlyDictionary<string, StrategyDefinition> strategies,
+        IReadOnlyDictionary<string, BlockCheckTarget> targetsById,
+        IReadOnlyList<BlockCheckTarget> targets,
+        List<BlockCheckIssue> issues)
+    {
+        if (!strategies.TryGetValue(assignment.StrategyId, out StrategyDefinition? strategy))
+        {
+            issues.Add(Error(
+                "MANUAL_STRATEGY_UNKNOWN",
+                "The selected strategy is absent from the active catalog.",
+                assignment.StrategyId));
+            return null;
+        }
+        if (!targetsById.TryGetValue(assignment.AnchorTargetId, out BlockCheckTarget? anchor))
+        {
+            issues.Add(Error(
+                "MANUAL_TARGET_UNKNOWN",
+                "The selected site is absent from this BlockCheck session.",
+                assignment.AnchorTargetId));
+            return null;
+        }
+
+        BlockCheckTarget[] scopeTargets = ResolveScopeTargets(
+            targets,
+            anchor,
+            assignment,
+            issues);
+        if (scopeTargets.Length == 0)
+        {
+            return null;
+        }
+        if (scopeTargets.Any(target => !strategy.AppliesTo(target)))
+        {
+            issues.Add(Error(
+                "MANUAL_STRATEGY_INAPPLICABLE",
+                "The selected strategy does not support every connection in this scope.",
+                strategy.Id));
+            return null;
+        }
+
+        return new ResolvedAssignment(
+            assignment,
+            strategy,
+            anchor,
+            scopeTargets,
+            ScopeKey(anchor, assignment));
+    }
+
+    /// <summary>
+    /// Builds the profile of one scope: the first distinct strategy is primary, the others are
+    /// circular fallbacks. Returns null when the combination cannot be circular.
+    /// </summary>
+    private static Zapret2ProfilePlan? TryBuildProfile(
+        IGrouping<string, ResolvedAssignment> group,
+        IReadOnlyDictionary<(string StrategyId, string TargetId), ProbeSummary> summaries,
+        BlockCheckManualPresetOptions options,
+        List<BlockCheckIssue> issues)
+    {
+        ResolvedAssignment first = group.First();
+        ResolvedAssignment[] unique = group
+            .DistinctBy(item => CandidateNormalizer.GetPlanSignature(item.Strategy), StringComparer.Ordinal)
+            .ToArray();
+        if (unique.Length != group.Count())
+        {
+            issues.Add(new BlockCheckIssue(
+                BlockCheckIssueSeverity.Warning,
+                "MANUAL_DUPLICATE_STRATEGY",
+                "A duplicate strategy in the same scope was ignored.",
+                first.ScopeKey));
+        }
+        if (unique.Length > 1 && unique.Any(item => !item.Strategy.SupportsCircular))
+        {
+            issues.Add(Error(
+                "MANUAL_CIRCULAR_UNSUPPORTED",
+                "At least one selected strategy cannot be used in a circular combination.",
+                first.ScopeKey));
+            return null;
+        }
+
+        WarnAboutEvidence(unique, summaries, options, issues);
+        Zapret2ProfilePlan profile = new()
+        {
+            Filter = new Zapret2ProfileFilter
+            {
+                IpVersion = first.Anchor.IpVersion,
+                Transport = first.Anchor.Transport,
+                Port = first.Anchor.Port,
+                Layer7Protocol = first.Anchor.Layer7Protocol,
+                Domains = first.Assignment.ScopeKind == BlockCheckManualScopeKind.Site
+                    ? [BlockCheckTarget.NormalizeHost(first.Anchor.Host)]
+                    : [],
+                HostListPaths = first.Assignment.ScopeKind == BlockCheckManualScopeKind.SiteList
+                    ? [Path.GetFullPath(first.Assignment.SiteListPath!)]
+                    : [],
+            },
+            Primary = unique[0].Strategy,
+            TargetIds = first.ScopeTargets
+                .Select(target => target.Id)
+                .ToHashSet(StringComparer.Ordinal),
+        };
+        foreach (ResolvedAssignment fallback in unique.Skip(1))
+        {
+            profile.Fallbacks.Add(fallback.Strategy);
+        }
+        return profile;
     }
 
     private static BlockCheckTarget[] ResolveScopeTargets(
