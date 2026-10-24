@@ -84,11 +84,11 @@ public class ProcessManager : IProcessService
         return _proxiFyreHelper.processState;
     }
 
-    public async Task StartProxy(string _proxyType, string ip, string port)
+    public async Task StartProxy(string proxyType, string ip, string port)
     {
         _ip = ip;
         _port = port;
-        _proxyType = _proxyType;
+        _proxyType = proxyType;
         _useProxy = !string.IsNullOrEmpty(_proxyType);
         Debug.WriteLine($"Proxy setup for {_proxyType}, {ip}, {port}");
         if (!string.IsNullOrEmpty(_proxyType))
