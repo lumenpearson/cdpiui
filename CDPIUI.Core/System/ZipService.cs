@@ -80,121 +80,23 @@ internal class ZipService
         {
             var entries = archive.Entries;
             ArchivePaths.EnsureWithinLimits(entries);
-            int totalFiles = entries.Count;
-            int extractedFiles = 0;
 
-            if (zipFolderToUnpack == null || zipFolderToUnpack == "/")
-                zipFolderToUnpack = string.Empty;
-            else if (zipFolderToUnpack.EndsWith("/"))
-                zipFolderToUnpack = zipFolderToUnpack.TrimEnd('/');
-
-            var patternSegments = string.IsNullOrEmpty(zipFolderToUnpack)
-                                    ? Array.Empty<string>()
-                                    : zipFolderToUnpack.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var patternSegments = GetPatternSegments(zipFolderToUnpack);
 
             foreach (var entry in entries)
             {
-                var entryPath = entry.FullName.Replace('\\', '/').TrimStart('/');
+                var relativePath = GetRelativePathOrNull(entry, patternSegments);
+                if (relativePath == null || ShouldSkip(relativePath, filesToSkip))
+                    continue;
 
-                var entrySegments = entryPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                var destinationPath = PrepareDestination(extractTo, relativePath);
 
-                bool isMatch = true;
-                if (patternSegments.Length > 0)
+                if (mergeTextFiles
+                    && relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
+                    && File.Exists(destinationPath))
                 {
-                    if (entrySegments.Length < patternSegments.Length)
-                    {
-                        isMatch = false;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < patternSegments.Length; i++)
-                        {
-                            var pat = patternSegments[i];
-                            var seg = entrySegments[i];
-
-                            if (pat == "$ANY")
-                            {
-                                continue;
-                            }
-
-                            if (!string.Equals(pat, seg, StringComparison.OrdinalIgnoreCase))
-                            {
-                                isMatch = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!isMatch)
+                    await MergeTextFileAsync(entry, destinationPath);
                     continue;
-
-                var relativeSegments = entrySegments.Skip(patternSegments.Length).ToArray();
-                var relativePath = string.Join("/", relativeSegments).TrimStart('/');
-
-                if (string.IsNullOrEmpty(relativePath))
-                    continue;
-
-                // "*.ext" skips by extension; any other value skips paths that contain it.
-                if (filesToSkip.Any(skip => skip.StartsWith("*.")
-                        ? relativePath.EndsWith(skip.Substring(1), StringComparison.OrdinalIgnoreCase)
-                        : relativePath.Contains(skip, StringComparison.OrdinalIgnoreCase)))
-                    continue;
-
-                var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);
-                ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
-                var destinationDir = Path.GetDirectoryName(destinationPath);
-                if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
-                    Directory.CreateDirectory(destinationDir);
-
-                if (mergeTextFiles)
-                {
-                    if (relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
-                        && File.Exists(destinationPath))
-                    {
-                        // FileSystemLinksManager replaces a linked list with a link and keeps
-                        // the original as .bak; the lines merge into that original file.
-                        if (File.Exists($"{destinationPath}.bak"))
-                        {
-                            destinationPath = $"{destinationPath}.bak";
-                        }
-                        // Whole lines are compared: as a substring, "t.co" was dropped because
-                        // the list already had "reddit.com".
-                        var destLines = new HashSet<string>(
-                            File.ReadLines(destinationPath).Select(line => line.Trim()), StringComparer.Ordinal);
-                        bool endsWithNewLine;
-                        using (var existing = File.OpenRead(destinationPath))
-                        {
-                            endsWithNewLine = existing.Length == 0;
-                            if (!endsWithNewLine)
-                            {
-                                existing.Seek(-1, SeekOrigin.End);
-                                endsWithNewLine = existing.ReadByte() == '\n';
-                            }
-                        }
-
-                        var newLines = new List<string>();
-                        using (var reader = new StreamReader(entry.Open()))
-                        {
-                            string? line;
-                            while ((line = await reader.ReadLineAsync()) != null)
-                            {
-                                if (line.Trim().Length > 0 && destLines.Add(line.Trim()))
-                                    newLines.Add(line);
-                            }
-                        }
-
-                        if (newLines.Count > 0)
-                        {
-                            using var stream = File.AppendText(destinationPath);
-                            if (!endsWithNewLine)
-                                await stream.WriteLineAsync();
-                            foreach (string line in newLines)
-                                await stream.WriteLineAsync(line);
-                        }
-
-                        continue;
-                    }
                 }
 
                 if (entry.FullName.EndsWith("/"))
@@ -206,10 +108,114 @@ internal class ZipService
                 {
                     ArchivePaths.ExtractToFileBounded(entry, destinationPath);
                 }
-
-                extractedFiles++;
             }
         }
+    }
+
+    private static string[] GetPatternSegments(string? zipFolderToUnpack)
+    {
+        if (zipFolderToUnpack == null || zipFolderToUnpack == "/")
+            zipFolderToUnpack = string.Empty;
+        else if (zipFolderToUnpack.EndsWith("/"))
+            zipFolderToUnpack = zipFolderToUnpack.TrimEnd('/');
+
+        return string.IsNullOrEmpty(zipFolderToUnpack)
+            ? Array.Empty<string>()
+            : zipFolderToUnpack.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// Returns the entry path below the folder pattern, or null when the entry is outside the
+    /// pattern or is the pattern folder itself. A "$ANY" pattern segment matches any segment.
+    /// </summary>
+    private static string? GetRelativePathOrNull(ZipArchiveEntry entry, string[] patternSegments)
+    {
+        var entryPath = entry.FullName.Replace('\\', '/').TrimStart('/');
+        var entrySegments = entryPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (!MatchesPattern(entrySegments, patternSegments))
+            return null;
+
+        var relativeSegments = entrySegments.Skip(patternSegments.Length).ToArray();
+        var relativePath = string.Join("/", relativeSegments).TrimStart('/');
+        return string.IsNullOrEmpty(relativePath) ? null : relativePath;
+    }
+
+    private static bool MatchesPattern(string[] entrySegments, string[] patternSegments)
+    {
+        if (entrySegments.Length < patternSegments.Length)
+            return false;
+
+        for (int i = 0; i < patternSegments.Length; i++)
+        {
+            var pat = patternSegments[i];
+            if (pat == "$ANY")
+                continue;
+
+            if (!string.Equals(pat, entrySegments[i], StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        return true;
+    }
+
+    // "*.ext" skips by extension; any other value skips paths that contain it.
+    private static bool ShouldSkip(string relativePath, IEnumerable<string> filesToSkip) =>
+        filesToSkip.Any(skip => skip.StartsWith("*.")
+            ? relativePath.EndsWith(skip.Substring(1), StringComparison.OrdinalIgnoreCase)
+            : relativePath.Contains(skip, StringComparison.OrdinalIgnoreCase));
+
+    private static string PrepareDestination(string extractTo, string relativePath)
+    {
+        var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+        var destinationDir = Path.GetDirectoryName(destinationPath);
+        if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
+            Directory.CreateDirectory(destinationDir);
+        return destinationPath;
+    }
+
+    private static async Task MergeTextFileAsync(ZipArchiveEntry entry, string destinationPath)
+    {
+        // FileSystemLinksManager replaces a linked list with a link and keeps
+        // the original as .bak; the lines merge into that original file.
+        if (File.Exists($"{destinationPath}.bak"))
+        {
+            destinationPath = $"{destinationPath}.bak";
+        }
+        // Whole lines are compared: as a substring, "t.co" was dropped because
+        // the list already had "reddit.com".
+        var destLines = new HashSet<string>(
+            File.ReadLines(destinationPath).Select(line => line.Trim()), StringComparer.Ordinal);
+        bool endsWithNewLine = EndsWithNewLine(destinationPath);
+
+        var newLines = new List<string>();
+        using (var reader = new StreamReader(entry.Open()))
+        {
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                if (line.Trim().Length > 0 && destLines.Add(line.Trim()))
+                    newLines.Add(line);
+            }
+        }
+
+        if (newLines.Count > 0)
+        {
+            using var stream = File.AppendText(destinationPath);
+            if (!endsWithNewLine)
+                await stream.WriteLineAsync();
+            foreach (string line in newLines)
+                await stream.WriteLineAsync(line);
+        }
+    }
+
+    private static bool EndsWithNewLine(string path)
+    {
+        using var existing = File.OpenRead(path);
+        if (existing.Length == 0)
+            return true;
+        existing.Seek(-1, SeekOrigin.End);
+        return existing.ReadByte() == '\n';
     }
 
     private static async Task VerifyCatalog(string directory)

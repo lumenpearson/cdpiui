@@ -66,47 +66,13 @@ internal class DownloadWorker : IDisposable
         bool success = false;
         List<string> _extractedFiles = [];
 
-        var enFiletype = filetype.ToEnum<FileExtensionTypes>(FileExtensionTypes.none);
-        bool isSupportedFileExtension = enFiletype != FileExtensionTypes.none;
-
-
         string tempFileName = FileSystemService.GetNewTempFileName(nameof(DownloadWorker), FileSystemService.GetFileExtension(FileExtensionTypes.temp));
         string tempDestination = Path.Combine(_tempDirectory, tempFileName);
 
         try
         {
-            Directory.CreateDirectory(_tempDirectory);
-
-            StageChanged?.Invoke(Tuple.Create(OperationId, "Downloading"));
-
-            Logger.Instance.CreateDebugLog(nameof(DownloadWorker), $"Uri used: {url}");
-
-            _cancellationToken.ThrowIfCancellationRequested();
-            try
-            {
-                await _requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
-                    cancellationToken: _cancellationToken);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode.HasValue)
-            {
-                string errorCode = $"ERR_DOWNLOAD_{PrettyErrorCode.UNEXPECTED_STATUS_CODE}_{(int)ex.StatusCode.Value}";
-                StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
-                ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, "Server Error"));
-                LastError = ErrorModel.OnlyErrorCode(errorCode);
+            if (!await DownloadToTempFileAsync(url, tempDestination, expectedSha256))
                 return false;
-            }
-
-            // A catalogue entry with a hash pins the file: a changed release asset or a replaced
-            // download is rejected before anything is extracted or installed.
-            if (!string.IsNullOrWhiteSpace(expectedSha256) && !HasSha256(tempDestination, expectedSha256))
-            {
-                const string errorCode = "ERR_DOWNLOAD_HASH_MISMATCH";
-                Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
-                StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
-                ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, "Hash mismatch"));
-                LastError = ErrorModel.OnlyErrorCode(errorCode);
-                return false;
-            }
 
             _cancellationToken.ThrowIfCancellationRequested();
             if (extractArchive)
@@ -116,62 +82,18 @@ internal class DownloadWorker : IDisposable
             }
             else
             {
-                if (!string.IsNullOrEmpty(executableFileName))
-                {
-                    // target_executable_file comes from the catalogue: "..\..\x" wrote the
-                    // download outside the item folder.
-                    if (!IsPlainFileName(executableFileName))
-                        throw new InvalidDataException($"Invalid target file name: {executableFileName}");
-                    string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
-                    File.Copy(tempDestination, copiedPath, true);
-                    _extractedFiles.Add(copiedPath);
-                }
-                else
-                {
-                    string exeName = string.IsNullOrEmpty(filename) ? GetFileNameFromUri(url) : filename;
-                    if (string.IsNullOrEmpty(exeName))
-                        throw new IOException();
-
-                    string extension = !isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype);
-
-                    string copiedPath = Path.Combine(destinationPath, exeName + extension);
-                    File.Copy(tempDestination, copiedPath, true);
-                    _extractedFiles.Add(copiedPath);
-                }
+                _extractedFiles.Add(CopyDownloadedFile(tempDestination, destinationPath, url, executableFileName, filetype, filename));
             }
 
-            if (filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString())
+            if (IsInstallerFiletype(filetype))
             {
-                StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
                 // The installer is the file copied above, whose name can come from
                 // target_executable_file and not from the URL.
+                StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
                 if (_extractedFiles.Count == 0)
                     throw new IOException("The installer was not copied.");
-                string msiPath = _extractedFiles[^1];
-                _msiGUID = Guid.NewGuid().ToString();
-                MsiInstallerService msiInstallerHelper = new(_msiGUID, msiPath);
-                msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
-                MsiCallback callback = await msiInstallerHelper.Run(_cancellationToken);
-                msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
-
-                Logger.Instance.CreateDebugLog(nameof(DownloadWorker), "TRY");
-
-                if (callback.State == MsiState.ExceptionHappens)
-                {
-                    success = false;
-                    throw new MsiInstallException("MSI_UNKNOWN");
-                }
-                else if (callback.State == MsiState.CompleteRestartRequest)
-                {
-                    IsRestartNeeded = true;
-                }
-
-                if (removeAfterAction)
-                {
-                    File.Delete(msiPath);
-                }
+                await InstallMsiAsync(_extractedFiles[^1], removeAfterAction);
             }
-
 
             _cancellationToken.ThrowIfCancellationRequested();
             StageChanged?.Invoke(Tuple.Create(OperationId, "Completed"));
@@ -187,26 +109,128 @@ internal class DownloadWorker : IDisposable
         }
         finally
         {
-            try
-            { if (File.Exists(tempDestination)) File.Delete(tempDestination); }
-            catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove the temporary file \"{tempDestination}\": {ex.Message}"); }
-
-            // An installer copied from this download is removed again when it failed to install
-            // only; other files may have replaced the files of the installed version and
-            // stay. Archives of signed packs are checked in a separate folder by ZipService and
-            // never reach the destination unchecked.
-            bool isInstaller = filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString();
-            if (removeAfterAction || (!success && isInstaller))
-            {
-                foreach (var file in _extractedFiles)
-                {
-                    try
-                    { if (File.Exists(file)) File.Delete(file); }
-                    catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove \"{file}\": {ex.Message}"); }
-                }
-            }
+            CleanUp(tempDestination, _extractedFiles, removeOutputs: removeAfterAction || (!success && IsInstallerFiletype(filetype)));
         }
         return success;
+    }
+
+    /// <summary>
+    /// Downloads <paramref name="url"/> to <paramref name="tempDestination"/>. Returns false, with
+    /// the error reported, when the server answers with an error status or the hash does not match.
+    /// </summary>
+    private async Task<bool> DownloadToTempFileAsync(string url, string tempDestination, string? expectedSha256)
+    {
+        Directory.CreateDirectory(_tempDirectory);
+
+        StageChanged?.Invoke(Tuple.Create(OperationId, "Downloading"));
+
+        Logger.Instance.CreateDebugLog(nameof(DownloadWorker), $"Uri used: {url}");
+
+        _cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            await _requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
+                cancellationToken: _cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode.HasValue)
+        {
+            ReportFailure($"ERR_DOWNLOAD_{PrettyErrorCode.UNEXPECTED_STATUS_CODE}_{(int)ex.StatusCode.Value}", "Server Error");
+            return false;
+        }
+
+        // A catalogue entry with a hash pins the file: a changed release asset or a replaced
+        // download is rejected before anything is extracted or installed.
+        if (!string.IsNullOrWhiteSpace(expectedSha256) && !HasSha256(tempDestination, expectedSha256))
+        {
+            Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
+            ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Hash mismatch");
+            return false;
+        }
+        return true;
+    }
+
+    private string CopyDownloadedFile(
+        string tempDestination,
+        string destinationPath,
+        string url,
+        string? executableFileName,
+        string filetype,
+        string filename
+    )
+    {
+        var enFiletype = filetype.ToEnum<FileExtensionTypes>(FileExtensionTypes.none);
+        string extension = enFiletype == FileExtensionTypes.none ? filetype : FileSystemService.GetFileExtension(enFiletype);
+
+        string copiedPath;
+        if (!string.IsNullOrEmpty(executableFileName))
+        {
+            // target_executable_file comes from the catalogue: "..\..\x" wrote the
+            // download outside the item folder.
+            if (!IsPlainFileName(executableFileName))
+                throw new InvalidDataException($"Invalid target file name: {executableFileName}");
+            copiedPath = Path.Combine(destinationPath, executableFileName + extension);
+        }
+        else
+        {
+            string exeName = string.IsNullOrEmpty(filename) ? GetFileNameFromUri(url) : filename;
+            if (string.IsNullOrEmpty(exeName))
+                throw new IOException();
+
+            copiedPath = Path.Combine(destinationPath, exeName + extension);
+        }
+        File.Copy(tempDestination, copiedPath, true);
+        return copiedPath;
+    }
+
+    private async Task InstallMsiAsync(string msiPath, bool removeAfterAction)
+    {
+        _msiGUID = Guid.NewGuid().ToString();
+        MsiInstallerService msiInstallerHelper = new(_msiGUID, msiPath);
+        msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
+        MsiCallback callback = await msiInstallerHelper.Run(_cancellationToken);
+        msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
+
+        Logger.Instance.CreateDebugLog(nameof(DownloadWorker), "TRY");
+
+        if (callback.State == MsiState.ExceptionHappens)
+        {
+            throw new MsiInstallException("MSI_UNKNOWN");
+        }
+        else if (callback.State == MsiState.CompleteRestartRequest)
+        {
+            IsRestartNeeded = true;
+        }
+
+        if (removeAfterAction)
+        {
+            File.Delete(msiPath);
+        }
+    }
+
+    private static bool IsInstallerFiletype(string filetype) =>
+        filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString();
+
+    /// <param name="removeOutputs">
+    /// An installer copied from this download is removed again when it failed to install
+    /// only; other files may have replaced the files of the installed version and
+    /// stay. Archives of signed packs are checked in a separate folder by ZipService and
+    /// never reach the destination unchecked.
+    /// </param>
+    private static void CleanUp(string tempDestination, List<string> copiedFiles, bool removeOutputs)
+    {
+        try
+        { if (File.Exists(tempDestination)) File.Delete(tempDestination); }
+        catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove the temporary file \"{tempDestination}\": {ex.Message}"); }
+
+        if (!removeOutputs)
+            return;
+
+        foreach (var file in copiedFiles)
+        {
+            try
+            { if (File.Exists(file)) File.Delete(file); }
+            catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove \"{file}\": {ex.Message}"); }
+        }
     }
 
     public async Task<bool> DownloadAndExtractAsync(
@@ -280,6 +304,13 @@ internal class DownloadWorker : IDisposable
         StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
         string errorCode = Convertor.GetPrettyErrorCode("ERR_NET_DOWNLOAD", ex);
         ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, $"{ex}"));
+        LastError = ErrorModel.OnlyErrorCode(errorCode);
+    }
+
+    private void ReportFailure(string errorCode, string message)
+    {
+        StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
+        ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, message));
         LastError = ErrorModel.OnlyErrorCode(errorCode);
     }
     public void Dispose()
