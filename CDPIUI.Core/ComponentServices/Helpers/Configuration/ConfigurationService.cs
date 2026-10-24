@@ -164,28 +164,8 @@ public partial class ConfigurationService
         return string.Empty;
     }
 
-    public static string GetDefaultLocalePath(string packId)
-    {
-        string folder = GetItemFolderFromPackId(packId);
-
-        string initFile = Path.Combine(folder, "init.json");
-
-        if (!File.Exists(initFile))
-            return string.Empty;
-
-        ConfigInitItem? configInitItem;
-        try
-        {
-            configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
-            return string.Empty;
-        }
-        string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN") ?? string.Empty;
-        return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
-    }
+    public static string GetDefaultLocalePath(string packId) =>
+        ConfigPackDirectoryLoader.GetDefaultLocalePath(GetItemFolderFromPackId(packId));
 
     public string GetLocalizedConfigVarName(string name, string packId)
     {
