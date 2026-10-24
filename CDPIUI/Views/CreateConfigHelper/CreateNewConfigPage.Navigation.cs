@@ -31,19 +31,19 @@ public sealed partial class CreateNewConfigPage
             Debug.WriteLine(operationType);
             switch (operationType)
             {
-                case "CFGSTRING":
+                case CreateConfigNavigationParameters.FromStringType:
                     OpenFromStartupString(collection);
                     break;
-                case "CFGIMPORT":
+                case CreateConfigNavigationParameters.ImportType:
                     OpenImportedConfig(collection);
                     break;
-                case "CFGEDIT":
+                case CreateConfigNavigationParameters.EditType:
                     OpenConfigForEdit();
                     break;
-                case "CFGCREATEBYID":
+                case CreateConfigNavigationParameters.CreateByIdType:
                     SelectComponent(collection.Get("componentId"));
                     break;
-                case "CFGRETURNEDITED":
+                case CreateConfigNavigationParameters.ReturnEditedType:
                     OpenReturnedEditedConfig();
                     break;
             }
