@@ -1,66 +1,28 @@
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using System.Threading.Tasks;
 using CDPIUI.Commands;
 using CDPIUI.Controls.Dialogs.Store;
+using CDPIUI.Controls.Navigation;
 using CDPIUI.Controls.Store;
-using CDPIUI.Controls.Universal;
-using CDPIUI.Core;
-using CDPIUI.Core.Basic;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Data;
-using CDPIUI.Core.Store;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Core.Store.Queue;
-using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.ViewModels;
-using CDPIUI.Core.System;
 using CDPIUI.Default;
 using CDPIUI.Extensions;
-using CDPIUI.Helper;
 using CDPIUI.Helper.Migration;
-using CDPIUI.Shared;
-using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.ViewModels;
+using CDPIUI.ViewModels.Welcome;
 using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using WinUI3Localizer;
-
 
 namespace CDPIUI;
 
-public sealed partial class WelcomeWindow : TemplateWindow
+public sealed partial class WelcomeWindow : TemplateWindow, IWelcomeView
 {
     public const string MigrationWindowId = "GoodbyeDpiMigrationWelcome";
 
-    private ILocalizer _localizer = Localizer.Get();
-    private GoodbyeDpiMigrationSession? _migrationSession;
-    private CancellationTokenSource _migrationCancellation = new();
-    private List<RepoItemModel> _migrationComponents = [];
-    private readonly Dictionary<string, double> _migrationComponentProgress = new(StringComparer.OrdinalIgnoreCase);
-    private bool _migrationFlowStarted;
-    private bool _migrationImportInProgress;
-    private bool _migrationReadyToContinue;
-    private bool _migrationHandlersConnected;
-    private Action<Tuple<string, string>>? _migrationStageHandler;
-    private Action<Tuple<string, double>>? _migrationProgressHandler;
-    private Action<Tuple<string, ErrorModel>>? _migrationErrorHandler;
-    private Action<string>? _migrationStoppedHandler;
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     private MarkdownConfig _config;
 
@@ -70,10 +32,11 @@ public sealed partial class WelcomeWindow : TemplateWindow
         set => _config = value;
     }
 
-    public ObservableCollection<StoreViewBundleItem> Kits = [];
+    public WelcomeViewModel ViewModel { get; }
 
     public WelcomeWindow()
     {
+        ViewModel = new WelcomeViewModel(this, DispatcherQueue);
         InitializeComponent();
 
         WindowTitle = _localizer.GetLocalizedString("WelcomeWindowTitle");
@@ -85,54 +48,66 @@ public sealed partial class WelcomeWindow : TemplateWindow
         _config = new MarkdownConfig();
         Closed += WelcomeWindow_Closed;
         _localizer.LanguageChanged += Localizer_LanguageChanged;
+    }
 
-        StoreViewBundles.ItemsSource = Kits;
+    public WelcomeStep CurrentStep
+    {
+        get
+        {
+            AnimatedHorizontalContentItem item = AnimatedHorizontalContentViewer.SelectedItem;
+            if (item == null)
+                return WelcomeStep.None;
+            if (item == WelcomeItem)
+                return WelcomeStep.Welcome;
+            if (item == LicenseItem)
+                return WelcomeStep.License;
+            if (item == PersonalizationItem)
+                return WelcomeStep.Personalization;
+            if (item == ProxyItem)
+                return WelcomeStep.Proxy;
+            if (item == StoreItem)
+                return WelcomeStep.Store;
+            if (item == CompleteItem)
+                return WelcomeStep.Complete;
+            return WelcomeStep.None;
+        }
     }
 
     internal void SetMigrationSession(GoodbyeDpiMigrationSession session)
     {
-        if (ReferenceEquals(_migrationSession, session))
-        {
-            ApplyMigrationSessionState();
+        if (!ViewModel.SetMigrationSession(session))
             return;
-        }
-
-        if (_migrationSession != null)
-            _migrationSession.Changed -= MigrationSession_Changed;
-        DisconnectMigrationQueueHandlers();
-        _migrationCancellation.Cancel();
-        _migrationCancellation.Dispose();
-        _migrationCancellation = new CancellationTokenSource();
-
-        _migrationSession = session;
-        _migrationSession.Changed += MigrationSession_Changed;
-        _migrationFlowStarted = false;
-        _migrationImportInProgress = false;
-        _migrationReadyToContinue = false;
-        _migrationComponents = [];
-        _migrationComponentProgress.Clear();
-
-        ReadyBundlesContent.Visibility = Visibility.Collapsed;
-        MigrationContent.Visibility = Visibility.Visible;
-        UpdateMigrationLocalizedText();
-        ApplyMigrationSessionState();
+        UpdateMigrationHeader();
         CheckNavigation();
+    }
+
+    void IWelcomeView.RefreshNavigation() => CheckNavigation();
+
+    void IWelcomeView.ShowStoreLoadingButtons() =>
+        UtilityButtonControls.SetButtonVisibilities(
+            (NextButton, Visibility.Collapsed),
+            (SkipButton, Visibility.Visible));
+
+    async Task<bool> IWelcomeView.AcceptLicensesAsync(List<ItemLicenseModel> licenses)
+    {
+        AcceptLicenseContentDialog dialog = new()
+        {
+            Licenses = licenses,
+            XamlRoot = ContentRoot.XamlRoot
+        };
+        return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary;
     }
 
     private void NextButton_Click(object sender, RoutedEventArgs e)
     {
-        if (AnimatedHorizontalContentViewer.SelectedItem == LicenseItem)
-        {
-            if (LicenseAgreeCheckBox.IsChecked != true)
-                return;
-            SettingsManager.Instance.SetValue("WELCOMEWIZARD", "Shown", true);
-        }
+        if (CurrentStep == WelcomeStep.License && !ViewModel.TryAcceptLicenseStep())
+            return;
 
         if (sender is Button btn &&
             btn == NextButton &&
-            AnimatedHorizontalContentViewer.SelectedItem == StoreItem &&
+            CurrentStep == WelcomeStep.Store &&
             StoreViewBundles.SelectedItems.Count > 0)
-            _ = DownloadItems(); // DownloadItems catches and logs its own errors.
+            _ = ViewModel.DownloadKitsAsync(StoreViewBundles.SelectedItems.Cast<StoreViewBundleItem>().ToList()); // DownloadKitsAsync catches and logs its own errors.
 
         AnimatedHorizontalContentViewer.GoNext();
         CheckNavigation();
@@ -147,99 +122,80 @@ public sealed partial class WelcomeWindow : TemplateWindow
     private void CheckNavigation()
     {
         UtilityButtonControls.HelpUrl = string.Empty;
-        NextButton.IsEnabled = true;
-        UtilityButtonControls.IsLoading = false;
-        var sel = AnimatedHorizontalContentViewer.SelectedItem;
+        ViewModel.IsNextEnabled = true;
+        ViewModel.IsLoading = false;
+        WelcomeStep step = CurrentStep;
 
-        bool isComplete = sel == CompleteItem;
+        bool isComplete = step == WelcomeStep.Complete;
         UtilityButtonControls.SetButtonVisibilities(
-            (BackButton, sel == WelcomeItem || isComplete
+            (BackButton, step == WelcomeStep.Welcome || isComplete
                 ? Visibility.Collapsed
                 : Visibility.Visible),
-            (SkipButton, sel == StoreItem && _migrationSession == null ? Visibility.Visible : Visibility.Collapsed),
+            (SkipButton, step == WelcomeStep.Store && !ViewModel.IsMigrationMode ? Visibility.Visible : Visibility.Collapsed),
             (NextButton, isComplete ? Visibility.Collapsed : Visibility.Visible),
             (CompleteButton, isComplete ? Visibility.Visible : Visibility.Collapsed));
 
-        if (sel == LicenseItem)
+        if (step == WelcomeStep.License)
         {
-            TryLoadLicense();
-            NextButton.IsEnabled = LicenseAgreeCheckBox.IsChecked ?? false;
+            ViewModel.EnterLicenseStep();
         }
-        /*
-        else if (sel == AdItem)
+        else if (step == WelcomeStep.Proxy)
         {
-            UtilityButtonControls.HelpUrl = "/Other/Ad";
+            _ = ViewModel.CheckStoreStatusAsync(); // CheckStoreStatusAsync catches and logs its own errors.
         }
-        */
-        else if (sel == ProxyItem)
+        else if (step == WelcomeStep.Store)
         {
-            _ = CheckStoreStatus(); // CheckStoreStatus catches and logs its own errors.
-        }
-        else if (sel == StoreItem)
-        {
-            if (_migrationSession == null)
+            if (!ViewModel.IsMigrationMode)
             {
-                _ = TryLoadStore(); // TryLoadStore catches and logs its own errors.
+                UtilityButtonControls.LoadingStateText = _localizer.GetLocalizedString("UpdatingStoreDatabase");
+                _ = ViewModel.LoadStoreAsync(); // LoadStoreAsync catches and logs its own errors.
             }
             else
             {
                 UtilityButtonControls.SetButtonVisibilities(
                     (SkipButton, Visibility.Collapsed),
                     (NextButton, Visibility.Visible));
-                NextButton.IsEnabled = _migrationReadyToContinue;
-                _ = TryStartMigrationFlow(); // TryStartMigrationFlow catches and logs its own errors.
+                ViewModel.EnterMigrationStep();
             }
         }
     }
 
-    private string Localized(string key) =>
-        _localizer.GetLocalizedString($"/WelcomeWizard/{key}");
+    private void UpdateMigrationHeader()
+    {
+        if (!ViewModel.IsMigrationMode)
+            return;
+        StoreItem.Header = _localizer.GetLocalizedString("/WelcomeWizard/MigrationAnimatedHorizontalContentItemHeader");
+        StoreItem.Description = _localizer.GetLocalizedString("/WelcomeWizard/MigrationAnimatedHorizontalContentItemDescription");
+    }
 
     private void Localizer_LanguageChanged(object? sender, LanguageChangedEventArgs e)
     {
-        UpdateMigrationLocalizedText();
-        ApplyMigrationSessionState();
+        UpdateMigrationHeader();
+        ViewModel.OnLanguageChanged();
     }
 
     private void WelcomeWindow_Closed(object sender, WindowEventArgs args)
     {
-        DisconnectMigrationQueueHandlers();
-        _migrationCancellation.Cancel();
-        _migrationCancellation.Dispose();
         _localizer.LanguageChanged -= Localizer_LanguageChanged;
         Closed -= WelcomeWindow_Closed;
-        if (_migrationSession != null)
-        {
-            _migrationSession.Changed -= MigrationSession_Changed;
-            if (!_migrationSession.IsTerminal)
-                _ = _migrationSession.UpdateAsync(
-                    MigrationSessionState.Failed,
-                    MigrationProgressBar.Value,
-                    "The migration wizard was closed before completion.",
-                    "MIGRATION_WINDOW_CLOSED");
-        }
+        ViewModel.OnWindowClosed();
     }
 
-    private void TryLoadLicense()
+    private Brush StoreStatusBrush(bool isStoreAvailable) =>
+        isStoreAvailable
+            ? (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"]
+            : (SolidColorBrush)Application.Current.Resources["SystemFillColorCautionBrush"];
+
+    private void StoreViewBundles_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        string path = Path.Combine(Directories.ELUADirectory, StoreLocalizationHelper.GetStoreLikeLocale(), "ELUA.md");
-        try
-        {
-            LicenseTextBlock.Text = ShellHelper.LoadAllTextFromFile(path);
-            LicenseAgreeCheckBox.IsEnabled = true;
-        }
-        catch
-        {
-            LicenseAgreeCheckBox.IsEnabled = false;
-            LicenseTextBlock.Text = string.Format(_localizer.GetLocalizedString("/WelcomeWizard/UnableLoadLicense"), path);
-        }
+        UtilityButtonControls.SetButtonVisibilities(
+            (NextButton, StoreViewBundles.SelectedItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed),
+            (SkipButton, Visibility.Visible));
     }
 
-    private void LicenseAgreeCheckBox_Click(object sender, RoutedEventArgs e)
+    private void ToggleSwitch_Toggled(object sender, RoutedEventArgs e)
     {
-        NextButton.IsEnabled = LicenseAgreeCheckBox.IsChecked ?? false;
-        if (LicenseAgreeCheckBox.IsChecked == true)
-            SettingsManager.Instance.SetValue("WELCOMEWIZARD", "Shown", true);
+        _ = ViewModel.CheckStoreStatusAsync(); // CheckStoreStatusAsync catches and logs its own errors.
     }
 
     private void UtilityButtonControls_Loaded(object sender, RoutedEventArgs e)
@@ -249,7 +205,7 @@ public sealed partial class WelcomeWindow : TemplateWindow
 
     private async void CompleteButton_Click(object sender, RoutedEventArgs e)
     {
-        bool showFeatures = ShowAppFeaturesCheckBox.IsChecked == true;
+        bool showFeatures = ViewModel.ShowAppFeatures == true;
         var app = (App)Application.Current;
         // Release ownership and the migration gate before activating the main window.
         await app.MakeWindowNormal(this);
@@ -262,5 +218,4 @@ public sealed partial class WelcomeWindow : TemplateWindow
             await CommandsHandler.HandleCommandAsync("cdpiui://AppFeatures");
         }
     }
-
 }

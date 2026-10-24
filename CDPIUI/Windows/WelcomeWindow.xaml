@@ -14,6 +14,7 @@
     xmlns:l="using:WinUI3Localizer"
     xmlns:uexp="using:CDPIUI.Helper.UserExperience"
     xmlns:vm="using:CDPIUI.ViewModels"
+    xmlns:welcome="using:CDPIUI.ViewModels.Welcome"
     xmlns:controls="using:CommunityToolkit.Labs.WinUI.MarkdownTextBlock" 
     xmlns:media="using:Microsoft.UI.Xaml.Media" 
     xmlns:scontrols="using:CDPIUI.Controls.Settings" 
@@ -77,6 +78,7 @@
                         <ScrollViewer Padding="20 0">
                             <controls:MarkdownTextBlock 
                                 x:Name="LicenseTextBlock"
+                                Text="{x:Bind ViewModel.LicenseText, Mode=OneWay}"
                                 Config="{x:Bind MarkdownConfig, Mode=OneTime}"
                                 UseAutoLinks="False"
                                 UseEmphasisExtras="True"
@@ -85,7 +87,13 @@
                                 UseTaskLists="True"
                                 Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"/>
                         </ScrollViewer>
-                        <CheckBox x:Name="LicenseAgreeCheckBox" l:Uids.Uid="/WelcomeWizard/LicenseAgreeCheckBox" Click="LicenseAgreeCheckBox_Click" Grid.Row="1" Margin="20 0 20 10"/>
+                        <CheckBox
+                            x:Name="LicenseAgreeCheckBox"
+                            l:Uids.Uid="/WelcomeWizard/LicenseAgreeCheckBox"
+                            IsChecked="{x:Bind ViewModel.IsLicenseAccepted, Mode=TwoWay}"
+                            IsEnabled="{x:Bind ViewModel.IsLicenseAgreeEnabled, Mode=OneWay}"
+                            Grid.Row="1"
+                            Margin="20 0 20 10"/>
                     </Grid>
                 </ncontrols:AnimatedHorizontalContentItem>
 
@@ -162,7 +170,7 @@
                             <ToggleSwitch IsOn="{x:Bind storenet:StoreProxyHelper.UseProxyForStoreConnections, Mode=TwoWay}" Toggled="ToggleSwitch_Toggled"/>
                         </toolkit:SettingsCard>
 
-                        <Button x:Name="CheckStoreStatusButton" l:Uids.Uid="CheckStoreStatusButton" Click="CheckStoreStatusButton_Click"/>
+                        <Button x:Name="CheckStoreStatusButton" l:Uids.Uid="CheckStoreStatusButton" Command="{x:Bind ViewModel.CheckStoreStatusCommand}"/>
 
                         <Grid ColumnSpacing="10">
                             <Grid.ColumnDefinitions>
@@ -170,7 +178,11 @@
                                 <ColumnDefinition Width="auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock l:Uids.Uid="StoreServiceStatusTextBlock"/>
-                            <TextBlock x:Name="StoreStatusTextBlock" Grid.Column="1"/>
+                            <TextBlock
+                                x:Name="StoreStatusTextBlock"
+                                Grid.Column="1"
+                                Text="{x:Bind ViewModel.StoreStatusText, Mode=OneWay}"
+                                Foreground="{x:Bind StoreStatusBrush(ViewModel.IsStoreAvailable), Mode=OneWay}"/>
                         </Grid>
                     </StackPanel>
                 </ncontrols:AnimatedHorizontalContentItem>
@@ -178,13 +190,19 @@
                     x:Name="StoreItem"
                     l:Uids.Uid="/WelcomeWizard/StoreAnimatedHorizontalContentItem">
                     <Grid x:Name="ContentRoot">
-                        <Grid x:Name="ReadyBundlesContent">
-                            <StackPanel x:Name="ErrorStackPanel" Spacing="10" Margin="20 0">
+                        <Grid x:Name="ReadyBundlesContent" Visibility="{x:Bind ViewModel.IsReadyBundlesContentVisible, Mode=OneWay}">
+                            <StackPanel
+                                x:Name="ErrorStackPanel"
+                                Spacing="10"
+                                Margin="20 0"
+                                Visibility="{x:Bind ViewModel.IsStoreErrorVisible, Mode=OneWay}">
                                 <ucontrols:NoContentToDisplayUserControl l:Uids.Uid="NoBundlesAvailableNoContentToDisplayUserControl" Margin="20"/>
                                 <ucontrols:URIButton URI="cdpiui://Store" l:Uids.Uid="OpenStoreURIButton"/>
                             </StackPanel>
                             <ListView 
                                 x:Name="StoreViewBundles"
+                                ItemsSource="{x:Bind ViewModel.Kits}"
+                                Visibility="{x:Bind ViewModel.IsStoreKitsVisible, Mode=OneWay}"
                                 SelectionMode="Multiple"
                                 SelectionChanged="StoreViewBundles_SelectionChanged">
                                 <ListView.ItemTemplate>
@@ -239,33 +257,37 @@
                             </ListView>
                         </Grid>
 
-                        <ScrollViewer x:Name="MigrationContent" Visibility="Collapsed">
+                        <ScrollViewer x:Name="MigrationContent" Visibility="{x:Bind ViewModel.IsMigrationMode, Mode=OneWay}">
                             <StackPanel Margin="20 0 20 20" Spacing="14">
                                 <InfoBar
                                     x:Name="MigrationStatusInfoBar"
                                     IsOpen="True"
                                     IsClosable="False"
-                                    Severity="Informational"/>
+                                    Title="{x:Bind ViewModel.MigrationStatusTitle, Mode=OneWay}"
+                                    Message="{x:Bind ViewModel.MigrationStatusMessage, Mode=OneWay}"
+                                    Severity="{x:Bind ViewModel.MigrationStatusSeverity, Mode=OneWay}"/>
                                 <ProgressBar
                                     x:Name="MigrationProgressBar"
                                     Minimum="0"
                                     Maximum="100"
-                                    Value="0"/>
+                                    Value="{x:Bind ViewModel.MigrationProgress, Mode=OneWay}"/>
                                 <ListView
                                     x:Name="MigrationComponentsListView"
+                                    ItemsSource="{x:Bind ViewModel.MigrationComponentItems, Mode=OneWay}"
+                                    Visibility="{x:Bind ViewModel.IsMigrationComponentsListVisible, Mode=OneWay}"
                                     SelectionMode="None"
                                     IsItemClickEnabled="False">
                                     <ListView.ItemTemplate>
-                                        <DataTemplate>
+                                        <DataTemplate x:DataType="welcome:MigrationComponentDisplayItem">
                                             <Grid Padding="4 8" ColumnSpacing="12">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{x:Bind DisplayName}" TextWrapping="Wrap"/>
                                                 <TextBlock
                                                     Grid.Column="1"
-                                                    Text="{Binding Status}"
+                                                    Text="{x:Bind Status}"
                                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                             </Grid>
                                         </DataTemplate>
@@ -273,14 +295,15 @@
                                 </ListView>
                                 <TextBlock
                                     x:Name="MigrationSummaryTextBlock"
+                                    Text="{x:Bind ViewModel.MigrationSummaryText, Mode=OneWay}"
                                     TextWrapping="Wrap"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 <Button
                                     x:Name="RetryMigrationButton"
                                     l:Uids.Uid="/WelcomeWizard/RetryMigrationButton"
-                                    Click="RetryMigrationButton_Click"
+                                    Command="{x:Bind ViewModel.RetryMigrationCommand}"
                                     HorizontalAlignment="Left"
-                                    Visibility="Collapsed"/>
+                                    Visibility="{x:Bind ViewModel.IsRetryMigrationVisible, Mode=OneWay}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
@@ -288,14 +311,23 @@
                 <ncontrols:AnimatedHorizontalContentItem
                     x:Name="CompleteItem"
                     l:Uids.Uid="/WelcomeWizard/CompleteAnimatedHorizontalContentItem">
-                    <CheckBox x:Name="ShowAppFeaturesCheckBox" l:Uids.Uid="ShowAppFeaturesCheckBox" VerticalAlignment="Bottom" Margin="20" IsChecked="True"/>
+                    <CheckBox
+                        x:Name="ShowAppFeaturesCheckBox"
+                        l:Uids.Uid="ShowAppFeaturesCheckBox"
+                        VerticalAlignment="Bottom"
+                        Margin="20"
+                        IsChecked="{x:Bind ViewModel.ShowAppFeatures, Mode=TwoWay}"/>
                 </ncontrols:AnimatedHorizontalContentItem>
             </ncontrols:AnimatedHorizontalContentViewer>
         </Grid>
-        <ucontrols:UtilityButtonControls x:Name="UtilityButtonControls" Grid.Row="2" Loaded="UtilityButtonControls_Loaded">
+        <ucontrols:UtilityButtonControls
+            x:Name="UtilityButtonControls"
+            Grid.Row="2"
+            IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+            Loaded="UtilityButtonControls_Loaded">
             <Button x:Name="BackButton" l:Uids.Uid="GoBackButton" Click="BackButton_Click"/>
             <Button x:Name="SkipButton" l:Uids.Uid="SkipButton" Click="NextButton_Click"/>
-            <Button x:Name="NextButton" l:Uids.Uid="GoForwardButton" Click="NextButton_Click"/>
+            <Button x:Name="NextButton" l:Uids.Uid="GoForwardButton" IsEnabled="{x:Bind ViewModel.IsNextEnabled, Mode=OneWay}" Click="NextButton_Click"/>
             <Button x:Name="CompleteButton" l:Uids.Uid="CompleteButton" Click="CompleteButton_Click" Visibility="Collapsed"/>
         </ucontrols:UtilityButtonControls>
     </Grid>

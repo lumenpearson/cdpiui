@@ -1,51 +1,25 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using System.Threading.Tasks;
-using CDPIUI.Commands;
-using CDPIUI.Controls.Dialogs.Store;
-using CDPIUI.Controls.Store;
-using CDPIUI.Controls.Universal;
-using CDPIUI.Core;
-using CDPIUI.Core.Basic;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Data;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Queue;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.ViewModels;
-using CDPIUI.Core.System;
-using CDPIUI.Default;
-using CDPIUI.Extensions;
-using CDPIUI.Helper;
 using CDPIUI.Helper.Migration;
-using CDPIUI.Shared;
-using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.ViewModels;
-using CommunityToolkit.Labs.WinUI.MarkdownTextBlock;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using WinUI3Localizer;
 
+namespace CDPIUI.ViewModels.Welcome;
 
-namespace CDPIUI;
-
-public sealed partial class WelcomeWindow
+public sealed partial class WelcomeViewModel
 {
+    private bool _migrationHandlersConnected;
+    private Action<Tuple<string, string>>? _migrationStageHandler;
+    private Action<Tuple<string, double>>? _migrationProgressHandler;
+    private Action<Tuple<string, ErrorModel>>? _migrationErrorHandler;
+    private Action<string>? _migrationStoppedHandler;
+
     private void ConnectMigrationQueueHandlers()
     {
         if (_migrationHandlersConnected)
@@ -134,7 +108,7 @@ public sealed partial class WelcomeWindow
     {
         if (_migrationComponents.Count == 0)
         {
-            MigrationProgressBar.Value = 65;
+            MigrationProgress = 65;
             return;
         }
         double total = 0;
@@ -153,7 +127,7 @@ public sealed partial class WelcomeWindow
         }
         double aggregate = total / _migrationComponents.Count;
         double overall = 25 + aggregate * 0.4;
-        MigrationProgressBar.Value = overall;
+        MigrationProgress = overall;
         if (_migrationSession != null)
             _ = _migrationSession.UpdateAsync(MigrationSessionState.DownloadingComponents, overall);
     }
@@ -195,9 +169,8 @@ public sealed partial class WelcomeWindow
                 Status = status
             });
         }
-        MigrationComponentsListView.ItemsSource = null;
-        MigrationComponentsListView.ItemsSource = items;
-        MigrationSummaryTextBlock.Text = items.Count == 0
+        MigrationComponentItems = items;
+        MigrationSummaryText = items.Count == 0
             ? Localized("MigrationNoComponentsRequired")
             : string.Format(Localized("MigrationComponentsCount"), items.Count);
     }
@@ -208,9 +181,9 @@ public sealed partial class WelcomeWindow
 
     private void RunMigrationOnUiThread(Action action)
     {
-        if (DispatcherQueue.HasThreadAccess)
+        if (_dispatcherQueue.HasThreadAccess)
             action();
         else
-            DispatcherQueue.TryEnqueue(() => action());
+            _dispatcherQueue.TryEnqueue(() => action());
     }
 }
