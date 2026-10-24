@@ -100,6 +100,30 @@ internal static class ConfigPackDirectoryLoader
         return [.. array];
     }
 
+    /// <summary>
+    /// The English strings file of the pack in <paramref name="folder"/>, or an empty string.
+    /// </summary>
+    public static string GetDefaultLocalePath(string folder)
+    {
+        string initFile = Path.Combine(folder, "init.json");
+
+        if (!File.Exists(initFile))
+            return string.Empty;
+
+        ConfigInitItem? configInitItem;
+        try
+        {
+            configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
+            return string.Empty;
+        }
+        string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN") ?? string.Empty;
+        return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
+    }
+
     // A preset without a name keeps its file name; Regex.Replace threw and the
     // preset was left out of the list.
     private static string LocalizePresetName(
