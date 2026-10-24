@@ -86,10 +86,17 @@ public sealed partial class ComponentSettingUserControl : UserControl, IComponen
             nameof(IsSettingChecked), typeof(bool), typeof(ComponentSettingUserControl), new PropertyMetadata(false)
         );
 
+    // The check state reaches the controls through x:Bind when the control loads, after
+    // the host has set the commands. The state set by the host is not a user toggle, so
+    // the notifications start only after Loaded, as when the state was written to the
+    // controls before the commands were set.
+    private bool _isLoaded;
+
     public ComponentSettingUserControl()
     {
         ViewModel = new ComponentSettingViewModel(this);
         InitializeComponent();
+        Loaded += (_, _) => _isLoaded = true;
     }
 
     public ComponentSettingViewModel ViewModel { get; }
@@ -204,6 +211,9 @@ public sealed partial class ComponentSettingUserControl : UserControl, IComponen
 
     private void ToggleChecked()
     {
+        if (!_isLoaded)
+            return;
+
         bool isChecked = ViewModel.UsesCheckBox ? (bool)MainCheckBox.IsChecked : MainToggleSwitch.IsOn;
         NotifyToggled(isChecked);
     }
