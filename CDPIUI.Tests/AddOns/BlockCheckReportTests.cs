@@ -353,6 +353,49 @@ public sealed class BlockCheckReportTests : IDisposable
     }
 
     [Fact]
+    public void ExcessiveProbeAndProfileCountsAreRejected()
+    {
+        BlockCheckReportProbe probe = Probe("baseline", "", "t1", 1, 1);
+        BlockCheckReportProfile profile = Profile("P", "p", ["t1"]);
+        BlockCheckReport[] reports =
+        [
+            Report(probes: Enumerable.Repeat(probe, 200_001).ToArray()),
+            Report(profiles: Enumerable.Repeat(profile, 20_001).ToArray()),
+        ];
+
+        foreach (BlockCheckReport report in reports)
+        {
+            var exception = Assert.Throws<InvalidDataException>(() => BlockCheckReportValidator.Validate(report));
+            Assert.Contains("unreasonable item counts", exception.Message);
+        }
+    }
+
+    [Fact]
+    public void ValidatorReportsTheFirstInvalidGroup()
+    {
+        var target = Target("t1", "example.com", "/", BlockCheckProtocol.Tls12);
+        (BlockCheckReport Report, string Message)[] cases =
+        [
+            (Report(targets: [target with { Port = 0 }], probes: [null!]), "invalid or duplicate targets"),
+            (Report(probes: [null!], profiles: [null!]), "invalid probe evidence"),
+            (Report(profiles: [null!], issues: [null!]), "invalid preset profiles"),
+            (Report(attempts: [null!]), "invalid diagnostics"),
+        ];
+
+        foreach (var (report, message) in cases)
+        {
+            var exception = Assert.Throws<InvalidDataException>(() => BlockCheckReportValidator.Validate(report));
+            Assert.Contains(message, exception.Message);
+        }
+    }
+
+    [Fact]
+    public void ValidReportPassesTheValidator()
+    {
+        BlockCheckReportValidator.Validate(FullReport());
+    }
+
+    [Fact]
     public void ValidAttemptIsAccepted()
     {
         var result = Importer.Import(Report(attempts: [new BlockCheckReportValidationAttempt(0, false, true, ["t1"], ["x"])]));
