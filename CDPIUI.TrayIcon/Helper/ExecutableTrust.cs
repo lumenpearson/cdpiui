@@ -481,13 +481,28 @@ public static class ExecutableTrust
         var thread = new Thread(() =>
         {
             threadId = NativeMethods.GetCurrentThreadId();
+            // A top-most owner on this thread keeps the box in front of other windows. The box is
+            // not shown with DefaultDesktopOnly: Windows then creates it in a system process, so
+            // the tray could not close it on the timeout and it stayed on screen after the start
+            // had already been rejected.
+            using var owner = new Form
+            {
+                TopMost = true,
+                ShowInTaskbar = false,
+                FormBorderStyle = FormBorderStyle.None,
+                StartPosition = FormStartPosition.CenterScreen,
+                Size = new Size(1, 1),
+                Opacity = 0,
+            };
+            owner.Show();
+            owner.Activate();
             answer = MessageBox.Show(
+                owner,
                 text,
                 title,
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning,
-                MessageBoxDefaultButton.Button2,
-                MessageBoxOptions.DefaultDesktopOnly);
+                MessageBoxDefaultButton.Button2);
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.IsBackground = true;
