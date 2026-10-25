@@ -77,7 +77,7 @@ public sealed partial class MainPage : TemplatePage, IConfigImportPageView
         string extension = Path.GetExtension(missingPath);
         using var dialog = new System.Windows.Forms.OpenFileDialog
         {
-            Title = _localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
+            Title = _localizer.GetLocalizedString("ConfigImportChooseFileTitle"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
                 ? $"{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"

@@ -15,7 +15,7 @@ internal static class ConfigMakerFileDialogs
         string extension = Path.GetExtension(missingPath);
         using OpenFileDialog dialog = new()
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
+            Title = localizer.GetLocalizedString("ConfigImportChooseFileTitle"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
                 ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"

@@ -41,23 +41,25 @@
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
+            <!-- The items of a flyout in resources exist only once it is first shown, so x:Bind
+                 cannot set their commands when the window activates (it threw and left every
+                 binding of the window unset). The window assigns them by Tag before ShowAt. -->
             <MenuFlyout x:Key="TaskContextMenu">
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_RunTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Ctrl+R"
-                    Command="{x:Bind ViewModel.RunTaskCommand}" />
+                    Tag="Run" />
                 <MenuFlyoutItem
-                    Tag="ToggleEnabled"
-                    Command="{x:Bind ViewModel.ToggleTaskEnabledCommand}" />
+                    Tag="ToggleEnabled" />
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_PropertiesTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Enter"
-                    Command="{x:Bind ViewModel.EditTaskCommand}" />
+                    Tag="Edit" />
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_DeleteTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Del"
-                    Command="{x:Bind ViewModel.DeleteTaskCommand}" />
+                    Tag="Delete" />
             </MenuFlyout>
         </Grid.Resources>
         <Grid.RowDefinitions>

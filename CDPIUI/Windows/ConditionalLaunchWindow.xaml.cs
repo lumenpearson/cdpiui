@@ -107,6 +107,18 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow, ICondition
         TaskListView.SelectedItem = container.Content;
         if (RootGrid.Resources["TaskContextMenu"] is MenuFlyout menu)
         {
+            foreach (MenuFlyoutItem item in menu.Items.OfType<MenuFlyoutItem>())
+            {
+                item.Command = item.Tag switch
+                {
+                    "Run" => ViewModel.RunTaskCommand,
+                    "ToggleEnabled" => ViewModel.ToggleTaskEnabledCommand,
+                    "Edit" => ViewModel.EditTaskCommand,
+                    "Delete" => ViewModel.DeleteTaskCommand,
+                    _ => item.Command,
+                };
+            }
+
             var toggleItem = menu.Items
                 .OfType<MenuFlyoutItem>()
                 .FirstOrDefault(item => Equals(item.Tag, "ToggleEnabled"));

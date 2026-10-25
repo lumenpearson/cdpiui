@@ -59,7 +59,7 @@ public sealed partial class ConfigImportPageViewModel : ObservableObject
         _fileAnalyzer = new ConfigImportFileAnalyzer(_importService);
         // The texts the button and the loading panel show before the first change. The button
         // has no localization uid: the uid would reset the text of the later steps.
-        _nextButtonText = _localizer.GetLocalizedString("GoForwardButton.Content");
+        _nextButtonText = _localizer.GetLocalizedString("ConfigImportNextButton");
         _loadingStateText = _localizer.GetLocalizedString("WorkingOnIt");
 
         NextCommand = new AsyncRelayCommand(NextAsync, () => _isNextEnabled);
