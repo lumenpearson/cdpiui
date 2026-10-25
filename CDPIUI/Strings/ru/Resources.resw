@@ -376,6 +376,12 @@
   <data name="GoForwardButton.Content" xml:space="preserve">
     <value>Далее</value>
   </data>
+  <data name="ConfigImportNextButton" xml:space="preserve">
+    <value>Далее</value>
+  </data>
+  <data name="ConfigImportChooseFileTitle" xml:space="preserve">
+    <value>Выбрать файл</value>
+  </data>
   <data name="GoodCheckAdditionalSettingsTip.Text" xml:space="preserve">
     <value>Эти настройки помогут вам настроить подбор под себя. Когда будете готовы продолжить, просто нажмите на кнопку "Далее"—все настройки будут сохранены автоматически</value>
   </data>
