@@ -59,6 +59,8 @@ The client stops its own process if the server fails the check.
 
 The tray makes a new random key (32 bytes, hexadecimal) at each start (`PipeSessionKeyWriter`). It writes the key to `<application folder>\.session\pipe.key` before it starts the pipe server (`PipeSessionKey`). The file has a protected access list: SYSTEM, Administrators and the tray user have full control, and the desktop user can read it. Other users cannot read the key. In an MSI installation, only administrators can create files in the installation folder, so nobody can put a key there before the tray.
 
+NOTE: The key separates the users of the computer, not the programs of one user. When the desktop user elevates the tray with their own account (the usual case), every program of that user can read `pipe.key`, and the tray user can also replace or delete it. The check that only the GUI connects is the client path check of `PipePeerVerifier`.
+
 1. The server sends `Service/ConnectOK` after the connection.
 2. The client reads `pipe.key` and sends `Service/RequestAuth` with the `GUID` key. The value is the key. The client reads the file again for each connection, because a restarted tray has a new key.
 3. If the key of the tray is not empty and the value is equal to it, the server sends `Service/AuthOK`. The comparison takes the same time for each wrong value.

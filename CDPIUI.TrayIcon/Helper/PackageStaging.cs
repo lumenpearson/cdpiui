@@ -68,9 +68,13 @@ public static class PackageStaging
         {
             // The catalog can only be checked on extracted files, so the archive is limited first:
             // an unverified package must not fill the disk of the installation volume.
+            List<string> layerPrefixes;
             using (ZipArchive archive = ZipFile.OpenRead(stagedPackage))
             {
                 ArchivePaths.EnsureWithinLimits(archive.Entries);
+                // Update.exe installs exactly these folders (the same rule is compiled into it),
+                // so every file it installs is in a layer whose catalog is checked below.
+                layerPrefixes = UpdatePackageLayers.GetPrefixes(archive.Entries.Select(entry => entry.FullName));
                 Directory.CreateDirectory(verifyDirectory);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
@@ -86,10 +90,9 @@ public static class PackageStaging
                 }
             }
 
-            string layersDirectory = Path.Combine(verifyDirectory, "layers");
-            List<string> layers = Directory.Exists(layersDirectory)
-                ? Directory.GetDirectories(layersDirectory).ToList()
-                : [Path.Combine(verifyDirectory, "CDPIUI")];
+            List<string> layers = layerPrefixes
+                .Select(prefix => Path.Combine(verifyDirectory, prefix.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar)))
+                .ToList();
 
             if (layers.Count == 0 || !layers.All(Directory.Exists))
                 return false;
@@ -166,6 +169,27 @@ public static class PackageStaging
         if (!pinned)
             Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"{path} is signed by an unknown certificate {thumbprint}");
         return pinned;
+    }
+
+    /// <summary>
+    /// The signer of the file when its Authenticode signature is valid and chains to a trusted
+    /// root, otherwise null: the name in a changed or self-signed file proves nothing.
+    /// </summary>
+    public static string? GetVerifiedSigner(string path)
+    {
+        if (VerifyTrust(path) != 0)
+            return null;
+        try
+        {
+#pragma warning disable SYSLIB0057 // The signature itself was checked by WinVerifyTrust above.
+            using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
+#pragma warning restore SYSLIB0057
+            return certificate.GetNameInfo(X509NameType.SimpleName, false);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
     }
 
     private static int VerifyTrust(string path)

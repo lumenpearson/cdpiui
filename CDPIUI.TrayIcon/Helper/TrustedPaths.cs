@@ -52,10 +52,31 @@ public static class TrustedPaths
 
     public static bool IsInStore(string? path, string operation)
     {
-        if (TrustedPathValidator.IsInside(path, Roots.Select(root => root == null ? null : Path.Combine(root, "Store"))))
+        // In an MSI installation only administrators can change the installation folder, and
+        // ExecutableTrust starts programs from it without a check; access to a folder in it
+        // must not be handed to the user. A portable copy keeps its Store next to the tray.
+        IEnumerable<string?> roots = Utils.IsInstalledByMsi()
+            ? Roots.Where(root => root != null && !IsSameDirectory(root, Utils.GetDataDirectory()))
+            : Roots;
+        if (TrustedPathValidator.IsInside(path, roots.Select(root => root == null ? null : Path.Combine(root, "Store"))))
             return true;
 
         Logger.Instance.CreateWarningLog(nameof(TrustedPaths), $"Rejected {operation} for \"{path}\": the path is outside the store directory");
         return false;
+    }
+
+    private static bool IsSameDirectory(string first, string second)
+    {
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(first).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(second).TrimEnd(Path.DirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
     }
 }

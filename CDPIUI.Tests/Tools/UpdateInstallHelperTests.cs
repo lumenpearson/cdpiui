@@ -81,11 +81,26 @@ public class UpdateInstallHelperTests : IDisposable
             ("layers/10/CDPIUI.exe", "c"),
             ("layers/2/CDPIUI.exe", "b"),
             ("layers/0/CDPIUI.exe", "a"),
-            ("layers/name/CDPIUI.exe", "x"),
             ("requirements.json", "{}"));
 
         using var zip = ZipFile.OpenRead(_archive);
         Assert.Equal(new[] { "layers/0/", "layers/2/", "layers/10/" }, InstallHelper.GetLayerPrefixes(zip));
+    }
+
+    [Theory]
+    // The tray checked the catalog of every folder under layers/, this tool installed only the
+    // numeric ones, or CDPIUI/ when none was numeric: a package could pass the check with one
+    // set of files and install another. Such packages are rejected on both sides now.
+    [InlineData("layers/name/CDPIUI.exe", "CDPIUI/CDPIUI.exe")]
+    [InlineData("layers/01/CDPIUI.exe", "layers/1/CDPIUI.exe")]
+    [InlineData("layers/0/CDPIUI.exe", "CDPIUI/CDPIUI.exe")]
+    [InlineData("layers/CDPIUI.exe", "layers/0/CDPIUI.exe")]
+    public void PackageTheTrayCouldReadDifferentlyIsRejected(string first, string second)
+    {
+        WriteArchive((first, "a"), (second, "b"));
+
+        using var zip = ZipFile.OpenRead(_archive);
+        Assert.Throws<InvalidDataException>(() => InstallHelper.GetLayerPrefixes(zip));
     }
 
     [Fact]

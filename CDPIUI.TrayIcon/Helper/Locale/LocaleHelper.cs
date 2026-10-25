@@ -62,7 +62,9 @@ public class LocaleHelper
         { "TrayErrorMessage", "We're unable to create icon in system notify area. Click or tap here to view details.\n{0}" },
         { "ExecutableTrustTitle", "CDPI UI: start with administrator rights?" },
         { "ExecutableTrustQuestion", "CDPI UI is about to start this program with administrator rights:\n\n{0}\n\nThe program or a library next to it is new or changed since the last start.\n\nSHA-256: {1}\nSigned by: {2}\n\nAllow the start only if you installed or updated this component yourself. Another program could have changed these files.\n\nStart the program?" },
-        { "ExecutableTrustNoSignature", "no signature" }
+        { "ExecutableTrustNoSignature", "no valid signature" },
+        { "ExecutableTrustCodeQuestion", "CDPI UI is about to start this program with administrator rights:\n\n{0}\n\nIts arguments give it Lua code that is new or changed since the last start. The code runs with administrator rights too:\n\n{1}\n\nSHA-256: {2}\n\nAllow the start only if you created or imported this preset yourself. Another program could have changed it.\n\nStart the program?" },
+        { "ExecutableTrustInlineCode", "(code in the arguments)" }
     };
 
     public static Dictionary<string, string> Russian = new Dictionary<string, string>()
@@ -101,7 +103,9 @@ public class LocaleHelper
         { "TrayErrorMessage", "Не удалось создать значок в области уведомлений. Нажмите или коснитесь здесь, чтобы узнать подробности.\n{0}" },
         { "ExecutableTrustTitle", "CDPI UI: запустить с правами администратора?" },
         { "ExecutableTrustQuestion", "CDPI UI собирается запустить эту программу с правами администратора:\n\n{0}\n\nПрограмма или библиотека рядом с ней появилась или изменилась после прошлого запуска.\n\nSHA-256: {1}\nПодпись: {2}\n\nРазрешите запуск, только если вы сами установили или обновили этот компонент. Эти файлы могла изменить другая программа.\n\nЗапустить программу?" },
-        { "ExecutableTrustNoSignature", "нет подписи" }
+        { "ExecutableTrustNoSignature", "нет действительной подписи" },
+        { "ExecutableTrustCodeQuestion", "CDPI UI собирается запустить эту программу с правами администратора:\n\n{0}\n\nЕё аргументы передают ей код Lua, который появился или изменился после прошлого запуска. Этот код тоже выполняется с правами администратора:\n\n{1}\n\nSHA-256: {2}\n\nРазрешите запуск, только если вы сами создали или импортировали этот пресет. Его могла изменить другая программа.\n\nЗапустить программу?" },
+        { "ExecutableTrustInlineCode", "(код в аргументах)" }
     };
 
     public static string GetLocaleString(string key)

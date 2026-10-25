@@ -97,6 +97,98 @@ public sealed class ExecutableLeaseTests : IDisposable
     }
 
     [Fact]
+    public void LeaseHoldsTheScriptsOfTheWholeStoreItem()
+    {
+        // Zapret2 loads --lua-init=@lua/zapret-lib.lua from the item folder, not the folder of the program.
+        string program = Write("Store/Items/CSZTBN012/bin/winws2.exe", "program");
+        Write("Store/Items/CSZTBN012/lua/zapret-lib.lua", "code");
+        Write("Store/Items/CSZTBN012/lists/list.txt", "data");
+
+        using var lease = ExecutableLease.Open(program);
+
+        Assert.Equal(Path.GetFullPath(Path.Combine(_directory, "Store/Items/CSZTBN012")), lease.Root);
+        Assert.Equal(
+            ["winws2.exe", "zapret-lib.lua"],
+            lease.Paths.Select(Path.GetFileName).Order(StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FingerprintChangesWhenAScriptChanges()
+    {
+        string program = Write("Store/Items/CSZTBN012/bin/winws2.exe", "program");
+        string script = Write("Store/Items/CSZTBN012/lua/zapret-lib.lua", "code");
+
+        string before;
+        using (var lease = ExecutableLease.Open(program))
+            before = lease.ComputeFingerprint();
+
+        File.WriteAllText(script, "os.execute('changed')");
+        using var again = ExecutableLease.Open(program);
+
+        Assert.NotEqual(before, again.ComputeFingerprint());
+    }
+
+    [Fact]
+    public void LockedArgumentFileCannotBeChanged()
+    {
+        string program = Write("bin/winws.exe", "program");
+        string arguments = Write("bin/args.txt", "--dpi-desync=fake");
+
+        using var lease = ExecutableLease.Open(program);
+        Assert.Equal("--dpi-desync=fake", lease.ReadArgumentFile(arguments));
+
+        Assert.Throws<IOException>(() => File.WriteAllText(arguments, "--wf-save=C:\\x"));
+    }
+
+    [Fact]
+    public void WriteTargetFolderCannotBeRenamedWhileGuarded()
+    {
+        string program = Write("bin/winws.exe", "program");
+        Directory.CreateDirectory(Path.Combine(_directory, "data", "lists"));
+
+        using (var lease = ExecutableLease.Open(program))
+        {
+            lease.GuardWriteTarget(Path.Combine(_directory, "data", "lists", "auto.txt"), [Path.Combine(_directory, "data")]);
+            Assert.ThrowsAny<IOException>(() => Directory.Move(Path.Combine(_directory, "data", "lists"), Path.Combine(_directory, "data", "moved")));
+
+            // The component still creates and appends to the file it writes.
+            File.WriteAllText(Path.Combine(_directory, "data", "lists", "auto.txt"), "a.com\n");
+            File.AppendAllText(Path.Combine(_directory, "data", "lists", "auto.txt"), "b.com\n");
+        }
+
+        Directory.Move(Path.Combine(_directory, "data", "lists"), Path.Combine(_directory, "data", "moved"));
+    }
+
+    [Fact]
+    public void WriteTargetOutsideTheRootsIsRejected()
+    {
+        string program = Write("bin/winws.exe", "program");
+        using var lease = ExecutableLease.Open(program);
+
+        Assert.Throws<UnauthorizedAccessException>(() =>
+            lease.GuardWriteTarget(Path.Combine(_directory, "other", "x.txt"), [Path.Combine(_directory, "data")]));
+    }
+
+    [Fact]
+    public void ApprovedCodeAndFoldersSurviveASave()
+    {
+        string folder = Path.Combine(_directory, "component");
+        Directory.CreateDirectory(folder);
+        string file = Path.Combine(_directory, ".trust", "approved.txt");
+        var approved = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [folder] = "AAAA",
+            [ExecutableApprovals.CodeKey("CCCC")] = "CCCC",
+        };
+
+        ExecutableApprovals.Save(file, approved);
+        Dictionary<string, string> loaded = ExecutableApprovals.Load(file);
+
+        Assert.Equal("AAAA", loaded[folder]);
+        Assert.Equal("CCCC", loaded[ExecutableApprovals.CodeKey("CCCC")]);
+    }
+
+    [Fact]
     public void MissingApprovalFileGivesNoApprovals()
     {
         Assert.Empty(ExecutableApprovals.Load(Path.Combine(_directory, "none.txt")));
