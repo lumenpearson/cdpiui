@@ -1,4 +1,5 @@
 using CDPIUI.AddOns.ConfigImport;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 
 namespace CDPIUI.Tests.AddOns;
 
@@ -43,6 +44,50 @@ public class ConfigImportServiceTests
                 i.Code == "REFERENCED_FILE_OUTSIDE_SOURCE" &&
                 i.Severity == ConfigImportIssueSeverity.Warning);
             Assert.Contains(Path.GetFullPath(outside), outsideResult.ReferencedFiles);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FileOutsideSourceFolderIsNotCopied()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "cdpiui-import-copy-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            string sourceFolder = Path.Combine(root, "A");
+            string otherFolder = Path.Combine(root, "B");
+            Directory.CreateDirectory(Path.Combine(sourceFolder, "lists"));
+            Directory.CreateDirectory(otherFolder);
+            string inside = Path.Combine(sourceFolder, "lists", "inside.txt");
+            string outside = Path.Combine(otherFolder, "private.txt");
+            File.WriteAllText(inside, "example.com");
+            File.WriteAllText(outside, "private data");
+            string batch = Path.Combine(sourceFolder, "mixed.bat");
+            File.WriteAllText(batch,
+                "@echo off\r\n" +
+                $"start \"\" \"%~dp0ciadpi.exe\" --hosts \"{inside}\" --split 1 --hosts \"{outside}\"\r\n");
+
+            ConfigImportResult result = new ConfigImportService().Import(
+                batch, new ConfigImportTarget("TEST001", "ByeDPI", "ciadpi", "1.0"));
+            Assert.True(result.IsSuccessful, string.Join("; ", result.Issues.Select(i => i.Message)));
+
+            List<ConfigImportResource> resources = ConfigImportResourcePlanner.Build(result, sourceFolder, "import1");
+            ConfigItem config = new ConfigImportInstaller().PrepareConfig(result, "Mixed", "import1");
+
+            // A crafted config must not pull a private file of the user into a preset that can be
+            // shared: only the file of the config folder is copied and its path changed.
+            ConfigImportResource resource = Assert.Single(resources);
+            Assert.Equal(Path.GetFullPath(inside), resource.SourcePath);
+            Assert.Contains("$GETCURRENTDIR()/List/Converted/import1/inside.txt", config.startup_string);
+            Assert.DoesNotContain(inside, config.startup_string);
+            // The outside reference stays, so the user sees it and can change it.
+            Assert.Contains(outside, config.startup_string);
+            Assert.Contains(result.Issues, i =>
+                i.Code == "REFERENCED_FILE_OUTSIDE_SOURCE" &&
+                i.Message.EndsWith(": " + Path.GetFullPath(outside), StringComparison.Ordinal));
         }
         finally
         {

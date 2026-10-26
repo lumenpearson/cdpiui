@@ -6376,7 +6376,10 @@ https://discord.com/app</value>
     <value>Не удалось разобрать путь к используемому файлу: {0}</value>
   </data>
   <data name="ConfigImportIssue_REFERENCED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
-    <value>Пресет использует файл за пределами своей папки: {0}</value>
+    <value>Пресет ссылается на файл за пределами своей папки. Импорт не копирует этот файл. При необходимости измените путь в пресете: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>Пресет читает файл за пределами своей папки: {0}</value>
   </data>
   <data name="ConfigImportIssue_REFERENCED_FILE_NOT_FOUND" xml:space="preserve">
     <value>Используемый файл не найден: {0}</value>

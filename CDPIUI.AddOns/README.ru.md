@@ -26,7 +26,7 @@ BlockCheck2 подбирает стратегии Zapret2 для набора с
 
 ### ConfigImport
 
-ConfigImport преобразует файлы `.bat`, `.cmd`, `.txt` и `.json` в конфиг CDPI UI с помощью статического анализа. Оно никогда не запускает исходный скрипт. У него есть специальный анализатор для `winws` и `winws2`. Оно находит недостающие ресурсы, позволяет пользователю протестировать результат и копирует ресурсы в `LocalUserStorage`. Пакеты `.cdpiconfig` оно передаёт в ConfigShare. Его использует окно импорта (`cdpiui://Tools/ImportConfig`). См. [ConfigImport/README.ru.md](ConfigImport/README.ru.md).
+ConfigImport преобразует файлы `.bat`, `.cmd`, `.txt` и `.json` в конфиг CDPI UI с помощью статического анализа. Оно никогда не запускает исходный скрипт. У него есть специальный анализатор для `winws` и `winws2`. Оно находит недостающие ресурсы, позволяет пользователю протестировать результат и копирует ресурсы в `LocalUserStorage`. Оно не копирует ресурс вне папки импортируемого файла. Пакеты `.cdpiconfig` оно передаёт в ConfigShare. Его использует окно импорта (`cdpiui://Tools/ImportConfig`). См. [ConfigImport/README.ru.md](ConfigImport/README.ru.md).
 
 ### ConfigShare
 
