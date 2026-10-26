@@ -12,7 +12,10 @@ public sealed class ComponentCommandHelpService
 {
     private const int ParserFormatVersion = 3;
     private static readonly ConcurrentDictionary<string, ComponentCommandHelpDocument> Cache = new();
-    private static readonly TimeSpan HelpTimeout = TimeSpan.FromSeconds(15);
+    // In an MSI installation the tray may first ask the user to approve a new or changed
+    // program (ExecutableTrust, up to 2 minutes), then captures the help for up to 10 seconds.
+    // A shorter wait gave up while the user was still answering, and the approved help was lost.
+    private static readonly TimeSpan HelpTimeout = TimeSpan.FromSeconds(150);
 
     private static string Text(string key) => WinUI3Localizer.Localizer.Get().GetLocalizedString(key);
 
