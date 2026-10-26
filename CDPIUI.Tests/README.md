@@ -46,7 +46,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `AddOns` | `ConfigImportServiceTests` | Parse of `set` commands in imported scripts |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Paths inside a `.cdpiconfig` package: traversal, device names, links |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Rejection of options that write outside a `.cdpiconfig` package |
-| `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: arguments, exit codes, block pages, cancellation |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: the system curl path, arguments, exit codes, block pages, cancellation |
 | `AddOns` | `StrategyCatalogValidatorTests` | Rules of the BlockCheck2 strategy catalogue and the built-in catalogue |
 | `AddOns` | `ZapretConfigImportServiceTests` | Batch file syntax: shell tail, carets, file modifiers |
 | `Core` | `BatchFileEncodingTests` | Encoding of batch files (Cyrillic, UTF-8 BOM) |

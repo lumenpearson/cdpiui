@@ -98,7 +98,7 @@ public sealed partial class EditSitelistAskApplicationContentDialog : ContentDia
         SettingsManager.Instance.SetValue("FILEOPENACTIONS", "mode", (int)TextFileOpenModes.FollowSystem);
         if (!string.IsNullOrEmpty(FilePath))
             if (UseNotepadAsDefault)
-                ShellHelper.RunApp("notepad.exe", $"\"{FilePath}\"", UseUAC);
+                ShellHelper.RunApp(ShellHelper.NotepadPath, $"\"{FilePath}\"", UseUAC);
             else
                 ShellHelper.OpenFileInDefaultApp(FilePath, UseUAC);
         IsSuccess = true;

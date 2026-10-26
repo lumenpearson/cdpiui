@@ -5,7 +5,9 @@ namespace CDPIUI.AddOns.BlockCheck2.Execution;
 
 public sealed class CurlBlockCheckProbeRunnerOptions
 {
-    public string Executable { get; init; } = "curl.exe";
+    // The full path: CreateProcess also looks for a bare name in the current folder, so a
+    // curl.exe next to an opened file could run instead of the system curl.
+    public string Executable { get; init; } = Path.Combine(Environment.SystemDirectory, "curl.exe");
     public TimeSpan ConnectTimeout { get; init; } = TimeSpan.FromSeconds(5);
     public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
     public string UserAgent { get; init; } = "CDPIUI-BlockCheck2/1.0";

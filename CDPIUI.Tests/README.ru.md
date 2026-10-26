@@ -46,7 +46,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `AddOns` | `ConfigImportServiceTests` | Разбор команд `set` в импортируемых скриптах |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Пути внутри пакета `.cdpiconfig`: выход за папку, имена устройств, ссылки |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Отклонение параметров, которые записывают за пределы пакета `.cdpiconfig` |
-| `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: аргументы, коды выхода, страницы блокировки, отмена |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: путь к системному curl, аргументы, коды выхода, страницы блокировки, отмена |
 | `AddOns` | `StrategyCatalogValidatorTests` | Правила каталога стратегий BlockCheck2 и встроенный каталог |
 | `AddOns` | `ZapretConfigImportServiceTests` | Синтаксис пакетных файлов: хвост команды оболочки, каретки, модификаторы файлов |
 | `Core` | `BatchFileEncodingTests` | Кодировка пакетных файлов (кириллица, UTF-8 BOM) |
