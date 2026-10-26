@@ -90,13 +90,13 @@ If `DataDirectory` cannot be found, the library uses `%LOCALAPPDATA%\CDPIUI` and
 
 The GUI is a pipe client. The tray process is the pipe server.
 
-- `PipeClientService`: connects to the pipe `SharedConstants.PipeName`.
-  - It waits 2 seconds. If the tray process runs, it waits 15 more seconds.
+- `PipeClientService`: connects to the pipe that the session file `.session\pipe.key` in the application folder names. The tray makes a new pipe name at each start.
+  - It waits 2 seconds. If the tray process runs, it waits 15 more seconds. During the wait, it reads the session file again each 0.5 seconds.
   - If there is no connection, it starts `CDPIUI_TrayIcon.exe` as administrator (`runas`) and stops the GUI process.
     The tray gets `--autorun` when `APPEARANCE/hideToTrayOnStartup` is `true`. Otherwise it gets `--show-ui`.
     When the GUI has activation arguments or a GoodbyeDPI migration argument, the tray gets `--show-ui` and these arguments.
   - It closes the connection and stops the GUI when the server is not the expected `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).
-  - It reads the pipe key from `.session\pipe.key` in the application folder for each connection and sends it in the auth packet (see [Pipe](../CDPIUI.Shared/Pipe/README.md)).
+  - It reads the pipe name and the pipe key together for each connection attempt and sends the key in the auth packet (see [Pipe](../CDPIUI.Shared/Pipe/README.md#session-file)).
   - A change in a settings group `CONFIGS/<componentId>` sends `ProcessIdStartupArgsChanged` and the setup state of the component.
 - `PipeHelper`: static methods that send typed packets (for example settings, update, notification, ConPTY, MSI, proxy, conditional launch).
 - `CoreCommandsHandler`: handles the packets from the tray (service, ConPTY, settings, MSI, application, conditional launch).

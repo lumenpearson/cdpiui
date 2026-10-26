@@ -67,12 +67,13 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Shared` | `CatalogVerifierTests` | Проверка подписи каталогов обновлений |
 | `Shared` | `ConditionalTaskFileServiceTests` | Сохранение и загрузка файлов `.cdpitask` |
 | `Shared` | `ErrorConvertorTests` | Преобразование кодов ошибок |
-| `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина, файл ключа pipe |
+| `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина |
 | `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
 | `Shared` | `GoodbyeDpiMigrationActivationTests` | Аргументы активации миграции GoodbyeDPI: обратимость и неверные значения |
 | `Shared` | `GuiActivationArgumentsTests` | Кодирование и декодирование `--gui-args:` и кавычки в командной строке |
 | `Shared` | `OutputCleanupHelperTests` | Удаление escape-последовательностей из вывода консоли |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |
+| `Shared` | `PipeSessionFileTests` | Формат имени pipe и ключа, запись и чтение файла сеанса, устаревшие и повреждённые файлы |
 | `Shared` | `StreamStringTests` | Строки потока pipe |
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |

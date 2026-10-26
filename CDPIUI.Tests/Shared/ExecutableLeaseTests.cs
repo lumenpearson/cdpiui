@@ -1,4 +1,3 @@
-using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Tests.Shared;
@@ -202,13 +201,5 @@ public sealed class ExecutableLeaseTests : IDisposable
     {
         string? folder = ExecutableApprovals.GetStoreItemDirectory(Path.Combine(_directory, program));
         Assert.Equal(expected == null ? null : Path.GetFullPath(Path.Combine(_directory, expected)), folder);
-    }
-
-    [Fact]
-    public void PipeKeyIsReadFromTheSessionFolder()
-    {
-        Assert.Null(PipeSessionKey.TryRead(_directory));
-        Write(".session/pipe.key", " ABCDEF \r\n");
-        Assert.Equal("ABCDEF", PipeSessionKey.TryRead(_directory));
     }
 }

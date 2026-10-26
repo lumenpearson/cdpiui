@@ -29,7 +29,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
 3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
-5. It writes a new pipe key to `.session\pipe.key` (`PipeSessionKeyWriter`, see [Pipe](../CDPIUI.Shared/Pipe/README.md)). Then it starts the pipe server.
+5. It deletes the session file `.session\pipe.key` of an earlier start (`PipeSessionWriter`). Then it starts the pipe server. The pipe server makes a random pipe name, creates the pipe, and then writes the name and the new pipe key to `.session\pipe.key` (see [Pipe](../CDPIUI.Shared/Pipe/README.md#session-file)).
 6. If a toast notification started the process, it creates `TrayApplicationContext`, handles the toast and does not do steps 7–11.
 7. If the arguments request it, it starts the GUI as the desktop user (see the table below).
 8. It renames `_Update.exe` to `Update.exe`, if `_Update.exe` exists.
@@ -38,7 +38,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 11. After 60 minutes, it asks the GUI to start the compatibility check, if `NOTIFICATIONS/compatibilityCheck` is `true`.
 12. It creates `TrayApplicationContext`: the icon, the uninstall listener, the Conditional Launch engine and the notification handler.
 
-If the pipe server cannot create the pipe and another tray process runs, the tray stops its own process.
+If the pipe server cannot create the pipe or write the session file, it makes a new pipe name and tries again after 2 seconds. It never adds an instance to a pipe that another program created (`PipeOptions.FirstPipeInstance`).
 
 ### Command-line arguments
 
@@ -63,7 +63,7 @@ The autorun task starts the tray with `--autorun`.
 | `Controls/` | Custom WinForms controls of the tray menu |
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
-| `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
+| `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe session file (`PipeSessionWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
 | `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names. The language is the language that the user selected in the app (`SYSTEM/language`). If this value is missing or unknown, the Windows display language is used |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
@@ -244,7 +244,7 @@ Notes:
 
 The tray is elevated, and the GUI is not. Treat each pipe message as data from a less trusted process.
 
-- Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new key at each start. An empty key authorizes no client. A failed authorization disconnects the client.
+- Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new pipe name and a new key at each start. It writes them to the session file only after it has created the pipe. An empty key authorizes no client. A failed authorization disconnects the client.
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.

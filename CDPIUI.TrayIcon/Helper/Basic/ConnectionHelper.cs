@@ -1,9 +1,7 @@
-using System.Diagnostics;
 using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
-using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Pipe.Models;
 
@@ -15,6 +13,10 @@ public class PipeServer : PipeServiceBase
     private Task? _listenerTask;
 
     private bool _isAuthorized = false;
+
+    // New at each start. The GUI finds the pipe only through the session file.
+    private string _pipeName = PipeSession.CreatePipeName();
+    private bool _isPipeNamePublished;
 
     private static PipeServer? _instance;
     private static readonly object SyncRoot = new object();
@@ -58,30 +60,37 @@ public class PipeServer : PipeServiceBase
             {
                 var ps = PipeAccessPolicy.CreatePipeSecurity();
 
+                // FirstPipeInstance: if a pipe with this name exists, the creation fails. Thus the
+                // tray never adds an instance to a pipe that another program created.
                 PipeStream = NamedPipeServerStreamAcl.Create(
-                    SharedConstants.PipeName,
+                    _pipeName,
                     PipeDirection.InOut,
                     _maxServerInstances,
                     PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous,
+                    PipeOptions.Asynchronous | PipeOptions.FirstPipeInstance,
                     inBufferSize: 0,
                     outBufferSize: 0,
                     pipeSecurity: ps);
+
+                // Published only after the pipe exists, so no other program can create a pipe
+                // with this name first.
+                if (!_isPipeNamePublished)
+                {
+                    PipeSessionWriter.Publish(_pipeName);
+                    _isPipeNamePublished = true;
+                }
             }
             catch (Exception ex)
             {
-                if (IsAnotherTrayRunning())
-                {
-                    Logger?.CreateDebugLog(nameof(PipeServer),
-                        $"Terminating PID={Environment.ProcessId}: pipe creation failed and another tray instance is running. " +
-                        $"Exception: {ex}");
-                    Process.GetCurrentProcess().Kill();
-                    return;
-                }
+                PipeStream?.Dispose();
+                PipeStream = null;
 
-                // Another process took the name while the pipe was being recreated. Clients check
-                // that the server is this tray, so waiting for the name to be released is enough.
-                Logger?.CreateWarningLog(nameof(PipeServer), $"Cannot create the pipe, retrying: {ex.Message}");
+                // The desktop user can read the published name. Thus a program of that user can
+                // create a pipe with it while the tray creates the next instance. A new name is
+                // unknown to that program until the tray has created the pipe and published it.
+                _pipeName = PipeSession.CreatePipeName();
+                _isPipeNamePublished = false;
+                Logger?.CreateWarningLog(nameof(PipeServer), $"Cannot create or publish the pipe, retrying with a new name: {ex.Message}");
                 try
                 { await Task.Delay(TimeSpan.FromSeconds(2), CancellationToken ?? default); }
                 catch (OperationCanceledException) { break; }
@@ -167,21 +176,6 @@ public class PipeServer : PipeServiceBase
         }
     }
 
-    private static bool IsAnotherTrayRunning()
-    {
-        using var current = Process.GetCurrentProcess();
-        Process[] trays = Process.GetProcessesByName(current.ProcessName);
-        try
-        {
-            return trays.Any(process => process.Id != current.Id);
-        }
-        finally
-        {
-            foreach (var process in trays)
-                process.Dispose();
-        }
-    }
-
     // Compared in constant time, so the time of a wrong answer tells nothing about the secret.
     private static bool SecretEquals(string? value, string secret) =>
         value != null && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
@@ -193,8 +187,8 @@ public class PipeServer : PipeServiceBase
         {
             if (messageModel.MessageType == ServiceMessageIds.RequestAuth)
             {
-                // An empty key (the key file could not be written) must not let any client in.
-                string key = PipeSessionKeyWriter.Key;
+                // An empty key must never let a client in.
+                string key = PipeSessionWriter.Key;
                 if (!string.IsNullOrEmpty(key) &&
                     messageModel.MessageData != null && SecretEquals(messageModel.MessageData["GUID"], key))
                 {
