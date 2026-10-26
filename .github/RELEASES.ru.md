@@ -12,13 +12,15 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 | Задание | Шаги |
 |-----|-------|
+| `secrets` | Работает на Ubuntu. Получает всю историю без сохранённого токена. Скачивает gitleaks 8.30.1 и проверяет архив по SHA-256. Проверяет файлы с `.gitleaks.toml`. Проверяет коммиты, которые добавляет pull request или push (`base..HEAD`); более старая история не проверяется. Находка завершает задание с ошибкой. |
 | `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. Восстанавливает пакеты этих четырёх проектов, `CDPIUI` и `CDPIUI.Tests` с `NuGetAuditMode=all` и завершается с ошибкой, если у прямого или транзитивного пакета есть известная уязвимость средней или более высокой серьёзности (предупреждения NU1902–NU1904 становятся ошибками). |
 | `gui` | Запускает `build_portable.ps1` и `check_setup_files.ps1`. Собирает MSI. Загружает `NewSetup/bin/**/*.msi` как артефакт `setup-msi` на 7 дней. |
 | `tools` | Устанавливает .NET 8 SDK. Собирает `Update/Update.csproj` и `EditHostFile/EditHostFile.csproj` (x64) в конфигурации Release с помощью `dotnet build`. Публикует каждый проект одним файлом, зависящим от среды выполнения (`win-x64`), в `artifacts/tools/<проект>`. Завершается с ошибкой, если в папке публикации есть другой файл, кроме файла `.exe`. Собирает `CDPIUI.ElevatedLauncher` и публикует его с Native AOT в `artifacts/tools/launcher` с `TreatWarningsAsErrors`: предупреждение обрезки или AOT завершает задание с ошибкой. Завершается с ошибкой, если в папке есть другой файл, кроме `CDPIUI_ElevatedLauncher.exe`, или если этот файл — сборка .NET. |
 
-У задания `gui` включён `continue-on-error`. Для сборки WinUI нужны фид CommunityToolkit Labs и
-инструменты Windows App SDK. Задание носит только информационный характер, пока сборку нельзя
-воспроизвести на hosted runners.
+Каждое задание должно пройти. Задание `gui` блокирует проверку так же, как остальные.
+
+Workflow ссылаются на каждое действие (action) по полному SHA коммита. Тег может указывать на
+другой код, SHA — нет. Комментарий после SHA указывает тег версии.
 
 ## Файлы релиза (`workflows/build_and_patch.yml`)
 

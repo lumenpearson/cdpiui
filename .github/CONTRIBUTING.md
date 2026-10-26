@@ -77,11 +77,16 @@ Some notes about these commands:
 
 The workflow `.github/workflows/ci.yml` does these checks:
 
+- It scans the files and the new commits for secrets with gitleaks and `.gitleaks.toml` (job `secrets`).
 - It builds the libraries, runs the unit tests and checks the NuGet packages for known vulnerabilities (job `libraries`).
 - It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
 - It builds `Update` and `EditHostFile` and publishes each tool as a single file. It publishes `CDPIUI.ElevatedLauncher` with Native AOT and fails on a trim or AOT warning (job `tools`).
 
-The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/RELEASES.md](RELEASES.md).
+All jobs must pass before you ask for a review. Refer to [.github/RELEASES.md](RELEASES.md).
+
+The workflows refer to each action by its full commit SHA, with the version tag in a comment. To update an action, replace the SHA with the SHA of the new tag and change the comment.
+
+If the secret scan finds a false positive, add a narrow allowlist entry to `.gitleaks.toml`. If it finds a real secret, revoke the secret first. Then remove it from the branch.
 
 ## Project structure
 

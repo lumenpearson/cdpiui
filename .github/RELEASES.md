@@ -12,13 +12,15 @@ CI runs on pushes to `main`, `dev` and `fix/**`, and on pull requests. It has re
 
 | Job | Steps |
 |-----|-------|
+| `secrets` | Runs on Ubuntu. Checks out the full history without a stored token. Downloads gitleaks 8.30.1 and checks the archive against its SHA-256. Scans the files with `.gitleaks.toml`. Scans the commits that the pull request or the push adds (`base..HEAD`); older history is not scanned. A finding fails the job. |
 | `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores these four projects, `CDPIUI` and `CDPIUI.Tests` with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
 | `gui` | Runs `build_portable.ps1` and `check_setup_files.ps1`. Builds the MSI. Uploads `NewSetup/bin/**/*.msi` as the `setup-msi` artifact for 7 days. |
 | `tools` | Installs the .NET 8 SDK. Builds `Update/Update.csproj` and `EditHostFile/EditHostFile.csproj` (x64) in Release with `dotnet build`. Publishes each project as a framework-dependent single file (`win-x64`) to `artifacts/tools/<project>`. Fails if the publish folder contains a file other than the `.exe` file. Builds `CDPIUI.ElevatedLauncher` and publishes it with Native AOT to `artifacts/tools/launcher`, with `TreatWarningsAsErrors`: a trim or AOT warning fails the job. Fails if the folder contains a file other than `CDPIUI_ElevatedLauncher.exe` or if this file is a .NET assembly. |
 
-The `gui` job has `continue-on-error`. The WinUI build needs the CommunityToolkit Labs feed and
-the Windows App SDK tools. The job gives only information until the build is reproducible on
-hosted runners.
+Each job must pass. The `gui` job blocks the check like the other jobs.
+
+The workflows refer to each action by its full commit SHA. A tag can move to other code; a SHA
+cannot. The comment after the SHA gives the version tag.
 
 ## Release files (`workflows/build_and_patch.yml`)
 

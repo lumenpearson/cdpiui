@@ -91,7 +91,7 @@
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
 
-Каждый push в ветки `main`, `dev` и `fix/**` и каждый pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек, тесты и проверка пакетов NuGet на известные уязвимости, сборка приложения и `Setup.msi` (это задание не блокирует проверку), сборка `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
+Каждый push в ветки `main`, `dev` и `fix/**` и каждый pull request проверяется в CI (`.github/workflows/ci.yml`): поиск секретов (gitleaks), сборка библиотек, тесты и проверка пакетов NuGet на известные уязвимости, сборка приложения и `Setup.msi`, сборка `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
 
 ## Документация
 
