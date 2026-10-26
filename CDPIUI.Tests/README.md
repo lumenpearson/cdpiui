@@ -59,6 +59,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Core` | `LScriptCoreTests` | LScript conditions, nested arguments and the parse of condition strings |
 | `Core` | `ProcessServiceTests` | Quiet flag in process arguments |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Proxy address, port and format parse |
+| `Core` | `StoreRequestCredentialsTests` | Credentials of Store requests: the repository token only in direct requests to the repository hosts, the proxy key only in proxy requests |
 | `Core` | `ReplaceVariablesTests`, `ReplaceFilesPathTests` | Variable replacement and file path replacement in presets |
 | `Core` | `VersionHelperTests` | Version comparison |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Conversion of Zapret Legacy arguments to Zapret2 (with the expected files in `TestData\Zapret1ToZapret2`) |
