@@ -3,9 +3,22 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 
+// Update.exe compiles this file as well (linked in Update.csproj): it must not load
+// CDPIUI.Shared.dll from the folder it replaces, and it must apply the limits of the tray.
+// Update.exe has no nullable context of its own.
+#nullable enable
+#if UPDATE_TOOL
+namespace Update;
+#else
 namespace CDPIUI.Shared.Basic.Filesystem;
+#endif
 
-public static class ArchivePaths
+#if UPDATE_TOOL
+internal
+#else
+public
+#endif
+static class ArchivePaths
 {
     // Limits for archives from the Store, local packs and application patches. The largest
     // real packages are about a hundred megabytes; a zip bomb is far above these values.

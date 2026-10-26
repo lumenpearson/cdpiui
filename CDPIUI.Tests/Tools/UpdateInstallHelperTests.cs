@@ -176,6 +176,20 @@ public class UpdateInstallHelperTests : IDisposable
     }
 
     [Fact]
+    public async Task ArchiveOverTheLimitsStopsTheUpdate()
+    {
+        // A file that is compressed far more than a real one: the tray rejects such a package,
+        // and the tool also rejects it before it extracts anything.
+        WriteArchive(("CDPIUI/CDPIUI.exe", "exe"), ("CDPIUI/bomb.bin", new string('a', 4 * 1024 * 1024)));
+
+        var helper = CreateHelper();
+        Assert.Null(await helper.StageAsync());
+        Assert.Equal(InstallError.ExtractingFile, helper.FinishStatus);
+        Assert.False(File.Exists(Staged("CDPIUI.exe")));
+        Assert.False(File.Exists(Staged("bomb.bin")));
+    }
+
+    [Fact]
     public async Task ArchiveWithoutFilesStopsTheUpdate()
     {
         WriteArchive(("requirements.json", "{}"));

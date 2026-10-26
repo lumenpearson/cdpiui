@@ -158,6 +158,9 @@ public class InstallHelper
 
             using (var zip = ZipFile.OpenRead(_archiveFilePath))
             {
+                // The tray checked the same limits before it staged the package. The check here
+                // also covers a package that reaches the tool in another way.
+                ArchivePaths.EnsureWithinLimits(zip.Entries);
                 var fileEntries = GetFileEntries(zip);
 
                 int totalFiles = fileEntries.Count;
@@ -230,14 +233,11 @@ public class InstallHelper
             .ToList();
     }
 
-    private static async Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
+    private static Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
-        using (var stream = entry.Open())
-        using (var outFile = new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None))
-        {
-            await stream.CopyToAsync(outFile);
-        }
+        // An entry that gives more data than its header says stops the update, as in the tray.
+        return Task.Run(() => ArchivePaths.ExtractToFileBounded(entry, stagedPath));
     }
 
     /// <summary>
