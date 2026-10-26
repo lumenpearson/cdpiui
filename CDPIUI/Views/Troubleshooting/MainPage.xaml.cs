@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Specialized;
 using CDPIUI.Commands;
 using CDPIUI.Controls.Default;
 using CDPIUI.Helper;
@@ -5,8 +7,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Specialized;
 using Windows.Foundation.Metadata;
 using Windows.UI.Popups;
 using WinRT.Interop;
@@ -22,7 +22,7 @@ namespace CDPIUI.Views.Troubleshooting;
 /// </summary>
 public sealed partial class MainPage : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public MainPage()
     {
         InitializeComponent();
@@ -63,7 +63,7 @@ public sealed partial class MainPage : TemplatePage
     private void NotOneConfigDoesWorkCard_Click(object sender, RoutedEventArgs e)
     {
         Frame.Navigate(typeof(WorkPage),
-            new NameValueCollection() { {"action", NavigationParameters.BeginBasicCheck.ToString() } },
+            new NameValueCollection() { { "action", NavigationParameters.BeginBasicCheck.ToString() } },
             new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
     }
 
@@ -77,7 +77,7 @@ public sealed partial class MainPage : TemplatePage
         Commands.CommandsHandler.HandleCommand(
             "cdpiui://Help/TroubleshootingComponentexceptions/BasicTroubleshooting/");
 
-        var window = await((App)Application.Current).SafeCreateNewWindow<TroubleshootingWindow>();
+        var window = await ((App)Application.Current).SafeCreateNewWindow<TroubleshootingWindow>();
         window.Close();
     }
 

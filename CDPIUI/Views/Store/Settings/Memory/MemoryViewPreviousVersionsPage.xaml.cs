@@ -1,3 +1,7 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Default;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Data;
@@ -8,17 +12,13 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.Store.Settings.Memory;
 
 public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
 {
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
     internal static string PreviousVersionsDirectory => Path.Combine(Directories.CurrentDirectory, ".old");
     private string RollbackPath => Path.Combine(PreviousVersionsDirectory, "GDPIUI-Rollback.exe");
 
@@ -29,9 +29,9 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
         ElementToAnimateForwardConnectedAnimation = NavGrid;
         BreadcrumbBar.ItemsSource = new BreadcrumbBarModel[]
         {
-            new() { DisplayName = localizer.GetLocalizedString("Settings"), Tag = typeof(SettingsPage) },
-            new() { DisplayName = localizer.GetLocalizedString("MemoryUsage"), Tag = typeof(MemoryViewPage) },
-            new() { DisplayName = localizer.GetLocalizedString("MemoryUsageCategoryPreviousVersionsDisplayName"), Tag = GetType() }
+            new() { DisplayName = _localizer.GetLocalizedString("Settings"), Tag = typeof(SettingsPage) },
+            new() { DisplayName = _localizer.GetLocalizedString("MemoryUsage"), Tag = typeof(MemoryViewPage) },
+            new() { DisplayName = _localizer.GetLocalizedString("MemoryUsageCategoryPreviousVersionsDisplayName"), Tag = GetType() }
         };
     }
 
@@ -85,7 +85,8 @@ public sealed partial class MemoryViewPreviousVersionsPage : TemplatePage
         ErrorStackPanel.Visibility = Visibility.Collapsed;
         try
         {
-            if (!File.Exists(RollbackPath)) throw new FileNotFoundException(null, RollbackPath);
+            if (!File.Exists(RollbackPath))
+                throw new FileNotFoundException(null, RollbackPath);
             using var process = Process.Start(new ProcessStartInfo(RollbackPath)
             {
                 WorkingDirectory = PreviousVersionsDirectory,

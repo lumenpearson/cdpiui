@@ -1,25 +1,22 @@
-using CDPIUI.Core.ComponentServices.Helpers;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using CDPIUI.Core.ComponentServices.Configuration;
+using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Shared;
 using CDPIUI.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Unidecode.NET;
+using static CDPIUI.Helper.AddOns.BlockCheck2.BlockCheck2PresetStorageNames;
 
 namespace CDPIUI.Helper.AddOns.BlockCheck2;
 
 public sealed class BlockCheck2PresetStorageService
 {
-    private const string StorageFolderName = "BlockCheck2";
-
     public Task<BlockCheck2PresetStorageResult> SaveAsync(
         string presetName,
         BlockCheck2PresetDraft draft)
@@ -48,12 +45,7 @@ public sealed class BlockCheck2PresetStorageService
         }
 
         string componentId = HardcodedItemIds.ComponentIds[Components.Zapret2];
-        ComponentHelper component = ComponentItemsLoaderHelper.Instance
-            .GetComponentHelperFromId(componentId);
-        string executablePath = component?.GetExecutablePath();
-        string componentDirectory = string.IsNullOrWhiteSpace(executablePath)
-            ? null
-            : Path.GetDirectoryName(executablePath);
+        string componentDirectory = GetComponentDirectory(componentId);
         if (string.IsNullOrWhiteSpace(componentDirectory) || !Directory.Exists(componentDirectory))
         {
             return BlockCheck2PresetStorageResult.Failed("COMPONENT_UNAVAILABLE");
@@ -61,105 +53,34 @@ public sealed class BlockCheck2PresetStorageService
 
         string userStorage = Directories.StoreLocalUserItemDirectory;
         Directory.CreateDirectory(userStorage);
-        string storageId = CreateStorageId(normalizedName, userStorage);
-        string listRoot = Path.Combine(
-            userStorage,
-            SharedConstants.LocalUserItemSiteListsFolder,
-            StorageFolderName,
-            storageId);
-        string binRoot = Path.Combine(
-            userStorage,
-            SharedConstants.LocalUserItemBinsFolder,
-            StorageFolderName,
-            storageId);
+        StorageTarget target = CreateStorageTarget(normalizedName, userStorage);
         List<string> createdRoots = [];
 
         try
         {
-            List<FileReplacement> replacements = [];
-            Dictionary<string, string> copiedFiles = new(StringComparer.OrdinalIgnoreCase);
-            int copiedFileCount = 0;
-
-            foreach (PresetFileSnapshot file in draft.Files)
+            FileStagingResult staging = StageFiles(
+                draft.Files,
+                componentDirectory,
+                userStorage,
+                target,
+                createdRoots);
+            if (staging.HasMissingFile)
             {
-                string sourcePath = ResolveSourcePath(
-                    file.Path,
-                    componentDirectory,
-                    userStorage);
-                if (sourcePath == null)
-                {
-                    Cleanup(createdRoots);
-                    return BlockCheck2PresetStorageResult.Failed(
-                        "FILE_MISSING",
-                        file.Path);
-                }
-
-                if (file.Kind != BlockCheck2PresetFileKind.SiteList &&
-                    IsPathInside(sourcePath, componentDirectory))
-                {
-                    string componentRelativePath = Path.GetRelativePath(
-                            componentDirectory,
-                            sourcePath)
-                        .Replace('\\', '/');
-                    replacements.Add(new FileReplacement(
-                        file.Kind,
-                        file.Path,
-                        componentRelativePath));
-                    continue;
-                }
-
-                string destinationRoot = file.Kind == BlockCheck2PresetFileKind.SiteList
-                    ? listRoot
-                    : binRoot;
-                if (!Directory.Exists(destinationRoot))
-                {
-                    Directory.CreateDirectory(destinationRoot);
-                    createdRoots.Add(destinationRoot);
-                }
-
-                string copyKey = $"{file.Kind}|{sourcePath}";
-                if (!copiedFiles.TryGetValue(copyKey, out string destinationPath))
-                {
-                    destinationPath = GetUniqueDestinationPath(
-                        destinationRoot,
-                        Path.GetFileName(sourcePath));
-                    File.Copy(sourcePath, destinationPath, overwrite: false);
-                    copiedFiles[copyKey] = destinationPath;
-                    copiedFileCount++;
-                }
-
-                string category = file.Kind == BlockCheck2PresetFileKind.SiteList
-                    ? SharedConstants.LocalUserItemSiteListsFolder
-                    : SharedConstants.LocalUserItemBinsFolder;
-                string storedReference = string.Join('/',
-                    "$GETCURRENTDIR()",
-                    category,
-                    StorageFolderName,
-                    storageId,
-                    Path.GetFileName(destinationPath));
-                replacements.Add(new FileReplacement(
-                    file.Kind,
-                    file.Path,
-                    storedReference));
+                Cleanup(createdRoots);
+                return BlockCheck2PresetStorageResult.Failed(
+                    "FILE_MISSING",
+                    staging.MissingReference);
             }
 
-            string startupArguments = RewriteFileReferences(
+            string startupArguments = BlockCheck2PresetReferenceRewriter.RewriteFileReferences(
                 draft.EffectiveArguments,
-                replacements);
-            string configFileName = $"{storageId}.json";
-            ConfigItem config = CreateConfigPageHelper.CreateConfigItem(
-                SharedConstants.LocalUserItemsId,
+                staging.Replacements);
+            string configFileName = $"{target.StorageId}.json";
+            string errorCode = await SaveConfigAsync(
                 normalizedName,
                 componentId,
-                [],
-                [],
-                [],
-                [],
-                startupArguments);
-            string errorCode = await ConfigurationService.SaveConfigItem(
                 configFileName,
-                SharedConstants.LocalUserItemsId,
-                config).ConfigureAwait(false);
+                startupArguments).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(errorCode))
             {
                 Cleanup(createdRoots);
@@ -171,7 +92,7 @@ public sealed class BlockCheck2PresetStorageService
                 Success = true,
                 PresetName = normalizedName,
                 ConfigFileName = configFileName,
-                CopiedFileCount = copiedFileCount,
+                CopiedFileCount = staging.CopiedFileCount,
             };
         }
         catch (Exception exception)
@@ -183,122 +104,154 @@ public sealed class BlockCheck2PresetStorageService
         }
     }
 
-    private static string RewriteFileReferences(
-        string arguments,
-        IReadOnlyList<FileReplacement> replacements)
+    private static string GetComponentDirectory(string componentId)
     {
-        IReadOnlyList<string> tokens = ComponentCommandLineFormatter.Tokenize(arguments);
-        List<string> output = [];
-        for (int index = 0; index < tokens.Count; index++)
-        {
-            string token = tokens[index];
-            int equalsIndex = token.IndexOf('=');
-            string option = equalsIndex >= 0 ? token[..equalsIndex] : token;
-            string value = equalsIndex >= 0 ? token[(equalsIndex + 1)..] : string.Empty;
-            bool usesSeparateValue = false;
-
-            BlockCheck2PresetFileKind? kind = option.Equals("--hostlist", StringComparison.OrdinalIgnoreCase) ||
-                                               option.Equals("--hostlist-exclude", StringComparison.OrdinalIgnoreCase)
-                ? BlockCheck2PresetFileKind.SiteList
-                : option.Equals("--lua-init", StringComparison.OrdinalIgnoreCase)
-                    ? BlockCheck2PresetFileKind.Library
-                    : option.Equals("--blob", StringComparison.OrdinalIgnoreCase)
-                        ? BlockCheck2PresetFileKind.Payload
-                        : null;
-            if (kind == null)
-            {
-                output.Add(token);
-                continue;
-            }
-
-            if (equalsIndex < 0 && index + 1 < tokens.Count && !tokens[index + 1].StartsWith("-", StringComparison.Ordinal))
-            {
-                value = tokens[++index];
-                usesSeparateValue = true;
-            }
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                output.Add(token);
-                continue;
-            }
-
-            string prefix = string.Empty;
-            string reference = value;
-            if (kind == BlockCheck2PresetFileKind.Payload)
-            {
-                string unquoted = value.Trim().Trim('"', '\'');
-                int separatorIndex = unquoted.IndexOf(':');
-                if (separatorIndex < 0)
-                {
-                    // "--blob <value>" lost its value here.
-                    output.Add(token);
-                    if (usesSeparateValue)
-                    {
-                        output.Add(value);
-                    }
-                    continue;
-                }
-                prefix = unquoted[..(separatorIndex + 1)];
-                reference = unquoted[(separatorIndex + 1)..];
-            }
-
-            char sourceMarker = GetSourceMarker(reference);
-            string normalizedReference = NormalizeReference(reference);
-            FileReplacement replacement = replacements.FirstOrDefault(candidate =>
-                candidate.Kind == kind &&
-                string.Equals(
-                    NormalizeReference(candidate.OriginalReference),
-                    normalizedReference,
-                    StringComparison.OrdinalIgnoreCase));
-            if (replacement == null)
-            {
-                output.Add(token);
-                if (usesSeparateValue)
-                {
-                    output.Add(value);
-                }
-                continue;
-            }
-
-            string marker = kind == BlockCheck2PresetFileKind.SiteList
-                ? string.Empty
-                : sourceMarker == '\0'
-                    ? kind == BlockCheck2PresetFileKind.Library ? "@" : string.Empty
-                    : sourceMarker.ToString();
-            string rewrittenValue = prefix + marker + replacement.ReplacementReference;
-            output.Add($"{option}=\"{rewrittenValue.Replace("\"", "\\\"")}\"");
-        }
-        return string.Join(' ', output);
+        ComponentHelper component = ComponentItemsLoaderHelper.Instance
+            .GetComponentHelperFromId(componentId);
+        string executablePath = component?.GetExecutablePath();
+        return string.IsNullOrWhiteSpace(executablePath)
+            ? null
+            : Path.GetDirectoryName(executablePath);
     }
 
-    private static char GetSourceMarker(string reference)
+    private static StorageTarget CreateStorageTarget(string normalizedName, string userStorage)
     {
-        string value = reference.Trim().Trim('"', '\'');
-        if (value.StartsWith("$GETCURRENTDIR()", StringComparison.OrdinalIgnoreCase))
-        {
-            return '\0';
-        }
-        return value.Length > 0 && (value[0] == '@' || value[0] == '$')
-            ? value[0]
-            : '\0';
+        string storageId = CreateStorageId(normalizedName, userStorage);
+        string listRoot = Path.Combine(
+            userStorage,
+            SharedConstants.LocalUserItemSiteListsFolder,
+            StorageFolderName,
+            storageId);
+        string binRoot = Path.Combine(
+            userStorage,
+            SharedConstants.LocalUserItemBinsFolder,
+            StorageFolderName,
+            storageId);
+        return new StorageTarget(storageId, listRoot, binRoot);
     }
 
-    private static string NormalizeReference(string reference)
+    /// <summary>
+    /// Copies the preset files that live outside the component folder into the storage
+    /// folders and collects the references that replace them. Stops at the first file
+    /// that cannot be found and reports it through <see cref="FileStagingResult.HasMissingFile"/>.
+    /// </summary>
+    private static FileStagingResult StageFiles(
+        IReadOnlyList<PresetFileSnapshot> files,
+        string componentDirectory,
+        string userStorage,
+        StorageTarget target,
+        List<string> createdRoots)
     {
-        string value = (reference ?? string.Empty).Trim().Trim('"', '\'');
-        if (value.StartsWith('@'))
+        List<BlockCheck2PresetFileReplacement> replacements = [];
+        Dictionary<string, string> copiedFiles = new(StringComparer.OrdinalIgnoreCase);
+        int copiedFileCount = 0;
+
+        foreach (PresetFileSnapshot file in files)
         {
-            value = value[1..].Trim().Trim('"', '\'');
+            string sourcePath = ResolveSourcePath(
+                file.Path,
+                componentDirectory,
+                userStorage);
+            if (sourcePath == null)
+            {
+                return new FileStagingResult(replacements, copiedFileCount, true, file.Path);
+            }
+
+            if (file.Kind != BlockCheck2PresetFileKind.SiteList &&
+                IsPathInside(sourcePath, componentDirectory))
+            {
+                string componentRelativePath = Path.GetRelativePath(
+                        componentDirectory,
+                        sourcePath)
+                    .Replace('\\', '/');
+                replacements.Add(new BlockCheck2PresetFileReplacement(
+                    file.Kind,
+                    file.Path,
+                    componentRelativePath));
+                continue;
+            }
+
+            string destinationPath = CopyToStorage(
+                file,
+                sourcePath,
+                target,
+                copiedFiles,
+                createdRoots,
+                ref copiedFileCount);
+            replacements.Add(new BlockCheck2PresetFileReplacement(
+                file.Kind,
+                file.Path,
+                CreateStoredReference(file.Kind, target.StorageId, destinationPath)));
         }
-        if (value.StartsWith("$GETCURRENTDIR()", StringComparison.OrdinalIgnoreCase))
+
+        return new FileStagingResult(replacements, copiedFileCount, false, null);
+    }
+
+    private static string CopyToStorage(
+        PresetFileSnapshot file,
+        string sourcePath,
+        StorageTarget target,
+        Dictionary<string, string> copiedFiles,
+        List<string> createdRoots,
+        ref int copiedFileCount)
+    {
+        string destinationRoot = file.Kind == BlockCheck2PresetFileKind.SiteList
+            ? target.ListRoot
+            : target.BinRoot;
+        if (!Directory.Exists(destinationRoot))
         {
-            value = value[1..];
+            Directory.CreateDirectory(destinationRoot);
+            createdRoots.Add(destinationRoot);
         }
-        else if (value.StartsWith('$'))
+
+        string copyKey = $"{file.Kind}|{sourcePath}";
+        if (!copiedFiles.TryGetValue(copyKey, out string destinationPath))
         {
-            value = value[1..].Trim().Trim('"', '\'');
+            destinationPath = GetUniqueDestinationPath(
+                destinationRoot,
+                Path.GetFileName(sourcePath));
+            File.Copy(sourcePath, destinationPath, overwrite: false);
+            copiedFiles[copyKey] = destinationPath;
+            copiedFileCount++;
         }
-        return value.Replace('\\', '/');
+        return destinationPath;
+    }
+
+    private static string CreateStoredReference(
+        BlockCheck2PresetFileKind kind,
+        string storageId,
+        string destinationPath)
+    {
+        string category = kind == BlockCheck2PresetFileKind.SiteList
+            ? SharedConstants.LocalUserItemSiteListsFolder
+            : SharedConstants.LocalUserItemBinsFolder;
+        return string.Join('/',
+            "$GETCURRENTDIR()",
+            category,
+            StorageFolderName,
+            storageId,
+            Path.GetFileName(destinationPath));
+    }
+
+    private static Task<string> SaveConfigAsync(
+        string normalizedName,
+        string componentId,
+        string configFileName,
+        string startupArguments)
+    {
+        ConfigItem config = CreateConfigPageHelper.CreateConfigItem(
+            SharedConstants.LocalUserItemsId,
+            normalizedName,
+            componentId,
+            [],
+            [],
+            [],
+            [],
+            startupArguments);
+        return ConfigurationService.SaveConfigItem(
+            configFileName,
+            SharedConstants.LocalUserItemsId,
+            config);
     }
 
     private static string ResolveSourcePath(
@@ -306,7 +259,7 @@ public sealed class BlockCheck2PresetStorageService
         string componentDirectory,
         string userStorage)
     {
-        string normalized = NormalizeReference(reference);
+        string normalized = BlockCheck2PresetReferenceRewriter.NormalizeReference(reference);
         if (normalized.StartsWith("GETCURRENTDIR()", StringComparison.OrdinalIgnoreCase))
         {
             string suffix = normalized["GETCURRENTDIR()".Length..]
@@ -348,82 +301,6 @@ public sealed class BlockCheck2PresetStorageService
                    StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string GetUniqueDestinationPath(string directory, string fileName)
-    {
-        string safeName = CreateAsciiFileName(fileName);
-        string candidate = Path.Combine(directory, safeName);
-        string stem = Path.GetFileNameWithoutExtension(safeName);
-        string extension = Path.GetExtension(safeName);
-        int suffix = 2;
-        while (File.Exists(candidate))
-        {
-            candidate = Path.Combine(directory, $"{stem}_{suffix++}{extension}");
-        }
-        return candidate;
-    }
-
-    private static string CreateStorageId(string presetName, string userStorage)
-    {
-        string slug = CreateAsciiSlug(presetName, 48);
-        if (slug.Length == 0)
-        {
-            slug = "preset";
-        }
-
-        string baseId = $"{slug}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-        string candidate = baseId;
-        int suffix = 2;
-        while (StorageIdExists(userStorage, candidate))
-        {
-            candidate = $"{baseId}_{suffix++}";
-        }
-        return candidate;
-    }
-
-    private static bool StorageIdExists(string userStorage, string storageId)
-    {
-        return Directory.Exists(Path.Combine(
-                   userStorage,
-                   SharedConstants.LocalUserItemSiteListsFolder,
-                   StorageFolderName,
-                   storageId)) ||
-               Directory.Exists(Path.Combine(
-                   userStorage,
-                   SharedConstants.LocalUserItemBinsFolder,
-                   StorageFolderName,
-                   storageId)) ||
-               File.Exists(Path.Combine(userStorage, $"{storageId}.json"));
-    }
-
-    private static string CreateAsciiFileName(string fileName)
-    {
-        string sourceName = string.IsNullOrWhiteSpace(fileName)
-            ? "dependency.bin"
-            : Path.GetFileName(fileName);
-        string stem = CreateAsciiSlug(Path.GetFileNameWithoutExtension(sourceName), 120);
-        if (stem.Length == 0)
-        {
-            stem = "dependency";
-        }
-
-        string extension = Path.GetExtension(sourceName).Unidecode();
-        extension = Regex.Replace(extension, @"[^A-Za-z0-9.]", string.Empty);
-        return stem + extension;
-    }
-
-    private static string CreateAsciiSlug(string value, int maxLength)
-    {
-        string slug = (value ?? string.Empty).Unidecode();
-        slug = Regex.Replace(slug, @"\s+", "_");
-        slug = Regex.Replace(slug, @"[^A-Za-z0-9_-]", "_");
-        slug = Regex.Replace(slug, @"_+", "_").Trim('_', '-');
-        if (slug.Length > maxLength)
-        {
-            slug = slug[..maxLength].TrimEnd('_', '-');
-        }
-        return slug;
-    }
-
     private static void Cleanup(IEnumerable<string> roots)
     {
         foreach (string root in roots.Distinct(StringComparer.OrdinalIgnoreCase))
@@ -442,10 +319,16 @@ public sealed class BlockCheck2PresetStorageService
         }
     }
 
-    private sealed record FileReplacement(
-        BlockCheck2PresetFileKind Kind,
-        string OriginalReference,
-        string ReplacementReference);
+    private sealed record StorageTarget(
+        string StorageId,
+        string ListRoot,
+        string BinRoot);
+
+    private sealed record FileStagingResult(
+        IReadOnlyList<BlockCheck2PresetFileReplacement> Replacements,
+        int CopiedFileCount,
+        bool HasMissingFile,
+        string MissingReference);
 
     private sealed record PresetFileSnapshot(
         string Path,
@@ -455,22 +338,4 @@ public sealed class BlockCheck2PresetStorageService
         string EffectiveArguments,
         bool CanUseConfig,
         IReadOnlyList<PresetFileSnapshot> Files);
-}
-
-public sealed class BlockCheck2PresetStorageResult
-{
-    public bool Success { get; init; }
-    public string PresetName { get; init; } = string.Empty;
-    public string ConfigFileName { get; init; } = string.Empty;
-    public int CopiedFileCount { get; init; }
-    public string ErrorCode { get; init; } = string.Empty;
-    public string ErrorDetails { get; init; } = string.Empty;
-
-    public static BlockCheck2PresetStorageResult Failed(
-        string errorCode,
-        string errorDetails = null) => new()
-        {
-            ErrorCode = errorCode,
-            ErrorDetails = errorDetails ?? string.Empty,
-        };
 }

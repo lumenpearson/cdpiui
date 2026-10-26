@@ -18,17 +18,17 @@ public class StrategyCatalogValidatorTests
         bool preHost = false,
         bool circular = true,
         bool noActions = false) => new()
-    {
-        Id = id,
-        Protocols = protocols ?? [BlockCheckProtocol.Tls12],
-        IpVersions = ipVersions ?? [BlockCheckIpVersion.IPv4],
-        BaseCost = cost,
-        ScanTier = tier,
-        RequiresPreHost = preHost,
-        SupportsCircular = circular,
-        Blobs = blobs ?? [],
-        Actions = noActions ? [] : [action ?? new LuaActionDefinition { Function = "fake" }],
-    };
+        {
+            Id = id,
+            Protocols = protocols ?? [BlockCheckProtocol.Tls12],
+            IpVersions = ipVersions ?? [BlockCheckIpVersion.IPv4],
+            BaseCost = cost,
+            ScanTier = tier,
+            RequiresPreHost = preHost,
+            SupportsCircular = circular,
+            Blobs = blobs ?? [],
+            Actions = noActions ? [] : [action ?? new LuaActionDefinition { Function = "fake" }],
+        };
 
     private static StrategyCatalog Catalog(params StrategyDefinition[] strategies) => new()
     {
@@ -248,14 +248,14 @@ public class StrategyCatalogValidatorTests
         BlockCheckProtocol protocol = BlockCheckProtocol.Tls12,
         BlockCheckIpVersion ipVersion = BlockCheckIpVersion.IPv4,
         int? port = null) => new()
-    {
-        Id = id,
-        Host = host,
-        Path = path,
-        Protocol = protocol,
-        IpVersion = ipVersion,
-        CustomPort = port,
-    };
+        {
+            Id = id,
+            Host = host,
+            Path = path,
+            Protocol = protocol,
+            IpVersion = ipVersion,
+            CustomPort = port,
+        };
 
     [Fact]
     public void ValidTargetsHaveNoIssues()

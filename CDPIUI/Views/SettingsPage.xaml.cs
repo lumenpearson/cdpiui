@@ -1,10 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Resources;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Core;
 using CDPIUI.Core.Communication;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Converters;
 using CDPIUI.Core.System;
-
+using CDPIUI.Helper.Basic;
+using CDPIUI.Helper.UserExperience;
 using CDPIUI.Properties;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
 using CDPIUI.Views.Settings;
 using CDPIUI.Views.Store;
@@ -18,206 +29,193 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Resources;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel.Resources;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
 using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
-using CDPIUI.Shared.Extensions;
-using CDPIUI.Controls.Default;
-using CDPIUI.Helper.Basic;
-using CDPIUI.Helper.UserExperience;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views
+namespace CDPIUI.Views;
+
+public class GridColumnsCountModel
 {
-    public class GridColumnsCountModel
+    public int Count { get; set; }
+    public string DisplayName { get; set; }
+}
+public class ThemeSelectModel
+{
+    public ElementTheme Id { get; set; }
+    public string DisplayName { get; set; }
+}
+
+public sealed partial class SettingsPage : TemplatePage
+{
+    private ObservableCollection<ComboBoxModel> _components = [];
+
+    public static readonly List<Type> MainSettingsNavigationSupportedPages = [
+        typeof(SettingsPage),
+        typeof(PersonalizePage),
+        typeof(AutorunPage)
+        ];
+
+    private ILocalizer _localizer = Localizer.Get();
+    public SettingsPage()
     {
-        public int Count { get; set; }
-        public string DisplayName { get; set; }
+        InitializeComponent();
+
+        IsForwardAnimationToPageAvailable = true;
+        ElementToAnimateForwardConnectedAnimation = NavGrid;
+        IsBackwardAnimationToPageAvailable = true;
+        ElementToAnimateBackwardConnectedAnimation = NavGrid;
+
+        this.NavigationCacheMode = NavigationCacheMode.Disabled;
+
+        ComponentErrorWindowSetting.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true);
+        ProcessStateToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState");
+        AppRunningInTrayToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide");
+        AppUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "appUpdates");
+        StoreUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "storeUpdates");
+        ConditionalLaunchActionToast.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>(
+            "NOTIFICATIONS",
+            "conditionalLaunchActions",
+            defaultValue: true);
+        Zapret2LegacyHashValidationToggleSwitch.IsOn = SettingsManager.Instance.GetValueOrDefault(
+            Zapret2LegacyConfigService.HashValidationSettingsGroup,
+            Zapret2LegacyConfigService.HashValidationSettingsKey,
+            defaultValue: Zapret2LegacyConfigService.DefaultHashValidationValue);
+
+
+
+
+
+        UpdateTextFileOpenSettings();
+
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
+        CreateBreadcrumbBarNavigation();
     }
-    public class ThemeSelectModel
+
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
+    public void CreateBreadcrumbBarNavigation()
     {
-        public ElementTheme Id { get; set; }
-        public string DisplayName { get; set; }
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
+        {
+            DisplayName = _localizer.GetLocalizedString("Settings"),
+            Tag = this.GetType()
+        });
     }
-    
-    public sealed partial class SettingsPage : TemplatePage
+
+    private void PrepareAnimate()
     {
-        private ObservableCollection<ComboBoxModel> components = [];
+        PrepareToConnectedForwardAnimate(NavGrid);
+    }
 
-        public static readonly List<Type> MainSettingsNavigationSupportedPages = [
-            typeof(SettingsPage),
-            typeof(PersonalizePage),
-            typeof(AutorunPage)
-            ];
+    private void UpdateTextFileOpenSettings()
+    {
+        int mode = SettingsManager.Instance.GetValue<int>("FILEOPENACTIONS", "mode");
+        string appPath = SettingsManager.Instance.GetValue<string>("FILEOPENACTIONS", "applicationPath");
+        OpenComponentSiteListToEditCard.Description =
+            string.Format(_localizer.GetLocalizedString(
+                "OpenComponentSiteListToEditCardDescription"),
+                mode == (int)TextFileOpenModes.UserChoose ? Path.GetFileNameWithoutExtension(appPath).FirstCharToUpper() : _localizer.GetLocalizedString("FollowSystem"));
+    }
 
-        private ILocalizer localizer = Localizer.Get();
-        public SettingsPage()
+
+    private void ComponentErrorWindowSetting_Click(object sender, RoutedEventArgs e) =>
+        SettingsManager.Instance.SetValue("NOTIFICATIONS", "componentErrorWindow", ComponentErrorWindowSetting.IsChecked == true);
+
+    private void ProcessStateToast_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue("NOTIFICATIONS", "procState", ProcessStateToast.IsChecked);
+        _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+    }
+
+    private void AppRunningInTrayToast_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue("NOTIFICATIONS", "trayHide", AppRunningInTrayToast.IsChecked);
+        _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+
+    }
+
+    private void AppUpdatesToast_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue("NOTIFICATIONS", "appUpdates", AppUpdatesToast.IsChecked);
+        _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+    }
+
+    private void StoreUpdatesToast_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue("NOTIFICATIONS", "storeUpdates", StoreUpdatesToast.IsChecked);
+        _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+    }
+
+    private void ConditionalLaunchActionToast_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue(
+            "NOTIFICATIONS",
+            "conditionalLaunchActions",
+            ConditionalLaunchActionToast.IsChecked);
+        _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+    }
+
+    private void Zapret2LegacyHashValidationToggleSwitch_Toggled(
+        object sender,
+        RoutedEventArgs e)
+    {
+        SettingsManager.Instance.SetValue(
+            Zapret2LegacyConfigService.HashValidationSettingsGroup,
+            Zapret2LegacyConfigService.HashValidationSettingsKey,
+            Zapret2LegacyHashValidationToggleSwitch.IsOn);
+    }
+
+
+    private async void OpenComponentSiteListToEditCard_Click(object sender, RoutedEventArgs e)
+    {
+        EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
         {
-            InitializeComponent();
+            XamlRoot = this.XamlRoot
+        };
+        await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
+        UpdateTextFileOpenSettings();
+    }
 
-            IsForwardAnimationToPageAvailable = true;
-            ElementToAnimateForwardConnectedAnimation = NavGrid;
-            IsBackwardAnimationToPageAvailable = true;
-            ElementToAnimateBackwardConnectedAnimation = NavGrid;
+    private async void OpenStoreSettingsCard_Click(object sender, RoutedEventArgs e)
+    {
+        var window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
+        window.NavigateSubPage(typeof(Views.Store.SettingsPage), null, new DrillInNavigationTransitionInfo());
+    }
 
-            this.NavigationCacheMode = NavigationCacheMode.Disabled;            
+    private void InstallFileAssociationsButton_Click(object sender, RoutedEventArgs e)
+    {
+        FileAssociationSettingsCard.IsEnabled = false;
 
-            ComponentErrorWindowSetting.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>("NOTIFICATIONS", "componentErrorWindow", defaultValue: true);
-            ProcessStateToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "procState");
-            AppRunningInTrayToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "trayHide");
-            AppUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "appUpdates");
-            StoreUpdatesToast.IsChecked = SettingsManager.Instance.GetValue<bool>("NOTIFICATIONS", "storeUpdates");
-            ConditionalLaunchActionToast.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>(
-                "NOTIFICATIONS",
-                "conditionalLaunchActions",
-                defaultValue: true);
-            Zapret2LegacyHashValidationToggleSwitch.IsOn = SettingsManager.Instance.GetValueOrDefault(
-                Zapret2LegacyConfigService.HashValidationSettingsGroup,
-                Zapret2LegacyConfigService.HashValidationSettingsKey,
-                defaultValue: Zapret2LegacyConfigService.DefaultHashValidationValue);
-
-            
-
-            
-
-            UpdateTextFileOpenSettings();
-
-            BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
-            CreateBreadcrumbBarNavigation();
-        }
-
-        private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
-        public void CreateBreadcrumbBarNavigation()
+        try
         {
-            BreadcrumbBarModels.Clear();
-            BreadcrumbBarModels.Add(new()
-            {
-                DisplayName = localizer.GetLocalizedString("Settings"),
-                Tag = this.GetType()
-            });
+            FileAssociationService.RegisterManually();
         }
-
-        private void PrepareAnimate()
+        finally
         {
-            PrepareToConnectedForwardAnimate(NavGrid);
+            FileAssociationSettingsCard.IsEnabled = true;
         }
+    }
 
-        private void UpdateTextFileOpenSettings()
-        {
-            int mode = SettingsManager.Instance.GetValue<int>("FILEOPENACTIONS", "mode");
-            string appPath = SettingsManager.Instance.GetValue<string>("FILEOPENACTIONS", "applicationPath");
-            OpenComponentSiteListToEditCard.Description =
-                string.Format(localizer.GetLocalizedString(
-                    "OpenComponentSiteListToEditCardDescription"),
-                    mode == (int)TextFileOpenModes.UserChoose ? Path.GetFileNameWithoutExtension(appPath).FirstCharToUpper() : localizer.GetLocalizedString("FollowSystem"));
-        }
-        
 
-        private void ComponentErrorWindowSetting_Click(object sender, RoutedEventArgs e) =>
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "componentErrorWindow", ComponentErrorWindowSetting.IsChecked == true);
 
-        private void ProcessStateToast_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "procState", ProcessStateToast.IsChecked);
-            _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
-        }
+    private void PersonalizationSettingsCard_Click(object sender, RoutedEventArgs e)
+    {
+        PrepareAnimate();
 
-        private void AppRunningInTrayToast_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "trayHide", AppRunningInTrayToast.IsChecked);
-            _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
+        Frame.Navigate(typeof(PersonalizePage), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+    }
 
-        }
+    private void AutorunSettingsCard_Click(object sender, RoutedEventArgs e)
+    {
+        PrepareAnimate();
 
-        private void AppUpdatesToast_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "appUpdates", AppUpdatesToast.IsChecked);
-            _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
-        }
-
-        private void StoreUpdatesToast_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue("NOTIFICATIONS", "storeUpdates", StoreUpdatesToast.IsChecked);
-            _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
-        }
-
-        private void ConditionalLaunchActionToast_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue(
-                "NOTIFICATIONS",
-                "conditionalLaunchActions",
-                ConditionalLaunchActionToast.IsChecked);
-            _ = PipeHelper.SendSettingsPacket(Shared.Pipe.Models.SettingsMessageIds.ReloadSettings);
-        }
-
-        private void Zapret2LegacyHashValidationToggleSwitch_Toggled(
-            object sender,
-            RoutedEventArgs e)
-        {
-            SettingsManager.Instance.SetValue(
-                Zapret2LegacyConfigService.HashValidationSettingsGroup,
-                Zapret2LegacyConfigService.HashValidationSettingsKey,
-                Zapret2LegacyHashValidationToggleSwitch.IsOn);
-        }
-        
-
-        private async void OpenComponentSiteListToEditCard_Click(object sender, RoutedEventArgs e)
-        {
-            EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
-            {
-                XamlRoot = this.XamlRoot
-            };
-            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
-            UpdateTextFileOpenSettings();
-        }
-
-        private async void OpenStoreSettingsCard_Click(object sender, RoutedEventArgs e)
-        {
-            var window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
-            window.NavigateSubPage(typeof(Views.Store.SettingsPage), null, new DrillInNavigationTransitionInfo());
-        }
-
-        private void InstallFileAssociationsButton_Click(object sender, RoutedEventArgs e)
-        {
-            FileAssociationSettingsCard.IsEnabled = false;
-
-            try
-            {
-                FileAssociationService.RegisterManually();
-            }
-            finally
-            {
-                FileAssociationSettingsCard.IsEnabled = true;
-            }
-        }
-
-        
-
-        private void PersonalizationSettingsCard_Click(object sender, RoutedEventArgs e)
-        {
-            PrepareAnimate();
-
-            Frame.Navigate(typeof(PersonalizePage), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-        }
-
-        private void AutorunSettingsCard_Click(object sender, RoutedEventArgs e)
-        {
-            PrepareAnimate();
-
-            Frame.Navigate(typeof(AutorunPage), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-        }
+        Frame.Navigate(typeof(AutorunPage), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
     }
 }

@@ -1,6 +1,6 @@
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 
 namespace CDPIUI.Controls.ComponentSettings;
 
@@ -49,15 +49,18 @@ public sealed partial class ConfigSelector : UserControl
 
     private async void ShareButton_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedItem is not ConfigSelectorItem selected) return;
+        if (SelectedItem is not ConfigSelectorItem selected)
+            return;
         ShareButton.IsEnabled = false;
-        try { await Helper.AddOns.ConfigShare.ConfigShareUI.ShowExportAsync(XamlRoot, selected); }
+        try
+        { await Helper.AddOns.ConfigShare.ConfigShareUI.ShowExportAsync(XamlRoot, selected); }
         catch (Exception exception)
         {
             Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigSelector), exception.ToString());
             var error = new Dialogs.ConfigShare.ConfigShareMessageContentDialog
             {
-                XamlRoot = XamlRoot, Title = Helper.AddOns.ConfigShare.ConfigShareUI.Text("ConfigShareError"),
+                XamlRoot = XamlRoot,
+                Title = Helper.AddOns.ConfigShare.ConfigShareUI.Text("ConfigShareError"),
                 Message = Helper.AddOns.ConfigShare.ConfigShareUI.ErrorText(exception)
             };
             await error.ShowQueuedAsync();

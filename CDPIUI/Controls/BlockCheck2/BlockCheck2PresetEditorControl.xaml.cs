@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
@@ -5,16 +7,14 @@ using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Linq;
 
 namespace CDPIUI.Controls.BlockCheck2;
 
 public sealed partial class BlockCheck2PresetEditorControl : UserControl
 {
-    private BlockCheck2PresetDraft? draft;
-    private bool refreshingEditor;
-    private bool updatingDraftFromEditor;
+    private BlockCheck2PresetDraft? _draft;
+    private bool _refreshingEditor;
+    private bool _updatingDraftFromEditor;
 
     public BlockCheck2PresetEditorControl()
     {
@@ -30,35 +30,35 @@ public sealed partial class BlockCheck2PresetEditorControl : UserControl
     public void LoadDraft(BlockCheck2PresetDraft value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (draft != null)
+        if (_draft != null)
         {
-            draft.PropertyChanged -= Draft_PropertyChanged;
+            _draft.PropertyChanged -= Draft_PropertyChanged;
         }
-        draft = value;
-        draft.PropertyChanged += Draft_PropertyChanged;
+        _draft = value;
+        _draft.PropertyChanged += Draft_PropertyChanged;
         RefreshFromDraft();
     }
 
     public void SetExpertEditing(bool enabled)
     {
-        if (draft == null)
+        if (_draft == null)
         {
             return;
         }
         if (enabled)
         {
-            draft.BeginExpertEditing();
+            _draft.BeginExpertEditing();
         }
         else
         {
-            draft.DiscardExpertChanges();
+            _draft.DiscardExpertChanges();
         }
         RefreshFromDraft();
     }
 
     private void Draft_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (!updatingDraftFromEditor &&
+        if (!_updatingDraftFromEditor &&
             (e.PropertyName is nameof(BlockCheck2PresetDraft.EffectiveArguments) or
                 nameof(BlockCheck2PresetDraft.IsExpertEditingEnabled)))
         {
@@ -79,33 +79,33 @@ public sealed partial class BlockCheck2PresetEditorControl : UserControl
 
     private void RefreshEditor()
     {
-        if (draft == null)
+        if (_draft == null)
         {
             return;
         }
-        refreshingEditor = true;
+        _refreshingEditor = true;
         try
         {
             ConfigMaker.CommandText = ComponentCommandLineFormatter.FormatByFlags(
-                draft.EffectiveArguments);
-            ConfigMaker.IsEditorReadOnly = !draft.IsExpertEditingEnabled;
-            ConfigMaker.SetCommandPanelVisible(draft.IsExpertEditingEnabled);
+                _draft.EffectiveArguments);
+            ConfigMaker.IsEditorReadOnly = !_draft.IsExpertEditingEnabled;
+            ConfigMaker.SetCommandPanelVisible(_draft.IsExpertEditingEnabled);
         }
         finally
         {
-            refreshingEditor = false;
+            _refreshingEditor = false;
         }
     }
 
     private void RebuildTrees()
     {
-        if (draft == null)
+        if (_draft == null)
         {
             ConfigMaker.ClearPresetStructure();
             return;
         }
         ConfigMaker.SetPresetStructure(
-            draft.Files.Select(file => new ConfigMakerPresetFileInfo(
+            _draft.Files.Select(file => new ConfigMakerPresetFileInfo(
                 file.Name,
                 file.Path,
                 file.Folder,
@@ -115,23 +115,23 @@ public sealed partial class BlockCheck2PresetEditorControl : UserControl
                     BlockCheck2PresetFileKind.Payload => ConfigMakerPresetFileKind.Payload,
                     _ => ConfigMakerPresetFileKind.SiteList,
                 })),
-            draft.Groups.Select(group => new ConfigMakerPresetGroupInfo(
+            _draft.Groups.Select(group => new ConfigMakerPresetGroupInfo(
                 group.Name,
                 [group.Route, group.Scope, group.Strategies])));
     }
 
     private void ConfigMaker_CommandTextChanged(string text)
     {
-        if (!refreshingEditor && draft?.IsExpertEditingEnabled == true)
+        if (!_refreshingEditor && _draft?.IsExpertEditingEnabled == true)
         {
-            updatingDraftFromEditor = true;
+            _updatingDraftFromEditor = true;
             try
             {
-                draft.SetExpertArguments(text);
+                _draft.SetExpertArguments(text);
             }
             finally
             {
-                updatingDraftFromEditor = false;
+                _updatingDraftFromEditor = false;
             }
         }
     }
@@ -140,9 +140,9 @@ public sealed partial class BlockCheck2PresetEditorControl : UserControl
         object? sender,
         ConfigMakerPresetFileReplacedEventArgs e)
     {
-        if (draft != null)
+        if (_draft != null)
         {
-            draft.ApplyFileReferenceChange(
+            _draft.ApplyFileReferenceChange(
                 e.CommandText,
                 e.OriginalPath,
                 e.ReplacementPath);

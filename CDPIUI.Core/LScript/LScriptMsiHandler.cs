@@ -1,107 +1,110 @@
-﻿using CDPIUI.Core.Basic;
+using System.Diagnostics;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.MSI;
 using CDPIUI.Shared.Exceptions;
-using System.Diagnostics;
 using static CDPIUI.Core.Store.MSI.MsiInstallerService;
 
-namespace CDPIUI.Core.LScript
-{
-    public class LScriptMsiHandler()
-    {
-        public static async Task InstallMsi(
-            string[] scriptArgs, Dictionary<string, string>? extraArgs, CancellationToken cancellationToken)
-        {
-            string itemDirectory = extraArgs?.GetValueOrDefault("CurrentDirectory", string.Empty) ?? string.Empty;
-            string path = Path.Combine(itemDirectory, scriptArgs[0]);
+namespace CDPIUI.Core.LScript;
 
-            // A script may only install packages that its own item brought.
-            string checkedPath = path.EndsWith("$ALL") ? path.Substring(0, path.Length - "$ALL".Length) : path;
-            if (string.IsNullOrEmpty(itemDirectory) || !IsInsideDirectory(checkedPath, itemDirectory))
+public class LScriptMsiHandler()
+{
+    public static async Task InstallMsi(
+        string[] scriptArgs, Dictionary<string, string>? extraArgs, CancellationToken cancellationToken)
+    {
+        string itemDirectory = extraArgs?.GetValueOrDefault("CurrentDirectory", string.Empty) ?? string.Empty;
+        string path = Path.Combine(itemDirectory, scriptArgs[0]);
+
+        // A script may only install packages that its own item brought.
+        string checkedPath = path.EndsWith("$ALL") ? path.Substring(0, path.Length - "$ALL".Length) : path;
+        if (string.IsNullOrEmpty(itemDirectory) || !IsInsideDirectory(checkedPath, itemDirectory))
+        {
+            throw new MsiInstallException("The package is outside the item directory");
+        }
+        if (bool.TryParse(scriptArgs[1], out bool removeAfterAction))
+        {
+            Debug.WriteLine(path);
+            if (path.EndsWith("$ALL"))
             {
-                throw new MsiInstallException("The package is outside the item directory");
-            }
-            if (bool.TryParse(scriptArgs[1], out bool removeAfterAction))
-            {
-                Debug.WriteLine(path);
-                if (path.EndsWith("$ALL"))
-                {
-                    var _result = await InstallAllMsiFromPath(path.Replace("$ALL", ""), removeAfterAction, cancellationToken);
-                    if (!_result.Item1) throw new MsiInstallException("Install failure");
-                    if (_result.Item2)
-                        CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
-                }
-                else
-                {
-                    var _result = await InstallMsi(path, removeAfterAction, cancellationToken);
-                    if (!_result.Item1) throw new MsiInstallException("Install failure");
-                    if (_result.Item2)
-                        CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
-                }
+                var _result = await InstallAllMsiFromPath(path.Replace("$ALL", ""), removeAfterAction, cancellationToken);
+                if (!_result.Item1)
+                    throw new MsiInstallException("Install failure");
+                if (_result.Item2)
+                    CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
             }
             else
             {
-                throw new MsiInstallException("Argument is null");
+                var _result = await InstallMsi(path, removeAfterAction, cancellationToken);
+                if (!_result.Item1)
+                    throw new MsiInstallException("Install failure");
+                if (_result.Item2)
+                    CoreEvents.Instance.InvokeRestartRequired(Path.GetFileName(itemDirectory.TrimEnd('\\', '/')));
             }
         }
-
-        private static bool IsInsideDirectory(string path, string directory)
+        else
         {
-            string root = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+            throw new MsiInstallException("Argument is null");
         }
+    }
 
-        private static async Task<Tuple<bool, bool>> InstallAllMsiFromPath(string directory, bool removeAfterAction, CancellationToken cancellationToken)
+    private static bool IsInsideDirectory(string path, string directory)
+    {
+        string root = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task<Tuple<bool, bool>> InstallAllMsiFromPath(string directory, bool removeAfterAction, CancellationToken cancellationToken)
+    {
+        bool requestRestart = false;
+        // Only installers: a readme or a .cab next to them failed the whole pack.
+        foreach (string filepath in Directory.EnumerateFiles(directory, "*.msi"))
         {
-            bool requestRestart = false;
-            // Only installers: a readme or a .cab next to them failed the whole pack.
-            foreach (string filepath in Directory.EnumerateFiles(directory, "*.msi"))
-            {
-                var result = await InstallMsi(filepath, removeAfterAction, cancellationToken);
-                if (!result.Item1) return Tuple.Create(false, false);
+            var result = await InstallMsi(filepath, removeAfterAction, cancellationToken);
+            if (!result.Item1)
+                return Tuple.Create(false, false);
 
-                if (result.Item2) requestRestart = result.Item2;
+            if (result.Item2)
+                requestRestart = result.Item2;
 
-            }
-            return Tuple.Create(true, requestRestart);
         }
+        return Tuple.Create(true, requestRestart);
+    }
 
-        private static async Task<Tuple<bool, bool>> InstallMsi(string filepath, bool removeAfterAction, CancellationToken cancellationToken)
+    private static async Task<Tuple<bool, bool>> InstallMsi(string filepath, bool removeAfterAction, CancellationToken cancellationToken)
+    {
+        bool success = true;
+        bool isRestartNeeded = false;
+
+        string msiPath = Path.Combine(filepath);
+        string msiGUID = Guid.NewGuid().ToString();
+        MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
+        msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
+        MsiCallback callback = await msiInstallerHelper.Run(cancellationToken);
+        msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
+
+        Logger.Instance.CreateDebugLog(nameof(MsiInstallerService), "TRY");
+
+        if (callback.State == MsiState.ExceptionHappens)
         {
-            bool success = true;
-            bool isRestartNeeded = false;
-
-            string msiPath = Path.Combine(filepath);
-            string msiGUID = Guid.NewGuid().ToString();
-            MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
-            msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
-            MsiCallback callback = await msiInstallerHelper.Run(cancellationToken);
-            msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
-
-            Logger.Instance.CreateDebugLog(nameof(MsiInstallerService), "TRY");
-
-            if (callback.State == MsiState.ExceptionHappens)
-            {
-                success = false;
-                throw new MsiInstallException("MSI_UNKNOWN");
-            }
-            else if (callback.State == MsiState.CompleteRestartRequest)
-            {
-                isRestartNeeded = true;
-            }
-
-            if (removeAfterAction)
-            {
-                File.Delete(msiPath);
-            }
-
-            return Tuple.Create(success, isRestartNeeded);
-
+            success = false;
+            throw new MsiInstallException("MSI_UNKNOWN");
         }
-
-        private static void HandleMsiInstallerMessage(MsiCallback callback)
+        else if (callback.State == MsiState.CompleteRestartRequest)
         {
-            Logger.Instance.CreateDebugLog(nameof(LScriptCore), $"MSI installing callback: {callback}");
+            isRestartNeeded = true;
         }
+
+        if (removeAfterAction)
+        {
+            File.Delete(msiPath);
+        }
+
+        return Tuple.Create(success, isRestartNeeded);
+
+    }
+
+    private static void HandleMsiInstallerMessage(MsiCallback callback)
+    {
+        Logger.Instance.CreateDebugLog(nameof(LScriptCore), $"MSI installing callback: {callback}");
     }
 }

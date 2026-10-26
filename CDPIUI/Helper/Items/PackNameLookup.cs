@@ -1,7 +1,7 @@
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Shared.Extensions;
 using System;
 using System.Collections.Generic;
+using CDPIUI.Core.Store.Database;
+using CDPIUI.Shared.Extensions;
 
 namespace CDPIUI.Helper.Items;
 
@@ -11,7 +11,7 @@ namespace CDPIUI.Helper.Items;
 internal sealed class PackNameLookup
 {
     // Ids are compared as the database compares them.
-    private readonly Dictionary<string, string> names = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _names = new(StringComparer.Ordinal);
 
     public string GetDisplayName(string packId)
     {
@@ -20,10 +20,10 @@ internal sealed class PackNameLookup
             return ReadDisplayName(packId);
         }
 
-        if (!names.TryGetValue(packId, out string name))
+        if (!_names.TryGetValue(packId, out string name))
         {
             name = ReadDisplayName(packId);
-            names[packId] = name;
+            _names[packId] = name;
         }
         return name;
     }

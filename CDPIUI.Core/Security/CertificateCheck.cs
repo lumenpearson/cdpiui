@@ -1,39 +1,38 @@
-﻿using CDPIUI.Shared.Secrets;
+using CDPIUI.Shared.Secrets;
 using CDPIUI.Shared.Security;
 
-namespace CDPIUI.Core.Security
+namespace CDPIUI.Core.Security;
+
+public enum CatalogCheckResult
 {
-    public enum CatalogCheckResult
-    {
-        Success,
-        FailureNoSignature,
-        FailureNotTrustedSignature,
-        FailureNotValid,
-        FailureUnknown
-    }
+    Success,
+    FailureNoSignature,
+    FailureNotTrustedSignature,
+    FailureNotValid,
+    FailureUnknown
+}
 
-    public class CertificateCheck
+public class CertificateCheck
+{
+    public static async Task<CatalogCheckResult> CheckCatalog(string catalogFile, string compareDirectory)
     {
-        public static async Task<CatalogCheckResult> CheckCatalog(string catalogFile, string compareDirectory)
+        try
         {
-            try
-            {
-                CatalogVerification verification = await CatalogVerifier.VerifyAsync(
-                    catalogFile, compareDirectory, Secret.TrustedCertificates);
+            CatalogVerification verification = await CatalogVerifier.VerifyAsync(
+                catalogFile, compareDirectory, Secret.TrustedCertificates);
 
-                return verification switch
-                {
-                    CatalogVerification.Success => CatalogCheckResult.Success,
-                    CatalogVerification.NoSignature => CatalogCheckResult.FailureNoSignature,
-                    CatalogVerification.NotTrustedSignature => CatalogCheckResult.FailureNotTrustedSignature,
-                    CatalogVerification.FilesDoNotMatch => CatalogCheckResult.FailureNotValid,
-                    _ => CatalogCheckResult.FailureUnknown,
-                };
-            }
-            catch
+            return verification switch
             {
-                return CatalogCheckResult.FailureUnknown;
-            }
+                CatalogVerification.Success => CatalogCheckResult.Success,
+                CatalogVerification.NoSignature => CatalogCheckResult.FailureNoSignature,
+                CatalogVerification.NotTrustedSignature => CatalogCheckResult.FailureNotTrustedSignature,
+                CatalogVerification.FilesDoNotMatch => CatalogCheckResult.FailureNotValid,
+                _ => CatalogCheckResult.FailureUnknown,
+            };
+        }
+        catch
+        {
+            return CatalogCheckResult.FailureUnknown;
         }
     }
 }

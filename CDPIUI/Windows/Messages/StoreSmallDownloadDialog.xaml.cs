@@ -1,5 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Dialogs.Store;
+using CDPIUI.Core.Store;
+using CDPIUI.Core.Store.Database;
+using CDPIUI.Core.Store.Repository.Localization;
+using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Default;
+using CDPIUI.Helper.LScript;
+using CDPIUI.Helper.Parsers;
+using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,369 +25,357 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinRT.Interop;
 using WinUI3Localizer;
 using WinUIEx;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Core.Store;
-using CDPIUI.Helper.LScript;
-using CDPIUI.Helper.Parsers;
-using CDPIUI.Core.Store.Repository.Localization;
-using CDPIUI.Shared.PrettyErrorConversionService;
-using CDPIUI.Core.Store.ViewModels;
-using System.Collections.Specialized;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Messages
+namespace CDPIUI.Messages;
+
+public sealed partial class StoreSmallDownloadDialog : TemplateWindow
 {
-    public sealed partial class StoreSmallDownloadDialog : TemplateWindow
+    private ILocalizer _localizer = Localizer.Get();
+
+    private string StoreId = string.Empty;
+
+    private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadSpeedChangedHandler;
+    private Action<Tuple<string, TimeSpan>> _itemTimeRemainingChangedHandler;
+    private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
+    private Action<string> _itemActionsStoppedHandler;
+
+    private RepoItemModel _item;
+
+    public StoreSmallDownloadDialog()
     {
-        private ILocalizer localizer = Localizer.Get();
+        InitializeComponent();
 
-        private string StoreId = string.Empty;
+        NewIdSet += NewIdSeted;
 
-        private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
-        private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
-        private Action<Tuple<string, double>> _itemDownloadSpeedChangedHandler;
-        private Action<Tuple<string, TimeSpan>> _itemTimeRemainingChangedHandler;
-        private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
-        private Action<string> _itemActionsStoppedHandler;
+        WindowTitle = _localizer.GetLocalizedString("StoreWindowsTitle");
+        IconUri = @"Assets/Icons/Store.ico";
+        this.CustomTitleBarUserControl = TitleBarUserControl;
 
-        private RepoItemModel item;
+        DisableResizeFeature();
 
-        public StoreSmallDownloadDialog()
-        {
-            InitializeComponent();
+        ToggleItemLoadingMode(true);
 
-            NewIdSet += NewIdSeted;
-
-            WindowTitle = localizer.GetLocalizedString("StoreWindowsTitle");
-            IconUri = @"Assets/Icons/Store.ico";
-            this.CustomTitleBarUserControl = TitleBarUserControl;
-
-            DisableResizeFeature();
-
-            ToggleItemLoadingMode(true);
-
-            this.Closed += StoreSmallDownloadDialog_Closed;
-        }
-
-        private void NewIdSeted()
-        {
-            _ = SetItemToViewId(Id); // SetItemToViewId catches and logs its own errors.
-        }
-
-        private void StoreSmallDownloadDialog_Closed(object sender, WindowEventArgs args)
-        {
-            NewIdSet -= NewIdSeted;
-
-            if (_itemDownloadStageChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadStageChanged -= _itemDownloadStageChangedHandler;
-
-            if (_itemDownloadProgressChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadProgressChanged -= _itemDownloadProgressChangedHandler;
-
-            if (_itemTimeRemainingChangedHandler != null)
-                StoreHelper.Instance.ItemTimeRemainingChanged -= _itemTimeRemainingChangedHandler;
-
-            if (_itemInstallingErrorHappensHandler != null)
-                StoreHelper.Instance.ItemInstallingErrorHappens -= _itemInstallingErrorHappensHandler;
-
-            if (_itemDownloadSpeedChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadSpeedChanged -= _itemDownloadSpeedChangedHandler;
-
-            if (_itemActionsStoppedHandler != null)
-                StoreHelper.Instance.ItemActionsStopped -= _itemActionsStoppedHandler;
-        }
-
-        private void ToggleItemLoadingMode(bool isLoading)
-        {
-            Visibility visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-
-            GetButton.IsEnabled = !isLoading;
-            ViewInStoreButton.IsEnabled = !isLoading;
-
-            TitleShimmer.Visibility = visibility;
-            DeveloperShimmer.Visibility = visibility;
-            CategoryShimmer.Visibility = visibility;
-            ImageShimmer.Visibility = visibility;
-            DescriptionShimmer.Visibility = visibility;
-        }
-
-        public async Task SetItemToViewId(string id)
-        {
-            try
-            {
-                StoreId = id;
-                await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: true);
-                LoadItemInfo();
-            }
-            catch (Exception exception)
-            {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
-            }
-        }
-
-        private void LoadItemInfo()
-        {
-            item = StoreHelper.Instance.GetItemInfoFromStoreId(StoreId);
-
-            if (item == null) return;
-
-            ConnectHandlers();
-            CheckCurrentStatus();
-
-            ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemName"), item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
-            ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(item.icon)));
-            DeveloperTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallDeveloperText"), item.developer);
-            CategoryTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallCategoryText"), StoreHelper.Instance.GetLocalizedStoreItemName(
-                    StoreHelper.Instance.GetCategoryFromStoreId(item.category_id).name,
-                    StoreLocalizationHelper.GetStoreLikeLocale()
-                ));
-            ItemSmallDescriptionTextBlock.Text = LScriptLangHelper.ExecuteScript(item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
-
-            ToggleItemLoadingMode(false);
-
-            if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
-            {
-                CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
-
-                ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
-                DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-                ErrorGrid.Visibility = Visibility.Visible;
-                GetButton.Visibility = Visibility.Collapsed;
-
-                ErrorCodeTextBlock.Text = "ERR_ITEM_ALLREADY_INSTALLED";
-            }
-            
-        }
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            StoreHelper.Instance.RemoveItemFromQueue(StoreId);
-            this.Close();
-        }
-
-        private void GetButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = StartDownload(); // StartDownload catches and logs its own errors.
-        }
-
-        private async void ViewInStoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            StoreWindow window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
-            window.NavigateSubPage(typeof(Views.Store.ItemViewPage), new NameValueCollection() { { "itemId", StoreId } }, new SuppressNavigationTransitionInfo());
-            this.Close();
-        }
-
-        private void GetReadyUI()
-        {
-            GetButton.Visibility = Visibility.Collapsed;
-            StatusProgressbar.IsIndeterminate = true;
-
-            ErrorGrid.Visibility = Visibility.Collapsed;
-            DownloadProgressStackPanel.Visibility = Visibility.Visible;
-        }
-
-        private async Task StartDownload()
-        {
-            try
-            {
-                if (!await AskLicense()) return;
-
-                GetReadyUI();
-
-                CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
-                StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
-            }
-            catch (Exception exception)
-            {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
-            }
-        }
-
-        private async Task<bool> AskLicense()
-        {
-            if (item.license == null || item.license.Count == 0)
-                return true;
-
-            AcceptLicenseContentDialog dialog = new()
-            {
-                Licenses = item.license,
-                XamlRoot = this.Content.XamlRoot
-            };
-            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        private void CheckCurrentStatus()
-        {
-            string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
-            if (!string.IsNullOrEmpty(operationId))
-            {
-                GetReadyUI();
-
-                string status = StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadStage;
-                PreferItemDownloadingStateActions(status);
-            }
-        }
-
-        private void PreferItemDownloadingStateActions(string state)
-        {
-            string stageHeaderText = string.Empty;
-            switch (state)
-            {
-                case "GETR":
-                    stageHeaderText = localizer.GetLocalizedString("GettingReady");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "END":
-                    stageHeaderText = localizer.GetLocalizedString("Finishing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "Downloading":
-                    stageHeaderText = localizer.GetLocalizedString("Downloading");
-                    StatusProgressbar.IsIndeterminate = false;
-                    CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
-                    break;
-                case "Extracting":
-                    stageHeaderText = localizer.GetLocalizedString("Installing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "ErrorHappens":
-                    stageHeaderText = localizer.GetLocalizedString("ErrorHappens");
-                    break;
-                case "Completed":
-                    stageHeaderText = localizer.GetLocalizedString("Finishing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "CANC":
-                    stageHeaderText = localizer.GetLocalizedString("Cancel");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "ConnectingToService":
-                    stageHeaderText = localizer.GetLocalizedString("ConnectingToService");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                default:
-                    stageHeaderText = localizer.GetLocalizedString(state);
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-            }
-            CurrentStatusTextBlock.Text = stageHeaderText;
-        }
-
-        private void ConnectHandlers()
-        {
-            _itemDownloadStageChangedHandler = (data) =>
-            {
-                string operationId = data.Item1;
-                string stage = data.Item2;
-
-                if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-                    return;
-
-                GetReadyUI();
-
-                CurrentStatusSpeedTextBlock.Visibility = Visibility.Collapsed;
-
-                PreferItemDownloadingStateActions(stage);
-            };
-            StoreHelper.Instance.ItemDownloadStageChanged += _itemDownloadStageChangedHandler;
-
-            _itemDownloadProgressChangedHandler = (data) =>
-            {
-                string operationId = data.Item1;
-                double progress = data.Item2;
-
-                if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-                    return;
-
-                StatusProgressbar.IsIndeterminate = false;
-                StatusProgressbar.Value = progress;
-            };
-            StoreHelper.Instance.ItemDownloadProgressChanged += _itemDownloadProgressChangedHandler;
-
-            _itemTimeRemainingChangedHandler = (data) =>
-            {
-                string operationId = data.Item1;
-                TimeSpan time = data.Item2;
-
-                if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-                    return;
-            };
-
-            StoreHelper.Instance.ItemTimeRemainingChanged += _itemTimeRemainingChangedHandler;
-
-            _itemDownloadSpeedChangedHandler = (data) =>
-            {
-                string operationId = data.Item1;
-                double speed = data.Item2;
-
-                if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-                    return;
-
-                CurrentStatusSpeedTextBlock.Text = $"{UnitsParser.FormatSpeed(speed)}";
-            };
-
-            StoreHelper.Instance.ItemDownloadSpeedChanged += _itemDownloadSpeedChangedHandler;
-
-            _itemInstallingErrorHappensHandler = (data) =>
-            {
-                string operationId = data.Item1;
-                string errorCode = data.Item2.ErrorCode;
-
-                if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
-                    return;
-                
-                ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
-                DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-                ErrorGrid.Visibility = Visibility.Visible;
-
-                ErrorCodeTextBlock.Text = errorCode;
-                errorHappened = true;
-
-                CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
-            };
-            StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
-
-            // The event fires for every item; "installed" was shown after an error or when
-            // another item finished.
-            _itemActionsStoppedHandler = (id) =>
-            {
-                if (id != StoreId || errorHappened) return;
-                ShowItemAfterInstallActions();
-            };
-            StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
-        }
-
-        private bool errorHappened = false;
-
-        private void ShowItemAfterInstallActions()
-        {
-            if (item == null) return;
-            DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
-            CancelButton.Content = localizer.GetLocalizedString("OkButtonText");
-
-            ItemNameTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreSmallItemNameComplete"), item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
-        }
-        
+        this.Closed += StoreSmallDownloadDialog_Closed;
     }
+
+    private void NewIdSeted()
+    {
+        _ = SetItemToViewId(Id); // SetItemToViewId catches and logs its own errors.
+    }
+
+    private void StoreSmallDownloadDialog_Closed(object sender, WindowEventArgs args)
+    {
+        NewIdSet -= NewIdSeted;
+
+        if (_itemDownloadStageChangedHandler != null)
+            StoreHelper.Instance.ItemDownloadStageChanged -= _itemDownloadStageChangedHandler;
+
+        if (_itemDownloadProgressChangedHandler != null)
+            StoreHelper.Instance.ItemDownloadProgressChanged -= _itemDownloadProgressChangedHandler;
+
+        if (_itemTimeRemainingChangedHandler != null)
+            StoreHelper.Instance.ItemTimeRemainingChanged -= _itemTimeRemainingChangedHandler;
+
+        if (_itemInstallingErrorHappensHandler != null)
+            StoreHelper.Instance.ItemInstallingErrorHappens -= _itemInstallingErrorHappensHandler;
+
+        if (_itemDownloadSpeedChangedHandler != null)
+            StoreHelper.Instance.ItemDownloadSpeedChanged -= _itemDownloadSpeedChangedHandler;
+
+        if (_itemActionsStoppedHandler != null)
+            StoreHelper.Instance.ItemActionsStopped -= _itemActionsStoppedHandler;
+    }
+
+    private void ToggleItemLoadingMode(bool isLoading)
+    {
+        Visibility visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+
+        GetButton.IsEnabled = !isLoading;
+        ViewInStoreButton.IsEnabled = !isLoading;
+
+        TitleShimmer.Visibility = visibility;
+        DeveloperShimmer.Visibility = visibility;
+        CategoryShimmer.Visibility = visibility;
+        ImageShimmer.Visibility = visibility;
+        DescriptionShimmer.Visibility = visibility;
+    }
+
+    public async Task SetItemToViewId(string id)
+    {
+        try
+        {
+            StoreId = id;
+            await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: true);
+            LoadItemInfo();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
+        }
+    }
+
+    private void LoadItemInfo()
+    {
+        _item = StoreHelper.Instance.GetItemInfoFromStoreId(StoreId);
+
+        if (_item == null)
+            return;
+
+        ConnectHandlers();
+        CheckCurrentStatus();
+
+        ItemNameTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallItemName"), _item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(_item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
+        ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(_item.icon)));
+        DeveloperTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallDeveloperText"), _item.developer);
+        CategoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallCategoryText"), StoreHelper.Instance.GetLocalizedStoreItemName(
+                StoreHelper.Instance.GetCategoryFromStoreId(_item.category_id).name,
+                StoreLocalizationHelper.GetStoreLikeLocale()
+            ));
+        ItemSmallDescriptionTextBlock.Text = LScriptLangHelper.ExecuteScript(_item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
+
+        ToggleItemLoadingMode(false);
+
+        if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+        {
+            CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
+
+            ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
+            DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
+            ErrorGrid.Visibility = Visibility.Visible;
+            GetButton.Visibility = Visibility.Collapsed;
+
+            ErrorCodeTextBlock.Text = "ERR_ITEM_ALLREADY_INSTALLED";
+        }
+
+    }
+
+    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        StoreHelper.Instance.RemoveItemFromQueue(StoreId);
+        this.Close();
+    }
+
+    private void GetButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = StartDownload(); // StartDownload catches and logs its own errors.
+    }
+
+    private async void ViewInStoreButton_Click(object sender, RoutedEventArgs e)
+    {
+        StoreWindow window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
+        window.NavigateSubPage(typeof(Views.Store.ItemViewPage), new NameValueCollection() { { "itemId", StoreId } }, new SuppressNavigationTransitionInfo());
+        this.Close();
+    }
+
+    private void GetReadyUI()
+    {
+        GetButton.Visibility = Visibility.Collapsed;
+        StatusProgressbar.IsIndeterminate = true;
+
+        ErrorGrid.Visibility = Visibility.Collapsed;
+        DownloadProgressStackPanel.Visibility = Visibility.Visible;
+    }
+
+    private async Task StartDownload()
+    {
+        try
+        {
+            if (!await AskLicense())
+                return;
+
+            GetReadyUI();
+
+            CurrentStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
+            StoreHelper.Instance.AddItemToQueue(StoreId, string.Empty);
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreSmallDownloadDialog), exception.ToString());
+        }
+    }
+
+    private async Task<bool> AskLicense()
+    {
+        if (_item.license == null || _item.license.Count == 0)
+            return true;
+
+        AcceptLicenseContentDialog dialog = new()
+        {
+            Licenses = _item.license,
+            XamlRoot = this.Content.XamlRoot
+        };
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void CheckCurrentStatus()
+    {
+        string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
+        if (!string.IsNullOrEmpty(operationId))
+        {
+            GetReadyUI();
+
+            string status = StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadStage;
+            PreferItemDownloadingStateActions(status);
+        }
+    }
+
+    private void PreferItemDownloadingStateActions(string state)
+    {
+        string stageHeaderText = string.Empty;
+        switch (state)
+        {
+            case "GETR":
+                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            case "END":
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            case "Downloading":
+                stageHeaderText = _localizer.GetLocalizedString("Downloading");
+                StatusProgressbar.IsIndeterminate = false;
+                CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
+                break;
+            case "Extracting":
+                stageHeaderText = _localizer.GetLocalizedString("Installing");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            case "ErrorHappens":
+                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
+                break;
+            case "Completed":
+                stageHeaderText = _localizer.GetLocalizedString("Finishing");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            case "CANC":
+                stageHeaderText = _localizer.GetLocalizedString("Cancel");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            case "ConnectingToService":
+                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+            default:
+                stageHeaderText = _localizer.GetLocalizedString(state);
+                StatusProgressbar.IsIndeterminate = true;
+                break;
+        }
+        CurrentStatusTextBlock.Text = stageHeaderText;
+    }
+
+    private void ConnectHandlers()
+    {
+        _itemDownloadStageChangedHandler = (data) =>
+        {
+            string operationId = data.Item1;
+            string stage = data.Item2;
+
+            if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
+                return;
+
+            GetReadyUI();
+
+            CurrentStatusSpeedTextBlock.Visibility = Visibility.Collapsed;
+
+            PreferItemDownloadingStateActions(stage);
+        };
+        StoreHelper.Instance.ItemDownloadStageChanged += _itemDownloadStageChangedHandler;
+
+        _itemDownloadProgressChangedHandler = (data) =>
+        {
+            string operationId = data.Item1;
+            double progress = data.Item2;
+
+            if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
+                return;
+
+            StatusProgressbar.IsIndeterminate = false;
+            StatusProgressbar.Value = progress;
+        };
+        StoreHelper.Instance.ItemDownloadProgressChanged += _itemDownloadProgressChangedHandler;
+
+        _itemTimeRemainingChangedHandler = (data) =>
+        {
+            string operationId = data.Item1;
+            TimeSpan time = data.Item2;
+
+            if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
+                return;
+        };
+
+        StoreHelper.Instance.ItemTimeRemainingChanged += _itemTimeRemainingChangedHandler;
+
+        _itemDownloadSpeedChangedHandler = (data) =>
+        {
+            string operationId = data.Item1;
+            double speed = data.Item2;
+
+            if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
+                return;
+
+            CurrentStatusSpeedTextBlock.Text = $"{UnitsParser.FormatSpeed(speed)}";
+        };
+
+        StoreHelper.Instance.ItemDownloadSpeedChanged += _itemDownloadSpeedChangedHandler;
+
+        _itemInstallingErrorHappensHandler = (data) =>
+        {
+            string operationId = data.Item1;
+            string errorCode = data.Item2.ErrorCode;
+
+            if (StoreHelper.Instance.GetItemIdFromOperationId(operationId) != StoreId)
+                return;
+
+            ItemSmallDescriptionStackPanel.Visibility = Visibility.Collapsed;
+            DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
+            ErrorGrid.Visibility = Visibility.Visible;
+
+            ErrorCodeTextBlock.Text = errorCode;
+            _errorHappened = true;
+
+            CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
+        };
+        StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
+
+        // The event fires for every item; "installed" was shown after an error or when
+        // another item finished.
+        _itemActionsStoppedHandler = (id) =>
+        {
+            if (id != StoreId || _errorHappened)
+                return;
+            ShowItemAfterInstallActions();
+        };
+        StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
+    }
+
+    private bool _errorHappened = false;
+
+    private void ShowItemAfterInstallActions()
+    {
+        if (_item == null)
+            return;
+        DownloadProgressStackPanel.Visibility = Visibility.Collapsed;
+        CancelButton.Content = _localizer.GetLocalizedString("OkButtonText");
+
+        ItemNameTextBlock.Text = string.Format(_localizer.GetLocalizedString("StoreSmallItemNameComplete"), _item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(_item.name, StoreLocalizationHelper.GetStoreLikeLocale()));
+    }
+
 }

@@ -1,124 +1,124 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
+using System.Collections.Specialized;
 using CDPIUI.Controls.MenuManagement;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
 using Windows.Foundation.Metadata;
 
-namespace CDPIUI.Controls.Default
+namespace CDPIUI.Controls.Default;
+
+public partial class TemplatePage : Page
 {
-    public partial class TemplatePage : Page
+    protected const string ForwardConnectedAnimation = "ForwardConnectedAnimation";
+    protected const string BackwardConnectedAnimation = "BackwardConnectedAnimation";
+
+    protected bool IsBackwardAnimationToPageAvailable = false;
+    protected bool IsForwardAnimationToPageAvailable = false;
+
+    protected FrameworkElement ElementToAnimateBackwardConnectedAnimation = null;
+    protected FrameworkElement ElementToAnimateForwardConnectedAnimation = null;
+
+    public NameValueCollection Parameter { get; set; } = null;
+
+    protected bool IsAnimated = false;
+
+    public DataTemplate MenuBarTemplate
     {
-        protected const string ForwardConnectedAnimation = "ForwardConnectedAnimation";
-        protected const string BackwardConnectedAnimation = "BackwardConnectedAnimation";
+        get => (DataTemplate)GetValue(MenuBarTemplateProperty);
+        set => SetValue(MenuBarTemplateProperty, value);
+    }
 
-        protected bool IsBackwardAnimationToPageAvailable = false;
-        protected bool IsForwardAnimationToPageAvailable = false;
+    public static readonly DependencyProperty MenuBarTemplateProperty = DependencyProperty.Register(
+        nameof(MenuBarTemplate),
+        typeof(DataTemplate),
+        typeof(TemplatePage),
+        new PropertyMetadata(null, OnMenuBarTemplateChanged));
 
-        protected FrameworkElement ElementToAnimateBackwardConnectedAnimation = null;
-        protected FrameworkElement ElementToAnimateForwardConnectedAnimation = null;
+    public MenuBarSession MenuBarSession { get; internal set; }
 
-        public NameValueCollection Parameter { get; set; } = null;
+    public TemplatePage()
+    {
+        this.Loaded += TemplatePage_Loaded;
+    }
 
-        protected bool IsAnimated = false;
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
 
-        public DataTemplate MenuBarTemplate
+        if (e.Parameter is NameValueCollection collection)
         {
-            get => (DataTemplate)GetValue(MenuBarTemplateProperty);
-            set => SetValue(MenuBarTemplateProperty, value);
+            Parameter = collection;
         }
 
-        public static readonly DependencyProperty MenuBarTemplateProperty = DependencyProperty.Register(
-            nameof(MenuBarTemplate),
-            typeof(DataTemplate),
-            typeof(TemplatePage),
-            new PropertyMetadata(null, OnMenuBarTemplateChanged));
-
-        public MenuBarSession MenuBarSession { get; internal set; }
-
-        public TemplatePage()
+        if (IsForwardAnimationToPageAvailable && ElementToAnimateForwardConnectedAnimation != null)
         {
-            this.Loaded += TemplatePage_Loaded;
+            var fdAnim = ConnectedAnimationService.GetForCurrentView().GetAnimation(ForwardConnectedAnimation);
+            IsAnimated = fdAnim?.TryStart(ElementToAnimateForwardConnectedAnimation) ?? false;
+        }
+        if (IsBackwardAnimationToPageAvailable && ElementToAnimateBackwardConnectedAnimation != null)
+        {
+            var bkAnim = ConnectedAnimationService.GetForCurrentView().GetAnimation(BackwardConnectedAnimation);
+            IsAnimated = bkAnim?.TryStart(ElementToAnimateBackwardConnectedAnimation) ?? false;
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+    }
+
+    protected bool FocusElement(string elementName)
+    {
+        if (string.IsNullOrEmpty(elementName))
+            return false;
+        if (FindName(elementName) is not FrameworkElement element)
+            return false;
+
+        if (element.Visibility != Visibility.Visible)
+            return false;
+
+        return element.Focus(FocusState.Programmatic);
+    }
+
+    protected void PrepareToConnectedForwardAnimate(
+        UIElement elementToAnimate,
+        ConnectedAnimationConfiguration configuration = null)
+    {
+        PrepareToAnimate(elementToAnimate, ForwardConnectedAnimation, configuration);
+    }
+
+    protected void PrepareToConnectedBackwardAnimate(
+        UIElement elementToAnimate,
+        ConnectedAnimationConfiguration configuration = null)
+    {
+        PrepareToAnimate(elementToAnimate, BackwardConnectedAnimation, configuration);
+    }
+
+    private static void PrepareToAnimate(
+        UIElement elementToAnimate,
+        string animateName,
+        ConnectedAnimationConfiguration configuration = null)
+    {
+        configuration ??= new BasicConnectedAnimationConfiguration();
+        var animq = ConnectedAnimationService.GetForCurrentView()
+               .PrepareToAnimate(animateName, elementToAnimate);
+
+        if (ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 7))
         {
-            base.OnNavigatedTo(e);
-
-            if (e.Parameter is NameValueCollection collection)
-            {
-                Parameter = collection;
-            }
-
-            if (IsForwardAnimationToPageAvailable && ElementToAnimateForwardConnectedAnimation != null)
-            {
-                var fdAnim = ConnectedAnimationService.GetForCurrentView().GetAnimation(ForwardConnectedAnimation);
-                IsAnimated = fdAnim?.TryStart(ElementToAnimateForwardConnectedAnimation) ?? false;
-            }
-            if (IsBackwardAnimationToPageAvailable && ElementToAnimateBackwardConnectedAnimation != null)
-            {
-                var bkAnim = ConnectedAnimationService.GetForCurrentView().GetAnimation(BackwardConnectedAnimation);
-                IsAnimated = bkAnim?.TryStart(ElementToAnimateBackwardConnectedAnimation) ?? false;
-            }
-
+            animq.Configuration = configuration;
         }
+    }
 
-        protected bool FocusElement(string elementName)
+    private void TemplatePage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (Parameter != null)
         {
-            if (string.IsNullOrEmpty(elementName)) return false;
-            if (FindName(elementName) is not FrameworkElement element)
-                return false;
-
-            if (element.Visibility != Visibility.Visible)
-                return false;
-
-            return element.Focus(FocusState.Programmatic);
+            FocusElement(Parameter.Get("setFocus"));
         }
+    }
 
-        protected void PrepareToConnectedForwardAnimate(
-            UIElement elementToAnimate, 
-            ConnectedAnimationConfiguration configuration = null)
-        {
-            PrepareToAnimate(elementToAnimate, ForwardConnectedAnimation, configuration);
-        }
-
-        protected void PrepareToConnectedBackwardAnimate(
-            UIElement elementToAnimate, 
-            ConnectedAnimationConfiguration configuration = null)
-        {
-            PrepareToAnimate(elementToAnimate, BackwardConnectedAnimation, configuration);
-        }
-
-        private static void PrepareToAnimate(
-            UIElement elementToAnimate, 
-            string animateName, 
-            ConnectedAnimationConfiguration configuration = null)
-        {
-            configuration ??= new BasicConnectedAnimationConfiguration();
-            var animq = ConnectedAnimationService.GetForCurrentView()
-                   .PrepareToAnimate(animateName, elementToAnimate);
-
-            if (ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 7))
-            {
-                animq.Configuration = configuration;
-            }
-        }
-
-        private void TemplatePage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (Parameter != null)
-            {
-                FocusElement(Parameter.Get("setFocus"));
-            }
-        }
-
-        private static void OnMenuBarTemplateChanged(
-            DependencyObject dependencyObject,
-            DependencyPropertyChangedEventArgs args)
-        {
-            if (dependencyObject is TemplatePage page)
-                page.MenuBarSession?.Refresh();
-        }
+    private static void OnMenuBarTemplateChanged(
+        DependencyObject dependencyObject,
+        DependencyPropertyChangedEventArgs args)
+    {
+        if (dependencyObject is TemplatePage page)
+            page.MenuBarSession?.Refresh();
     }
 }

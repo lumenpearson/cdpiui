@@ -1,11 +1,11 @@
-﻿using CDPIUI.Shared.Extensions;
+using System;
 using CDPIUI.Commands;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Default;
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using WinUI3Localizer;
 
 namespace CDPIUI;

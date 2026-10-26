@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -9,12 +15,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -29,7 +29,7 @@ public sealed partial class StoreItemSmallButton : UserControl
     private TranslateTransform _translate;
     private Button _button;
     private Rectangle _bottomRect;
-    private Vector3 shadowVector = new Vector3(0, 0, 20);
+    private Vector3 _shadowVector = new Vector3(0, 0, 20);
 
     public Action<StoreItemSmallButton> Click;
     public UIElement imageElement;
@@ -49,7 +49,7 @@ public sealed partial class StoreItemSmallButton : UserControl
 
         this.SizeChanged += (s, e) =>
         {
-            PART_Button.Width = e.NewSize.Width-15;
+            PART_Button.Width = e.NewSize.Width - 15;
             PART_Button.Height = e.NewSize.Height;
         };
 
@@ -63,7 +63,7 @@ public sealed partial class StoreItemSmallButton : UserControl
         AnimateTranslateY(-3, durationMs: 200);
 
         _bottomRect.Style = (Style)Resources["BackgroundRectangleHoverStyle"];
-        PART_Button.Translation += shadowVector;
+        PART_Button.Translation += _shadowVector;
     }
 
     private void OnButtonPointerExited(object sender, PointerRoutedEventArgs e)
@@ -72,7 +72,7 @@ public sealed partial class StoreItemSmallButton : UserControl
         AnimateTranslateY(0, durationMs: 200);
 
         _bottomRect.Style = (Style)Resources["BackgroundRectangleDefaultStyle"];
-        PART_Button.Translation -= shadowVector;
+        PART_Button.Translation -= _shadowVector;
     }
 
     private void AnimateTranslateY(double to, double durationMs)
@@ -153,9 +153,9 @@ public sealed partial class StoreItemSmallButton : UserControl
 
     public static readonly DependencyProperty CardBackgroundProperty =
         DependencyProperty.Register(
-            nameof(CardBackgroundBrush), 
-            typeof(Brush), 
-            typeof(StoreItemSmallButton), 
+            nameof(CardBackgroundBrush),
+            typeof(Brush),
+            typeof(StoreItemSmallButton),
             new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
         );
     public double PreferredWidth

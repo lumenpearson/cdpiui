@@ -1,198 +1,199 @@
-﻿using CDPIUI.Core.Basic;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.JSON;
 using CDPIUI.Core.LScript;
 using CDPIUI.Core.System;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
 
-namespace CDPIUI.Core.Store
+namespace CDPIUI.Core.Store;
+
+public class LocalItemInitModel
 {
-    public class LocalItemInitModel
+    public string? StoreId { get; set; }
+    public string? Type { get; set; }
+    public string? Version { get; set; }
+    public string? Name { get; set; }
+    public string? Icon { get; set; }
+    public string? ReadyToUseIcon = null;
+    public List<string[]>? Requirements { get; set; }
+    public string? ShortName { get; set; }
+    public string? Color { get; set; }
+    public string? Developer { get; set; }
+    public string? BeforeInstallActions { get; set; }
+    public string? AfterInstallActions { get; set; }
+    public string? ExecutableFile { get; set; }
+}
+
+public class LocalItemsInstallerHelper
+{
+    private readonly string _tempDirectory;
+
+    private const string AppTempDirectory = "TempFiles";
+    private const string DownloadManagerDirectory = "Offline";
+
+    public Action<string>? ErrorHappens;
+
+    private static LocalItemsInstallerHelper? _instance;
+    private static readonly object SyncRoot = new object();
+
+    public static LocalItemsInstallerHelper Instance
     {
-        public string? StoreId { get; set; }
-        public string? Type { get; set; }
-        public string? Version { get; set; }
-        public string? Name { get; set; }
-        public string? Icon { get; set; }
-        public string? ReadyToUseIcon = null;
-        public List<string[]>? Requirements { get; set; }
-        public string? ShortName { get; set; }
-        public string? Color { get; set; }
-        public string? Developer { get; set; }
-        public string? BeforeInstallActions { get; set; }
-        public string? AfterInstallActions { get; set; }
-        public string? ExecutableFile { get; set; }
+        get
+        {
+            lock (SyncRoot)
+            {
+                _instance ??= new LocalItemsInstallerHelper();
+                return _instance;
+            }
+        }
     }
 
-    public class LocalItemsInstallerHelper
+    // Files an unsigned pack may not bring: programs, libraries, drivers, installers and scripts.
+    private static readonly List<string> UnsignedPackSkippedFiles =
+    [
+        "*.exe", "*.dll", "*.sys", "*.msi", "*.com", "*.scr", "*.cpl", "*.bat", "*.cmd",
+        "*.ps1", "*.vbs", "*.vbe", "*.js", "*.jse", "*.wsf", "*.hta", "*.lnk", "*.url",
+    ];
+
+    private LocalItemsInstallerHelper()
     {
-        private readonly string TempDirectory;
+        string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
+        _tempDirectory = Path.Combine(localAppData, AppTempDirectory, DownloadManagerDirectory);
+    }
 
-        private const string AppTempDirectory = "TempFiles";
-        private const string DownloadManagerDirectory = "Offline";
+    public async Task<LocalItemInitModel?> ImportStoreItemPackFile(string itemPackFile, Action<string>? onError = null)
+    {
+        string tempFolderName = FileSystemService.GetNewTempFileName("ap");
+        string tempDestination = Path.Combine(_tempDirectory, tempFolderName);
 
-        public Action<string>? ErrorHappens;
+        bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
+        List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
 
-        private static LocalItemsInstallerHelper? _instance;
-        private static readonly object _lock = new object();
-
-        public static LocalItemsInstallerHelper Instance
+        try
         {
-            get
+            await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
+            string initFilePath = Path.Combine(tempDestination, "init.json");
+
+            // An empty init.json or "null" is not a pack either.
+            LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
+                ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
+                : null;
+            if (localItemInitModel == null)
             {
-                lock (_lock)
-                {
-                    _instance ??= new LocalItemsInstallerHelper();
-                    return _instance;
-                }
-            }
-        }
-
-        // Files an unsigned pack may not bring: programs, libraries, drivers, installers and scripts.
-        private static readonly List<string> UnsignedPackSkippedFiles =
-        [
-            "*.exe", "*.dll", "*.sys", "*.msi", "*.com", "*.scr", "*.cpl", "*.bat", "*.cmd",
-            "*.ps1", "*.vbs", "*.vbe", "*.js", "*.jse", "*.wsf", "*.hta", "*.lnk", "*.url",
-        ];
-
-        private LocalItemsInstallerHelper() 
-        {
-            string localAppData = CDPIUI.Core.Data.Directories.DataDirectory;
-            TempDirectory = Path.Combine(localAppData, AppTempDirectory, DownloadManagerDirectory);
-        }
-
-        public async Task<LocalItemInitModel?> ImportStoreItemPackFile(string itemPackFile, Action<string>? onError = null)
-        {
-            string tempFolderName = FileSystemService.GetNewTempFileName("ap");
-            string tempDestination = Path.Combine(TempDirectory, tempFolderName);
-
-            bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
-
-            try
-            {
-                await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
-                string initFilePath = Path.Combine(tempDestination, "init.json");
-
-                // An empty init.json or "null" is not a pack either.
-                LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
-                    ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
-                    : null;
-                if (localItemInitModel == null)
-                {
-                    TryDeleteDirectory(tempDestination);
-                    string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
-                    (onError ?? ErrorHappens)?.Invoke(error);
-                    return null;
-                }
-
-                if (localItemInitModel.Icon?.StartsWith("$DYNAMICIMAGE") == true)
-                {
-                    string iconUrl = LScriptCore.ExecuteScript(localItemInitModel.Icon, scriptArgs: tempDestination);
-                    // Only an image of the pack itself: an absolute path in Icon copied any local file
-                    // before the user had confirmed anything.
-                    if (File.Exists(iconUrl) && IsPackImage(tempDestination, iconUrl))
-                    {
-                        string newIconUrl = Path.Combine(TempDirectory, $"{tempFolderName}_ICONDATA", Path.GetFileName(iconUrl));
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(newIconUrl)!);
-
-                        File.Copy(iconUrl, newIconUrl, overwrite: true);
-                        localItemInitModel.ReadyToUseIcon = newIconUrl;
-                    }
-                }
-
-                if (localItemInitModel.StoreId == SharedConstants.ApplicationStoreId || localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
-                {
-                    throw new AccessViolationException("StoreId is protected by security policy");
-                }
-                if (!StoreItemIds.IsValid(localItemInitModel.StoreId))
-                {
-                    throw new InvalidDataException("StoreId is not a valid identifier");
-                }
-
-                Directory.Delete(tempDestination, recursive: true);
-
-                if (!isCatalogCheckRequired) localItemInitModel.ExecutableFile = null;
-                return localItemInitModel;
-            }
-            catch (Exception ex)
-            {
-                string error = HandleError(ex);
+                TryDeleteDirectory(tempDestination);
+                string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
                 (onError ?? ErrorHappens)?.Invoke(error);
                 return null;
             }
-        }
 
-        public async Task BeginLocalItemInstalling(string itemPackFile, Action<string>? onError = null, CancellationToken cancellationToken = default)
-        {
-            string tempFolderName = FileSystemService.GetNewTempFileName("ap");
-            string tempDestination = Path.Combine(TempDirectory, tempFolderName);
-
-            bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
-            List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
-
-            try
+            if (localItemInitModel.Icon?.StartsWith("$DYNAMICIMAGE") == true)
             {
-                await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
-                string initFilePath = Path.Combine(tempDestination, "init.json");
-
-                // An empty init.json or "null" is not a pack either.
-                LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
-                    ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
-                    : null;
-                if (localItemInitModel == null)
+                string iconUrl = LScriptCore.ExecuteScript(localItemInitModel.Icon, scriptArgs: tempDestination);
+                // Only an image of the pack itself: an absolute path in Icon copied any local file
+                // before the user had confirmed anything.
+                if (File.Exists(iconUrl) && IsPackImage(tempDestination, iconUrl))
                 {
-                    TryDeleteDirectory(tempDestination);
-                    string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
-                    (onError ?? ErrorHappens)?.Invoke(error);
-                    return;
-                }
-                if (!StoreItemIds.IsValid(localItemInitModel.StoreId) ||
-                    localItemInitModel.StoreId == SharedConstants.ApplicationStoreId ||
-                    localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
-                {
-                    throw new InvalidDataException("StoreId is not allowed for a local pack");
-                }
+                    string newIconUrl = Path.Combine(_tempDirectory, $"{tempFolderName}_ICONDATA", Path.GetFileName(iconUrl));
 
-                if (cancellationToken.IsCancellationRequested) return;
-                StoreHelper.Instance.AddItemToQueue(localItemInitModel.StoreId!, packFile: tempDestination, isSignedPack: isCatalogCheckRequired);
-                return;
+                    Directory.CreateDirectory(Path.GetDirectoryName(newIconUrl)!);
+
+                    File.Copy(iconUrl, newIconUrl, overwrite: true);
+                    localItemInitModel.ReadyToUseIcon = newIconUrl;
+                }
             }
-            catch (Exception ex)
+
+            if (localItemInitModel.StoreId == SharedConstants.ApplicationStoreId || localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
             {
-                string error = HandleError(ex);
+                throw new AccessViolationException("StoreId is protected by security policy");
+            }
+            if (!StoreItemIds.IsValid(localItemInitModel.StoreId))
+            {
+                throw new InvalidDataException("StoreId is not a valid identifier");
+            }
+
+            Directory.Delete(tempDestination, recursive: true);
+
+            if (!isCatalogCheckRequired)
+                localItemInitModel.ExecutableFile = null;
+            return localItemInitModel;
+        }
+        catch (Exception ex)
+        {
+            string error = HandleError(ex);
+            (onError ?? ErrorHappens)?.Invoke(error);
+            return null;
+        }
+    }
+
+    public async Task BeginLocalItemInstalling(string itemPackFile, Action<string>? onError = null, CancellationToken cancellationToken = default)
+    {
+        string tempFolderName = FileSystemService.GetNewTempFileName("ap");
+        string tempDestination = Path.Combine(_tempDirectory, tempFolderName);
+
+        bool isCatalogCheckRequired = string.Equals(Path.GetExtension(itemPackFile), ".cdpisignedpack", StringComparison.OrdinalIgnoreCase);
+        List<string> filesToSkip = isCatalogCheckRequired ? [] : UnsignedPackSkippedFiles;
+
+        try
+        {
+            await ZipService.ExtractZip(itemPackFile, "/", tempDestination, filesToSkip: filesToSkip, isCatalogCheckRequired: isCatalogCheckRequired);
+            string initFilePath = Path.Combine(tempDestination, "init.json");
+
+            // An empty init.json or "null" is not a pack either.
+            LocalItemInitModel? localItemInitModel = File.Exists(initFilePath)
+                ? JSONConvertor.LoadJson<LocalItemInitModel>(initFilePath)
+                : null;
+            if (localItemInitModel == null)
+            {
+                TryDeleteDirectory(tempDestination);
+                string error = "ERR_LOCAL_ITEM_UNSUPPORTED";
                 (onError ?? ErrorHappens)?.Invoke(error);
                 return;
             }
-        }
-
-        private static void TryDeleteDirectory(string path)
-        {
-            try
+            if (!StoreItemIds.IsValid(localItemInitModel.StoreId) ||
+                localItemInitModel.StoreId == SharedConstants.ApplicationStoreId ||
+                localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
             {
-                if (Directory.Exists(path))
-                    Directory.Delete(path, recursive: true);
+                throw new InvalidDataException("StoreId is not allowed for a local pack");
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Logger.Instance.CreateWarningLog(nameof(LocalItemsInstallerHelper), $"Cannot delete \"{path}\": {ex.Message}");
-            }
-        }
 
-        private string HandleError(Exception ex)
+            if (cancellationToken.IsCancellationRequested)
+                return;
+            StoreHelper.Instance.AddItemToQueue(localItemInitModel.StoreId!, packFile: tempDestination, isSignedPack: isCatalogCheckRequired);
+            return;
+        }
+        catch (Exception ex)
         {
-            return ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_LOCAL_ITEM_INSTALLING", ex);
+            string error = HandleError(ex);
+            (onError ?? ErrorHappens)?.Invoke(error);
+            return;
         }
+    }
 
-        private static readonly string[] PackImageExtensions = [".png", ".jpg", ".jpeg", ".ico", ".bmp", ".gif"];
-
-        private static bool IsPackImage(string packDirectory, string file)
+    private static void TryDeleteDirectory(string path)
+    {
+        try
         {
-            string root = Path.GetFullPath(packDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            string fullPath = Path.GetFullPath(file);
-            return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) &&
-                PackImageExtensions.Contains(Path.GetExtension(fullPath), StringComparer.OrdinalIgnoreCase);
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.Instance.CreateWarningLog(nameof(LocalItemsInstallerHelper), $"Cannot delete \"{path}\": {ex.Message}");
+        }
+    }
+
+    private string HandleError(Exception ex)
+    {
+        return ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_LOCAL_ITEM_INSTALLING", ex);
+    }
+
+    private static readonly string[] PackImageExtensions = [".png", ".jpg", ".jpeg", ".ico", ".bmp", ".gif"];
+
+    private static bool IsPackImage(string packDirectory, string file)
+    {
+        string root = Path.GetFullPath(packDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        string fullPath = Path.GetFullPath(file);
+        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) &&
+            PackImageExtensions.Contains(Path.GetExtension(fullPath), StringComparer.OrdinalIgnoreCase);
     }
 }

@@ -1,262 +1,261 @@
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
 using Microsoft.Win32;
 using Microsoft.Windows.AppLifecycle;
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
 using WinUI3Localizer;
 
-namespace CDPIUI.Helper.Basic
+namespace CDPIUI.Helper.Basic;
+
+internal static class FileAssociationService
 {
-    internal static class FileAssociationService
+    private const string AutomaticRegistrationMarkerPath =
+        @"Software\CDPIUI\Registration\{B0DC091F-8A91-4EA4-AC76-ECA28C7ED986}\FileIcons-v2";
+
+    private static readonly Association[] Associations =
+    [
+        new(".cdpitask", "CDPIUI.ConditionalTask", "ConditionalTaskFileTypeDisplayName", @"Assets\Icons\ConditionalUtil.ico"),
+        new(".cdpiconfigpack", "CDPIUI.ConfigPack", "ConfigPackFileTypeDisplayName", @"Assets\Store\Files\Pack.ico"),
+        new(".cdpiconfig", "CDPIUI.SharedConfig", "ConfigShareFileType", @"Assets\Store\Files\List.ico"),
+        new(".cdpisignedpack", "CDPIUI.SignedPack", "SignedPackFileTypeDisplayName", @"Assets\Store\Files\Pack.ico"),
+        new(".cdpipatch", "CDPIUI.Patch", "PatchFileTypeDisplayName", @"Assets\Store\Files\Pack.ico")
+    ];
+
+    private const string RegisteredPathValueName = "ExecutablePath";
+
+    /// <summary>
+    /// Registers the associations once per executable path: after the application was moved
+    /// or reinstalled elsewhere, the old registration points to a missing file.
+    /// </summary>
+    internal static void EnsureRegistered()
     {
-        private const string AutomaticRegistrationMarkerPath =
-            @"Software\CDPIUI\Registration\{B0DC091F-8A91-4EA4-AC76-ECA28C7ED986}\FileIcons-v2";
+        string executablePath = Environment.ProcessPath ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(executablePath) ||
+            string.Equals(GetRegisteredExecutablePath(), executablePath, StringComparison.OrdinalIgnoreCase))
+            return;
 
-        private static readonly Association[] Associations =
-        [
-            new(".cdpitask", "CDPIUI.ConditionalTask", "ConditionalTaskFileTypeDisplayName", @"Assets\Icons\ConditionalUtil.ico"),
-            new(".cdpiconfigpack", "CDPIUI.ConfigPack", "ConfigPackFileTypeDisplayName", @"Assets\Store\Files\Pack.ico"),
-            new(".cdpiconfig", "CDPIUI.SharedConfig", "ConfigShareFileType", @"Assets\Store\Files\List.ico"),
-            new(".cdpisignedpack", "CDPIUI.SignedPack", "SignedPackFileTypeDisplayName", @"Assets\Store\Files\Pack.ico"),
-            new(".cdpipatch", "CDPIUI.Patch", "PatchFileTypeDisplayName", @"Assets\Store\Files\Pack.ico")
-        ];
+        // Attempted once per path, also when a part failed, so the warnings are not repeated on every start.
+        _ = RegisterAssociations();
+        _ = TryCreateAutomaticRegistrationMarker(executablePath);
+    }
 
-        private const string RegisteredPathValueName = "ExecutablePath";
+    internal static bool RegisterManually()
+    {
+        bool registered = RegisterAssociations();
+        if (registered)
+            _ = TryCreateAutomaticRegistrationMarker(Environment.ProcessPath ?? string.Empty);
+        return registered;
+    }
 
-        /// <summary>
-        /// Registers the associations once per executable path: after the application was moved
-        /// or reinstalled elsewhere, the old registration points to a missing file.
-        /// </summary>
-        internal static void EnsureRegistered()
+    private static bool RegisterAssociations()
+    {
+        var executablePath = Environment.ProcessPath ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(executablePath))
+            return false;
+
+        var localizer = Localizer.Get();
+        var applicationDisplayName = string.Format(
+            localizer.GetLocalizedString("FileAssociationApplicationNameFormat"),
+            ApplicationInfo.Version);
+        var executableIcon = $"{executablePath},0";
+
+        var protocolRegistered = RegisterProtocolActivation(
+            executablePath,
+            executableIcon,
+            applicationDisplayName);
+        var fileActivationRegistered = RegisterFileActivationHandlers(
+            executablePath,
+            localizer);
+        var classicAssociationsRegistered = RegisterClassicAssociations(
+            executablePath,
+            applicationDisplayName,
+            localizer);
+
+        return protocolRegistered &&
+            fileActivationRegistered &&
+            classicAssociationsRegistered;
+    }
+
+    private static bool RegisterProtocolActivation(
+        string executablePath,
+        string executableIcon,
+        string applicationDisplayName)
+    {
+        try
         {
-            string executablePath = Environment.ProcessPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(executablePath) ||
-                string.Equals(GetRegisteredExecutablePath(), executablePath, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            // Attempted once per path, also when a part failed, so the warnings are not repeated on every start.
-            _ = RegisterAssociations();
-            _ = TryCreateAutomaticRegistrationMarker(executablePath);
-        }
-
-        internal static bool RegisterManually()
-        {
-            bool registered = RegisterAssociations();
-            if (registered)
-                _ = TryCreateAutomaticRegistrationMarker(Environment.ProcessPath ?? string.Empty);
-            return registered;
-        }
-
-        private static bool RegisterAssociations()
-        {
-            var executablePath = Environment.ProcessPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(executablePath))
-                return false;
-
-            var localizer = Localizer.Get();
-            var applicationDisplayName = string.Format(
-                localizer.GetLocalizedString("FileAssociationApplicationNameFormat"),
-                ApplicationInfo.Version);
-            var executableIcon = $"{executablePath},0";
-
-            var protocolRegistered = RegisterProtocolActivation(
-                executablePath,
+            ActivationRegistrationManager.RegisterForProtocolActivation(
+                "cdpiui",
                 executableIcon,
-                applicationDisplayName);
-            var fileActivationRegistered = RegisterFileActivationHandlers(
-                executablePath,
-                localizer);
-            var classicAssociationsRegistered = RegisterClassicAssociations(
-                executablePath,
                 applicationDisplayName,
-                localizer);
+                executablePath);
 
-            return protocolRegistered &&
-                fileActivationRegistered &&
-                classicAssociationsRegistered;
+            return true;
         }
-
-        private static bool RegisterProtocolActivation(
-            string executablePath,
-            string executableIcon,
-            string applicationDisplayName)
+        catch (Exception ex)
         {
-            try
+            Logger.Instance.CreateWarningLog(
+                nameof(FileAssociationService),
+                $"Cannot register protocol activation: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static bool RegisterFileActivationHandlers(
+        string executablePath,
+        ILocalizer localizer)
+    {
+        try
+        {
+            foreach (var association in Associations)
             {
-                ActivationRegistrationManager.RegisterForProtocolActivation(
-                    "cdpiui",
-                    executableIcon,
-                    applicationDisplayName,
+                ActivationRegistrationManager.RegisterForFileTypeActivation(
+                    [association.Extension],
+                    GetAssociationIcon(association),
+                    localizer.GetLocalizedString(association.DisplayNameResource),
+                    [],
                     executablePath);
+            }
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(FileAssociationService),
-                    $"Cannot register protocol activation: {ex.Message}");
-                return false;
-            }
+            return true;
         }
-
-        private static bool RegisterFileActivationHandlers(
-            string executablePath,
-            ILocalizer localizer)
+        catch (Exception ex)
         {
-            try
-            {
-                foreach (var association in Associations)
-                {
-                    ActivationRegistrationManager.RegisterForFileTypeActivation(
-                        [association.Extension],
-                        GetAssociationIcon(association),
-                        localizer.GetLocalizedString(association.DisplayNameResource),
-                        [],
-                        executablePath);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(FileAssociationService),
-                    $"Cannot register file activation: {ex.Message}");
-                return false;
-            }
+            Logger.Instance.CreateWarningLog(
+                nameof(FileAssociationService),
+                $"Cannot register file activation: {ex.Message}");
+            return false;
         }
+    }
 
-        private static bool RegisterClassicAssociations(
-            string executablePath,
-            string applicationDisplayName,
-            ILocalizer localizer)
+    private static bool RegisterClassicAssociations(
+        string executablePath,
+        string applicationDisplayName,
+        ILocalizer localizer)
+    {
+        try
         {
-            try
+            var executableName = Path.GetFileName(executablePath);
+            var command = $"\"{executablePath}\" \"%1\"";
+            var icon = $"\"{executablePath}\",0";
+
+            SetValue($@"Software\Classes\Applications\{executableName}", "FriendlyAppName", applicationDisplayName);
+            SetValue($@"Software\Classes\Applications\{executableName}", "ApplicationIcon", icon);
+            SetValue($@"Software\Classes\Applications\{executableName}\DefaultIcon", null, icon);
+            SetValue($@"Software\Classes\Applications\{executableName}\shell\open\command", null, command);
+
+            using var supportedTypesKey = Registry.CurrentUser.CreateSubKey(
+                $@"Software\Classes\Applications\{executableName}\SupportedTypes");
+            using var capabilitiesKey = Registry.CurrentUser.CreateSubKey(
+                @"Software\CDPIUI\Capabilities");
+            capabilitiesKey?.SetValue("ApplicationName", applicationDisplayName);
+            capabilitiesKey?.SetValue("ApplicationDescription", "CDPI UI");
+            capabilitiesKey?.SetValue("ApplicationIcon", icon);
+            using var capabilityAssociationsKey = Registry.CurrentUser.CreateSubKey(
+                @"Software\CDPIUI\Capabilities\FileAssociations");
+
+            foreach (var association in Associations)
             {
-                var executableName = Path.GetFileName(executablePath);
-                var command = $"\"{executablePath}\" \"%1\"";
-                var icon = $"\"{executablePath}\",0";
+                var displayName = localizer.GetLocalizedString(association.DisplayNameResource);
+                SetValue($@"Software\Classes\{association.Extension}", null, association.ProgId);
+                SetValue($@"Software\Classes\{association.ProgId}", null, displayName);
+                SetValue($@"Software\Classes\{association.ProgId}", "FriendlyTypeName", displayName);
+                SetValue($@"Software\Classes\{association.ProgId}\DefaultIcon", null, GetAssociationIcon(association));
+                SetValue($@"Software\Classes\{association.ProgId}\shell\open\command", null, command);
 
-                SetValue($@"Software\Classes\Applications\{executableName}", "FriendlyAppName", applicationDisplayName);
-                SetValue($@"Software\Classes\Applications\{executableName}", "ApplicationIcon", icon);
-                SetValue($@"Software\Classes\Applications\{executableName}\DefaultIcon", null, icon);
-                SetValue($@"Software\Classes\Applications\{executableName}\shell\open\command", null, command);
-
-                using var supportedTypesKey = Registry.CurrentUser.CreateSubKey(
-                    $@"Software\Classes\Applications\{executableName}\SupportedTypes");
-                using var capabilitiesKey = Registry.CurrentUser.CreateSubKey(
-                    @"Software\CDPIUI\Capabilities");
-                capabilitiesKey?.SetValue("ApplicationName", applicationDisplayName);
-                capabilitiesKey?.SetValue("ApplicationDescription", "CDPI UI");
-                capabilitiesKey?.SetValue("ApplicationIcon", icon);
-                using var capabilityAssociationsKey = Registry.CurrentUser.CreateSubKey(
-                    @"Software\CDPIUI\Capabilities\FileAssociations");
-
-                foreach (var association in Associations)
+                using (var openWithKey = Registry.CurrentUser.CreateSubKey(
+                    $@"Software\Classes\{association.Extension}\OpenWithProgids"))
                 {
-                    var displayName = localizer.GetLocalizedString(association.DisplayNameResource);
-                    SetValue($@"Software\Classes\{association.Extension}", null, association.ProgId);
-                    SetValue($@"Software\Classes\{association.ProgId}", null, displayName);
-                    SetValue($@"Software\Classes\{association.ProgId}", "FriendlyTypeName", displayName);
-                    SetValue($@"Software\Classes\{association.ProgId}\DefaultIcon", null, GetAssociationIcon(association));
-                    SetValue($@"Software\Classes\{association.ProgId}\shell\open\command", null, command);
-
-                    using (var openWithKey = Registry.CurrentUser.CreateSubKey(
-                        $@"Software\Classes\{association.Extension}\OpenWithProgids"))
-                    {
-                        openWithKey?.SetValue(
-                            association.ProgId,
-                            Array.Empty<byte>(),
-                            RegistryValueKind.None);
-                    }
-
-                    supportedTypesKey?.SetValue(
-                        association.Extension,
+                    openWithKey?.SetValue(
+                        association.ProgId,
                         Array.Empty<byte>(),
                         RegistryValueKind.None);
-                    capabilityAssociationsKey?.SetValue(
-                        association.Extension,
-                        association.ProgId);
                 }
 
-                SetValue(
-                    @"Software\RegisteredApplications",
-                    "CDPI UI",
-                    @"Software\CDPIUI\Capabilities");
-                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
-                return true;
+                supportedTypesKey?.SetValue(
+                    association.Extension,
+                    Array.Empty<byte>(),
+                    RegistryValueKind.None);
+                capabilityAssociationsKey?.SetValue(
+                    association.Extension,
+                    association.ProgId);
             }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(FileAssociationService),
-                    $"Cannot register classic file associations: {ex.Message}");
-                return false;
-            }
-        }
 
-        private static string GetAssociationIcon(Association association)
+            SetValue(
+                @"Software\RegisteredApplications",
+                "CDPI UI",
+                @"Software\CDPIUI\Capabilities");
+            SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+            return true;
+        }
+        catch (Exception ex)
         {
-            var iconPath = Path.Combine(AppContext.BaseDirectory, association.IconRelativePath);
-            return $"\"{iconPath}\",0";
+            Logger.Instance.CreateWarningLog(
+                nameof(FileAssociationService),
+                $"Cannot register classic file associations: {ex.Message}");
+            return false;
         }
-
-        private static string? GetRegisteredExecutablePath()
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(AutomaticRegistrationMarkerPath);
-                return key?.GetValue(RegisteredPathValueName) as string;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(FileAssociationService),
-                    $"Cannot read the automatic association registration marker: {ex.Message}");
-                return null;
-            }
-        }
-
-        private static bool TryCreateAutomaticRegistrationMarker(string executablePath)
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.CreateSubKey(AutomaticRegistrationMarkerPath);
-                key?.SetValue(RegisteredPathValueName, executablePath);
-                return key is not null;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(FileAssociationService),
-                    $"Cannot create the automatic association registration marker: {ex.Message}");
-                return false;
-            }
-        }
-
-        private static void SetValue(string keyPath, string? valueName, object value)
-        {
-            using var key = Registry.CurrentUser.CreateSubKey(keyPath);
-            key?.SetValue(valueName, value);
-        }
-
-        private sealed record Association(
-            string Extension,
-            string ProgId,
-            string DisplayNameResource,
-            string IconRelativePath);
-
-        private const uint SHCNE_ASSOCCHANGED = 0x08000000;
-        private const uint SHCNF_IDLIST = 0x0000;
-
-        [DllImport("shell32.dll")]
-        private static extern void SHChangeNotify(
-            uint wEventId,
-            uint uFlags,
-            IntPtr dwItem1,
-            IntPtr dwItem2);
     }
+
+    private static string GetAssociationIcon(Association association)
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, association.IconRelativePath);
+        return $"\"{iconPath}\",0";
+    }
+
+    private static string? GetRegisteredExecutablePath()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(AutomaticRegistrationMarkerPath);
+            return key?.GetValue(RegisteredPathValueName) as string;
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateWarningLog(
+                nameof(FileAssociationService),
+                $"Cannot read the automatic association registration marker: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static bool TryCreateAutomaticRegistrationMarker(string executablePath)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(AutomaticRegistrationMarkerPath);
+            key?.SetValue(RegisteredPathValueName, executablePath);
+            return key is not null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateWarningLog(
+                nameof(FileAssociationService),
+                $"Cannot create the automatic association registration marker: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static void SetValue(string keyPath, string? valueName, object value)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(keyPath);
+        key?.SetValue(valueName, value);
+    }
+
+    private sealed record Association(
+        string Extension,
+        string ProgId,
+        string DisplayNameResource,
+        string IconRelativePath);
+
+    private const uint SHCNE_ASSOCCHANGED = 0x08000000;
+    private const uint SHCNF_IDLIST = 0x0000;
+
+    [DllImport("shell32.dll")]
+    private static extern void SHChangeNotify(
+        uint wEventId,
+        uint uFlags,
+        IntPtr dwItem1,
+        IntPtr dwItem2);
 }

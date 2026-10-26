@@ -25,7 +25,8 @@ public partial class ConfigItem
                 ConfigFileKind kind = Enum.TryParse(resource.kind, true, out ConfigFileKind parsedKind)
                     ? parsedKind : ConfigFileReferences.InferKind(resource.path) ?? ConfigFileKind.Other;
                 files.Add(ConfigFileReferences.CreateFile(reference, ExpandFileReference(reference), kind,
-                    isAttachedResource: true) with { Name = resource.alias });
+                    isAttachedResource: true) with
+                { Name = resource.alias });
             }
             files.AddRange(ConfigFileReferences.ExtractFromText(startup_string, ExpandFileReference));
             foreach (string value in GetVariableCandidateValues())

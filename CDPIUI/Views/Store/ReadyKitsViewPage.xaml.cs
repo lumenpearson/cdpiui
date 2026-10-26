@@ -1,3 +1,6 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Store;
 using CDPIUI.Core.Store;
@@ -5,73 +8,69 @@ using CDPIUI.Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Linq;
 using WinUI3Localizer;
 
-namespace CDPIUI.Views.Store
+namespace CDPIUI.Views.Store;
+
+public sealed partial class ReadyKitsViewPage : TemplatePage
 {
-    public sealed partial class ReadyKitsViewPage : TemplatePage
+    private readonly ILocalizer _localizer = Localizer.Get();
+
+    public ObservableCollection<StoreViewBundleItem> Bundles { get; } = [];
+
+    public ReadyKitsViewPage()
     {
-        private readonly ILocalizer _localizer = Localizer.Get();
+        InitializeComponent();
 
-        public ObservableCollection<StoreViewBundleItem> Bundles { get; } = [];
+        IsForwardAnimationToPageAvailable = true;
+        ElementToAnimateForwardConnectedAnimation = PageTitleTextBlock;
+        PageTitleTextBlock.Text = _localizer.GetLocalizedString("ReadyKitsPageTitle");
+    }
 
-        public ReadyKitsViewPage()
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+        bool loaded = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: false);
+        if (!loaded)
         {
-            InitializeComponent();
-
-            IsForwardAnimationToPageAvailable = true;
-            ElementToAnimateForwardConnectedAnimation = PageTitleTextBlock;
-            PageTitleTextBlock.Text = _localizer.GetLocalizedString("ReadyKitsPageTitle");
+            ShowError(_localizer.GetLocalizedString("ReadyKitsLoadError"));
+            return;
         }
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        Bundles.Clear();
+        foreach (StoreViewBundleItem bundle in StoreHelper.Instance.ReadyKits
+            .OrderByDescending(kit => kit.IsRecommended)
+            .Select(ReadyKitViewModelFactory.Create))
         {
-            base.OnNavigatedTo(e);
-
-            bool loaded = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync: false);
-            if (!loaded)
-            {
-                ShowError(_localizer.GetLocalizedString("ReadyKitsLoadError"));
-                return;
-            }
-
-            Bundles.Clear();
-            foreach (StoreViewBundleItem bundle in StoreHelper.Instance.ReadyKits
-                .OrderByDescending(kit => kit.IsRecommended)
-                .Select(ReadyKitViewModelFactory.Create))
-            {
-                Bundles.Add(bundle);
-            }
-
-            if (Bundles.Count == 0)
-            {
-                ShowError(_localizer.GetLocalizedString("ReadyKitsEmptyMessage"));
-                return;
-            }
-
-            LoadingGrid.Visibility = Visibility.Collapsed;
-            ErrorGrid.Visibility = Visibility.Collapsed;
-            StoreScrollViewer.Visibility = Visibility.Visible;
+            Bundles.Add(bundle);
         }
 
-        private void ReadyKitButton_Click(StoreReadyKitButton button)
+        if (Bundles.Count == 0)
         {
-            PrepareToConnectedForwardAnimate(button.ImageElement);
-            StoreWindow.Instance.NavigateSubPage(
-                typeof(ReadyKitViewPage),
-                new NameValueCollection { { "kitId", button.KitId } },
-                new SuppressNavigationTransitionInfo());
+            ShowError(_localizer.GetLocalizedString("ReadyKitsEmptyMessage"));
+            return;
         }
 
-        private void ShowError(string message)
-        {
-            LoadingGrid.Visibility = Visibility.Collapsed;
-            StoreScrollViewer.Visibility = Visibility.Collapsed;
-            ErrorTextBlock.Text = message;
-            ErrorGrid.Visibility = Visibility.Visible;
-        }
+        LoadingGrid.Visibility = Visibility.Collapsed;
+        ErrorGrid.Visibility = Visibility.Collapsed;
+        StoreScrollViewer.Visibility = Visibility.Visible;
+    }
+
+    private void ReadyKitButton_Click(StoreReadyKitButton button)
+    {
+        PrepareToConnectedForwardAnimate(button.ImageElement);
+        StoreWindow.Instance.NavigateSubPage(
+            typeof(ReadyKitViewPage),
+            new NameValueCollection { { "kitId", button.KitId } },
+            new SuppressNavigationTransitionInfo());
+    }
+
+    private void ShowError(string message)
+    {
+        LoadingGrid.Visibility = Visibility.Collapsed;
+        StoreScrollViewer.Visibility = Visibility.Collapsed;
+        ErrorTextBlock.Text = message;
+        ErrorGrid.Visibility = Visibility.Visible;
     }
 }

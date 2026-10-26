@@ -31,6 +31,49 @@ public sealed class BlockCheckTargetInputParser
         BlockCheckTargetInputOptions? options = null)
     {
         options ??= new BlockCheckTargetInputOptions();
+        List<BlockCheckIssue> issues = ValidateOptions(options);
+        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
+        {
+            return new BlockCheckTargetInputResult { Issues = issues };
+        }
+
+        string[] lines = SplitInputLines(input);
+        if (lines.Length == 0)
+        {
+            issues.Add(Error("TARGET_INPUT_EMPTY", "Enter at least one domain or URL."));
+            return new BlockCheckTargetInputResult { Issues = issues };
+        }
+
+        List<TargetSeed> seeds = [];
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            AddLineSeeds(lines[lineIndex], $"line-{lineIndex + 1}", options, seeds, issues);
+        }
+
+        TargetSeed[] distinctSeeds = seeds.Distinct().ToArray();
+        if (distinctSeeds.Length > options.MaximumTargets)
+        {
+            issues.Add(Error(
+                "TARGET_INPUT_LIMIT_EXCEEDED",
+                $"The input expands to {distinctSeeds.Length} targets; the configured limit is {options.MaximumTargets}."));
+            return new BlockCheckTargetInputResult { Issues = issues };
+        }
+
+        List<BlockCheckTarget> targets = CreateTargets(distinctSeeds);
+        if (targets.Count == 0 && !issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
+        {
+            issues.Add(Error("TARGET_INPUT_NO_TARGETS", "No enabled probe targets could be created."));
+        }
+
+        return new BlockCheckTargetInputResult
+        {
+            Targets = targets,
+            Issues = issues,
+        };
+    }
+
+    private static List<BlockCheckIssue> ValidateOptions(BlockCheckTargetInputOptions options)
+    {
         List<BlockCheckIssue> issues = [];
         if (options.Protocols.Count == 0)
         {
@@ -47,93 +90,86 @@ public sealed class BlockCheckTargetInputParser
             issues.Add(Error("TARGET_INPUT_LIMIT_INVALID", "Maximum target count must be at least one."));
         }
 
-        if (issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
-        {
-            return new BlockCheckTargetInputResult { Issues = issues };
-        }
+        return issues;
+    }
 
-        string[] lines = (input ?? string.Empty)
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(line => line.Length > 0 && !line.StartsWith('#'))
-            .ToArray();
-        if (lines.Length == 0)
-        {
-            issues.Add(Error("TARGET_INPUT_EMPTY", "Enter at least one domain or URL."));
-            return new BlockCheckTargetInputResult { Issues = issues };
-        }
+    private static string[] SplitInputLines(string input) => (input ?? string.Empty)
+        .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(line => line.Length > 0 && !line.StartsWith('#'))
+        .ToArray();
 
-        List<TargetSeed> seeds = [];
-        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
-        {
-            string line = lines[lineIndex];
-            bool hasExplicitScheme = line.Contains("://", StringComparison.Ordinal);
-            string candidate = hasExplicitScheme ? line : $"https://{line}";
-            if (!Uri.TryCreate(candidate, UriKind.Absolute, out Uri? uri) ||
-                string.IsNullOrWhiteSpace(uri.Host))
-            {
-                issues.Add(Error(
-                    "TARGET_INPUT_INVALID",
-                    "The input line is not a valid domain or absolute URL.",
-                    $"line-{lineIndex + 1}"));
-                continue;
-            }
-
-            if (hasExplicitScheme &&
-                !uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
-                !uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            {
-                issues.Add(Error(
-                    "TARGET_INPUT_SCHEME_UNSUPPORTED",
-                    "Only HTTP and HTTPS URLs are supported.",
-                    $"line-{lineIndex + 1}"));
-                continue;
-            }
-
-            string host = BlockCheckTarget.NormalizeHost(uri.Host);
-            if (!BlockCheckTarget.IsValidHost(host))
-            {
-                issues.Add(Error(
-                    "TARGET_INPUT_HOST_INVALID",
-                    "The input line does not contain a valid DNS host name.",
-                    $"line-{lineIndex + 1}"));
-                continue;
-            }
-
-            BlockCheckProtocol[] protocols = SelectProtocols(uri, hasExplicitScheme, options.Protocols);
-            if (protocols.Length == 0)
-            {
-                issues.Add(new BlockCheckIssue(
-                    BlockCheckIssueSeverity.Warning,
-                    "TARGET_INPUT_PROTOCOL_DISABLED",
-                    "The URL protocol is disabled by the current probe selection.",
-                    $"line-{lineIndex + 1}"));
-                continue;
-            }
-
-            string path = string.IsNullOrEmpty(uri.PathAndQuery) ? "/" : uri.PathAndQuery;
-            int? inputPort = GetInputPort(line, hasExplicitScheme, uri);
-            foreach (BlockCheckProtocol protocol in protocols)
-            {
-                foreach (BlockCheckIpVersion ipVersion in options.IpVersions.OrderBy(value => value))
-                {
-                    seeds.Add(new TargetSeed(host, path, protocol, ipVersion, inputPort));
-                }
-            }
-        }
-
-        TargetSeed[] distinctSeeds = seeds.Distinct().ToArray();
-        if (distinctSeeds.Length > options.MaximumTargets)
+    /// <summary>
+    /// Adds a seed for each enabled protocol and IP version of one input line, or the issue
+    /// that rejects the line.
+    /// </summary>
+    private static void AddLineSeeds(
+        string line,
+        string lineId,
+        BlockCheckTargetInputOptions options,
+        List<TargetSeed> seeds,
+        List<BlockCheckIssue> issues)
+    {
+        bool hasExplicitScheme = line.Contains("://", StringComparison.Ordinal);
+        string candidate = hasExplicitScheme ? line : $"https://{line}";
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out Uri? uri) ||
+            string.IsNullOrWhiteSpace(uri.Host))
         {
             issues.Add(Error(
-                "TARGET_INPUT_LIMIT_EXCEEDED",
-                $"The input expands to {distinctSeeds.Length} targets; the configured limit is {options.MaximumTargets}."));
-            return new BlockCheckTargetInputResult { Issues = issues };
+                "TARGET_INPUT_INVALID",
+                "The input line is not a valid domain or absolute URL.",
+                lineId));
+            return;
         }
 
-        List<BlockCheckTarget> targets = [];
-        for (int index = 0; index < distinctSeeds.Length; index++)
+        if (hasExplicitScheme &&
+            !uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+            !uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
         {
-            TargetSeed seed = distinctSeeds[index];
+            issues.Add(Error(
+                "TARGET_INPUT_SCHEME_UNSUPPORTED",
+                "Only HTTP and HTTPS URLs are supported.",
+                lineId));
+            return;
+        }
+
+        string host = BlockCheckTarget.NormalizeHost(uri.Host);
+        if (!BlockCheckTarget.IsValidHost(host))
+        {
+            issues.Add(Error(
+                "TARGET_INPUT_HOST_INVALID",
+                "The input line does not contain a valid DNS host name.",
+                lineId));
+            return;
+        }
+
+        BlockCheckProtocol[] protocols = SelectProtocols(uri, hasExplicitScheme, options.Protocols);
+        if (protocols.Length == 0)
+        {
+            issues.Add(new BlockCheckIssue(
+                BlockCheckIssueSeverity.Warning,
+                "TARGET_INPUT_PROTOCOL_DISABLED",
+                "The URL protocol is disabled by the current probe selection.",
+                lineId));
+            return;
+        }
+
+        string path = string.IsNullOrEmpty(uri.PathAndQuery) ? "/" : uri.PathAndQuery;
+        int? inputPort = GetInputPort(line, hasExplicitScheme, uri);
+        foreach (BlockCheckProtocol protocol in protocols)
+        {
+            foreach (BlockCheckIpVersion ipVersion in options.IpVersions.OrderBy(value => value))
+            {
+                seeds.Add(new TargetSeed(host, path, protocol, ipVersion, inputPort));
+            }
+        }
+    }
+
+    private static List<BlockCheckTarget> CreateTargets(TargetSeed[] seeds)
+    {
+        List<BlockCheckTarget> targets = [];
+        for (int index = 0; index < seeds.Length; index++)
+        {
+            TargetSeed seed = seeds[index];
             targets.Add(new BlockCheckTarget
             {
                 Id = $"target-{index + 1:D3}-{ProtocolId(seed.Protocol)}-{IpVersionId(seed.IpVersion)}",
@@ -145,16 +181,7 @@ public sealed class BlockCheckTargetInputParser
             });
         }
 
-        if (targets.Count == 0 && !issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
-        {
-            issues.Add(Error("TARGET_INPUT_NO_TARGETS", "No enabled probe targets could be created."));
-        }
-
-        return new BlockCheckTargetInputResult
-        {
-            Targets = targets,
-            Issues = issues,
-        };
+        return targets;
     }
 
     private static BlockCheckProtocol[] SelectProtocols(

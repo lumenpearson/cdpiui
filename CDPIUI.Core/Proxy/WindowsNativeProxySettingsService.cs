@@ -1,137 +1,139 @@
-﻿using CDPIUI.Core.Basic;
-using Microsoft.Win32;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using CDPIUI.Core.Basic;
+using Microsoft.Win32;
 
-namespace CDPIUI.Core.Proxy
+namespace CDPIUI.Core.Proxy;
+
+public static class WindowsNativeProxySettingsService
 {
-    public static class WindowsNativeProxySettingsService
+    public const string InternetSettingsKeyPath =
+        @"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
+    private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
+    private const int INTERNET_OPTION_REFRESH = 37;
+
+    [DllImport("wininet.dll", SetLastError = true)]
+    private static extern bool InternetSetOption(
+        nint hInternet,
+        int dwOption,
+        nint lpBuffer,
+        int dwBufferLength);
+
+    public static Dictionary<string, string> ReadProxySettings()
     {
-        public const string InternetSettingsKeyPath = 
-            @"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
-        private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
-        private const int INTERNET_OPTION_REFRESH = 37;
+        if (!OperatingSystem.IsWindows())
+            throw new NotSupportedException();
 
-        [DllImport("wininet.dll", SetLastError = true)]
-        private static extern bool InternetSetOption(
-            nint hInternet, 
-            int dwOption, 
-            nint lpBuffer, 
-            int dwBufferLength);
-
-        public static Dictionary<string, string> ReadProxySettings()
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            if (!OperatingSystem.IsWindows()) throw new NotSupportedException();
+            ["ProxyServer"] = string.Empty,
+            ["ProxyOverride"] = string.Empty
+        };
 
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        using (var key =
+            Registry.CurrentUser.OpenSubKey(InternetSettingsKeyPath, writable: false))
+        {
+            if (key != null)
             {
-                ["ProxyServer"] = string.Empty,
-                ["ProxyOverride"] = string.Empty
-            };
+                var proxyServer = key.GetValue("ProxyServer") as string ?? string.Empty;
+                var proxyOverride = key.GetValue("ProxyOverride") as string ?? string.Empty;
 
-            using (var key = 
+                result["ProxyServer"] = proxyServer;
+                result["ProxyOverride"] = proxyOverride;
+            }
+        }
+
+        return result;
+    }
+
+    public static bool TryParseProxyServer(string? proxyServer, out string host, out string port)
+    {
+        host = string.Empty;
+        port = string.Empty;
+        if (string.IsNullOrWhiteSpace(proxyServer))
+            return false;
+
+        string entry = proxyServer.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault() ?? string.Empty;
+        int schemeSeparator = entry.IndexOf('=');
+        if (schemeSeparator >= 0)
+            entry = entry[(schemeSeparator + 1)..];
+
+        int portSeparator = entry.LastIndexOf(':');
+        if (entry.StartsWith('['))
+        {
+            int closingBracket = entry.IndexOf(']');
+            if (closingBracket < 0 || portSeparator < closingBracket)
+                return false;
+            host = entry[1..closingBracket];
+        }
+        else
+        {
+            if (portSeparator <= 0 || entry.IndexOf(':') != portSeparator)
+                return false;
+            host = entry[..portSeparator];
+        }
+
+        port = entry[(portSeparator + 1)..];
+        return host.Length > 0 && port.Length > 0;
+    }
+
+    public static bool IsProxyEnabled()
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows())
+                throw new NotSupportedException();
+
+            int? isProxyEnable = new();
+            using (var key =
                 Registry.CurrentUser.OpenSubKey(InternetSettingsKeyPath, writable: false))
             {
                 if (key != null)
                 {
-                    var proxyServer = key.GetValue("ProxyServer") as string ?? string.Empty;
-                    var proxyOverride = key.GetValue("ProxyOverride") as string ?? string.Empty;
-
-                    result["ProxyServer"] = proxyServer;
-                    result["ProxyOverride"] = proxyOverride;
+                    isProxyEnable = (int?)key.GetValue("ProxyEnable", new int?());
                 }
             }
+            return isProxyEnable.HasValue && Convert.ToBoolean(isProxyEnable.Value);
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService),
+                $"Cannot get reg value. {ex.Message}");
+            return false;
+        }
+    }
 
-            return result;
+    public static void SaveProxySettings(
+        string proxyServer,
+        string proxyOverride,
+        int proxyEnable)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new NotSupportedException();
+
+        if (proxyEnable != 0 && proxyEnable != 1)
+            throw new ArgumentOutOfRangeException(nameof(proxyEnable),
+                "ERR_REGEDIT_HELPER_INTERNAL");
+
+        using (var key = Registry.CurrentUser.CreateSubKey(InternetSettingsKeyPath))
+        {
+            if (key == null)
+                throw new InvalidOperationException("ERR_REGISTRY_WRITE");
+
+            key.SetValue("ProxyServer", proxyServer ?? string.Empty, RegistryValueKind.String);
+            key.SetValue("ProxyOverride", proxyOverride ?? string.Empty, RegistryValueKind.String);
+            key.SetValue("ProxyEnable", proxyEnable, RegistryValueKind.DWord);
         }
 
-        public static bool TryParseProxyServer(string? proxyServer, out string host, out string port)
+        if (!InternetSetOption(nint.Zero, INTERNET_OPTION_SETTINGS_CHANGED, nint.Zero, 0))
         {
-            host = string.Empty;
-            port = string.Empty;
-            if (string.IsNullOrWhiteSpace(proxyServer))
-                return false;
-
-            string entry = proxyServer.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .FirstOrDefault() ?? string.Empty;
-            int schemeSeparator = entry.IndexOf('=');
-            if (schemeSeparator >= 0)
-                entry = entry[(schemeSeparator + 1)..];
-
-            int portSeparator = entry.LastIndexOf(':');
-            if (entry.StartsWith('['))
-            {
-                int closingBracket = entry.IndexOf(']');
-                if (closingBracket < 0 || portSeparator < closingBracket)
-                    return false;
-                host = entry[1..closingBracket];
-            }
-            else
-            {
-                if (portSeparator <= 0 || entry.IndexOf(':') != portSeparator)
-                    return false;
-                host = entry[..portSeparator];
-            }
-
-            port = entry[(portSeparator + 1)..];
-            return host.Length > 0 && port.Length > 0;
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
         }
 
-        public static bool IsProxyEnabled()
+        if (!InternetSetOption(nint.Zero, INTERNET_OPTION_REFRESH, nint.Zero, 0))
         {
-            try
-            {
-                if (!OperatingSystem.IsWindows()) throw new NotSupportedException();
-
-                int? isProxyEnable = new();
-                using (var key = 
-                    Registry.CurrentUser.OpenSubKey(InternetSettingsKeyPath, writable: false))
-                {
-                    if (key != null)
-                    {
-                        isProxyEnable = (int?)key.GetValue("ProxyEnable", new int?());
-                    }
-                }
-                return isProxyEnable.HasValue && Convert.ToBoolean(isProxyEnable.Value);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService),
-                    $"Cannot get reg value. {ex.Message}");
-                return false;
-            }
-        }
-
-        public static void SaveProxySettings(
-            string proxyServer, 
-            string proxyOverride, 
-            int proxyEnable)
-        {
-            if (!OperatingSystem.IsWindows()) throw new NotSupportedException();
-
-            if (proxyEnable != 0 && proxyEnable != 1)
-                throw new ArgumentOutOfRangeException(nameof(proxyEnable), 
-                    "ERR_REGEDIT_HELPER_INTERNAL");
-
-            using (var key = Registry.CurrentUser.CreateSubKey(InternetSettingsKeyPath))
-            {
-                if (key == null)
-                    throw new InvalidOperationException("ERR_REGISTRY_WRITE");
-
-                key.SetValue("ProxyServer", proxyServer ?? string.Empty, RegistryValueKind.String);
-                key.SetValue("ProxyOverride", proxyOverride ?? string.Empty, RegistryValueKind.String);
-                key.SetValue("ProxyEnable", proxyEnable, RegistryValueKind.DWord);
-            }
-
-            if (!InternetSetOption(nint.Zero, INTERNET_OPTION_SETTINGS_CHANGED, nint.Zero, 0))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
-            }
-
-            if (!InternetSetOption(nint.Zero, INTERNET_OPTION_REFRESH, nint.Zero, 0))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
-            }
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "ERR_WININET_CALL");
         }
     }
 }

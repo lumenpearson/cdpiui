@@ -1,105 +1,81 @@
-﻿using CDPIUI.Core.Basic;
 using System.Net;
 using System.Text.RegularExpressions;
+using CDPIUI.Core.Basic;
 
-namespace CDPIUI.AddOns.GoodCheck
+namespace CDPIUI.AddOns.GoodCheck;
+
+public static class DomainValidationHelper
 {
-    public static class DomainValidationHelper
+    public enum CheckMode
     {
-        public enum CheckMode
+        None,
+        Quick,
+        Slow
+    }
+
+    public static async Task<List<string>> GetSupportedTxtFiles(
+        string? rootDirectory,
+        CheckMode mode = CheckMode.Slow,
+        int maxConcurrency = 8,
+        CancellationToken cancellationToken = default)
+    {
+        var supported = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(rootDirectory) || !Directory.Exists(rootDirectory))
         {
-            None,
-            Quick,
-            Slow
+            Logger.Instance
+                .CreateWarningLog(nameof(DomainValidationHelper), $"Directory not found: {rootDirectory}");
+            return [];
         }
 
-        public static async Task<List<string>> GetSupportedTxtFiles(
-            string? rootDirectory,
-            CheckMode mode = CheckMode.Slow,
-            int maxConcurrency = 8,
-            CancellationToken cancellationToken = default)
+        var files = Directory.EnumerateFiles(rootDirectory, "*.txt", SearchOption.AllDirectories);
+
+        using var sem = new SemaphoreSlim(Math.Max(1, maxConcurrency));
+        var tasks = new List<Task>();
+
+        foreach (var file in files)
         {
-            var supported = new List<string>();
+            await sem.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-            if (string.IsNullOrWhiteSpace(rootDirectory) || !Directory.Exists(rootDirectory))
-            {
-                Logger.Instance
-                    .CreateWarningLog(nameof(DomainValidationHelper), $"Directory not found: {rootDirectory}");
-                return [];
-            }
-
-            var files = Directory.EnumerateFiles(rootDirectory, "*.txt", SearchOption.AllDirectories);
-
-            using var sem = new SemaphoreSlim(Math.Max(1, maxConcurrency));
-            var tasks = new List<Task>();
-
-            foreach (var file in files)
-            {
-                await sem.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                var t = Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                            return;
-
-                        bool isSupported = await IsFileSupportedAsync(file, mode, cancellationToken).ConfigureAwait(false);
-
-                        if (isSupported)
-                        {
-                            lock (supported)
-                            {
-                                supported.Add(file);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        sem.Release();
-                    }
-                }, cancellationToken);
-
-                tasks.Add(t);
-            }
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-            return supported;
-        }
-
-        public static async Task<bool> IsFileCorrectSiteList(string filePath, CheckMode mode, CancellationToken cancellationToken = default)
-        {
-            return await IsFileSupportedAsync(filePath, mode, cancellationToken);
-        }
-
-        private static async Task<bool> IsFileSupportedAsync(string filePath, CheckMode mode, CancellationToken cancellationToken)
-        {
-            if (mode == CheckMode.None)
+            var t = Task.Run(async () =>
             {
                 try
                 {
-                    using var fs = new FileStream(
-                        filePath,
-                        FileMode.Open,
-                        FileAccess.Read,
-                        FileShare.Read,
-                        bufferSize: 4096,
-                        FileOptions.Asynchronous | FileOptions.SequentialScan);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
 
-                    var buffer = new byte[1];
-                    int read = await fs.ReadAsync(buffer, 0, 0, cancellationToken).ConfigureAwait(false);
-                    return true;
+                    bool isSupported = await IsFileSupportedAsync(file, mode, cancellationToken).ConfigureAwait(false);
+
+                    if (isSupported)
+                    {
+                        lock (supported)
+                        {
+                            supported.Add(file);
+                        }
+                    }
                 }
-                catch
+                finally
                 {
-                    return false;
+                    sem.Release();
                 }
-            }
+            }, cancellationToken);
 
-            const int quickLimit = 10;
-            int nonEmptyChecked = 0;
-            bool validFile = true;
+            tasks.Add(t);
+        }
 
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+        return supported;
+    }
+
+    public static async Task<bool> IsFileCorrectSiteList(string filePath, CheckMode mode, CancellationToken cancellationToken = default)
+    {
+        return await IsFileSupportedAsync(filePath, mode, cancellationToken);
+    }
+
+    private static async Task<bool> IsFileSupportedAsync(string filePath, CheckMode mode, CancellationToken cancellationToken)
+    {
+        if (mode == CheckMode.None)
+        {
             try
             {
                 using var fs = new FileStream(
@@ -107,65 +83,88 @@ namespace CDPIUI.AddOns.GoodCheck
                     FileMode.Open,
                     FileAccess.Read,
                     FileShare.Read,
-                    bufferSize: 8192,
+                    bufferSize: 4096,
                     FileOptions.Asynchronous | FileOptions.SequentialScan);
 
-                using var reader = new StreamReader(fs);
-
-                while (!reader.EndOfStream)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    string raw = await reader.ReadLineAsync().ConfigureAwait(false);
-                    if (raw == null)
-                        break;
-
-                    string line = raw.Trim();
-
-                    // Comment lines are common in site lists and do not make a list invalid.
-                    if (string.IsNullOrEmpty(line) || line.StartsWith('#'))
-                    {
-                        continue;
-                    }
-
-                    if (mode == CheckMode.Quick)
-                    {
-                        nonEmptyChecked++;
-                    }
-
-                    if (Regex.IsMatch(line, @"\s"))
-                    {
-                        validFile = false;
-                        break;
-                    }
-
-                    if (line.Contains("/"))
-                    {
-                        validFile = false;
-                        break;
-                    }
-
-                    if (IPAddress.TryParse(line, out _))
-                    {
-                        validFile = false;
-                        break;
-                    }
-
-                    if (mode == CheckMode.Quick && nonEmptyChecked >= quickLimit)
-                    {
-                        break;
-                    }
-                }
+                var buffer = new byte[1];
+                int read = await fs.ReadAsync(buffer, 0, 0, cancellationToken).ConfigureAwait(false);
+                return true;
             }
             catch
             {
-                Logger.Instance
-                    .CreateInfoLog(nameof(DomainValidationHelper), $"File {filePath} is not supported sitelist.");
                 return false;
             }
-
-            return validFile;
         }
 
+        const int quickLimit = 10;
+        int nonEmptyChecked = 0;
+        bool validFile = true;
+
+        try
+        {
+            using var fs = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 8192,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            using var reader = new StreamReader(fs);
+
+            while (!reader.EndOfStream)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string raw = await reader.ReadLineAsync().ConfigureAwait(false);
+                if (raw == null)
+                    break;
+
+                string line = raw.Trim();
+
+                // Comment lines are common in site lists and do not make a list invalid.
+                if (string.IsNullOrEmpty(line) || line.StartsWith('#'))
+                {
+                    continue;
+                }
+
+                if (mode == CheckMode.Quick)
+                {
+                    nonEmptyChecked++;
+                }
+
+                if (Regex.IsMatch(line, @"\s"))
+                {
+                    validFile = false;
+                    break;
+                }
+
+                if (line.Contains("/"))
+                {
+                    validFile = false;
+                    break;
+                }
+
+                if (IPAddress.TryParse(line, out _))
+                {
+                    validFile = false;
+                    break;
+                }
+
+                if (mode == CheckMode.Quick && nonEmptyChecked >= quickLimit)
+                {
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            Logger.Instance
+                .CreateInfoLog(nameof(DomainValidationHelper), $"File {filePath} is not supported sitelist.");
+            return false;
+        }
+
+        return validFile;
     }
+
 }

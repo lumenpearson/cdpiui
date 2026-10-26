@@ -1,6 +1,19 @@
-using CDPIUI.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Configuration;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
+using CDPIUI.Extensions;
+using CDPIUI.Helper.Parsers;
+using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.ConditionalLaunch;
 using CDPIUI.Views.Store.Settings;
 using CDPIUI.Views.Store.Settings.Memory;
 using CommunityToolkit.WinUI.Controls;
@@ -12,297 +25,288 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Configuration;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
 
-using CDPIUI.Helper.Parsers;
-using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.ConditionalLaunch;
-
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Controls.Store.Settings
+namespace CDPIUI.Controls.Store.Settings;
+
+
+
+public enum MemoryUsageCategories
 {
-    
+    Application,
+    Settings,
+    Logs,
+    Temp,
+    StoreItems,
+    StoreCache,
+    ConditionalTasks,
+    PreviousVersions,
+}
 
-    public enum MemoryUsageCategories
+public class MemoryViewItemModel : IComparable
+{
+    public MemoryUsageCategories Category { get; set; }
+
+    public string DisplayName { get; set; }
+    public string DisplayDescription { get; set; }
+    public string DisplayMemoryUsageText { get; set; }
+    public string IconGlyph { get; set; }
+    public double MaxValue { get; set; }
+    public double CurrentValue { get; set; }
+
+    public bool IsClickEnabled { get; set; }
+
+    public int CompareTo(object o)
     {
-        Application,
-        Settings,
-        Logs,
-        Temp,
-        StoreItems,
-        StoreCache,
-        ConditionalTasks,
-        PreviousVersions,
+        MemoryViewItemModel a = this;
+        MemoryViewItemModel b = (MemoryViewItemModel)o;
+        if (a.CurrentValue > b.CurrentValue)
+            return -1;
+        else if (a.CurrentValue < b.CurrentValue)
+            return 1;
+        else
+            return 0;
     }
 
-    public class MemoryViewItemModel : IComparable
+}
+
+public sealed partial class MemoryDiskUsageViewUserControl : UserControl
+{
+    private ILocalizer _localizer = Localizer.Get();
+
+    private ObservableCollection<MemoryViewItemModel> MemoryViewItemModels { get; set; } = [];
+
+    private Dictionary<MemoryUsageCategories, string> _categoryGlyphPairs = new()
     {
-        public MemoryUsageCategories Category { get; set; }
+        { MemoryUsageCategories.Application, "\uE74C" },
+        { MemoryUsageCategories.Settings, "\uE713" },
+        { MemoryUsageCategories.Logs, "\uEBE8" },
+        { MemoryUsageCategories.Temp, "\uE74D" },
+        { MemoryUsageCategories.StoreItems, "\uE71D" },
+        { MemoryUsageCategories.StoreCache, "\uE719" },
+        { MemoryUsageCategories.ConditionalTasks, "\uE7C1" },
+        { MemoryUsageCategories.PreviousVersions, "\uE777" },
+    };
 
-        public string DisplayName { get; set; }
-        public string DisplayDescription { get; set; }
-        public string DisplayMemoryUsageText { get; set; }
-        public string IconGlyph { get; set; }
-        public double MaxValue { get; set; }
-        public double CurrentValue { get; set; }
+    private Dictionary<MemoryUsageCategories, Type> _categoryPageTypePairs = new()
+    {
+        { MemoryUsageCategories.Application, typeof(MemoryViewApplicationFilesDetailsPage) },
+        { MemoryUsageCategories.Settings, typeof(MemoryViewSettingsDetailsPage) },
+        { MemoryUsageCategories.Logs, typeof(MemoryViewLogsDetailsPage) },
+        { MemoryUsageCategories.Temp, typeof(MemoryViewApplicationFilesDetailsPage) },
+        { MemoryUsageCategories.StoreItems, typeof(MemoryViewInstalledItemsDetailsPage) },
+        { MemoryUsageCategories.StoreCache, typeof(MemoryViewStoreCachePage) },
+        { MemoryUsageCategories.ConditionalTasks, typeof(MemoryViewConditionalLaunchDetailsPage) },
+        { MemoryUsageCategories.PreviousVersions, typeof(MemoryViewPreviousVersionsPage) },
+    };
 
-        public bool IsClickEnabled { get; set; }
+    public MemoryDiskUsageViewUserControl()
+    {
+        InitializeComponent();
 
-        public int CompareTo(object o)
-        {
-            MemoryViewItemModel a = this;
-            MemoryViewItemModel b = (MemoryViewItemModel)o;
-            if (a.CurrentValue > b.CurrentValue) return -1;
-            else if (a.CurrentValue < b.CurrentValue) return 1;
-            else return 0;
-        }
+        MemoryCategoriesListView.ItemsSource = MemoryViewItemModels;
+
 
     }
 
-    public sealed partial class MemoryDiskUsageViewUserControl : UserControl
+    public string DiskLetter
     {
-        private ILocalizer localizer = Localizer.Get();
-
-        private ObservableCollection<MemoryViewItemModel> MemoryViewItemModels { get; set; } = [];
-
-        private Dictionary<MemoryUsageCategories, string> CategoryGlyphPairs = new()
+        get { return (string)GetValue(DiskLetterProperty); }
+        set
         {
-            { MemoryUsageCategories.Application, "\uE74C" },
-            { MemoryUsageCategories.Settings, "\uE713" },
-            { MemoryUsageCategories.Logs, "\uEBE8" },
-            { MemoryUsageCategories.Temp, "\uE74D" },
-            { MemoryUsageCategories.StoreItems, "\uE71D" },
-            { MemoryUsageCategories.StoreCache, "\uE719" },
-            { MemoryUsageCategories.ConditionalTasks, "\uE7C1" },
-            { MemoryUsageCategories.PreviousVersions, "\uE777" },
-        };
-
-        private Dictionary<MemoryUsageCategories, Type> CategoryPageTypePairs = new()
-        {
-            { MemoryUsageCategories.Application, typeof(MemoryViewApplicationFilesDetailsPage) },
-            { MemoryUsageCategories.Settings, typeof(MemoryViewSettingsDetailsPage) },
-            { MemoryUsageCategories.Logs, typeof(MemoryViewLogsDetailsPage) },
-            { MemoryUsageCategories.Temp, typeof(MemoryViewApplicationFilesDetailsPage) },
-            { MemoryUsageCategories.StoreItems, typeof(MemoryViewInstalledItemsDetailsPage) },
-            { MemoryUsageCategories.StoreCache, typeof(MemoryViewStoreCachePage) },
-            { MemoryUsageCategories.ConditionalTasks, typeof(MemoryViewConditionalLaunchDetailsPage) },
-            { MemoryUsageCategories.PreviousVersions, typeof(MemoryViewPreviousVersionsPage) },
-        };
-
-        public MemoryDiskUsageViewUserControl()
-        {
-            InitializeComponent();
-
-            MemoryCategoriesListView.ItemsSource = MemoryViewItemModels;
-
-            
+            SetValue(DiskLetterProperty, value);
+            _ = Init(); // Init catches and logs its own errors.
         }
+    }
 
-        public string DiskLetter
+    public static readonly DependencyProperty DiskLetterProperty =
+        DependencyProperty.Register(
+            nameof(DiskLetter), typeof(string), typeof(MemoryDiskUsageViewUserControl), new PropertyMetadata(string.Empty)
+        );
+
+    public async Task Init()
+    {
+        try
         {
-            get { return (string)GetValue(DiskLetterProperty); }
-            set { 
-                SetValue(DiskLetterProperty, value);
-                _ = Init(); // Init catches and logs its own errors.
-            }
-        }
+            MemoryViewItemModels.Clear();
+            string appDir = CDPIUI.Core.Data.Directories.CurrentDirectory;
+            string dataDir = CDPIUI.Core.Data.Directories.DataDirectory;
 
-        public static readonly DependencyProperty DiskLetterProperty =
-            DependencyProperty.Register(
-                nameof(DiskLetter), typeof(string), typeof(MemoryDiskUsageViewUserControl), new PropertyMetadata(string.Empty)
-            );
+            DriveInfo appDirDriveInfo = new(appDir);
+            DriveInfo dataDirDriveInfo = new(dataDir);
 
-        public async Task Init()
-        {
-            try
+            DriveInfo usedDriveInfo;
+            string usedDir;
+
+            long appDirSize;
+
+            if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.Name == DiskLetter)
             {
-                MemoryViewItemModels.Clear();
-                string appDir = CDPIUI.Core.Data.Directories.CurrentDirectory;
-                string dataDir = CDPIUI.Core.Data.Directories.DataDirectory;
-
-                DriveInfo appDirDriveInfo = new(appDir);
-                DriveInfo dataDirDriveInfo = new(dataDir);
-
-                DriveInfo usedDriveInfo;
-                string usedDir;
-
-                long appDirSize;
-
-                if (Path.Combine(appDir) == Path.Combine(dataDir) && appDirDriveInfo.Name == DiskLetter)
-                {
-                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
-                    usedDriveInfo = appDirDriveInfo;
-                    usedDir = appDir;
-                }
-                else if (appDirDriveInfo.Name == dataDirDriveInfo.Name && appDirDriveInfo.Name == DiskLetter)
-                {
-                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance) + await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
-                    usedDriveInfo = appDirDriveInfo;
-                    usedDir = dataDir;
-                    long oldSize = await FileSystemService.GetDirectorySize(MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, Logger.Instance);
-                    CreateTileForMemoryUsageCategory(oldSize, appDirSize, MemoryUsageCategories.PreviousVersions);
-                    CreateTileForMemoryUsageCategory(await FileSystemService.GetDirectorySize(appDir, Logger.Instance) - oldSize, appDirSize, MemoryUsageCategories.Application);
-                }
-                else if (appDirDriveInfo.Name == DiskLetter)
-                {
-                    appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
-                    usedDriveInfo = appDirDriveInfo;
-                    usedDir = appDir;
-                }
-                else if (dataDirDriveInfo.Name == DiskLetter)
-                {
-                    appDirSize = await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
-                    usedDriveInfo = dataDirDriveInfo;
-                    usedDir = dataDir;
-                }
-                else
-                {
-                    return;
-                }
-
-                long totalFreeMemory = usedDriveInfo.AvailableFreeSpace;
-
-                DiskNameTextBlock.Text = string.Format(
-                    localizer.GetLocalizedString("MemoryDiskName"),
-                    string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel, 
-                    usedDriveInfo.Name);
-
-                Logger.Instance.CreateInfoLog(nameof(MemoryDiskUsageViewUserControl), $"Disk is {usedDriveInfo.Name}, {string.IsNullOrEmpty(usedDriveInfo.Name)}");
-
-                CreateTotalStatistic(appDirSize, totalFreeMemory);
-
-                await CreateTilesForCategories(usedDir, appDirSize);
-
-                MemoryViewItemModels.Sort();
+                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
+                usedDriveInfo = appDirDriveInfo;
+                usedDir = appDir;
             }
-            catch (Exception exception)
+            else if (appDirDriveInfo.Name == dataDirDriveInfo.Name && appDirDriveInfo.Name == DiskLetter)
             {
-                Logger.Instance.CreateWarningLog(nameof(MemoryDiskUsageViewUserControl), exception.ToString());
+                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance) + await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
+                usedDriveInfo = appDirDriveInfo;
+                usedDir = dataDir;
+                long oldSize = await FileSystemService.GetDirectorySize(MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, Logger.Instance);
+                CreateTileForMemoryUsageCategory(oldSize, appDirSize, MemoryUsageCategories.PreviousVersions);
+                CreateTileForMemoryUsageCategory(await FileSystemService.GetDirectorySize(appDir, Logger.Instance) - oldSize, appDirSize, MemoryUsageCategories.Application);
             }
-        }
-
-        public void CreateTotalStatistic(long dirSize, long totalFreeMemory)
-        {
-            long totalBytesSize = (long)totalFreeMemory + dirSize;
-
-            MainProgressBar.Maximum = totalBytesSize;
-            MainProgressBar.Value = dirSize;
-
-            UsedMemoryTextBlock.Text = string.Format(localizer.GetLocalizedString("UsedMemory"), UnitsParser.FormatSize(dirSize));
-            FreeMemoryTextBlock.Text = string.Format(localizer.GetLocalizedString("FreeMemory"), UnitsParser.FormatSize((long)totalFreeMemory));
-        }
-
-        private async Task CreateTilesForCategories(string directory, long totalSize)
-        {
-            long parentMem = 0;
-            long otherSize = totalSize;
-            DirectoryInfo dirInfo = new DirectoryInfo(directory);
-            foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
+            else if (appDirDriveInfo.Name == DiskLetter)
             {
-                string relpath = Path.GetRelativePath(directory, dir.FullName);
-                long size = await FileSystemService.GetDirectorySize(dir.FullName, Logger.Instance);
+                appDirSize = await FileSystemService.GetDirectorySize(appDir, Logger.Instance);
+                usedDriveInfo = appDirDriveInfo;
+                usedDir = appDir;
+            }
+            else if (dataDirDriveInfo.Name == DiskLetter)
+            {
+                appDirSize = await FileSystemService.GetDirectorySize(dataDir, Logger.Instance);
+                usedDriveInfo = dataDirDriveInfo;
+                usedDir = dataDir;
+            }
+            else
+            {
+                return;
+            }
 
-                otherSize -= size;
+            long totalFreeMemory = usedDriveInfo.AvailableFreeSpace;
 
-                if (string.Equals(dir.FullName, MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, StringComparison.OrdinalIgnoreCase))
+            DiskNameTextBlock.Text = string.Format(
+                _localizer.GetLocalizedString("MemoryDiskName"),
+                string.IsNullOrEmpty(usedDriveInfo.VolumeLabel) ? _localizer.GetLocalizedString("LocalDrive") : usedDriveInfo.VolumeLabel,
+                usedDriveInfo.Name);
+
+            Logger.Instance.CreateInfoLog(nameof(MemoryDiskUsageViewUserControl), $"Disk is {usedDriveInfo.Name}, {string.IsNullOrEmpty(usedDriveInfo.Name)}");
+
+            CreateTotalStatistic(appDirSize, totalFreeMemory);
+
+            await CreateTilesForCategories(usedDir, appDirSize);
+
+            MemoryViewItemModels.Sort();
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(MemoryDiskUsageViewUserControl), exception.ToString());
+        }
+    }
+
+    public void CreateTotalStatistic(long dirSize, long totalFreeMemory)
+    {
+        long totalBytesSize = (long)totalFreeMemory + dirSize;
+
+        MainProgressBar.Maximum = totalBytesSize;
+        MainProgressBar.Value = dirSize;
+
+        UsedMemoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("UsedMemory"), UnitsParser.FormatSize(dirSize));
+        FreeMemoryTextBlock.Text = string.Format(_localizer.GetLocalizedString("FreeMemory"), UnitsParser.FormatSize((long)totalFreeMemory));
+    }
+
+    private async Task CreateTilesForCategories(string directory, long totalSize)
+    {
+        long parentMem = 0;
+        long otherSize = totalSize;
+        DirectoryInfo dirInfo = new DirectoryInfo(directory);
+        foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
+        {
+            string relpath = Path.GetRelativePath(directory, dir.FullName);
+            long size = await FileSystemService.GetDirectorySize(dir.FullName, Logger.Instance);
+
+            otherSize -= size;
+
+            if (string.Equals(dir.FullName, MemoryViewPreviousVersionsPage.PreviousVersionsDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.PreviousVersions);
+            }
+            else if (relpath.StartsWith("Settings"))
+            {
+                CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Settings);
+
+            }
+            else if (relpath.StartsWith("Logs"))
+            {
+                CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Logs);
+            }
+            else if (relpath.StartsWith("Store"))
+            {
+                foreach (var storeDir in dir.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
                 {
-                    CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.PreviousVersions);
-                }
-                else if (relpath.StartsWith("Settings"))
-                {
-                    CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Settings);
-                    
-                }
-                else if (relpath.StartsWith("Logs"))
-                {
-                    CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Logs);
-                }
-                else if (relpath.StartsWith("Store"))
-                {
-                    foreach (var storeDir in dir.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
+                    string st_relpath = Path.GetRelativePath(dir.FullName, storeDir.FullName);
+                    long st_size = await FileSystemService.GetDirectorySize(storeDir.FullName, Logger.Instance);
+                    if (st_relpath.StartsWith("Items"))
                     {
-                        string st_relpath = Path.GetRelativePath(dir.FullName, storeDir.FullName);
-                        long st_size = await FileSystemService.GetDirectorySize(storeDir.FullName, Logger.Instance);
-                        if (st_relpath.StartsWith("Items"))
-                        {
-                            CreateTileForMemoryUsageCategory(st_size, totalSize, MemoryUsageCategories.StoreItems);
-                        }
-                        else if (st_relpath.StartsWith("Cache"))
-                        {
-                            CreateTileForMemoryUsageCategory(st_size, totalSize, MemoryUsageCategories.StoreCache);
-                        }
-                        else
-                        {
-                            parentMem += st_size;
-                        }
+                        CreateTileForMemoryUsageCategory(st_size, totalSize, MemoryUsageCategories.StoreItems);
+                    }
+                    else if (st_relpath.StartsWith("Cache"))
+                    {
+                        CreateTileForMemoryUsageCategory(st_size, totalSize, MemoryUsageCategories.StoreCache);
+                    }
+                    else
+                    {
+                        parentMem += st_size;
                     }
                 }
-                else if (relpath.StartsWith("TempFiles"))
-                {
-                    CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Temp);
-                }
-                else if (relpath.Equals(
-                    ConditionalTaskFileService.DirectoryName,
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    CreateTileForMemoryUsageCategory(
-                        size,
-                        totalSize,
-                        MemoryUsageCategories.ConditionalTasks);
-                }
-                else
-                {
-                    parentMem += size;
-                }
             }
-
-            CreateTileForMemoryUsageCategory(parentMem + otherSize, totalSize, MemoryUsageCategories.Application);
+            else if (relpath.StartsWith("TempFiles"))
+            {
+                CreateTileForMemoryUsageCategory(size, totalSize, MemoryUsageCategories.Temp);
+            }
+            else if (relpath.Equals(
+                ConditionalTaskFileService.DirectoryName,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                CreateTileForMemoryUsageCategory(
+                    size,
+                    totalSize,
+                    MemoryUsageCategories.ConditionalTasks);
+            }
+            else
+            {
+                parentMem += size;
+            }
         }
 
-        private void CreateTileForMemoryUsageCategory(long size, long totalSize, MemoryUsageCategories category)
+        CreateTileForMemoryUsageCategory(parentMem + otherSize, totalSize, MemoryUsageCategories.Application);
+    }
+
+    private void CreateTileForMemoryUsageCategory(long size, long totalSize, MemoryUsageCategories category)
+    {
+        if (size == 0)
+            return;
+        if (MemoryViewItemModels.FirstOrDefault(x => x.Category == category) != null)
+            return;
+        MemoryViewItemModels.Add(new MemoryViewItemModel
         {
-            if (size == 0) return;
-            if (MemoryViewItemModels.FirstOrDefault(x => x.Category == category) != null) return;
-            MemoryViewItemModels.Add(new MemoryViewItemModel
-            {
-                Category = category,
-                IsClickEnabled = true,
+            Category = category,
+            IsClickEnabled = true,
 
-                DisplayName = localizer.GetLocalizedString($"MemoryUsageCategory{category}DisplayName"),
-                DisplayDescription = localizer.GetLocalizedString($"MemoryUsageCategory{category}Description"),
-                DisplayMemoryUsageText = $"{UnitsParser.FormatSize(size)}/{UnitsParser.FormatSize(totalSize)}",
-                IconGlyph = CategoryGlyphPairs.GetValueOrDefault(category),
+            DisplayName = _localizer.GetLocalizedString($"MemoryUsageCategory{category}DisplayName"),
+            DisplayDescription = _localizer.GetLocalizedString($"MemoryUsageCategory{category}Description"),
+            DisplayMemoryUsageText = $"{UnitsParser.FormatSize(size)}/{UnitsParser.FormatSize(totalSize)}",
+            IconGlyph = _categoryGlyphPairs.GetValueOrDefault(category),
 
-                CurrentValue = size,
-                MaxValue = totalSize
-            });
-        }
+            CurrentValue = size,
+            MaxValue = totalSize
+        });
+    }
 
 
 
-        private async void SettingsCard_Click(object sender, RoutedEventArgs e)
+    private async void SettingsCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is SettingsCard settingsCard)
         {
-            if (sender is SettingsCard settingsCard)
+            if (settingsCard.Tag is MemoryUsageCategories category)
             {
-                if (settingsCard.Tag is MemoryUsageCategories category)
-                {
-                    var window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
-                    window.NavigateSubPage(CategoryPageTypePairs.GetValueOrDefault(category), UnitsParser.FormatSize((long)MemoryViewItemModels.FirstOrDefault(x => x.Category == category)?.CurrentValue), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-                }
+                var window = await ((App)Application.Current).SafeCreateNewWindow<StoreWindow>();
+                window.NavigateSubPage(_categoryPageTypePairs.GetValueOrDefault(category), UnitsParser.FormatSize((long)MemoryViewItemModels.FirstOrDefault(x => x.Category == category)?.CurrentValue), new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
         }
     }

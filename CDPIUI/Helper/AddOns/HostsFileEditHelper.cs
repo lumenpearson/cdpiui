@@ -1,11 +1,10 @@
-﻿using CDPIUI.Controls.Dialogs.ComponentSettings;
-using CDPIUI.Core;
-using CDPIUI.Core.System;
-
-using Microsoft.UI.Xaml;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using CDPIUI.Controls.Dialogs.ComponentSettings;
+using CDPIUI.Core;
+using CDPIUI.Core.System;
+using Microsoft.UI.Xaml;
 
 namespace CDPIUI.Helper.AddOns;
 
@@ -13,8 +12,8 @@ public class HostsFileEditHelper
 {
     public static void EditHostsFile(XamlRoot xamlRoot)
     {
-        if (!SettingsManager.Instance.GetValue<bool>("FILEOPENACTIONS", "isDialogShown") || 
-            !SettingsManager.Instance.GetValueOrDefault("FILEOPENACTIONS", "doNotRemindAgain", 
+        if (!SettingsManager.Instance.GetValue<bool>("FILEOPENACTIONS", "isDialogShown") ||
+            !SettingsManager.Instance.GetValueOrDefault("FILEOPENACTIONS", "doNotRemindAgain",
             defaultValue: true))
         {
             // ShowEditAskDialog catches and logs its own errors.

@@ -1,8 +1,8 @@
-﻿using CDPIUI.Core.ComponentServices;
+using System;
 using CDPIUI.Core.Basic;
+using CDPIUI.Core.ComponentServices;
 using CDPIUI.Default;
 using Microsoft.UI.Xaml;
-using System;
 using WinUI3Localizer;
 
 namespace CDPIUI;

@@ -1,8 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Windows.Forms;
 using CDPIUI.Core;
-
 using CDPIUI.Core.System;
 using CDPIUI.Shared.Extensions;
-
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -13,14 +19,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Windows.Forms;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage.FileProperties;
@@ -35,7 +33,7 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings;
 
 public sealed partial class EditSitelistAskApplicationContentDialog : ContentDialog
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public string FilePath { get; set; } = string.Empty;
     public bool UseUAC { get; set; } = false;
     public bool UseNotepadAsDefault { get; set; } = false;
@@ -65,18 +63,18 @@ public sealed partial class EditSitelistAskApplicationContentDialog : ContentDia
             PreviousChoiceButton.Visibility = Visibility.Collapsed;
         }
 
-        DoNotAskAgainCheckBox.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>("FILEOPENACTIONS", "doNotRemindAgain", defaultValue:true);
+        DoNotAskAgainCheckBox.IsChecked = SettingsManager.Instance.GetValueOrDefault<bool>("FILEOPENACTIONS", "doNotRemindAgain", defaultValue: true);
     }
 
     private void SelectAppManuallyButton_Click(object sender, RoutedEventArgs e)
     {
         string appPath;
         using OpenFileDialog openFileDialog = new OpenFileDialog();
-        openFileDialog.Title = localizer.GetLocalizedString("FileDialogChooseExecutable");
+        openFileDialog.Title = _localizer.GetLocalizedString("FileDialogChooseExecutable");
         openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         openFileDialog.FilterIndex = 4;
 
-        openFileDialog.Filter = $"{localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
+        openFileDialog.Filter = $"{_localizer.GetLocalizedString("FileDialogChooseExecutableFilter")} (*.exe)|*.exe";
         openFileDialog.RestoreDirectory = true;
 
         if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -99,8 +97,10 @@ public sealed partial class EditSitelistAskApplicationContentDialog : ContentDia
     {
         SettingsManager.Instance.SetValue("FILEOPENACTIONS", "mode", (int)TextFileOpenModes.FollowSystem);
         if (!string.IsNullOrEmpty(FilePath))
-            if (UseNotepadAsDefault) ShellHelper.RunApp("notepad.exe", $"\"{FilePath}\"", UseUAC);
-            else ShellHelper.OpenFileInDefaultApp(FilePath, UseUAC);
+            if (UseNotepadAsDefault)
+                ShellHelper.RunApp("notepad.exe", $"\"{FilePath}\"", UseUAC);
+            else
+                ShellHelper.OpenFileInDefaultApp(FilePath, UseUAC);
         IsSuccess = true;
         this.Hide();
     }

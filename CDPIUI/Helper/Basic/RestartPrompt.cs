@@ -1,10 +1,10 @@
-﻿using CDPIUI.Core;
-using CDPIUI.Core.Basic;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Diagnostics;
 using System.IO;
+using CDPIUI.Core;
+using CDPIUI.Core.Basic;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace CDPIUI;
 
@@ -64,7 +64,8 @@ internal static class RestartPrompt
         {
             root.Loaded += (_, _) =>
             {
-                if (CoreEvents.Instance.IsRestartPending) OnRestartRequired(string.Empty);
+                if (CoreEvents.Instance.IsRestartPending)
+                    OnRestartRequired(string.Empty);
             };
         }
     }
