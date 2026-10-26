@@ -228,8 +228,9 @@ signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.Ha
 [Update/README.md](../Update/README.md) describes `Update.exe`. The tray deletes the `.staging`
 folder at each start.
 
-`Update.exe` does not copy a `catalog.cat` file from a patch into the installation folder. It also
-does not remove files that are not in the patch, because a patch contains only the changed files.
+`Update.exe` checks the same archive limits again before it extracts the package. It does not copy
+a `catalog.cat` file from a patch into the installation folder. It also does not remove files that
+are not in the patch, because a patch contains only the changed files.
 
 ### Catalog check
 

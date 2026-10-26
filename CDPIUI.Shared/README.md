@@ -38,7 +38,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 | `XMLSettingsService` | Reads and writes `Settings.xml`. The GUI and the tray use it. |
 | `CommandLine/GuiActivationArguments` | Encodes the GUI arguments as `--gui-args:`, so the tray can start the GUI with the same arguments. |
 | `CommandLine/CommandLineTokens` | Splits a component command line into arguments as the Windows command line does. `ConfigCommandLine` in Core uses it. |
-| `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. |
+| `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. `Update.exe` compiles this file as a link (see [Update/README.md](../Update/README.md#build)). |
 | `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no part below the root is a reparse point. |
 | `Filesystem/ApplicationPathMatcher` | Finds the processes and drivers of the application during uninstall. |
 | `Filesystem/DirectoriesManager` | Returns the executable directory if it is writable. Otherwise, or if the caller sets `forceAppData` (MSI installation), it returns `%LOCALAPPDATA%\CDPIUI`. |
