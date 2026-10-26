@@ -6,13 +6,13 @@ namespace CDPIUI.Tests.AddOns;
 
 public sealed class BlockCheckReportTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-report-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-report-" + Guid.NewGuid().ToString("N"));
     private static readonly BlockCheckReportSerializer Serializer = new();
     private static readonly BlockCheckReportImportService Importer = new();
 
-    public BlockCheckReportTests() => Directory.CreateDirectory(directory);
+    public BlockCheckReportTests() => Directory.CreateDirectory(_directory);
 
-    public void Dispose() => Directory.Delete(directory, true);
+    public void Dispose() => Directory.Delete(_directory, true);
 
     private static BlockCheckReportTarget Target(
         string id, string host, string path, BlockCheckProtocol protocol,
@@ -44,21 +44,21 @@ public sealed class BlockCheckReportTests : IDisposable
         string catalog = "2026.08.11-standard",
         string preset = "--filter-tcp=443 --lua-desync=fake",
         int schema = 2) => new()
-    {
-        SchemaVersion = schema,
-        CreatedAtUtc = new DateTimeOffset(2026, 10, 1, 12, 30, 45, TimeSpan.Zero),
-        CatalogVersion = catalog,
-        RunPreset = BlockCheckRunPreset.Balanced,
-        Success = true,
-        WasCanceled = false,
-        IsBestEffort = true,
-        Targets = targets ?? [Target("t1", "example.com", "/", BlockCheckProtocol.Tls12)],
-        Probes = probes ?? [],
-        Profiles = profiles ?? [],
-        Issues = issues ?? [],
-        ValidationAttempts = attempts ?? [],
-        PresetArguments = preset,
-    };
+        {
+            SchemaVersion = schema,
+            CreatedAtUtc = new DateTimeOffset(2026, 10, 1, 12, 30, 45, TimeSpan.Zero),
+            CatalogVersion = catalog,
+            RunPreset = BlockCheckRunPreset.Balanced,
+            Success = true,
+            WasCanceled = false,
+            IsBestEffort = true,
+            Targets = targets ?? [Target("t1", "example.com", "/", BlockCheckProtocol.Tls12)],
+            Probes = probes ?? [],
+            Profiles = profiles ?? [],
+            Issues = issues ?? [],
+            ValidationAttempts = attempts ?? [],
+            PresetArguments = preset,
+        };
 
     private static BlockCheckReport FullReport() => Report(
         targets:
@@ -258,7 +258,7 @@ public sealed class BlockCheckReportTests : IDisposable
             profiles:
             [
                 Profile("Known", "tls-multisplit-1", ["t1"], fallbacks: ["http-fake-md5", "missing-fallback"],
-                    lists: [Path.Combine(directory, "missing.txt")]),
+                    lists: [Path.Combine(_directory, "missing.txt")]),
                 Profile("Unknown", "missing-primary", ["t1"]),
             ],
             probes:
@@ -290,7 +290,7 @@ public sealed class BlockCheckReportTests : IDisposable
 
         BlockCheckTarget target = Assert.Single(result.Session.Targets);
         Assert.Equal(443, target.Port);
-        Assert.Equal([Path.Combine(directory, "missing.txt")], target.HostListPaths);
+        Assert.Equal([Path.Combine(_directory, "missing.txt")], target.HostListPaths);
         Assert.Equal(result.Issues.Count, result.Report.Issues.Count);
     }
 
@@ -353,6 +353,49 @@ public sealed class BlockCheckReportTests : IDisposable
     }
 
     [Fact]
+    public void ExcessiveProbeAndProfileCountsAreRejected()
+    {
+        BlockCheckReportProbe probe = Probe("baseline", "", "t1", 1, 1);
+        BlockCheckReportProfile profile = Profile("P", "p", ["t1"]);
+        BlockCheckReport[] reports =
+        [
+            Report(probes: Enumerable.Repeat(probe, 200_001).ToArray()),
+            Report(profiles: Enumerable.Repeat(profile, 20_001).ToArray()),
+        ];
+
+        foreach (BlockCheckReport report in reports)
+        {
+            var exception = Assert.Throws<InvalidDataException>(() => BlockCheckReportValidator.Validate(report));
+            Assert.Contains("unreasonable item counts", exception.Message);
+        }
+    }
+
+    [Fact]
+    public void ValidatorReportsTheFirstInvalidGroup()
+    {
+        var target = Target("t1", "example.com", "/", BlockCheckProtocol.Tls12);
+        (BlockCheckReport Report, string Message)[] cases =
+        [
+            (Report(targets: [target with { Port = 0 }], probes: [null!]), "invalid or duplicate targets"),
+            (Report(probes: [null!], profiles: [null!]), "invalid probe evidence"),
+            (Report(profiles: [null!], issues: [null!]), "invalid preset profiles"),
+            (Report(attempts: [null!]), "invalid diagnostics"),
+        ];
+
+        foreach (var (report, message) in cases)
+        {
+            var exception = Assert.Throws<InvalidDataException>(() => BlockCheckReportValidator.Validate(report));
+            Assert.Contains(message, exception.Message);
+        }
+    }
+
+    [Fact]
+    public void ValidReportPassesTheValidator()
+    {
+        BlockCheckReportValidator.Validate(FullReport());
+    }
+
+    [Fact]
     public void ValidAttemptIsAccepted()
     {
         var result = Importer.Import(Report(attempts: [new BlockCheckReportValidationAttempt(0, false, true, ["t1"], ["x"])]));
@@ -364,8 +407,8 @@ public sealed class BlockCheckReportTests : IDisposable
     [Fact]
     public async Task TextReportScopeIsRecoveredFromSiteLists()
     {
-        string listA = Path.Combine(directory, "a.txt");
-        string listB = Path.Combine(directory, "b.txt");
+        string listA = Path.Combine(_directory, "a.txt");
+        string listB = Path.Combine(_directory, "b.txt");
         File.WriteAllLines(listA, ["\uFEFF# comment", "", "^Example.COM.", "https://other.org/path", "not a host!"]);
         BlockCheckReport report = Report(
             targets:
@@ -375,7 +418,7 @@ public sealed class BlockCheckReportTests : IDisposable
                 Target("t3", "unrelated.net", "/", BlockCheckProtocol.Tls12),
             ],
             profiles: [Profile("P", "tls-multisplit-1", ["t1"], lists: [listA, listB])]);
-        string file = Path.Combine(directory, "report.txt");
+        string file = Path.Combine(_directory, "report.txt");
         await File.WriteAllTextAsync(file, Serializer.SerializeText(report));
 
         BlockCheckReportImportResult result = await Importer.LoadAsync(file);
@@ -388,7 +431,7 @@ public sealed class BlockCheckReportTests : IDisposable
     [Fact]
     public async Task JsonReportIsLoaded()
     {
-        string file = Path.Combine(directory, "report.json");
+        string file = Path.Combine(_directory, "report.json");
         await File.WriteAllTextAsync(file, "  \n" + Serializer.SerializeJson(FullReport()));
 
         BlockCheckReportImportResult result = await Importer.LoadJsonAsync(file);
@@ -401,12 +444,12 @@ public sealed class BlockCheckReportTests : IDisposable
     [Fact]
     public async Task BadFilesAreRejected()
     {
-        string empty = Path.Combine(directory, "empty.json");
-        string broken = Path.Combine(directory, "broken.json");
+        string empty = Path.Combine(_directory, "empty.json");
+        string broken = Path.Combine(_directory, "broken.json");
         await File.WriteAllTextAsync(empty, "");
         await File.WriteAllTextAsync(broken, "{ \"schemaVersion\": ");
 
-        await Assert.ThrowsAsync<FileNotFoundException>(() => Importer.LoadAsync(Path.Combine(directory, "none.json")));
+        await Assert.ThrowsAsync<FileNotFoundException>(() => Importer.LoadAsync(Path.Combine(_directory, "none.json")));
         await Assert.ThrowsAsync<InvalidDataException>(() => Importer.LoadAsync(empty));
         await Assert.ThrowsAsync<InvalidDataException>(() => Importer.LoadAsync(broken));
         Assert.Throws<InvalidDataException>(() => Serializer.DeserializeJson("null"));

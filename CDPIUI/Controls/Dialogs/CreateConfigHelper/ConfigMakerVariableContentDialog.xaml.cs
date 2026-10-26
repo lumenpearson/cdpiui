@@ -1,40 +1,40 @@
 #nullable enable
 
-using CDPIUI.ViewModels;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CDPIUI.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Dialogs.CreateConfigHelper;
 
 public sealed partial class ConfigMakerVariableContentDialog : ContentDialog
 {
-    private readonly ConfigMakerPresetDocument document;
-    private readonly ConfigMakerVariableDefinition? source;
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ConfigMakerPresetDocument _document;
+    private readonly ConfigMakerVariableDefinition? _source;
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public ConfigMakerVariableContentDialog(
         ConfigMakerPresetDocument document,
         ConfigMakerVariableDefinition? variable = null)
     {
-        this.document = document ?? throw new ArgumentNullException(nameof(document));
-        source = variable;
+        _document = document ?? throw new ArgumentNullException(nameof(document));
+        _source = variable;
         InitializeComponent();
-        Title = localizer.GetLocalizedString(variable == null
+        Title = _localizer.GetLocalizedString(variable == null
             ? "ConfigMakerCreateVariableDialogTitle"
             : "ConfigMakerEditVariableDialogTitle");
-        PrimaryButtonText = localizer.GetLocalizedString("Save");
-        CloseButtonText = localizer.GetLocalizedString("Cancel");
+        PrimaryButtonText = _localizer.GetLocalizedString("Save");
+        CloseButtonText = _localizer.GetLocalizedString("Cancel");
         DefaultButton = ContentDialogButton.Primary;
         LoadSource();
         ValidateInput();
     }
 
     public ConfigMakerVariableDefinition? ResultVariable { get; private set; }
-    public string OriginalName => source?.Name ?? string.Empty;
+    public string OriginalName => _source?.Name ?? string.Empty;
 
     private ConfigMakerVariableKind SelectedKind =>
         Enum.TryParse(
@@ -46,7 +46,7 @@ public sealed partial class ConfigMakerVariableContentDialog : ContentDialog
 
     private void LoadSource()
     {
-        ConfigMakerVariableDefinition variable = source ?? new ConfigMakerVariableDefinition
+        ConfigMakerVariableDefinition variable = _source ?? new ConfigMakerVariableDefinition
         {
             Kind = ConfigMakerVariableKind.Text,
             StorageKind = ConfigMakerVariableStorageKind.Direct,
@@ -91,21 +91,21 @@ public sealed partial class ConfigMakerVariableContentDialog : ContentDialog
         string name = NameTextBox.Text.Trim();
         if (!ConfigMakerPresetDocument.IsValidVariableName(name))
         {
-            message = localizer.GetLocalizedString("ConfigMakerVariableInvalidNameMessage");
+            message = _localizer.GetLocalizedString("ConfigMakerVariableInvalidNameMessage");
         }
-        else if (document.ContainsVariable(name, source?.Id))
+        else if (_document.ContainsVariable(name, _source?.Id))
         {
-            message = localizer.GetLocalizedString("ConfigMakerVariableDuplicateNameMessage");
+            message = _localizer.GetLocalizedString("ConfigMakerVariableDuplicateNameMessage");
         }
         else if (SelectedKind == ConfigMakerVariableKind.Switch &&
                  (string.IsNullOrWhiteSpace(OnValueTextBox.Text) ||
                   string.IsNullOrWhiteSpace(OffValueTextBox.Text)))
         {
-            message = localizer.GetLocalizedString("ConfigMakerVariableSwitchValuesRequiredMessage");
+            message = _localizer.GetLocalizedString("ConfigMakerVariableSwitchValuesRequiredMessage");
         }
         else if (SelectedKind == ConfigMakerVariableKind.Choice && ParseValues().Count == 0)
         {
-            message = localizer.GetLocalizedString("ConfigMakerVariableChoiceValuesRequiredMessage");
+            message = _localizer.GetLocalizedString("ConfigMakerVariableChoiceValuesRequiredMessage");
         }
 
         IsPrimaryButtonEnabled = message.Length == 0;
@@ -131,12 +131,12 @@ public sealed partial class ConfigMakerVariableContentDialog : ContentDialog
 
         ConfigMakerVariableDefinition variable = new()
         {
-            Id = source?.Id ?? Guid.NewGuid().ToString("N"),
+            Id = _source?.Id ?? Guid.NewGuid().ToString("N"),
             Name = NameTextBox.Text.Trim(),
             Kind = SelectedKind,
             StorageKind = SelectedKind == ConfigMakerVariableKind.Switch
                 ? ConfigMakerVariableStorageKind.Conditional
-                : source?.StorageKind == ConfigMakerVariableStorageKind.Expression
+                : _source?.StorageKind == ConfigMakerVariableStorageKind.Expression
                     ? ConfigMakerVariableStorageKind.Expression
                     : ConfigMakerVariableStorageKind.Direct,
             Value = ValueTextBox.Text,
@@ -145,7 +145,7 @@ public sealed partial class ConfigMakerVariableContentDialog : ContentDialog
             OffValue = OffValueTextBox.Text,
             IsSwitchEnabled = DefaultSwitch.IsOn,
             InternalParameterName = SelectedKind == ConfigMakerVariableKind.Switch
-                ? source?.InternalParameterName ?? CreateParameterName(NameTextBox.Text.Trim())
+                ? _source?.InternalParameterName ?? CreateParameterName(NameTextBox.Text.Trim())
                 : string.Empty,
         };
         foreach (string value in ParseValues())

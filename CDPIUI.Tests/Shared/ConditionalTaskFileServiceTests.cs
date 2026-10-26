@@ -4,12 +4,12 @@ namespace CDPIUI.Tests.Shared;
 
 public sealed class ConditionalTaskFileServiceTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), "cdpiui-tasks-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-tasks-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {
-        if (Directory.Exists(directory))
-            Directory.Delete(directory, true);
+        if (Directory.Exists(_directory))
+            Directory.Delete(_directory, true);
     }
 
     private static ConditionalTask CreateTask(string name) => new()
@@ -23,25 +23,25 @@ public sealed class ConditionalTaskFileServiceTests : IDisposable
     public void SavedTaskLoadsBackWithoutTemporaryFiles()
     {
         ConditionalTask task = CreateTask("First");
-        string path = ConditionalTaskFileService.Save(task, directory);
+        string path = ConditionalTaskFileService.Save(task, _directory);
         task.Name = "Renamed";
-        ConditionalTaskFileService.Save(task, directory);
+        ConditionalTaskFileService.Save(task, _directory);
 
         ConditionalTask loaded = ConditionalTaskFileService.Load(path);
 
         Assert.Equal("Renamed", loaded.Name);
-        Assert.Single(Directory.GetFiles(directory));
+        Assert.Single(Directory.GetFiles(_directory));
     }
 
     [Fact]
     public void CopiedTaskFileIsSkippedAndReported()
     {
         ConditionalTask task = CreateTask("Task");
-        string path = ConditionalTaskFileService.Save(task, directory);
-        File.Copy(path, Path.Combine(directory, "copy" + ConditionalTaskFileService.FileExtension));
+        string path = ConditionalTaskFileService.Save(task, _directory);
+        File.Copy(path, Path.Combine(_directory, "copy" + ConditionalTaskFileService.FileExtension));
         var errors = new List<string>();
 
-        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(directory, (file, _) => errors.Add(file));
+        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(_directory, (file, _) => errors.Add(file));
 
         Assert.Single(tasks);
         Assert.Single(errors);
@@ -50,11 +50,11 @@ public sealed class ConditionalTaskFileServiceTests : IDisposable
     [Fact]
     public void BrokenTaskFileIsReported()
     {
-        Directory.CreateDirectory(directory);
-        File.WriteAllText(Path.Combine(directory, "broken" + ConditionalTaskFileService.FileExtension), "<ConditionalTask");
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(Path.Combine(_directory, "broken" + ConditionalTaskFileService.FileExtension), "<ConditionalTask");
         var errors = new List<string>();
 
-        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(directory, (file, _) => errors.Add(file));
+        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(_directory, (file, _) => errors.Add(file));
 
         Assert.Empty(tasks);
         Assert.Single(errors);

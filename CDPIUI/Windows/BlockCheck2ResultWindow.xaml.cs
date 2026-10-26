@@ -1,3 +1,7 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using System.Windows.Controls.Primitives;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.Universal;
@@ -10,10 +14,6 @@ using CDPIUI.Views.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows.Controls.Primitives;
 using Windows.ApplicationModel.DataTransfer;
 using WinUI3Localizer;
 using RoutedEventArgs = Microsoft.UI.Xaml.RoutedEventArgs;
@@ -23,14 +23,14 @@ namespace CDPIUI;
 
 public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly BlockCheck2ResultViewModel viewModel = new();
-    private readonly BlockCheckReportSerializer reportSerializer = new();
-    private bool modeChoiceShown;
-    private IStatusNotificationSource? notificationSource;
-    private readonly BlockCheckReportImportService importService = new();
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly BlockCheck2ResultViewModel _viewModel = new();
+    private readonly BlockCheckReportSerializer _reportSerializer = new();
+    private bool _modeChoiceShown;
+    private IStatusNotificationSource? _notificationSource;
+    private readonly BlockCheckReportImportService _importService = new();
 
-    private readonly ObservableCollection<string> StatusBarItems = [];
+    private readonly ObservableCollection<string> _statusBarItems = [];
 
     public BlockCheck2ResultWindow()
     {
@@ -46,31 +46,31 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
         ContentFrame.Navigated += ContentFrame_Navigated;
         ContentFrame.Loaded += ContentFrame_Loaded;
-        viewModel.ManualAssignments.CollectionChanged += (_, _) => UpdateChrome();
-        viewModel.Draft.PropertyChanged += (_, _) => UpdateChrome();
-        ContentFrame.Navigate(typeof(ResultPage), viewModel);
+        _viewModel.ManualAssignments.CollectionChanged += (_, _) => UpdateChrome();
+        _viewModel.Draft.PropertyChanged += (_, _) => UpdateChrome();
+        ContentFrame.Navigate(typeof(ResultPage), _viewModel);
 
-        StatusBarListView.ItemsSource = StatusBarItems;
+        StatusBarListView.ItemsSource = _statusBarItems;
     }
 
     public void ShowReport(BlockCheckReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
 
-        viewModel.Load(report);
+        _viewModel.Load(report);
         OpenBuilder();
         QueueModeChoice();
     }
 
-    private bool ReportOpenRequested = false;
-    private string ReportUri = string.Empty;
+    private bool _reportOpenRequested = false;
+    private string _reportUri = string.Empty;
 
     public void ShowReport(string filePath)
     {
         LoadingGrid.Visibility = Visibility.Visible;
         ContentFrame.Visibility = Visibility.Collapsed;
-        ReportOpenRequested = true;
-        ReportUri = filePath;
+        _reportOpenRequested = true;
+        _reportUri = filePath;
     }
 
     public void ShowSession(BlockCheckResultSession session)
@@ -78,7 +78,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         ArgumentNullException.ThrowIfNull(session);
         DispatcherQueue.TryEnqueue(() =>
         {
-            viewModel.Load(session);
+            _viewModel.Load(session);
             OpenBuilder();
             QueueModeChoice();
         });
@@ -86,15 +86,15 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private void OpenBuilder()
     {
-        modeChoiceShown = false;
+        _modeChoiceShown = false;
         ContentFrame.BackStack.Clear();
         if (ContentFrame.Content is ResultPage page)
         {
-            page.LoadViewModel(viewModel);
+            page.LoadViewModel(_viewModel);
             UpdateChrome();
             return;
         }
-        ContentFrame.Navigate(typeof(ResultPage), viewModel);
+        ContentFrame.Navigate(typeof(ResultPage), _viewModel);
     }
 
     private void QueueModeChoice()
@@ -104,12 +104,12 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private void ContentFrame_Loaded(object sender, RoutedEventArgs e)
     {
-        if (ReportOpenRequested)
+        if (_reportOpenRequested)
         {
             _ = Load(); // Load catches and logs its own errors.
         }
 
-        if (!modeChoiceShown && viewModel.HasReport)
+        if (!_modeChoiceShown && _viewModel.HasReport)
         {
             QueueModeChoice();
         }
@@ -117,13 +117,13 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async Task Load()
     {
-        string filePath = ReportUri;
-        ReportOpenRequested = false;
+        string filePath = _reportUri;
+        _reportOpenRequested = false;
         try
         {
             // Only the import runs on the pool; the error is shown back on the UI thread,
             // NotificationCenter.Show from the pool thread threw a COMException.
-            BlockCheckReportImportResult imported = await Task.Run(() => importService.LoadAsync(filePath));
+            BlockCheckReportImportResult imported = await Task.Run(() => _importService.LoadAsync(filePath));
             ShowSession(imported.Session);
         }
         catch (Exception exception)
@@ -140,11 +140,11 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async System.Threading.Tasks.Task ShowModeChoiceAsync()
     {
-        if (modeChoiceShown || ContentFrame.XamlRoot == null)
+        if (_modeChoiceShown || ContentFrame.XamlRoot == null)
         {
             return;
         }
-        modeChoiceShown = true;
+        _modeChoiceShown = true;
         ContentDialog dialog = new()
         {
             XamlRoot = ContentFrame.XamlRoot,
@@ -153,10 +153,10 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
             PrimaryButtonText = Text("BlockCheck2ResultModeAutomaticButton"),
             SecondaryButtonText = Text("BlockCheck2ResultModeManualButton"),
             CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
-            DefaultButton = viewModel.CanUseConfig
+            DefaultButton = _viewModel.CanUseConfig
                 ? ContentDialogButton.Primary
                 : ContentDialogButton.Secondary,
-            IsPrimaryButtonEnabled = viewModel.CanUseConfig,
+            IsPrimaryButtonEnabled = _viewModel.CanUseConfig,
         };
         ContentDialogResult result = await dialog.ShowQueuedAsync();
         if (result == ContentDialogResult.Primary)
@@ -167,23 +167,23 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private void OpenPresetReview()
     {
-        if (!viewModel.CanUseConfig || ContentFrame.Content is PresetReviewPage)
+        if (!_viewModel.CanUseConfig || ContentFrame.Content is PresetReviewPage)
         {
             return;
         }
-        ContentFrame.Navigate(typeof(PresetReviewPage), viewModel);
+        ContentFrame.Navigate(typeof(PresetReviewPage), _viewModel);
     }
 
     private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
     {
-        if (notificationSource != null)
+        if (_notificationSource != null)
         {
-            notificationSource.StatusNotificationRequested -= StatusNotificationSource_Requested;
+            _notificationSource.StatusNotificationRequested -= StatusNotificationSource_Requested;
         }
-        notificationSource = e.Content as IStatusNotificationSource;
-        if (notificationSource != null)
+        _notificationSource = e.Content as IStatusNotificationSource;
+        if (_notificationSource != null)
         {
-            notificationSource.StatusNotificationRequested += StatusNotificationSource_Requested;
+            _notificationSource.StatusNotificationRequested += StatusNotificationSource_Requested;
         }
         UpdateChrome();
     }
@@ -195,32 +195,33 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private void UpdateChrome()
     {
-        StatusBarItems.Clear();
+        _statusBarItems.Clear();
         bool review = ContentFrame.Content is PresetReviewPage;
         SaveToApplicationMenuItem.Visibility = review ? Visibility.Visible : Visibility.Collapsed;
-        SaveToApplicationMenuItem.IsEnabled = review && viewModel.Draft.CanUseConfig;
+        SaveToApplicationMenuItem.IsEnabled = review && _viewModel.Draft.CanUseConfig;
         BackToBuilderMenuItem.Visibility = review ? Visibility.Visible : Visibility.Collapsed;
 
-        StatusBarItems.Clear();
+        _statusBarItems.Clear();
         if (review)
         {
-            StatusBarItems.Add(Text("BlockCheck2ReviewStatusFormat"));
-            StatusBarItems.Add(string.Format(Text("BlockCheck2ReviewStatusFormatGroups"), viewModel.Draft.Groups.Count));
-            StatusBarItems.Add(string.Format(Text("BlockCheck2ReviewStatusFormatFiles"), viewModel.Draft.Files.Count));
+            _statusBarItems.Add(Text("BlockCheck2ReviewStatusFormat"));
+            _statusBarItems.Add(string.Format(Text("BlockCheck2ReviewStatusFormatGroups"), _viewModel.Draft.Groups.Count));
+            _statusBarItems.Add(string.Format(Text("BlockCheck2ReviewStatusFormatFiles"), _viewModel.Draft.Files.Count));
         }
         else
         {
-            StatusBarItems.Add(Text("BlockCheck2BuilderStatusFormat"));
-            StatusBarItems.Add(RunPresetName());
-            StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTargetCount"), viewModel?.TargetCount.ToString() ?? "%~"));
-            StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatStrategies"), viewModel.StrategyEvidenceCount));
-            if (!string.IsNullOrEmpty(viewModel?.CreatedAtLocalText)) StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTime"), viewModel.CreatedAtLocalText));
-            StatusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatSelected"), viewModel.ManualAssignmentCount));
+            _statusBarItems.Add(Text("BlockCheck2BuilderStatusFormat"));
+            _statusBarItems.Add(RunPresetName());
+            _statusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTargetCount"), _viewModel?.TargetCount.ToString() ?? "%~"));
+            _statusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatStrategies"), _viewModel.StrategyEvidenceCount));
+            if (!string.IsNullOrEmpty(_viewModel?.CreatedAtLocalText))
+                _statusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusTime"), _viewModel.CreatedAtLocalText));
+            _statusBarItems.Add(string.Format(Text("BlockCheck2BuilderStatusFormatSelected"), _viewModel.ManualAssignmentCount));
 
         }
     }
 
-    private string RunPresetName() => viewModel.Report?.RunPreset switch
+    private string RunPresetName() => _viewModel.Report?.RunPreset switch
     {
         BlockCheckRunPreset.Quick => Text("BlockCheck2QuickModeName"),
         BlockCheckRunPreset.Exhaustive => Text("BlockCheck2ExhaustiveModeName"),
@@ -229,7 +230,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async void SaveJsonReportItem_Click(object sender, RoutedEventArgs e)
     {
-        if (viewModel.Report == null)
+        if (_viewModel.Report == null)
         {
             return;
         }
@@ -240,7 +241,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         {
             try
             {
-                await reportSerializer.SaveJsonAsync(dialog.FileName, viewModel.Report);
+                await _reportSerializer.SaveJsonAsync(dialog.FileName, _viewModel.Report);
                 ShowNotification(
                     InfoBarSeverity.Success,
                     Text("BlockCheck2ActionCompletedTitle"),
@@ -258,7 +259,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async void SaveTextReportItem_Click(object sender, RoutedEventArgs e)
     {
-        if (viewModel.Report == null)
+        if (_viewModel.Report == null)
         {
             return;
         }
@@ -269,7 +270,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         {
             try
             {
-                await reportSerializer.SaveTextAsync(dialog.FileName, viewModel.Report);
+                await _reportSerializer.SaveTextAsync(dialog.FileName, _viewModel.Report);
                 ShowNotification(
                     InfoBarSeverity.Success,
                     Text("BlockCheck2ActionCompletedTitle"),
@@ -296,7 +297,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
 
     private async void SaveToApplicationItem_Click(object sender, RoutedEventArgs e)
     {
-        if (!viewModel.CanUseConfig || ContentFrame.Content is not PresetReviewPage page)
+        if (!_viewModel.CanUseConfig || ContentFrame.Content is not PresetReviewPage page)
         {
             return;
         }
@@ -324,5 +325,5 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
     private void ShowNotification(InfoBarSeverity severity, string title, string message) =>
         NotificationCenter.Show(severity, title, message);
 
-    private string Text(string key) => localizer.GetLocalizedString(key);
+    private string Text(string key) => _localizer.GetLocalizedString(key);
 }

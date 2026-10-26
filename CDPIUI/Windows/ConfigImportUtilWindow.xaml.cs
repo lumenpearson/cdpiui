@@ -1,23 +1,23 @@
-﻿using CDPIUI.Default;
+using System.Collections.Specialized;
+using CDPIUI.Default;
 using CDPIUI.Views.ConfigImportUtil;
 using Microsoft.UI.Xaml.Media.Animation;
-using System.Collections.Specialized;
 using WinUI3Localizer;
 
 namespace CDPIUI;
 
 public sealed partial class ConfigImportUtilWindow : TemplateWindow
 {
-    private string targetStoreId = string.Empty;
+    private string _targetStoreId = string.Empty;
     public string TargetStoreId
     {
-        get => targetStoreId;
+        get => _targetStoreId;
         set
         {
-            targetStoreId = value ?? string.Empty;
+            _targetStoreId = value ?? string.Empty;
             ContentFrame.Navigate(
                 typeof(MainPage),
-                new NameValueCollection { { "componentId", targetStoreId } },
+                new NameValueCollection { { "componentId", _targetStoreId } },
                 new SuppressNavigationTransitionInfo());
         }
     }
@@ -42,7 +42,7 @@ public sealed partial class ConfigImportUtilWindow : TemplateWindow
 
         ContentFrame.Navigate(
             typeof(MainPage),
-            new NameValueCollection { { "componentId", targetStoreId } },
+            new NameValueCollection { { "componentId", _targetStoreId } },
             new SuppressNavigationTransitionInfo());
     }
 }

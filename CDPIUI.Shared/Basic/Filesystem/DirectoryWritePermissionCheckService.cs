@@ -1,55 +1,54 @@
-﻿using CDPIUI.Shared.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using CDPIUI.Shared.Models;
 
-namespace CDPIUI.Shared.Basic.Filesystem
+namespace CDPIUI.Shared.Basic.Filesystem;
+
+internal class DirectoryWritePermissionCheckService
 {
-    internal class DirectoryWritePermissionCheckService
+    public static UnprocessedOperationResultModel<EmptyResult> HasWritePermission(string directory)
     {
-        public static UnprocessedOperationResultModel<EmptyResult> HasWritePermission(string directory)
+        var testFile = Path.Combine(directory, $".write_test_{Guid.NewGuid():N}.tmp");
+        try
         {
-            var testFile = Path.Combine(directory, $".write_test_{Guid.NewGuid():N}.tmp");
+            using (var fs = new FileStream(testFile, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                fs.WriteByte(0x0);
+                fs.Flush();
+            }
+
+            File.Delete(testFile);
+            return UnprocessedOperationResultModel<EmptyResult>.SuccessResult();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
+        }
+        catch (IOException)
+        {
+            return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
+        }
+        catch (Exception ex)
+        {
+            return UnprocessedOperationResultModel<EmptyResult>.FailureResult(ex);
+        }
+        finally
+        {
             try
             {
-                using (var fs = new FileStream(testFile, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                {
-                    fs.WriteByte(0x0);
-                    fs.Flush();
-                }
-
-                File.Delete(testFile);
-                return UnprocessedOperationResultModel<EmptyResult>.SuccessResult();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
-            }
-            catch (DirectoryNotFoundException)
-            {
-                return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
-            }
-            catch (IOException)
-            {
-                return UnprocessedOperationResultModel<EmptyResult>.UnSuccessResult();
+                if (File.Exists(testFile))
+                    File.Delete(testFile);
             }
             catch (Exception ex)
             {
-                return UnprocessedOperationResultModel<EmptyResult>.FailureResult(ex);
-            }
-            finally
-            {
-                try
-                {
-                    if (File.Exists(testFile))
-                        File.Delete(testFile);
-                }
-                catch (Exception ex)
-                {
-                    // The check result is already known; only an empty test file is left.
-                    System.Diagnostics.Trace.WriteLine($"[DirectoryWritePermissionCheckService] Cannot delete the test file {testFile}: {ex.Message}");
-                }
+                // The check result is already known; only an empty test file is left.
+                System.Diagnostics.Trace.WriteLine($"[DirectoryWritePermissionCheckService] Cannot delete the test file {testFile}: {ex.Message}");
             }
         }
     }

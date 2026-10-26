@@ -1,3 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Windows.Input;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,13 +13,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -51,7 +51,7 @@ public sealed partial class IconButton : UserControl
         set => SetValue(ClickCommandParameterProperty, value);
     }
 
-    private bool IsPointerOnButton = false;
+    private bool _isPointerOnButton = false;
 
     public IconButton()
     {
@@ -78,7 +78,8 @@ public sealed partial class IconButton : UserControl
     public string IconGlyph
     {
         get { return (string)GetValue(IconGlyphProperty); }
-        set { 
+        set
+        {
             SetValue(IconGlyphProperty, value);
             if (!Checked)
             {
@@ -96,7 +97,8 @@ public sealed partial class IconButton : UserControl
     public string CheckedIconGlyph
     {
         get { return (string)GetValue(CheckedIconGlyphProperty); }
-        set { 
+        set
+        {
             SetValue(CheckedIconGlyphProperty, value);
             if (Checked)
             {
@@ -123,18 +125,19 @@ public sealed partial class IconButton : UserControl
     public bool Checked
     {
         get { return (bool)GetValue(CheckedProperty); }
-        set { 
+        set
+        {
             SetValue(CheckedProperty, value);
             if (value)
             {
-                Icon.Style = IsPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconAccentTertiaryColor"];
-                MainTextBlock.Style = IsPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextAccentTertiaryColor"];
+                Icon.Style = _isPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconAccentTertiaryColor"];
+                MainTextBlock.Style = _isPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextAccentTertiaryColor"];
                 Icon.Glyph = !string.IsNullOrEmpty(CheckedIconGlyph) ? CheckedIconGlyph : IconGlyph;
             }
             else
             {
-                Icon.Style = IsPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconDefaultColor"];
-                MainTextBlock.Style = IsPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextDefaultColor"];
+                Icon.Style = _isPointerOnButton ? (Style)Resources["FontIconAccentColor"] : (Style)Resources["FontIconDefaultColor"];
+                MainTextBlock.Style = _isPointerOnButton ? (Style)Resources["TextAccentColor"] : (Style)Resources["TextDefaultColor"];
                 Icon.Glyph = IconGlyph;
             }
         }
@@ -170,12 +173,12 @@ public sealed partial class IconButton : UserControl
         Icon.Style = (Style)Resources["FontIconAccentColor"];
         MainTextBlock.Style = (Style)Resources["TextAccentColor"];
 
-        IsPointerOnButton = true;
+        _isPointerOnButton = true;
     }
 
     private void Button_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        IsPointerOnButton = false;
+        _isPointerOnButton = false;
         if (Checked)
         {
             Icon.Style = (Style)Resources["FontIconAccentTertiaryColor"];
@@ -185,7 +188,7 @@ public sealed partial class IconButton : UserControl
         {
             Icon.Style = (Style)Resources["FontIconDefaultColor"];
             MainTextBlock.Style = (Style)Resources["TextDefaultColor"];
-            
+
         }
     }
 }

@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Core;
@@ -13,14 +21,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
@@ -33,16 +33,16 @@ namespace CDPIUI.Views.Settings;
 
 public sealed partial class PersonalizePage : TemplatePage
 {
-    private ObservableCollection<BreadcrumbBarModel> BreadcrumbBarModels = [];
+    private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];
 
-    private ILocalizer localizer = Localizer.Get();
-
-    
-    private ObservableCollection<GridColumnsCountModel> gridColumnModels = [];
-    private ObservableCollection<ColorViewModel> Colors = [];
+    private ILocalizer _localizer = Localizer.Get();
 
 
-    private UISettings UISettings = new UISettings();
+    private ObservableCollection<GridColumnsCountModel> _gridColumnModels = [];
+    private ObservableCollection<ColorViewModel> _colors = [];
+
+
+    private UISettings _uiSettings = new UISettings();
 
 
     public PersonalizePage()
@@ -54,25 +54,25 @@ public sealed partial class PersonalizePage : TemplatePage
         IsForwardAnimationToPageAvailable = true;
         ElementToAnimateForwardConnectedAnimation = NavGrid;
 
-        BreadcrumbBar.ItemsSource = BreadcrumbBarModels;
+        BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
         CreateBreadcrumbBarNavigation();
 
-        ColorsGridView.ItemsSource = Colors;
+        ColorsGridView.ItemsSource = _colors;
 
         CreateColors();
         InitSettings();
-        
-        SystemColorBorder.Background = new SolidColorBrush(UISettings.GetColorValue(UIColorType.Accent));
-        UISettings.ColorValuesChanged += HandleAccentChanged;
+
+        SystemColorBorder.Background = new SolidColorBrush(_uiSettings.GetColorValue(UIColorType.Accent));
+        _uiSettings.ColorValuesChanged += HandleAccentChanged;
 
 
     }
 
     private void InitSettings()
     {
-        MainGridColumnSelector.ItemsSource = gridColumnModels;
+        MainGridColumnSelector.ItemsSource = _gridColumnModels;
         CreateGridColimnVariants();
-        MainGridColumnSelector.SelectedItem = gridColumnModels.FirstOrDefault(x => x.Count == SettingsManager.Instance.GetValue<int>("APPEARANCE", "mainGridColumnsCount"));
+        MainGridColumnSelector.SelectedItem = _gridColumnModels.FirstOrDefault(x => x.Count == SettingsManager.Instance.GetValue<int>("APPEARANCE", "mainGridColumnsCount"));
         MainGridColumnSelector.SelectionChanged += MainGridColumnSelector_SelectionChanged;
 
         CheckFontSettings();
@@ -99,62 +99,62 @@ public sealed partial class PersonalizePage : TemplatePage
 
     private void CreateThemes()
     {
-        
+
     }
 
     private void CreateGridColimnVariants()
     {
-        gridColumnModels.Clear();
-        gridColumnModels.Add(new()
+        _gridColumnModels.Clear();
+        _gridColumnModels.Add(new()
         {
             Count = -1,
-            DisplayName = localizer.GetLocalizedString("MainPageGridColumnsCountAuto")
+            DisplayName = _localizer.GetLocalizedString("MainPageGridColumnsCountAuto")
         });
-        gridColumnModels.Add(new()
+        _gridColumnModels.Add(new()
         {
             Count = 1,
-            DisplayName = localizer.GetLocalizedString("MainPageGridColumnsCountOne")
+            DisplayName = _localizer.GetLocalizedString("MainPageGridColumnsCountOne")
         });
-        gridColumnModels.Add(new()
+        _gridColumnModels.Add(new()
         {
             Count = 2,
-            DisplayName = localizer.GetLocalizedString("MainPageGridColumnsCountTwo")
+            DisplayName = _localizer.GetLocalizedString("MainPageGridColumnsCountTwo")
         });
-        gridColumnModels.Add(new()
+        _gridColumnModels.Add(new()
         {
             Count = 4,
-            DisplayName = localizer.GetLocalizedString("MainPageGridColumnsCountFour")
+            DisplayName = _localizer.GetLocalizedString("MainPageGridColumnsCountFour")
         });
     }
 
     private void SetColor(string hex)
     {
-        var selColor = Colors.FirstOrDefault(x => x.Hex == hex);
+        var selColor = _colors.FirstOrDefault(x => x.Hex == hex);
         if (selColor is null)
         {
-            Colors.Add(new ColorViewModel(hex));
+            _colors.Add(new ColorViewModel(hex));
         }
-        ColorsGridView.SelectedIndex = Colors.IndexOf(Colors.FirstOrDefault(x => x.Hex == hex));
+        ColorsGridView.SelectedIndex = _colors.IndexOf(_colors.FirstOrDefault(x => x.Hex == hex));
     }
 
     private void CreateColors()
     {
-        Colors.Clear();
-        Colors.Add(new ColorViewModel("#0078d7"));
-        Colors.Add(new ColorViewModel("#00838c"));
-        Colors.Add(new ColorViewModel("#e3008c"));
-        Colors.Add(new ColorViewModel("#ca4f07"));
-        Colors.Add(new ColorViewModel("#e81123"));
-        Colors.Add(new ColorViewModel("#00819e"));
-        Colors.Add(new ColorViewModel("#10893e"));
-        Colors.Add(new ColorViewModel("#881798"));
-        Colors.Add(new ColorViewModel("#c239b3"));
-        Colors.Add(new ColorViewModel("#767676"));
-        Colors.Add(new ColorViewModel("#e1b12c"));
-        Colors.Add(new ColorViewModel("#16a085"));
-        Colors.Add(new ColorViewModel("#0984e3"));
-        Colors.Add(new ColorViewModel("#4a69bd"));
-        Colors.Add(new ColorViewModel("#05c46b"));
+        _colors.Clear();
+        _colors.Add(new ColorViewModel("#0078d7"));
+        _colors.Add(new ColorViewModel("#00838c"));
+        _colors.Add(new ColorViewModel("#e3008c"));
+        _colors.Add(new ColorViewModel("#ca4f07"));
+        _colors.Add(new ColorViewModel("#e81123"));
+        _colors.Add(new ColorViewModel("#00819e"));
+        _colors.Add(new ColorViewModel("#10893e"));
+        _colors.Add(new ColorViewModel("#881798"));
+        _colors.Add(new ColorViewModel("#c239b3"));
+        _colors.Add(new ColorViewModel("#767676"));
+        _colors.Add(new ColorViewModel("#e1b12c"));
+        _colors.Add(new ColorViewModel("#16a085"));
+        _colors.Add(new ColorViewModel("#0984e3"));
+        _colors.Add(new ColorViewModel("#4a69bd"));
+        _colors.Add(new ColorViewModel("#05c46b"));
     }
 
     private void HandleAccentChanged(UISettings sender, object args)
@@ -171,9 +171,9 @@ public sealed partial class PersonalizePage : TemplatePage
         string family = ConsoleFontHelper.Instance.FontFamily.Source.ToString();
         string size = ConsoleFontHelper.Instance.FontSize.ToString();
 
-        SelectFontSettingsCard.Description = string.Format(localizer.GetLocalizedString("FontSizeDescription"), family, size);
+        SelectFontSettingsCard.Description = string.Format(_localizer.GetLocalizedString("FontSizeDescription"), family, size);
     }
-    
+
 
     #region Basic
 
@@ -187,7 +187,7 @@ public sealed partial class PersonalizePage : TemplatePage
         base.OnNavigatedFrom(e);
 
         MainGridColumnSelector.SelectionChanged -= MainGridColumnSelector_SelectionChanged;
-        UISettings.ColorValuesChanged -= HandleAccentChanged;
+        _uiSettings.ColorValuesChanged -= HandleAccentChanged;
 
         try
         {
@@ -203,15 +203,15 @@ public sealed partial class PersonalizePage : TemplatePage
 
     public void CreateBreadcrumbBarNavigation()
     {
-        BreadcrumbBarModels.Clear();
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Clear();
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Settings"),
+            DisplayName = _localizer.GetLocalizedString("Settings"),
             Tag = typeof(SettingsPage)
         });
-        BreadcrumbBarModels.Add(new()
+        _breadcrumbBarModels.Add(new()
         {
-            DisplayName = localizer.GetLocalizedString("Personalization"),
+            DisplayName = _localizer.GetLocalizedString("Personalization"),
             Tag = this.GetType()
         });
     }
@@ -241,7 +241,7 @@ public sealed partial class PersonalizePage : TemplatePage
         SettingsManager.Instance.SetValue<int>("APPEARANCE", "mainGridColumnsCount", ((GridColumnsCountModel)MainGridColumnSelector.SelectedItem).Count);
     }
 
-    
+
 
     private void ColorsGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

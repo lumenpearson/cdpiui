@@ -1,52 +1,56 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Helper.Items;
 using Microsoft.UI.Dispatching;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CDPIUI.Helper;
 
 internal sealed class ComponentPresetListSubscription : IDisposable
 {
-    private readonly string componentId;
-    private readonly DispatcherQueue dispatcher;
-    private readonly Action<IReadOnlyList<ConfigSelectorItem>> apply;
-    private ComponentHelper helper;
-    private bool disposed;
-    private int version;
+    private readonly string _componentId;
+    private readonly DispatcherQueue _dispatcher;
+    private readonly Action<IReadOnlyList<ConfigSelectorItem>> _apply;
+    private ComponentHelper _helper;
+    private bool _disposed;
+    private int _version;
 
     public ComponentPresetListSubscription(string componentId, DispatcherQueue dispatcher,
         Action<IReadOnlyList<ConfigSelectorItem>> apply)
     {
-        this.componentId = componentId;
-        this.dispatcher = dispatcher;
-        this.apply = apply;
+        _componentId = componentId;
+        _dispatcher = dispatcher;
+        _apply = apply;
         ComponentItemsLoaderHelper.Instance.InitRequested += Rebind;
         Rebind();
     }
 
-    private void Rebind() => dispatcher.TryEnqueue(() =>
+    private void Rebind() => _dispatcher.TryEnqueue(() =>
     {
-        if (disposed) return;
-        var current = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(componentId);
-        if (!ReferenceEquals(current, helper))
+        if (_disposed)
+            return;
+        var current = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(_componentId);
+        if (!ReferenceEquals(current, _helper))
         {
-            if (helper != null) helper.ConfigListUpdated -= Refresh;
-            helper = current;
-            if (helper != null) helper.ConfigListUpdated += Refresh;
+            if (_helper != null)
+                _helper.ConfigListUpdated -= Refresh;
+            _helper = current;
+            if (_helper != null)
+                _helper.ConfigListUpdated += Refresh;
         }
         Refresh();
     });
 
-    public void Refresh() => dispatcher.TryEnqueue(async () =>
+    public void Refresh() => _dispatcher.TryEnqueue(async () =>
     {
-        if (disposed) return;
-        int request = ++version;
-        var source = helper;
+        if (_disposed)
+            return;
+        int request = ++_version;
+        var source = _helper;
         try
         {
             PackNameLookup packNames = new();
@@ -54,11 +58,14 @@ internal sealed class ComponentPresetListSubscription : IDisposable
                 .Where(item => !item.MarkAsRemoved)
                 .Select(item => new ConfigSelectorItem
                 {
-                    FileName = item.file_name, PackId = item.packId, DisplayName = item.name,
+                    FileName = item.file_name,
+                    PackId = item.packId,
+                    DisplayName = item.name,
                     PackDisplayName = packNames.GetDisplayName(item.packId),
                     IsLegacyConfig = item.IsLegacy
                 }).ToArray() ?? Array.Empty<ConfigSelectorItem>());
-            if (!disposed && request == version && ReferenceEquals(source, helper)) apply(items);
+            if (!_disposed && request == _version && ReferenceEquals(source, _helper))
+                _apply(items);
         }
         catch (Exception exception)
         {
@@ -68,10 +75,11 @@ internal sealed class ComponentPresetListSubscription : IDisposable
 
     public void Dispose()
     {
-        disposed = true;
-        ++version;
+        _disposed = true;
+        ++_version;
         ComponentItemsLoaderHelper.Instance.InitRequested -= Rebind;
-        if (helper != null) helper.ConfigListUpdated -= Refresh;
-        helper = null;
+        if (_helper != null)
+            _helper.ConfigListUpdated -= Refresh;
+        _helper = null;
     }
 }

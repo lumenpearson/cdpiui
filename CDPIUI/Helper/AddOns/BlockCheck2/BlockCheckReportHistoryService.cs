@@ -1,12 +1,12 @@
-using CDPIUI.AddOns.BlockCheck2.Reporting;
-using CDPIUI.Core.Basic;
-using CDPIUI.Helper.BlockCheck2;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.AddOns.BlockCheck2.Reporting;
+using CDPIUI.Core.Basic;
+using CDPIUI.Helper.BlockCheck2;
 
 namespace CDPIUI.Helper.AddOns.BlockCheck2;
 
@@ -20,11 +20,11 @@ public sealed class BlockCheckReportHistoryService
 {
     public const int MaximumReportCount = 50;
 
-    private readonly BlockCheckReportSerializer serializer;
+    private readonly BlockCheckReportSerializer _serializer;
 
     public BlockCheckReportHistoryService(BlockCheckReportSerializer serializer = null)
     {
-        this.serializer = serializer ?? new BlockCheckReportSerializer();
+        _serializer = serializer ?? new BlockCheckReportSerializer();
     }
 
     public static string HistoryDirectory => BlockCheck2HistoryStoreItemService.StorageDirectory;
@@ -55,7 +55,7 @@ public sealed class BlockCheckReportHistoryService
 
         try
         {
-            await serializer.SaveJsonAsync(temporaryPath, report, cancellationToken);
+            await _serializer.SaveJsonAsync(temporaryPath, report, cancellationToken);
             File.Move(temporaryPath, destinationPath);
         }
         finally
@@ -88,7 +88,7 @@ public sealed class BlockCheckReportHistoryService
             try
             {
                 string json = await File.ReadAllTextAsync(filePath, cancellationToken);
-                BlockCheckReport report = serializer.DeserializeJson(json)
+                BlockCheckReport report = _serializer.DeserializeJson(json)
                     ?? throw new InvalidDataException("The report is empty.");
                 FileInfo file = new(filePath);
                 entries.Add(new BlockCheckReportHistoryEntry(

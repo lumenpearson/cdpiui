@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using CDPIUI.Shared.Basic;
 
 namespace CDPIUI.Tests.Shared;

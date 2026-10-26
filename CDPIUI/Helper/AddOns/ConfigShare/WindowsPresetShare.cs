@@ -1,9 +1,9 @@
-using CDPIUI.AddOns.ConfigShare;
-using Microsoft.UI.Xaml;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using CDPIUI.AddOns.ConfigShare;
+using Microsoft.UI.Xaml;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Storage;
@@ -31,7 +31,8 @@ internal static class WindowsPresetShare
         Guid iid = new("A5CAEE9B-8708-49D1-8D36-67D25A8DA00C");
         IntPtr pointer = interop.GetForWindow(window, iid);
         DataTransferManager manager;
-        try { manager = MarshalInterface<DataTransferManager>.FromAbi(pointer); }
+        try
+        { manager = MarshalInterface<DataTransferManager>.FromAbi(pointer); }
         finally { Marshal.Release(pointer); }
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         DataPackage data = null;
@@ -50,7 +51,8 @@ internal static class WindowsPresetShare
                 data.RequestedOperation = DataPackageOperation.Copy;
                 data.SetStorageItems(new[] { file });
                 data.ShareCompleted += completed;
-                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) data.ShareCanceled += canceled;
+                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+                    data.ShareCanceled += canceled;
                 data.OperationCompleted += operationCompleted;
             }
             catch (Exception exception)
@@ -74,7 +76,8 @@ internal static class WindowsPresetShare
             if (data != null)
             {
                 data.ShareCompleted -= completed;
-                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) data.ShareCanceled -= canceled;
+                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+                    data.ShareCanceled -= canceled;
                 data.OperationCompleted -= operationCompleted;
             }
         }

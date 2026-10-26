@@ -1,5 +1,3 @@
-﻿using CDPIUI.Default;
-using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,133 +5,140 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CDPIUI.Default;
+using Microsoft.UI.Xaml;
 
-namespace CDPIUI.Helper.WindowHelper
+namespace CDPIUI.Helper.WindowHelper;
+
+internal class WindowOpenHelper
 {
-    internal class WindowOpenHelper
+    public static async Task OpenAsync(NameValueCollection parameters)
     {
-        public static async Task OpenAsync(NameValueCollection parameters)
+        var windowName = parameters["windowName"];
+
+        if (string.IsNullOrWhiteSpace(windowName))
+            return;
+
+        if (windowName == "MainWindow")
+            windowName = "ModernMainWindow";
+        if (windowName == "LegacyMainWindow")
+            windowName = "MainWindow";
+
+        if (windowName is "ModernMainWindow" or "MainWindow" &&
+            (((App)Application.Current).OpenWindows.OfType<WelcomeWindow>().Any() ||
+             !Core.SettingsManager.Instance.GetValueOrDefault("WELCOMEWIZARD", "Shown", defaultValue: false)))
         {
-            var windowName = parameters["windowName"];
+            await ((App)Application.Current).OpenStartupWindowAsync();
+            return;
+        }
 
-            if (string.IsNullOrWhiteSpace(windowName)) return;
+        var pageName = parameters["page"];
+        var id = parameters["id"];
 
-            if (windowName == "MainWindow") windowName = "ModernMainWindow";
-            if (windowName == "LegacyMainWindow") windowName = "MainWindow";
+        var pageParameters = new NameValueCollection();
+        foreach (string key in parameters.AllKeys)
+        {
+            if (key == null)
+                continue;
 
-            if (windowName is "ModernMainWindow" or "MainWindow" &&
-                (((App)Application.Current).OpenWindows.OfType<WelcomeWindow>().Any() ||
-                 !Core.SettingsManager.Instance.GetValueOrDefault("WELCOMEWIZARD", "Shown", defaultValue: false)))
+            if (key.Equals("windowName", StringComparison.OrdinalIgnoreCase) ||
+                key.Equals("page", StringComparison.OrdinalIgnoreCase) ||
+                key.Equals("id", StringComparison.OrdinalIgnoreCase))
             {
-                await ((App)Application.Current).OpenStartupWindowAsync();
+                continue;
+            }
+
+            pageParameters[key] = parameters[key];
+        }
+
+        Window window;
+
+        var type = GetWindowType(windowName);
+        if (type == null)
+            return;
+
+        // Only template windows have an id. Another window (the classic main window) opens
+        // as a single window; the id was cast to TemplateWindow and threw.
+        if (!string.IsNullOrWhiteSpace(id) && typeof(TemplateWindow).IsAssignableFrom(type))
+        {
+            window = await ((App)Application.Current)
+                .UnsafeCreateNewWindow(type, id: id);
+        }
+        else
+        {
+            window = await ((App)Application.Current)
+                .SafeCreateNewWindow(type);
+        }
+
+        if (window is OfflineHelpWindow helpWindow &&
+            parameters["helpUrl"] is string helpUrl &&
+            !string.IsNullOrWhiteSpace(helpUrl))
+        {
+            helpWindow.NavigateToPage(helpUrl);
+        }
+
+        if (!string.IsNullOrWhiteSpace(pageName))
+        {
+            if (window is not TemplateWindow baseWindow)
                 return;
-            }
 
-            var pageName = parameters["page"];
-            var id = parameters["id"];
-
-            var pageParameters = new NameValueCollection();
-            foreach (string key in parameters.AllKeys)
-            {
-                if (key == null)
-                    continue;
-
-                if (key.Equals("windowName", StringComparison.OrdinalIgnoreCase) ||
-                    key.Equals("page", StringComparison.OrdinalIgnoreCase) ||
-                    key.Equals("id", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                pageParameters[key] = parameters[key];
-            }
-
-            Window window;
-
-            var type = GetWindowType(windowName);
-            if (type == null) return;
-
-            // Only template windows have an id. Another window (the classic main window) opens
-            // as a single window; the id was cast to TemplateWindow and threw.
-            if (!string.IsNullOrWhiteSpace(id) && typeof(TemplateWindow).IsAssignableFrom(type))
-            {
-                window = await ((App)Application.Current)
-                    .UnsafeCreateNewWindow(type, id: id);
-            }
-            else
-            {
-                window = await ((App)Application.Current)
-                    .SafeCreateNewWindow(type);
-            }
-
-            if (window is OfflineHelpWindow helpWindow &&
-                parameters["helpUrl"] is string helpUrl &&
-                !string.IsNullOrWhiteSpace(helpUrl))
-            {
-                helpWindow.NavigateToPage(helpUrl);
-            }
-
-            if (!string.IsNullOrWhiteSpace(pageName))
-            {
-                if (window is not TemplateWindow baseWindow) return;
-
-                var pType = GetPageType(windowName, pageName);
-                if (pType == null) return;
-                baseWindow.NavigateToPageWithParameter(
-                    pType,
-                    pageParameters.Count > 0 ? pageParameters : null);
-            }
+            var pType = GetPageType(windowName, pageName);
+            if (pType == null)
+                return;
+            baseWindow.NavigateToPageWithParameter(
+                pType,
+                pageParameters.Count > 0 ? pageParameters : null);
         }
+    }
 
-        private static Type GetWindowType(string windowName)
+    private static Type GetWindowType(string windowName)
+    {
+        // Only windows of this application: the name can come from a cdpiui:// link, and any
+        // other type found by name would be instantiated before the cast.
+        var type = typeof(App).Assembly.GetType($"CDPIUI.{windowName}", false);
+        return type != null && typeof(Window).IsAssignableFrom(type) && !type.IsAbstract &&
+            type.GetConstructor(Type.EmptyTypes) != null
+            ? type
+            : null;
+    }
+
+    private static Type GetPageType(string windowName, string pageName)
+    {
+        var isModernMainWindow = windowName == "ModernMainWindow";
+
+        if (isModernMainWindow && pageName == "HomePage")
+            return ModernMainWindow.GetMainPage();
+
+        windowName = isModernMainWindow ? "Main" : windowName;
+        var windowPrefix = windowName.EndsWith("Window", StringComparison.Ordinal)
+            ? windowName[..^"Window".Length]
+            : windowName;
+
+        var fullNames = new List<string>
         {
-            // Only windows of this application: the name can come from a cdpiui:// link, and any
-            // other type found by name would be instantiated before the cast.
-            var type = typeof(App).Assembly.GetType($"CDPIUI.{windowName}", false);
-            return type != null && typeof(Window).IsAssignableFrom(type) && !type.IsAbstract &&
-                type.GetConstructor(Type.EmptyTypes) != null
-                ? type
-                : null;
-        }
+            $"CDPIUI.Views.{windowPrefix}.{pageName}"
+        };
 
-        private static Type GetPageType(string windowName, string pageName)
+        // Main navigation pages live both directly under CDPIUI.Views and
+        // under CDPIUI.Views.Settings, not only under CDPIUI.Views.Main.
+        if (isModernMainWindow)
+            fullNames.Add($"CDPIUI.Views.{pageName}");
+
+        if (windowName == "StoreWindow" && pageName == "HomePage")
+            fullNames.Add($"CDPIUI.{pageName}");
+
+        foreach (var fullName in fullNames)
         {
-            var isModernMainWindow = windowName == "ModernMainWindow";
+            Debug.WriteLine(fullName);
 
-            if (isModernMainWindow && pageName == "HomePage")
-                return ModernMainWindow.GetMainPage();
+            var pageType = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType(fullName, false))
+                .FirstOrDefault(t => t != null);
 
-            windowName = isModernMainWindow ? "Main" : windowName;
-            var windowPrefix = windowName.EndsWith("Window", StringComparison.Ordinal)
-                ? windowName[..^"Window".Length]
-                : windowName;
-
-            var fullNames = new List<string>
-            {
-                $"CDPIUI.Views.{windowPrefix}.{pageName}"
-            };
-
-            // Main navigation pages live both directly under CDPIUI.Views and
-            // under CDPIUI.Views.Settings, not only under CDPIUI.Views.Main.
-            if (isModernMainWindow)
-                fullNames.Add($"CDPIUI.Views.{pageName}");
-
-            if (windowName == "StoreWindow" && pageName == "HomePage")
-                fullNames.Add($"CDPIUI.{pageName}");
-
-            foreach (var fullName in fullNames)
-            {
-                Debug.WriteLine(fullName);
-
-                var pageType = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(a => a.GetType(fullName, false))
-                    .FirstOrDefault(t => t != null);
-
-                if (pageType != null)
-                    return pageType;
-            }
-
-            return null;
+            if (pageType != null)
+                return pageType;
         }
+
+        return null;
     }
 }

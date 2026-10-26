@@ -1,13 +1,12 @@
-namespace CDPIUI.Controls.MenuManagement
+namespace CDPIUI.Controls.MenuManagement;
+
+public enum MenuBarMutationResult
 {
-    public enum MenuBarMutationResult
-    {
-        Added,
-        Merged,
-        Removed,
-        PartiallyRemoved,
-        Protected,
-        NotFound,
-        InvalidTarget,
-    }
+    Added,
+    Merged,
+    Removed,
+    PartiallyRemoved,
+    Protected,
+    NotFound,
+    InvalidTarget,
 }

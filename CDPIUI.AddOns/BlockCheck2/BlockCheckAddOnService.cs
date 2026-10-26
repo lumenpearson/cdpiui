@@ -41,7 +41,7 @@ public sealed class BlockCheckAddOnService
         options ??= new BlockCheckRunOptions();
         BlockCheckTarget[] targetArray = targets.ToArray();
         List<BlockCheckIssue> preflightIssues = [.. ValidateRunOptions(options)];
-        if (!preflightIssues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error) &&
+        if (!HasErrors(preflightIssues) &&
             probeRunner is IBlockCheckProbePreflight preflight)
         {
             try
@@ -51,17 +51,11 @@ public sealed class BlockCheckAddOnService
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                preflightIssues.Add(CanceledIssue());
-                return new BlockCheckRunResult
-                {
-                    PreflightIssues = preflightIssues,
-                    Scan = new BlockCheckScanResult { WasCanceled = true },
-                    WasCanceled = true,
-                };
+                return Canceled(preflightIssues, new BlockCheckScanResult { WasCanceled = true });
             }
         }
 
-        if (preflightIssues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
+        if (HasErrors(preflightIssues))
         {
             return new BlockCheckRunResult
             {
@@ -85,13 +79,7 @@ public sealed class BlockCheckAddOnService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            preflightIssues.Add(CanceledIssue());
-            return new BlockCheckRunResult
-            {
-                PreflightIssues = preflightIssues,
-                Scan = new BlockCheckScanResult { WasCanceled = true },
-                WasCanceled = true,
-            };
+            return Canceled(preflightIssues, new BlockCheckScanResult { WasCanceled = true });
         }
 
         if (!scan.Success)
@@ -104,7 +92,35 @@ public sealed class BlockCheckAddOnService
             };
         }
 
-        BlockCheckTarget[] activeTargets = targetArray
+        return await SynthesizeAndValidateAsync(
+                catalog,
+                targetArray,
+                scan,
+                strategyRunner,
+                probeRunner,
+                options,
+                preflightIssues,
+                progress,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Builds the preset from a successful scan, without the targets the scan ignored, and
+    /// validates it unless the scan was canceled.
+    /// </summary>
+    private async Task<BlockCheckRunResult> SynthesizeAndValidateAsync(
+        StrategyCatalog catalog,
+        BlockCheckTarget[] targets,
+        BlockCheckScanResult scan,
+        IBlockCheckStrategyRunner strategyRunner,
+        IBlockCheckProbeRunner probeRunner,
+        BlockCheckRunOptions options,
+        List<BlockCheckIssue> preflightIssues,
+        IProgress<BlockCheckScanProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        BlockCheckTarget[] activeTargets = targets
             .Where(target => !scan.IgnoredTargetIds.Contains(target.Id))
             .ToArray();
         ProbeResult[] activeBaselineResults = scan.BaselineResults
@@ -117,7 +133,7 @@ public sealed class BlockCheckAddOnService
             scan.ProbeResults,
             options.Synthesis,
             activeBaselineResults);
-        if (!synthesis.Success)
+        if (!synthesis.Success || scan.WasCanceled)
         {
             return new BlockCheckRunResult
             {
@@ -125,17 +141,6 @@ public sealed class BlockCheckAddOnService
                 Scan = scan,
                 Synthesis = synthesis,
                 WasCanceled = scan.WasCanceled,
-            };
-        }
-
-        if (scan.WasCanceled)
-        {
-            return new BlockCheckRunResult
-            {
-                PreflightIssues = preflightIssues,
-                Scan = scan,
-                Synthesis = synthesis,
-                WasCanceled = true,
             };
         }
 
@@ -158,14 +163,7 @@ public sealed class BlockCheckAddOnService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            preflightIssues.Add(CanceledIssue());
-            return new BlockCheckRunResult
-            {
-                PreflightIssues = preflightIssues,
-                Scan = scan,
-                Synthesis = synthesis,
-                WasCanceled = true,
-            };
+            return Canceled(preflightIssues, scan, synthesis);
         }
 
         return new BlockCheckRunResult
@@ -269,6 +267,24 @@ public sealed class BlockCheckAddOnService
         }
 
         return issues;
+    }
+
+    private static bool HasErrors(IEnumerable<BlockCheckIssue> issues) =>
+        issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error);
+
+    private static BlockCheckRunResult Canceled(
+        List<BlockCheckIssue> preflightIssues,
+        BlockCheckScanResult scan,
+        BlockCheckSynthesisResult? synthesis = null)
+    {
+        preflightIssues.Add(CanceledIssue());
+        return new BlockCheckRunResult
+        {
+            PreflightIssues = preflightIssues,
+            Scan = scan,
+            Synthesis = synthesis,
+            WasCanceled = true,
+        };
     }
 
     private static BlockCheckIssue CanceledIssue() =>

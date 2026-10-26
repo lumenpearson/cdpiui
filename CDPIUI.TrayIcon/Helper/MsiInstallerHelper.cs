@@ -1,244 +1,244 @@
-﻿using CDPIUI.Shared.Pipe.Models;
-using CDPIUI.TrayIcon.Helper.Basic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CDPIUI.Shared.Pipe.Models;
+using CDPIUI.TrayIcon.Helper.Basic;
 
-namespace CDPIUI.TrayIcon.Helper
+namespace CDPIUI.TrayIcon.Helper;
+
+public class MsiInstallerHelper
 {
-    public class MsiInstallerHelper
+    public enum MsiState
     {
-        public enum MsiState
+        GettingReady,
+        Installing,
+        Complete,
+        CompleteRestartRequest,
+        ExceptionHappens
+    }
+
+    private static MsiInstallerHelper? _instance;
+    private static readonly object SyncRoot = new object();
+
+    public static MsiInstallerHelper Instance
+    {
+        get
         {
-            GettingReady,
-            Installing,
-            Complete,
-            CompleteRestartRequest,
-            ExceptionHappens
+            lock (SyncRoot)
+            {
+                if (_instance == null)
+                    _instance = new MsiInstallerHelper();
+                return _instance;
+            }
+        }
+    }
+
+    private MsiInstallerHelper() { }
+
+    private class QueueItem
+    {
+        public string OperationId { get; init; } = "";
+        public string FilePath { get; init; } = "";
+    }
+
+    private readonly Queue<QueueItem> _queue = new Queue<QueueItem>();
+    private readonly HashSet<string> _pendingOps = new HashSet<string>();
+
+    private string? _currentOperationId;
+    private Process? _currentProcess;
+
+    public void AddToQueue(string operationId, string fileName)
+    {
+        lock (SyncRoot)
+        {
+            if (_pendingOps.Contains(operationId) || _currentOperationId == operationId)
+                return;
+
+            var item = new QueueItem
+            {
+                OperationId = operationId,
+                FilePath = fileName
+            };
+
+            _queue.Enqueue(item);
+            _pendingOps.Add(operationId);
         }
 
-        private static MsiInstallerHelper? _instance;
-        private static readonly object _lock = new object();
+        _ = PipeHelper
+            .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.GettingReady);
 
-        public static MsiInstallerHelper Instance
+        TryStartNext();
+    }
+
+    public void RemoveFromQueue(string operationId)
+    {
+        bool removedFromWaiting = false;
+        bool wasRunning = false;
+
+        lock (SyncRoot)
         {
-            get
+            if (_currentOperationId == operationId)
             {
-                lock (_lock)
+                wasRunning = true;
+                try
                 {
-                    if (_instance == null)
-                        _instance = new MsiInstallerHelper();
-                    return _instance;
+                    _currentProcess?.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance?.CreateErrorLog(
+                        nameof(MsiInstallerHelper), $"Failed to kill process for {operationId}: {ex.Message}");
                 }
             }
-        }
-
-        private MsiInstallerHelper() { }
-
-        private class QueueItem
-        {
-            public string OperationId { get; init; } = "";
-            public string FilePath { get; init; } = "";
-        }
-
-        private readonly Queue<QueueItem> _queue = new Queue<QueueItem>();
-        private readonly HashSet<string> _pendingOps = new HashSet<string>();
-
-        private string? _currentOperationId;
-        private Process? _currentProcess;
-
-        public void AddToQueue(string operationId, string fileName)
-        {
-            lock (_lock)
+            else if (_pendingOps.Contains(operationId))
             {
-                if (_pendingOps.Contains(operationId) || _currentOperationId == operationId)
-                    return;
-
-                var item = new QueueItem
+                var newQ = new Queue<QueueItem>(_queue.Count);
+                while (_queue.Count > 0)
                 {
-                    OperationId = operationId,
-                    FilePath = fileName
-                };
+                    var item = _queue.Dequeue();
+                    if (item.OperationId == operationId)
+                    {
+                        removedFromWaiting = true;
+                        continue;
+                    }
+                    newQ.Enqueue(item);
+                }
+                while (newQ.Count > 0)
+                    _queue.Enqueue(newQ.Dequeue());
 
-                _queue.Enqueue(item);
-                _pendingOps.Add(operationId);
+                _pendingOps.Remove(operationId);
             }
+        }
 
+        if (removedFromWaiting)
+        {
             _ = PipeHelper
-                .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.GettingReady);
-
-            TryStartNext();
+                .SendMsiInstallationPacket(MSIInstallationMessageIds.RemoveOperationId, operationId);
         }
 
-        public void RemoveFromQueue(string operationId)
+        if (wasRunning)
         {
-            bool removedFromWaiting = false;
-            bool wasRunning = false;
-
-            lock (_lock)
-            {
-                if (_currentOperationId == operationId)
-                {
-                    wasRunning = true;
-                    try
-                    {
-                        _currentProcess?.Kill(entireProcessTree: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance?.CreateErrorLog(
-                            nameof(MsiInstallerHelper), $"Failed to kill process for {operationId}: {ex.Message}");
-                    }
-                }
-                else if (_pendingOps.Contains(operationId))
-                {
-                    var newQ = new Queue<QueueItem>(_queue.Count);
-                    while (_queue.Count > 0)
-                    {
-                        var item = _queue.Dequeue();
-                        if (item.OperationId == operationId)
-                        {
-                            removedFromWaiting = true;
-                            continue;
-                        }
-                        newQ.Enqueue(item);
-                    }
-                    while (newQ.Count > 0)
-                        _queue.Enqueue(newQ.Dequeue());
-
-                    _pendingOps.Remove(operationId);
-                }
-            }
-
-            if (removedFromWaiting)
-            {
-                _ = PipeHelper
-                    .SendMsiInstallationPacket(MSIInstallationMessageIds.RemoveOperationId, operationId);
-            }
-
-            if (wasRunning)
-            {
-                _ = PipeHelper
-                    .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
-                Logger.Instance?.CreateErrorLog(nameof(MsiInstallerHelper), $"Installation for {operationId} was cancelled by RemoveFromQueue.");
-            }
-
-            TryStartNext();
+            _ = PipeHelper
+                .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
+            Logger.Instance?.CreateErrorLog(nameof(MsiInstallerHelper), $"Installation for {operationId} was cancelled by RemoveFromQueue.");
         }
 
-        private void TryStartNext()
+        TryStartNext();
+    }
+
+    private void TryStartNext()
+    {
+        QueueItem? next = null;
+
+        lock (SyncRoot)
         {
-            QueueItem? next = null;
+            if (_currentOperationId != null)
+                return;
 
-            lock (_lock)
-            {
-                if (_currentOperationId != null)
-                    return; 
+            if (_queue.Count == 0)
+                return;
 
-                if (_queue.Count == 0)
-                    return;
-
-                next = _queue.Dequeue();
-                if (next != null)
-                    _pendingOps.Remove(next.OperationId);
-
-                if (next != null)
-                    _currentOperationId = next.OperationId;
-            }
+            next = _queue.Dequeue();
+            if (next != null)
+                _pendingOps.Remove(next.OperationId);
 
             if (next != null)
-            {
-                _ = ProcessMsi(next.OperationId, next.FilePath);
-            }
+                _currentOperationId = next.OperationId;
         }
 
-
-        private async Task ProcessMsi(string operationId, string filePath)
+        if (next != null)
         {
-            string? stagedPath = null;
-            try
+            _ = ProcessMsi(next.OperationId, next.FilePath);
+        }
+    }
+
+
+    private async Task ProcessMsi(string operationId, string filePath)
+    {
+        string? stagedPath = null;
+        try
+        {
+            if (!TrustedPaths.IsAllowed(filePath, "package installation"))
+                throw new UnauthorizedAccessException("The package is outside the application directories.");
+
+            // Installers from the store (driver and runtime packages) are signed by their vendors.
+            // The copy is checked and run, so the user's copy cannot be swapped after the check.
+            stagedPath = PackageStaging.Stage(filePath);
+            if (!PackageStaging.HasValidSignature(stagedPath))
+                throw new UnauthorizedAccessException("The package does not have a valid signature.");
+
+            _ = PipeHelper
+                .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Installing);
+
+            lock (SyncRoot)
             {
-                if (!TrustedPaths.IsAllowed(filePath, "package installation"))
-                    throw new UnauthorizedAccessException("The package is outside the application directories.");
-
-                // Installers from the store (driver and runtime packages) are signed by their vendors.
-                // The copy is checked and run, so the user's copy cannot be swapped after the check.
-                stagedPath = PackageStaging.Stage(filePath);
-                if (!PackageStaging.HasValidSignature(stagedPath))
-                    throw new UnauthorizedAccessException("The package does not have a valid signature.");
-
-                _ = PipeHelper
-                    .SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Installing);
-
-                lock (_lock)
-                {
-                    if (string.Equals(Path.GetExtension(stagedPath), ".msi", StringComparison.OrdinalIgnoreCase))
-                        _currentProcess = RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedPath}\" /passive /norestart");
-                    else
-                        _currentProcess = RunHelper.Run(stagedPath, $"/install /passive /norestart");
-                }
-
-                if (_currentProcess == null)
-                {
-                    _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
-                    Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), "The installer process did not start.");
-                    throw new InvalidOperationException("The installer process did not start.");
-                }
-
-                await _currentProcess.WaitForExitAsync().ConfigureAwait(false);
-                int exitCode = _currentProcess.ExitCode;
-
-                if (exitCode == 3010 || exitCode == 1641)
-                {
-                    _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.CompleteRestartRequest);
-                }
-                else if (exitCode == 0 || exitCode == 1638)
-                {
-                    _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Complete);
-                }
+                if (string.Equals(Path.GetExtension(stagedPath), ".msi", StringComparison.OrdinalIgnoreCase))
+                    _currentProcess = RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedPath}\" /passive /norestart");
                 else
-                {
-                    _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
-                    Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), $"Cannot install package {exitCode}");
-
-                    NotifyHelper.ShowMessage(
-                        LocaleHelper.GetLocaleString("MsiInstallerHelper"),
-                        string.Format(LocaleHelper.GetLocaleString("MsiInstallerHelperErr"), Path.GetFileNameWithoutExtension(filePath), exitCode),
-                        "LOGGER:OPEN_MSI_LOG"
-                    );
-                }
+                    _currentProcess = RunHelper.Run(stagedPath, $"/install /passive /norestart");
             }
-            catch (Exception ex)
+
+            if (_currentProcess == null)
             {
                 _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
-                Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), $"Exception while installing {filePath}: {ex}");
+                Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), "The installer process did not start.");
+                throw new InvalidOperationException("The installer process did not start.");
+            }
+
+            await _currentProcess.WaitForExitAsync().ConfigureAwait(false);
+            int exitCode = _currentProcess.ExitCode;
+
+            if (exitCode == 3010 || exitCode == 1641)
+            {
+                _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.CompleteRestartRequest);
+            }
+            else if (exitCode == 0 || exitCode == 1638)
+            {
+                _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.Complete);
+            }
+            else
+            {
+                _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
+                Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), $"Cannot install package {exitCode}");
 
                 NotifyHelper.ShowMessage(
-                        LocaleHelper.GetLocaleString("MsiInstallerHelper"),
-                        string.Format(LocaleHelper.GetLocaleString("MsiInstallerHelperErr"), Path.GetFileNameWithoutExtension(filePath), "ERR_UNKNOWN"),
-                        "LOGGER:OPEN_MSI_LOG"
-                    );
+                    LocaleHelper.GetLocaleString("MsiInstallerHelper"),
+                    string.Format(LocaleHelper.GetLocaleString("MsiInstallerHelperErr"), Path.GetFileNameWithoutExtension(filePath), exitCode),
+                    "LOGGER:OPEN_MSI_LOG"
+                );
             }
-            finally
-            {
-                lock (_lock)
-                {
-                    try { _currentProcess?.Dispose(); }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance.CreateWarningLog(nameof(MsiInstallerHelper), $"Cannot release the installer process: {ex.Message}");
-                    }
-                    _currentProcess = null;
-                    _currentOperationId = null;
-                }
-                if (stagedPath != null)
-                    PackageStaging.Release(stagedPath);
+        }
+        catch (Exception ex)
+        {
+            _ = PipeHelper.SendMsiInstallationPacket(MSIInstallationMessageIds.SetOperationStatus, operationId, MsiState.ExceptionHappens);
+            Logger.Instance.CreateErrorLog(nameof(MsiInstallerHelper), $"Exception while installing {filePath}: {ex}");
 
-                TryStartNext();
+            NotifyHelper.ShowMessage(
+                    LocaleHelper.GetLocaleString("MsiInstallerHelper"),
+                    string.Format(LocaleHelper.GetLocaleString("MsiInstallerHelperErr"), Path.GetFileNameWithoutExtension(filePath), "ERR_UNKNOWN"),
+                    "LOGGER:OPEN_MSI_LOG"
+                );
+        }
+        finally
+        {
+            lock (SyncRoot)
+            {
+                try
+                { _currentProcess?.Dispose(); }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateWarningLog(nameof(MsiInstallerHelper), $"Cannot release the installer process: {ex.Message}");
+                }
+                _currentProcess = null;
+                _currentOperationId = null;
             }
+            if (stagedPath != null)
+                PackageStaging.Release(stagedPath);
+
+            TryStartNext();
         }
     }
 }

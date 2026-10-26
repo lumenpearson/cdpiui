@@ -1,3 +1,8 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.Default;
@@ -5,11 +10,6 @@ using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
-using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.BlockCheck2;
@@ -23,9 +23,9 @@ public sealed class BlockCheck2ReportHistoryItemViewModel
 
 public sealed partial class ReportHistoryPage : TemplatePage
 {
-    private readonly ILocalizer localizer = Localizer.Get();
-    private readonly BlockCheckReportHistoryService historyService = new();
-    private bool isLoaded;
+    private readonly ILocalizer _localizer = Localizer.Get();
+    private readonly BlockCheckReportHistoryService _historyService = new();
+    private bool _isLoaded;
 
     public ObservableCollection<BlockCheck2ReportHistoryItemViewModel> HistoryItems { get; } = [];
 
@@ -38,10 +38,10 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
     private async void ReportHistoryPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if (!isLoaded)
+        if (!_isLoaded)
         {
-            localizer.LanguageChanged += Localizer_LanguageChanged;
-            isLoaded = true;
+            _localizer.LanguageChanged += Localizer_LanguageChanged;
+            _isLoaded = true;
         }
 
         await LoadHistoryAsync();
@@ -49,13 +49,13 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
     private void ReportHistoryPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        if (!isLoaded)
+        if (!_isLoaded)
         {
             return;
         }
 
-        localizer.LanguageChanged -= Localizer_LanguageChanged;
-        isLoaded = false;
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
+        _isLoaded = false;
     }
 
     private async void Localizer_LanguageChanged(object? sender, LanguageChangedEventArgs e) =>
@@ -74,7 +74,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
         EmptyHistoryTextBlock.Visibility = Visibility.Collapsed;
         try
         {
-            var entries = await historyService.LoadAsync();
+            var entries = await _historyService.LoadAsync();
             HistoryItems.Clear();
             foreach (BlockCheckReportHistoryEntry entry in entries)
             {
@@ -218,7 +218,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
         try
         {
-            historyService.Delete(item.Entry.FilePath);
+            _historyService.Delete(item.Entry.FilePath);
             HistoryItems.Remove(item);
             ReportsListView.Visibility = HistoryItems.Count > 0
                 ? Visibility.Visible
@@ -238,7 +238,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
     {
-        
+
         if (Frame?.CanGoBack == true)
         {
             Frame.GoBack();
@@ -259,5 +259,5 @@ public sealed partial class ReportHistoryPage : TemplatePage
         StatusInfoBar.IsOpen = true;
     }
 
-    private string Text(string key) => localizer.GetLocalizedString(key);
+    private string Text(string key) => _localizer.GetLocalizedString(key);
 }

@@ -1,43 +1,42 @@
-﻿using CDPIUI.Shared.Logger;
-using CDPIUI.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CDPIUI.Shared.Extensions;
+using CDPIUI.Shared.Logger;
 
-namespace CDPIUI.TrayIcon.Helper.Basic
+namespace CDPIUI.TrayIcon.Helper.Basic;
+
+public class Logger : LoggerBase, ILogger
 {
-    public class Logger : LoggerBase, ILogger
-    {
-        private static Logger? _instance;
-        private static readonly object _lock = new();
+    private static Logger? _instance;
+    private static readonly object SyncRoot = new();
 
-        public static Logger Instance
+    public static Logger Instance
+    {
+        get
         {
-            get
+            lock (SyncRoot)
             {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                        _instance = new Logger();
-                    return _instance;
-                }
+                if (_instance == null)
+                    _instance = new Logger();
+                return _instance;
             }
         }
+    }
 
-        
 
-        public Logger() : base(Utils.GetDataDirectory(), GetSelevirity()) { }
 
-        private static LogSelevirity GetSelevirity()
-        {
+    public Logger() : base(Utils.GetDataDirectory(), GetSelevirity()) { }
+
+    private static LogSelevirity GetSelevirity()
+    {
 #if DEBUG
-            return LogSelevirity.DEBG;
+        return LogSelevirity.DEBG;
 #else
-            return SettingsManager.Instance.GetValue<string>("DEBUG", "logLevel").ToEnum<LogSelevirity>(LogSelevirity.WARN);
+        return SettingsManager.Instance.GetValue<string>("DEBUG", "logLevel").ToEnum<LogSelevirity>(LogSelevirity.WARN);
 #endif
-        }
     }
 }

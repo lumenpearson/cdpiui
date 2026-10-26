@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Controls.Default;
 using CDPIUI.Core;
 using CDPIUI.Core.Basic;
@@ -10,12 +16,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
@@ -31,7 +31,7 @@ namespace CDPIUI.Views.SetupProxy;
 /// </summary>
 public sealed partial class SetupProxyForSystem : TemplatePage
 {
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
     public SetupProxyForSystem()
     {
         InitializeComponent();
@@ -62,7 +62,7 @@ public sealed partial class SetupProxyForSystem : TemplatePage
         Frame.Navigate(typeof(T), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
     }
 
-    private void SetSettings() 
+    private void SetSettings()
     {
         Dictionary<string, string> currentSettings = WindowsNativeProxySettingsService.ReadProxySettings();
 
@@ -101,8 +101,10 @@ public sealed partial class SetupProxyForSystem : TemplatePage
                 };
             }
 
-            if (string.IsNullOrEmpty(proxyServer)) throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
-            if (!ProxyHelper.IsValidPort(PortValue.Text)) throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
+            if (string.IsNullOrEmpty(proxyServer))
+                throw new ArgumentOutOfRangeException("ERR_INVALID_IP");
+            if (!ProxyHelper.IsValidPort(PortValue.Text))
+                throw new ArgumentOutOfRangeException("ERR_INVALID_PORT");
 
             string proxyOverride = WhiteListTextBox.Text.Replace(" ", "");
             if (BypassLocalCheckBox.IsChecked == true)
@@ -125,9 +127,9 @@ public sealed partial class SetupProxyForSystem : TemplatePage
             Logger.Instance.CreateErrorLog(nameof(WindowsNativeProxySettingsService), ex.Message);
             _ = new ContentDialog()
             {
-                Title = localizer.GetLocalizedString("ErrorOccurred"),
-                Content = string.Format(localizer.GetLocalizedString("ExceptionSystemProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
-                CloseButtonText = localizer.GetLocalizedString("OkButtonText"),
+                Title = _localizer.GetLocalizedString("ErrorOccurred"),
+                Content = string.Format(_localizer.GetLocalizedString("ExceptionSystemProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
+                CloseButtonText = _localizer.GetLocalizedString("OkButtonText"),
                 Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
                 XamlRoot = this.XamlRoot
             }.ShowQueuedAsync();

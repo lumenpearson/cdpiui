@@ -1,1273 +1,443 @@
-﻿using CDPIUI.Core.Basic;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Converters;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration.Helpers;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.JSON;
-using CDPIUI.Core.LScript;
-using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
-using CDPIUI.Core.Store.Repository.Localization;
-using CDPIUI.Shared.Extensions;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
 
-namespace CDPIUI.Core.ComponentServices.Configuration
+namespace CDPIUI.Core.ComponentServices.Configuration;
+
+/// <summary>
+/// The presets of the installed config packs for one component, and the operations on them.
+/// </summary>
+public partial class ConfigurationService
 {
-    public partial class ConfigurationService
+    private readonly List<ConfigItem> _items = [];
+
+    private string _target;
+
+    private List<Tuple<string, LocaleModel>> _configLocaleHelpers = [];
+
+    private readonly object _lock = new object();
+    public ConfigurationService(string target)
     {
-        // start ["title"] [/min /b ...] program args: the program may be quoted or not, so that
-        // `start "t" /min %BIN%winws.exe ...` does not leave the program in the arguments.
-        private const string BatStartRegex = @"^start\s+(?:""[^""]*""\s+)?(?:/\w+\s+)*(?:""[^""]*""|\S+)(?<args>.*?)\^?\s*$";
+        _target = target;
+    }
 
-        private readonly List<ConfigItem> Items = [];
+    /// <inheritdoc cref="PresetFileLoader.LoadPresetForTarget"/>
+    internal static ConfigItem? LoadPresetForTarget(string jsonFile, string target, out bool isLegacyZapretConfig) =>
+        PresetFileLoader.LoadPresetForTarget(jsonFile, target, out isLegacyZapretConfig);
 
-        private string Target;
+    public static ConfigItem? LoadConfigItemFromPack(
+        string filename,
+        string packId,
+        string target) =>
+        PresetFileLoader.LoadConfigItemFromPack(filename, packId, target);
 
-        
-        private List<Tuple<string, LocaleModel>> ConfigLocaleHelpers = [];
-
-
-        private readonly object _lock = new object();
-        public ConfigurationService(string target)
+    public void Init(string itemId = "")
+    {
+        lock (_lock)
         {
-            Target = target;
-        }
+            _items.Clear();
+            _configLocaleHelpers.Clear();
+            List<DatabaseStoreItem> configItems =
+                string.IsNullOrEmpty(itemId) ?
+                DatabaseHelper.Instance.GetItemsByType("configlist") :
+                DatabaseHelper.Instance.GetItemById(itemId) is { } configItem ? [configItem] : [];
 
-        private List<ConfigItem> InitConfigDirectory(DatabaseStoreItem item)
-        {
-            string? directory = item.Directory;
-            string? id = item.Id;
+            List<DatabaseStoreItem> itemsToCheck = new List<DatabaseStoreItem>();
 
-            if (string.IsNullOrEmpty(id) || directory == null) return [];
-
-            List<ConfigItem> configItems = new List<ConfigItem>();
-
-            string initFile = Path.Combine(directory, "init.json");
-
-            if (!File.Exists(initFile))
-                return configItems;
-
-            // A damaged pack must not hide the presets of the other packs (issue #61).
-            ConfigInitItem? configInitItem;
-            try
+            foreach (DatabaseStoreItem item in configItems)
             {
-                configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
-                return configItems;
-            }
-            if (configInitItem == null)
-                return configItems;
-
-            string[] jsonFiles = Directory.GetFiles(directory, "*.json");
-
-            LocaleModel localeModel = new LocaleModel();
-            ConfigLocaleHelpers.Add(Tuple.Create(id, localeModel));
-            ConfigLocalizationHelper.InitLocaleHelper(
-                localeModel, 
-                configInitItem.localized_strings_directory!, 
-                directory, 
-                StoreLocalizationHelper.GetStoreLikeLocale());
-
-            foreach (string jsonFile in jsonFiles)
-            {
-                // Only the pack description: presets such as "initial-*.json" were skipped too.
-                if (Path.GetFileName(jsonFile).Equals("init.json", StringComparison.OrdinalIgnoreCase))
+                if (!Path.Exists(item?.Directory))
                     continue;
 
-                try
-                {
-                    ConfigItem? configItem = LoadPresetForTarget(jsonFile, Target, out bool isLegacyZapretConfig);
-                    if (configItem == null)
-                        continue;
-
-                    configItem.IsLegacy = isLegacyZapretConfig;
-
-                    // A preset without a name keeps its file name; Regex.Replace threw and the
-                    // preset was left out of the list.
-                    var result = Regex.Replace(
-                        configItem.name ?? Path.GetFileNameWithoutExtension(jsonFile),
-                        // Only $NAME(key) is a script: a preset named "Fast $5 (beta)" stays as it is.
-                        @"\$[A-Za-z_]+\((.*?)\)",
-                        match =>
-                        {
-                            var key = match.Groups[1].Value;
-                            if (configInitItem.localized_strings_directory == null)
-                                return key;
-
-                            var localized = ConfigLocalizationHelper.GetLocalizedConfigNameString(
-                                key, 
-                                StoreLocalizationHelper.GetStoreLikeLocale(), 
-                                directory, 
-                                configInitItem.localized_strings_directory, 
-                                localeModel);
-
-                            return localized;
-                        }
-                    );
-
-                    configItem.not_converted_name = configItem.name;
-                    configItem.name = result;
-                    configItem.file_name = Path.GetFileName(jsonFile);
-                    configItem.packId = id;
-                    configItem.toggle_lists = configInitItem.toggleListAvailable;
-
-                    configItems.Add(configItem);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.CreateWarningLog(nameof(ConfigurationService), $"Error happens: {ex}");
-                }
+                itemsToCheck.Add(item);
             }
-            ConfigItem[] array = [.. configItems];
-            Array.Sort(array, new LogicalComparer());
 
-            return [.. array];
-        }
-
-        private readonly record struct FileStamp(DateTime LastWriteTimeUtc, long Length);
-
-        private readonly record struct CachedPresetTarget(FileStamp Stamp, string? Target);
-
-        // The target of each preset file, shared by all components. An entry is used only while
-        // the file keeps the same write time and size.
-        private static readonly ConcurrentDictionary<string, CachedPresetTarget> PresetTargetCache =
-            new(StringComparer.Ordinal);
-
-        private static FileStamp GetFileStamp(string path)
-        {
-            FileInfo info = new(path);
-            return new FileStamp(info.LastWriteTimeUtc, info.Length);
-        }
-
-        /// <summary>
-        /// Reads a preset file when it is for <paramref name="target"/>, otherwise returns null.
-        /// Every component reads the same packs, so a file already known to be for another
-        /// component is skipped without parsing it again. A matching file is always parsed anew,
-        /// because callers change the returned item.
-        /// </summary>
-        internal static ConfigItem? LoadPresetForTarget(string jsonFile, string target, out bool isLegacyZapretConfig)
-        {
-            FileStamp stamp = GetFileStamp(jsonFile);
-            if (PresetTargetCache.TryGetValue(jsonFile, out CachedPresetTarget cached) &&
-                cached.Stamp == stamp &&
-                !MatchesTarget(cached.Target, target, out _))
+            foreach (DatabaseStoreItem item in itemsToCheck)
             {
-                isLegacyZapretConfig = false;
-                return null;
+                _items.AddRange(ConfigPackDirectoryLoader.Load(item, _target, _configLocaleHelpers));
             }
+        }
+    }
 
-            ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(jsonFile);
+    private ConfigItem? FindItem(string? filename, string? packId) =>
+        _items.FirstOrDefault(
+            x => string.Equals(x.packId, packId, StringComparison.Ordinal) &&
+                 string.Equals(x.file_name, filename, StringComparison.Ordinal));
+
+    public List<ConfigItem> GetConfigItems()
+    {
+        lock (_lock)
+        {
+            return [.. _items];
+        }
+    }
+
+    public ConfigItem? GetConfigItem(string filename, string packId)
+    {
+        lock (_lock)
+        {
+            return FindItem(filename, packId);
+        }
+    }
+
+    public void SetConfigItem(ConfigItem newConfigItem)
+    {
+        lock (_lock)
+        {
+            var configItem = FindItem(newConfigItem.file_name, newConfigItem.packId);
             if (configItem != null)
-                PresetTargetCache[jsonFile] = new CachedPresetTarget(stamp, configItem.target?.FirstOrDefault());
+                _items.Remove(configItem);
 
-            return MatchesTarget(configItem, target, out isLegacyZapretConfig) ? configItem : null;
+            _items.Add(newConfigItem);
+        }
+    }
+
+    public void ChangeVariableValue(string filename, string packId, string key, bool value)
+    {
+        var configItem = FindItem(filename, packId);
+
+        if (configItem == null)
+            return;
+
+        configItem.jparams[key] = value;
+
+        _ = SaveConfigItem(filename, packId, configItem);
+    }
+
+    public void ChangeCommaVariableValue(string filename, string packId, string key, string value)
+    {
+        var configItem = FindItem(filename, packId);
+
+        if (configItem?.commaVars == null)
+            return;
+
+        string? actualKey = configItem.commaVars.Keys.FirstOrDefault(
+            candidate => string.Equals(candidate, key, StringComparison.OrdinalIgnoreCase));
+        AvailableVarValues? availableValues = configItem.availableCommaVarsValues?.FirstOrDefault(
+            item => string.Equals(item.VarName, key, StringComparison.OrdinalIgnoreCase));
+        if (actualKey == null)
+            return;
+
+        configItem.commaVars[actualKey] = value;
+        if (availableValues != null)
+        {
+            availableValues.CurrentValueIndex = availableValues.Values?.FindIndex(
+                candidate => string.Equals(candidate, value, StringComparison.Ordinal)) ?? -1;
+        }
+        _ = SaveConfigItem(filename, packId, configItem);
+    }
+
+    public static async Task<string> SaveConfigItem(string filename, string packId, ConfigItem item)
+    {
+        string folder = GetItemFolderFromPackId(packId);
+        string fileName = Path.Combine(folder, filename);
+
+        // The file keeps the name as written by its author ($LOADDYNAMIC... keys), while the cached
+        // item keeps showing the localized name.
+        string? displayName = item.name;
+        string jsonString;
+        try
+        {
+            item.name = item.not_converted_name ?? item.name;
+            jsonString = JSONConvertor.SerializeObject(item);
+        }
+        finally
+        {
+            item.name = displayName;
         }
 
-        private static bool MatchesTarget(
-            ConfigItem? configItem,
-            string target,
-            out bool isLegacyZapretConfig)
+        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), jsonString);
+        try
         {
-            if (configItem == null)
-            {
-                isLegacyZapretConfig = false;
-                return false;
-            }
-
-            return MatchesTarget(configItem.target?.FirstOrDefault(), target, out isLegacyZapretConfig);
+            CDPIUI.Shared.Basic.Filesystem.FileSystemService.WriteAllTextAtomic(fileName, jsonString);
+        }
+        catch (Exception ex)
+        {
+            return ErrorsHelper.Convertor.GetPrettyErrorCode("SAVE_CFG", ex);
         }
 
-        private static bool MatchesTarget(
-            string? configTarget,
-            string target,
-            out bool isLegacyZapretConfig)
+        await Task.CompletedTask;
+        return string.Empty;
+    }
+
+    public static string GetDefaultLocalePath(string packId) =>
+        ConfigPackDirectoryLoader.GetDefaultLocalePath(GetItemFolderFromPackId(packId));
+
+    public string GetLocalizedConfigVarName(string name, string packId)
+    {
+        try
         {
-            isLegacyZapretConfig =
-                target == HardcodedItemIds.ComponentIds[Components.Zapret2] &&
-                configTarget == HardcodedItemIds.ComponentIds[Components.Zapret];
-
-            return target == "$ANY" || configTarget == target || isLegacyZapretConfig;
-        }
-
-        public static ConfigItem? LoadConfigItemFromPack(
-            string filename,
-            string packId,
-            string target)
-        {
-            if (string.IsNullOrWhiteSpace(filename) ||
-                string.IsNullOrWhiteSpace(packId) ||
-                string.IsNullOrWhiteSpace(target) ||
-                !string.Equals(filename, Path.GetFileName(filename), StringComparison.Ordinal))
+            foreach (Tuple<string, LocaleModel> localeHelperTuple in _configLocaleHelpers)
             {
-                return null;
-            }
-
-            try
-            {
-                DatabaseStoreItem? pack = DatabaseHelper.Instance.GetItemById(packId);
-                if (string.IsNullOrWhiteSpace(pack?.Directory))
-                    return null;
-
-                string configPath = Path.Combine(pack.Directory, filename);
-                if (!File.Exists(configPath))
-                    return null;
-
-                ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(configPath);
-                if (configItem == null ||
-                    !MatchesTarget(configItem, target, out bool isLegacyZapretConfig))
-                    return null;
-
-                configItem.file_name = filename;
-                configItem.packId = packId;
-                configItem.IsLegacy = isLegacyZapretConfig;
-                return configItem;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateWarningLog(
-                    nameof(ConfigurationService),
-                    $"Cannot load selected config '{packId}/{filename}': {ex.Message}");
-                return null;
-            }
-        }
-
-        public void Init(string itemId = "")
-        {
-            lock (_lock)
-            {
-                Items.Clear();
-                ConfigLocaleHelpers.Clear();
-                List<DatabaseStoreItem> configItems =
-                    string.IsNullOrEmpty(itemId) ? 
-                    DatabaseHelper.Instance.GetItemsByType("configlist") :
-                    DatabaseHelper.Instance.GetItemById(itemId) is { } configItem ? [configItem] : [];
-
-                List<DatabaseStoreItem> itemsToCheck = new List<DatabaseStoreItem>();
-
-                foreach (DatabaseStoreItem item in configItems)
+                if (localeHelperTuple.Item1 == packId)
                 {
-                    if (!Path.Exists(item?.Directory))
-                        continue;
-
-                    itemsToCheck.Add(item);
-                }
-
-
-                foreach (DatabaseStoreItem item in itemsToCheck)
-                {
-                    Items.AddRange(InitConfigDirectory(item));
+                    if (!localeHelperTuple.Item2.keyValuePairs.ContainsKey(name))
+                        return $"Toggle \"{name}\"";
+                    return localeHelperTuple.Item2.keyValuePairs[name];
                 }
             }
         }
-
-        public List<ConfigItem> GetConfigItems()
+        catch (Exception ex)
         {
-            lock (_lock)
+            // A missing translation is not an error for the user; the default name is shown.
+            Basic.Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Cannot get the localized name of {name}: {ex.Message}");
+        }
+
+        return $"Toggle \"{name}\"";
+    }
+
+    internal const int MaxVariablePasses = ConfigVariableExpander.MaxVariablePasses;
+    internal const int MaxExpandedLength = ConfigVariableExpander.MaxExpandedLength;
+
+    public static Dictionary<string, string>? GetReadyToUseVariables(
+        string? id,
+        List<string>? variables,
+        Dictionary<string, bool>? jparams) =>
+        ConfigVariableExpander.GetReadyToUseVariables(id, variables, jparams);
+
+    public static string ReplaceVariables(string input, IDictionary<string, string>? readyToUseVars) =>
+        ConfigVariableExpander.ReplaceVariables(input, readyToUseVars);
+
+    public static string ReplaceCommaVariables(string startupString, Dictionary<string, string>? commaVars) =>
+        ConfigVariableExpander.ReplaceCommaVariables(startupString, commaVars);
+
+    /// <summary>
+    /// Gets startup sting of <see cref="ConfigItem"/> after
+    /// variables and paths check.
+    /// </summary>
+    /// <param name="item">Target item</param>
+    /// <param name="forceRebuild">
+    /// Force rebuild config if component required hidden conversion.<br></br>
+    /// If <see cref="false"/>, rebuild called only if user sets
+    /// "ZAPRET2/validateLegacyCacheHashes" as <see cref="true"/><br></br>
+    /// If <paramref name="item"/> target not required conversion this property
+    /// ignores.
+    /// </param>
+    /// <returns>Component startup string for item</returns>
+    public static string GetStartupParametersByConfigItem(ConfigItem item, bool forceRebuild = false)
+    {
+        Dictionary<string, bool>? jparams = item.jparams;
+        List<string>? variables = item.variables;
+        string? startupString = item.startup_string;
+
+        if (jparams == null || variables == null || startupString == null)
+            return string.Empty;
+
+        startupString = ConfigVariableExpander.ExpandStartupString(
+            startupString, item.packId, variables, jparams, item.commaVars);
+
+        if (!item.IsLegacy)
+        {
+            return startupString;
+        }
+
+        bool validateHashes = SettingsManager.Instance.GetValueOrDefault(
+            Zapret2LegacyConfigService.HashValidationSettingsGroup,
+            Zapret2LegacyConfigService.HashValidationSettingsKey,
+            defaultValue: Zapret2LegacyConfigService.DefaultHashValidationValue);
+
+        return Zapret2LegacyConfigService.GetStartupString(
+            item,
+            startupString,
+            validateHashes,
+            forceRebuild);
+    }
+
+    public string GetStartupParameters(string filename, string packId)
+    {
+        ConfigItem? item = FindItem(filename, packId);
+        if (item?.startup_string == null)
+            return string.Empty;
+
+        return ConfigVariableExpander.ExpandStartupString(
+            item.startup_string, packId, item.variables, item.jparams, item.commaVars);
+    }
+
+    public static List<VariableItem> GetVariables(ConfigItem configItem) =>
+        ToVariableItems(configItem.jparams!);
+
+    public List<VariableItem> GetVariables(string filename, string packId)
+    {
+        var configItem = FindItem(filename, packId);
+
+        if (configItem?.jparams == null)
+            return [];
+
+        return ToVariableItems(configItem.jparams);
+    }
+
+    private static List<VariableItem> ToVariableItems(Dictionary<string, bool> jparams)
+    {
+        List<VariableItem> variables = [];
+
+        foreach (var variable in jparams)
+        {
+            VariableItem variableItem = new()
             {
-                return [.. Items];
-            }
+                name = variable.Key,
+                value = variable.Value,
+            };
+            variables.Add(variableItem);
         }
 
-        public ConfigItem? GetConfigItem(string filename, string packId)
+        return variables;
+    }
+
+    public List<CommaVariableItem> GetCommaVariables(string filename, string packId)
+    {
+        var configItem = FindItem(filename, packId);
+        if (configItem?.commaVars == null)
+            return [];
+
+        var result = new List<CommaVariableItem>();
+        foreach (var commaVariable in configItem.commaVars)
         {
-            lock (_lock)
-            {
-                var configItem = Items.FirstOrDefault(
-                    x => string.Equals(x.packId, packId, StringComparison.Ordinal) && 
-                    string.Equals(x.file_name, filename, StringComparison.Ordinal)
-                );
-                return configItem;
-            }
-        }
-
-        public void SetConfigItem(ConfigItem newConfigItem)
-        {
-            lock (_lock)
-            {
-                var configItem = Items.FirstOrDefault(
-                    x => string.Equals(x.packId, newConfigItem.packId, StringComparison.Ordinal) &&
-                    string.Equals(x.file_name, newConfigItem.file_name, StringComparison.Ordinal)
-                );
-                if (configItem != null)
-                    Items.Remove(configItem);
-
-                Items.Add(newConfigItem);
-            }
-        }
-
-        public void ChangeVariableValue(string filename, string packId, string key, bool value)
-        {
-            var configItem = Items.FirstOrDefault(
-                x => string.Equals(x.packId, packId, StringComparison.Ordinal) && string.Equals(x.file_name, filename, StringComparison.Ordinal)
-            );
-
-            if (configItem == null)
-                return;
-
-            configItem.jparams[key] = value;
-
-            _ = SaveConfigItem(filename, packId, configItem);
-        }
-
-        public void ChangeCommaVariableValue(string filename, string packId, string key, string value)
-        {
-            var configItem = Items.FirstOrDefault(
-                x => string.Equals(x.packId, packId, StringComparison.Ordinal) &&
-                     string.Equals(x.file_name, filename, StringComparison.Ordinal));
-
-            if (configItem?.commaVars == null)
-                return;
-
-            string? actualKey = configItem.commaVars.Keys.FirstOrDefault(
-                candidate => string.Equals(candidate, key, StringComparison.OrdinalIgnoreCase));
             AvailableVarValues? availableValues = configItem.availableCommaVarsValues?.FirstOrDefault(
-                item => string.Equals(item.VarName, key, StringComparison.OrdinalIgnoreCase));
-            if (actualKey == null)
-                return;
+                item => string.Equals(item.VarName, commaVariable.Key, StringComparison.OrdinalIgnoreCase));
+            List<string> values = (availableValues?.Values ?? [])
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
 
-            configItem.commaVars[actualKey] = value;
-            if (availableValues != null)
+            result.Add(new CommaVariableItem
             {
-                availableValues.CurrentValueIndex = availableValues.Values?.FindIndex(
-                    candidate => string.Equals(candidate, value, StringComparison.Ordinal)) ?? -1;
-            }
-            _ = SaveConfigItem(filename, packId, configItem);
+                name = commaVariable.Key,
+                comment = availableValues?.Comment,
+                value = commaVariable.Value,
+                values = values,
+            });
         }
 
-        public static async Task<string> SaveConfigItem(string filename, string packId, ConfigItem item)
+        return result;
+    }
+
+    public List<string> GetToggleLists(string filename, string packId)
+    {
+        var configItem = FindItem(filename, packId);
+
+        // The callers read Count: a preset without toggle lists gives an empty list.
+        return configItem?.toggle_lists ?? [];
+    }
+
+    public async Task<List<SiteListItem>> GetExcludedSiteListItemsAsync(
+        string filename,
+        string packId,
+        bool unique = true,
+        bool ignoreNull = false)
+    {
+        await Task.CompletedTask;
+        return GetExcludedSiteListItems(filename, packId, unique, ignoreNull);
+    }
+
+    public List<SiteListItem> GetExcludedSiteListItems(
+        string filename,
+        string packId,
+        bool unique = true,
+        bool ignoreNull = false)
+    {
+        GetAllWindowsInConfig(filename, packId, out var localItemFolder, out var windows);
+        return SiteListParser.GetExcludedLists(windows, localItemFolder, unique, ignoreNull);
+    }
+
+    public async Task<List<SiteListItem>> GetSiteListItemsAsync(
+        string filename,
+        string packId,
+        bool unique = true,
+        bool ignoreNull = false)
+    {
+        await Task.CompletedTask;
+        return GetSiteListItems(filename, packId, unique, ignoreNull);
+    }
+
+    public List<SiteListItem> GetSiteListItems(
+        string filename,
+        string packId,
+        bool unique = true,
+        bool ignoreNull = false)
+    {
+        GetAllWindowsInConfig(filename, packId, out var localItemFolder, out var windows);
+        return SiteListParser.GetIncludedLists(windows, localItemFolder, unique, ignoreNull);
+    }
+
+    private void GetAllWindowsInConfig(
+        string filename,
+        string packId,
+        out string localItemFolder,
+        out List<string> windows)
+    {
+        localItemFolder = GetItemFolderFromPackId(packId);
+        string startupString = GetStartupParameters(filename, packId);
+        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"{startupString}");
+
+        windows = SiteListParser.SplitProfiles(startupString);
+    }
+
+    public static string GetItemFolderFromPackId(string packId)
+    {
+        string localItemFolder = Path.Combine(Directories.StoreItemsDirectory, packId);
+        return localItemFolder;
+    }
+
+    // The item is null when a .json file holds "null".
+    public static Tuple<ConfigItem?, bool>? LoadConfigFromFile(string filepath) =>
+        ConfigFileImporter.Load(filepath);
+
+    public static List<string> GetUsedFilesFromConfigItem(ConfigItem configItem) =>
+        configItem.UsedFiles
+            .Select(file => file.ExpandedPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    public static ConfigItem ReplaceFilesPath(ConfigItem configItem, Dictionary<string, string> files) =>
+        ConfigFilePathReplacer.ReplaceFilesPath(configItem, files);
+
+    public string RemoveConfig(string filename, string packId, bool removeFile)
+    {
+        string folder = GetItemFolderFromPackId(packId);
+        string packPath = Path.Combine(folder, filename);
+
+        var item = FindItem(filename, packId);
+        if (item != null)
         {
-            string folder = GetItemFolderFromPackId(packId);
-            string fileName = Path.Combine(folder, filename);
+            if (removeFile)
+            {
+                _items.Remove(item);
+            }
+            else
+            {
+                item.MarkAsRemoved = true;
+            }
+        }
 
-            // The file keeps the name as written by its author ($LOADDYNAMIC... keys), while the cached
-            // item keeps showing the localized name.
-            string? displayName = item.name;
-            string jsonString;
+        if (removeFile)
+        {
             try
             {
-                item.name = item.not_converted_name ?? item.name;
-                jsonString = JSONConvertor.SerializeObject(item);
-            }
-            finally
-            {
-                item.name = displayName;
-            }
-
-            Logger.Instance.CreateDebugLog(nameof(ConfigurationService), jsonString);
-            try
-            {
-                CDPIUI.Shared.Basic.Filesystem.FileSystemService.WriteAllTextAtomic(fileName, jsonString);
+                File.Delete(packPath);
             }
             catch (Exception ex)
             {
                 return ErrorsHelper.Convertor.GetPrettyErrorCode("SAVE_CFG", ex);
             }
-
-            await Task.CompletedTask;
-            return string.Empty;
         }
+        return string.Empty;
+    }
 
-        public static string GetDefaultLocalePath(string packId)
+    public static string GetLastEditTimeFromConfigFile(string filename, string packId)
+    {
+        string filePath = Path.Combine(GetItemFolderFromPackId(packId), filename);
+
+        try
         {
-            string folder = GetItemFolderFromPackId(packId);
-
-            string initFile = Path.Combine(folder, "init.json");
-
-            if (!File.Exists(initFile))
-                return string.Empty;
-
-            ConfigInitItem? configInitItem;
-            try
-            {
-                configInitItem = JSONConvertor.LoadJson<ConfigInitItem>(initFile);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
-                return string.Empty;
-            }
-            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN") ?? string.Empty;
-            return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
+            DateTime lastEditTime = File.GetLastWriteTime(filePath);
+            return lastEditTime.ToString();
         }
-
-        public string GetLocalizedConfigVarName(string name, string packId)
+        catch
         {
-            try
-            {
-                foreach (Tuple<string, LocaleModel> localeHelperTuple in ConfigLocaleHelpers)
-                {
-                    if (localeHelperTuple.Item1 == packId)
-                    {
-                        if (!localeHelperTuple.Item2.keyValuePairs.ContainsKey(name))
-                            return $"Toggle \"{name}\"";
-                        return localeHelperTuple.Item2.keyValuePairs[name];
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // A missing translation is not an error for the user; the default name is shown.
-                Basic.Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Cannot get the localized name of {name}: {ex.Message}");
-            }
-
-            return $"Toggle \"{name}\"";
+            return "01.12.1970";
         }
-
-        public static Dictionary<string, string>? GetReadyToUseVariables(
-            string? id,
-            List<string>? variables,
-            Dictionary<string, bool>? jparams)
-        {
-            // Same rules as ConfigItem.ExpandVariables in the UI: names ignore case, and a name
-            // declared twice takes the last value instead of failing the start.
-            Dictionary<string, string> result = new(StringComparer.OrdinalIgnoreCase);
-            string regexString = @"%(.*?)%=(.*?)$";
-
-            if (variables == null || jparams == null)
-            {
-                return null;
-            }
-
-            foreach (string variable in variables)
-            {
-                Match match = Regex.Match(variable, regexString);
-
-                if (!match.Success)
-                    continue;
-
-                // A folder script is left for the expansion of the whole startup string, which
-                // quotes a path with spaces; expanded here, the path stayed unquoted (issue #2).
-                string value = match.Groups[2].Value;
-                string trimmed = value.TrimStart();
-                result[match.Groups[1].Value] =
-                    trimmed.StartsWith("$GETCURRENTDIR", StringComparison.OrdinalIgnoreCase) ||
-                    trimmed.StartsWith("$GETSRDIR", StringComparison.OrdinalIgnoreCase)
-                        ? value
-                        : LScriptCore.ExecuteScript(value, callItemId: id, jparams: jparams);
-            }
-
-            return result;
-        }
-
-        internal const int MaxVariablePasses = 16;
-        internal const int MaxExpandedLength = 64 * 1024;
-
-        [GeneratedRegex("%(?<name>[A-Za-z0-9_.\\-]+)%", RegexOptions.CultureInvariant)]
-        private static partial Regex VariableReferenceRegex();
-
-        public static string ReplaceVariables(string input, IDictionary<string, string>? readyToUseVars)
-        {
-            if (string.IsNullOrEmpty(input) || readyToUseVars == null || readyToUseVars.Count == 0)
-            {
-                return input;
-            }
-
-            var vars = new Dictionary<string, string>(readyToUseVars, StringComparer.OrdinalIgnoreCase);
-
-            string evaluator(Match match) =>
-                vars.TryGetValue(match.Groups["name"].Value, out string? value) ? value : match.Value;
-
-            // Variables may refer to other variables, as in the editor preview, which expands
-            // them the same way; the length limit stops definitions such as %A%=%A%%A%.
-            string result = input;
-            for (int pass = 0; pass < MaxVariablePasses; pass++)
-            {
-                string expanded = VariableReferenceRegex().Replace(result, evaluator);
-                if (expanded == result || expanded.Length > MaxExpandedLength)
-                    break;
-                result = expanded;
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Gets startup sting of <see cref="ConfigItem"/> after 
-        /// variables and paths check.
-        /// </summary>
-        /// <param name="item">Target item</param>
-        /// <param name="forceRebuild">
-        /// Force rebuild config if component required hidden conversion.<br></br>
-        /// If <see cref="false"/>, rebuild called only if user sets 
-        /// "ZAPRET2/validateLegacyCacheHashes" as <see cref="true"/><br></br>
-        /// If <paramref name="item"/> target not required conversion this property
-        /// ignores.
-        /// </param>
-        /// <returns>Component startup string for item</returns>
-        public static string GetStartupParametersByConfigItem(ConfigItem item, bool forceRebuild = false)
-        {
-            Dictionary<string, bool>? jparams = item.jparams;
-            List<string>? variables = item.variables;
-            string? startupString = item.startup_string;
-            string? packId = item.packId;
-            Dictionary<string, string>? commaVars = item.commaVars;
-
-            if (jparams == null || variables == null || startupString == null)
-                return string.Empty;
-
-            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
-
-            startupString = ReplaceVariables(startupString, readyToUseVars);
-            startupString = ReplaceCommaVariables(startupString, commaVars);
-
-            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId, quotePaths: true);
-
-            if (!item.IsLegacy)
-            {
-                return startupString;
-            }
-
-            bool validateHashes = SettingsManager.Instance.GetValueOrDefault(
-                Zapret2LegacyConfigService.HashValidationSettingsGroup,
-                Zapret2LegacyConfigService.HashValidationSettingsKey,
-                defaultValue: Zapret2LegacyConfigService.DefaultHashValidationValue);
-
-            return Zapret2LegacyConfigService.GetStartupString(
-                item,
-                startupString,
-                validateHashes,
-                forceRebuild);
-        }
-        public static string ReplaceCommaVariables(string startupString, Dictionary<string, string>? commaVars)
-        {
-            Dictionary<string, string>? vars = commaVars;
-
-            if (vars == null || vars.Count == 0)
-                return startupString;
-
-            string result = ReplaceVariables(startupString, vars);
-            return result;
-        }
-
-        public string GetStartupParameters(string filename, string packId)
-        {
-            Dictionary<string, bool>? jparams = null;
-            List<string>? variables = null;
-            string? startupString = null;
-            Dictionary<string, string>? commaVars = null;
-
-            foreach (ConfigItem item in Items)
-            {
-                if (item.packId == packId && item.file_name == filename)
-                {
-                    jparams = item.jparams;
-                    variables = item.variables;
-                    startupString = item.startup_string;
-                    commaVars = item.commaVars;
-                    break;
-                }
-            }
-
-            if (startupString == null)
-                return string.Empty;
-
-            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
-
-            startupString = ReplaceVariables(startupString, readyToUseVars);
-            startupString = ReplaceCommaVariables(startupString, commaVars);
-
-            startupString = LScript.LScriptCore.ExecuteScriptUnsafe(startupString, callItemId: packId, quotePaths: true);
-            return startupString;
-        }
-
-        public static List<VariableItem> GetVariables(ConfigItem configItem)
-        {
-            List<VariableItem> variables = [];
-
-            foreach (var variable in configItem.jparams)
-            {
-                VariableItem variableItem = new()
-                {
-                    name = variable.Key,
-                    value = variable.Value,
-                };
-                variables.Add(variableItem);
-            }
-
-            return variables;
-        }
-
-        public List<VariableItem> GetVariables(string filename, string packId)
-        {
-            List<VariableItem> variables = [];
-
-            var configItem = Items.FirstOrDefault(
-                x => string.Equals(x.packId, packId, StringComparison.Ordinal) && 
-                string.Equals(x.file_name, filename, StringComparison.Ordinal)
-                );
-
-            if (configItem == null)
-                return variables;
-
-            if (configItem.jparams == null)
-                return variables;
-
-            foreach (var variable in configItem.jparams)
-            {
-                VariableItem variableItem = new()
-                {
-                    name = variable.Key,
-                    value = variable.Value,
-                };
-                variables.Add(variableItem);
-            }
-
-            return variables;
-        }
-
-        public List<CommaVariableItem> GetCommaVariables(string filename, string packId)
-        {
-            var configItem = Items.FirstOrDefault(
-                x => string.Equals(x.packId, packId, StringComparison.Ordinal) &&
-                     string.Equals(x.file_name, filename, StringComparison.Ordinal));
-            if (configItem?.commaVars == null)
-                return [];
-
-            var result = new List<CommaVariableItem>();
-            foreach (var commaVariable in configItem.commaVars)
-            {
-                AvailableVarValues? availableValues = configItem.availableCommaVarsValues?.FirstOrDefault(
-                    item => string.Equals(item.VarName, commaVariable.Key, StringComparison.OrdinalIgnoreCase));
-                List<string> values = (availableValues?.Values ?? [])
-                    .Distinct(StringComparer.Ordinal)
-                    .ToList();
-
-                result.Add(new CommaVariableItem
-                {
-                    name = commaVariable.Key,
-                    comment = availableValues?.Comment,
-                    value = commaVariable.Value,
-                    values = values,
-                });
-            }
-
-            return result;
-        }
-
-        public List<string> GetToggleLists(string filename, string packId)
-        {
-            var configItem = Items.FirstOrDefault(
-                x => string.Equals(x.packId, packId, StringComparison.Ordinal) && 
-                string.Equals(x.file_name, filename, StringComparison.Ordinal)
-                );
-
-            // The callers read Count: a preset without toggle lists gives an empty list.
-            return configItem?.toggle_lists ?? [];
-        }
-
-        public async Task<List<SiteListItem>> GetExcludedSiteListItemsAsync(
-            string filename, 
-            string packId, 
-            bool unique = true, 
-            bool ignoreNull = false)
-        {
-            await Task.CompletedTask;
-            return GetExcludedSiteListItems(filename, packId, unique, ignoreNull);
-        }
-
-        public List<SiteListItem> GetExcludedSiteListItems(
-            string filename, 
-            string packId, 
-            bool unique = true, 
-            bool ignoreNull = false)
-        {
-            GetAllWindowsInConfig(filename, packId, out var localItemFolder, out var windows);
-
-            var results = new List<SiteListItem>();
-            var seenNames = new HashSet<string>();
-
-            foreach (var window in windows)
-            {
-                string prettyWindow = string.Empty;
-                prettyWindow = WindowConverterRegex()
-                    .Replace(window.Replace(localItemFolder, ""), m => m.Groups[1].Value + m.Groups[3].Value);
-
-                var tokenPattern = @"(?<=\s|^)(?:(?:(?:--|/)[^\s]*=""[^""]*"")|""[^""]*""|[^ ]+)+";
-                var tokens = Regex.Matches(window, tokenPattern)
-                                  .Cast<Match>()
-                                  .Select(m => m.Value.Trim('"'))
-                                  .ToList();
-
-
-
-                bool found = false;
-                for (int i = 0; i < tokens.Count; i++)
-                {
-                    string param = tokens[i];
-                    string name = null, type = null;
-
-                    if (param.StartsWith("--hostlist-exclude="))
-                    {
-                        name = param.Substring("--hostlist-exclude=".Length);
-                        type = "SiteList";
-                    }
-                    else if (param.StartsWith("--ipset-exclude="))
-                    {
-                        name = param.Substring("--ipset-exclude=".Length);
-                        type = "IpList";
-                    }
-                    else if ((param == "--hostlist-exclude" || param == "--ipset-exclude")
-                             && i + 1 < tokens.Count)
-                    {
-                        name = tokens[i + 1];
-                        type = param == "--hostlist-exclude"
-                                   ? "SiteList"
-                                   : "IpList";
-                        i++;
-                    }
-
-                    if (name != null)
-                    {
-
-                        if (unique && seenNames.Contains(name))
-                        {
-                            var item = results.FirstOrDefault(
-                                x => string.Equals(x.Name, Path.GetFileName(name), StringComparison.Ordinal));
-
-                            if (item != null)
-                            {
-                                item.ApplyParams.Add(window);
-                                item.PrettyApplyParams.Add(prettyWindow);
-                            }
-                            found = true;
-                            break;
-                        }
-
-                        seenNames.Add(name);
-
-                        var before = string.Join(" ", tokens.Take(i - (param.Contains('=') ? 0 : 1)));
-                        var after = string.Join(" ", tokens.Skip(i + 1));
-
-                        results.Add(new SiteListItem
-                        {
-                            Name = Path.GetFileName(name),
-                            Type = type,
-                            FilePath = name.Replace("\"", ""),
-                            ApplyParams = [window],
-                            PrettyApplyParams = [prettyWindow]
-                        });
-
-                        found = true;
-
-                    }
-                }
-                if (!found && !ignoreNull)
-                {
-                    results.Add(new SiteListItem
-                    {
-                        Name = "",
-                        Type = "NULL",
-                        FilePath = "",
-                        ApplyParams = [window],
-                        PrettyApplyParams = [prettyWindow]
-                    });
-                }
-            }
-            return results;
-        }
-
-        public async Task<List<SiteListItem>> GetSiteListItemsAsync(
-            string filename, 
-            string packId, 
-            bool unique = true, 
-            bool ignoreNull = false)
-        {
-            await Task.CompletedTask;
-            return GetSiteListItems(filename, packId, unique, ignoreNull);
-        }
-
-        public List<SiteListItem> GetSiteListItems(
-            string filename, 
-            string packId, 
-            bool unique = true, 
-            bool ignoreNull = false)
-        {
-            GetAllWindowsInConfig(filename, packId, out var localItemFolder, out var windows);
-
-            var results = new List<SiteListItem>();
-            var seenNames = new HashSet<string>();
-
-            foreach (var window in windows)
-            {
-                string prettyWindow = string.Empty;
-                prettyWindow = WindowConverterRegex()
-                    .Replace(window.Replace(localItemFolder, ""), m => m.Groups[1].Value + m.Groups[3].Value);
-
-                var tokenPattern = @"(?<=\s|^)(?:(?:(?:--|/)[^\s]*=""[^""]*"")|""[^""]*""|[^ ]+)+";
-                var tokens = Regex.Matches(window, tokenPattern)
-                                  .Cast<Match>()
-                                  .Select(m => m.Value.Trim('"'))
-                                  .ToList();
-
-
-
-                bool found = false;
-                for (int i = 0; i < tokens.Count; i++)
-                {
-                    string param = tokens[i];
-                    string name = null, type = null;
-
-                    if (param.StartsWith("--hostlist="))
-                    {
-                        name = param.Substring("--hostlist=".Length);
-                        type = "SiteList";
-                    }
-                    else if (param.StartsWith("--blacklist="))
-                    {
-                        name = param.Substring("--blacklist=".Length);
-                        type = "SiteList";
-                    }
-                    else if (param.StartsWith("--ipset="))
-                    {
-                        name = param.Substring("--ipset=".Length);
-                        type = "IpList";
-                    }
-                    else if (param.StartsWith("--hostlist-auto="))
-                    {
-                        name = param.Substring("--hostlist-auto=".Length);
-                        type = "AutoSiteList";
-                    }
-                    else if ((param == "--hostlist" || param == "--ipset" || param == "--hostlist-auto" || param == "--blacklist")
-                             && i + 1 < tokens.Count)
-                    {
-                        name = tokens[i + 1];
-                        type = param == "--hostlist" || param == "--blacklist"
-                                   ? "SiteList"
-                                   : param == "--ipset"
-                                       ? "IpList"
-                                       : "AutoSiteList";
-                        i++;
-                    }
-
-                    if (name != null)
-                    {
-
-                        if (unique && seenNames.Contains(name))
-                        {
-                            var item = results.FirstOrDefault(x => string.Equals(x.Name, Path.GetFileName(name), StringComparison.Ordinal));
-
-                            if (item != null)
-                            {
-                                item.ApplyParams.Add(window);
-                                item.PrettyApplyParams.Add(prettyWindow);
-                            }
-                            found = true;
-                            break;
-                        }
-
-                        seenNames.Add(name);
-
-                        var before = string.Join(" ", tokens.Take(i - (param.Contains('=') ? 0 : 1)));
-                        var after = string.Join(" ", tokens.Skip(i + 1));
-
-                        results.Add(new SiteListItem
-                        {
-                            Name = Path.GetFileName(name),
-                            Type = type,
-                            FilePath = name.Replace("\"", ""),
-                            ApplyParams = [window],
-                            PrettyApplyParams = [prettyWindow]
-                        });
-
-                        found = true;
-                    }
-                }
-                if (!found && !ignoreNull)
-                {
-                    results.Add(new SiteListItem
-                    {
-                        Name = "",
-                        Type = "NULL",
-                        FilePath = "",
-                        ApplyParams = [window],
-                        PrettyApplyParams = [prettyWindow]
-                    });
-                }
-            }
-            return results;
-        }
-
-        private void GetAllWindowsInConfig(
-            string filename,
-            string packId, 
-            out string localItemFolder, 
-            out List<string> windows)
-        {
-            localItemFolder = GetItemFolderFromPackId(packId);
-            string startupString = GetStartupParameters(filename, packId);
-            Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"{startupString}");
-
-            // Only the --new option separates profiles, not options such as --newfoo.
-            windows = Regex.Split(startupString, @"(?<!\S)--new(?!\S)")
-                .Select(w => w.Trim())
-                .Where(w => w.Length > 0)
-                .ToList();
-        }
-
-        public static string GetItemFolderFromPackId(string packId)
-        {
-            string localItemFolder = Path.Combine(Directories.StoreItemsDirectory, packId);
-            return localItemFolder;
-        }
-
-        private static Tuple<ConfigItem, bool> ConvertConfigFromBAT(string filepath)
-        {
-            // TODO: recursevily call other .BAT files via GOTO check
-            string[] lines = CDPIUI.Core.System.BatchFileEncoding.ReadAllLines(filepath);
-            Dictionary<string, string> vars = [];
-            List<AvailableVarValues> availableVarValues = [];
-
-            bool errorHappens = false;
-            bool commaBuilderMode = false;
-
-            string comment = "";
-            string comma = "";
-
-            List<string> target = null;
-            foreach (string line in lines)
-            {
-                if (string.IsNullOrEmpty(line))
-                    continue;
-
-                if (line.StartsWith("set", StringComparison.OrdinalIgnoreCase))
-                {
-                    string[] setLine = line[3..].Split("=");
-                    if (setLine.Length >= 2)
-                    {
-                        // set "WF=..." keeps a space before the name: trimmed here, or the
-                        // variable was not found by the alternatives below.
-                        string key = setLine[0].Replace("\"", "").Trim();
-                        string value = line[3..].Replace($"{setLine[0]}=", "").Replace("\"", "").Trim();
-
-                        // Every !VAR! of the value, not only the first one.
-                        foreach (Match match in VarInVarRegex().Matches(value))
-                        {
-                            string varInVar = match.Groups[1].Value;
-                            if (vars.ContainsKey(varInVar))
-                            {
-                                value = value.Replace($"!{varInVar}!", vars[varInVar]);
-                            }
-                            else
-                            {
-                                errorHappens = true;
-                                Logger.Instance.CreateWarningLog(
-                                    nameof(ConfigurationService), 
-                                    $"Error happens, cannot find var {varInVar}");
-                            }
-                        }
-                        if (!vars.ContainsKey(key.Trim()))
-                            vars.Add(key.Trim(), value);
-                        else
-                            vars[key.Trim()] = value;
-
-                        AvailableVarValues availableVar = availableVarValues.FirstOrDefault(x => x.VarName == key);
-                        if (availableVar != null)
-                        {
-                            availableVarValues.Remove(availableVar);
-                            availableVar.Values.Add(value);
-                            availableVar.CurrentValueIndex = availableVar.Values.Count - 1;
-                            availableVarValues.Add(availableVar);
-                        }
-
-                        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Found var {key} = {value}");
-                    }
-
-                    continue;
-                }
-                if (line.StartsWith("::") && line.EndsWith("::"))
-                {
-                    comment = line[2..^2].Trim();
-                    continue;
-                }
-                // "rem set NAME=value" lists another value of a variable; a comment such as
-                // "rem settings = ..." is no such line.
-                if (RemSetRegex().IsMatch(line))
-                {
-                    string _l = line[3..];
-                    var rx = new Regex(@"\s+set\b", RegexOptions.None);
-                    _l = rx.Replace(_l, "", 1);
-
-                    string[] remLine = _l.Split("=");
-                    if (remLine.Length >= 2)
-                    {
-                        remLine[0] = remLine[0].Trim();
-                        remLine[1] = remLine[1].Trim();
-                        string value = rx.Replace(line[3..], "", 1).Replace($"{remLine[0]}=", "").Trim();
-
-                        bool found = false;
-                        foreach (var availableVar in availableVarValues)
-                        {
-                            if (availableVar.VarName.Trim() == remLine[0])
-                            {
-                                if (!availableVar.Values.Contains(value))
-                                    availableVar.Values.Add(value);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
-                        {
-                            List<string> values = [];
-                            if (vars.TryGetValue(remLine[0], out string _value))
-                                values.Add(_value);
-
-                            if (!values.Contains(value))
-                                values.Add(value);
-
-                            availableVarValues.Add(new()
-                            {
-                                Comment = comment,
-                                VarName = remLine[0],
-                                // Index 0 is the value of "set X=..." when it came first; it was
-                                // left out, so "rem set X=b" after "set X=a" lost "a".
-                                CurrentValueIndex = 0,
-                                Values = values
-                            });
-                            comment = "";
-                        }
-                        if (!vars.ContainsKey(remLine[0]))
-                            vars.Add(remLine[0], "$EMPTY");
-                        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Found REM var {remLine[0]} = {value}");
-                    }
-                    continue;
-                }
-                if (line.StartsWith("start", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (line.Contains("winws.exe"))
-                    {
-                        string ver = DatabaseHelper.Instance
-                            .GetItemById(HardcodedItemIds.ComponentIds[Components.Zapret])?.CurrentVersion ??
-                            "%CURRENT%";
-                        target = [HardcodedItemIds.ComponentIds[Components.Zapret], ver];
-                    }
-
-                    if (line.Contains('^'))
-                        commaBuilderMode = true;
-                    Match match = BatFileStartRegex().Match(line);
-                    if (match.Success)
-                    {
-                        comma = match.Groups["args"].Value.Trim().Replace('^', ' ');
-                        Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Found start line {comma}");
-                    }
-                    continue;
-                }
-                if (commaBuilderMode)
-                {
-                    comma += line.Replace('^', ' ');
-
-                    Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Comma++ {comma}");
-
-                    if (!line.EndsWith('^'))
-                    {
-                        commaBuilderMode = false;
-                        break;
-                    }
-                    continue;
-                }
-            }
-
-            foreach (var _var in vars)
-            {
-                if (_var.Value.StartsWith("%~dp0"))
-                {
-                    vars.Remove(_var.Key);
-                    comma = comma.Replace($"%{_var.Key}%", _var.Value.Replace("%~dp0", ""));
-                }
-            }
-
-            ConfigItem configItem = new()
-            {
-                meta = "pUC:v1.0",
-                name = Path.GetFileNameWithoutExtension(filepath),
-                target = target,
-                commaVars = vars.Count > 0 ? vars : null,
-                availableCommaVarsValues = availableVarValues.Count > 0 ? availableVarValues : null,
-                jparams = [],
-                variables = [],
-                startup_string = comma,
-            };
-
-            return Tuple.Create(configItem, errorHappens);
-        }
-
-        // The item is null when a .json file holds "null".
-        public static Tuple<ConfigItem?, bool>? LoadConfigFromFile(string filepath)
-        {
-            if (!File.Exists(filepath))
-                return null;
-
-
-            if (Path.GetExtension(filepath).Equals(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                OldConfigItem oldConfig = JSONConvertor.LoadJson<OldConfigItem>(filepath);
-                if (oldConfig != null && oldConfig.custom_parameters != null)
-                {
-                    ConfigItem newConfig = new ConfigItem()
-                    {
-                        meta = "pUC:v1.0",
-                        name = Path.GetFileNameWithoutExtension(filepath),
-                        target = null,
-                        jparams = [],
-                        variables = [],
-                        startup_string = oldConfig.custom_parameters,
-                    };
-                    return Tuple.Create<ConfigItem?, bool>(newConfig, true);
-                }
-                return Tuple.Create(JSONConvertor.LoadJson<ConfigItem>(filepath), true);
-            }
-            else if (Path.GetExtension(filepath).Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
-                     Path.GetExtension(filepath).Equals(".cmd", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    var (configItem, errorHappens) = ConvertConfigFromBAT(filepath);
-
-                    return Tuple.Create<ConfigItem?, bool>(configItem, errorHappens);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.CreateWarningLog(nameof(ConfigurationService), $"Error happens: {ex}");
-                    return null;
-                }
-
-            }
-
-            return null;
-        }
-
-        public static List<string> GetUsedFilesFromConfigItem(ConfigItem configItem) =>
-            configItem.UsedFiles
-                .Select(file => file.ExpandedPath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-        public static ConfigItem ReplaceFilesPath(ConfigItem configItem, Dictionary<string, string> files)
-        {
-            // Replaces whole paths only, with either separator and with the quotes around them:
-            // a substring replacement also changed "mylist.txt" when "list.txt" was replaced, every
-            // apostrophe in the line became a quote, and "" (an empty value) became ".
-            static string ReplaceInString(string input, Dictionary<string, string> files)
-            {
-                if (string.IsNullOrEmpty(input) || files == null || files.Count == 0)
-                    return input;
-
-                input = input.Replace("%~dp0", "");
-
-                foreach (var kvp in files)
-                {
-                    string oldPath = kvp.Key?.Trim().Trim('"', '\'') ?? string.Empty;
-                    if (oldPath.Length == 0)
-                        continue;
-                    string newPath = $"\"{kvp.Value.Trim().Trim('"')}\"";
-
-                    string pathPattern = string.Join("[\\\\/]",
-                        oldPath.Split('\\', '/').Select(Regex.Escape));
-                    input = Regex.Replace(
-                        input,
-                        $@"(?<![\w.\\/:-])(?<q>[""']?){pathPattern}\k<q>(?![\w.\\/-])",
-                        _ => newPath,
-                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                }
-
-                return input;
-            }
-
-            if (!string.IsNullOrEmpty(configItem.startup_string))
-            {
-                string startupString;
-                startupString = ReplaceInString(configItem.startup_string, files);
-
-                configItem.startup_string = startupString;
-            }
-
-            if (configItem.commaVars != null)
-            {
-                var keys = configItem.commaVars.Keys.ToList();
-                foreach (var key in keys)
-                {
-                    if (!string.IsNullOrEmpty(configItem.commaVars[key]))
-                        configItem.commaVars[key] = ReplaceInString(configItem.commaVars[key], files);
-                }
-            }
-
-            if (configItem.availableCommaVarsValues != null)
-            {
-                foreach (var varValue in configItem.availableCommaVarsValues)
-                {
-                    if (varValue.Values != null)
-                    {
-                        for (int i = 0; i < varValue.Values.Count; i++)
-                        {
-                            varValue.Values[i] = ReplaceInString(varValue.Values[i], files);
-                        }
-                    }
-                }
-            }
-
-            return configItem;
-        }
-
-        public string RemoveConfig(string filename, string packId, bool removeFile)
-        {
-            string folder = GetItemFolderFromPackId(packId);
-            string packPath = Path.Combine(folder, filename);
-
-            var item = Items.FirstOrDefault(x => x.packId == packId && x.file_name == filename);
-            if (item != null)
-            {
-                if (removeFile)
-                {
-                    Items.Remove(item);
-                }
-                else
-                {
-                    item.MarkAsRemoved = true;
-                }
-            }
-
-            if (removeFile)
-            {
-                try
-                {
-                    File.Delete(packPath);
-                }
-                catch (Exception ex)
-                {
-                    return ErrorsHelper.Convertor.GetPrettyErrorCode("SAVE_CFG", ex);
-                }
-            }
-            return string.Empty;
-        }
-
-        public static string GetLastEditTimeFromConfigFile(string filename, string packId)
-        {
-            string filePath = Path.Combine(GetItemFolderFromPackId(packId), filename);
-
-            try
-            {
-                DateTime lastEditTime = File.GetLastWriteTime(filePath);
-                return lastEditTime.ToString();
-            }
-            catch
-            {
-                return "01.12.1970";
-            }
-        }
-
-
-
-        [GeneratedRegex(@"("")(/.*?\\)(.*?"")")]
-        private static partial Regex WindowConverterRegex();
-        [GeneratedRegex(BatStartRegex, RegexOptions.IgnoreCase)]
-        private static partial Regex BatFileStartRegex();
-        [GeneratedRegex(@"!(.*?)!")]
-        private static partial Regex VarInVarRegex();
-        [GeneratedRegex(@"^rem\s+set\s", RegexOptions.IgnoreCase)]
-        private static partial Regex RemSetRegex();
     }
 }

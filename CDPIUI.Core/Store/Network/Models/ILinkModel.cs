@@ -1,8 +1,7 @@
-﻿namespace CDPIUI.Core.Store.Network.Models
+namespace CDPIUI.Core.Store.Network.Models;
+
+internal interface ILinkModel
 {
-    internal interface ILinkModel
-    {
-        string? link { get; set; }
-        string? version { get; set; }
-    }
+    string? link { get; set; }
+    string? version { get; set; }
 }

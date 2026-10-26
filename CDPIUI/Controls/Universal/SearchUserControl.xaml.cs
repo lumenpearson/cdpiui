@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Controls.Default;
 using CDPIUI.Converters;
 using CDPIUI.Core;
@@ -10,11 +15,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using TextControlBoxNS;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -30,10 +30,10 @@ namespace CDPIUI.Controls.Universal;
 
 public sealed partial class SearchUserControl : UserControl
 {
-    private TextControlBox currentTextbox = null;
+    private TextControlBox _currentTextbox = null;
     public bool searchOpen = false;
 
-    private SearchWindowState searchWindowState = SearchWindowState.Hidden;
+    private SearchWindowState _searchWindowState = SearchWindowState.Hidden;
 
     public static readonly DependencyProperty ReplaceEnableProperty =
         DependencyProperty.Register(
@@ -60,12 +60,12 @@ public sealed partial class SearchUserControl : UserControl
     private void CalcCenter(bool isReplaceOpened)
     {
         SearchWindowScaleTransform.CenterX = this.ActualWidth != 0 ? this.ActualWidth / 2 : this.MaxWidth / 2;
-        SearchWindowScaleTransform.CenterY = (isReplaceOpened? 80 : 45) / 2;
+        SearchWindowScaleTransform.CenterY = (isReplaceOpened ? 80 : 45) / 2;
     }
 
     private void BeginSearch(string searchword, bool matchCase, bool wholeWord)
     {
-        var res = currentTextbox.BeginSearch(searchword, wholeWord, matchCase);
+        var res = _currentTextbox.BeginSearch(searchword, wholeWord, matchCase);
         ColorWindowBorder(res);
     }
     private void ToggleVisibility(bool visible)
@@ -76,57 +76,58 @@ public sealed partial class SearchUserControl : UserControl
     }
     private void ColorWindowBorder(SearchResult result)
     {
-        SearchWindow.BorderBrush = (SolidColorBrush)(result == SearchResult.Found ? 
+        SearchWindow.BorderBrush = (SolidColorBrush)(result == SearchResult.Found ?
             ((App)Application.Current).Resources["SystemFillColorSuccessBrush"] : ((App)Application.Current).Resources["SystemFillColorCautionBrush"]);
     }
     private void HideWindow()
     {
         hideSearchAnimation.Begin();
-        searchWindowState = SearchWindowState.Hidden;
+        _searchWindowState = SearchWindowState.Hidden;
     }
     private void ShowWindow()
     {
         this.Visibility = Visibility.Visible;
         showSearchAnimation.Begin();
-        searchWindowState = SearchWindowState.Default;
+        _searchWindowState = SearchWindowState.Default;
     }
     private void ExpandReplace()
     {
         expandSearchAnimation.Begin();
-        searchWindowState = SearchWindowState.Expanded;
+        _searchWindowState = SearchWindowState.Expanded;
     }
     private void CollapseReplace(bool skipAnim = false)
     {
         collapseSearchAnimation.Begin();
-        if (skipAnim) collapseSearchAnimation.SkipToFill();
-        searchWindowState = SearchWindowState.Default;
+        if (skipAnim)
+            collapseSearchAnimation.SkipToFill();
+        _searchWindowState = SearchWindowState.Default;
     }
 
     public void ShowSearch(TextControlBox textBox)
     {
-        if (currentTextbox != null && currentTextbox != textBox)
+        if (_currentTextbox != null && _currentTextbox != textBox)
         {
-            currentTextbox.EndSearch();
-            this.searchWindowState = SearchWindowState.Hidden;
+            _currentTextbox.EndSearch();
+            _searchWindowState = SearchWindowState.Hidden;
         }
 
-        currentTextbox = textBox;
+        _currentTextbox = textBox;
         searchOpen = true;
 
-        if (searchWindowState == SearchWindowState.Expanded)
+        if (_searchWindowState == SearchWindowState.Expanded)
         {
             CollapseReplace();
         }
-        else if (searchWindowState == SearchWindowState.Hidden)
+        else if (_searchWindowState == SearchWindowState.Hidden)
         {
             CalcCenter(false);
             CollapseReplace(true);
             ShowWindow();
         }
 
-        if (currentTextbox.HasSelection && currentTextbox.CalculateSelectionPosition().Length < 200)
+        if (_currentTextbox.HasSelection && _currentTextbox.CalculateSelectionPosition().Length < 200)
         {
-            textToFindTextbox.Text = currentTextbox.SelectedText;
+            textToFindTextbox.Text = _currentTextbox.SelectedText;
         }
 
         textToFindTextbox.Focus(FocusState.Keyboard);
@@ -135,20 +136,20 @@ public sealed partial class SearchUserControl : UserControl
 
     public void ShowReplace(TextControlBox textBox)
     {
-        if (currentTextbox != null && currentTextbox != textBox)
+        if (_currentTextbox != null && _currentTextbox != textBox)
         {
-            currentTextbox.EndSearch();
-            this.searchWindowState = SearchWindowState.Hidden;
+            _currentTextbox.EndSearch();
+            _searchWindowState = SearchWindowState.Hidden;
         }
 
-        currentTextbox = textBox;
+        _currentTextbox = textBox;
         searchOpen = true;
 
-        if (searchWindowState == SearchWindowState.Default)
+        if (_searchWindowState == SearchWindowState.Default)
         {
             ExpandReplace();
         }
-        else if (searchWindowState == SearchWindowState.Hidden)
+        else if (_searchWindowState == SearchWindowState.Hidden)
         {
             CalcCenter(true);
             ShowWindow();
@@ -156,9 +157,9 @@ public sealed partial class SearchUserControl : UserControl
         }
 
 
-        if (currentTextbox.HasSelection && currentTextbox.CalculateSelectionPosition().Length < 200)
+        if (_currentTextbox.HasSelection && _currentTextbox.CalculateSelectionPosition().Length < 200)
         {
-            textToFindTextbox.Text = currentTextbox.SelectedText;
+            textToFindTextbox.Text = _currentTextbox.SelectedText;
         }
 
         textToReplaceTextBox.Focus(FocusState.Keyboard);
@@ -169,15 +170,15 @@ public sealed partial class SearchUserControl : UserControl
 
     public void Close()
     {
-        if (!searchOpen || currentTextbox == null)
+        if (!searchOpen || _currentTextbox == null)
             return;
 
         searchOpen = false;
-        currentTextbox.EndSearch();
+        _currentTextbox.EndSearch();
         HideWindow();
-        currentTextbox.Focus(FocusState.Programmatic);
+        _currentTextbox.Focus(FocusState.Programmatic);
 
-        currentTextbox = null;
+        _currentTextbox = null;
     }
 
     private void UpdateSearch()
@@ -194,7 +195,7 @@ public sealed partial class SearchUserControl : UserControl
     }
     private void SearchTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (currentTextbox == null)
+        if (_currentTextbox == null)
             return;
 
         //Search down on Enter and up on Shift + Enter//
@@ -202,22 +203,22 @@ public sealed partial class SearchUserControl : UserControl
         if (e.Key == VirtualKey.Enter)
         {
             if (shift)
-                currentTextbox.FindPrevious();
+                _currentTextbox.FindPrevious();
             else
-                currentTextbox.FindNext();
+                _currentTextbox.FindNext();
         }
     }
     private void SearchUpButton_Click(object sender, RoutedEventArgs e)
     {
-        currentTextbox.FindPrevious();
+        _currentTextbox.FindPrevious();
     }
     private void SearchDownButton_Click(object sender, RoutedEventArgs e)
     {
-        currentTextbox.FindNext();
+        _currentTextbox.FindNext();
     }
     private void ReplaceAllButton_Click(object sender, RoutedEventArgs e)
     {
-        var res = currentTextbox.ReplaceAll(
+        var res = _currentTextbox.ReplaceAll(
             textToFindTextbox.Text,
             textToReplaceTextBox.Text,
             MatchCaseMenuFlyoutItem.IsChecked,
@@ -228,7 +229,7 @@ public sealed partial class SearchUserControl : UserControl
     }
     private void ReplaceCurrentButton_Click(object sender, RoutedEventArgs e)
     {
-        var res = currentTextbox.ReplaceNext(textToReplaceTextBox.Text);
+        var res = _currentTextbox.ReplaceNext(textToReplaceTextBox.Text);
         ColorWindowBorder(res);
     }
     private void SearchWindow_CloseButtonClick(object sender, RoutedEventArgs e)
@@ -237,10 +238,10 @@ public sealed partial class SearchUserControl : UserControl
     }
     private void ExpandSearchBoxForReplaceButton_Click(object sender, RoutedEventArgs e)
     {
-        if (searchWindowState == SearchWindowState.Expanded)
-            ShowSearch(currentTextbox);
+        if (_searchWindowState == SearchWindowState.Expanded)
+            ShowSearch(_currentTextbox);
         else
-            ShowReplace(currentTextbox);
+            ShowReplace(_currentTextbox);
     }
     private void TextBoxes_GotFocus(object sender, RoutedEventArgs e)
     {

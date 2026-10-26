@@ -1,184 +1,183 @@
-﻿using CDPIUI.AddOns.GoodCheck;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using CDPIUI.AddOns.GoodCheck;
 using CDPIUI.AddOns.Troubleshooting;
 using CDPIUI.Core.Features;
 using CDPIUI.Helper.Items;
 using CDPIUI.Helper.WindowHelper;
 using CDPIUI.Shared.Pipe.Models;
 using CDPIUI.ViewModels;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Windows.Input;
 
 
-namespace CDPIUI.Commands
+namespace CDPIUI.Commands;
+
+internal class CommandsHandler
 {
-    internal class CommandsHandler
+    #region UI link handle
+    private static CommandsHandler _instance;
+    private static readonly object SyncRoot = new();
+    public static CommandsHandler Instance
     {
-        #region UI link handle
-        private static CommandsHandler _instance;
-        private static readonly object _lock = new();
-        public static CommandsHandler Instance
+        get
         {
-            get
+            lock (SyncRoot)
             {
-                lock (_lock)
-                {
-                    _instance ??= new CommandsHandler();
-                    return _instance;
-                }
+                _instance ??= new CommandsHandler();
+                return _instance;
             }
         }
+    }
 
-        public ICommand Command { get; }
+    public ICommand Command { get; }
 
-        private CommandsHandler()
+    private CommandsHandler()
+    {
+        Command = new RelayCommand(ExecuteCommand);
+    }
+
+    private void ExecuteCommand(object parameter)
+    {
+        if (parameter is string uri)
         {
-            Command = new RelayCommand(ExecuteCommand);
+            HandleCommand(uri);
         }
+    }
+    #endregion
 
-        private void ExecuteCommand(object parameter)
+
+    /// <summary>
+    /// Handles a link built by the application itself; it may be an internal pipe message.
+    /// </summary>
+    public static bool HandleCommand(string commandUri)
+    {
+        var message = CommandUriMapper.ConvertBack(commandUri, allowPipeMessages: true);
+        return message != null && HandleCommand(message);
+    }
+
+    public static bool HandleCommand(IPipeMessage message)
+    {
+        if (!CanHandle(message))
+            return false;
+
+        _ = HandleCommandAsync(message);
+        return true;
+    }
+
+    /// <summary>
+    /// Handles a link that comes from outside the application, such as a cdpiui:// activation:
+    /// only the public routes are accepted.
+    /// </summary>
+    public static async Task<bool> HandleCommandAsync(string commandUri)
+    {
+        var message = CommandUriMapper.ConvertBack(commandUri);
+        return message != null && await HandleCommandAsync(message);
+    }
+
+    public static async Task<bool> HandleCommandAsync(IPipeMessage message)
+    {
+        switch (message)
         {
-            if (parameter is string uri)
-            {
-                HandleCommand(uri);
-            }
-        }
-        #endregion
+            case PresentationMessageModel model:
+                await HandlePresentationMessage(model);
+                break;
 
+            case GoodCheckMessageModel model:
+                HandleGoodCheckMessage(model);
+                break;
 
-        /// <summary>
-        /// Handles a link built by the application itself; it may be an internal pipe message.
-        /// </summary>
-        public static bool HandleCommand(string commandUri)
-        {
-            var message = CommandUriMapper.ConvertBack(commandUri, allowPipeMessages: true);
-            return message != null && HandleCommand(message);
-        }
+            case UtilsMessageModel model:
+                HandleUtilsMessage(model);
+                break;
 
-        public static bool HandleCommand(IPipeMessage message)
-        {
-            if (!CanHandle(message))
+            case UpdateMessageModel model:
+                await HandleUpdateMessage(model);
+                break;
+
+            case CompatibilityCheckMessageModel model:
+                await HandleCompatibilityCheckMessage(model);
+                break;
+            default:
                 return false;
-
-            _ = HandleCommandAsync(message);
-            return true;
         }
+        return true;
+    }
 
-        /// <summary>
-        /// Handles a link that comes from outside the application, such as a cdpiui:// activation:
-        /// only the public routes are accepted.
-        /// </summary>
-        public static async Task<bool> HandleCommandAsync(string commandUri)
+    private static bool CanHandle(IPipeMessage message) =>
+        message is PresentationMessageModel or
+            GoodCheckMessageModel or
+            UtilsMessageModel or
+            UpdateMessageModel or
+            CompatibilityCheckMessageModel;
+
+    private static async Task HandlePresentationMessage(PresentationMessageModel model)
+    {
+        if (model.MessageType != PresentationMessageIds.ShowWindow)
+            return;
+
+        await WindowOpenHelper.OpenAsync(model.MessageData);
+    }
+    private static void HandleGoodCheckMessage(GoodCheckMessageModel model)
+    {
+        switch (model.MessageType)
         {
-            var message = CommandUriMapper.ConvertBack(commandUri);
-            return message != null && await HandleCommandAsync(message);
-        }
-
-        public static async Task<bool> HandleCommandAsync(IPipeMessage message)
-        {
-            switch (message)
-            {
-                case PresentationMessageModel model:
-                    await HandlePresentationMessage(model);
-                    break;
-
-                case GoodCheckMessageModel model:
-                    HandleGoodCheckMessage(model);
-                    break;
-
-                case UtilsMessageModel model:
-                    HandleUtilsMessage(model);
-                    break;
-
-                case UpdateMessageModel model:
-                    await HandleUpdateMessage(model);
-                    break;
-
-                case CompatibilityCheckMessageModel model:
-                    await HandleCompatibilityCheckMessage(model);
-                    break;
-                default:
-                    return false;
-            }
-            return true;
-        }
-
-        private static bool CanHandle(IPipeMessage message) =>
-            message is PresentationMessageModel or
-                GoodCheckMessageModel or
-                UtilsMessageModel or
-                UpdateMessageModel or
-                CompatibilityCheckMessageModel;
-
-        private static async Task HandlePresentationMessage(PresentationMessageModel model)
-        {
-            if (model.MessageType != PresentationMessageIds.ShowWindow)
+            case GoodCheckMessageIds.Running:
                 return;
 
-            await WindowOpenHelper.OpenAsync(model.MessageData);
-        }
-        private static void HandleGoodCheckMessage(GoodCheckMessageModel model)
-        {
-            switch (model.MessageType)
-            {
-                case GoodCheckMessageIds.Running:
-                    return;
-
-                case GoodCheckMessageIds.Died:
-                    {
-                        if (!int.TryParse(model.MessageData?["operationId"], out var id))
-                            return;
-
-                        GoodCheckProcessService.Instance.OperationWithIdDied(id);
+            case GoodCheckMessageIds.Died:
+                {
+                    if (!int.TryParse(model.MessageData?["operationId"], out var id))
                         return;
-                    }
 
-                case GoodCheckMessageIds.DiedViaError:
-                    {
-                        var error = model.MessageData?["error"];
-
-                        if (!int.TryParse(model.MessageData?["operationId"], out var id))
-                            return;
-
-                        GoodCheckProcessService.Instance.OperationWithIdFailed(id, error);
-                        return;
-                    }
-            }
-        }
-
-        private static void HandleUtilsMessage(UtilsMessageModel model)
-        {
-            switch (model.MessageType)
-            {
-                case UtilsMessageIds.GrantAccessResponse:
-                    {
-                        if (!bool.TryParse(model.MessageData?["result"], out var granted))
-                            return;
-
-                        TroubleshootingService.Instance.OnGrantAccessCompleted(granted);
-                        return;
-                    }
-            }
-        }
-
-        private static async Task HandleUpdateMessage(UpdateMessageModel model)
-        {
-            switch (model.MessageType)
-            {
-                case UpdateMessageIds.CheckForUpdates:
-                    await ApplicationUpdate.Instance.CheckForUpdates(notify: true);
+                    GoodCheckProcessService.Instance.OperationWithIdDied(id);
                     return;
-            }
-        }
+                }
 
-        private static async Task HandleCompatibilityCheckMessage(CompatibilityCheckMessageModel model)
-        {
-            switch (model.MessageType)
-            {
-                case CompatibilityCheckMessageIds.Begin:
-                    await CompatibilityCheckHelper.Instance.BeginCheck();
+            case GoodCheckMessageIds.DiedViaError:
+                {
+                    var error = model.MessageData?["error"];
+
+                    if (!int.TryParse(model.MessageData?["operationId"], out var id))
+                        return;
+
+                    GoodCheckProcessService.Instance.OperationWithIdFailed(id, error);
                     return;
-            }
+                }
+        }
+    }
+
+    private static void HandleUtilsMessage(UtilsMessageModel model)
+    {
+        switch (model.MessageType)
+        {
+            case UtilsMessageIds.GrantAccessResponse:
+                {
+                    if (!bool.TryParse(model.MessageData?["result"], out var granted))
+                        return;
+
+                    TroubleshootingService.Instance.OnGrantAccessCompleted(granted);
+                    return;
+                }
+        }
+    }
+
+    private static async Task HandleUpdateMessage(UpdateMessageModel model)
+    {
+        switch (model.MessageType)
+        {
+            case UpdateMessageIds.CheckForUpdates:
+                await ApplicationUpdate.Instance.CheckForUpdates(notify: true);
+                return;
+        }
+    }
+
+    private static async Task HandleCompatibilityCheckMessage(CompatibilityCheckMessageModel model)
+    {
+        switch (model.MessageType)
+        {
+            case CompatibilityCheckMessageIds.Begin:
+                await CompatibilityCheckHelper.Instance.BeginCheck();
+                return;
         }
     }
 }

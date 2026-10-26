@@ -1,5 +1,3 @@
-﻿using CDPIUI.TrayIcon.Helper.Basic;
-using CDPIUI.TrayIcon.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,178 +9,179 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CDPIUI.TrayIcon.Helper;
+using CDPIUI.TrayIcon.Helper.Basic;
 using Windows.ApplicationModel.Chat;
 
-namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls;
+
+public partial class ComponentUserControl : UserControl
 {
-    public partial class ComponentUserControl : UserControl
+    private string _text = string.Empty;
+    public string DisplayText
     {
-        private string _text = string.Empty;
-        public string DisplayText
+        get
         {
-            get
-            {
-                return _text;
-            }
-            set
-            {
-                _text = value;
-                MainTextBox.Text = value;
-            }
+            return _text;
         }
-
-        private string _componentId = string.Empty;
-        public string ComponentId
+        set
         {
-            get => _componentId;
-            set => _componentId = value;
+            _text = value;
+            MainTextBox.Text = value;
         }
+    }
 
-        private bool _isRunning = false;
-        public bool IsRunning
+    private string _componentId = string.Empty;
+    public string ComponentId
+    {
+        get => _componentId;
+        set => _componentId = value;
+    }
+
+    private bool _isRunning = false;
+    public bool IsRunning
+    {
+        get { return _isRunning; }
+        set
         {
-            get { return _isRunning; }
-            set
-            {
-                _isRunning = value;
-                StateChangedActions();
-            }
-        }
-
-        private bool _isSetupComplete = false;
-        public bool IsSetupComplete
-        {
-            get { return _isSetupComplete; }
-            set
-            {
-                _isSetupComplete = value;
-                SetupStateChanged();
-            }
-        }
-
-        public Action? EventHappens;
-
-        public ComponentUserControl()
-        {
-            InitializeComponent();
-            ConnectHandlers();
+            _isRunning = value;
             StateChangedActions();
-
-            this.Load += ComponentUserControl_Load;
-            this.Disposed += ComponentUserControl_Disposed;
         }
+    }
 
-        #region HandlersManagement
-        private void ConnectHandlers()
+    private bool _isSetupComplete = false;
+    public bool IsSetupComplete
+    {
+        get { return _isSetupComplete; }
+        set
         {
-            ComponentWorkButton.Clicked += ComponentWorkButton_Clicked;
-            OpenPseudoConsoleButton.Clicked += OpenPseudoConsoleButton_Clicked;
-            OpenSettingsButton.Clicked += OpenSettingsButton_Clicked;
-
-
+            _isSetupComplete = value;
+            SetupStateChanged();
         }
+    }
 
-        private void DisconnectHandlers()
+    public Action? EventHappens;
+
+    public ComponentUserControl()
+    {
+        InitializeComponent();
+        ConnectHandlers();
+        StateChangedActions();
+
+        this.Load += ComponentUserControl_Load;
+        this.Disposed += ComponentUserControl_Disposed;
+    }
+
+    #region HandlersManagement
+    private void ConnectHandlers()
+    {
+        ComponentWorkButton.Clicked += ComponentWorkButton_Clicked;
+        OpenPseudoConsoleButton.Clicked += OpenPseudoConsoleButton_Clicked;
+        OpenSettingsButton.Clicked += OpenSettingsButton_Clicked;
+
+
+    }
+
+    private void DisconnectHandlers()
+    {
+        ComponentWorkButton.Clicked -= ComponentWorkButton_Clicked;
+        OpenPseudoConsoleButton.Clicked -= OpenPseudoConsoleButton_Clicked;
+        OpenSettingsButton.Clicked -= OpenSettingsButton_Clicked;
+    }
+    #endregion
+
+    private void ComponentUserControl_Load(object? sender, EventArgs e)
+    {
+        InitToolTips();
+        this.Load -= ComponentUserControl_Load;
+    }
+
+    private void InitToolTips()
+    {
+        ComponentWorkButton.ToolTip = BasicToolTip;
+        OpenPseudoConsoleButton.ToolTip = BasicToolTip;
+        OpenSettingsButton.ToolTip = BasicToolTip;
+
+        ComponentWorkButton.ToolTipMessage = LocaleHelper.GetLocaleString("ToggleState");
+        OpenPseudoConsoleButton.ToolTipMessage = LocaleHelper.GetLocaleString("Pseudoconsole");
+        OpenSettingsButton.ToolTipMessage = LocaleHelper.GetLocaleString("Setup");
+    }
+
+
+    private void StateChangedActions()
+    {
+        ComponentWorkButton.IsHighlighted = IsRunning;
+        ComponentWorkButton.Glyph = IsRunning ? "\uF8AE" : "\uF5B0";
+    }
+
+    private void SetupStateChanged()
+    {
+        ComponentWorkButton.Enabled = IsSetupComplete;
+    }
+
+    private async void OpenSettingsButton_Clicked(object? sender, EventArgs e)
+    {
+        try
         {
-            ComponentWorkButton.Clicked -= ComponentWorkButton_Clicked;
-            OpenPseudoConsoleButton.Clicked -= OpenPseudoConsoleButton_Clicked;
-            OpenSettingsButton.Clicked -= OpenSettingsButton_Clicked;
-        }
-        #endregion
+            EventHappens?.Invoke();
 
-        private void ComponentUserControl_Load(object? sender, EventArgs e)
-        {
-            InitToolTips();
-            this.Load -= ComponentUserControl_Load;
-        }
-
-        private void InitToolTips()
-        {
-            ComponentWorkButton.ToolTip = BasicToolTip;
-            OpenPseudoConsoleButton.ToolTip = BasicToolTip;
-            OpenSettingsButton.ToolTip = BasicToolTip;
-
-            ComponentWorkButton.ToolTipMessage = LocaleHelper.GetLocaleString("ToggleState");
-            OpenPseudoConsoleButton.ToolTipMessage = LocaleHelper.GetLocaleString("Pseudoconsole");
-            OpenSettingsButton.ToolTipMessage = LocaleHelper.GetLocaleString("Setup");
-        }
-
-        
-        private void StateChangedActions()
-        {
-            ComponentWorkButton.IsHighlighted = IsRunning;
-            ComponentWorkButton.Glyph = IsRunning ? "\uF8AE" : "\uF5B0";
-        }
-
-        private void SetupStateChanged()
-        {
-            ComponentWorkButton.Enabled = IsSetupComplete;
-        }
-
-        private async void OpenSettingsButton_Clicked(object? sender, EventArgs e)
-        {
-            try
+            await PipeHelper.SendOpenWindowPacket("MainWindow", new()
             {
-                EventHappens?.Invoke();
-
-                await PipeHelper.SendOpenWindowPacket("MainWindow", new() 
-                {
-                    { "page", "Components.ViewComponentSettingsPage" },
-                    { "componentId", ComponentId },
-                }, true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the settings of {ComponentId}: {ex}");
-            }
+                { "page", "Components.ViewComponentSettingsPage" },
+                { "componentId", ComponentId },
+            }, true);
         }
-
-        private async void OpenPseudoConsoleButton_Clicked(object? sender, EventArgs e)
+        catch (Exception ex)
         {
-            try
-            {
-                EventHappens?.Invoke();
-
-                await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
-                {
-                    { "id", ComponentId },
-                }, true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the pseudo console of {ComponentId}: {ex}");
-            }
+            Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the settings of {ComponentId}: {ex}");
         }
+    }
 
-        private void ComponentWorkButton_Clicked(object? sender, EventArgs e)
+    private async void OpenPseudoConsoleButton_Clicked(object? sender, EventArgs e)
+    {
+        try
         {
-            try
-            {
-                EventHappens?.Invoke();
+            EventHappens?.Invoke();
 
-                // The click toggles the state the component has when its turn comes in the queue, behind
-                // the pipe commands that came first; the UI does not wait. Deciding from the shown state
-                // made a quick double-click start the component twice (a restart) instead of
-                // starting and stopping it.
-                var id = ComponentId;
-                ComponentCommandQueue.Post(id, async () =>
-                {
-                    if (await TasksHelper.Instance.IsTaskRunning(id))
-                        await TasksHelper.Instance.StopTask(id);
-                    else
-                        await TasksHelper.Instance.CreateAndRunNewTask(id);
-                }, nameof(ComponentUserControl));
-            }
-            catch (Exception ex)
+            await PipeHelper.SendOpenWindowPacket("ViewWindow", new()
             {
-                Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot change the state of {ComponentId}: {ex}");
-            }
+                { "id", ComponentId },
+            }, true);
         }
-
-        private void ComponentUserControl_Disposed(object? sender, EventArgs e)
+        catch (Exception ex)
         {
-            DisconnectHandlers();
-            this.Disposed -= ComponentUserControl_Disposed;
+            Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot open the pseudo console of {ComponentId}: {ex}");
         }
+    }
+
+    private void ComponentWorkButton_Clicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            EventHappens?.Invoke();
+
+            // The click toggles the state the component has when its turn comes in the queue, behind
+            // the pipe commands that came first; the UI does not wait. Deciding from the shown state
+            // made a quick double-click start the component twice (a restart) instead of
+            // starting and stopping it.
+            var id = ComponentId;
+            ComponentCommandQueue.Post(id, async () =>
+            {
+                if (await TasksHelper.Instance.IsTaskRunning(id))
+                    await TasksHelper.Instance.StopTask(id);
+                else
+                    await TasksHelper.Instance.CreateAndRunNewTask(id);
+            }, nameof(ComponentUserControl));
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(ComponentUserControl), $"Cannot change the state of {ComponentId}: {ex}");
+        }
+    }
+
+    private void ComponentUserControl_Disposed(object? sender, EventArgs e)
+    {
+        DisconnectHandlers();
+        this.Disposed -= ComponentUserControl_Disposed;
     }
 }

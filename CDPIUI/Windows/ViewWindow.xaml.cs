@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Controls.Dialogs.Universal;
 using CDPIUI.Core;
@@ -8,23 +11,20 @@ using CDPIUI.Helper.UserExperience;
 using CDPIUI.Helper.WindowHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI;
 
 public sealed partial class ViewWindow : TemplateWindow
 {
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public ViewWindow()
     {
         NewIdSet += SetId;
         InitializeComponent();
 
-        WindowTitle = localizer.GetLocalizedString("PseudoconsoleWindowTitle");
+        WindowTitle = _localizer.GetLocalizedString("PseudoconsoleWindowTitle");
         IconUri = @"Assets/Icons/Pseudoconsole.ico";
         CustomTitleBarUserControl = TitleBarUserControl;
         Closed += ViewWindow_Closed;
@@ -66,7 +66,7 @@ public sealed partial class ViewWindow : TemplateWindow
     private void UpdateProcessControls(bool isRunning)
     {
         ProcessControlIcon.Glyph = isRunning ? "\uE71A" : "\uE768";
-        ProcessControl.Text = localizer.GetLocalizedString(isRunning ? "Stop" : "Start");
+        ProcessControl.Text = _localizer.GetLocalizedString(isRunning ? "Stop" : "Start");
         ProcessRestart.IsEnabled = isRunning;
     }
 
@@ -86,7 +86,7 @@ public sealed partial class ViewWindow : TemplateWindow
             OverwritePrompt = true,
             FileName = "PseudoConsoleLog.txt",
             DefaultExt = ".txt",
-            Filter = $"{localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt",
+            Filter = $"{_localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt",
         };
         if (dialog.ShowDialog() != true)
         {
@@ -102,7 +102,7 @@ public sealed partial class ViewWindow : TemplateWindow
             ErrorContentDialog errorDialog = new();
             await errorDialog.ShowErrorDialogAsync(
                 content: string.Format(
-                    localizer.GetLocalizedString("FileSaveErrorMessage"),
+                    _localizer.GetLocalizedString("FileSaveErrorMessage"),
                     dialog.FileName,
                     "ERR_FILE_WRITE"),
                 errorDetails: exception.ToString(),

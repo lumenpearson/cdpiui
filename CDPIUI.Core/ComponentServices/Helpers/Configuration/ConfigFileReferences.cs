@@ -94,7 +94,8 @@ public static partial class ConfigFileReferences
         string normalized = NormalizePath(expandedPath);
         string name = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? normalized;
         return new ConfigUsedFile(name, NormalizePath(path), GetDisplayFolder(normalized), kind,
-            optionName, isAttachedResource) { ExpandedPath = normalized };
+            optionName, isAttachedResource)
+        { ExpandedPath = normalized };
     }
 
     public static string GetDisplayFolder(string path)

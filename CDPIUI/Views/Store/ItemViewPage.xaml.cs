@@ -1,3 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.Store;
 using CDPIUI.Core;
@@ -10,7 +20,6 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Core.System;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Helper.Parsers;
-
 using CDPIUI.Shared;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Views.Main.Components;
@@ -25,16 +34,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinRT.CDPIUIGenericHelpers;
@@ -43,605 +42,325 @@ using WinUI3Localizer;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views.Store
+namespace CDPIUI.Views.Store;
+
+public sealed partial class ItemViewPage : TemplatePage
 {
-    public class AdditionalItemInfoModel
+    private string _storeId;
+    private RepoItemModel _item;
+
+    private MarkdownConfig _config;
+
+    public MarkdownConfig MarkdownConfig
     {
-        public string DisplayName { get; set; }
-        public string DisplayValue { get; set; }
+        get => _config;
+        set => _config = value;
     }
-    public sealed partial class ItemViewPage : TemplatePage
+
+    private bool _errorHappens = false;
+    private bool _loaded = false;
+    private bool _handlersConnected;
+    private int _handlerVersion;
+    private Action<string> _itemRemovedHandler;
+
+    private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
+    private Action<Tuple<string, double>> _itemDownloadSpeedChangedHandler;
+    private Action<Tuple<string, TimeSpan>> _itemTimeRemainingChangedHandler;
+    private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
+    private Action<string> _itemActionsStoppedHandler;
+
+    private ObservableCollection<AdditionalItemInfoModel> _additionalItemInfoModels = [];
+
+    private ILocalizer _localizer = Localizer.Get();
+
+    public ItemViewPage()
     {
-        private string _storeId;
-        private RepoItemModel item;
+        InitializeComponent();
 
-        private MarkdownConfig _config;
+        IsForwardAnimationToPageAvailable = true;
+        ElementToAnimateForwardConnectedAnimation = ItemImage;
 
-        public MarkdownConfig MarkdownConfig
+        _config = new MarkdownConfig();
+
+        AdvancedInfoListView.ItemsSource = _additionalItemInfoModels;
+
+        this.Loaded += ItemViewPage_Loaded;
+    }
+
+    private void ItemViewPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded)
+            ShowErrorDialog();
+
+        this.Loaded -= ItemViewPage_Loaded;
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+
+        // support NameValueCollection or legacy string parameter
+        if (Parameter != null && Parameter.Get("itemId") != null)
         {
-            get => _config;
-            set => _config = value;
-        }
+            _storeId = Parameter.Get("itemId");
 
-        private bool errorHappens = false;
-        private bool loaded = false;
-        private bool handlersConnected;
-        private int handlerVersion;
-        private Action<string> itemRemovedHandler;
+            ConnectHandlers();
 
-        private Action<Tuple<string, string>> _itemDownloadStageChangedHandler;
-        private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
-        private Action<Tuple<string, double>> _itemDownloadSpeedChangedHandler;
-        private Action<Tuple<string, TimeSpan>> _itemTimeRemainingChangedHandler;
-        private Action<Tuple<string, ErrorModel>> _itemInstallingErrorHappensHandler;
-        private Action<string> _itemActionsStoppedHandler;
+            _item = StoreHelper.Instance.GetItemInfoFromStoreId(_storeId);
 
-        private ObservableCollection<AdditionalItemInfoModel> AdditionalItemInfoModels = [];
-
-        private ILocalizer localizer = Localizer.Get();
-
-        public ItemViewPage()
-        {
-            InitializeComponent();
-
-            IsForwardAnimationToPageAvailable = true;
-            ElementToAnimateForwardConnectedAnimation = ItemImage;
-
-            _config = new MarkdownConfig();
-
-            AdvancedInfoListView.ItemsSource = AdditionalItemInfoModels;
-
-            this.Loaded += ItemViewPage_Loaded;
-        }
-
-        private void ItemViewPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (!loaded) ShowErrorDialog();
-
-            this.Loaded -= ItemViewPage_Loaded;
-        }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-
-
-            // support NameValueCollection or legacy string parameter
-            if (Parameter != null && Parameter.Get("itemId") != null)
-            {
-                _storeId = Parameter.Get("itemId");
-
-                ConnectHandlers();
-
-                item = StoreHelper.Instance.GetItemInfoFromStoreId(_storeId);
-
-                if (item == null || _storeId == SharedConstants.ApplicationStoreId)
-                {
-                    return;
-                }
-
-                ItemName.Text = item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(item.name, StoreLocalizationHelper.GetStoreLikeLocale());
-                ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(item.icon)));
-                ItemDeveloper.Text = item.developer;
-                Logger.Instance.CreateDebugLog(nameof(ItemViewPage), item.category_id);
-                StarCount.Text = item.stars ?? "NaN";
-                ItemCategoryButton.Content = StoreHelper.Instance.GetLocalizedStoreItemName(
-                    StoreHelper.Instance.GetCategoryFromStoreId(item.category_id)?.name ?? string.Empty,
-                    StoreLocalizationHelper.GetStoreLikeLocale()
-                );
-                SmallDescriptionText.Text = LScriptLangHelper.ExecuteScript(item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
-                ItemFullDescriptionText.Text = LScriptLangHelper.ExecuteScript(item.description, StoreLocalizationHelper.GetStoreLikeLocale());
-                ItemWarningAera.Visibility = item.display_warning ? Visibility.Visible : Visibility.Collapsed;
-                ItemWarningText.Text = LScriptLangHelper.ExecuteScript(item.warning_text, StoreLocalizationHelper.GetStoreLikeLocale());
-
-                if (DatabaseHelper.Instance.IsItemInstalled(_storeId))
-                {
-                    ItemActionButton.IsEnabled = item.type == "component";
-                    ItemActionButtonText.Text = localizer.GetLocalizedString("Setup");
-                    ItemMoreButton.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    ItemActionButtonText.Text = localizer.GetLocalizedString("Install");
-                    ItemMoreButton.Visibility = Visibility.Collapsed;
-
-                    bool isItemSupported = IsItemSupported();
-
-                    ItemActionButton.IsEnabled = isItemSupported;
-                    ItemUnsupportedWarningGrid.Visibility = isItemSupported ? Visibility.Collapsed : Visibility.Visible;
-                }
-
-                if (item.links?.Count > 0)
-                    CreateLinks(item.links);
-                else
-                    LinksGrid.Visibility = Visibility.Collapsed;
-
-                loaded = true;
-
-                LoadAdvancedItemInfo();
-                CheckCurrentStatus();
-            }
-            else
-            {
-                ItemName.Text = "Template page";
-            }
-        }
-
-        private void LoadAdvancedItemInfo()
-        {
-            item = StoreHelper.Instance.GetItemInfoFromStoreId(_storeId);
-            AdditionalItemInfoModels.Clear();
-            if (item == null)
+            if (_item == null || _storeId == SharedConstants.ApplicationStoreId)
             {
                 return;
             }
-            AdditionalItemInfoModels.Add(new() { DisplayName = "StoreId", DisplayValue = item.store_id });
-            AdditionalItemInfoModels.Add(new() { DisplayName = "CategoryId", DisplayValue = item.category_id });
-            AdditionalItemInfoModels.Add(new() { DisplayName = "BackgroundColor", DisplayValue = item.background });
-            AdditionalItemInfoModels.Add(new() { DisplayName = "VersionControlType", DisplayValue = item.version_control });
-            if (item.version_control == "several_repos")
+
+            ItemName.Text = _item.short_name ?? StoreHelper.Instance.GetLocalizedStoreItemName(_item.name, StoreLocalizationHelper.GetStoreLikeLocale());
+            ItemImage.Source = new BitmapImage(new Uri(LScriptLangHelper.ExecuteScript(_item.icon)));
+            ItemDeveloper.Text = _item.developer;
+            Logger.Instance.CreateDebugLog(nameof(ItemViewPage), _item.category_id);
+            StarCount.Text = _item.stars ?? "NaN";
+            ItemCategoryButton.Content = StoreHelper.Instance.GetLocalizedStoreItemName(
+                StoreHelper.Instance.GetCategoryFromStoreId(_item.category_id)?.name ?? string.Empty,
+                StoreLocalizationHelper.GetStoreLikeLocale()
+            );
+            SmallDescriptionText.Text = LScriptLangHelper.ExecuteScript(_item.small_description, StoreLocalizationHelper.GetStoreLikeLocale());
+            ItemFullDescriptionText.Text = LScriptLangHelper.ExecuteScript(_item.description, StoreLocalizationHelper.GetStoreLikeLocale());
+            ItemWarningAera.Visibility = _item.display_warning ? Visibility.Visible : Visibility.Collapsed;
+            ItemWarningText.Text = LScriptLangHelper.ExecuteScript(_item.warning_text, StoreLocalizationHelper.GetStoreLikeLocale());
+
+            if (DatabaseHelper.Instance.IsItemInstalled(_storeId))
             {
-                int i = 0;
-                if (item.files_to_download != null)
-                {
-                    foreach (var link in item.files_to_download)
-                    {
-                        i++;
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > Type", DisplayValue = link.type });
-
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > VersionControlType", DisplayValue = link.version_control });
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > VersionControlLink", DisplayValue = link.version_control_link });
-
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PreferredVersion", DisplayValue = link.preffered_version });
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > PreferredFileName", DisplayValue = link.preffered_to_download_file_name });
-
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > DownloadLink", DisplayValue = link.download_link });
-                        AdditionalItemInfoModels.Add(new() { DisplayName = $"#{i} > ArchiveRootFolder", DisplayValue = link.archive_root_folder });
-                    }
-                }
+                ItemActionButton.IsEnabled = _item.type == "component";
+                ItemActionButtonText.Text = _localizer.GetLocalizedString("Setup");
+                ItemMoreButton.Visibility = Visibility.Visible;
             }
             else
             {
-                AdditionalItemInfoModels.Add(new() { DisplayName = "VersionControlLink", DisplayValue = item.version_control_link });
-                AdditionalItemInfoModels.Add(new() { DisplayName = "DownloadLink", DisplayValue = item.download_link });
-                AdditionalItemInfoModels.Add(new() { DisplayName = "FileType", DisplayValue = item.filetype });
-                AdditionalItemInfoModels.Add(new() { DisplayName = "ArchiveRootFolder", DisplayValue = item.archive_root_folder });
-            }
-
-
-            AdditionalItemInfoModels.Add(new() { DisplayName = "TargetExecutableFile", DisplayValue = item.target_executable_file }); 
-
-            AdditionalItemInfoModels.Add(new() { DisplayName = "TargetMaxVer", DisplayValue = item.target_maxversion }); 
-            AdditionalItemInfoModels.Add(new() { DisplayName = "TargetMinVer", DisplayValue = item.target_minversion }); 
-        }
-
-        private void GetReadyUI()
-        {
-            StopActionButton.IsEnabled = true;
-            StatusProgressbar.IsIndeterminate = true;
-            ErrorStatusGrid.Visibility = Visibility.Collapsed;
-            ItemActionButton.Visibility = Visibility.Collapsed;
-            DownloadStatusGrid.Visibility = Visibility.Visible;
-        }
-
-        private void CheckCurrentStatus()
-        {
-            string operationId = StoreHelper.Instance.GetOperationIdFromItemId(_storeId);
-            if (!string.IsNullOrEmpty(operationId))
-            {
-                GetReadyUI();
-
-                string status = StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadStage;
-                PreferItemDownloadingStateActions(status ?? "QueueWaiting");
-                StatusProgressbar.Value = StoreHelper.Instance.GetQueueItemFromOperationId(operationId)?.DownloadProgress ?? 0;
-            }
-        }
-
-        private bool IsItemSupported()
-        {
-            return VersionHelper.IsVersionInRange(ApplicationInfo.Version, item.target_minversion, item.target_maxversion);
-        }
-
-        private void ShowErrorDialog()
-        {
-            DispatcherQueue.TryEnqueue(async () =>
-            {
-                var dialog = new ContentDialog()
-                {
-                    XamlRoot = this.XamlRoot,
-                    Title = localizer.GetLocalizedString("ElementNotExistTitle"),
-                    Content = string.Format(localizer.GetLocalizedString("ElementNotExistMessage"), _storeId, "ERR_STORE_ITEM_NOT_FOUND"),
-                    PrimaryButtonText = localizer.GetLocalizedString("OkButtonText")
-                };
-                await dialog.ShowQueuedAsync();
-                if (Frame.CanGoBack)
-                    Frame.GoBack();
-                else
-                    Frame.Navigate(typeof(HomePage));
-            });
-        }
-
-        private void CreateLinks(List<Link> links)
-        {
-            LinksStackPanel.Children.Clear();
-
-            ObservableCollection<StoreItemLinkButton> linkButtons = new ObservableCollection<StoreItemLinkButton>();
-
-            foreach (Link link in links)
-            {
-                linkButtons.Add(new StoreItemLinkButton
-                {
-                    Text = StoreHelper.Instance.GetLocalizedStoreItemName(link.name, StoreLocalizationHelper.GetStoreLikeLocale()),
-                    Url = link.url,
-                });
-            }
-
-            var itemsControl = new ItemsControl
-            {
-                Margin = new Thickness(0, 0, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                ItemsSource = linkButtons,
-                ItemsPanel = (ItemsPanelTemplate)this.Resources["DefaultItemsPanel"]
-            };
-
-            LinksStackPanel.Children.Add(itemsControl);
-
-        }
-
-        private void PreferItemDownloadingStateActions(string state)
-        {
-            state ??= "QueueWaiting";
-            string stageHeaderText = string.Empty;
-            switch (state)
-            {
-                case "GETR":
-                    stageHeaderText = localizer.GetLocalizedString("GettingReady");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "END":
-                    stageHeaderText = localizer.GetLocalizedString("Finishing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "Downloading":
-                    stageHeaderText = localizer.GetLocalizedString("Downloading");
-                    StatusProgressbar.IsIndeterminate = false;
-                    CurrentStatusSpeedTextBlock.Visibility = Visibility.Visible;
-                    break;
-                case "Extracting":
-                    stageHeaderText = localizer.GetLocalizedString("Installing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "ErrorHappens":
-                    stageHeaderText = localizer.GetLocalizedString("ErrorHappens");
-                    break;
-                case "Completed":
-                    stageHeaderText = localizer.GetLocalizedString("Finishing");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "CANC":
-                    stageHeaderText = localizer.GetLocalizedString("Cancel");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                case "ConnectingToService":
-                    stageHeaderText = localizer.GetLocalizedString("ConnectingToService");
-                    CurrentStatusTipTextBlock.Text = localizer.GetLocalizedString("ConnectingToServiceTip");
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-                default:
-                    stageHeaderText = localizer.GetLocalizedString(state);
-                    StatusProgressbar.IsIndeterminate = true;
-                    break;
-            }
-            CurrentStatusTextBlock.Text = stageHeaderText;
-        }
-
-        private Action<Tuple<string, T>> ForCurrentOperation<T>(Action<Tuple<string, T>> action)
-        {
-            return data =>
-            {
-                // Resolve the operation before it is removed from the queue.
-                if (StoreHelper.Instance.GetItemIdFromOperationId(data.Item1) != _storeId) return;
-                int version = handlerVersion;
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (handlersConnected && version == handlerVersion) action(data);
-                });
-            };
-        }
-
-        private void ConnectHandlers()
-        {
-            if (handlersConnected) return;
-            handlersConnected = true;
-            ++handlerVersion;
-            _itemDownloadStageChangedHandler = ForCurrentOperation<string>((data) =>
-            {
-                if (errorHappens) return;
-                string operationId = data.Item1;
-                string stage = data.Item2;
-
-                GetReadyUI();
-
-                CurrentStatusSpeedTextBlock.Visibility = Visibility.Collapsed;
-
-                PreferItemDownloadingStateActions(stage);
-            });
-            StoreHelper.Instance.ItemDownloadStageChanged += _itemDownloadStageChangedHandler;
-
-            _itemDownloadProgressChangedHandler = ForCurrentOperation<double>((data) =>
-            {
-                if (errorHappens) return;
-                string operationId = data.Item1;
-                double progress = data.Item2;
-
-
-                StatusProgressbar.IsIndeterminate = false;
-                StatusProgressbar.Value = progress;
-            });
-            StoreHelper.Instance.ItemDownloadProgressChanged += _itemDownloadProgressChangedHandler;
-
-            _itemTimeRemainingChangedHandler = ForCurrentOperation<TimeSpan>((data) =>
-            {
-                if (errorHappens) return;
-                string operationId = data.Item1;
-                TimeSpan time = data.Item2;
-
-
-                if (time.TotalMinutes >= 1)
-                    CurrentStatusTipTextBlock.Text = string.Format(localizer.GetLocalizedString("/UIHelper/LeftMinutes"), (int)time.TotalMinutes);
-                else
-                    CurrentStatusTipTextBlock.Text = localizer.GetLocalizedString("/UIHelper/LeftSmall");
-            });
-
-            StoreHelper.Instance.ItemTimeRemainingChanged += _itemTimeRemainingChangedHandler;
-
-            _itemDownloadSpeedChangedHandler = ForCurrentOperation<double>((data) =>
-            {
-                if (errorHappens) return;
-                string operationId = data.Item1;
-                double speed = data.Item2;
-
-
-                CurrentStatusSpeedTextBlock.Text = $"{UnitsParser.FormatSpeed(speed)}, ";
-            });
-
-            StoreHelper.Instance.ItemDownloadSpeedChanged += _itemDownloadSpeedChangedHandler;
-
-            _itemInstallingErrorHappensHandler = ForCurrentOperation<ErrorModel>((data) =>
-            {
-                string operationId = data.Item1;
-                string errorCode = data.Item2.ErrorCode;
-
-
-                ErrorStatusGrid.Visibility = Visibility.Visible;
-                ItemActionButton.Visibility = Visibility.Collapsed;
-                DownloadStatusGrid.Visibility = Visibility.Collapsed;
-
-                ErrorNameTextBlock.Text = errorCode;
-                errorHappens = true;
-            });
-            StoreHelper.Instance.ItemInstallingErrorHappens += _itemInstallingErrorHappensHandler;
-
-            _itemActionsStoppedHandler = (id) =>
-            {
-                if (id != _storeId) return;
-                int version = handlerVersion;
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (handlersConnected && version == handlerVersion) ShowItemAfterInstallActions(id);
-                });
-            };
-            StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
-            itemRemovedHandler = id =>
-            {
-                if (id != _storeId) return;
-                int version = handlerVersion;
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    // Reinstall removes the old item before immediately queuing the replacement.
-                    if (handlersConnected && version == handlerVersion &&
-                        StoreHelper.Instance.GetOperationIdFromItemId(_storeId) == null)
-                    {
-                        ShowItemAfterInstallActions(id);
-                    }
-                });
-            };
-            StoreHelper.Instance.ItemRemoved += itemRemovedHandler;
-        }
-
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            base.OnNavigatedFrom(e);
-            handlersConnected = false;
-            ++handlerVersion;
-            StoreHelper.Instance.ItemRemoved -= itemRemovedHandler;
-
-            if (_itemDownloadStageChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadStageChanged -= _itemDownloadStageChangedHandler;
-
-            if (_itemDownloadProgressChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadProgressChanged -= _itemDownloadProgressChangedHandler;
-
-            if (_itemTimeRemainingChangedHandler != null)
-                StoreHelper.Instance.ItemTimeRemainingChanged -= _itemTimeRemainingChangedHandler;
-
-            if (_itemInstallingErrorHappensHandler != null)
-                StoreHelper.Instance.ItemInstallingErrorHappens -= _itemInstallingErrorHappensHandler;
-
-            if (_itemDownloadSpeedChangedHandler != null)
-                StoreHelper.Instance.ItemDownloadSpeedChanged -= _itemDownloadSpeedChangedHandler;
-
-            if (_itemActionsStoppedHandler != null)
-                StoreHelper.Instance.ItemActionsStopped -= _itemActionsStoppedHandler;
-
-            this.DataContext = null;
-            MarkdownConfig = null;
-        }
-
-        private void ShowItemAfterInstallActions(string id)
-        {
-            if (id != _storeId) return;
-            StatusProgressbar.Value = 0;
-            StatusProgressbar.IsIndeterminate = true;
-
-            CurrentStatusSpeedTextBlock.Visibility = Visibility.Collapsed;
-            CurrentStatusSpeedTextBlock.Text = "";
-            CurrentStatusTipTextBlock.Text = localizer.GetLocalizedString("WorkingOnIt");
-
-            if (id == _storeId && !errorHappens)
-            {
-                ItemActionButton.IsEnabled = IsItemSupported();
-                ItemActionButtonText.Text = localizer.GetLocalizedString("Install");
+                ItemActionButtonText.Text = _localizer.GetLocalizedString("Install");
                 ItemMoreButton.Visibility = Visibility.Collapsed;
-                ItemActionButton.Visibility = Visibility.Visible;
-                DownloadStatusGrid.Visibility = Visibility.Collapsed;
 
-                if (DatabaseHelper.Instance.IsItemInstalled(id))
+                bool isItemSupported = IsItemSupported();
+
+                ItemActionButton.IsEnabled = isItemSupported;
+                ItemUnsupportedWarningGrid.Visibility = isItemSupported ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (_item.links?.Count > 0)
+                CreateLinks(_item.links);
+            else
+                LinksGrid.Visibility = Visibility.Collapsed;
+
+            _loaded = true;
+
+            LoadAdvancedItemInfo();
+            CheckCurrentStatus();
+        }
+        else
+        {
+            ItemName.Text = "Template page";
+        }
+    }
+
+    private void LoadAdvancedItemInfo()
+    {
+        _item = StoreHelper.Instance.GetItemInfoFromStoreId(_storeId);
+        _additionalItemInfoModels.Clear();
+        if (_item == null)
+        {
+            return;
+        }
+        foreach (AdditionalItemInfoModel info in AdditionalItemInfoBuilder.Build(_item))
+            _additionalItemInfoModels.Add(info);
+    }
+
+    private bool IsItemSupported()
+    {
+        return VersionHelper.IsVersionInRange(ApplicationInfo.Version, _item.target_minversion, _item.target_maxversion);
+    }
+
+    private void ShowErrorDialog()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            var dialog = new ContentDialog()
+            {
+                XamlRoot = this.XamlRoot,
+                Title = _localizer.GetLocalizedString("ElementNotExistTitle"),
+                Content = string.Format(_localizer.GetLocalizedString("ElementNotExistMessage"), _storeId, "ERR_STORE_ITEM_NOT_FOUND"),
+                PrimaryButtonText = _localizer.GetLocalizedString("OkButtonText")
+            };
+            await dialog.ShowQueuedAsync();
+            if (Frame.CanGoBack)
+                Frame.GoBack();
+            else
+                Frame.Navigate(typeof(HomePage));
+        });
+    }
+
+    private void CreateLinks(List<Link> links)
+    {
+        LinksStackPanel.Children.Clear();
+
+        ObservableCollection<StoreItemLinkButton> linkButtons = new ObservableCollection<StoreItemLinkButton>();
+
+        foreach (Link link in links)
+        {
+            linkButtons.Add(new StoreItemLinkButton
+            {
+                Text = StoreHelper.Instance.GetLocalizedStoreItemName(link.name, StoreLocalizationHelper.GetStoreLikeLocale()),
+                Url = link.url,
+            });
+        }
+
+        var itemsControl = new ItemsControl
+        {
+            Margin = new Thickness(0, 0, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemsSource = linkButtons,
+            ItemsPanel = (ItemsPanelTemplate)this.Resources["DefaultItemsPanel"]
+        };
+
+        LinksStackPanel.Children.Add(itemsControl);
+
+    }
+
+    private async Task InstallingItemActions()
+    {
+        if (!await AskLicense())
+            return;
+        ConnectHandlers();
+        _errorHappens = false;
+
+        GetReadyUI();
+
+        CurrentStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
+        StoreHelper.Instance.AddItemToQueue(_storeId, string.Empty);
+
+        ItemActionButton.IsEnabled = _item.type == "component";
+    }
+
+    private void ItemCategoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.CategoryViewPage), new NameValueCollection() { { "categoryId", _item.category_id } }, new SuppressNavigationTransitionInfo());
+    }
+
+    private async void ItemWarningButton_Click(object sender, RoutedEventArgs e)
+    {
+        ContentDialog dialog = new ContentDialog()
+        {
+            Title = _localizer.GetLocalizedString("MessageFromDeveloper"),
+            Content = _localizer.GetLocalizedString("MessageFromDeveloperTip"),
+            PrimaryButtonText = _localizer.GetLocalizedString("OkButtonText"),
+            XamlRoot = this.XamlRoot,
+        };
+        await dialog.ShowQueuedAsync();
+    }
+
+    private async void ItemActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!DatabaseHelper.Instance.IsItemInstalled(_storeId))
+        {
+            await InstallingItemActions();
+        }
+        else
+        {
+            ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
+
+            window.NavView_Navigate(typeof(ViewComponentSettingsPage),
+                new NameValueCollection()
                 {
-                    ItemActionButtonText.Text = localizer.GetLocalizedString("Setup");
-                    ItemMoreButton.Visibility = Visibility.Visible;
-
-                    ItemActionButton.IsEnabled = item.type == "component";
-                }
-            }
+                    { "componentId", _storeId }
+                },
+                new DrillInNavigationTransitionInfo());
         }
+    }
 
-        private async Task InstallingItemActions()
+    private void StopActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        StoreHelper.Instance.RemoveItemFromQueue(_storeId);
+    }
+
+    private async void ErrorHelpButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new CDPIUI.Controls.Dialogs.Store.DownloadErrorActionsContentDialog
         {
-            if (!await AskLicense()) return;
-            ConnectHandlers();
-            errorHappens = false;
+            XamlRoot = XamlRoot
+        };
+        await dialog.ShowQueuedAsync();
+    }
 
-            GetReadyUI();
+    private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    {
 
-            CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
-            StoreHelper.Instance.AddItemToQueue(_storeId, string.Empty);
+        StopActionButton.IsEnabled = false;
+        CurrentStatusTextBlock.Text = _localizer.GetLocalizedString("QueueWaiting");
+        StatusProgressbar.IsIndeterminate = true;
+        ErrorStatusGrid.Visibility = Visibility.Collapsed;
+        ItemActionButton.Visibility = Visibility.Collapsed;
+        DownloadStatusGrid.Visibility = Visibility.Visible;
 
-            ItemActionButton.IsEnabled = item.type == "component";
-        }
+        StoreHelper.Instance.RemoveItem(_storeId);
 
-        private void ItemCategoryButton_Click(object sender, RoutedEventArgs e)
+        ItemActionButton.IsEnabled = IsItemSupported();
+    }
+
+    private async void ReinstallButton_Click(object sender, RoutedEventArgs e)
+    {
+        // TODO: downloading from saved URL
+
+        ContentDialog dialog = new()
         {
-            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.CategoryViewPage), new NameValueCollection() { { "categoryId", item.category_id } }, new SuppressNavigationTransitionInfo());
-        }
-
-        private async void ItemWarningButton_Click(object sender, RoutedEventArgs e)
+            XamlRoot = this.XamlRoot,
+            Title = _localizer.GetLocalizedString("ReinstallWarningTitle"),
+            Content = _localizer.GetLocalizedString("ReinstallWarningMessage"),
+            PrimaryButtonText = _localizer.GetLocalizedString("Yes"),
+            CloseButtonText = _localizer.GetLocalizedString("No"),
+            Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style
+        };
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
         {
-            ContentDialog dialog = new ContentDialog()
-            {
-                Title = localizer.GetLocalizedString("MessageFromDeveloper"),
-                Content = localizer.GetLocalizedString("MessageFromDeveloperTip"),
-                PrimaryButtonText = localizer.GetLocalizedString("OkButtonText"),
-                XamlRoot = this.XamlRoot,
-            };
-            await dialog.ShowQueuedAsync();
+            // The old files must be gone before the new ones are written.
+            await StoreHelper.Instance.RemoveItemAsync(_storeId);
+            await InstallingItemActions();
         }
+    }
 
-        private async void ItemActionButton_Click(object sender, RoutedEventArgs e)
+    private async Task<bool> AskLicense()
+    {
+        if (_item.license == null || _item.license.Count == 0)
+            return true;
+
+        AcceptLicenseContentDialog dialog = new()
         {
-            if (!DatabaseHelper.Instance.IsItemInstalled(_storeId))
-            {
-                await InstallingItemActions();
-            }
-            else
-            {
-                ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
-
-                window.NavView_Navigate(typeof(ViewComponentSettingsPage), 
-                    new NameValueCollection()
-                    {
-                        { "componentId", _storeId }
-                    }, 
-                    new DrillInNavigationTransitionInfo());
-            }
-        }
-
-        private void StopActionButton_Click(object sender, RoutedEventArgs e)
+            Licenses = _item.license,
+            XamlRoot = this.XamlRoot
+        };
+        if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
         {
-            StoreHelper.Instance.RemoveItemFromQueue(_storeId);
+            return true;
         }
-
-        private async void ErrorHelpButton_Click(object sender, RoutedEventArgs e)
+        else
         {
-            var dialog = new CDPIUI.Controls.Dialogs.Store.DownloadErrorActionsContentDialog
-            {
-                XamlRoot = XamlRoot
-            };
-            await dialog.ShowQueuedAsync();
+            return false;
         }
+    }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    private void ShowFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
         {
-
-            StopActionButton.IsEnabled = false;
-            CurrentStatusTextBlock.Text = localizer.GetLocalizedString("QueueWaiting");
-            StatusProgressbar.IsIndeterminate = true;
-            ErrorStatusGrid.Visibility = Visibility.Collapsed;
-            ItemActionButton.Visibility = Visibility.Collapsed;
-            DownloadStatusGrid.Visibility = Visibility.Visible;
-
-            StoreHelper.Instance.RemoveItem(_storeId);
-
-            ItemActionButton.IsEnabled = IsItemSupported();
+            ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(_item.store_id)?.Directory ?? string.Empty);
         }
-
-        private async void ReinstallButton_Click(object sender, RoutedEventArgs e)
+        catch (Exception exception)
         {
-            // TODO: downloading from saved URL
-
-            ContentDialog dialog = new()
-            {
-                XamlRoot = this.XamlRoot,
-                Title = localizer.GetLocalizedString("ReinstallWarningTitle"),
-                Content = localizer.GetLocalizedString("ReinstallWarningMessage"),
-                PrimaryButtonText = localizer.GetLocalizedString("Yes"),
-                CloseButtonText = localizer.GetLocalizedString("No"),
-                Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style
-            };
-            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-            {
-                // The old files must be gone before the new ones are written.
-                await StoreHelper.Instance.RemoveItemAsync(_storeId);
-                await InstallingItemActions();
-            }
+            Logger.Instance.CreateWarningLog(nameof(ItemViewPage), exception.ToString());
         }
+    }
 
-        private async Task<bool> AskLicense()
-        {
-            if (item.license == null || item.license.Count == 0)
-                return true;
-
-            AcceptLicenseContentDialog dialog = new()
-            {
-                Licenses = item.license,
-                XamlRoot = this.XamlRoot
-            };
-            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        private void ShowFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(item.store_id)?.Directory ?? string.Empty);
-            }
-            catch (Exception exception)
-            {
-                Logger.Instance.CreateWarningLog(nameof(ItemViewPage), exception.ToString());
-            }
-        }
-
-        private void LaunchItemUnsupportedHelp_Click(object sender, RoutedEventArgs e)
-        {
-            Commands.CommandsHandler.HandleCommand(
-                "cdpiui://Help/Store/ItemUnsupportedWarning/");
-        }
+    private void LaunchItemUnsupportedHelp_Click(object sender, RoutedEventArgs e)
+    {
+        Commands.CommandsHandler.HandleCommand(
+            "cdpiui://Help/Store/ItemUnsupportedWarning/");
     }
 }

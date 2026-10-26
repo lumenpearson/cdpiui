@@ -1,8 +1,16 @@
-﻿using CDPIUI.Core;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using CDPIUI.Controls.Default;
+using CDPIUI.Core;
 using CDPIUI.Core.Features;
 using CDPIUI.Core.Store;
 using CDPIUI.Helper;
-
 using CDPIUI.Shared;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,15 +19,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
-using CDPIUI.Controls.Default;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -27,269 +26,270 @@ using WinUI3Localizer;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views
+namespace CDPIUI.Views;
+
+/// <summary>
+/// An empty page that can be used on its own or navigated to within a Frame.
+/// </summary>
+
+public class AcknowledgmentsModel
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    
-    public class AcknowledgmentsModel
-    {
-        public string Name { get; set; }
-    }
+    public string Name { get; set; }
+}
 public sealed partial class AboutPage : TemplatePage
+{
+    private enum UpdateButtonStatus
     {
-        private enum UpdateButtonStatus
+        Ready,
+        Work,
+        ActionInstallAsk
+    }
+
+    private enum BadgeStatus
+    {
+        NewestInstalled,
+        NewVersionAvailable,
+        Work,
+        Error
+    }
+
+    private ILocalizer _localizer = Localizer.Get();
+
+    private ObservableCollection<AcknowledgmentsModel> _acknowledgmentsList = new ObservableCollection<AcknowledgmentsModel>()
+    {
+        new () { Name = "MMaxX_ON" },
+        new () { Name = "StafiLynx" },
+        new () { Name = "Aster" },
+        new () { Name = "Niko" },
+        new () { Name = "o2o" },
+        new () { Name = "Factiosi" },
+        new () { Name = "Lumenpearson" },
+        new () { Name = "Leaftail1880" },
+        new () { Name = "Nek0t" },
+        new () { Name = "🔭" },
+    };
+
+    private ObservableCollection<AcknowledgmentsModel> _requrementsList = new ObservableCollection<AcknowledgmentsModel>()
+    {
+        new () { Name = "TextControlBox-WinUI by FrozenAssassine" },
+        new () { Name = "WinUI3Localizer by Andrew KeepCoding" },
+        new () { Name = "WinUIEx by Morten Nielsen" },
+        new () { Name = "TaskScheduler by David Hall" },
+        new () { Name = "Newtonsoft.Json by James Newton-King" },
+        new () { Name = "CommunityToolkit.Labs" },
+        new () { Name = "CommunityToolkit.WinUI" },
+        new () { Name = "ini-parser by Ricardo Amores Hernández" },
+        new () { Name = "Microsoft.Data.Sqlite" },
+    };
+    public AboutPage()
+    {
+        InitializeComponent();
+
+        SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
+        SetBadgeStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? BadgeStatus.NewVersionAvailable : BadgeStatus.NewestInstalled);
+        SetCurrentVersion(ApplicationInfo.Version);
+
+        if (ApplicationUpdate.Instance.ErrorHappened)
         {
-            Ready,
-            Work,
-            ActionInstallAsk
+            SetServerVersion(ApplicationUpdate.Instance.ErrorInfo);
+            SetBadgeStatus(BadgeStatus.Error);
+        }
+        else
+        {
+            SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
         }
 
-        private enum BadgeStatus
+        ConnectEvents();
+        Loaded += (_, _) => ConnectEvents();
+        Unloaded += (_, _) => DisconnectEvents();
+
+        RepoRun.Text = UrlOpenHelper.MainRepoUrl;
+
+        AcknowledgmentsListView.ItemsSource = _acknowledgmentsList;
+        RequirementsListView.ItemsSource = _requrementsList;
+    }
+
+    // The services are singletons: a page that is not shown must not keep receiving their events.
+    private bool _eventsConnected;
+
+    private void ConnectEvents()
+    {
+        if (_eventsConnected)
+            return;
+        _eventsConnected = true;
+        ApplicationUpdate.Instance.ErrorHappens += ApplicationUpdateHelper_ErrorHappens;
+        ApplicationUpdate.Instance.CheckForUpdatesCompleted += ApplicationUpdateHelper_CheckForUpdatesCompleted;
+        ApplicationUpdate.Instance.CheckForUpdatesStarted += ApplicationUpdateHelper_CheckForUpdatesStarted;
+    }
+
+    private void DisconnectEvents()
+    {
+        if (!_eventsConnected)
+            return;
+        _eventsConnected = false;
+        ApplicationUpdate.Instance.ErrorHappens -= ApplicationUpdateHelper_ErrorHappens;
+        ApplicationUpdate.Instance.CheckForUpdatesCompleted -= ApplicationUpdateHelper_CheckForUpdatesCompleted;
+        ApplicationUpdate.Instance.CheckForUpdatesStarted -= ApplicationUpdateHelper_CheckForUpdatesStarted;
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+        if (Parameter != null)
         {
-            NewestInstalled,
-            NewVersionAvailable,
-            Work,
-            Error
-        }
-
-        private ILocalizer localizer = Localizer.Get();
-
-        private ObservableCollection<AcknowledgmentsModel> AcknowledgmentsList = new ObservableCollection<AcknowledgmentsModel>()
-        {
-            new () { Name = "MMaxX_ON" },
-            new () { Name = "StafiLynx" },
-            new () { Name = "Aster" },
-            new () { Name = "Niko" },
-            new () { Name = "o2o" },
-            new () { Name = "Factiosi" },
-            new () { Name = "Lumenpearson" },
-            new () { Name = "Leaftail1880" },
-            new () { Name = "Nek0t" },
-            new () { Name = "🔭" },
-        };
-
-        private ObservableCollection<AcknowledgmentsModel> RequrementsList = new ObservableCollection<AcknowledgmentsModel>()
-        {
-            new () { Name = "TextControlBox-WinUI by FrozenAssassine" },
-            new () { Name = "WinUI3Localizer by Andrew KeepCoding" },
-            new () { Name = "WinUIEx by Morten Nielsen" },
-            new () { Name = "TaskScheduler by David Hall" },
-            new () { Name = "Newtonsoft.Json by James Newton-King" },
-            new () { Name = "CommunityToolkit.Labs" },
-            new () { Name = "CommunityToolkit.WinUI" },
-            new () { Name = "ini-parser by Ricardo Amores Hernández" },
-            new () { Name = "Microsoft.Data.Sqlite" },
-        };
-        public AboutPage()
-        {
-            InitializeComponent();
-
-            SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
-            SetBadgeStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? BadgeStatus.NewVersionAvailable : BadgeStatus.NewestInstalled);
-            SetCurrentVersion(ApplicationInfo.Version);
-
-            if (ApplicationUpdate.Instance.ErrorHappened)
+            if (bool.TryParse(Parameter.Get("isUpdateRequested"), out var isUpdateRequested))
             {
-                SetServerVersion(ApplicationUpdate.Instance.ErrorInfo);
-                SetBadgeStatus(BadgeStatus.Error);
-            }
-            else
-            {
-                SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
-            }
-
-            ConnectEvents();
-            Loaded += (_, _) => ConnectEvents();
-            Unloaded += (_, _) => DisconnectEvents();
-
-            RepoRun.Text = UrlOpenHelper.MainRepoUrl;
-
-            AcknowledgmentsListView.ItemsSource = AcknowledgmentsList;
-            RequirementsListView.ItemsSource = RequrementsList;
-        }
-
-        // The services are singletons: a page that is not shown must not keep receiving their events.
-        private bool eventsConnected;
-
-        private void ConnectEvents()
-        {
-            if (eventsConnected) return;
-            eventsConnected = true;
-            ApplicationUpdate.Instance.ErrorHappens += ApplicationUpdateHelper_ErrorHappens;
-            ApplicationUpdate.Instance.CheckForUpdatesCompleted += ApplicationUpdateHelper_CheckForUpdatesCompleted;
-            ApplicationUpdate.Instance.CheckForUpdatesStarted += ApplicationUpdateHelper_CheckForUpdatesStarted;
-        }
-
-        private void DisconnectEvents()
-        {
-            if (!eventsConnected) return;
-            eventsConnected = false;
-            ApplicationUpdate.Instance.ErrorHappens -= ApplicationUpdateHelper_ErrorHappens;
-            ApplicationUpdate.Instance.CheckForUpdatesCompleted -= ApplicationUpdateHelper_CheckForUpdatesCompleted;
-            ApplicationUpdate.Instance.CheckForUpdatesStarted -= ApplicationUpdateHelper_CheckForUpdatesStarted;
-        }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-
-            if (Parameter != null)
-            {
-                if( bool.TryParse(Parameter.Get("isUpdateRequested"), out var isUpdateRequested))
+                if (isUpdateRequested)
                 {
-                    if (isUpdateRequested)
-                    {
-                        UpdateButton_Click(null, null);
-                    }
+                    UpdateButton_Click(null, null);
                 }
             }
         }
+    }
 
-        private void ApplicationUpdateHelper_ErrorHappens()
+    private void ApplicationUpdateHelper_ErrorHappens()
+    {
+        _ = DispatcherQueue?.TryEnqueue(() =>
         {
-            _ = DispatcherQueue?.TryEnqueue(() =>
-            {
-                SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
-                SetBadgeStatus(BadgeStatus.Error);
-                SetServerVersion(ApplicationUpdate.Instance.ErrorInfo);
-            });
+            SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
+            SetBadgeStatus(BadgeStatus.Error);
+            SetServerVersion(ApplicationUpdate.Instance.ErrorInfo);
+        });
+    }
+
+    private void ApplicationUpdateHelper_CheckForUpdatesStarted()
+    {
+        _ = DispatcherQueue?.TryEnqueue(() =>
+        {
+            SetUpdateButtonStatus(UpdateButtonStatus.Work);
+            SetBadgeStatus(BadgeStatus.Work);
+        });
+    }
+    private void ApplicationUpdateHelper_CheckForUpdatesCompleted()
+    {
+        // Raised on the thread of the check, which may have no dispatcher queue.
+        _ = DispatcherQueue?.TryEnqueue(() =>
+        {
+            // After a failed check the error handler has already set the state.
+            if (ApplicationUpdate.Instance.ErrorHappened)
+                return;
+            SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
+            SetBadgeStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? BadgeStatus.NewVersionAvailable : BadgeStatus.NewestInstalled);
+            SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
+        });
+    }
+
+    private void SetUpdateButtonStatus(UpdateButtonStatus status)
+    {
+        UpdateButtonTextBlock.Opacity = 1;
+        UpdateProgressRing.Visibility = Visibility.Collapsed;
+
+        switch (status)
+        {
+            case UpdateButtonStatus.Ready:
+                UpdateButtonTextBlock.Text = _localizer.GetLocalizedString("CheckForUpdates");
+                break;
+            case UpdateButtonStatus.Work:
+                UpdateButtonTextBlock.Opacity = 0;
+                UpdateProgressRing.Visibility = Visibility.Visible;
+                break;
+            case UpdateButtonStatus.ActionInstallAsk:
+                UpdateButtonTextBlock.Text = _localizer.GetLocalizedString("InstallUpdates");
+                break;
+        }
+    }
+
+    private void SetBadgeStatus(BadgeStatus status)
+    {
+
+        switch (status)
+        {
+            case BadgeStatus.NewestInstalled:
+                UpdateBadgeGlyph.Glyph = "\uE73E";
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("NewestVersionInstalled").ToUpper();
+                UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
+                break;
+            case BadgeStatus.NewVersionAvailable:
+                UpdateBadgeGlyph.Glyph = "\uE752";
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("NewVersionAvailable").ToUpper();
+                UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#FFEB3B");
+                break;
+            case BadgeStatus.Work:
+                UpdateBadgeGlyph.Glyph = "\uE895";
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("CheckingForUpdates").ToUpper();
+                UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
+                break;
+            case BadgeStatus.Error:
+                UpdateBadgeGlyph.Glyph = "\uE783";
+                UpdateBadgeTextBlock.Text = _localizer.GetLocalizedString("ErrorOccurred").ToUpper();
+                UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#F44336");
+                break;
+        }
+    }
+
+    private void SetCurrentVersion(string version)
+    {
+        CurrentVersionTextBlock.Text = string.Format(_localizer.GetLocalizedString("CurrentVersion"), version) + (State.IsApplicationBuildAsMsi ? " MSI-BUILD" : " PORTABLE-BUILD");
+    }
+    private void SetServerVersion(string version)
+    {
+        if (string.IsNullOrEmpty(version))
+        {
+            ServerVersionTextBlock.Visibility = Visibility.Collapsed;
+        }
+        else if (version.StartsWith("ERR_"))
+        {
+            ServerVersionTextBlock.Visibility = Visibility.Visible;
+            ServerVersionTextBlock.Text = _localizer.GetLocalizedString("ErrorOccurred") + " " + version;
+        }
+        else
+        {
+            ServerVersionTextBlock.Visibility = Visibility.Visible;
+            ServerVersionTextBlock.Text = string.Format(_localizer.GetLocalizedString("ServerVersion"), version);
         }
 
-        private void ApplicationUpdateHelper_CheckForUpdatesStarted()
+
+    }
+
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ApplicationUpdate.Instance.IsUpdateAvailable)
         {
-            _ = DispatcherQueue?.TryEnqueue(() =>
-            {
-                SetUpdateButtonStatus(UpdateButtonStatus.Work);
-                SetBadgeStatus(BadgeStatus.Work);
-            });
+            SetUpdateButtonStatus(UpdateButtonStatus.Work);
+            SetBadgeStatus(BadgeStatus.Work);
+            StoreHelper.Instance.AddItemToQueue(SharedConstants.ApplicationStoreId, ApplicationUpdate.Instance.ServerVersion);
         }
-        private void ApplicationUpdateHelper_CheckForUpdatesCompleted()
+        else
         {
-            // Raised on the thread of the check, which may have no dispatcher queue.
-            _ = DispatcherQueue?.TryEnqueue(() =>
-            {
-                // After a failed check the error handler has already set the state.
-                if (ApplicationUpdate.Instance.ErrorHappened)
-                    return;
-                SetUpdateButtonStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? UpdateButtonStatus.ActionInstallAsk : UpdateButtonStatus.Ready);
-                SetBadgeStatus(ApplicationUpdate.Instance.IsUpdateAvailable ? BadgeStatus.NewVersionAvailable : BadgeStatus.NewestInstalled);
-                SetServerVersion(ApplicationUpdate.Instance.ServerVersion);
-            });
+            SetUpdateButtonStatus(UpdateButtonStatus.Work);
+            SetBadgeStatus(BadgeStatus.Work);
+            bool result = await ApplicationUpdate.Instance.CheckForUpdates();
         }
+    }
 
-        private void SetUpdateButtonStatus(UpdateButtonStatus status)
-        {
-            UpdateButtonTextBlock.Opacity = 1;
-            UpdateProgressRing.Visibility = Visibility.Collapsed;
+    private void LicenseButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = UrlOpenHelper.LaunchLicenseUrl();
+    }
 
-            switch (status)
-            {
-                case UpdateButtonStatus.Ready:
-                    UpdateButtonTextBlock.Text = localizer.GetLocalizedString("CheckForUpdates");
-                    break;
-                case UpdateButtonStatus.Work:
-                    UpdateButtonTextBlock.Opacity = 0;
-                    UpdateProgressRing.Visibility = Visibility.Visible;
-                    break;
-                case UpdateButtonStatus.ActionInstallAsk:
-                    UpdateButtonTextBlock.Text = localizer.GetLocalizedString("InstallUpdates");
-                    break;
-            }
-        }
+    private void RepoHyperlink_Click(Microsoft.UI.Xaml.Documents.Hyperlink sender, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs args)
+    {
+        _ = UrlOpenHelper.LaunchMainRepoUrl();
+    }
 
-        private void SetBadgeStatus(BadgeStatus status)
-        {
+    private void ReportABugButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = UrlOpenHelper.LaunchReportUrl();
+    }
 
-            switch (status)
-            {
-                case BadgeStatus.NewestInstalled:
-                    UpdateBadgeGlyph.Glyph = "\uE73E";
-                    UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("NewestVersionInstalled").ToUpper();
-                    UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
-                    break;
-                case BadgeStatus.NewVersionAvailable:
-                    UpdateBadgeGlyph.Glyph = "\uE752";
-                    UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("NewVersionAvailable").ToUpper();
-                    UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#FFEB3B");
-                    break;
-                case BadgeStatus.Work:
-                    UpdateBadgeGlyph.Glyph = "\uE895";
-                    UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("CheckingForUpdates").ToUpper();
-                    UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#4CA0E0");
-                    break;
-                case BadgeStatus.Error:
-                    UpdateBadgeGlyph.Glyph = "\uE783";
-                    UpdateBadgeTextBlock.Text = localizer.GetLocalizedString("ErrorOccurred").ToUpper();
-                    UpdateBadgeBorder.Background = UIHelper.HexToSolidColorBrushConverter("#F44336");
-                    break;
-            }
-        }
+    private void DonateButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = UrlOpenHelper.LaunchDonateUrl();
+    }
 
-        private void SetCurrentVersion(string version)
-        {
-            CurrentVersionTextBlock.Text = string.Format(localizer.GetLocalizedString("CurrentVersion"), version) + (State.IsApplicationBuildAsMsi ? " MSI-BUILD" : " PORTABLE-BUILD");
-        }
-        private void SetServerVersion(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-            {
-                ServerVersionTextBlock.Visibility = Visibility.Collapsed;
-            }
-            else if (version.StartsWith("ERR_"))
-            {
-                ServerVersionTextBlock.Visibility = Visibility.Visible;
-                ServerVersionTextBlock.Text = localizer.GetLocalizedString("ErrorOccurred") + " " + version;
-            }
-            else
-            {
-                ServerVersionTextBlock.Visibility = Visibility.Visible;
-                ServerVersionTextBlock.Text = string.Format(localizer.GetLocalizedString("ServerVersion"), version);
-            }
-
-
-        }
-
-        private async void UpdateButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ApplicationUpdate.Instance.IsUpdateAvailable)
-            {
-                SetUpdateButtonStatus(UpdateButtonStatus.Work);
-                SetBadgeStatus(BadgeStatus.Work);
-                StoreHelper.Instance.AddItemToQueue(SharedConstants.ApplicationStoreId, ApplicationUpdate.Instance.ServerVersion);
-            }
-            else
-            {
-                SetUpdateButtonStatus(UpdateButtonStatus.Work);
-                SetBadgeStatus(BadgeStatus.Work);
-                bool result = await ApplicationUpdate.Instance.CheckForUpdates();
-            }
-        }
-
-        private void LicenseButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = UrlOpenHelper.LaunchLicenseUrl();
-        }
-
-        private void RepoHyperlink_Click(Microsoft.UI.Xaml.Documents.Hyperlink sender, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs args)
-        {
-            _ = UrlOpenHelper.LaunchMainRepoUrl();
-        }
-
-        private void ReportABugButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = UrlOpenHelper.LaunchReportUrl();
-        }
-
-        private void DonateButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = UrlOpenHelper.LaunchDonateUrl();
-        }
-
-        private void DeveloperChannelButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = UrlOpenHelper.LaunchTelegramUrl();
-        }
+    private void DeveloperChannelButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = UrlOpenHelper.LaunchTelegramUrl();
     }
 }

@@ -1,139 +1,138 @@
-﻿using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using ABI.Windows.UI;
+using CDPIUI.Controls.Universal;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
-using ABI.Windows.UI;
-using System.Drawing;
-using System.Windows.Media;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Documents;
 using WinUI3Localizer;
-using CDPIUI.Controls.Universal;
 
-namespace CDPIUI.Controls.Dialogs.Universal
+namespace CDPIUI.Controls.Dialogs.Universal;
+
+internal class ErrorContentDialog
 {
-    internal class ErrorContentDialog
+    private string GetLocalizedString(string locId, string defaultString)
     {
-        private string GetLocalizedString(string locId, string defaultString)
+        ILocalizer localizer = Localizer.Get();
+        string result = localizer.GetLocalizedString(locId);
+        return string.IsNullOrEmpty(result) ? defaultString : result;
+    }
+
+    private StackPanel _errorDetailsPanel;
+    private HyperlinkButton _moreButton;
+
+    public async Task ShowErrorDialogAsync(string content, string errorDetails, XamlRoot xamlRoot)
+    {
+        var dialog = new ContentDialog()
         {
-            ILocalizer localizer = Localizer.Get();
-            string result = localizer.GetLocalizedString(locId);
-            return string.IsNullOrEmpty(result) ? defaultString : result;
-        }
+            Title = GetLocalizedString("UnexpectedError", "Unexpected Error"),
+            XamlRoot = xamlRoot,
+            PrimaryButtonText = GetLocalizedString("OkButtonText", "OK"),
+            DefaultButton = ContentDialogButton.Primary
+        };
+        var scrollView = new ScrollView();
 
-        private StackPanel ErrorDetailsPanel;
-        private HyperlinkButton MoreButton;
-
-        public async Task ShowErrorDialogAsync(string content, string errorDetails, XamlRoot xamlRoot)
+        var stackPanel = new StackPanel();
+        scrollView.Content = stackPanel;
+        var contentTextBlock = new TextBlock()
         {
-            var dialog = new ContentDialog()
-            {
-                Title = GetLocalizedString("UnexpectedError", "Unexpected Error"),
-                XamlRoot = xamlRoot,
-                PrimaryButtonText = GetLocalizedString("OkButtonText", "OK"),
-                DefaultButton = ContentDialogButton.Primary
-            };
-            var scrollView = new ScrollView();
+            Text = content,
+            TextWrapping = TextWrapping.Wrap
+        };
 
-            var stackPanel = new StackPanel();
-            scrollView.Content = stackPanel;
-            var contentTextBlock = new TextBlock()
-            {
-                Text = content,
-                TextWrapping = TextWrapping.Wrap
-            };
+        stackPanel.Children.Add(contentTextBlock);
 
-            stackPanel.Children.Add(contentTextBlock);
-
-            MoreButton = new HyperlinkButton()
-            {
-                Content = GetLocalizedString("ViewMore", "More"),
-                Margin = new Thickness(0, 10, 0, 0),
-                Padding= new Thickness(0)
-            };
-
-            stackPanel.Children.Add(MoreButton);
-
-            ErrorDetailsPanel = new StackPanel()
-            {
-                Visibility = Visibility.Collapsed,
-                Margin = new Thickness(0, 10, 0, 0),
-                Spacing = 10
-            };
-
-            Paragraph paragraph = new Paragraph();
-
-            var errorDetailsTextBlock = new RichTextBlock()
-            {
-                TextWrapping = TextWrapping.Wrap,
-                
-            };
-            Run run = new Run();
-
-            errorDetailsTextBlock.IsTextSelectionEnabled = true;
-            run.Text = errorDetails;
-
-            paragraph.Inlines.Add(run);
-            errorDetailsTextBlock.Blocks.Add(paragraph);
-
-            ErrorDetailsPanel.Children.Add(errorDetailsTextBlock);
-
-            var transparent = new Microsoft.UI.Xaml.Media.SolidColorBrush();
-            transparent.Opacity = 0;
-
-            FontIcon icon = new FontIcon();
-            icon.Glyph = "\uE8C8";
-            icon.Margin = new Thickness(0, 0, 5, 0);
-            icon.FontSize = 16;
-
-            TextBlock textBlock1 = new TextBlock();
-            textBlock1.Text = GetLocalizedString("CopyErrorText", "Copy error text");
-            textBlock1.Style = (Style)Application.Current.Resources["BodyTextBlockStyle"];
-
-            StackPanel stackPanel1 = new StackPanel();
-
-            stackPanel1.Orientation = Orientation.Horizontal;
-            stackPanel1.Children.Add(icon);
-            stackPanel1.Children.Add(textBlock1);
-
-
-
-            var copyButton = new CopyButton()
-            {
-                Content = stackPanel1,
-                CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage", "Copied to clipboard."),
-            };
-            
-            copyButton.Click += (sender, e) =>
-            {
-                var dataPackage = new DataPackage();
-                dataPackage.SetText(errorDetails);
-                Clipboard.SetContent(dataPackage);
-            };
-
-            ErrorDetailsPanel.Children.Add(copyButton);
-
-            stackPanel.Children.Add(ErrorDetailsPanel);
-
-            MoreButton.Click += ViewMoreHandler;
-
-            dialog.Content = scrollView;
-
-            await dialog.ShowQueuedAsync();
-        }
-
-        private void ViewMoreHandler(object sender, RoutedEventArgs e)
+        _moreButton = new HyperlinkButton()
         {
-            ErrorDetailsPanel.Visibility = ErrorDetailsPanel.Visibility == Visibility.Collapsed
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+            Content = GetLocalizedString("ViewMore", "More"),
+            Margin = new Thickness(0, 10, 0, 0),
+            Padding = new Thickness(0)
+        };
 
-            MoreButton.Content = ErrorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore", "More") : GetLocalizedString("ViewLess", "Less");
-        }
+        stackPanel.Children.Add(_moreButton);
+
+        _errorDetailsPanel = new StackPanel()
+        {
+            Visibility = Visibility.Collapsed,
+            Margin = new Thickness(0, 10, 0, 0),
+            Spacing = 10
+        };
+
+        Paragraph paragraph = new Paragraph();
+
+        var errorDetailsTextBlock = new RichTextBlock()
+        {
+            TextWrapping = TextWrapping.Wrap,
+
+        };
+        Run run = new Run();
+
+        errorDetailsTextBlock.IsTextSelectionEnabled = true;
+        run.Text = errorDetails;
+
+        paragraph.Inlines.Add(run);
+        errorDetailsTextBlock.Blocks.Add(paragraph);
+
+        _errorDetailsPanel.Children.Add(errorDetailsTextBlock);
+
+        var transparent = new Microsoft.UI.Xaml.Media.SolidColorBrush();
+        transparent.Opacity = 0;
+
+        FontIcon icon = new FontIcon();
+        icon.Glyph = "\uE8C8";
+        icon.Margin = new Thickness(0, 0, 5, 0);
+        icon.FontSize = 16;
+
+        TextBlock textBlock1 = new TextBlock();
+        textBlock1.Text = GetLocalizedString("CopyErrorText", "Copy error text");
+        textBlock1.Style = (Style)Application.Current.Resources["BodyTextBlockStyle"];
+
+        StackPanel stackPanel1 = new StackPanel();
+
+        stackPanel1.Orientation = Orientation.Horizontal;
+        stackPanel1.Children.Add(icon);
+        stackPanel1.Children.Add(textBlock1);
+
+
+
+        var copyButton = new CopyButton()
+        {
+            Content = stackPanel1,
+            CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage", "Copied to clipboard."),
+        };
+
+        copyButton.Click += (sender, e) =>
+        {
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(errorDetails);
+            Clipboard.SetContent(dataPackage);
+        };
+
+        _errorDetailsPanel.Children.Add(copyButton);
+
+        stackPanel.Children.Add(_errorDetailsPanel);
+
+        _moreButton.Click += ViewMoreHandler;
+
+        dialog.Content = scrollView;
+
+        await dialog.ShowQueuedAsync();
+    }
+
+    private void ViewMoreHandler(object sender, RoutedEventArgs e)
+    {
+        _errorDetailsPanel.Visibility = _errorDetailsPanel.Visibility == Visibility.Collapsed
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+        _moreButton.Content = _errorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore", "More") : GetLocalizedString("ViewLess", "Less");
     }
 }

@@ -1,4 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.Controls.CreateConfigHelper;
+using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.Universal;
 using CDPIUI.Core;
@@ -8,25 +20,11 @@ using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.System;
-
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
-using CDPIUI.Controls.Default;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Windows.UI.Popups;
 using WinRT.Interop;
 using WinUI3Localizer;
@@ -35,395 +33,399 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views.CreateConfigHelper
+namespace CDPIUI.Views.CreateConfigHelper;
+
+/// <summary>
+/// An empty page that can be used on its own or navigated to within a Frame.
+/// </summary>
+public sealed partial class EditConfigKitPage : TemplatePage
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class EditConfigKitPage : TemplatePage
+    private string KitId = string.Empty;
+    private readonly ObservableCollection<ViewConfigInKitModel> _configs = [];
+    private ConfigurationService _configHelper = null;
+
+    private readonly ILocalizer _localizer = Localizer.Get();
+
+    private readonly ObservableCollection<MenuItemViewModel> _folders = [];
+
+    public ICommand RemoveConfigCommand { get; }
+    public ICommand RenameConfigCommand { get; }
+    public ICommand EditConfigCommand { get; }
+    public ICommand OpenDirectoryCommand { get; }
+
+    public EditConfigKitPage()
     {
-        private string KitId = string.Empty;
-        private readonly ObservableCollection<ViewConfigInKitModel> Configs = [];
-        private ConfigurationService ConfigHelper = null;
+        InitializeComponent();
+        NavigationCacheMode = NavigationCacheMode.Required;
 
-        private readonly ILocalizer localizer = Localizer.Get();
+        ConfigsListView.ItemsSource = _configs;
 
-        private readonly ObservableCollection<MenuItemViewModel> Folders = [];
+        RemoveConfigCommand = new RelayCommand(p => RemoveConfig((Tuple<string>)p));
+        RenameConfigCommand = new RelayCommand(p => RenameConfig((Tuple<string, string>)p));
+        EditConfigCommand = new RelayCommand(p => EditConfig((Tuple<string>)p));
+        OpenDirectoryCommand = new RelayCommand(p => OpenConfigDirectory((Tuple<string, OpenFileDirectoryTypes>)p));
+    }
 
-        public ICommand RemoveConfigCommand { get; }
-        public ICommand RenameConfigCommand { get; }
-        public ICommand EditConfigCommand { get; }
-        public ICommand OpenDirectoryCommand { get; }
+    private void EditConfigKitPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        _ = LoadedActions(); // LoadedActions catches and logs its own errors.
+        Loaded -= EditConfigKitPage_Loaded;
+    }
 
-        public EditConfigKitPage()
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        if (e.SourcePageType != typeof(CreateNewConfigPage))
         {
-            InitializeComponent();
-            NavigationCacheMode = NavigationCacheMode.Required;
-
-            ConfigsListView.ItemsSource = Configs;
-
-            RemoveConfigCommand = new RelayCommand(p => RemoveConfig((Tuple<string>)p));
-            RenameConfigCommand = new RelayCommand(p => RenameConfig((Tuple<string, string>)p));
-            EditConfigCommand = new RelayCommand(p => EditConfig((Tuple<string>)p));
-            OpenDirectoryCommand = new RelayCommand(p => OpenConfigDirectory((Tuple<string, OpenFileDirectoryTypes>)p));
+            _configs.Clear();
+            KitId = string.Empty;
         }
+    }
 
-        private void EditConfigKitPage_Loaded(object sender, RoutedEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
+
+        if (window?.NavigateBackParameter is ConfigItem configItem)
         {
+            ReplaceConfig(configItem);
+        }
+        window?.ClearNavigateBackParameter();
+
+        if (IsLoaded)
             _ = LoadedActions(); // LoadedActions catches and logs its own errors.
-            Loaded -= EditConfigKitPage_Loaded;
-        }
+        else
+            Loaded += EditConfigKitPage_Loaded;
+    }
 
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
+    private async Task LoadedActions()
+    {
+        try
         {
-            if (e.SourcePageType != typeof(CreateNewConfigPage))
+            if (Parameter != null && Parameter.Get("kitId") != KitId)
             {
-                Configs.Clear();
-                KitId = string.Empty;
+                KitId = Parameter.Get("kitId");
+                await Task.Run(() => LoadConfigItems());
             }
         }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        catch (Exception exception)
         {
-            base.OnNavigatedTo(e);
-            var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
-
-            if (window?.NavigateBackParameter is ConfigItem configItem)
-            {
-                ReplaceConfig(configItem);
-            }
-            window?.ClearNavigateBackParameter();
-
-            if (IsLoaded) _ = LoadedActions(); // LoadedActions catches and logs its own errors.
-            else Loaded += EditConfigKitPage_Loaded;
+            Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
         }
+    }
 
-        private async Task LoadedActions()
-        {
-            try
-            {
-                if (Parameter != null && Parameter.Get("kitId") != KitId)
-                {
-                    KitId = Parameter.Get("kitId");
-                    await Task.Run(() => LoadConfigItems());
-                }
-            }
-            catch (Exception exception)
-            {
-                Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
-            }
-        }
+    private async Task LoadConfigItems()
+    {
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("LoadingConfigs"));
 
-        private async Task LoadConfigItems()
+        DispatcherQueue.TryEnqueue(() =>
         {
-            ToggleLoadingMode(true, localizer.GetLocalizedString("LoadingConfigs"));
+            _folders.Clear();
+            _configs.Clear();
+        });
+        _configHelper = new(target: "$ANY");
+        _configHelper.Init(KitId);
+
+        await Task.Delay(100);
+
+        List<ConfigItem> items = _configHelper.GetConfigItems();
+
+        foreach (ConfigItem item in items)
+        {
+            // target[0] threw on the UI thread for a config without a target.
+            if (item.MarkAsRemoved || item.target == null || item.target.Count == 0)
+                continue;
+            List<string> usedSiteLists =
+                [.. (await _configHelper.GetSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
+            List<string> excludedSiteLists =
+                [.. (await _configHelper.GetExcludedSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                Folders.Clear();
-                Configs.Clear();
-            });
-            ConfigHelper = new(target:"$ANY");
-            ConfigHelper.Init(KitId);
-
-            await Task.Delay(100);
-
-            List<ConfigItem> items = ConfigHelper.GetConfigItems();
-
-            foreach (ConfigItem item in items)
-            {
-                // target[0] threw on the UI thread for a config without a target.
-                if (item.MarkAsRemoved || item.target == null || item.target.Count == 0) continue;
-                List<string> usedSiteLists = 
-                    [.. (await ConfigHelper.GetSiteListItemsAsync(item.file_name, item.packId, ignoreNull:true)).Select(x => Path.GetFileName(x.FilePath))];
-                List<string> excludedSiteLists = 
-                    [.. (await ConfigHelper.GetExcludedSiteListItemsAsync(item.file_name, item.packId, ignoreNull: true)).Select(x => Path.GetFileName(x.FilePath))];
-
-                DispatcherQueue.TryEnqueue(() =>
+                _configs.Add(new()
                 {
-                    Configs.Add(new()
-                    {
-                        Guid = Guid.NewGuid().ToString(),
-                        PackId = item.packId,
-                        FileName = item.file_name,
+                    Guid = Guid.NewGuid().ToString(),
+                    PackId = item.packId,
+                    FileName = item.file_name,
 
-                        TargetComponentId = item.target[0],
-                        DisplayName = item.name,
-                        UsedSiteLists = usedSiteLists,
-                        ExcludedSiteLists = excludedSiteLists,
-                        LastEditTime = ConfigurationService.GetLastEditTimeFromConfigFile(item.file_name, item.packId),
-                    });
+                    TargetComponentId = item.target[0],
+                    DisplayName = item.name,
+                    UsedSiteLists = usedSiteLists,
+                    ExcludedSiteLists = excludedSiteLists,
+                    LastEditTime = ConfigurationService.GetLastEditTimeFromConfigFile(item.file_name, item.packId),
                 });
-            }
-            ToggleLoadingMode(false);
-            await Task.CompletedTask;
-        }
-
-        private void ToggleLoadingMode(bool loadingMode, string text = "")
-        {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                SaveAsButton.IsEnabled = !loadingMode;
-                SaveButton.IsEnabled = !loadingMode;
             });
-            var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
-            window?.SetStatus(loadingMode, text);
         }
+        ToggleLoadingMode(false);
+        await Task.CompletedTask;
+    }
 
-        private void RemoveConfig(Tuple<string> parameter)
+    private void ToggleLoadingMode(bool loadingMode, string text = "")
+    {
+        DispatcherQueue.TryEnqueue(() =>
         {
-            var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+            SaveAsButton.IsEnabled = !loadingMode;
+            SaveButton.IsEnabled = !loadingMode;
+        });
+        var window = ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>();
+        window?.SetStatus(loadingMode, text);
+    }
 
-            if (item != null)
+    private void RemoveConfig(Tuple<string> parameter)
+    {
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+
+        if (item != null)
+        {
+            _configs.Remove(item);
+            _configHelper.RemoveConfig(item.FileName, item.PackId, false);
+        }
+    }
+
+    private void RenameConfig(Tuple<string, string> parameter)
+    {
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+
+        if (item != null)
+        {
+            item.DisplayName = parameter.Item2;
+            ConfigItem configItem = _configHelper.GetConfigItem(item.FileName, item.PackId);
+            if (configItem != null && !configItem.MarkAsRemoved)
             {
-                Configs.Remove(item);
-                ConfigHelper.RemoveConfig(item.FileName, item.PackId, false);
+                configItem.name = parameter.Item2;
             }
+            _configHelper.SetConfigItem(configItem);
         }
+    }
 
-        private void RenameConfig(Tuple<string, string> parameter)
+    private void EditConfig(Tuple<string> parameter)
+    {
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+
+        if (item != null)
         {
-            var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
-
-            if (item != null)
+            ConfigItem configItem = _configHelper.GetConfigItem(item.FileName, item.PackId);
+            var nvc = new NameValueCollection
             {
-                item.DisplayName = parameter.Item2;
-                ConfigItem configItem = ConfigHelper.GetConfigItem(item.FileName, item.PackId);
-                if (configItem != null && !configItem.MarkAsRemoved)
+                { "type", "CFGRETURNEDITED" },
+                { "configItem", CDPIUI.Core.JSON.JSONConvertor.SerializeObject(configItem) }
+            };
+            Frame.Navigate(typeof(CreateNewConfigPage), nvc, new DrillInNavigationTransitionInfo());
+        }
+    }
+    private void OpenConfigDirectory(Tuple<string, OpenFileDirectoryTypes> parameter)
+    {
+        var item = _configs.FirstOrDefault(x => x.Guid == parameter.Item1);
+
+        if (item != null)
+        {
+            ShellHelper.LookupDirectory(ConfigurationService.GetItemFolderFromPackId(KitId));
+        }
+    }
+
+    private void ReplaceConfig(ConfigItem newItem)
+    {
+        var item = _configs.FirstOrDefault(x => x.FileName == newItem.file_name && x.PackId == newItem.packId);
+
+        if (item != null)
+        {
+            item.DisplayName = string.IsNullOrEmpty(newItem.name) ? newItem.not_converted_name : newItem.name;
+            item.LastEditTime = DateTime.Now.ToString();
+            _configHelper.SetConfigItem(newItem);
+        }
+    }
+
+
+    private async Task SaveKit()
+    {
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("SavingConfigKit"));
+        List<ConfigItem> items = [];
+        items.AddRange(_configHelper.GetConfigItems());
+        for (int i = 0; i < items.Count; i++)
+        {
+            ConfigItem configItem = items[i];
+            var item = _configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
+            if (item == null)
+            {
+                string errorCode =
+                    _configHelper.RemoveConfig(configItem.file_name, configItem.packId, true);
+                if (!string.IsNullOrEmpty(errorCode))
                 {
-                    configItem.name = parameter.Item2;
+                    // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
+                    _ = ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
+                    SaveButton.IsEnabled = true;
+                    SaveAsButton.IsEnabled = true;
+                    return;
                 }
-                ConfigHelper.SetConfigItem(configItem);
             }
-        }
-
-        private void EditConfig(Tuple<string> parameter)
-        {
-            var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
-
-            if (item != null)
+            else
             {
-                ConfigItem configItem = ConfigHelper.GetConfigItem(item.FileName, item.PackId);
-                var nvc = new NameValueCollection
+                string errorCode = await ConfigurationService.SaveConfigItem(configItem.file_name, configItem.packId, configItem);
+                if (!string.IsNullOrEmpty(errorCode))
                 {
-                    { "type", "CFGRETURNEDITED" },
-                    { "configItem", CDPIUI.Core.JSON.JSONConvertor.SerializeObject(configItem) }
-                };
-                Frame.Navigate(typeof(CreateNewConfigPage), nvc, new DrillInNavigationTransitionInfo());
-            }
-        }
-        private void OpenConfigDirectory(Tuple<string, OpenFileDirectoryTypes> parameter)
-        {
-            var item = Configs.FirstOrDefault(x => x.Guid == parameter.Item1);
-
-            if (item != null)
-            {
-                ShellHelper.LookupDirectory(ConfigurationService.GetItemFolderFromPackId(KitId));
-            }
-        }
-
-        private void ReplaceConfig(ConfigItem newItem)
-        {
-            var item = Configs.FirstOrDefault(x => x.FileName == newItem.file_name && x.PackId == newItem.packId);
-
-            if (item != null)
-            {
-                item.DisplayName = string.IsNullOrEmpty(newItem.name) ? newItem.not_converted_name : newItem.name;
-                item.LastEditTime = DateTime.Now.ToString();
-                ConfigHelper.SetConfigItem(newItem);
-            }
-        }
-
-
-        private async Task SaveKit()
-        {
-            ToggleLoadingMode(true, localizer.GetLocalizedString("SavingConfigKit"));
-            List<ConfigItem> items = [];
-            items.AddRange(ConfigHelper.GetConfigItems());
-            for (int i = 0; i < items.Count; i++) 
-            {
-                ConfigItem configItem = items[i];
-                var item = Configs.FirstOrDefault(x => x.PackId == configItem.packId && x.FileName == configItem.file_name);
-                if (item == null) 
-                {
-                    string errorCode =
-                        ConfigHelper.RemoveConfig(configItem.file_name, configItem.packId, true);
-                    if (!string.IsNullOrEmpty(errorCode))
-                    {
-                        // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
-                        _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
-                        SaveButton.IsEnabled = true;
-                        SaveAsButton.IsEnabled = true;
-                        return;
-                    }
-                }
-                else
-                {
-                    string errorCode = await ConfigurationService.SaveConfigItem(configItem.file_name, configItem.packId, configItem);
-                    if (!string.IsNullOrEmpty(errorCode)) 
-                    {
-                        // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
-                        _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("SaveConfigException"), errorCode), localizer.GetLocalizedString("SomethingWentWrong"));
-                        SaveButton.IsEnabled = true;
-                        SaveAsButton.IsEnabled = true;
-                        return;
-                    }
+                    // Not awaited: the buttons are enabled while the message is shown. ShowErrorDialog logs its own errors.
+                    _ = ShowErrorDialog(string.Format(_localizer.GetLocalizedString("SaveConfigException"), errorCode), _localizer.GetLocalizedString("SomethingWentWrong"));
+                    SaveButton.IsEnabled = true;
+                    SaveAsButton.IsEnabled = true;
+                    return;
                 }
             }
+        }
 
+        ToggleLoadingMode(false);
+
+        ComponentItemsLoaderHelper.Instance.Init(forse: true);
+
+        if (Frame.CanGoBack)
+            Frame.GoBack();
+        else
+            Frame.Navigate(typeof(CreateConfigHelper.MainPage), new NameValueCollection(), new DrillInNavigationTransitionInfo());
+    }
+
+    private async Task ShowErrorDialog(string message, string title)
+    {
+        try
+        {
+            var dlg = new MessageDialog(message, title);
+            InitializeWithWindow.Initialize(
+                dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
+                );
+            await dlg.ShowAsync();
+
+
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
+        }
+    }
+
+    private async void SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveConfirmationFlyout.Hide();
+        try
+        {
+            await SaveKit();
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog(nameof(EditConfigKitPage), $"Cannot save the config kit: {ex}");
+        }
+    }
+
+    private async void SaveAsButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleLoadingMode(true, _localizer.GetLocalizedString("SavingConfigKit"));
+
+        SaveConfigKitAsContentDialog dialog = new()
+        {
+            XamlRoot = this.XamlRoot,
+            DisplayName = DatabaseHelper.Instance.GetItemById(KitId)?.ShortName + $" ({_localizer.GetLocalizedString("Edited")})" ?? string.Empty,
+        };
+
+        await dialog.ShowQueuedAsync();
+
+        var result = dialog.Result;
+
+        if (result.Mode == SaveConfigKitAsModes.None)
+        {
             ToggleLoadingMode(false);
-
-            ComponentItemsLoaderHelper.Instance.Init(forse: true);
-
-            if (Frame.CanGoBack) Frame.GoBack();
-            else Frame.Navigate(typeof(CreateConfigHelper.MainPage), new NameValueCollection(), new DrillInNavigationTransitionInfo());
+            return;
         }
 
-        private async Task ShowErrorDialog(string message, string title)
+        if (result.Mode == SaveConfigKitAsModes.SaveForMe)
         {
-            try
-            {
-                var dlg = new MessageDialog(message, title);
-                InitializeWithWindow.Initialize(
-                    dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>())
-                    );
-                await dlg.ShowAsync();
+            string newPackId = $"{Guid.NewGuid()}_FM";
+            string directory = ConfigurationService.GetItemFolderFromPackId(newPackId);
+            string lstFile = directory;
 
-            
-            }
-            catch (Exception exception)
+            ConfigPackMakeHelper.ConfigPackInitModel templateModel = new()
             {
-                Logger.Instance.CreateWarningLog(nameof(EditConfigKitPage), exception.ToString());
-            }
-        }
-
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveConfirmationFlyout.Hide();
-            try
-            {
-                await SaveKit();
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.CreateErrorLog(nameof(EditConfigKitPage), $"Cannot save the config kit: {ex}");
-            }
-        }
-
-        private async void SaveAsButton_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleLoadingMode(true, localizer.GetLocalizedString("SavingConfigKit"));
-
-            SaveConfigKitAsContentDialog dialog = new()
-            {
-                XamlRoot = this.XamlRoot,
-                DisplayName = DatabaseHelper.Instance.GetItemById(KitId)?.ShortName + $" ({localizer.GetLocalizedString("Edited")})" ?? string.Empty,
+                StoreId = newPackId,
+                ShortName = result.DisplayName,
+                Name = result.DisplayName,
+                Developer = SettingsManager.Instance.GetValueOrDefault("CONFIGKIT", "lastUsedDevName", defaultValue: Environment.UserName),
             };
 
-            await dialog.ShowQueuedAsync();
+            var operationResult = await Task.Run(() =>
+                ConfigPackMakeHelper.CreateConfigPack(templateModel, _configHelper.GetConfigItems(), directory, autoImport: true));
 
-            var result = dialog.Result;
-
-            if (result.Mode == SaveConfigKitAsModes.None)
+            if (operationResult?.Success != true)
             {
-                ToggleLoadingMode(false);
-                return;
+                ErrorContentDialog errorDialog = new() { };
+                await errorDialog.ShowErrorDialogAsync(
+                    content: string.Format(_localizer.GetLocalizedString("FileSaveErrorMessage"), directory, operationResult?.Error.ErrorCode),
+                    errorDetails: operationResult?.Error.FriendlyDescription,
+                    xamlRoot: this.Content.XamlRoot);
             }
-
-            if (result.Mode == SaveConfigKitAsModes.SaveForMe)
+        }
+        else
+        {
+            var _dialog = new Microsoft.Win32.SaveFileDialog
             {
-                string newPackId = $"{Guid.NewGuid()}_FM";
-                string directory = ConfigurationService.GetItemFolderFromPackId(newPackId);
-                string lstFile = directory;
+                OverwritePrompt = true,
+                FileName = $"{result.DisplayName}.cdpiconfigpack",
+                DefaultExt = ".cdpiconfigpack",
+                Filter = $"{_localizer.GetLocalizedString("ConfigPack")}|*.cdpiconfigpack"
+            };
+            var saveDialogResult = _dialog.ShowDialog();
+            if (saveDialogResult.HasValue && saveDialogResult.Value)
+            {
+                string filename = _dialog.FileName;
 
                 ConfigPackMakeHelper.ConfigPackInitModel templateModel = new()
                 {
-                    StoreId = newPackId,
+                    StoreId = result.Id,
                     ShortName = result.DisplayName,
                     Name = result.DisplayName,
-                    Developer = SettingsManager.Instance.GetValueOrDefault("CONFIGKIT", "lastUsedDevName", defaultValue: Environment.UserName),
+                    Version = result.Version,
+                    Developer = result.Developer,
+                    Color = result.HexAccentColor,
+                    Icon = result.ImageSourceUri == new Uri("ms-appx:///Assets/Store/empty.png") ? $"$LOADSTATIC(Store/empty.png)" : result.ImageSourceUri.LocalPath
                 };
 
                 var operationResult = await Task.Run(() =>
-                    ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), directory, autoImport:true));
+                    ConfigPackMakeHelper.CreateConfigPack(templateModel, _configHelper.GetConfigItems(), filename));
 
                 if (operationResult?.Success != true)
                 {
                     ErrorContentDialog errorDialog = new() { };
                     await errorDialog.ShowErrorDialogAsync(
-                        content: string.Format(localizer.GetLocalizedString("FileSaveErrorMessage"), directory, operationResult?.Error.ErrorCode),
+                        content: string.Format(_localizer.GetLocalizedString("FileSaveErrorMessage"), _dialog.FileName, operationResult?.Error.ErrorCode),
                         errorDetails: operationResult?.Error.FriendlyDescription,
                         xamlRoot: this.Content.XamlRoot);
                 }
+
             }
-            else
-            {
-                var _dialog = new Microsoft.Win32.SaveFileDialog
-                {
-                    OverwritePrompt = true,
-                    FileName = $"{result.DisplayName}.cdpiconfigpack",
-                    DefaultExt = ".cdpiconfigpack",
-                    Filter = $"{localizer.GetLocalizedString("ConfigPack")}|*.cdpiconfigpack"
-                };
-                var saveDialogResult = _dialog.ShowDialog();
-                if (saveDialogResult.HasValue && saveDialogResult.Value)
-                {
-                    string filename = _dialog.FileName;
-
-                    ConfigPackMakeHelper.ConfigPackInitModel templateModel = new()
-                    {
-                        StoreId = result.Id,
-                        ShortName = result.DisplayName,
-                        Name = result.DisplayName,
-                        Version = result.Version,
-                        Developer = result.Developer,
-                        Color = result.HexAccentColor,
-                        Icon = result.ImageSourceUri == new Uri("ms-appx:///Assets/Store/empty.png") ? $"$LOADSTATIC(Store/empty.png)" : result.ImageSourceUri.LocalPath
-                    };
-
-                    var operationResult = await Task.Run(() =>
-                        ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), filename));
-
-                    if (operationResult?.Success != true)
-                    {
-                        ErrorContentDialog errorDialog = new() { };
-                        await errorDialog.ShowErrorDialogAsync(
-                            content: string.Format(localizer.GetLocalizedString("FileSaveErrorMessage"), _dialog.FileName, operationResult?.Error.ErrorCode),
-                            errorDetails: operationResult?.Error.FriendlyDescription,
-                            xamlRoot: this.Content.XamlRoot);
-                    }
-
-                }
-            }
-
-            await Task.Delay(200);
-
-            ToggleLoadingMode(false);
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (Frame.CanGoBack)
-                CreateConfigHelperWindow.RemoveAndGoBackTo(typeof(MainPage), Frame);
-            else
-                ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>()?.Close();
-        }
+        await Task.Delay(200);
 
-        private void CloseFlyoutButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveConfirmationFlyout.Hide();
-        }
+        ToggleLoadingMode(false);
+    }
 
-        private void SaveConfirmationFlyout_Opened(object sender, object e)
-        {
-            SaveAsButton.IsEnabled = false;
-            SaveButton.IsEnabled = false;
-        }
+    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Frame.CanGoBack)
+            CreateConfigHelperWindow.RemoveAndGoBackTo(typeof(MainPage), Frame);
+        else
+            ((App)Application.Current).GetCurrentWindowFromType<CreateConfigHelperWindow>()?.Close();
+    }
 
-        private void SaveConfirmationFlyout_Closed(object sender, object e)
-        {
-            SaveAsButton.IsEnabled = true;
-            SaveButton.IsEnabled = true;
-        }
+    private void CloseFlyoutButton_Click(object sender, RoutedEventArgs e)
+    {
+        SaveConfirmationFlyout.Hide();
+    }
+
+    private void SaveConfirmationFlyout_Opened(object sender, object e)
+    {
+        SaveAsButton.IsEnabled = false;
+        SaveButton.IsEnabled = false;
+    }
+
+    private void SaveConfirmationFlyout_Closed(object sender, object e)
+    {
+        SaveAsButton.IsEnabled = true;
+        SaveButton.IsEnabled = true;
     }
 }

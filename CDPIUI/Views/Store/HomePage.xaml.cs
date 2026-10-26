@@ -1,3 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
 using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Store;
 using CDPIUI.Core;
@@ -17,21 +32,6 @@ using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -51,78 +51,21 @@ namespace CDPIUI;
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.
 /// </summary>
-public class UICategoryData
-{
-    public string StoreId { get; set; }
-    public string Type { get; set; }
-    public string Name { get; set; }
-
-    public ObservableCollection<UIElement> Items { get; set; }
-}
 public sealed partial class HomePage : TemplatePage
 {
-    private double _largeElementWidth;
-    public double LargeElementWidth
-    {
-        get => _largeElementWidth;
-        set
-        {
-            if (_largeElementWidth != value)
-            {
-                _largeElementWidth = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    private double _smallElementWidth;
-    public double SmallElementWidth
-    {
-        get => _smallElementWidth;
-        set
-        {
-            if (_smallElementWidth != value)
-            {
-                _smallElementWidth = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    private double _currentPageWidth;
-    public double CurrentPageWidth
-    {
-        get => _currentPageWidth;
-        set
-        {
-            if (_currentPageWidth != value)
-            {
-                _currentPageWidth = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged([CallerMemberName] string name = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-    private int availableColumns = 6;
-
-
     private readonly List<(ItemsControl Panel, UICategoryData Data)> _panels
         = new List<(ItemsControl, UICategoryData)>();
 
-    private double LargeMinW, LargePrefW;
+    private double _largeMinW, _largePrefW;
 
     private const int DefaultLargeColumns = 8;
     private const double MaxTotalWidth = 1860;
 
     private IEnumerable<UICategoryData> _lastCategories;
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
-    // Database update started event will be removed. 
+    // Database update started event will be removed.
 
     public HomePage()
     {
@@ -181,24 +124,10 @@ public sealed partial class HomePage : TemplatePage
     }
 
 
-    private bool _isFirstLayout = true;
-
-    private void HomePage_LayoutUpdated(object sender, object e)
-    {
-        if (_isFirstLayout)
-        {
-            _isFirstLayout = !SetupElementsWidth();
-        } 
-        else
-        {
-            this.LayoutUpdated -= HomePage_LayoutUpdated;
-        }
-    }
-
     private void HomePage_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        
-        
+
+
     }
 
     private List<UICategoryData> CreateCategoriesList(List<RepoCategoryModel> values)
@@ -218,11 +147,11 @@ public sealed partial class HomePage : TemplatePage
                 {
                     categoryItems.Add(
                         UIHelper.CreateLargeButton(
-                            storeId:repoCategoryItem.store_id,
-                            imageSource:LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            storeId: repoCategoryItem.store_id,
+                            imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? _localizer.GetLocalizedString("Installed") : _localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
-                            backgroundColor:repoCategoryItem.background,
+                            backgroundColor: repoCategoryItem.background,
                             action: StoreItemButton_Click
                         )
                     );
@@ -231,12 +160,12 @@ public sealed partial class HomePage : TemplatePage
                 {
                     categoryItems.Add(
                         UIHelper.CreateSmallButton(
-                            storeId:repoCategoryItem.store_id,
+                            storeId: repoCategoryItem.store_id,
                             imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                            price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                            price: installedIds.Contains(repoCategoryItem.store_id) ? _localizer.GetLocalizedString("Installed") : _localizer.GetLocalizedString("Get"),
                             title: StoreHelper.Instance.GetLocalizedStoreItemName(repoCategoryItem.name, StoreLocalizationHelper.GetStoreLikeLocale()),
                             developer: repoCategoryItem.developer,
-                            backgroundColor:repoCategoryItem.background,
+                            backgroundColor: repoCategoryItem.background,
                             action: StoreItemButton_Click
                         )
                     );
@@ -256,52 +185,6 @@ public sealed partial class HomePage : TemplatePage
 
         return categoryDatas;
     }
-  
-    private void StoreItemButton_Click(UIElement sender)
-    {
-        if (sender is StoreItemLargeButton btn && btn.StoreId is string sid)
-        {
-            PrepareToConnectedForwardAnimate(btn.imageElement);
-
-            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage), 
-                new NameValueCollection() { {"itemId", sid } }, new SuppressNavigationTransitionInfo());
-        }
-        else if (sender is StoreItemSmallButton smallBtn && smallBtn.StoreId is string smallSid)
-        {
-            PrepareToConnectedForwardAnimate(smallBtn.imageElement);
-
-            StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.ItemViewPage), 
-                new NameValueCollection() { { "itemId", smallSid } }, new SuppressNavigationTransitionInfo());
-        }
-    }
-
-    private void CategoryHeaderClick(StoreCategoryButton sender)
-    {
-        PrepareToConnectedForwardAnimate(sender.textElement, new DirectConnectedAnimationConfiguration());
-
-        StoreWindow.Instance.NavigateSubPage(typeof(Views.Store.CategoryViewPage), 
-            new NameValueCollection() { { "categoryId", sender.Id } }, new SuppressNavigationTransitionInfo());
-
-    }
-
-    private void ReadyKitButton_Click(StoreReadyKitButton sender)
-    {
-        PrepareToConnectedForwardAnimate(sender.ImageElement);
-
-        StoreWindow.Instance.NavigateSubPage(
-            typeof(Views.Store.ReadyKitViewPage),
-            new NameValueCollection() { { "kitId", sender.KitId } },
-            new SuppressNavigationTransitionInfo());
-    }
-
-    private void BundlesCategoryButton_Click(StoreCategoryButton sender)
-    {
-        PrepareToConnectedForwardAnimate(sender.textElement, new DirectConnectedAnimationConfiguration());
-        StoreWindow.Instance.NavigateSubPage(
-            typeof(Views.Store.ReadyKitsViewPage),
-            null,
-            new SuppressNavigationTransitionInfo());
-    }
 
     public void InitializeAndShow(IEnumerable<UICategoryData> categories)
     {
@@ -320,8 +203,8 @@ public sealed partial class HomePage : TemplatePage
                                       MaxTotalWidth);
 
         var sampleLarge = new StoreItemLargeButton();
-        LargeMinW = sampleLarge.MinWidth;
-        LargePrefW = sampleLarge.PreferredWidth;
+        _largeMinW = sampleLarge.MinWidth;
+        _largePrefW = sampleLarge.PreferredWidth;
 
         LoadReadyKits();
 
@@ -334,7 +217,7 @@ public sealed partial class HomePage : TemplatePage
                 Id = cat.StoreId,
             };
             header.Click += CategoryHeaderClick;
-            
+
             StoreStackPanel.Children.Add(header);
 
             var itemsControl = new ItemsControl
@@ -350,7 +233,7 @@ public sealed partial class HomePage : TemplatePage
         }
 
         LargeElementWidth = CalcGrid(MaxTotalWidth);
-        
+
         CurrentPageWidth = totalWidth;
         // StoreViewBundles.Width = CurrentPageWidth;
 
@@ -392,7 +275,7 @@ public sealed partial class HomePage : TemplatePage
                 ErrorScrollViewer.Visibility = Visibility.Collapsed;
                 LoadingGrid.Visibility = Visibility.Collapsed;
                 StoreScrollViewer.Visibility = Visibility.Visible;
-            } 
+            }
             else
             {
                 ErrorScrollViewer.Visibility = Visibility.Visible;
@@ -412,136 +295,5 @@ public sealed partial class HomePage : TemplatePage
         ErrorCodeText.Text = obj;
         LoadingGrid.Visibility = Visibility.Collapsed;
         StoreScrollViewer.Visibility = Visibility.Collapsed;
-    }
-
-    public static T FindDescendant<T>(DependencyObject element) where T : DependencyObject
-    {
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
-        {
-            var child = VisualTreeHelper.GetChild(element, i);
-            if (child is T t)
-                return t;
-
-            var result = FindDescendant<T>(child);
-            if (result != null)
-                return result;
-        }
-
-        return null;
-    }
-
-    private double CalcGrid(double newWidth)
-    {
-        double largeElementWidth = 0;
-
-        double totalWidth = Math.Min(
-            newWidth - StoreScrollViewer.Padding.Left - StoreScrollViewer.Padding.Right,
-            MaxTotalWidth);
-
-        int availableColumnsFloor = (int)Math.Floor(totalWidth / (LargeMinW + 15 + 15));
-        int availableColumnsRound = (int)Math.Round(totalWidth / (LargeMinW + 15 + 15));
-
-        if (availableColumnsFloor == availableColumnsRound)
-        {
-            availableColumns = availableColumnsFloor;
-        }
-        else
-        {
-            availableColumns = availableColumnsRound;
-        }
-
-        double preCalcWidth = totalWidth / (availableColumns);
-
-        if (preCalcWidth < LargeMinW && availableColumns >= 2 )
-        {
-            availableColumns--;
-        } 
-        else if (preCalcWidth > LargePrefW*1.5)
-        {
-            if (availableColumns % 2 == 0)
-                availableColumns += 2;
-            else
-                availableColumns++;
-        }
-
-        if (availableColumns % 2 != 0 && availableColumns > 2)
-        {
-            availableColumns--;
-        }
-
-        largeElementWidth = totalWidth / (availableColumns);
-
-        return largeElementWidth;
-    }
-
-    private bool SetupElementsWidth()
-    {
-        bool result = true;
-        if (_panels.Count <= 0)
-            result = false;
-
-        foreach (var (control, cat) in _panels)
-        {
-            bool isLarge = cat.Type == "basic_category";
-            int elementCount = cat.Items.Count;
-
-            var panel = FindDescendant<ItemsWrapGrid>(control);
-            if (panel != null && DataContext is HomePage vm)
-            {
-                panel.ItemWidth = isLarge ? vm.LargeElementWidth : vm.SmallElementWidth;
-                if (!isLarge)
-                {
-                    if (vm.SmallElementWidth * elementCount > CurrentPageWidth)
-                        panel.MaximumRowsOrColumns = 2;
-                    else
-                        panel.MaximumRowsOrColumns = 1;
-                }
-                else
-                {
-                    panel.MaximumRowsOrColumns = 1;
-                }
-            } 
-            else
-            {
-                result = false;     
-            }
-        }
-        return result;
-    }
-
-    private void StoreLoadFixButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-    {
-        OpenHelp("FixDatabaseLoadIssue");
-    }
-
-    private void WhatIsStoreButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-    {
-        OpenHelp("WelcomeToStore");
-    }
-
-    private void AskSupportButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-    {
-        _ = UrlOpenHelper.LaunchReportUrl();
-    }
-
-    private static void OpenHelp(string page)
-    {
-        Commands.CommandsHandler.HandleCommand(
-            $"cdpiui://Help/Store/{page.Trim('/')}/");
-    }
-
-    private void OnContainerSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        double totalWidth = Math.Min(
-            e.NewSize.Width - StoreScrollViewer.Padding.Left - StoreScrollViewer.Padding.Right,
-            MaxTotalWidth);
-        LargeElementWidth = CalcGrid(e.NewSize.Width);
-
-        CurrentPageWidth = totalWidth;
-        StoreViewBundles.Width = CurrentPageWidth;
-
-        SmallElementWidth = LargeElementWidth * 2;
-
-        SetupElementsWidth();
     }
 }

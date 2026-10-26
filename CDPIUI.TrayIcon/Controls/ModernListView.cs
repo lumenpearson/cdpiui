@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,61 +9,60 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls;
+
+public partial class ModernListView : FlowLayoutPanel
 {
-    public partial class ModernListView : FlowLayoutPanel
+
+    private int _radius = 10;
+    public int Radius
     {
-
-        private int _radius = 10;
-        public int Radius
+        get { return _radius; }
+        set
         {
-            get { return _radius; }
-            set
-            {
-                _radius = value;
-                Invalidate();
-            }
+            _radius = value;
+            Invalidate();
         }
+    }
 
-        private Color _backgroundColor = SystemColors.Control;
-        public Color BackgroundColor
+    private Color _backgroundColor = SystemColors.Control;
+    public Color BackgroundColor
+    {
+        get { return _backgroundColor; }
+        set
         {
-            get { return _backgroundColor; }
-            set
-            {
-                _backgroundColor = value;
-                Invalidate();
-            }
+            _backgroundColor = value;
+            Invalidate();
         }
+    }
 
-        private Color _borderColor = SystemColors.Control;
-        public Color BorderColor
+    private Color _borderColor = SystemColors.Control;
+    public Color BorderColor
+    {
+        get { return _borderColor; }
+        set
         {
-            get { return _borderColor; }
-            set
-            {
-                _borderColor = value;
-                Invalidate();
-            }
+            _borderColor = value;
+            Invalidate();
         }
+    }
 
-        private float _borderWidth = 2.0f;
-        public float BorderWidth
+    private float _borderWidth = 2.0f;
+    public float BorderWidth
+    {
+        get { return _borderWidth; }
+        set
         {
-            get { return _borderWidth; }
-            set
-            {
-                _borderWidth = value;
-                Invalidate();
-            }
+            _borderWidth = value;
+            Invalidate();
         }
+    }
 
-        public ModernListView()
-        {
-            InitializeComponent();
+    public ModernListView()
+    {
+        InitializeComponent();
 
-            BackgroundColor = Color.FromArgb(244, 244, 244);
+        BackgroundColor = Color.FromArgb(244, 244, 244);
 
-        }
     }
 }

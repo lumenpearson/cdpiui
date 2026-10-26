@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CDPIUI.ViewModels
+namespace CDPIUI.ViewModels;
+
+internal class MenuItemViewModel
 {
-    internal class MenuItemViewModel
-    {
-        public string Id { get; set; }
-        public string DisplayName { get; set; }
-        public string Tag { get; set; }
-    }
+    public string Id { get; set; }
+    public string DisplayName { get; set; }
+    public string Tag { get; set; }
 }

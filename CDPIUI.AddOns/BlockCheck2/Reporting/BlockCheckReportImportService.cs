@@ -57,7 +57,7 @@ public sealed class BlockCheckReportImportService
     public BlockCheckReportImportResult Import(BlockCheckReport sourceReport)
     {
         ArgumentNullException.ThrowIfNull(sourceReport);
-        ValidateReport(sourceReport);
+        BlockCheckReportValidator.Validate(sourceReport);
 
         StrategyCatalog catalog = StrategyCatalogLoader.LoadBuiltIn();
         List<BlockCheckIssue> importIssues = [];
@@ -72,9 +72,44 @@ public sealed class BlockCheckReportImportService
                 $"contains '{catalog.CatalogVersion}'. Unknown strategies cannot be edited or tested."));
         }
 
+        BlockCheckTarget[] targets = RestoreTargets(sourceReport);
+        AddMissingSiteListWarnings(sourceReport, importIssues);
+
+        ProbeResult[] baseline = RestoreProbes(sourceReport, "baseline");
+        ProbeResult[] strategyProbes = RestoreProbes(sourceReport, "strategy");
+        IReadOnlyList<Zapret2ProfilePlan> profiles = RestoreProfiles(
+            sourceReport,
+            catalog,
+            importIssues);
+
+        EnsurePresetWritesNoFiles(sourceReport.PresetArguments);
+
+        BlockCheckReport report = CopyWithIssues(sourceReport, sourceReport.Issues
+            .Concat(importIssues)
+            .DistinctBy(issue => (issue.Severity, issue.Code, issue.Message, issue.SubjectId))
+            .ToArray());
+        BlockCheckResultSession session = new()
+        {
+            Catalog = catalog,
+            Targets = targets,
+            RunResult = CreateRunResult(report, baseline, strategyProbes, profiles),
+            Report = report,
+            RunOptions = BlockCheckRunPresetFactory.Create(report.RunPreset),
+        };
+
+        return new BlockCheckReportImportResult
+        {
+            Report = report,
+            Session = session,
+            Issues = importIssues,
+        };
+    }
+
+    private static BlockCheckTarget[] RestoreTargets(BlockCheckReport report)
+    {
         Dictionary<string, IReadOnlyList<string>> hostListsByTarget =
-            BuildHostListsByTarget(sourceReport);
-        BlockCheckTarget[] targets = sourceReport.Targets
+            BlockCheckReportHostListScope.BuildByTarget(report);
+        return report.Targets
             .Select(target => new BlockCheckTarget
             {
                 Id = target.Id,
@@ -86,254 +121,70 @@ public sealed class BlockCheckReportImportService
                 HostListPaths = hostListsByTarget[target.Id],
             })
             .ToArray();
+    }
 
-        foreach (string missingPath in sourceReport.Profiles
+    private static void AddMissingSiteListWarnings(BlockCheckReport report, List<BlockCheckIssue> issues)
+    {
+        foreach (string missingPath in report.Profiles
                      .SelectMany(profile => profile.HostListPaths)
                      .Where(path => !string.IsNullOrWhiteSpace(path))
                      .Distinct(StringComparer.OrdinalIgnoreCase)
                      .Where(path => !File.Exists(path)))
         {
-            importIssues.Add(Warning(
+            issues.Add(Warning(
                 "REPORT_SITE_LIST_MISSING",
                 "A site list referenced by the imported report does not exist on this computer. " +
                 "The saved config can be inspected, but that list scope must be repaired before use.",
                 missingPath));
         }
+    }
 
-        ProbeResult[] baseline = sourceReport.Probes
-            .Where(probe => string.Equals(probe.Kind, "baseline", StringComparison.OrdinalIgnoreCase))
-            .Select(ToProbeResult)
-            .ToArray();
-        ProbeResult[] strategyProbes = sourceReport.Probes
-            .Where(probe => string.Equals(probe.Kind, "strategy", StringComparison.OrdinalIgnoreCase))
-            .Select(ToProbeResult)
-            .ToArray();
-        IReadOnlyList<Zapret2ProfilePlan> profiles = RestoreProfiles(
-            sourceReport,
-            catalog,
-            importIssues);
+    private static ProbeResult[] RestoreProbes(BlockCheckReport report, string kind) => report.Probes
+        .Where(probe => string.Equals(probe.Kind, kind, StringComparison.OrdinalIgnoreCase))
+        .Select(ToProbeResult)
+        .ToArray();
 
+    private static void EnsurePresetWritesNoFiles(string presetArguments)
+    {
         // The preset of a report runs in the tray with administrator rights: a report from
         // someone else must not make the component write files. The synthesizer
         // never writes such options, so any of them means the report was edited.
         try
         {
             CDPIUI.AddOns.ConfigShare.ConfigShareService.EnsureNoOutsideWrites(
-                sourceReport.PresetArguments,
+                presetArguments,
                 Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
         }
         catch (CDPIUI.AddOns.ConfigShare.ConfigShareException exception)
         {
             throw new InvalidDataException(exception.Message, exception);
         }
+    }
 
-        BlockCheckReport report = CopyWithIssues(sourceReport, sourceReport.Issues
-            .Concat(importIssues)
-            .DistinctBy(issue => (issue.Severity, issue.Code, issue.Message, issue.SubjectId))
-            .ToArray());
-        BlockCheckRunResult runResult = new()
+    private static BlockCheckRunResult CreateRunResult(
+        BlockCheckReport report,
+        IReadOnlyList<ProbeResult> baseline,
+        IReadOnlyList<ProbeResult> strategyProbes,
+        IReadOnlyList<Zapret2ProfilePlan> profiles) => new()
+    {
+        PreflightIssues = report.Issues,
+        Scan = new BlockCheckScanResult
         {
-            PreflightIssues = report.Issues,
-            Scan = new BlockCheckScanResult
-            {
-                BaselineResults = baseline,
-                ProbeResults = strategyProbes,
-                WasCanceled = report.WasCanceled,
-            },
-            Synthesis = new BlockCheckSynthesisResult
-            {
-                Profiles = profiles,
-                Configuration = new Zapret2WriteResult
-                {
-                    CommandLine = report.PresetArguments,
-                },
-                IsBestEffort = report.IsBestEffort,
-            },
+            BaselineResults = baseline,
+            ProbeResults = strategyProbes,
             WasCanceled = report.WasCanceled,
-        };
-        BlockCheckRunOptions runOptions = BlockCheckRunPresetFactory.Create(report.RunPreset);
-        BlockCheckResultSession session = new()
+        },
+        Synthesis = new BlockCheckSynthesisResult
         {
-            Catalog = catalog,
-            Targets = targets,
-            RunResult = runResult,
-            Report = report,
-            RunOptions = runOptions,
-        };
-
-        return new BlockCheckReportImportResult
-        {
-            Report = report,
-            Session = session,
-            Issues = importIssues,
-        };
-    }
-
-    private static void ValidateReport(BlockCheckReport report)
-    {
-        if (report.SchemaVersion != 2)
-        {
-            throw new InvalidDataException(
-                $"Unsupported BlockCheck2 report schema {report.SchemaVersion}. Expected schema 2.");
-        }
-        if (report.Targets is null || report.Probes is null || report.Profiles is null ||
-            report.ValidationAttempts is null || report.Issues is null)
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains null collections.");
-        }
-        if (report.Targets.Count > 20_000 || report.Probes.Count > 200_000 ||
-            report.Profiles.Count > 20_000)
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains unreasonable item counts.");
-        }
-        if (report.Targets.Any(target =>
-                target is null ||
-                string.IsNullOrWhiteSpace(target.Id) ||
-                !BlockCheckTarget.IsValidHost(target.Host) ||
-                target.Port is < 1 or > 65535 ||
-                !Enum.IsDefined(target.Protocol) ||
-                !Enum.IsDefined(target.IpVersion) ||
-                !Enum.IsDefined(target.Transport)) ||
-            report.Targets.Select(target => target.Id).Distinct(StringComparer.Ordinal).Count() !=
-            report.Targets.Count)
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains invalid or duplicate targets.");
-        }
-        HashSet<string> targetIds = report.Targets
-            .Select(target => target.Id)
-            .ToHashSet(StringComparer.Ordinal);
-        if (report.Probes.Any(probe =>
-                probe is null ||
-                !targetIds.Contains(probe.TargetId) ||
-                string.IsNullOrWhiteSpace(probe.Kind) ||
-                probe.AttemptCount is < 0 or > 1_000 ||
-                probe.SuccessCount < 0 ||
-                probe.SuccessCount > probe.AttemptCount ||
-                probe.HttpStatusCodes is null ||
-                probe.FailureCodes is null))
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains invalid probe evidence.");
-        }
-        if (report.Profiles.Any(profile =>
-                profile is null ||
-                string.IsNullOrWhiteSpace(profile.Name) ||
-                string.IsNullOrWhiteSpace(profile.PrimaryStrategyId) ||
-                profile.Domains is null ||
-                profile.HostListPaths is null ||
-                profile.FallbackStrategyIds is null ||
-                profile.TargetIds is null ||
-                profile.TargetIds.Any(id => !targetIds.Contains(id))))
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains invalid preset profiles.");
-        }
-        if (report.Issues.Any(issue =>
-                issue is null ||
-                string.IsNullOrWhiteSpace(issue.Code) ||
-                !Enum.IsDefined(issue.Severity)) ||
-            report.ValidationAttempts.Any(attempt =>
-                attempt is null ||
-                attempt.CandidateNumber < 0 ||
-                attempt.FailedTargetIds is null ||
-                attempt.ExcludedStrategyIds is null ||
-                attempt.FailedTargetIds.Any(id => !targetIds.Contains(id))))
-        {
-            throw new InvalidDataException("The BlockCheck2 report contains invalid diagnostics.");
-        }
-    }
-
-    private static Dictionary<string, IReadOnlyList<string>> BuildHostListsByTarget(
-        BlockCheckReport report)
-    {
-        bool inferredTextScope = report.Issues.Any(issue =>
-            string.Equals(issue.Code, "REPORT_TEXT_SCOPE_INFERRED", StringComparison.Ordinal));
-        if (!inferredTextScope)
-        {
-            return report.Targets.ToDictionary(
-                target => target.Id,
-                target => (IReadOnlyList<string>)report.Profiles
-                    .Where(profile => profile.TargetIds.Contains(target.Id, StringComparer.Ordinal))
-                    .SelectMany(profile => profile.HostListPaths)
-                    .Where(path => !string.IsNullOrWhiteSpace(path))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray(),
-                StringComparer.Ordinal);
-        }
-
-        // The legacy text export omits profile target IDs. Recover the scope from
-        // the referenced files when they are still available. A missing file is
-        // intentionally not assigned to every target because that would make a
-        // manually built config look precise while silently using the wrong list.
-        Dictionary<string, HashSet<string>?> domainsByPath = new(StringComparer.OrdinalIgnoreCase);
-        foreach (string path in report.Profiles
-                     .SelectMany(profile => profile.HostListPaths)
-                     .Where(path => !string.IsNullOrWhiteSpace(path))
-                     .Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            domainsByPath[path] = TryReadHostList(path);
-        }
-
-        return report.Targets.ToDictionary(
-            target => target.Id,
-            target => (IReadOnlyList<string>)domainsByPath
-                .Where(item => item.Value != null && HostMatchesList(target.Host, item.Value))
-                .Select(item => item.Key)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray(),
-            StringComparer.Ordinal);
-    }
-
-    private static HashSet<string>? TryReadHostList(string path)
-    {
-        try
-        {
-            string fullPath = Path.GetFullPath(path);
-            if (!File.Exists(fullPath))
+            Profiles = profiles,
+            Configuration = new Zapret2WriteResult
             {
-                return null;
-            }
-
-            HashSet<string> domains = new(StringComparer.OrdinalIgnoreCase);
-            foreach (string source in File.ReadLines(fullPath))
-            {
-                string line = source.Trim().TrimStart('\uFEFF');
-                if (line.Length == 0 || line.StartsWith('#'))
-                {
-                    continue;
-                }
-                line = line.TrimStart('^').TrimEnd('.');
-                if (Uri.TryCreate(line, UriKind.Absolute, out Uri? uri))
-                {
-                    line = uri.Host;
-                }
-                string domain = BlockCheckTarget.NormalizeHost(line);
-                if (BlockCheckTarget.IsValidHost(domain))
-                {
-                    domains.Add(domain);
-                }
-            }
-            return domains;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-                                           ArgumentException or NotSupportedException)
-        {
-            return null;
-        }
-    }
-
-    private static bool HostMatchesList(string host, IReadOnlySet<string> domains)
-    {
-        string candidate = BlockCheckTarget.NormalizeHost(host);
-        while (candidate.Length > 0)
-        {
-            if (domains.Contains(candidate))
-            {
-                return true;
-            }
-            int separator = candidate.IndexOf('.');
-            candidate = separator < 0 ? string.Empty : candidate[(separator + 1)..];
-        }
-        return false;
-    }
+                CommandLine = report.PresetArguments,
+            },
+            IsBestEffort = report.IsBestEffort,
+        },
+        WasCanceled = report.WasCanceled,
+    };
 
     private static ProbeResult ToProbeResult(BlockCheckReportProbe probe)
     {
@@ -424,21 +275,21 @@ public sealed class BlockCheckReportImportService
     private static BlockCheckReport CopyWithIssues(
         BlockCheckReport source,
         IReadOnlyList<BlockCheckIssue> issues) => new()
-    {
-        SchemaVersion = source.SchemaVersion,
-        CreatedAtUtc = source.CreatedAtUtc,
-        CatalogVersion = source.CatalogVersion,
-        RunPreset = source.RunPreset,
-        Success = source.Success,
-        WasCanceled = source.WasCanceled,
-        IsBestEffort = source.IsBestEffort,
-        Targets = source.Targets,
-        Probes = source.Probes,
-        Profiles = source.Profiles,
-        ValidationAttempts = source.ValidationAttempts,
-        Issues = issues,
-        PresetArguments = source.PresetArguments,
-    };
+        {
+            SchemaVersion = source.SchemaVersion,
+            CreatedAtUtc = source.CreatedAtUtc,
+            CatalogVersion = source.CatalogVersion,
+            RunPreset = source.RunPreset,
+            Success = source.Success,
+            WasCanceled = source.WasCanceled,
+            IsBestEffort = source.IsBestEffort,
+            Targets = source.Targets,
+            Probes = source.Probes,
+            Profiles = source.Profiles,
+            ValidationAttempts = source.ValidationAttempts,
+            Issues = issues,
+            PresetArguments = source.PresetArguments,
+        };
 
     private static BlockCheckIssue Warning(string code, string message, string? subjectId = null) =>
         new(BlockCheckIssueSeverity.Warning, code, message, subjectId);

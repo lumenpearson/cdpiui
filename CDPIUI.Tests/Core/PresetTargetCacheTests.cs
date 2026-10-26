@@ -4,11 +4,11 @@ namespace CDPIUI.Tests.Core;
 
 public class PresetTargetCacheTests : IDisposable
 {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), $"cdpiui-presets-{Guid.NewGuid():N}");
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), $"cdpiui-presets-{Guid.NewGuid():N}");
 
-    public PresetTargetCacheTests() => Directory.CreateDirectory(directory);
+    public PresetTargetCacheTests() => Directory.CreateDirectory(_directory);
 
-    public void Dispose() => Directory.Delete(directory, recursive: true);
+    public void Dispose() => Directory.Delete(_directory, recursive: true);
 
     private static string Preset(string target, string name) =>
         $$"""{"target":["{{target}}"],"name":"{{name}}","startup_string":"--x"}""";
@@ -16,7 +16,7 @@ public class PresetTargetCacheTests : IDisposable
     [Fact]
     public void MatchingPresetIsReadAndOtherTargetIsSkipped()
     {
-        string file = Path.Combine(directory, "a.json");
+        string file = Path.Combine(_directory, "a.json");
         File.WriteAllText(file, Preset("CSGIVS036", "One"));
 
         Assert.Null(ConfigurationService.LoadPresetForTarget(file, "CSBIHA024", out _));
@@ -26,7 +26,7 @@ public class PresetTargetCacheTests : IDisposable
     [Fact]
     public void EachCallGivesItsOwnItem()
     {
-        string file = Path.Combine(directory, "a.json");
+        string file = Path.Combine(_directory, "a.json");
         File.WriteAllText(file, Preset("CSGIVS036", "One"));
 
         var first = ConfigurationService.LoadPresetForTarget(file, "CSGIVS036", out _);
@@ -38,7 +38,7 @@ public class PresetTargetCacheTests : IDisposable
     [Fact]
     public void ChangedFileIsReadAgain()
     {
-        string file = Path.Combine(directory, "a.json");
+        string file = Path.Combine(_directory, "a.json");
         File.WriteAllText(file, Preset("CSGIVS036", "One"));
         File.SetLastWriteTimeUtc(file, new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         Assert.Null(ConfigurationService.LoadPresetForTarget(file, "CSBIHA024", out _));
@@ -52,7 +52,7 @@ public class PresetTargetCacheTests : IDisposable
     [Fact]
     public void KnownFileOfOtherTargetIsNotParsedAgain()
     {
-        string file = Path.Combine(directory, "a.json");
+        string file = Path.Combine(_directory, "a.json");
         string text = Preset("CSGIVS036", "One");
         DateTime stamp = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         File.WriteAllText(file, text);
@@ -70,7 +70,7 @@ public class PresetTargetCacheTests : IDisposable
     [Fact]
     public void LegacyZapretPresetMatchesZapret2()
     {
-        string file = Path.Combine(directory, "a.json");
+        string file = Path.Combine(_directory, "a.json");
         File.WriteAllText(file, Preset("CSZTBN012", "Old"));
 
         Assert.NotNull(ConfigurationService.LoadPresetForTarget(file, "CSZTBN012", out bool legacyForZapret));

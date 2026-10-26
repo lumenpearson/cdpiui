@@ -1,9 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Store.Settings;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
+using CDPIUI.Helper;
 using CDPIUI.Helper.LScript;
-
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -12,122 +21,114 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using System.Collections.Specialized;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
-using CDPIUI.Controls.Default;
-using CDPIUI.Helper;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace CDPIUI.Views.Store
-{
-    public class LibraryItemModel : IComparable
-    {
-        public string StoreId { get; set; }
-        public string Title { get; set; }
-        public string Developer { get; set; }
-        public string Category { get; set; }
-        public ImageSource ImageSource { get; set; }
-        public Brush CardBackgroundBrush {  get; set; }
-        public double Size { get; set; }
+namespace CDPIUI.Views.Store;
 
-        public int CompareTo(object o)
+public class LibraryItemModel : IComparable
+{
+    public string StoreId { get; set; }
+    public string Title { get; set; }
+    public string Developer { get; set; }
+    public string Category { get; set; }
+    public ImageSource ImageSource { get; set; }
+    public Brush CardBackgroundBrush { get; set; }
+    public double Size { get; set; }
+
+    public int CompareTo(object o)
+    {
+        LibraryItemModel a = this;
+        LibraryItemModel b = (LibraryItemModel)o;
+        if (a.Size > b.Size)
+            return -1;
+        else if (a.Size < b.Size)
+            return 1;
+        else
+            return 0;
+    }
+}
+
+public sealed partial class LibraryPage : TemplatePage
+{
+    private ObservableCollection<LibraryItemModel> _libraryItems = [];
+
+    private ILocalizer _localizer = Localizer.Get();
+    public LibraryPage()
+    {
+        InitializeComponent();
+
+        ItemsListView.ItemsSource = _libraryItems;
+        this.Loaded += LibraryPage_Loaded;
+
+        StoreHelper.Instance.ItemRemoved += StoreHelper_ItemRemoved;
+        StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
+    }
+
+    private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        _ = LoadItems(); // LoadItems catches and logs its own errors.
+        this.Loaded -= LibraryPage_Loaded;
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+
+        StoreHelper.Instance.ItemRemoved -= StoreHelper_ItemRemoved;
+        StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
+    }
+
+    public async Task LoadItems()
+    {
+        try
         {
-            LibraryItemModel a = this;
-            LibraryItemModel b = (LibraryItemModel)o;
-            if (a.Size > b.Size) return -1;
-            else if (a.Size < b.Size) return 1;
-            else return 0;
+            _libraryItems.Clear();
+            List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
+
+            foreach (DatabaseStoreItem item in databaseStoreItems)
+            {
+                string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
+                title = title.StartsWith("slocale:") ? item.ShortName : title;
+
+                string category = _localizer.GetLocalizedString(item.Type);
+                category = string.IsNullOrEmpty(category) ? item.Type : category;
+
+                BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));
+
+                SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
+
+                LibraryItemModel libraryItemModel = new()
+                {
+                    StoreId = item.Id,
+                    Title = title,
+                    Developer = item.Developer,
+                    Category = category,
+                    ImageSource = image,
+                    CardBackgroundBrush = solidColorBrush
+                };
+                _libraryItems.Add(libraryItemModel);
+            }
+            // _libraryItems.Reverse();
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(LibraryPage), exception.ToString());
         }
     }
 
-    public sealed partial class LibraryPage : TemplatePage
+    private void StoreHelper_ItemActionsStopped(string obj)
     {
-        private ObservableCollection<LibraryItemModel> _libraryItems = [];
+        _ = LoadItems(); // LoadItems catches and logs its own errors.
+    }
 
-        private ILocalizer localizer = Localizer.Get();
-        public LibraryPage()
-        {
-            InitializeComponent();
-
-            ItemsListView.ItemsSource = _libraryItems;
-            this.Loaded += LibraryPage_Loaded;
-
-            StoreHelper.Instance.ItemRemoved += StoreHelper_ItemRemoved;
-            StoreHelper.Instance.ItemActionsStopped += StoreHelper_ItemActionsStopped;
-        }
-
-        private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            _ = LoadItems(); // LoadItems catches and logs its own errors.
-            this.Loaded -= LibraryPage_Loaded;
-        }
-
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            base.OnNavigatedFrom(e);
-
-            StoreHelper.Instance.ItemRemoved -= StoreHelper_ItemRemoved;
-            StoreHelper.Instance.ItemActionsStopped -= StoreHelper_ItemActionsStopped;
-        }
-
-        public async Task LoadItems()
-        {
-            try
-            {
-                _libraryItems.Clear();
-                List<DatabaseStoreItem> databaseStoreItems = DatabaseHelper.Instance.GetAllInstalledItems();
-
-                foreach (DatabaseStoreItem item in databaseStoreItems)
-                {
-                    string title = StoreHelper.Instance.GetLocalizedStoreItemName(item.Name, StoreLocalizationHelper.GetStoreLikeLocale());
-                    title = title.StartsWith("slocale:")? item.ShortName : title;
-
-                    string category = localizer.GetLocalizedString(item.Type);
-                    category = string.IsNullOrEmpty(category) ? item.Type : category;
-
-                    BitmapImage image = new(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath)));
-
-                    SolidColorBrush solidColorBrush = UIHelper.HexToSolidColorBrushConverter(item.BackgroundColor);
-
-                    LibraryItemModel libraryItemModel = new()
-                    {
-                        StoreId = item.Id,
-                        Title = title,
-                        Developer = item.Developer,
-                        Category = category,
-                        ImageSource = image,
-                        CardBackgroundBrush = solidColorBrush
-                    };
-                    _libraryItems.Add(libraryItemModel);
-                }
-                // _libraryItems.Reverse();
-                await Task.CompletedTask;
-            }
-            catch (Exception exception)
-            {
-                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(LibraryPage), exception.ToString());
-            }
-        }
-
-        private void StoreHelper_ItemActionsStopped(string obj)
-        {
-            _ = LoadItems(); // LoadItems catches and logs its own errors.
-        }
-
-        private void StoreHelper_ItemRemoved(string obj)
-        {
-            _ = LoadItems(); // LoadItems catches and logs its own errors.
-        }
+    private void StoreHelper_ItemRemoved(string obj)
+    {
+        _ = LoadItems(); // LoadItems catches and logs its own errors.
     }
 }

@@ -1,48 +1,47 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace CDPIUI.Shared
+namespace CDPIUI.Shared;
+
+
+
+public static class SharedConstants
 {
 
 
-    public static class SharedConstants
-    {
 
+    #region Store
 
+    // Local
 
-        #region Store
+    public static string StoreRepo = "Storik4pro/CDPIUI-Store";
+    public static string GitLabStoreRepo = "Storik4/CDPIUI-Store";
 
-        // Local
+    public static string ApplicationStoreId = "CDPIUIAppSt";
+    public static string LocalUserItemsId = "LocalUserStorage";
+    public static string ConvertedZapretStoreItemId = "__ConvertedZPRT";
+    public static string BlockCheck2HistoryStoreItemId = "BlockCheck2";
+    public static string MigratedGoodbyeDpiUiStoreItemId = "MigratedFromGoodbyeDPIUI";
 
-        public static string StoreRepo = "Storik4pro/CDPIUI-Store";
-        public static string GitLabStoreRepo = "Storik4/CDPIUI-Store";
+    public static string LocalUserItemSiteListsFolder = "List";
+    public static string LocalUserItemBinsFolder = "Bin";
+    public static string LocalUserItemLocFolder = "Loc";
 
-        public static string ApplicationStoreId = "CDPIUIAppSt";
-        public static string LocalUserItemsId = "LocalUserStorage";
-        public static string ConvertedZapretStoreItemId = "__ConvertedZPRT";
-        public static string BlockCheck2HistoryStoreItemId = "BlockCheck2";
-        public static string MigratedGoodbyeDpiUiStoreItemId = "MigratedFromGoodbyeDPIUI";
+    // Repository
 
-        public static string LocalUserItemSiteListsFolder = "List";
-        public static string LocalUserItemBinsFolder = "Bin";
-        public static string LocalUserItemLocFolder = "Loc";
+    public static string ApplicationCheckUpdatesUrl = "https://github.com/Storik4pro/cdpiui";
+    public static string ApplicationGitLabCheckUpdatesUrl = "https://gitlab.com/Storik4/CDPI-UI";
 
-        // Repository
+    // Database
 
-        public static string ApplicationCheckUpdatesUrl = "https://github.com/Storik4pro/cdpiui";
-        public static string ApplicationGitLabCheckUpdatesUrl = "https://gitlab.com/Storik4/CDPI-UI";
+    public static string DatabaseFileName = "storedata.db";
 
-        // Database
+    #endregion
 
-        public static string DatabaseFileName = "storedata.db";
+    public static string PipeName = "{203ABE1D-01A2-47C0-B33D-8C8F7934CF4F}_CDPIUI";
 
-        #endregion
+    public static string Schema = "cdpiui";
 
-        public static string PipeName = "{203ABE1D-01A2-47C0-B33D-8C8F7934CF4F}_CDPIUI";
-
-        public static string Schema = "cdpiui";
-
-        public static bool IsPreview = false;
-    }
+    public static bool IsPreview = false;
 }

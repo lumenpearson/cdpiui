@@ -1,17 +1,17 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using WinUI3Localizer;
 
 namespace CDPIUI.Controls.Dialogs.BlockCheck2;
 
 public sealed partial class CustomSiteListContentDialog : ContentDialog
 {
-    private readonly ILocalizer localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public CustomSiteListContentDialog(string? existingContent = null)
     {
@@ -57,5 +57,5 @@ public sealed partial class CustomSiteListContentDialog : ContentDialog
         args.Cancel = true;
     }
 
-    private string Text(string resourceKey) => localizer.GetLocalizedString(resourceKey);
+    private string Text(string resourceKey) => _localizer.GetLocalizedString(resourceKey);
 }

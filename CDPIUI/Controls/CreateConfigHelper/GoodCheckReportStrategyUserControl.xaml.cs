@@ -1,6 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CDPIUI.Controls.Dialogs;
 using CDPIUI.Core.ComponentServices;
-
 using CDPIUI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,14 +17,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -29,11 +28,11 @@ namespace CDPIUI;
 
 public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 {
-    private bool IsPointerOnControl = false;
-    private bool isRunning = false;
+    private bool _isPointerOnControl = false;
+    private bool _isRunning = false;
 
 
-    private ILocalizer localizer = Localizer.Get();
+    private ILocalizer _localizer = Localizer.Get();
 
     public static readonly DependencyProperty FlagToggledCommandProperty =
             DependencyProperty.Register(
@@ -78,8 +77,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
         // The task manager outlives the report; a control unloaded during a test stayed in memory.
         Unloaded += (_, _) => ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
 
-        FlagToolTip.Content = localizer.GetLocalizedString("SetFlag");
-        PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
+        FlagToolTip.Content = _localizer.GetLocalizedString("SetFlag");
+        PlayToolTip.Content = _localizer.GetLocalizedString("TestThis");
     }
 
     public string ComponentId
@@ -126,11 +125,13 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     public bool Flag
     {
         get { return (bool)GetValue(FlagProperty); }
-        set { 
+        set
+        {
             SetValue(FlagProperty, value);
             FlagIconButton.Checked = value;
-            if (FlagIconButton.Checked) FlagIconButton.Visibility = Visibility.Visible;
-            FlagToolTip.Content = FlagIconButton.Checked ? localizer.GetLocalizedString("RemoveFlag") : localizer.GetLocalizedString("SetFlag");
+            if (FlagIconButton.Checked)
+                FlagIconButton.Visibility = Visibility.Visible;
+            FlagToolTip.Content = FlagIconButton.Checked ? _localizer.GetLocalizedString("RemoveFlag") : _localizer.GetLocalizedString("SetFlag");
         }
     }
     public static readonly DependencyProperty FlagProperty =
@@ -165,7 +166,7 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     {
         try
         {
-            if (!isRunning)
+            if (!_isRunning)
             {
                 await ComponentTasksManager.Instance.StopTask(ComponentId);
 
@@ -178,8 +179,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
             {
                 await ComponentTasksManager.Instance.StopTask(ComponentId);
                 PlayIconButton.Checked = false;
-                PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
-                if (!IsPointerOnControl)
+                PlayToolTip.Content = _localizer.GetLocalizedString("TestThis");
+                if (!_isPointerOnControl)
                     PlayIconButton.Visibility = Visibility.Collapsed;
                 ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
             }
@@ -198,21 +199,22 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 
     private void ApplyProcessState(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != ComponentId) return;
+        if (tuple.Item1 != ComponentId)
+            return;
         if (tuple.Item2)
         {
             PlayIconButton.Checked = true;
-            PlayToolTip.Content = localizer.GetLocalizedString("StopTest");
+            PlayToolTip.Content = _localizer.GetLocalizedString("StopTest");
             PlayIconButton.Visibility = Visibility.Visible;
-            isRunning = true;
+            _isRunning = true;
         }
-        else if (isRunning)
+        else if (_isRunning)
         {
             PlayIconButton.Checked = false;
-            PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
-            if (!IsPointerOnControl)
+            PlayToolTip.Content = _localizer.GetLocalizedString("TestThis");
+            if (!_isPointerOnControl)
                 PlayIconButton.Visibility = Visibility.Collapsed;
-            isRunning = false;
+            _isRunning = false;
             ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
         }
     }
@@ -222,7 +224,7 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
         ViewApplyArgsContentDialog dialog = new()
         {
             XamlRoot = this.XamlRoot,
-            Title = localizer.GetLocalizedString("ViewArguments"),
+            Title = _localizer.GetLocalizedString("ViewArguments"),
             DialogTitle = string.Empty,
             SeparationTextVisible = Visibility.Collapsed,
             Args = [this.Args ?? string.Empty]
@@ -256,13 +258,13 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
 
     private void UserControl_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        IsPointerOnControl = true;
+        _isPointerOnControl = true;
         SetVisible(true);
     }
 
     private void UserControl_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        IsPointerOnControl = false;
+        _isPointerOnControl = false;
         SetVisible(false);
     }
 }
