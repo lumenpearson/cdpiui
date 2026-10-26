@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using CDPIUI.Shared.Exceptions;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.AddOns.HostsFileEditor;
 
@@ -14,13 +15,17 @@ public class HostsFileEditService
     private static Process? RunEditorWithFlag(Flags flag)
     {
         string startupString = $"/{flag}";
-        string path = Path.Combine(Core.Data.Directories.CurrentDirectory,
-            "EditHostFile.exe");
+        string directory = Core.Data.Directories.CurrentDirectory;
+        string path = Path.Combine(directory, "EditHostFile.exe");
+        string launcherPath = ElevatedLauncherCommand.GetPath(directory);
 
-        if (!Path.Exists(path))
+        if (!Path.Exists(path) || !Path.Exists(launcherPath))
             throw new ApplicationFilesDamagedException("File not found");
 
-        var psi = new ProcessStartInfo(path, startupString)
+        // The launcher removes the .NET variables of the user profile, starts the tool and
+        // returns its exit code.
+        var psi = new ProcessStartInfo(launcherPath,
+            ElevatedLauncherCommand.GetArguments(ElevatedLauncherCommand.HostsTarget, startupString))
         {
             UseShellExecute = true,
             Verb = "runas"

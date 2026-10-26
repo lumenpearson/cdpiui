@@ -19,6 +19,8 @@ Two more tools use .NET 8. Each tool is a framework-dependent single-file execut
 - `Update` applies the application patches.
 - `EditHostFile` changes the hosts file with administrator rights.
 
+`CDPIUI.ElevatedLauncher` is a small Native AOT program. The GUI and the autorun task start the tray and `EditHostFile` with administrator rights through it. It removes the .NET variables of the user profile (for example `DOTNET_ROOT`) before the start. Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
+
 The `NewSetup` project makes the MSI installer.
 
 The GUI does not start the components. The GUI sends a request to the tray. The tray starts the component and sends the process state and the output to the GUI.
@@ -66,7 +68,7 @@ CAUTION: Do not start the GUI as administrator. Some GUI functions do not operat
 Some notes about these commands:
 
 - You cannot build the GUI project on Linux or macOS.
-- `build_portable.ps1` puts the GUI, the single-file tray, `Update.exe` and `EditHostFile.exe` into `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`.
+- `build_portable.ps1` puts the GUI, the single-file tray, `Update.exe`, `EditHostFile.exe` and the Native AOT `CDPIUI_ElevatedLauncher.exe` into `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`. Native AOT needs the C++ build tools of Visual Studio (workload "Desktop development with C++").
 - Build the MSI installer after `build_portable.ps1`. The installer uses [WiX Toolset 6](https://wixtoolset.org/).
 - `NewSetup/NewSetupFiles.wxs` must list all files of the release layout. `check_setup_files.ps1` shows the differences.
 - The `build_and_patch.yml` workflow makes the patches (`.cdpipatch`). Refer to [.github/RELEASES.md](RELEASES.md).
@@ -77,7 +79,7 @@ The workflow `.github/workflows/ci.yml` does these checks:
 
 - It builds the libraries, runs the unit tests and checks the NuGet packages for known vulnerabilities (job `libraries`).
 - It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
-- It builds `Update` and `EditHostFile` and publishes each tool as a single file (job `tools`).
+- It builds `Update` and `EditHostFile` and publishes each tool as a single file. It publishes `CDPIUI.ElevatedLauncher` with Native AOT and fails on a trim or AOT warning (job `tools`).
 
 The `libraries` and `tools` jobs must pass before you ask for a review. The `gui` job has `continue-on-error`. Its result gives only information. Refer to [.github/RELEASES.md](RELEASES.md).
 
@@ -105,8 +107,9 @@ cdpiui/
 │   └── Program.cs              # Entry point. Controls the single instance.
 ├── CDPIUI.AddOns/              # Internal add-ons. One folder for each add-on.
 ├── CDPIUI.Core/                # Application logic of the GUI: components, presets, Store, LScript, proxy, updates
+├── CDPIUI.ElevatedLauncher/    # Starts the tray and EditHostFile elevated without the .NET variables of the user (Native AOT)
 ├── CDPIUI.Shared/              # Code for the GUI, Core and the tray: pipe, tasks, logs, settings, errors
-├── CDPIUI.Tests/               # xUnit tests for Shared, Core, AddOns, Update and EditHostFile
+├── CDPIUI.Tests/               # xUnit tests for Shared, Core, AddOns, Update, EditHostFile and the launcher rules
 ├── CDPIUI.TrayIcon/            # The tray application (WinForms). It operates as administrator.
 ├── EditHostFile/               # The hosts file editor (.NET 8, console). It operates as administrator.
 ├── NewSetup/                   # The WiX 6 installer
@@ -128,7 +131,7 @@ cdpiui/
 - Use correct English names.
 - Some names go to the disk or through the pipe. Examples: settings keys, Store JSON fields, preset JSON fields and enum values in files. If you change the C# name, you must keep the stored value. Use `[JsonProperty]`, `[JsonPropertyName]` or a map. If you change a settings key, read the old key too.
 - The pipe sends message types by name (`cdpiui://<Target>/<MessageType>`). If you change the name of a pipe enum member, you change the protocol. The GUI and the tray must then come from the same build. The other side cannot read a message with an unknown name.
-- Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core, AddOns, `Update` and `EditHostFile`.
+- Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core, AddOns, `Update`, `EditHostFile` and `CDPIUI.ElevatedLauncher`.
 
 WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, executable trust in `ExecutableTrust`, package signatures). Do not open files or links through the shell from the tray.
 
@@ -232,5 +235,6 @@ To add a language, do these steps:
 | Tests | [CDPIUI.Tests/README.md](../CDPIUI.Tests/README.md) |
 | Updater | [Update/README.md](../Update/README.md) |
 | Hosts file editor | [EditHostFile/README.md](../EditHostFile/README.md) |
+| Elevated launcher | [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md) |
 | Installer | [NewSetup/README.md](../NewSetup/README.md) |
 | CI and releases | [.github/RELEASES.md](RELEASES.md) |

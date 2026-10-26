@@ -7,6 +7,7 @@ using CDPIUI.Shared.Migration;
 using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Pipe.Models;
 using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Communication;
 
@@ -199,7 +200,10 @@ public class PipeClientService : PipeServiceBase
     {
         try
         {
-            var psi = new ProcessStartInfo(Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe"), GetTrayStartupArguments())
+            // The launcher removes the .NET variables of the user profile before it starts the tray.
+            var psi = new ProcessStartInfo(
+                ElevatedLauncherCommand.GetPath(Data.Directories.CurrentDirectory),
+                ElevatedLauncherCommand.GetArguments(ElevatedLauncherCommand.TrayTarget, GetTrayStartupArguments()))
             {
                 UseShellExecute = true,
                 Verb = "runas"

@@ -92,7 +92,7 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
 
 - `PipeClientService`: подключается к pipe, имя которого указано в файле сеанса `.session\pipe.key` в папке приложения. Трей создаёт новое имя pipe при каждом запуске.
   - Ждёт 2 секунды. Если процесс трея запущен, ждёт ещё 15 секунд. Во время ожидания снова читает файл сеанса каждые 0,5 секунды.
-  - Если подключения нет, запускает `CDPIUI_TrayIcon.exe` с правами администратора (`runas`) и завершает процесс GUI.
+  - Если подключения нет, запускает `CDPIUI_ElevatedLauncher.exe tray <arguments>` с правами администратора (`runas`) и завершает процесс GUI. Программа запуска удаляет переменные .NET из профиля пользователя и запускает `CDPIUI_TrayIcon.exe` (см. [CDPIUI.ElevatedLauncher/README.ru.md](../CDPIUI.ElevatedLauncher/README.ru.md)).
     Трей получает `--autorun`, если `APPEARANCE/hideToTrayOnStartup` равно `true`. Иначе он получает `--show-ui`.
     Если у GUI есть аргументы активации или аргумент миграции GoodbyeDPI, трей получает `--show-ui` и эти аргументы.
   - Закрывает подключение и завершает GUI, если сервер — не ожидаемый `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).

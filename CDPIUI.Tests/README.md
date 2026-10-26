@@ -4,6 +4,8 @@
 
 `CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` and `EditHostFile`. The target framework is `net8.0-windows`, because `Update` and `EditHostFile` target `net8.0-windows`. The project sets `DisableTransitiveFrameworkReferences`: the tests do not need the Windows Desktop runtime of `Update`, and they also run on Linux.
 
+`CDPIUI.ElevatedLauncher` is a Native AOT executable. The project does not reference it. It compiles `CDPIUI.ElevatedLauncher/LaunchPolicy.cs` as a linked file (`Tools\ElevatedLauncher\LaunchPolicy.cs`).
+
 ## Run the tests
 
 On Windows:
@@ -78,6 +80,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Shared` | `TasksManageServiceTests` | Task creation and stop with concurrent calls |
 | `Shared` | `TrustedPathValidatorTests` | Trusted path checks |
 | `Shared` | `XmlSettingsServiceTests` | XML settings, values in different cultures |
+| `Tools` | `ElevatedLauncherTests` | `CDPIUI.ElevatedLauncher`: allowed target names, removal of the .NET runtime variables, launcher arguments of `ElevatedLauncherCommand` |
 | `Tools` | `EditHostFileTests` | `EditHostFile`: encoding detection, line breaks, add, remove and recover of the CDPI UI block, backup |
 | `Tools` | `UpdateInstallHelperTests` | `Update`: path checks, layer sequence, skipped files (`catalog.cat`, `Update.exe`), apply and rollback |
 
@@ -93,7 +96,7 @@ To read a test file, use `Path.Combine(AppContext.BaseDirectory, "TestData", "<f
 
 ## Add a test
 
-1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`. Put the tests of `Update` and `EditHostFile` in `Tools`.
+1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`. Put the tests of `Update`, `EditHostFile` and `CDPIUI.ElevatedLauncher` in `Tools`.
 2. Use the namespace `CDPIUI.Tests.<Folder>`.
 3. Mark each test with `[Fact]` or `[Theory]`. The project imports `Xunit` globally.
 4. If the test writes files, use a new directory in `Path.GetTempPath()`.

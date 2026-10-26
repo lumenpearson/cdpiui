@@ -19,7 +19,7 @@ For more information about the HOSTS file and its recovery in Windows, see the [
 
 1. Open the [Hosts file utility] on the [Utils] page of the main window.
 2. Select [Add domains to hosts file].
-3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot edit the file without these rights.
+3. Give administrator rights to the `CDPIUI_ElevatedLauncher.exe` process. It starts `EditHostFile.exe`. The utility cannot edit the file without these rights.
 4. Make sure that the status at the top of the utility window is "Hosts file edited".
 
 ### How do I remove addresses from the file?
@@ -28,7 +28,7 @@ For more information about the HOSTS file and its recovery in Windows, see the [
 
 1. Open the [Hosts file utility] on the [Utils] page of the main window.
 2. Select [Remove custom domains from hosts file].
-3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot edit the file without these rights.
+3. Give administrator rights to the `CDPIUI_ElevatedLauncher.exe` process. It starts `EditHostFile.exe`. The utility cannot edit the file without these rights.
 4. Make sure that the status at the top of the utility window is "Hosts file not edited".
 
 ### How do I restore the file?
@@ -39,17 +39,17 @@ The restore removes the added addresses from the hosts file and deletes the `hos
 
 1. Open the [Hosts file utility] on the [Utils] page of the main window.
 2. Select [Recover original hosts file from backup].
-3. Give administrator rights to the `EditHostFile.exe` process. The utility cannot restore the file without these rights.
+3. Give administrator rights to the `CDPIUI_ElevatedLauncher.exe` process. It starts `EditHostFile.exe`. The utility cannot restore the file without these rights.
 4. Make sure that the status at the top of the utility window is "Hosts file not edited".
 5. Make sure that the restore button is not available.
 
 ## Possible errors
 
-Antivirus software can identify the `EditHostFile.exe` file as malware and delete it. Then the application shows an error such as `APPLICATION_DAMAGED_NEED_REPAIR` when you edit the hosts file.
+Antivirus software can identify the `EditHostFile.exe` or `CDPIUI_ElevatedLauncher.exe` file as malware and delete it. Then the application shows an error such as `APPLICATION_DAMAGED_NEED_REPAIR` when you edit the hosts file.
 
 To solve this problem:
 
-- For the Portable version, copy the `EditHostFile.exe` file from the latest Portable release. Put it into the application directory next to `CDPIUI.exe`.
+- For the Portable version, copy the `EditHostFile.exe` and `CDPIUI_ElevatedLauncher.exe` files from the latest Portable release. Put them into the application directory next to `CDPIUI.exe`.
 - For the MSI version, do a repair of the installation.
 
 For manual troubleshooting, run `EditHostFile.exe` in a terminal with administrator rights. Then read the console output.

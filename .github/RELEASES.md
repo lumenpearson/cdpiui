@@ -14,7 +14,7 @@ CI runs on pushes to `main`, `dev` and `fix/**`, and on pull requests. It has re
 |-----|-------|
 | `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores these four projects, `CDPIUI` and `CDPIUI.Tests` with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
 | `gui` | Runs `build_portable.ps1` and `check_setup_files.ps1`. Builds the MSI. Uploads `NewSetup/bin/**/*.msi` as the `setup-msi` artifact for 7 days. |
-| `tools` | Installs the .NET 8 SDK. Builds `Update/Update.csproj` and `EditHostFile/EditHostFile.csproj` (x64) in Release with `dotnet build`. Publishes each project as a framework-dependent single file (`win-x64`) to `artifacts/tools/<project>`. Fails if the publish folder contains a file other than the `.exe` file. |
+| `tools` | Installs the .NET 8 SDK. Builds `Update/Update.csproj` and `EditHostFile/EditHostFile.csproj` (x64) in Release with `dotnet build`. Publishes each project as a framework-dependent single file (`win-x64`) to `artifacts/tools/<project>`. Fails if the publish folder contains a file other than the `.exe` file. Builds `CDPIUI.ElevatedLauncher` and publishes it with Native AOT to `artifacts/tools/launcher`, with `TreatWarningsAsErrors`: a trim or AOT warning fails the job. Fails if the folder contains a file other than `CDPIUI_ElevatedLauncher.exe` or if this file is a .NET assembly. |
 
 The `gui` job has `continue-on-error`. The WinUI build needs the CommunityToolkit Labs feed and
 the Windows App SDK tools. The job gives only information until the build is reproducible on
@@ -85,7 +85,7 @@ The workflow does not make a GitHub release.
 
 ### `build_portable.ps1`
 
-Parameter: `-Configuration` (default `Release`). The script requires `msbuild` (for the GUI) and the .NET 8 SDK.
+Parameter: `-Configuration` (default `Release`). The script requires `msbuild` (for the GUI), the .NET 8 SDK and the C++ build tools of Visual Studio (for the Native AOT launcher). The hosted `windows-latest` image has them.
 The script does these steps:
 
 1. Run `create_secret_stub.ps1`.
@@ -94,10 +94,15 @@ The script does these steps:
 4. Remove the language folders that contain only `.mui` files, except `en-us` and `ru-ru`. The Windows App SDK copies approximately 90 languages.
 5. Publish `CDPIUI.TrayIcon` as a single file to `artifacts/tools/tray`.
 6. Publish `Update` and `EditHostFile` as single files (x64, `win-x64`, framework-dependent) to `artifacts/tools/update` and `artifacts/tools/edithostfile`.
-7. Copy `CDPIUI_TrayIcon.exe`, `Update.exe` and `EditHostFile.exe` into the publish folder.
+7. Publish `CDPIUI.ElevatedLauncher` with Native AOT (x64, `win-x64`) to `artifacts/tools/launcher`. Fail if `CDPIUI_ElevatedLauncher.exe` is missing or is a .NET assembly.
+8. Copy `CDPIUI_TrayIcon.exe`, `Update.exe`, `EditHostFile.exe` and `CDPIUI_ElevatedLauncher.exe` into the publish folder.
 
 `Update.exe` replaces the application files while it operates. Thus it must not load a DLL from
 the installation folder. The single file contains all the code of the tool.
+
+The GUI and the autorun task start the tray and `EditHostFile.exe` through `CDPIUI_ElevatedLauncher.exe`.
+The launcher must have no .NET host. Otherwise the .NET variables of the user profile act on it.
+Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
 
 ### `check_setup_files.ps1`
 

@@ -224,6 +224,8 @@
 
 `FileWritingOptions` находит параметры компонента, которые записывают файл (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`), и проверяет, что файл находится в разрешённых папках. Он также может читать файлы аргументов (`@<file>`). Трей использует его перед каждым запуском компонента, а `ConfigShare` — для общих пресетов.
 
+`ElevatedLauncherCommand` даёт имя файла `CDPIUI_ElevatedLauncher.exe`, имена его целей (`tray`, `hosts`) и его командную строку. GUI и задача автозапуска трея запускают трей и `EditHostFile.exe` с правами администратора только через программу запуска. См. [CDPIUI.ElevatedLauncher/README.ru.md](../CDPIUI.ElevatedLauncher/README.ru.md).
+
 ## System
 
 Полифилы для `netstandard2.1`:

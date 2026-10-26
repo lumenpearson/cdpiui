@@ -4,6 +4,8 @@
 
 `CDPIUI.Tests` содержит тесты xUnit для `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` и `EditHostFile`. Целевая платформа — `net8.0-windows`, потому что `Update` и `EditHostFile` используют `net8.0-windows`. Проект задаёт `DisableTransitiveFrameworkReferences`: тестам не нужна среда Windows Desktop от `Update`, и они работают также в Linux.
 
+`CDPIUI.ElevatedLauncher` — исполняемый файл Native AOT. Проект не ссылается на него. Он компилирует `CDPIUI.ElevatedLauncher/LaunchPolicy.cs` как связанный файл (`Tools\ElevatedLauncher\LaunchPolicy.cs`).
+
 ## Запуск тестов
 
 В Windows:
@@ -78,6 +80,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |
 | `Shared` | `XmlSettingsServiceTests` | Настройки XML, значения в разных региональных стандартах |
+| `Tools` | `ElevatedLauncherTests` | `CDPIUI.ElevatedLauncher`: разрешённые имена целей, удаление переменных среды выполнения .NET, аргументы программы запуска из `ElevatedLauncherCommand` |
 | `Tools` | `EditHostFileTests` | `EditHostFile`: определение кодировки, переносы строк, добавление, удаление и восстановление блока CDPI UI, резервная копия |
 | `Tools` | `UpdateInstallHelperTests` | `Update`: проверка путей, порядок слоёв, пропускаемые файлы (`catalog.cat`, `Update.exe`), применение и откат |
 
@@ -93,7 +96,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 
 ## Добавление теста
 
-1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`. Тесты `Update` и `EditHostFile` помещайте в `Tools`.
+1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`. Тесты `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher` помещайте в `Tools`.
 2. Используйте пространство имён `CDPIUI.Tests.<Folder>`.
 3. Пометьте каждый тест атрибутом `[Fact]` или `[Theory]`. Проект импортирует `Xunit` глобально.
 4. Если тест записывает файлы, используйте новый каталог в `Path.GetTempPath()`.

@@ -110,3 +110,23 @@ jobs:
               throw "$name must publish only $name.exe, found: $($files.Name -join ', ')"
             }
           }
+
+      # Native AOT, as build_portable.ps1 publishes it: the launcher has no .NET host, so the .NET
+      # variables of the user profile do not act on it. The native link uses the C++ build tools
+      # of the hosted image. A trim or AOT warning fails the job.
+      - name: Build and publish CDPIUI.ElevatedLauncher
+        shell: pwsh
+        run: |
+          $project = 'CDPIUI.ElevatedLauncher/CDPIUI.ElevatedLauncher.csproj'
+          dotnet build $project -c Release -p:Platform=x64 -p:TreatWarningsAsErrors=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $out = 'artifacts/tools/launcher'
+          dotnet publish $project -c Release -p:Platform=x64 -r win-x64 -p:TreatWarningsAsErrors=true -o $out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $files = @(Get-ChildItem -LiteralPath $out -File | Where-Object { $_.Extension -ne '.pdb' })
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'CDPIUI_ElevatedLauncher.exe') {
+            throw "CDPIUI.ElevatedLauncher must publish only CDPIUI_ElevatedLauncher.exe, found: $($files.Name -join ', ')"
+          }
+          $managed = $true
+          try { [void][System.Reflection.AssemblyName]::GetAssemblyName($files[0].FullName) } catch { $managed = $false }
+          if ($managed) { throw 'CDPIUI_ElevatedLauncher.exe is a .NET assembly. It must be a Native AOT executable.' }

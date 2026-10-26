@@ -27,7 +27,7 @@ The GUI connects in `PipeClientService.Start`:
 
 1. The GUI tries to connect for 2 seconds.
 2. If a `CDPIUI_TrayIcon` process runs, the GUI tries again for 15 seconds.
-3. If there is no connection, the GUI starts `CDPIUI_TrayIcon.exe` with `runas` and stops its own process.
+3. If there is no connection, the GUI starts `CDPIUI_ElevatedLauncher.exe tray <arguments>` with `runas` and stops its own process. The launcher starts `CDPIUI_TrayIcon.exe` without the .NET variables of the user profile.
 4. The tray then starts the GUI again (see [CDPIUI.TrayIcon/README.md](../../CDPIUI.TrayIcon/README.md)).
 
 In steps 1 and 2, the GUI reads the session file each 0.5 seconds and tries to connect to the pipe that the file names. Thus the GUI finds a tray that starts during the wait. If the file is missing or damaged, the GUI operates as if the tray does not run.
