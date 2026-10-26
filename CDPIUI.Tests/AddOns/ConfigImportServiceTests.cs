@@ -82,9 +82,10 @@ public class ConfigImportServiceTests
             ConfigImportResource resource = Assert.Single(resources);
             Assert.Equal(Path.GetFullPath(inside), resource.SourcePath);
             Assert.Contains("$GETCURRENTDIR()/List/Converted/import1/inside.txt", config.startup_string);
-            Assert.DoesNotContain(inside, config.startup_string);
+            // The import writes paths with forward slashes, so compare in that form.
+            Assert.DoesNotContain(ToForwardSlashes(inside), config.startup_string);
             // The outside reference stays, so the user sees it and can change it.
-            Assert.Contains(outside, config.startup_string);
+            Assert.Contains(ToForwardSlashes(outside), config.startup_string);
             Assert.Contains(result.Issues, i =>
                 i.Code == "REFERENCED_FILE_OUTSIDE_SOURCE" &&
                 i.Message.EndsWith(": " + Path.GetFullPath(outside), StringComparison.Ordinal));
@@ -94,6 +95,8 @@ public class ConfigImportServiceTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    private static string ToForwardSlashes(string path) => path.Replace('\\', '/');
 
     private static string WriteBatch(string folder, string name, string hostsFile)
     {
