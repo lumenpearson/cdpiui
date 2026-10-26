@@ -223,6 +223,8 @@ The certificates are pinned by thumbprint, and the chain, the revocation and the
 
 `FileWritingOptions` finds component options that write a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) and checks that the file is in the allowed folders. It can also read the argument files (`@<file>`). The tray uses it before each component start, and `ConfigShare` uses it for shared presets.
 
+`ElevatedLauncherCommand` gives the file name of `CDPIUI_ElevatedLauncher.exe`, its target names (`tray`, `hosts`) and its command line. The GUI and the autorun task of the tray start the tray and `EditHostFile.exe` with administrator rights only through the launcher. Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
+
 ## System
 
 Polyfills for `netstandard2.1`:

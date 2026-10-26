@@ -49,6 +49,8 @@ jobs:
           CATALOG_CERTIFICATE_PASSWORD: ${{ secrets.CATALOG_CERTIFICATE_PASSWORD }}
         run: ./.github/scripts/create_release_secret.ps1 -Force
 
+      # Also publishes CDPIUI_ElevatedLauncher.exe with Native AOT and fails if the file is a .NET
+      # assembly. The native link uses the C++ build tools of the hosted image.
       - name: Build portable layout
         shell: pwsh
         run: ./.github/scripts/build_portable.ps1

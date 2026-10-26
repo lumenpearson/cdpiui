@@ -70,6 +70,8 @@ class Programm
 
         StartGuiIfRequested(args);
         FinishUpdate(args);
+        // An autorun task of an earlier version starts the tray with the environment of the user profile.
+        _ = Task.Run(AutoStartManager.MoveTaskToLauncher);
 
         if (args.Contains("--autorun"))
         {

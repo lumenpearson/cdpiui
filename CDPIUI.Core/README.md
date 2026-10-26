@@ -92,7 +92,7 @@ The GUI is a pipe client. The tray process is the pipe server.
 
 - `PipeClientService`: connects to the pipe that the session file `.session\pipe.key` in the application folder names. The tray makes a new pipe name at each start.
   - It waits 2 seconds. If the tray process runs, it waits 15 more seconds. During the wait, it reads the session file again each 0.5 seconds.
-  - If there is no connection, it starts `CDPIUI_TrayIcon.exe` as administrator (`runas`) and stops the GUI process.
+  - If there is no connection, it starts `CDPIUI_ElevatedLauncher.exe tray <arguments>` as administrator (`runas`) and stops the GUI process. The launcher removes the .NET variables of the user profile and starts `CDPIUI_TrayIcon.exe` (see [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md)).
     The tray gets `--autorun` when `APPEARANCE/hideToTrayOnStartup` is `true`. Otherwise it gets `--show-ui`.
     When the GUI has activation arguments or a GoodbyeDPI migration argument, the tray gets `--show-ui` and these arguments.
   - It closes the connection and stops the GUI when the server is not the expected `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).

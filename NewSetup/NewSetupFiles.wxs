@@ -258,6 +258,10 @@
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\Update.exe" KeyPath="yes" />
       </Component>
+      <!-- The GUI and the autorun task start the tray and EditHostFile.exe through the launcher. -->
+      <Component Directory="INSTALLLOCATION">
+        <File Source="$(var.SourceDir)\CDPIUI_ElevatedLauncher.exe" KeyPath="yes" />
+      </Component>
       <Component Directory="INSTALLLOCATION" Subdirectory="ELUA\EN">
         <File Source="$(var.SourceDir)\ELUA\EN\ELUA.md" KeyPath="yes" />
       </Component>

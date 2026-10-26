@@ -22,11 +22,12 @@ Each method returns `Task<int>`: the exit code of the tool.
 
 ## Sequence
 
-1. The method finds `EditHostFile.exe` in the application folder (`Directories.CurrentDirectory`).
-2. If the file does not exist, the method throws `ApplicationFilesDamagedException`.
-3. The method starts the tool with `UseShellExecute = true` and the verb `runas`. Windows shows the UAC prompt.
-4. The method waits for the process to exit.
-5. The method returns the exit code. If `Process.Start` returns `null`, the method returns `-1`.
+1. The method finds `EditHostFile.exe` and `CDPIUI_ElevatedLauncher.exe` in the application folder (`Directories.CurrentDirectory`).
+2. If one of the files does not exist, the method throws `ApplicationFilesDamagedException`.
+3. The method starts `CDPIUI_ElevatedLauncher.exe hosts /<argument>` with `UseShellExecute = true` and the verb `runas`. Windows shows the UAC prompt for the launcher.
+4. The launcher removes the .NET variables of the user profile, starts `EditHostFile.exe` with the same token and waits for it. Refer to [CDPIUI.ElevatedLauncher/README.md](../../CDPIUI.ElevatedLauncher/README.md).
+5. The method waits for the launcher to exit.
+6. The method returns the exit code. The launcher gives the exit code of the tool. If `Process.Start` returns `null`, the method returns `-1`.
 
 If the user cancels the UAC prompt, `Process.Start` throws an exception. The method does not catch it. The caller must process it.
 
@@ -36,7 +37,8 @@ The exit codes of the tool are:
 |---|---|
 | `0` | Success |
 | `0x80070057` (`E_INVALIDARG`) | No known argument |
-| Other | The `HResult` of the exception that stopped the tool, or `1` |
+| `0x80070002` | The launcher did not find `EditHostFile.exe` |
+| Other | The `HResult` of the exception that stopped the tool, or `1`. A `0x8007xxxx` code can also come from the launcher, when Windows did not start the tool. |
 
 ## GUI
 
@@ -75,6 +77,6 @@ The page uses these values to enable the cards:
 ## Limits
 
 - The page does not read the hosts file to find its state. It uses only the `HOSTS` settings. A change of the hosts file outside CDPI UI does not change these settings. For example, the MSI uninstall cleanup runs `EditHostFile.exe /remove` but does not change the settings.
-- Each operation shows a UAC prompt.
-- The add-on does not check a signature of `EditHostFile.exe`. In an MSI installation, only administrators can change the installation folder. A portable copy is in a folder that the user can change, together with `CDPIUI.exe` and the tray. Thus a check of one file does not protect it. The UAC prompt shows the path of the file.
+- Each operation shows a UAC prompt. The prompt shows `CDPIUI_ElevatedLauncher.exe`, not `EditHostFile.exe`.
+- The add-on does not check a signature of `EditHostFile.exe` or of the launcher. In an MSI installation, only administrators can change the installation folder. A portable copy is in a folder that the user can change, together with `CDPIUI.exe` and the tray. Thus a check of one file does not protect it. The UAC prompt shows the path of the launcher.
 - The add-on has no tests in `CDPIUI.Tests`.
