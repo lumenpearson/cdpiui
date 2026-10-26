@@ -28,9 +28,13 @@ The file list comes only from `ConfigItem.UsedFiles`. The export resolves each p
 |---|---:|
 | Entries in the archive | 4096, including `manifest.json` |
 | Resources in an export | 4095 |
-| Uncompressed size, total and for one entry | 512 MiB |
+| Uncompressed size of one resource | 32 MiB |
+| Uncompressed size of all resources | 64 MiB |
 | `manifest.json` | 4 MiB |
+| Size of the `.cdpiconfig` file | 76 MiB: the resources, `manifest.json` and 8 MiB for the ZIP headers |
 | Compression ratio of an entry larger than 1 MiB | 200 |
+
+The limits agree with the content of a preset. A site list or an IP set is usually smaller than 1 MiB. A large domain list with some hundred thousand names has some MiB. Lua scripts and fake packets have some kilobytes. The reader keeps one resource in memory to calculate its SHA-256. Thus the limits also set the maximum memory that a package can make the GUI use. The export uses the same limits, so it does not make a package that the reader rejects (`SHARE_TOO_LARGE`).
 
 Before the installation, the reader checks:
 
@@ -38,6 +42,8 @@ Before the installation, the reader checks:
 - that the name, the developer, `target[0]` and `startup_string` are not empty;
 - that the archive has exactly the entries of the manifest and `manifest.json`;
 - duplicate entry names (the comparison ignores the case);
+- the size of the `.cdpiconfig` file, before it opens the archive;
+- the declared sizes of the entries, before it reads an entry;
 - the declared size and the SHA-256 of each resource;
 - the entry count, the total size and the compression ratio;
 - safe relative paths.
@@ -97,5 +103,7 @@ The two import entry points offer the Store installer of the component when the 
 ## Tests
 
 `CDPIUI.Tests/AddOns/ConfigShareWriteOptionsTests.cs` checks `EnsureNoOutsideWrites`. It makes sure that file writes outside the package are rejected and that writes inside the package and a plain `--debug` are accepted.
+
+`CDPIUI.Tests/AddOns/ConfigShareReadTests.cs` reads a valid package and damaged packages. It also makes sure that the reader rejects a resource or a package over the size limits before it reads the data.
 
 The solution has no separate test project for the round trip, the dependencies, the destinations, damaged archives or the cleanup.

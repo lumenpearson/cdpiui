@@ -22,10 +22,17 @@ public sealed class ConfigShareService
     internal const string SystemShareMarker = ".retain-for-system-share";
     internal const string ReferencePrefix = "share://";
     private const string ManifestName = "manifest.json";
-    private const long MaxTotalBytes = 512L * 1024 * 1024;
+    // A package holds site lists, IP sets, Lua scripts and fake packets. A large domain list with
+    // some hundred thousand names has some MiB; the other files have some kilobytes. The reader
+    // keeps an entry in memory to check its SHA-256, so the limits also cap what a crafted package
+    // can make the GUI allocate.
+    internal const long MaxEntryBytes = 32L * 1024 * 1024;
+    internal const long MaxTotalBytes = 64L * 1024 * 1024;
     private const long MaxCompressionRatio = 200;
     private const int MaxEntries = 4096;
     private const int MaxManifestBytes = 4 * 1024 * 1024;
+    // More than the ZIP headers of MaxEntries entries with long names.
+    private const long MaxHeaderBytes = 8L * 1024 * 1024;
     private static readonly SemaphoreSlim InstallGate = new(1, 1);
 
     public static bool IsSupported(string path) => Path.GetExtension(path).Equals(Extension, StringComparison.OrdinalIgnoreCase);
@@ -152,6 +159,10 @@ public sealed class ConfigShareService
         string directory = CreateTemporaryDirectory();
         try
         {
+            // Opening the archive reads its central directory into memory, so the file size is
+            // checked first: a valid package is not larger than its content and its headers.
+            if (new FileInfo(path).Length > MaxTotalBytes + MaxManifestBytes + MaxHeaderBytes)
+                throw new ConfigShareException("SHARE_TOO_LARGE", "The package file is too large.");
             using var archive = ZipFile.OpenRead(path);
             var entries = IndexEntries(archive, directory);
             var manifest = ReadManifest(entries);
@@ -196,8 +207,13 @@ public sealed class ConfigShareService
         foreach (var entry in archive.Entries)
         {
             SafeDestination(directory, entry.FullName);
-            if (!entries.TryAdd(entry.FullName, entry) || entry.Length > MaxTotalBytes || (total += entry.Length) > MaxTotalBytes)
-                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Duplicate entries or excessive archive size.");
+            if (!entries.TryAdd(entry.FullName, entry))
+                throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Duplicate entries.");
+            // The declared sizes, before any entry is read. The manifest has its own limit.
+            bool isManifest = entry.FullName.Equals(ManifestName, StringComparison.OrdinalIgnoreCase);
+            if (entry.Length > (isManifest ? MaxManifestBytes : MaxEntryBytes) ||
+                (!isManifest && (total += entry.Length) > MaxTotalBytes))
+                throw new ConfigShareException("SHARE_TOO_LARGE", $"The entry {entry.FullName} exceeds the package size limit.");
             if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
                 throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Symbolic links are not supported.");
             // Site lists compress well, but not a thousand times: a small file that unpacks to
@@ -239,7 +255,7 @@ public sealed class ConfigShareService
                 !entries.TryGetValue(resource.Path, out var entry) || resource.Length != entry.Length ||
                 !references.TryAdd(ReferencePrefix + resource.Path, SafeDestination(directory, resource.Path).Replace('\\', '/')))
                 throw new ConfigShareException("SHARE_ARCHIVE_INVALID", "Invalid or missing resource entry.");
-            byte[] data = ReadEntry(entry, MaxTotalBytes);
+            byte[] data = ReadEntry(entry, MaxEntryBytes);
             if (!Convert.ToHexString(SHA256.HashData(data)).Equals(resource.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new ConfigShareException("SHARE_CHECKSUM_FAILED", $"Resource checksum mismatch: {resource.Path}");
             string destination = SafeDestination(directory, resource.Path);
@@ -456,24 +472,29 @@ public sealed class ConfigShareService
         return destination;
     }
 
+    // The export uses the limit of the reader, so it never makes a package that the reader rejects.
     internal static byte[] ReadBoundedFile(string path)
     {
         using var input = File.OpenRead(path);
-        if (input.Length > MaxTotalBytes)
+        if (input.Length > MaxEntryBytes)
             throw new ConfigShareException("SHARE_TOO_LARGE", path);
-        using var output = new MemoryStream();
-        CopyBounded(input, output, MaxTotalBytes);
+        using var output = new MemoryStream((int)input.Length);
+        CopyBounded(input, output, MaxEntryBytes);
         return output.ToArray();
     }
 
     private static byte[] ReadEntry(ZipArchiveEntry entry, long limit)
     {
+        // The checked declared size sets the buffer: an entry that holds more data cannot grow it.
+        if (entry.Length > limit)
+            throw new ConfigShareException("SHARE_TOO_LARGE", $"The entry {entry.FullName} exceeds the size limit.");
+        byte[] data = new byte[entry.Length];
         using var input = entry.Open();
-        using var output = new MemoryStream();
-        CopyBounded(input, output, Math.Min(limit, entry.Length));
-        if (output.Length != entry.Length)
+        if (input.ReadAtLeast(data, data.Length, throwOnEndOfStream: false) != data.Length)
             throw new InvalidDataException("Truncated ZIP entry.");
-        return output.ToArray();
+        if (input.ReadByte() != -1)
+            throw new ConfigShareException("SHARE_TOO_LARGE", "Resource exceeds declared size.");
+        return data;
     }
 
     private static void CopyBounded(Stream input, Stream output, long limit)

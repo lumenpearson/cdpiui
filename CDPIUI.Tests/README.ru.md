@@ -44,6 +44,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `AddOns` | `BlockCheckTargetInputParserTests` | Список целей BlockCheck2: схемы, порты, протоколы, IDN, повторы, ограничения |
 | `AddOns` | `ConfigImportGoldenTests` | Импорт пакетных файлов Flowseal и сравнение с ожидаемыми файлами в `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Разбор команд `set` в импортируемых скриптах |
+| `AddOns` | `ConfigShareReadTests` | Чтение пакета `.cdpiconfig`: правильные и повреждённые пакеты, ограничения размера |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Пути внутри пакета `.cdpiconfig`: выход за папку, имена устройств, ссылки |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Отклонение параметров, которые записывают за пределы пакета `.cdpiconfig` |
 | `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: путь к системному curl, аргументы, коды выхода, страницы блокировки, отмена |
