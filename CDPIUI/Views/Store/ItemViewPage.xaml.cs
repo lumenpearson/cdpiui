@@ -251,7 +251,7 @@ namespace CDPIUI.Views.Store
                     XamlRoot = this.XamlRoot,
                     Title = localizer.GetLocalizedString("ElementNotExistTitle"),
                     Content = string.Format(localizer.GetLocalizedString("ElementNotExistMessage"), _storeId, "ERR_STORE_ITEM_NOT_FOUND"),
-                    PrimaryButtonText = "OK"
+                    PrimaryButtonText = localizer.GetLocalizedString("OkButtonText")
                 };
                 await dialog.ShowQueuedAsync();
                 if (Frame.CanGoBack)
@@ -506,7 +506,7 @@ namespace CDPIUI.Views.Store
             }
         }
 
-        private async void InstallingItemActions()
+        private async Task InstallingItemActions()
         {
             if (!await AskLicense()) return;
             ConnectHandlers();
@@ -531,7 +531,7 @@ namespace CDPIUI.Views.Store
             {
                 Title = localizer.GetLocalizedString("MessageFromDeveloper"),
                 Content = localizer.GetLocalizedString("MessageFromDeveloperTip"),
-                PrimaryButtonText = "OK",
+                PrimaryButtonText = localizer.GetLocalizedString("OkButtonText"),
                 XamlRoot = this.XamlRoot,
             };
             await dialog.ShowQueuedAsync();
@@ -541,7 +541,7 @@ namespace CDPIUI.Views.Store
         {
             if (!DatabaseHelper.Instance.IsItemInstalled(_storeId))
             {
-                InstallingItemActions();
+                await InstallingItemActions();
             }
             else
             {
@@ -602,7 +602,7 @@ namespace CDPIUI.Views.Store
             {
                 // The old files must be gone before the new ones are written.
                 await StoreHelper.Instance.RemoveItemAsync(_storeId);
-                InstallingItemActions();
+                await InstallingItemActions();
             }
         }
 
@@ -632,9 +632,9 @@ namespace CDPIUI.Views.Store
             {
                 ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(item.store_id)?.Directory ?? string.Empty);
             }
-            catch
+            catch (Exception exception)
             {
-
+                Logger.Instance.CreateWarningLog(nameof(ItemViewPage), exception.ToString());
             }
         }
 

@@ -19,6 +19,12 @@ namespace CDPIUI.Core.ComponentServices
         public string Id { get; set; } = string.Empty;
 
         public event Action<string>? OutputReceived;
+        /// <summary>
+        /// The cleaned chunk with its number in the output. The number is taken under the same lock
+        /// as the buffer, so a view can tell a chunk that a snapshot already holds from a new one,
+        /// and notice chunks whose events arrive out of order.
+        /// </summary>
+        public event Action<string, long>? OutputAppended;
         public event Action? OutputReset;
         public event Action<ErrorModel>? ErrorHappens;
         public event Action<string>? ProcessNameChanged;
@@ -77,7 +83,10 @@ namespace CDPIUI.Core.ComponentServices
                 ComponentHelper componentHelper =
                     ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(Id);
 
-                ProcessName = DatabaseHelper.Instance.GetItemById(Id)?.Executable?.FirstCharToUpper() ?? string.Empty;
+                // The helper was just built from the same row, so there is no need to read it again.
+                ProcessName = (componentHelper != null
+                    ? componentHelper.ExecutableName
+                    : DatabaseHelper.Instance.GetItemById(Id)?.Executable)?.FirstCharToUpper() ?? string.Empty;
 
                 if (componentHelper == null)
                     throw new InvalidOperationException($"Component {Id} is not installed or its executable is missing.");
@@ -160,8 +169,8 @@ namespace CDPIUI.Core.ComponentServices
                 return args;
             }
 
-            string ip = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
-            string port = SettingsManager.Instance.GetValue<string>("PROXY", "port");
+            string? ip = SettingsManager.Instance.GetValue<string>("PROXY", "IPAddress");
+            string? port = SettingsManager.Instance.GetValue<string>("PROXY", "port");
 
             string proxyType = SettingsManager.Instance.GetValue<string>("PROXY", "proxyType");
 
@@ -207,7 +216,7 @@ namespace CDPIUI.Core.ComponentServices
         private string GetProxiFyrePath()
         {
             var item = DatabaseHelper.Instance.GetItemById("ASPEWK002");
-            if (item == null) return string.Empty;
+            if (item?.Directory == null) return string.Empty;
 
             return Path.Combine(item.Directory, item.Executable + ".exe");
         }
@@ -226,7 +235,7 @@ namespace CDPIUI.Core.ComponentServices
                 if (output) ProcessStateChanged?.Invoke(Tuple.Create(Id, false));
                 IsProcessRunning = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 IsProcessRunning = false;
             }
@@ -242,6 +251,26 @@ namespace CDPIUI.Core.ComponentServices
         public static async Task StopService()
         {
             await PipeHelper.SendConPTYPacket(Shared.Pipe.Models.CONPTYMessageIds.StopService);
+        }
+
+        /// <summary>The raw output and the number of the last change it holds.</summary>
+        public string GetDefaultProcessOutput(out long sequence)
+        {
+            lock (outputLock)
+            {
+                sequence = _outputSequence;
+                return _outputDefaultBuffer.ToString();
+            }
+        }
+
+        /// <summary>The cleaned output and the number of the last change it holds.</summary>
+        public string GetProcessOutput(out long sequence)
+        {
+            lock (outputLock)
+            {
+                sequence = _outputSequence;
+                return _outputBuffer.ToString();
+            }
         }
 
         public string GetDefaultProcessOutput()
@@ -320,12 +349,16 @@ namespace CDPIUI.Core.ComponentServices
         }
         // An escape sequence split between two chunks is cleaned once the rest arrives.
         private string _pendingEscape = string.Empty;
+        // Counts every change of the buffers; guarded by outputLock.
+        private long _outputSequence;
 
         public void AddOutput(string output)
         {
             string prettyOutput;
+            long sequence;
             lock (outputLock)
             {
+                sequence = ++_outputSequence;
                 string chunk = _pendingEscape + output;
                 _pendingEscape = OutputCleanupHelper.TakeIncompleteTail(ref chunk);
                 prettyOutput = OutputCleanupHelper.ReplaceSymbols(chunk);
@@ -337,6 +370,7 @@ namespace CDPIUI.Core.ComponentServices
             }
 
             OutputReceived?.Invoke(prettyOutput);
+            OutputAppended?.Invoke(prettyOutput, sequence);
         }
         public void ClearOutput()
         {
@@ -347,6 +381,7 @@ namespace CDPIUI.Core.ComponentServices
         {
             lock (outputLock)
             {
+                ++_outputSequence;
                 _outputDefaultBuffer.Clear().Append(output);
                 _pendingEscape = string.Empty;
                 _outputBuffer.Clear().Append(OutputCleanupHelper.ReplaceSymbols(output));

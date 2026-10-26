@@ -14,7 +14,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 |-----|-------|
 | `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. Восстанавливает пакеты этих четырёх проектов, `CDPIUI` и `CDPIUI.Tests` с `NuGetAuditMode=all` и завершается с ошибкой, если у прямого или транзитивного пакета есть известная уязвимость средней или более высокой серьёзности (предупреждения NU1902–NU1904 становятся ошибками). |
 | `gui` | Запускает `build_portable.ps1` и `check_setup_files.ps1`. Собирает MSI. Загружает `NewSetup/bin/**/*.msi` как артефакт `setup-msi` на 7 дней. |
-| `tools` | Собирает `Update/Update.csproj` (с восстановлением packages.config) и `EditHostFile/EditHostFile.csproj` в конфигурации Release с помощью `msbuild`. |
+| `tools` | Устанавливает .NET 8 SDK. Собирает `Update/Update.csproj` и `EditHostFile/EditHostFile.csproj` (x64) в конфигурации Release с помощью `dotnet build`. Публикует каждый проект одним файлом, зависящим от среды выполнения (`win-x64`), в `artifacts/tools/<проект>`. Завершается с ошибкой, если в папке публикации есть другой файл, кроме файла `.exe`. |
 
 У задания `gui` включён `continue-on-error`. Для сборки WinUI нужны фид CommunityToolkit Labs и
 инструменты Windows App SDK. Задание носит только информационный характер, пока сборку нельзя
@@ -85,7 +85,7 @@ Workflow не создаёт релиз на GitHub.
 
 ### `build_portable.ps1`
 
-Параметр: `-Configuration` (по умолчанию `Release`). Скрипту нужны `msbuild` и .NET 8 SDK.
+Параметр: `-Configuration` (по умолчанию `Release`). Скрипту нужны `msbuild` (для GUI) и .NET 8 SDK.
 Скрипт выполняет следующие шаги:
 
 1. Запускает `create_secret_stub.ps1`.
@@ -93,8 +93,11 @@ Workflow не создаёт релиз на GitHub.
 3. Публикует `CDPIUI/CDPIUI.csproj` в эту папку (x64, `win-x64`, framework-dependent).
 4. Удаляет языковые папки, которые содержат только файлы `.mui`, кроме `en-us` и `ru-ru`. Windows App SDK копирует примерно 90 языков.
 5. Публикует `CDPIUI.TrayIcon` как один файл в `artifacts/tools/tray`.
-6. Собирает `Update` (x64) и `EditHostFile`.
+6. Публикует `Update` и `EditHostFile` как один файл каждый (x64, `win-x64`, framework-dependent) в `artifacts/tools/update` и `artifacts/tools/edithostfile`.
 7. Копирует `CDPIUI_TrayIcon.exe`, `Update.exe` и `EditHostFile.exe` в папку publish.
+
+`Update.exe` заменяет файлы приложения во время работы. Поэтому он не должен загружать DLL из
+папки установки. Один файл содержит весь код инструмента.
 
 ### `check_setup_files.ps1`
 

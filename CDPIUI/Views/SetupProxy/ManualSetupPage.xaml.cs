@@ -117,7 +117,7 @@ namespace CDPIUI.Views.SetupProxy
                 {
                     Title = localizer.GetLocalizedString("ErrorOccurred"),
                     Content = string.Format(localizer.GetLocalizedString("ExceptionProxySet"), $"HKEY_CURRENT_USER/{WindowsNativeProxySettingsService.InternetSettingsKeyPath}", ex.Message),
-                    CloseButtonText = "OK",
+                    CloseButtonText = localizer.GetLocalizedString("OkButtonText"),
                     Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
                     XamlRoot = this.XamlRoot
                 }.ShowQueuedAsync();

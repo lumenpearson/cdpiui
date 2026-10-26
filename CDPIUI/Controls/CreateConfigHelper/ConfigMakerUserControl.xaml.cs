@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
@@ -1103,7 +1104,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             Config = sourceConfig,
             Target = new ConfigImportTarget(
                 ComponentId ?? string.Empty,
-                component?.ShortName ?? ComponentId ?? string.Empty,
+                component?.ShortName.NullIfEmpty() ?? ComponentId ?? string.Empty,
                 component?.Executable ?? string.Empty,
                 component?.CurrentVersion,
                 componentDirectory),
@@ -1934,9 +1935,10 @@ public sealed partial class ConfigMakerUserControl : UserControl
                     TryApplyPresetFileReplacement(file, suggestion, showStatus: false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // A silent import leaves unresolved references unchanged.
+                Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConfigMakerUserControl), $"Cannot resolve \"{missingPath}\": {ex.Message}");
             }
         }
     }
@@ -2707,6 +2709,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
         }
         catch (OperationCanceledException)
         {
+            // The load was cancelled (a newer request or the control was unloaded): nothing is left to show.
         }
         finally
         {
@@ -2996,7 +2999,7 @@ public sealed partial class ConfigMakerUserControl : UserControl
             string exportText = ConfigMakerPresetStorageService
                 .CreateResolvedCommandForTextExport(presetDocument);
 
-            if (Path.GetExtension(filePath) == ".cdpiconfig")
+            if (string.Equals(Path.GetExtension(filePath), ".cdpiconfig", StringComparison.OrdinalIgnoreCase))
             {
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 using var package = await new ConfigShareService()

@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.ConditionalLaunch;
 using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.ComponentServices.Helpers;
@@ -73,12 +74,12 @@ namespace CDPIUI.Controls.Dialogs.ConditionalLaunch
                     .GetItemsByType("configlist")
                     .Where(item => !string.IsNullOrWhiteSpace(item.Id))
                     .Select(item => new ConditionalParameterChoice(
-                        item.ShortName ?? item.Id!,
+                        item.ShortName.NullIfEmpty() ?? item.Id!,
                         item.Id!)));
             }
-            catch
+            catch (Exception ex)
             {
-                // pass
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConditionalActionContentDialog), $"Cannot load installed config kits: {ex.Message}");
             }
 
             if (!string.IsNullOrWhiteSpace(existingKitId) &&
@@ -385,7 +386,7 @@ namespace CDPIUI.Controls.Dialogs.ConditionalLaunch
                 return string.Empty;
             try
             {
-                return DatabaseHelper.Instance.GetItemById(id)?.ShortName ?? id;
+                return DatabaseHelper.Instance.GetItemById(id)?.ShortName.NullIfEmpty() ?? id;
             }
             catch
             {

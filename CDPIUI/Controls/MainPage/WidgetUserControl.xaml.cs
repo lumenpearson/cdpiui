@@ -79,7 +79,7 @@ public sealed partial class WidgetUserControl : UserControl
         {
             var el = Widgets.FirstOrDefault(x => x.Id == guid);
             if (el != null)
-                WidgetHelper.RunActions(el.Type, el.ActionObject, this.XamlRoot);
+                _ = WidgetHelper.RunActions(el.Type, el.ActionObject, this.XamlRoot); // RunActions catches and logs its own errors.
         }
     }
 }

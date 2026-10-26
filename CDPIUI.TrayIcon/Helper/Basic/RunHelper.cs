@@ -25,7 +25,10 @@ namespace CDPIUI.TrayIcon.Helper
                     if (string.Equals(moduleNorm, target, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
-                catch { }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or NotSupportedException)
+                {
+                    // Protected and exited processes do not give their module; they are skipped.
+                }
             }
             return false;
         }

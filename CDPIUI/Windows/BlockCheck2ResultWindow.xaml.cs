@@ -106,7 +106,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
     {
         if (ReportOpenRequested)
         {
-            Load();
+            _ = Load(); // Load catches and logs its own errors.
         }
 
         if (!modeChoiceShown && viewModel.HasReport)
@@ -115,7 +115,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         }
     }
 
-    private async void Load()
+    private async Task Load()
     {
         string filePath = ReportUri;
         ReportOpenRequested = false;
@@ -128,6 +128,7 @@ public sealed partial class BlockCheck2ResultWindow : TemplateWindow
         }
         catch (Exception exception)
         {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(BlockCheck2ResultWindow), exception.ToString());
             NotificationCenter.Show(InfoBarSeverity.Error, Text("BlockCheck2ReportOpenFailedTitle"), exception.Message);
         }
         finally

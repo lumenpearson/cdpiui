@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -132,7 +133,9 @@ namespace CDPIUI.Shared.Security
 
             if (await Task.WhenAny(exited, Task.Delay(FileCheckTimeout)) != exited)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); }
+                // The process has just exited or cannot be ended; the check fails either way.
+                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException) { }
                 return false;
             }
 

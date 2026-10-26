@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -19,6 +21,7 @@ namespace EditHostFile
 
         static int Main(string[] args)
         {
+            RegisterCodePages();
             try
             {
                 Console.Title = Strings.WindowTitle;
@@ -65,14 +68,39 @@ namespace EditHostFile
             return 0;
         }
 
-        private sealed class HostsText
+        [DllImport("kernel32.dll")]
+        private static extern uint GetACP();
+
+        /// <summary>
+        /// .NET 8 has only the Unicode encodings, ASCII and Latin-1. The ANSI code pages
+        /// (for example 1251 and 1252) come from CodePagesEncodingProvider.
+        /// </summary>
+        internal static void RegisterCodePages()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        }
+
+        /// <summary>
+        /// The ANSI code page of the system. On .NET Framework, Encoding.Default gave this encoding.
+        /// On .NET 8, Encoding.Default is always UTF-8.
+        /// </summary>
+        internal static Encoding GetAnsiEncoding()
+        {
+            RegisterCodePages();
+            int codePage = OperatingSystem.IsWindows()
+                ? (int)GetACP()
+                : CultureInfo.CurrentCulture.TextInfo.ANSICodePage;
+            return Encoding.GetEncoding(codePage);
+        }
+
+        internal sealed class HostsText
         {
             public string Text;
             public Encoding Encoding;
             public string NewLine;
         }
 
-        private static HostsText Read(string path)
+        internal static HostsText Read(string path)
         {
             // Some systems have no hosts file at all; it is then treated as empty, and /add creates it.
             if (!File.Exists(path))
@@ -108,7 +136,7 @@ namespace EditHostFile
                 }
                 catch (DecoderFallbackException)
                 {
-                    encoding = Encoding.Default;
+                    encoding = GetAnsiEncoding();
                 }
             }
 
@@ -117,7 +145,7 @@ namespace EditHostFile
             return new HostsText { Text = text, Encoding = encoding, NewLine = newLine };
         }
 
-        private static void Write(string path, HostsText content)
+        internal static void Write(string path, HostsText content)
         {
             byte[] preamble = content.Encoding.GetPreamble();
             byte[] body = content.Encoding.GetBytes(content.Text);
@@ -154,7 +182,7 @@ namespace EditHostFile
             Write($"{path}.bak", content);
         }
 
-        private static void RestoreBackup(string path)
+        internal static void RestoreBackup(string path)
         {
             // The backup is the file as it was before /add without the added block. Copying it back
             // would also drop every change made to the hosts file since then (VPN clients, Docker,
@@ -166,12 +194,12 @@ namespace EditHostFile
             if (File.Exists(backup)) File.Delete(backup);
         }
 
-        private static string RemoveBlock(string text)
+        internal static string RemoveBlock(string text)
         {
             return Regex.Replace(text, @"(# \[CDOM-B\](?:.*?)# \[CDOM-E\](?:.*?))(?:\n|$)", "", RegexOptions.Singleline);
         }
 
-        private static void RemoveAddedLines(string path)
+        internal static void RemoveAddedLines(string path)
         {
             Log(string.Format(Strings.RemovingLines, path));
             HostsText content = Read(path);
@@ -187,7 +215,7 @@ namespace EditHostFile
             return text.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         }
 
-        private static void AddNewLines(string path)
+        internal static void AddNewLines(string path)
         {
             Log(string.Format(Strings.AddingLines, path));
             Assembly assembly = Assembly.GetExecutingAssembly();

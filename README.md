@@ -37,7 +37,7 @@
 |------------------------------|-----------------------------------------------------|
 | Оперативная память           | 100 МБ                                              |
 | Свободное место на жёстком диске | 200 МБ                                          |
-| .NET                         | .NET 8 Desktop Runtime (x64); .NET Framework 4.7.2  |
+| .NET                         | .NET 8 Desktop Runtime (x64)                        |
 | Операционная система         | Windows 10 версии 1809 (10.0.17763) и выше, x64     |
 
 ### Шаги установки
@@ -71,7 +71,7 @@
 
 Главное окно не запускает компоненты само: оно отправляет запрос трею, а трей запускает компонент и передаёт его состояние и вывод обратно. Трей принимает команды только от главного окна приложения и запускает файлы только из папки установки и папок данных **CDPI UI**. В установке MSI новую или изменённую программу вне папки установки трей запускает, только если это подписанный элемент Магазина или если пользователь подтвердил запуск.
 
-Ещё две утилиты работают на .NET Framework 4.7.2: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора.
+Ещё две утилиты работают на .NET 8, как и трей, и поставляются одним файлом каждая: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора.
 
 ## Сборка из исходного кода
 
@@ -86,6 +86,7 @@
 | Задача | Команда |
 |---|---|
 | Модульные тесты | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Модульные тесты с покрытием кода | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings coverage.runsettings` |
 | Сборка портативной версии | `pwsh .github/scripts/build_portable.ps1` |
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
@@ -101,6 +102,7 @@
 | Сборка, устройство и правила изменения кода | [.github/CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md) |
 | Главное окно (WinUI 3) | [CDPIUI/README.ru.md](CDPIUI/README.ru.md) |
 | Общая логика: Магазин, компоненты, настройки | [CDPIUI.Core/README.ru.md](CDPIUI.Core/README.ru.md) |
+| Каталог Магазина: формат, типы загрузки и проверки | [CDPIUI.Core/Store/README.ru.md](CDPIUI.Core/Store/README.ru.md) |
 | Язык условий LScript | [CDPIUI.Core/LScript/README.ru.md](CDPIUI.Core/LScript/README.ru.md) |
 | Общие типы и безопасность | [CDPIUI.Shared/README.ru.md](CDPIUI.Shared/README.ru.md) |
 | Протокол обмена между окном и треем | [CDPIUI.Shared/Pipe/README.ru.md](CDPIUI.Shared/Pipe/README.ru.md) |

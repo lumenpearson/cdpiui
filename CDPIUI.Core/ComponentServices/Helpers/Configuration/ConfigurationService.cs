@@ -9,6 +9,7 @@ using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Shared.Extensions;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -37,10 +38,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         private List<ConfigItem> InitConfigDirectory(DatabaseStoreItem item)
         {
-            string directory = item.Directory;
-            string id = item.Id;
+            string? directory = item.Directory;
+            string? id = item.Id;
 
-            if (string.IsNullOrEmpty(id)) return [];
+            if (string.IsNullOrEmpty(id) || directory == null) return [];
 
             List<ConfigItem> configItems = new List<ConfigItem>();
 
@@ -81,16 +82,16 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
                 try
                 {
-                    ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(jsonFile);
-
-                    if (configItem == null ||
-                        !MatchesTarget(configItem, Target, out bool isLegacyZapretConfig))
+                    ConfigItem? configItem = LoadPresetForTarget(jsonFile, Target, out bool isLegacyZapretConfig);
+                    if (configItem == null)
                         continue;
 
                     configItem.IsLegacy = isLegacyZapretConfig;
 
+                    // A preset without a name keeps its file name; Regex.Replace threw and the
+                    // preset was left out of the list.
                     var result = Regex.Replace(
-                        configItem.name!,
+                        configItem.name ?? Path.GetFileNameWithoutExtension(jsonFile),
                         // Only $NAME(key) is a script: a preset named "Fast $5 (beta)" stays as it is.
                         @"\$[A-Za-z_]+\((.*?)\)",
                         match =>
@@ -129,6 +130,45 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             return [.. array];
         }
 
+        private readonly record struct FileStamp(DateTime LastWriteTimeUtc, long Length);
+
+        private readonly record struct CachedPresetTarget(FileStamp Stamp, string? Target);
+
+        // The target of each preset file, shared by all components. An entry is used only while
+        // the file keeps the same write time and size.
+        private static readonly ConcurrentDictionary<string, CachedPresetTarget> PresetTargetCache =
+            new(StringComparer.Ordinal);
+
+        private static FileStamp GetFileStamp(string path)
+        {
+            FileInfo info = new(path);
+            return new FileStamp(info.LastWriteTimeUtc, info.Length);
+        }
+
+        /// <summary>
+        /// Reads a preset file when it is for <paramref name="target"/>, otherwise returns null.
+        /// Every component reads the same packs, so a file already known to be for another
+        /// component is skipped without parsing it again. A matching file is always parsed anew,
+        /// because callers change the returned item.
+        /// </summary>
+        internal static ConfigItem? LoadPresetForTarget(string jsonFile, string target, out bool isLegacyZapretConfig)
+        {
+            FileStamp stamp = GetFileStamp(jsonFile);
+            if (PresetTargetCache.TryGetValue(jsonFile, out CachedPresetTarget cached) &&
+                cached.Stamp == stamp &&
+                !MatchesTarget(cached.Target, target, out _))
+            {
+                isLegacyZapretConfig = false;
+                return null;
+            }
+
+            ConfigItem? configItem = JSONConvertor.LoadJson<ConfigItem>(jsonFile);
+            if (configItem != null)
+                PresetTargetCache[jsonFile] = new CachedPresetTarget(stamp, configItem.target?.FirstOrDefault());
+
+            return MatchesTarget(configItem, target, out isLegacyZapretConfig) ? configItem : null;
+        }
+
         private static bool MatchesTarget(
             ConfigItem? configItem,
             string target,
@@ -140,7 +180,14 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 return false;
             }
 
-            string? configTarget = configItem.target?.FirstOrDefault();
+            return MatchesTarget(configItem.target?.FirstOrDefault(), target, out isLegacyZapretConfig);
+        }
+
+        private static bool MatchesTarget(
+            string? configTarget,
+            string target,
+            out bool isLegacyZapretConfig)
+        {
             isLegacyZapretConfig =
                 target == HardcodedItemIds.ComponentIds[Components.Zapret2] &&
                 configTarget == HardcodedItemIds.ComponentIds[Components.Zapret];
@@ -198,7 +245,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 ConfigLocaleHelpers.Clear();
                 List<DatabaseStoreItem> configItems =
                     string.IsNullOrEmpty(itemId) ? 
-                    DatabaseHelper.Instance.GetItemsByType("configlist") : [DatabaseHelper.Instance.GetItemById(itemId)];
+                    DatabaseHelper.Instance.GetItemsByType("configlist") :
+                    DatabaseHelper.Instance.GetItemById(itemId) is { } configItem ? [configItem] : [];
 
                 List<DatabaseStoreItem> itemsToCheck = new List<DatabaseStoreItem>();
 
@@ -344,7 +392,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 Logger.Instance.CreateErrorLog(nameof(ConfigurationService), $"Cannot read \"{initFile}\": {ex.Message}");
                 return string.Empty;
             }
-            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN", null) ?? string.Empty;
+            string _preFilepath = configInitItem?.localized_strings_directory?.GetValueOrDefault("EN") ?? string.Empty;
             return string.IsNullOrEmpty(_preFilepath) ? string.Empty : Path.Combine(folder, _preFilepath);
         }
 
@@ -362,15 +410,19 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // A missing translation is not an error for the user; the default name is shown.
+                Basic.Logger.Instance.CreateDebugLog(nameof(ConfigurationService), $"Cannot get the localized name of {name}: {ex.Message}");
+            }
 
             return $"Toggle \"{name}\"";
         }
 
         public static Dictionary<string, string>? GetReadyToUseVariables(
-            string id, 
-            List<string> variables, 
-            Dictionary<string, bool> jparams)
+            string? id,
+            List<string>? variables,
+            Dictionary<string, bool>? jparams)
         {
             // Same rules as ConfigItem.ExpandVariables in the UI: names ignore case, and a name
             // declared twice takes the last value instead of failing the start.
@@ -409,7 +461,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         [GeneratedRegex("%(?<name>[A-Za-z0-9_.\\-]+)%", RegexOptions.CultureInvariant)]
         private static partial Regex VariableReferenceRegex();
 
-        public static string ReplaceVariables(string input, IDictionary<string, string> readyToUseVars)
+        public static string ReplaceVariables(string input, IDictionary<string, string>? readyToUseVars)
         {
             if (string.IsNullOrEmpty(input) || readyToUseVars == null || readyToUseVars.Count == 0)
             {
@@ -449,16 +501,16 @@ namespace CDPIUI.Core.ComponentServices.Configuration
         /// <returns>Component startup string for item</returns>
         public static string GetStartupParametersByConfigItem(ConfigItem item, bool forceRebuild = false)
         {
-            Dictionary<string, bool> jparams = item.jparams;
-            List<string> variables = item.variables;
-            string startupString = item.startup_string;
-            string packId = item.packId;
-            Dictionary<string, string> commaVars = item.commaVars;
+            Dictionary<string, bool>? jparams = item.jparams;
+            List<string>? variables = item.variables;
+            string? startupString = item.startup_string;
+            string? packId = item.packId;
+            Dictionary<string, string>? commaVars = item.commaVars;
 
             if (jparams == null || variables == null || startupString == null)
                 return string.Empty;
 
-            Dictionary<string, string> readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
+            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
 
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
@@ -481,9 +533,9 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 validateHashes,
                 forceRebuild);
         }
-        public static string ReplaceCommaVariables(string startupString, Dictionary<string, string> commaVars)
+        public static string ReplaceCommaVariables(string startupString, Dictionary<string, string>? commaVars)
         {
-            Dictionary<string, string> vars = commaVars;
+            Dictionary<string, string>? vars = commaVars;
 
             if (vars == null || vars.Count == 0)
                 return startupString;
@@ -494,10 +546,10 @@ namespace CDPIUI.Core.ComponentServices.Configuration
 
         public string GetStartupParameters(string filename, string packId)
         {
-            Dictionary<string, bool> jparams = null;
-            List<string> variables = null;
-            string startupString = null;
-            Dictionary<string, string> commaVars = null;
+            Dictionary<string, bool>? jparams = null;
+            List<string>? variables = null;
+            string? startupString = null;
+            Dictionary<string, string>? commaVars = null;
 
             foreach (ConfigItem item in Items)
             {
@@ -514,7 +566,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             if (startupString == null)
                 return string.Empty;
 
-            Dictionary<string, string> readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
+            Dictionary<string, string>? readyToUseVars = GetReadyToUseVariables(packId, variables, jparams);
 
             startupString = ReplaceVariables(startupString, readyToUseVars);
             startupString = ReplaceCommaVariables(startupString, commaVars);
@@ -604,7 +656,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 string.Equals(x.file_name, filename, StringComparison.Ordinal)
                 );
 
-            return configItem != null ? configItem.toggle_lists : [];
+            // The callers read Count: a preset without toggle lists gives an empty list.
+            return configItem?.toggle_lists ?? [];
         }
 
         public async Task<List<SiteListItem>> GetExcludedSiteListItemsAsync(
@@ -963,14 +1016,17 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                             if (vars.TryGetValue(remLine[0], out string _value))
                                 values.Add(_value);
 
-                            values.Add(value);
+                            if (!values.Contains(value))
+                                values.Add(value);
 
                             availableVarValues.Add(new()
                             {
                                 Comment = comment,
                                 VarName = remLine[0],
+                                // Index 0 is the value of "set X=..." when it came first; it was
+                                // left out, so "rem set X=b" after "set X=a" lost "a".
                                 CurrentValueIndex = 0,
-                                Values = [value]
+                                Values = values
                             });
                             comment = "";
                         }
@@ -985,9 +1041,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                     if (line.Contains("winws.exe"))
                     {
                         string ver = DatabaseHelper.Instance
-                            .IsItemInstalled(HardcodedItemIds.ComponentIds[Components.Zapret]) ?
-                            DatabaseHelper.Instance
-                            .GetItemById(HardcodedItemIds.ComponentIds[Components.Zapret]).CurrentVersion : 
+                            .GetItemById(HardcodedItemIds.ComponentIds[Components.Zapret])?.CurrentVersion ??
                             "%CURRENT%";
                         target = [HardcodedItemIds.ComponentIds[Components.Zapret], ver];
                     }
@@ -1041,7 +1095,8 @@ namespace CDPIUI.Core.ComponentServices.Configuration
             return Tuple.Create(configItem, errorHappens);
         }
 
-        public static Tuple<ConfigItem, bool>? LoadConfigFromFile(string filepath)
+        // The item is null when a .json file holds "null".
+        public static Tuple<ConfigItem?, bool>? LoadConfigFromFile(string filepath)
         {
             if (!File.Exists(filepath))
                 return null;
@@ -1061,7 +1116,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                         variables = [],
                         startup_string = oldConfig.custom_parameters,
                     };
-                    return Tuple.Create(newConfig, true);
+                    return Tuple.Create<ConfigItem?, bool>(newConfig, true);
                 }
                 return Tuple.Create(JSONConvertor.LoadJson<ConfigItem>(filepath), true);
             }
@@ -1072,7 +1127,7 @@ namespace CDPIUI.Core.ComponentServices.Configuration
                 {
                     var (configItem, errorHappens) = ConvertConfigFromBAT(filepath);
 
-                    return Tuple.Create(configItem, errorHappens);
+                    return Tuple.Create<ConfigItem?, bool>(configItem, errorHappens);
                 }
                 catch (Exception ex)
                 {

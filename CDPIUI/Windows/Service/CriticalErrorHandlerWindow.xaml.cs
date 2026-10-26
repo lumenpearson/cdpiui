@@ -52,6 +52,7 @@ namespace CDPIUI
             // The window may report a failure of the localizer itself, so English is kept as a fallback.
             string localizedTitle = null;
             try { localizedTitle = WinUI3Localizer.Localizer.Get().GetLocalizedString("CriticalErrorWindowTitle"); }
+            // A broken localizer is one of the errors this window reports: the English title is used.
             catch { }
             WindowTitle = string.IsNullOrEmpty(localizedTitle) ? "Critical error" : localizedTitle;
             IconUri = @"Assets/Icons/Error.ico";
@@ -90,7 +91,7 @@ namespace CDPIUI
 
         private void GetHelpButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchReportUrl();
+            _ = UrlOpenHelper.LaunchReportUrl();
         }
 
         private CancellationTokenSource _copyTimerCts;
@@ -128,7 +129,7 @@ namespace CDPIUI
             }
             catch (TaskCanceledException)
             {
-
+                // A new copy restarted the timer; that copy restores the text.
             }
         }
 

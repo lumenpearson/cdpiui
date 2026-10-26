@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using Windows.Foundation;
@@ -110,11 +111,18 @@ namespace CDPIUI.Controls
         }
 
         private ILocalizer localizer = Localizer.Get();
-        private async void ShowDialog(string message)
+        private async Task ShowDialog(string message)
         {
-            var dlg = new MessageDialog(message,localizer.GetLocalizedString("AutoCorrectError"));
-            InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
-            await dlg.ShowAsync();
+            try
+            {
+                var dlg = new MessageDialog(message,localizer.GetLocalizedString("AutoCorrectError"));
+                InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<CreateConfigHelperWindow>()));
+                await dlg.ShowAsync();
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(FileConfigInspectUserControl), exception.ToString());
+            }
         }
 
         private void ApplyAutoCorrectButton_Click(object sender, RoutedEventArgs e)
@@ -125,7 +133,7 @@ namespace CDPIUI.Controls
             }
             catch (Exception ex)
             {
-                ShowDialog("ERR_AUTOCORRECT_IO:\n" + ex.Message);
+                _ = ShowDialog("ERR_AUTOCORRECT_IO:\n" + ex.Message); // ShowDialog catches and logs its own errors.
                 return;
             }
             string lastSegment = FileSystemService.GetFolderNamesUpTo(ConvertFolderPath, SharedConstants.LocalUserItemsId);
@@ -159,7 +167,7 @@ namespace CDPIUI.Controls
                     }
                     catch (Exception ex)
                     {
-                        ShowDialog("ERR_AUTOCORRECT_IO:\n" + ex.Message);
+                        _ = ShowDialog("ERR_AUTOCORRECT_IO:\n" + ex.Message); // ShowDialog catches and logs its own errors.
                         return;
                     }
                     string lastSegment = FileSystemService.GetFolderNamesUpTo(ConvertFolderPath, SharedConstants.LocalUserItemsId);

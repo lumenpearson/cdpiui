@@ -40,8 +40,10 @@ namespace CDPIUI.Controls.Store
             get { return (string)GetValue(StoreIdProperty); }
             set { 
                 SetValue(StoreIdProperty, value);
-                CheckAvailiableActions();
-                VersionTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion.Replace("v", "") ?? string.Empty;
+                // One read of the row serves both the actions and the version.
+                DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+                CheckAvailiableActions(databaseStoreItem);
+                VersionTextBlock.Text = databaseStoreItem?.CurrentVersion.Replace("v", "") ?? string.Empty;
             }
         }
 
@@ -111,9 +113,11 @@ namespace CDPIUI.Controls.Store
                 new PropertyMetadata(new SolidColorBrush(Colors.Transparent))
             );
 
-        private void CheckAvailiableActions()
+        private void CheckAvailiableActions(DatabaseStoreItem databaseStoreItem)
         {
-            DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+            // The item is being removed; the library reloads without it.
+            if (databaseStoreItem == null)
+                return;
 
             BigActionButton.IsEnabled = true;
             ActionButton.IsEnabled = true;
@@ -150,6 +154,8 @@ namespace CDPIUI.Controls.Store
         private async void ActionButton_Click(object sender, RoutedEventArgs e)
         {
             DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+            if (databaseStoreItem == null)
+                return;
             if (databaseStoreItem.Type == "component")
             {
                 ModernMainWindow window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
@@ -183,6 +189,8 @@ namespace CDPIUI.Controls.Store
             ProgressBar.Visibility = Visibility.Visible;
             DeleteButton.IsEnabled = false;
             ReinstallButton.IsEnabled = false;
+            ActionButton.IsEnabled = false;
+            BigActionButton.IsEnabled = false;
         }
 
         private void ShowFolderButton_Click(object sender, RoutedEventArgs e)
@@ -191,9 +199,9 @@ namespace CDPIUI.Controls.Store
             {
                 ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
-            catch
+            catch (Exception exception)
             {
-
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreLibraryItemButton), exception.ToString());
             }
         }
     }

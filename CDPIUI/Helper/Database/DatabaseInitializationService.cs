@@ -77,7 +77,12 @@ namespace CDPIUI.Helper.Database
 
                 SettingsManager.Instance.SetValue("SYSTEM", "zapretRenamed", true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(
+                    nameof(DatabaseInitializationService),
+                    $"Cannot rename the installed Zapret item: {ex}");
+            }
         }
 
         private static void TryManualRestore(DatabaseStoreItem item)

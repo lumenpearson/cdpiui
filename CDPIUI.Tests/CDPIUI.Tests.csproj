@@ -1,9 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- net8.0-windows: the tests also reference Update and EditHostFile, which target net8.0-windows. -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Update uses Windows Forms. The tested Update code does not, and the tests must also run
+         on Linux, where the Windows Desktop runtime is not available. -->
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Reports unused code; the rules are set in the root .editorconfig. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -17,15 +23,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CDPIUI.Shared\CDPIUI.Shared.csproj" />
     <ProjectReference Include="..\CDPIUI.Core\CDPIUI.Core.csproj" />
     <ProjectReference Include="..\CDPIUI.AddOns\CDPIUI.AddOns.csproj" />
+    <ProjectReference Include="..\Update\Update.csproj" />
+    <ProjectReference Include="..\EditHostFile\EditHostFile.csproj" />
   </ItemGroup>
 
 </Project>

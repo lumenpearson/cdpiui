@@ -198,7 +198,7 @@ $<NAME>(<command>, <argument 1>, <argument 2>);$<NAME>(<command>, ...)
 |---|---|---|
 | `finish_component_setup` | component name | Calls `ComponentTasksManager.UpdateTaskList`. For `byedpi`, `spoofdpi` or `nodpi`, it sends the `ProxySetupRequired` notification when `PROXY/proxyType` is `None`. |
 | `install_msi` | path, `true`/`false` | Installs an MSI through the tray. The second argument tells if the library deletes the MSI after the installation. |
-| `download_easy_designer_annotation_file` | HTTPS URL | Adds `DOWNLOAD=<url>$SEPARATORedannotationfile;` to the result of `RunScript`. |
+| `download_easy_designer_annotation_file` | HTTPS URL, optional SHA-256 | Adds `DOWNLOAD=<url>$SEPARATORedannotationfile;` to the result of `RunScript`. With a SHA-256, adds `DOWNLOAD=<url>$SEPARATORedannotationfile$SEPARATOR<sha256>;`, and the installation rejects a file with another hash. |
 | `apply_config` | any | No operation. Older pack builders write it. The preset lists load again after each installation. |
 
 The names in the first column are case-sensitive and lower case.

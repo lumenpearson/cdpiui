@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
@@ -30,6 +31,7 @@ using System.Windows.Forms;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
+using CDPIUI.Helper.Items;
 
 
 namespace CDPIUI.Controls.Dialogs.EditConfig;
@@ -61,7 +63,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         InitializeComponent();
 
         InitDialog();
-        LoadConfigKits();
+        _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
 
         ConfigsListView.ItemsSource = ConfigModels;
         ConfigKitsListView.ItemsSource = ConfigKits;
@@ -102,7 +104,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
         if (items != null)
         {
-
+            PackNameLookup packNames = new();
             foreach (var item in items)
             {
                 ConfigModels.Add(
@@ -111,7 +113,7 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
                         DisplayName = item.name,
                         FileName = item.file_name,
                         PackId = item.packId,
-                        PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                        PackDisplayName = packNames.GetDisplayName(item.packId),
                         IsLegacyConfig = item.IsLegacy,
                     });
             }
@@ -127,24 +129,31 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
         }
     }
 
-    private async void LoadConfigKits()
+    private async Task LoadConfigKits()
     {
-        ConfigKits.Clear();
-        List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
-
-        foreach (DatabaseStoreItem item in items)
+        try
         {
-            ConfigKits.Add(new()
-            {
-                StoreId = item.Id,
-                Name = item.ShortName,
-                Developer = item.Developer,
-                ColorHEX = item.BackgroundColor,
-                ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs: item.Directory)))
-            });
-        }
+            ConfigKits.Clear();
+            List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
-        await Task.CompletedTask;
+            foreach (DatabaseStoreItem item in items)
+            {
+                ConfigKits.Add(new()
+                {
+                    StoreId = item.Id,
+                    Name = item.ShortName,
+                    Developer = item.Developer,
+                    ColorHEX = item.BackgroundColor,
+                    ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs: item.Directory)))
+                });
+            }
+
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(EditConfigWindowWelcomeContentDialog), exception.ToString());
+        }
     }
 
     private void ComponentChooseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -183,7 +192,10 @@ public sealed partial class EditConfigWindowWelcomeContentDialog : ContentDialog
 
                 CloseWithResult(EditConfigWelcomeWindowResult.EditConfig, item);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(EditConfigWindowWelcomeContentDialog), exception.ToString());
+            }
         }
     }
 

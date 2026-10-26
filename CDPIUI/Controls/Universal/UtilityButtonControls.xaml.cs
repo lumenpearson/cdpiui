@@ -374,7 +374,7 @@ namespace CDPIUI.Controls.Universal
             }
             catch (OperationCanceledException)
             {
-                
+                // The sequence was cancelled by a newer change or by suspended animations: nothing is left to do.
             }
             finally
             {

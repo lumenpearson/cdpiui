@@ -210,6 +210,7 @@ It uses `CatalogVerifier` from `CDPIUI.Shared` and `Secret.TrustedCertificates`.
 ## Store
 
 `StoreHelper` is the facade for the Store. The GUI uses this class. The other Store services are internal.
+The catalogue format, the download types and the checks for each type are in [Store/README.md](Store/README.md).
 
 | Type | Responsibility |
 |---|---|

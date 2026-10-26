@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using System.Collections.Specialized;
@@ -52,10 +53,11 @@ namespace CDPIUI
             NavView.SelectedItem = NavView.MenuItems[0];
             ContentFrame.Navigated += On_Navigated;
             ContentFrame.Navigate(GetMainPage(), new NameValueCollection());
+            RestartPrompt.Attach(this);
 
             if (!SettingsManager.Instance.GetValue<bool>("AD", "welcomeToPreview"))
             {
-                // ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
+                // _ = ShowDialog(localizer.GetLocalizedString("PreviewVersionDescription"), localizer.GetLocalizedString("PreviewVersion"));
                 // SettingsManager.Instance.SetValue("AD", "welcomeToPreview", true);
             }
         }
@@ -73,11 +75,18 @@ namespace CDPIUI
         }
 
 
-        private async void ShowDialog(string message, string title)
+        private async Task ShowDialog(string message, string title)
         {
-            var dlg = new MessageDialog(message, title);
-            InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(this));
-            await dlg.ShowAsync();
+            try
+            {
+                var dlg = new MessageDialog(message, title);
+                InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(this));
+                await dlg.ShowAsync();
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(ModernMainWindow), exception.ToString());
+            }
         }
 
 

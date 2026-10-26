@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Core.Store.Repository;
 using static CDPIUI.Core.Basic.ErrorsHelper;
 using TimeSpan = System.TimeSpan;
+using System.Runtime.ExceptionServices;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Repository.Localization;
 using CDPIUI.Core.Store.Queue;
@@ -31,7 +32,6 @@ namespace CDPIUI.Core.Store
 
         private ApplicationUpdateService? ApplicationUpdateService;
 
-        private const string ScriptGetArgsRegex = @"\$.*?\((.*?)\)";
 
         
 
@@ -54,7 +54,6 @@ namespace CDPIUI.Core.Store
         }
 
         public event Action<string>? StoreInternalErrorHappens;
-        public event Action<Tuple<string, string, List<string>>>? SelectFileNeeded;
         public event Action<string>? NowProcessItemActions;
         public event Action<string>? ItemActionsStopped;
 
@@ -166,9 +165,15 @@ namespace CDPIUI.Core.Store
         #endregion
 
         #region Localization
-        public string GetLocalizedStoreItemName(string name, string langCode)
+        private static readonly Dictionary<string, string> NoLocalizationPaths = [];
+
+        public string GetLocalizedStoreItemName(string? name, string langCode)
         {
-            LocalizationService.StoreLocalizationPaths = RepositoryLoaderService.StoreLocalizationPaths?? [];
+            // The setter clears the cached strings, so it runs only after a repository sync
+            // replaced the paths; before, every item name re-read the localization file.
+            var paths = RepositoryLoaderService.StoreLocalizationPaths ?? NoLocalizationPaths;
+            if (!ReferenceEquals(LocalizationService.StoreLocalizationPaths, paths))
+                LocalizationService.StoreLocalizationPaths = paths;
             return LocalizationService.GetLocalizedStoreItemName(name, langCode);
         }
         #endregion
@@ -314,6 +319,31 @@ namespace CDPIUI.Core.Store
         }
 
         /// <summary>
+        /// RemoveItemAsync works from the database record, which a failed first installation does
+        /// not have yet; its downloaded files stayed in the item folder.
+        /// </summary>
+        private static void DeleteFolderWithoutRecord(string itemId)
+        {
+            if (!StoreItemIds.IsValid(itemId) ||
+                itemId == SharedConstants.ApplicationStoreId ||
+                itemId == SharedConstants.LocalUserItemsId ||
+                DatabaseHelper.Instance.GetItemById(itemId) != null)
+                return;
+
+            string itemFolder = Path.Combine(Directories.StoreItemsDirectory, itemId);
+            if (!Directory.Exists(itemFolder) || !StoreItemIds.IsItemFolder(itemFolder))
+                return;
+            try
+            {
+                Directory.Delete(itemFolder, recursive: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Cannot delete \"{itemFolder}\": {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Stops the component before its files are replaced or deleted, together with the
         /// driver service it may hold open. Returns whether the component was running.
         /// </summary>
@@ -337,6 +367,9 @@ namespace CDPIUI.Core.Store
             return wasRunning;
         }
 
+        // Update checks sent at the same time; more would hit the API rate limits sooner.
+        private const int UpdateCheckConcurrency = 4;
+
         public async Task CheckUpdates()
         {
             if (IsNowUpdatesChecked) return;
@@ -350,20 +383,59 @@ namespace CDPIUI.Core.Store
 
                 List<DatabaseStoreItem> storeItems = DatabaseHelper.Instance.GetAllInstalledItems();
 
+                List<(DatabaseStoreItem Item, string RepoUrl)> itemsToCheck = [];
+                ExceptionDispatchInfo? prepareError = null;
                 foreach (var item in storeItems)
                 {
                     if (item.Id == SharedConstants.LocalUserItemsId || item.VersionControlType == "local") continue;
 
-                    string downloadUrl = item.DownloadUrl;
-                    string versionControlType = item.VersionControlType;
-                    string directory = item.Directory;
-
-                    string? repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
+                    string? repoUrl;
+                    try
+                    {
+                        repoUrl = GetReadyToUseRepoUrl(item.UpdateCheckUrl, item.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        // The items before this one are still checked, as when they were checked one by one.
+                        prepareError = ExceptionDispatchInfo.Capture(ex);
+                        break;
+                    }
                     // Local packs have no update source; that is not an error.
                     if (string.IsNullOrEmpty(repoUrl))
                         continue;
 
-                    var versionDataCheckResult = await APIWorker.GetLastVersionAndVersionNotes(repoUrl);
+                    itemsToCheck.Add((item, repoUrl));
+                }
+
+                // The requests run a few at a time; the results are handled below in the item order.
+                using SemaphoreSlim requestSlots = new(UpdateCheckConcurrency);
+                var versionRequests = itemsToCheck
+                    .Select(async x =>
+                    {
+                        await requestSlots.WaitAsync().ConfigureAwait(false);
+                        try
+                        {
+                            return await APIWorker.GetLastVersionAndVersionNotes(x.RepoUrl).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            requestSlots.Release();
+                        }
+                    })
+                    .ToList();
+                try
+                {
+                    await Task.WhenAll(versionRequests);
+                }
+                catch
+                {
+                    // Each failed request is handled below at its place in the list.
+                }
+
+                for (int i = 0; i < itemsToCheck.Count; i++)
+                {
+                    var (item, repoUrl) = itemsToCheck[i];
+                    var versionDataCheckResult = await versionRequests[i];
 
                     if (versionDataCheckResult.ErrorHappens || !versionDataCheckResult.Success)
                     {
@@ -402,6 +474,8 @@ namespace CDPIUI.Core.Store
                         continue;
                     }
                 }
+
+                prepareError?.Throw();
             }
             catch (Exception ex)
             {
@@ -445,7 +519,10 @@ namespace CDPIUI.Core.Store
                     // A failed update keeps the installed version; only a failed first
                     // installation is cleaned up.
                     if (!wasInstalled)
+                    {
                         await RemoveItemAsync(qi.ItemId);
+                        DeleteFolderWithoutRecord(qi.ItemId);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -526,7 +603,6 @@ namespace CDPIUI.Core.Store
                 var gettingPatchReadyResult = await ApplicationUpdateService
                     .GetPatchReadyToInstall(
                     Path.Combine(itemFolder, "patch.cdpipatch"), 
-                    qi.OperationId, 
                     OnlineItemsInstallationService.DownloadWorker);
 
                 ApplicationUpdateService = null;
@@ -553,7 +629,8 @@ namespace CDPIUI.Core.Store
                     .FailureResult(HandleException(PrettyErrorCode.ITEM_NOT_FOUND));
             }
 
-            var result = await OnlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, cancellationTokenSource);
+            // Set by ProcessAsync for the whole installation.
+            var result = await OnlineItemsInstallationService.DownloadAndInstallItemFromOnlineStore(qi, item, cancellationTokenSource!);
 
             if (!result.Success && result.ErrorHappens)
             {
@@ -577,10 +654,10 @@ namespace CDPIUI.Core.Store
                 .SuccessResult(Tuple.Create(tag, downloadUrl, item));
         }
         
-        private OperationResultModel<Tuple<string, string?, RepoItemModel>> GetReadyLocalItem(QueueItemModel qi)
+        private OperationResultModel<Tuple<string?, string?, RepoItemModel>> GetReadyLocalItem(QueueItemModel qi)
         {
             RepoItemModel item;
-            string tag;
+            string? tag;
             string downloadUrl;
 
             string id = qi.ItemId;
@@ -589,7 +666,7 @@ namespace CDPIUI.Core.Store
             string itemFolder = Path.Combine(Directories.StoreItemsDirectory, qi.ItemId);
 
             var copyResult = CopyLocalPack(id, itemFolder, packFilePath);
-            if (!copyResult.Success) return OperationResultModel<Tuple<string, string?, RepoItemModel>>.FailureResult(copyResult.Error);
+            if (!copyResult.Success) return OperationResultModel<Tuple<string?, string?, RepoItemModel>>.FailureResult(copyResult.Error);
 
             if (qi.ItemId == SharedConstants.ApplicationStoreId)
             {
@@ -602,7 +679,7 @@ namespace CDPIUI.Core.Store
                 string initFilePath = Path.Combine(itemFolder, "init.json");
 
                 if (!File.Exists(initFilePath))
-                    return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                    return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                         .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
                 LocalItemInitModel? localItemInitModel;
@@ -616,7 +693,7 @@ namespace CDPIUI.Core.Store
                     localItemInitModel = null;
                 }
                 if (localItemInitModel == null)
-                    return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                    return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                         .FailureResult(HandleException(PrettyErrorCode.PACK_NOT_SUPPORTED_TYPE));
 
                 item = new()
@@ -642,10 +719,10 @@ namespace CDPIUI.Core.Store
             }
 
             if (item == null)
-                return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+                return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                     .FailureResult(HandleException(PrettyErrorCode.NULL_REFERENCE));
 
-            return OperationResultModel<Tuple<string, string?, RepoItemModel>>
+            return OperationResultModel<Tuple<string?, string?, RepoItemModel>>
                 .SuccessResult(Tuple.Create(tag, downloadUrl, item));
         }
 
@@ -748,7 +825,7 @@ namespace CDPIUI.Core.Store
         }
         
         private async Task<OperationResultModel<EmptyResult>> AddItemToDatabase(
-            string version,
+            string? version,
             string? downloadUrl,
             string itemFolder,
             RepoItemModel item,

@@ -44,6 +44,7 @@ public sealed partial class MainPage : TemplatePage
         {
             PrepareToConnectedForwardAnimate(ActionButtonsGrid);
         }
+        // The connected animation is cosmetic; the navigation goes on without it.
         catch { }
     }
 
@@ -68,7 +69,7 @@ public sealed partial class MainPage : TemplatePage
 
     private void MyProblemNotInListCard_Click(object sender, RoutedEventArgs e)
     {
-        UrlOpenHelper.LaunchReportUrl();
+        _ = UrlOpenHelper.LaunchReportUrl();
     }
 
     private async void ComponentDoesNotRunCard_Click(object sender, RoutedEventArgs e)

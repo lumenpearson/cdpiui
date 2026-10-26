@@ -5,6 +5,7 @@ using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.Store;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
+using CDPIUI.Shared.Extensions;
 
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,9 @@ namespace CDPIUI.Helper.Items
             {
                 List<string> outdatedComponents = [];
                 var components = ComponentItemsLoaderHelper.Instance.GetComponentHelpers();
+                // One read of the database instead of one per preset; ids are compared as the database does.
+                Dictionary<string, DatabaseStoreItem> installedItems = DatabaseHelper.Instance.GetAllInstalledItems()
+                    .ToDictionary(item => item.Id, StringComparer.Ordinal);
 
                 foreach (var component in components)
                 {
@@ -51,8 +55,7 @@ namespace CDPIUI.Helper.Items
                     {
                         if (config.target != null && config.target.Count == 2)
                         {
-                            var databaseItem = DatabaseHelper.Instance.GetItemById(config.target[0]);
-                            if (databaseItem == null) continue;
+                            if (!installedItems.TryGetValue(config.target[0], out var databaseItem)) continue;
 
                             string requiredVersion = config.target[1];
                             string installedVersion = databaseItem.CurrentVersion;
@@ -73,7 +76,9 @@ namespace CDPIUI.Helper.Items
                     await PipeHelper.SendNotificationPacket(Shared.Pipe.Models.NotificationsMessageIds.CompatibilityCheckAssistant,
                         new()
                         {
-                            { "componentName", HardcodedItemIds.ComponentIds.FirstOrDefault(x => x.Value == component).Key.ToString() }
+                            { "componentName", HardcodedItemIds.ComponentIds.TryGetKeyByValue(component, out var knownComponent)
+                                ? knownComponent.ToString()
+                                : DatabaseHelper.Instance.GetItemById(component)?.ShortName is { Length: > 0 } shortName ? shortName : component }
                         });
                 }
             }

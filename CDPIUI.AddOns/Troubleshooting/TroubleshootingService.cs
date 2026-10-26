@@ -5,6 +5,7 @@ using CDPIUI.Core.Data;
 using CDPIUI.Core.Proxy;
 using CDPIUI.Core.Store;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.ServiceProcess;
 
 namespace CDPIUI.AddOns.Troubleshooting
@@ -199,7 +200,7 @@ namespace CDPIUI.AddOns.Troubleshooting
             // The Intel(R) Connectivity Network Service only: "Network" alone matched many
             // Windows services, so the check failed on almost every computer.
             bool isRunningIntelConnectivityNetwork = IsServiceRunning(service =>
-                Matches(service, "Intel") && Matches(service, "Connectivity Network"));
+                OperatingSystem.IsWindows() && Matches(service, "Intel") && Matches(service, "Connectivity Network"));
 
             CurrentStateChanged?.Invoke(RunBasicDialogStates.CheckCheckPointServices);
             bool isCheckPointServiceRunning = IsServiceRunning("TracSrvWrapper") || IsServiceRunning("EPWD");
@@ -345,9 +346,13 @@ namespace CDPIUI.AddOns.Troubleshooting
             {
                 if (!OperatingSystem.IsWindows()) return true;
                 Services ??= ServiceController.GetServices();
-#pragma warning disable CA1416 // Validate platform compatibility
-                return Services.FirstOrDefault(s => s.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase))?.Status != null;
-#pragma warning restore CA1416 // Validate platform compatibility
+                // A loop, not a lambda: the platform analyzer sees the Windows check above.
+                foreach (var service in Services)
+                {
+                    if (service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                return false;
             }
             catch
             {
@@ -356,7 +361,8 @@ namespace CDPIUI.AddOns.Troubleshooting
         }
 
         private bool IsServiceRunning(string name) =>
-            IsServiceRunning(service => service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
+            IsServiceRunning(service =>
+                OperatingSystem.IsWindows() && service.ServiceName.Contains(name, StringComparison.OrdinalIgnoreCase));
 
         // Any matching service that runs: the first match alone could be a stopped one.
         private bool IsServiceRunning(Func<ServiceController, bool> match)
@@ -365,10 +371,13 @@ namespace CDPIUI.AddOns.Troubleshooting
             {
                 if (!OperatingSystem.IsWindows()) return true;
                 Services ??= ServiceController.GetServices();
-#pragma warning disable CA1416 // Validate platform compatibility
-                return Services.Where(match).Any(service =>
-                    service.Status is ServiceControllerStatus.Running or ServiceControllerStatus.StopPending or ServiceControllerStatus.StartPending);
-#pragma warning restore CA1416 // Validate platform compatibility
+                foreach (var service in Services)
+                {
+                    if (match(service) &&
+                        service.Status is ServiceControllerStatus.Running or ServiceControllerStatus.StopPending or ServiceControllerStatus.StartPending)
+                        return true;
+                }
+                return false;
             }
             catch
             {
@@ -376,11 +385,10 @@ namespace CDPIUI.AddOns.Troubleshooting
             }
         }
 
-#pragma warning disable CA1416 // Validate platform compatibility
+        [SupportedOSPlatform("windows")]
         private static bool Matches(ServiceController service, string text) =>
             service.ServiceName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
             service.DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase);
-#pragma warning restore CA1416 // Validate platform compatibility
 
         private static bool ExistsOnPath(string fileName)
         {
@@ -437,7 +445,12 @@ namespace CDPIUI.AddOns.Troubleshooting
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); }
+                catch (Exception ex)
+                {
+                    // For example, the process exited at the same time; the timeout is reported below.
+                    Logger.Instance.CreateWarningLog(nameof(TroubleshootingService), $"Cannot stop {fileName}: {ex.Message}");
+                }
                 throw new System.TimeoutException($"{fileName} did not finish in time");
             }
             await errors;
@@ -481,12 +494,10 @@ namespace CDPIUI.AddOns.Troubleshooting
         {
             Process[] processes =
                 Process.GetProcessesByName(procName);
-
-            if (processes.Length > 0)
-            {
-                return true;
-            }
-            return false;
+            // Each Process holds a handle until it is disposed.
+            foreach (var process in processes)
+                process.Dispose();
+            return processes.Length > 0;
         }
 
         private static async Task<bool> GetDnsAddress()
@@ -509,7 +520,6 @@ namespace CDPIUI.AddOns.Troubleshooting
 
         #region StoreFixServices
         private TaskCompletionSource<bool>? _tcs;
-        private bool opResult;
         // The answer of the tray can be lost; without a time limit the fix waited forever.
         private static readonly TimeSpan GrantAccessTimeout = TimeSpan.FromSeconds(30);
 
@@ -529,7 +539,6 @@ namespace CDPIUI.AddOns.Troubleshooting
 
         public void OnGrantAccessCompleted(bool state)
         {
-            opResult = state;
             // An answer without a request is ignored.
             _tcs?.TrySetResult(state);
         }

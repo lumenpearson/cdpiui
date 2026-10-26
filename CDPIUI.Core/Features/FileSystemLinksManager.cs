@@ -56,7 +56,7 @@ namespace CDPIUI.Core.Features
             try
             {
                 Debug.WriteLine($">>> {linkTo} {itemId}");
-                string backupFile = SettingsManager.Instance.GetValue<string>(
+                string? backupFile = SettingsManager.Instance.GetValue<string>(
                     ["HARDLINKS", itemId, linkTo], "backupFile");
                 bool hadOriginal = !string.IsNullOrEmpty(backupFile) && backupFile != "NaN";
                 if (hadOriginal && !File.Exists(backupFile))
@@ -66,8 +66,9 @@ namespace CDPIUI.Core.Features
                 }
                 File.Delete(linkTo);
                 // Without an original file the link is only removed.
+                // hadOriginal is true only for a non-empty backupFile.
                 if (hadOriginal)
-                    File.Move(backupFile, linkTo);
+                    File.Move(backupFile!, linkTo);
 
                 SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "backupFile", "NaN");
                 SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "targetFile", "NaN");

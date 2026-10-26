@@ -38,7 +38,6 @@ namespace CDPIUI.Core.Store.Network
 
             try
             {
-                if (string.IsNullOrEmpty(Token)) throw new ArgumentNullException(nameof(Token));
                 if (string.IsNullOrEmpty(repoUrl)) throw new ArgumentNullException(nameof(repoUrl));
                 if (string.IsNullOrEmpty(targetFileOrFileType)) throw new ArgumentNullException(nameof(targetFileOrFileType));
 
@@ -56,6 +55,11 @@ namespace CDPIUI.Core.Store.Network
                         .FailureResult(ErrorModel.OnlyErrorCode(PrettyErrorCode.ERROR_HTTP_INVALID_SERVER_RESPONSE));
                 }
 
+                // The value is a file type or an exact asset name. A name is not a type, so it
+                // matches by name only.
+                var fileType = targetFileOrFileType.ToEnum(FileExtensionTypes.none);
+                string? typeExtension = fileType == FileExtensionTypes.none ? null : FileSystemService.GetFileExtension(fileType);
+
                 var matches = ((JsonElement.ArrayEnumerator)assets)
                     .Select(a => new
                     {
@@ -67,9 +71,7 @@ namespace CDPIUI.Core.Store.Network
                     )
                     .Where(a =>
                         string.Equals(a.Name, targetFileOrFileType, StringComparison.OrdinalIgnoreCase)
-                        || a.Name.EndsWith(
-                            FileSystemService.GetFileExtension(targetFileOrFileType.ToEnum<FileExtensionTypes>()), 
-                            StringComparison.OrdinalIgnoreCase)
+                        || (typeExtension != null && a.Name.EndsWith(typeExtension, StringComparison.OrdinalIgnoreCase))
                     )
                     .Where(a =>
                         preferredFile is null ||
@@ -151,7 +153,8 @@ namespace CDPIUI.Core.Store.Network
                     type = file.type,
                     archive_root_folder = file.archive_root_folder,
                     actions = file.actions,
-                    target_executable_file = null
+                    target_executable_file = null,
+                    sha256 = file.sha256
                 });
             }
 
@@ -187,7 +190,8 @@ namespace CDPIUI.Core.Store.Network
             string repoUrl, 
             string? version)
         {
-            if (string.IsNullOrEmpty(Token)) throw new ArgumentNullException(nameof(Token));
+            // Without a token the request is anonymous: public repositories work with the
+            // lower rate limit, and private ones return an HTTP error.
             var uri = new Uri(repoUrl);
             var parts = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
             // GitLab projects may sit in nested groups ("group/subgroup/project"), and its pages

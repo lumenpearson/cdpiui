@@ -102,6 +102,18 @@ public class XmlSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void SaveIsSkippedWhileTheOtherProcessHoldsTheLock()
+    {
+        var settings = new XMLSettingsService(SettingsPath);
+        settings.SetValue("APPEARANCE", "Theme", "Dark");
+
+        using (new FileStream(SettingsPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            settings.SetValue("APPEARANCE", "Theme", "Light");
+
+        Assert.Equal("Dark", new XMLSettingsService(SettingsPath).GetValue<string>("APPEARANCE", "Theme"));
+    }
+
+    [Fact]
     public void ListItemsWithSeparatorsRoundTrip()
     {
         List<string> items = [@"C:\Lists\a;b.txt", "100%.txt", "%3B literal", ""];

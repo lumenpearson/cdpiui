@@ -56,9 +56,11 @@ namespace CDPIUI.TrayIcon.Helper
 
         public bool IsProcessInfoChanged = false;
 
-        public event Action<ErrorModel>? ErrorHappens;
-        public event Action<string>? OutputReceived;
-        public event Action<string>? ProcessNameChanged;
+        // The tray sends errors, output and process names to the GUI through the pipe, so these
+        // events of the interface are never raised here.
+        event Action<ErrorModel>? IProcessService.ErrorHappens { add { } remove { } }
+        event Action<string>? IProcessService.OutputReceived { add { } remove { } }
+        event Action<string>? IProcessService.ProcessNameChanged { add { } remove { } }
         // The tray shows no error windows; errors go to the GUI through the pipe.
         event Action<string>? IProcessService.ShowErrorMessageWindow { add { } remove { } }
 
@@ -97,15 +99,20 @@ namespace CDPIUI.TrayIcon.Helper
                 }
                 else if (proxyType == "ProxiFyre")
                 {
-                    proxiFyreHelper.RunProcess(proxiFyreDir, string.Empty, Path.GetDirectoryName(proxiFyreDir)!);
+                    _ = proxiFyreHelper.RunProcess(proxiFyreDir, string.Empty, Path.GetDirectoryName(proxiFyreDir)!);
                 }
             }
             await Task.CompletedTask;
         }
 
+        // 1 while the system proxy set by this component is on.
+        private int _systemProxyStarted;
+
+        // Runs for the stop command and again for the exit events of the process: only the first
+        // call after StartProxy restores the system proxy.
         public async Task StopProxy()
         {
-            if (proxyType == "AllSystem")
+            if (Interlocked.Exchange(ref _systemProxyStarted, 0) == 1)
                 StopSystemProxy();
 
             if (proxiFyreHelper.processState)
@@ -128,7 +135,7 @@ namespace CDPIUI.TrayIcon.Helper
         }
         
 
-        public async Task StartProcess(string executable, string args)
+        public async Task StartProcess(string executable, string? args)
         {
             LastError = null;
             IsProcessInfoChanged = false;
@@ -144,7 +151,7 @@ namespace CDPIUI.TrayIcon.Helper
 
             SendNowSelectedComponentName();
 
-            conPTYHelper.RunProcess(exePath, args, workingDirectory?? "");
+            _ = conPTYHelper.RunProcess(exePath, args ?? string.Empty, workingDirectory?? "");
         }
 
         public void SendNowSelectedComponentName()
@@ -159,7 +166,9 @@ namespace CDPIUI.TrayIcon.Helper
 
         public async Task StopProcess(bool output = true)
         {
-            if (conPTYHelper.processState)
+            // A start that still waits for its turn counts too: it ran after this stop when the
+            // previous process had just exited.
+            if (conPTYHelper.IsRunningOrStarting)
             {
                 await StopProxy();
                 await conPTYHelper.StopProcess(output);
@@ -287,6 +296,7 @@ namespace CDPIUI.TrayIcon.Helper
                         RegeditHelper.SaveSnapshotBackup(_systemProxyBackup);
                     }
                     RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
+                    Interlocked.Exchange(ref _systemProxyStarted, 1);
                 }
             }
             catch (Exception ex)
@@ -302,10 +312,11 @@ namespace CDPIUI.TrayIcon.Helper
             {
                 lock (SystemProxyLock)
                 {
-                    if (_systemProxyBackup != null)
-                        RegeditHelper.RestoreProxySnapshot(_systemProxyBackup);
-                    else
-                        RegeditHelper.SaveProxySettings(string.Empty, string.Empty, 0);
+                    // Without a backup the settings were already restored; clearing them here
+                    // wiped the user's own proxy.
+                    if (_systemProxyBackup == null)
+                        return;
+                    RegeditHelper.RestoreProxySnapshot(_systemProxyBackup);
                     _systemProxyBackup = null;
                     RegeditHelper.DeleteSnapshotBackup();
                 }

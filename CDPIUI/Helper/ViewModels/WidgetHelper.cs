@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using WinUI3Localizer;
 
 namespace CDPIUI.Helper.ViewModels
@@ -149,35 +150,42 @@ namespace CDPIUI.Helper.ViewModels
             return widgets;
         }
 
-        public static async void RunActions(WidgetType actionType, object actionObject, XamlRoot xamlRoot)
+        public static async Task RunActions(WidgetType actionType, object actionObject, XamlRoot xamlRoot)
         {
-            if (AllowedWidgetTypeObjectTypes.TryGetValue(actionType, out Type expectedType) && expectedType == actionObject.GetType())
+            try
             {
-                switch(actionType)
+                if (AllowedWidgetTypeObjectTypes.TryGetValue(actionType, out Type expectedType) && expectedType == actionObject.GetType())
                 {
-                    case WidgetType.OpenWindow:
-                        if (((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Parameter == null)
-                            await ((App)Application.Current).SafeCreateNewWindow(((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Target);
-                        else
-                            await ((App)Application.Current).UnsafeCreateNewWindow(
-                                ((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Target, 
-                                id:(string)((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Parameter);
-                        break;
-                    case WidgetType.OpenDialog:
-                        var dialog = (ContentDialog)Activator.CreateInstance(((LaunchActionWithParameterModel<ContentDialog>)actionObject).Target);
+                    switch(actionType)
+                    {
+                        case WidgetType.OpenWindow:
+                            if (((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Parameter == null)
+                                await ((App)Application.Current).SafeCreateNewWindow(((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Target);
+                            else
+                                await ((App)Application.Current).UnsafeCreateNewWindow(
+                                    ((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Target, 
+                                    id:(string)((LaunchActionWithParameterModel<TemplateWindow>)actionObject).Parameter);
+                            break;
+                        case WidgetType.OpenDialog:
+                            var dialog = (ContentDialog)Activator.CreateInstance(((LaunchActionWithParameterModel<ContentDialog>)actionObject).Target);
 
-                        dialog.XamlRoot = xamlRoot;
+                            dialog.XamlRoot = xamlRoot;
 
-                        await dialog.ShowQueuedAsync();
-                        break;
+                            await dialog.ShowQueuedAsync();
+                            break;
 
-                    case WidgetType.LaunchUrl: 
-                        UrlOpenHelper.LaunchUrl((string)actionObject);
-                        break;
-                    case WidgetType.NavigateToPage:
-                        Commands.CommandsHandler.HandleCommand((string)actionObject);
-                        break;
+                        case WidgetType.LaunchUrl: 
+                            await UrlOpenHelper.LaunchUrl((string)actionObject);
+                            break;
+                        case WidgetType.NavigateToPage:
+                            Commands.CommandsHandler.HandleCommand((string)actionObject);
+                            break;
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WidgetHelper), exception.ToString());
             }
         }
     }

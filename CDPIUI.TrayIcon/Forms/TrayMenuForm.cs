@@ -145,15 +145,7 @@ namespace CDPIUI.TrayIcon.Forms
             if (IsDisposed || !IsHandleCreated)
                 return;
 
-            List<TaskModel<ProcessManager>> tasks;
-            try
-            {
-                tasks = TasksHelper.Instance.Tasks.ToList().DistinctBy(task => task.Id).ToList();
-            }
-            catch (InvalidOperationException)
-            {
-                return;
-            }
+            List<TaskModel<ProcessManager>> tasks = TasksHelper.Instance.GetTasksSnapshotSync().DistinctBy(task => task.Id).ToList();
 
             SafeInvoke(() =>
             {
@@ -218,8 +210,14 @@ namespace CDPIUI.TrayIcon.Forms
                 if (!IsDisposed && IsHandleCreated)
                     Invoke(action);
             }
-            catch (ObjectDisposedException) { }
-            catch (InvalidOperationException) { }
+            catch (ObjectDisposedException)
+            {
+                // The form was closed after the check above; there is nothing to update.
+            }
+            catch (InvalidOperationException)
+            {
+                // The window handle was destroyed after the check above; there is nothing to update.
+            }
         }
 
         private void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate) =>

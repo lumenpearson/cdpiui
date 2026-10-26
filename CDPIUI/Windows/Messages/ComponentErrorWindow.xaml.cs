@@ -1,4 +1,5 @@
-﻿using CDPIUI.Commands;
+﻿using CDPIUI.Shared.Extensions;
+using CDPIUI.Commands;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Default;
 using CDPIUI.Shared.PrettyErrorConversionService;
@@ -27,7 +28,7 @@ public sealed partial class ComponentErrorWindow : TemplateWindow
         var item = DatabaseHelper.Instance.GetItemById(componentId);
         Heading.Text = localizer.GetLocalizedString("ComponentFailureTitle");
         Description.Text = string.Format(localizer.GetLocalizedString("ComponentFailureDescription"),
-            item?.ShortName ?? item?.Name ?? componentId);
+            item?.ShortName.NullIfEmpty() ?? item?.Name.NullIfEmpty() ?? componentId);
         ErrorCode.Text = error?.ErrorCode ?? "UNKNOWN_ERROR";
         ConsoleLink.Tag = $"cdpiui://Tools/Console/{Uri.EscapeDataString(componentId)}";
     }

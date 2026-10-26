@@ -57,7 +57,8 @@ namespace CDPIUI.Core.Store.Network
             string? executableFileName = "executableFile",
             string filetype = "",
             bool removeAfterAction = false,
-            string filename = ""
+            string filename = "",
+            string? expectedSha256 = null
         )
         {
             LastError = null;
@@ -95,7 +96,17 @@ namespace CDPIUI.Core.Store.Network
                     return false;
                 }
 
-
+                // A catalogue entry with a hash pins the file: a changed release asset or a replaced
+                // download is rejected before anything is extracted or installed.
+                if (!string.IsNullOrWhiteSpace(expectedSha256) && !HasSha256(tempDestination, expectedSha256))
+                {
+                    const string errorCode = "ERR_DOWNLOAD_HASH_MISMATCH";
+                    Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
+                    StageChanged?.Invoke(Tuple.Create(OperationId, "ErrorHappens"));
+                    ErrorHappens?.Invoke(Tuple.Create(OperationId, errorCode, "Hash mismatch"));
+                    LastError = ErrorModel.OnlyErrorCode(errorCode);
+                    return false;
+                }
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (extractArchive)
@@ -107,6 +118,10 @@ namespace CDPIUI.Core.Store.Network
                 {
                     if (!string.IsNullOrEmpty(executableFileName))
                     {
+                        // target_executable_file comes from the catalogue: "..\..\x" wrote the
+                        // download outside the item folder.
+                        if (!IsPlainFileName(executableFileName))
+                            throw new InvalidDataException($"Invalid target file name: {executableFileName}");
                         string copiedPath = Path.Combine(destinationPath, executableFileName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
                         File.Copy(tempDestination, copiedPath, true);
                         _extractedFiles.Add(copiedPath);
@@ -128,10 +143,11 @@ namespace CDPIUI.Core.Store.Network
                 if (filetype == FileExtensionTypes.msi.ToString() || filetype == FileExtensionTypes.elmsi.ToString())
                 {
                     StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
-                    string installerExeName = GetFileNameFromUri(url);
-                    installerExeName = string.IsNullOrEmpty(installerExeName) ? "installer" : installerExeName;
-
-                    string msiPath = Path.Combine(destinationPath, installerExeName + (!isSupportedFileExtension ? filetype : FileSystemService.GetFileExtension(enFiletype)));
+                    // The installer is the file copied above, whose name can come from
+                    // target_executable_file and not from the URL.
+                    if (_extractedFiles.Count == 0)
+                        throw new IOException("The installer was not copied.");
+                    string msiPath = _extractedFiles[^1];
                     msiGUID = Guid.NewGuid().ToString();
                     MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
                     msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
@@ -171,7 +187,8 @@ namespace CDPIUI.Core.Store.Network
             }
             finally
             {
-                try { if (File.Exists(tempDestination)) File.Delete(tempDestination); } catch { }
+                try { if (File.Exists(tempDestination)) File.Delete(tempDestination); }
+                catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove the temporary file \"{tempDestination}\": {ex.Message}"); }
 
                 // An installer copied from this download is removed again when it failed to install
                 // only; other files may have replaced the files of the installed version and
@@ -182,7 +199,8 @@ namespace CDPIUI.Core.Store.Network
                 {
                     foreach (var file in _extractedFiles)
                     {
-                        try { if (File.Exists(file)) File.Delete(file); } catch { }
+                        try { if (File.Exists(file)) File.Delete(file); }
+                        catch (Exception ex) { Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"Cannot remove \"{file}\": {ex.Message}"); }
                     }
                 }
             }
@@ -198,10 +216,26 @@ namespace CDPIUI.Core.Store.Network
             string? executableFileName = "executableFile",
             FileExtensionTypes filetype = FileExtensionTypes.temp,
             bool removeAfterAction = false,
-            string filename = ""
+            string filename = "",
+            string? expectedSha256 = null
         )
         {
-            return await DownloadAndExtractAsync(url, destinationPath, extractArchive, extractSkipFiletypes, extractRootFolder, executableFileName, filetype.ToString(), removeAfterAction, filename);
+            return await DownloadAndExtractAsync(url, destinationPath, extractArchive, extractSkipFiletypes, extractRootFolder, executableFileName, filetype.ToString(), removeAfterAction, filename, expectedSha256);
+        }
+
+        internal static bool IsPlainFileName(string name) =>
+            !string.IsNullOrWhiteSpace(name) &&
+            name == Path.GetFileName(name) &&
+            name != "." && name != ".." &&
+            name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
+            !name.Contains('\\') && !name.Contains('/');
+
+        internal static bool HasSha256(string file, string expectedSha256)
+        {
+            string expected = new string(expectedSha256.Where(Uri.IsHexDigit).ToArray());
+            using var stream = File.OpenRead(file);
+            string actual = Convert.ToHexString(global::System.Security.Cryptography.SHA256.HashData(stream));
+            return expected.Length == 64 && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
         }
 
         private void ReportDownloadProgress(long totalRead, long totalBytes, TimeSpan elapsed)

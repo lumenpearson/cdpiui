@@ -269,27 +269,27 @@ public sealed partial class AboutPage : TemplatePage
 
         private void LicenseButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchLicenseUrl();
+            _ = UrlOpenHelper.LaunchLicenseUrl();
         }
 
         private void RepoHyperlink_Click(Microsoft.UI.Xaml.Documents.Hyperlink sender, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs args)
         {
-            UrlOpenHelper.LaunchMainRepoUrl();
+            _ = UrlOpenHelper.LaunchMainRepoUrl();
         }
 
         private void ReportABugButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchReportUrl();
+            _ = UrlOpenHelper.LaunchReportUrl();
         }
 
         private void DonateButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchDonateUrl();
+            _ = UrlOpenHelper.LaunchDonateUrl();
         }
 
         private void DeveloperChannelButton_Click(object sender, RoutedEventArgs e)
         {
-            UrlOpenHelper.LaunchTelegramUrl();
+            _ = UrlOpenHelper.LaunchTelegramUrl();
         }
     }
 }

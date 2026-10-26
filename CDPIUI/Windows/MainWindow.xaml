@@ -114,10 +114,10 @@
             </NavigationView.HeaderTemplate>
             <NavigationView.MenuItems>
 
-                <NavigationViewItem l:Uids.Uid="HomeButton" Tag="CDPI_UI.Views.MainPage" Icon="Home" Style="{StaticResource StoreNavigationViewItemStyle}"/>
+                <NavigationViewItem l:Uids.Uid="HomeButton" Tag="CDPIUI.Views.MainPage" Icon="Home" Style="{StaticResource StoreNavigationViewItemStyle}"/>
                 <NavigationViewItemSeparator/>
 
-                <NavigationViewItem l:Uids.Uid="UtilsButton" Tag="CDPI_UI.Views.UtilsPage" Style="{StaticResource StoreNavigationViewItemStyle}">
+                <NavigationViewItem l:Uids.Uid="UtilsButton" Tag="CDPIUI.Views.UtilsPage" Style="{StaticResource StoreNavigationViewItemStyle}">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE7B8;" />
                     </NavigationViewItem.Icon>
@@ -125,22 +125,22 @@
 
                 <NavigationViewItemSeparator/>
 
-                <NavigationViewItem x:Name="ZapretNavigationViewItem" Content="Zapret" Tag="CDPI_UI.Views.Components.Zapret" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="ZapretNavigationViewItem" Content="Zapret" Tag="CDPIUI.Views.Components.Zapret" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/zapret.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ByeDPINavigationViewItem" Content="ByeDPI" Tag="CDPI_UI.Views.Components.ByeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="ByeDPINavigationViewItem" Content="ByeDPI" Tag="CDPIUI.Views.Components.ByeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/byedpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="GoodbyeDPINavigationViewItem" Content="GoodbyeDPI" Tag="CDPI_UI.Views.Components.GoodbyeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="GoodbyeDPINavigationViewItem" Content="GoodbyeDPI" Tag="CDPIUI.Views.Components.GoodbyeDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/goodbyedpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="SpoofDPINavigationViewItem" Content="SpoofDPI" Tag="CDPI_UI.Views.Components.SpoofDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
+                <NavigationViewItem x:Name="SpoofDPINavigationViewItem" Content="SpoofDPI" Tag="CDPIUI.Views.Components.SpoofDPI" Style="{StaticResource StoreNavigationViewItemStyle}" Visibility="Visible">
                     <NavigationViewItem.Icon>
                         <BitmapIcon UriSource="ms-appx:///Assets/Store/spoofdpi.png" Width="23" ShowAsMonochrome="True"/>
                     </NavigationViewItem.Icon>
@@ -184,12 +184,12 @@
 
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem l:Uids.Uid="SettingsButton" Tag="CDPI_UI.Views.SettingsPage" Style="{StaticResource StoreNavigationViewItemStyle}">
+                <NavigationViewItem l:Uids.Uid="SettingsButton" Tag="CDPIUI.Views.SettingsPage" Style="{StaticResource StoreNavigationViewItemStyle}">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE713;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem l:Uids.Uid="AboutButton" Tag="CDPI_UI.Views.AboutPage" Style="{StaticResource StoreNavigationViewItemStyle}">
+                <NavigationViewItem l:Uids.Uid="AboutButton" Tag="CDPIUI.Views.AboutPage" Style="{StaticResource StoreNavigationViewItemStyle}">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE946;" />
                     </NavigationViewItem.Icon>

@@ -2,8 +2,13 @@
 
 # Update
 
-`Update.exe` is a .NET Framework 4.7.2 WinForms tool. It installs an application patch
+`Update.exe` is a .NET 8 WinForms tool. It installs an application patch
 (`.cdpipatch`) into the installation folder. Then it starts the tray again.
+
+`Update.exe` is a framework-dependent single file, as the tray is. It uses the .NET 8 Desktop
+Runtime that the tray also uses. The tool replaces the application files while it operates.
+Thus it must not load a DLL from the installation folder. The single file contains all the code
+of the tool. Refer to [Build](#build).
 
 `Update.exe` cannot replace itself while it runs. Thus a patch contains a new updater as
 `_Update.exe`. At the next start, the tray changes the name of `_Update.exe` to `Update.exe`
@@ -34,7 +39,7 @@ Notes on the arguments (`Update/Program.cs`):
 - The tool removes the `"` characters at the start and at the end of each value. A quoted path that ends with `\` gives a trailing `"`.
 - If one of the two arguments is missing, the tool shows an information message and stops.
 
-The project does not embed a manifest. Thus `Update.exe` gets the rights of the tray.
+The project has no manifest of its own. The .NET SDK embeds the default manifest (`asInvoker`). Thus `Update.exe` gets the rights of the tray.
 
 ## Procedure
 
@@ -100,7 +105,10 @@ The MSI uninstall cleanup deletes `update.log`, `.update-manifest`, `.update-sta
 ## Window
 
 The `Update Assistant` window (`Update/Form1.cs`, `Update/Form1.Designer.cs`) has a fixed size
-and no control box. The window texts are in English. If the Windows UI language is Russian, they are in Russian (`Update/Strings.cs`). The log lines are always in English.
+and no control box. The window uses the font Microsoft Sans Serif 8.25 pt, which was the default
+font of .NET Framework (`Application.SetDefaultFont` in `Update/Program.cs`). The default font of .NET 8 is larger.
+The window is not DPI-aware, as before (`Application.SetHighDpiMode`). Windows scales it.
+The window texts are in English. If the Windows UI language is Russian, they are in Russian (`Update/Strings.cs`). The log lines are always in English.
 
 The window contains these controls:
 
@@ -117,3 +125,22 @@ The tool shows an error message box for these errors: the rollback is incomplete
 not start, or an unexpected exception occurs. The installation thread sends the error to the UI
 thread. The window owns the message box. Thus the message box cannot open behind the window.
 When the user closes the message box, the tool stops.
+
+## Build
+
+`Update/Update.csproj` is an SDK-style project: `net8.0-windows`, Windows Forms, x64, `win-x64`.
+The version (`1.1.0.0`) and the other assembly data are in the project file.
+
+```
+dotnet publish Update/Update.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
+
+On Linux or macOS, add `-p:EnableWindowsTargeting=true`. `.github/scripts/build_portable.ps1`
+uses the same command and copies `Update.exe` into the release layout. The publish folder must
+contain only `Update.exe`.
+
+## Tests
+
+`CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` tests the path checks, the layer sequence, the
+staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback. The tests do not
+use the window.

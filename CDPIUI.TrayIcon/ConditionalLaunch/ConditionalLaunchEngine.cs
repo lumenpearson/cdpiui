@@ -30,6 +30,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
         private System.Threading.Timer? _processTimer;
         private System.Threading.Timer? _reloadTimer;
         private int _isPolling;
+        // Without process triggers the process list is not read at all.
+        private volatile bool _hasProcessTriggers;
         private const int FirstHotKeyId = 0x4300;
         private int _nextHotKeyId = FirstHotKeyId;
         private bool _disposed;
@@ -80,7 +82,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 {
                     messageWindow.BeginInvoke(new Action(() => Reload(tasksDirectory)));
                 }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException)
+                {
+                    // The window is closing, so the engine stops and needs no reload.
+                }
                 return;
             }
 
@@ -135,6 +140,8 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
 
                 _loadedTasks = loadedTasks.ToList();
                 _tasks = _loadedTasks.Where(task => task.IsEnabled).ToList();
+                _hasProcessTriggers = EnumerateProcessTriggers().Any(binding =>
+                    !string.IsNullOrWhiteSpace(binding.Trigger.GetParameter("processName")));
                 RegisterHotKeys();
 
                 var fileCount = Directory.EnumerateFiles(
@@ -258,6 +265,9 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
 
         private void PollProcesses()
         {
+            if (!_hasProcessTriggers)
+                return;
+
             if (Interlocked.Exchange(ref _isPolling, 1) != 0)
                 return;
 
@@ -270,7 +280,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                     {
                         runningProcessNames.Add(process.ProcessName);
                     }
-                    catch { }
+                    catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+                    {
+                        // The process exited after the list was taken; it is not running.
+                    }
                     finally
                     {
                         process.Dispose();
@@ -377,7 +390,10 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 if (!cancellation.IsCancellationRequested)
                     await RunTaskOnceAsync(match.Task);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // The trigger was cancelled during the delay; the task must not run.
+            }
             finally
             {
                 lock (_sync)
@@ -582,6 +598,7 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 _processStates.Clear();
                 _loadedTasks.Clear();
                 _tasks.Clear();
+                _hasProcessTriggers = false;
 
                 if (_watcher != null)
                 {

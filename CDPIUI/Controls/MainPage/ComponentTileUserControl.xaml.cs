@@ -1,3 +1,4 @@
+using CDPIUI.Shared.Extensions;
 using CDPIUI.Controls.Dialogs.ComponentSettings;
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core;
@@ -41,6 +42,7 @@ using WinUI3Localizer;
 using static CDPIUI.Helper.UIHelper;
 using ToolTip = Microsoft.UI.Xaml.Controls.ToolTip;
 using ToolTipService = Microsoft.UI.Xaml.Controls.ToolTipService;
+using CDPIUI.Helper.Items;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -88,9 +90,10 @@ public sealed partial class ComponentTileUserControl : UserControl
         ViewOutputIconButton.DisplayText = localizer.GetLocalizedString("ViewOutputIconButton");
         SettingsIconButton.DisplayText = localizer.GetLocalizedString("SettingsIconButton");
 
-        ViewOutputClickCommand = new RelayCommand(p => ViewOutputButtonClick());
-        ViewSettingsButtonClickCommand = new RelayCommand(p => ViewSettingsButtonClick());
-        ToggleProcessButtonClickCommand = new RelayCommand(p => ToggleProcessButtonClick());
+        // The command methods catch and log their own errors.
+        ViewOutputClickCommand = new RelayCommand(p => _ = ViewOutputButtonClick());
+        ViewSettingsButtonClickCommand = new RelayCommand(p => _ = ViewSettingsButtonClick());
+        ToggleProcessButtonClickCommand = new RelayCommand(p => _ = ToggleProcessButtonClick());
 
         ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
 
@@ -152,7 +155,7 @@ public sealed partial class ComponentTileUserControl : UserControl
             Debug.WriteLine($"Init for {value}, {GetValue(StoreIdProperty)}");
             SetValue(StoreIdProperty, value);
             
-            Init();
+            _ = Init(); // Init catches and logs its own errors.
         }
     }
 
@@ -177,37 +180,49 @@ public sealed partial class ComponentTileUserControl : UserControl
 
     private void TaskUpdated(Tuple<string, bool> tuple)
     {
-        if (tuple.Item1 != StoreId) return;
-        
-
-        PreferTaskStateActions();
+        // Can be raised on a thread pool thread (BlockCheck2 and preset tests stop and start
+        // tasks there). Reading StoreId off the UI thread threw and the handlers after this
+        // one did not get the event.
+        DispatcherQueue?.TryEnqueue(() =>
+        {
+            if (tuple.Item1 != StoreId) return;
+            _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
+        });
     }
 
-    private async void Init()
+    private async Task Init()
     {
-        TitleTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.ShortName ?? StoreId;
-
-        if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+        try
         {
-            PreferTaskStateActions();
+            TitleTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.ShortName.NullIfEmpty() ?? StoreId;
 
-            TileBackgroungBorder.Background = UIHelper.HexToSolidColorBrushConverter(DatabaseHelper.Instance.GetItemById(StoreId).BackgroundColor);
+            if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+            {
+                // PreferTaskStateActions and CheckComponentState catch and log their own errors.
+                _ = PreferTaskStateActions();
 
-            bool isAddToAutorun = SettingsManager.Instance.GetValue<bool>(["CONFIGS", StoreId], "usedForAutorun");
-            AutorunBadgeGrid.Visibility = isAddToAutorun ? Visibility.Visible : Visibility.Collapsed;
-            CheckComponentState();
+                TileBackgroungBorder.Background = UIHelper.HexToSolidColorBrushConverter(DatabaseHelper.Instance.GetItemById(StoreId).BackgroundColor);
 
-            string st = StoreId;
+                bool isAddToAutorun = SettingsManager.Instance.GetValue<bool>(["CONFIGS", StoreId], "usedForAutorun");
+                AutorunBadgeGrid.Visibility = isAddToAutorun ? Visibility.Visible : Visibility.Collapsed;
+                _ = CheckComponentState();
 
-            GetAvailableFeaturesForItem();
+                string st = StoreId;
 
-            await Task.Run(() => LoadConfigInfo(st));
+                GetAvailableFeaturesForItem();
+
+                await Task.Run(() => LoadConfigInfo(st));
+            }
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
         }
     }
 
     private async Task LoadConfigInfo(string storeId)
     {
-        LoadConfigItems(storeId);
+        _ = LoadConfigItems(storeId); // LoadConfigItems catches and logs its own errors.
 
         ComponentHelper componentHelper =
             ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
@@ -321,41 +336,62 @@ public sealed partial class ComponentTileUserControl : UserControl
         return (await ComponentTasksManager.Instance.GetTaskFromId(StoreId))?.ProcessManager;
     }
 
-    private async void PreferTaskStateActions()
+    private async Task PreferTaskStateActions()
     {
-        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
-
-        if (isRunning)
+        try
         {
-            StateToggleButton.DisplayText = localizer.GetLocalizedString("Stop");
-            ShowComponentState(ComponentState.Running);
+            bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
+
+            if (isRunning)
+            {
+                StateToggleButton.DisplayText = localizer.GetLocalizedString("Stop");
+                ShowComponentState(ComponentState.Running);
+            }
+            else
+            {
+                StateToggleButton.DisplayText = localizer.GetLocalizedString("Start");
+                _ = CheckComponentState(); // CheckComponentState catches and logs its own errors.
+            }
+
+            StateToggleButton.Checked = isRunning;
         }
-        else
+        catch (Exception exception)
         {
-            StateToggleButton.DisplayText = localizer.GetLocalizedString("Start");
-            CheckComponentState();
-        }
-
-        StateToggleButton.Checked = isRunning;
-    }
-
-    private async void ToggleProcessButtonClick()
-    {
-        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
-
-        if (!isRunning)
-        {
-            _ = ComponentTasksManager.Instance.CreateAndRunNewTask(StoreId);
-        }
-        else
-        {
-            await ComponentTasksManager.Instance.StopTask(StoreId);
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
         }
     }
 
-    private async void CheckComponentState()
+    private async Task ToggleProcessButtonClick()
     {
-        ShowComponentState(await GetComponentState());
+        try
+        {
+            bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
+
+            if (!isRunning)
+            {
+                _ = ComponentTasksManager.Instance.CreateAndRunNewTask(StoreId);
+            }
+            else
+            {
+                await ComponentTasksManager.Instance.StopTask(StoreId);
+            }
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
+        }
+    }
+
+    private async Task CheckComponentState()
+    {
+        try
+        {
+            ShowComponentState(await GetComponentState());
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
+        }
     }
 
     private async Task<ComponentState> GetComponentState()
@@ -415,56 +451,77 @@ public sealed partial class ComponentTileUserControl : UserControl
         ToolTipService.SetToolTip(StatusGrid, toolTip);
     }
 
-    private async void ViewOutputButtonClick()
+    private async Task ViewOutputButtonClick()
     {
-        var window = await ((App)Application.Current).UnsafeCreateNewWindow<ViewWindow>(id: StoreId);
+        try
+        {
+            var window = await ((App)Application.Current).UnsafeCreateNewWindow<ViewWindow>(id: StoreId);
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
+        }
     }
 
-    private async void ViewSettingsButtonClick()
+    private async Task ViewSettingsButtonClick()
     {
-        var window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
-        window.NavView_Navigate(typeof(ViewComponentSettingsPage), 
-            new NameValueCollection()
-                {
-                    { "componentId", StoreId }
-                }, 
-                new DrillInNavigationTransitionInfo());
+        try
+        {
+            var window = await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>();
+            window.NavView_Navigate(typeof(ViewComponentSettingsPage), 
+                new NameValueCollection()
+                    {
+                        { "componentId", StoreId }
+                    }, 
+                    new DrillInNavigationTransitionInfo());
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
+        }
     }
 
     private void LoadConfigItems()
     {
-        LoadConfigItems(StoreId);
+        _ = LoadConfigItems(StoreId); // LoadConfigItems catches and logs its own errors.
     }
 
-    private async void LoadConfigItems(string storeId)
+    private async Task LoadConfigItems(string storeId)
     {
-        int loadVersion = Interlocked.Increment(ref configLoadVersion);
-
-        ComponentItemsLoaderHelper.Instance.Init(forse:false);
-
-        ComponentHelper componentHelper =
-            ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
-                storeId);
-
-        if (componentHelper is null)
-            return;
-
-        List<ConfigItem> items;
         try
         {
-            items = await Task.Run(() =>
-                componentHelper.GetConfigHelper().GetConfigItems().ToList());
-        }
-        catch (Exception ex)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(
-                nameof(ComponentTileUserControl),
-                $"Cannot load configs for component '{storeId}': {ex}");
-            items = [];
-        }
+            int loadVersion = Interlocked.Increment(ref configLoadVersion);
 
-        DispatcherQueue.TryEnqueue(() =>
-            ApplyLoadedConfigItems(storeId, loadVersion, items));
+            ComponentItemsLoaderHelper.Instance.Init(forse:false);
+
+            ComponentHelper componentHelper =
+                ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(
+                    storeId);
+
+            if (componentHelper is null)
+                return;
+
+            List<ConfigItem> items;
+            try
+            {
+                items = await Task.Run(() =>
+                    componentHelper.GetConfigHelper().GetConfigItems().ToList());
+            }
+            catch (Exception ex)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(
+                    nameof(ComponentTileUserControl),
+                    $"Cannot load configs for component '{storeId}': {ex}");
+                items = [];
+            }
+
+            DispatcherQueue.TryEnqueue(() =>
+                ApplyLoadedConfigItems(storeId, loadVersion, items));
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ComponentTileUserControl), exception.ToString());
+        }
     }
 
     private void ApplyLoadedConfigItems(
@@ -480,6 +537,7 @@ public sealed partial class ComponentTileUserControl : UserControl
 
         _configItems.Clear();
 
+        PackNameLookup packNames = new();
         foreach (ConfigItem item in items)
         {
             ConfigSelectorItem configItem = new()
@@ -487,7 +545,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                 FileName = item.file_name,
                 PackId = item.packId,
                 DisplayName = item.name,
-                PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                PackDisplayName = packNames.GetDisplayName(item.packId),
                 IsLegacyConfig = item.IsLegacy
             };
 
@@ -610,7 +668,7 @@ public sealed partial class ComponentTileUserControl : UserControl
                     new SuppressNavigationTransitionInfo());
                 break;
             case AvailableComponentFeatures.VisitForum:
-                UrlOpenHelper.LaunchComponentForumUrl(StoreId);
+                await UrlOpenHelper.LaunchComponentForumUrl(StoreId);
                 break;
             case AvailableComponentFeatures.ConnectTgWsProxy:
                 ConnectTelegramProxyContentDialog dialog = new()
@@ -624,6 +682,6 @@ public sealed partial class ComponentTileUserControl : UserControl
 
     private void GoToComponentSettings_Click(object sender, RoutedEventArgs e)
     {
-        ViewSettingsButtonClick();
+        _ = ViewSettingsButtonClick(); // ViewSettingsButtonClick catches and logs its own errors.
     }
 }

@@ -75,6 +75,8 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
         PlayCommand = new RelayCommand(p => Play());
         SetFlagCommand = new RelayCommand(p => SetFlag());
         SetVisible(false);
+        // The task manager outlives the report; a control unloaded during a test stayed in memory.
+        Unloaded += (_, _) => ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
 
         FlagToolTip.Content = localizer.GetLocalizedString("SetFlag");
         PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
@@ -155,33 +157,46 @@ public sealed partial class GoodCheckReportStrategyUserControl : UserControl
     {
         if (ComponentId != null)
         {
-            PlayAsync();
+            _ = PlayAsync(); // PlayAsync catches and logs its own errors.
         }
     }
 
-    private async void PlayAsync()
+    private async Task PlayAsync()
     {
-        if (!isRunning)
+        try
         {
-            await ComponentTasksManager.Instance.StopTask(ComponentId);
+            if (!isRunning)
+            {
+                await ComponentTasksManager.Instance.StopTask(ComponentId);
 
-            ComponentTasksManager.Instance.TaskStateUpdated += ProcessManager_onProcessStateChanged;
+                ComponentTasksManager.Instance.TaskStateUpdated += ProcessManager_onProcessStateChanged;
 
-            _ = ComponentTasksManager.Instance.CreateAndRunNewTask(ComponentId, Args);
+                _ = ComponentTasksManager.Instance.CreateAndRunNewTask(ComponentId, Args);
 
+            }
+            else
+            {
+                await ComponentTasksManager.Instance.StopTask(ComponentId);
+                PlayIconButton.Checked = false;
+                PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
+                if (!IsPointerOnControl)
+                    PlayIconButton.Visibility = Visibility.Collapsed;
+                ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
+            }
         }
-        else
+        catch (Exception exception)
         {
-            await ComponentTasksManager.Instance.StopTask(ComponentId);
-            PlayIconButton.Checked = false;
-            PlayToolTip.Content = localizer.GetLocalizedString("TestThis");
-            if (!IsPointerOnControl)
-                PlayIconButton.Visibility = Visibility.Collapsed;
-            ComponentTasksManager.Instance.TaskStateUpdated -= ProcessManager_onProcessStateChanged;
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(GoodCheckReportStrategyUserControl), exception.ToString());
         }
     }
 
     private void ProcessManager_onProcessStateChanged(Tuple<string, bool> tuple)
+    {
+        // Can be raised on a thread pool thread; ComponentId and the button are UI-thread only.
+        DispatcherQueue?.TryEnqueue(() => ApplyProcessState(tuple));
+    }
+
+    private void ApplyProcessState(Tuple<string, bool> tuple)
     {
         if (tuple.Item1 != ComponentId) return;
         if (tuple.Item2)

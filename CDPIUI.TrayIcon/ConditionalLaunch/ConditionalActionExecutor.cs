@@ -77,23 +77,17 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                 case ConditionalActionType.StopComponent:
                     {
                         var componentId = RequireParameter(action, "componentId");
-                        if (await TasksHelper.Instance.GetTaskFromId(componentId) == null)
-                            return ConditionalActionResult.Failed($"Component '{componentId}' was not found.");
-                        await TasksHelper.Instance.StopTask(componentId);
+                        return await RunComponentCommandAsync(componentId, () => TasksHelper.Instance.StopTask(componentId));
                     }
-                    return ConditionalActionResult.Ok();
 
                 case ConditionalActionType.RestartComponent:
                     {
                         var componentId = RequireParameter(action, "componentId");
-                        if (await TasksHelper.Instance.GetTaskFromId(componentId) == null)
-                            return ConditionalActionResult.Failed($"Component '{componentId}' was not found.");
-                        await TasksHelper.Instance.RestartTask(componentId);
+                        return await RunComponentCommandAsync(componentId, () => TasksHelper.Instance.RestartTask(componentId));
                     }
-                    return ConditionalActionResult.Ok();
 
                 case ConditionalActionType.StopAllComponents:
-                    await TasksHelper.Instance.StopAllTasks();
+                    await TasksHelper.Instance.StopAllTasksInOrder();
                     return ConditionalActionResult.Ok();
 
                 case ConditionalActionType.StopNetworkService:
@@ -154,6 +148,26 @@ namespace CDPIUI.TrayIcon.ConditionalLaunch
                     return ConditionalActionResult.Failed(
                         $"Action '{action.Type}' is not supported.");
             }
+        }
+
+        // Runs in the component's queue, after the commands for it that came first. The component
+        // is looked up there too, so one removed by an earlier command counts as not found.
+        private static async Task<ConditionalActionResult> RunComponentCommandAsync(
+            string componentId,
+            Func<Task> command)
+        {
+            var found = false;
+            await ComponentCommandQueue.Run(componentId, async () =>
+            {
+                if (await TasksHelper.Instance.GetTaskFromId(componentId) == null)
+                    return;
+                found = true;
+                await command();
+            });
+
+            return found
+                ? ConditionalActionResult.Ok()
+                : ConditionalActionResult.Failed($"Component '{componentId}' was not found.");
         }
 
         private static async Task<ConditionalActionResult> ExecuteCoreActionAsync(

@@ -64,7 +64,7 @@ The autorun task starts the tray with `--autorun`.
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
 | `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
-| `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names |
+| `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names. The language is the language that the user selected in the app (`SYSTEM/language`). If this value is missing or unknown, the Windows display language is used |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
 
@@ -180,8 +180,10 @@ The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck 
    - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the names and the contents of the locked files.
    - A Store item catalog (`<item>\catalog.cat`) that has the signature of a pinned certificate and agrees with the code files. Data files (lists and other files) are not compared, because the user can change them.
    - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level.
-5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.json`. Only administrators can change this folder.
-6. The tray releases the handles after the process starts.
+5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.txt`, one line per program: the fingerprint, a tab and the path. Only administrators can change this folder.
+
+`ExecutableLease` (the locks and the fingerprint) and `ExecutableApprovals` (the approval file and the Store item folder) are in `CDPIUI.Shared/Security`, so `CDPIUI.Tests` can test them. `ExecutableTrust` in the tray decides and asks the user.
+6. The tray keeps the handles until the process exits. The process loads its DLLs after it starts and can load more later, so the files must stay locked for the whole run. An update of the item stops the component first, so the handles do not block it.
 
 A portable copy does not do steps 3 and 4, because the user can change the tray itself.
 

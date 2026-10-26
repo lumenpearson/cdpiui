@@ -64,6 +64,6 @@ public sealed partial class CommunityContentDialog : ContentDialog
     {
         var data = (sender as FrameworkElement).DataContext as UrlViewModel;
 
-        UrlOpenHelper.LaunchUrl(data.Url);
+        _ = UrlOpenHelper.LaunchUrl(data.Url);
     }
 }

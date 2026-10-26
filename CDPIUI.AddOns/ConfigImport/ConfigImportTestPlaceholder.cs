@@ -1,5 +1,6 @@
 namespace CDPIUI.AddOns.ConfigImport;
 
+using CDPIUI.Core.Basic;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -130,9 +131,10 @@ public sealed class ConfigImportTestPlaceholder : IDisposable
                 Directory.Delete(fullPath, recursive: true);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort cleanup. A stale empty file is harmless.
+            Logger.Instance.CreateWarningLog(nameof(ConfigImportTestPlaceholder), $"Cannot remove the placeholder directory: {ex.Message}");
         }
     }
 

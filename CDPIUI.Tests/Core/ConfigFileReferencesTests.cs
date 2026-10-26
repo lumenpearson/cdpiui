@@ -36,4 +36,29 @@ public class ConfigFileReferencesTests
         Assert.False(ConfigCommandLine.IsOption("-10000"));
         Assert.True(ConfigCommandLine.IsOption("-p"));
     }
+
+    [Theory]
+    [InlineData("lists/hosts.txt", ConfigFileKind.SiteList)]
+    [InlineData("C:\\Lists\\HOSTS.TXT", ConfigFileKind.SiteList)]
+    [InlineData("ipset.list", ConfigFileKind.SiteList)]
+    [InlineData("lua/init.LUA", ConfigFileKind.Library)]
+    [InlineData("tls.bin", ConfigFileKind.Payload)]
+    [InlineData("quic.dat", ConfigFileKind.Payload)]
+    [InlineData("cert.der", ConfigFileKind.Payload)]
+    [InlineData("cert.Pem", ConfigFileKind.Payload)]
+    public void InferKindUsesTheExtension(string path, ConfigFileKind kind)
+    {
+        Assert.Equal(kind, ConfigFileReferences.InferKind(path));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("readme")]
+    [InlineData("hosts.txt.bak")]
+    [InlineData("archive.zip")]
+    [InlineData("lists.txt/")]
+    public void InferKindReturnsNullForOtherFiles(string path)
+    {
+        Assert.Null(ConfigFileReferences.InferKind(path));
+    }
 }

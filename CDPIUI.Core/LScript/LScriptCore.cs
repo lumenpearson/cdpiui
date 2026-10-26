@@ -34,7 +34,7 @@ namespace CDPIUI.Core.LScript
             return scriptData;
         }
 
-        public static string GetScriptArgs(string scriptString, string scriptArgs = null)
+        public static string GetScriptArgs(string scriptString, string? scriptArgs = null)
         {
             string scriptData = "";
             if (scriptString != null && scriptString.StartsWith("$"))
@@ -392,7 +392,10 @@ namespace CDPIUI.Core.LScript
                     case "download_easy_designer_annotation_file":
                         if (scriptArgs.Length < 1)
                             break;
-                        result += $"DOWNLOAD={DownloadEasyDesignerAnnotationFile(scriptArgs[0])}$SEPARATORedannotationfile;";
+                        // An optional second argument is the SHA-256 of the file.
+                        result += scriptArgs.Length > 1 && !string.IsNullOrWhiteSpace(scriptArgs[1])
+                            ? $"DOWNLOAD={DownloadEasyDesignerAnnotationFile(scriptArgs[0])}$SEPARATORedannotationfile$SEPARATOR{scriptArgs[1].Trim()};"
+                            : $"DOWNLOAD={DownloadEasyDesignerAnnotationFile(scriptArgs[0])}$SEPARATORedannotationfile;";
                         break;
                     case "install_msi":
                         if (scriptArgs.Length < 2)

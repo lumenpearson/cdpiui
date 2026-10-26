@@ -42,8 +42,10 @@ namespace CDPIUI.Controls.Store.Settings
             set
             {
                 SetValue(StoreIdProperty, value);
-                CheckAvailiableActions();
-                VersionTextBlock.Text = DatabaseHelper.Instance.GetItemById(StoreId)?.CurrentVersion.Replace("v", "") ?? string.Empty;
+                // One read of the row serves both the actions and the version.
+                DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
+                CheckAvailiableActions(databaseStoreItem);
+                VersionTextBlock.Text = databaseStoreItem?.CurrentVersion.Replace("v", "") ?? string.Empty;
                 if (string.IsNullOrEmpty(VersionTextBlock.Text))
                 {
                     VersionTextBlock.Visibility = Visibility.Collapsed;
@@ -133,10 +135,8 @@ namespace CDPIUI.Controls.Store.Settings
                 nameof(SizeText), typeof(double), typeof(MemoryStoreItemUserControl), new PropertyMetadata(0d)
             );
 
-        private void CheckAvailiableActions()
+        private void CheckAvailiableActions(DatabaseStoreItem databaseStoreItem)
         {
-            DatabaseStoreItem databaseStoreItem = DatabaseHelper.Instance.GetItemById(StoreId);
-
             SetupMenuFlyuoutItem.IsEnabled = true;
             DeleteButton.IsEnabled = true;
             ProgressBar.Visibility = Visibility.Collapsed;
@@ -167,9 +167,9 @@ namespace CDPIUI.Controls.Store.Settings
             {
                 ShellHelper.OpenFileInDefaultApp(DatabaseHelper.Instance.GetItemById(StoreId)?.Directory ?? string.Empty);
             }
-            catch
+            catch (Exception exception)
             {
-
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MemoryStoreItemUserControl), exception.ToString());
             }
         }
 

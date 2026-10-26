@@ -232,7 +232,10 @@ namespace CDPIUI
                 _activeHelper?.CancelAllCurls();
                 _testCts?.Cancel();
             }
-            catch { }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(ConfigTestWindow), exception.ToString());
+            }
         }
 
         private async void ApplyPresetButton_Click(object sender, RoutedEventArgs e)

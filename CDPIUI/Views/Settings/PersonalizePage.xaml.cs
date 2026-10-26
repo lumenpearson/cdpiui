@@ -196,6 +196,7 @@ public sealed partial class PersonalizePage : TemplatePage
                 PrepareToConnectedForwardAnimate(NavGrid);
             }
         }
+        // The connected animation is cosmetic; the navigation goes on without it.
         catch { }
     }
 
@@ -284,7 +285,7 @@ public sealed partial class PersonalizePage : TemplatePage
 
     private void SelectFontButton_Click(object sender, RoutedEventArgs e)
     {
-        ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(XamlRoot);
+        _ = ConsoleFontHelper.Instance.ShowFontSettingsDialogForXamlRoot(XamlRoot); // ShowFontSettingsDialogForXamlRoot catches and logs its own errors.
         CheckFontSettings();
     }
 }

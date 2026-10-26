@@ -29,7 +29,7 @@ namespace CDPIUI.Core.ComponentServices
         {
             _ = UpdateTaskList();
 
-            ComponentItemsLoaderHelper.Instance.InitRequested += SendTasksData;
+            ComponentItemsLoaderHelper.Instance.InitRequested += () => _ = SendTasksData();
             StoreHelper.Instance.ItemActionsStopped += (id) => RequestComponentItemsInit();
             StoreHelper.Instance.ItemRemoved += (id) => RequestComponentItemsInit();
         }
@@ -52,10 +52,12 @@ namespace CDPIUI.Core.ComponentServices
 
                 foreach (var item in DatabaseHelper.Instance.GetItemsByType("component"))
                 {
+                    if (item.Id == null)
+                        continue;
                     if (runningIds.Contains(item.Id))
-                        await CreateAndRunNewTask(item.Id!);
+                        await CreateAndRunNewTask(item.Id);
                     else
-                        await AddNewTaskAsync(item.Id!);
+                        await AddNewTaskAsync(item.Id);
                 }
             }
             catch (Exception ex)
@@ -110,11 +112,19 @@ namespace CDPIUI.Core.ComponentServices
             }
         }
 
-        public async void SendTasksData()
+        // Catches and logs its own errors, so a caller can start it without waiting for it.
+        public async Task SendTasksData()
         {
-            foreach (var task in await GetTasksSnapshot())
+            try
             {
-                await SendTaskData(task.Id);
+                foreach (var task in await GetTasksSnapshot())
+                {
+                    await SendTaskData(task.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ComponentTasksManager), $"Cannot send the task data: {ex}");
             }
         }
 
@@ -124,7 +134,7 @@ namespace CDPIUI.Core.ComponentServices
         // TODO: Remove hardcoded Ids
         List<string> serviceUsedComponentsIds = ["CSGIVS036", "CSZTBN012", "CSZTBN062"];
 
-        public async void StopService()
+        public async Task StopService()
         {
             foreach (var task in Tasks)
             {

@@ -36,27 +36,34 @@ namespace CDPIUI.Controls.CreateConfigHelper
 
             ConfigKitListView.ItemsSource = ConfigKits;
 
-            LoadConfigKits();
+            _ = LoadConfigKits(); // LoadConfigKits catches and logs its own errors.
         }
 
-        private async void LoadConfigKits()
+        private async Task LoadConfigKits()
         {
-            ConfigKits.Clear();
-            List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
-
-            foreach (DatabaseStoreItem item in items)
+            try
             {
-                ConfigKits.Add(new()
-                {
-                    StoreId = item.Id,
-                    Name = item.ShortName,
-                    Developer = item.Developer,
-                    ColorHEX = item.BackgroundColor,
-                    ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs:item.Directory)))
-                });
-            }
+                ConfigKits.Clear();
+                List<DatabaseStoreItem> items = DatabaseHelper.Instance.GetItemsByType("configlist");
 
-            await Task.CompletedTask;
+                foreach (DatabaseStoreItem item in items)
+                {
+                    ConfigKits.Add(new()
+                    {
+                        StoreId = item.Id,
+                        Name = item.ShortName,
+                        Developer = item.Developer,
+                        ColorHEX = item.BackgroundColor,
+                        ImageSource = new BitmapImage(UIHelper.GetUriFromString(LScriptLangHelper.ExecuteScript(item.IconPath, scriptArgs:item.Directory)))
+                    });
+                }
+
+                await Task.CompletedTask;
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SelectConfigKitToEditContentDialog), exception.ToString());
+            }
         }
 
         private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

@@ -196,7 +196,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             }
         }
 
-        private async void InitGoodCheckSiteListsPage()
+        private async Task InitGoodCheckSiteListsPage()
         {
 
             SetLoadingMode(true, isIndeterminate: true, cancellationAvailable: false, headerText: localizer.GetLocalizedString("WorkingOnIt"));
@@ -232,7 +232,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             if (StrategiesLists.Count == 0)
             {
                 // The add-on is installed: it has no strategy lists for this component.
-                ShowErrorDialog(localizer.GetLocalizedString("GoodCheckNoStrategyLists"));
+                _ = ShowErrorDialog(localizer.GetLocalizedString("GoodCheckNoStrategyLists")); // ShowErrorDialog catches and logs its own errors.
                 return;
             }
 
@@ -283,13 +283,14 @@ namespace CDPIUI.Views.CreateConfigUtil
 
             if (!GoodCheckProcessService.IsAddOnInstalled())
             {
-                ShowErrorDialog();
+                _ = ShowErrorDialog(); // ShowErrorDialog catches and logs its own errors.
                 return;
             }
             if (!File.Exists(targetFolder))
             {
                 // Installed, but the files are incomplete: reinstalling fixes it, unlike installing.
-                ShowErrorDialog(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
+                // ShowErrorDialog catches and logs its own errors.
+                _ = ShowErrorDialog(string.Format(localizer.GetLocalizedString("AddOnFilesMissing"),
                     HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), targetFolder));
                 return;
             }
@@ -384,7 +385,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             catch (Exception ex)
             {
                 Logger.Instance.CreateErrorLog(nameof(GoodCheckProcessService), $"Cannot set settings. Exception is {ex}");
-                ShowErrorDialog(localizer.GetLocalizedString("GoodCheckComponentDirsSetException"));
+                _ = ShowErrorDialog(localizer.GetLocalizedString("GoodCheckComponentDirsSetException")); // ShowErrorDialog catches and logs its own errors.
             }
             IniSettingsHelper.Save();
         }
@@ -487,7 +488,7 @@ namespace CDPIUI.Views.CreateConfigUtil
             {
                 case States.LetsBegin:
                     SwitchState(States.PrepareLoading);
-                    InitGoodCheckSiteListsPage();
+                    await InitGoodCheckSiteListsPage();
                     break;
                 case States.SiteListsSettings:
                     SwitchState(States.StrategyListSettings);
@@ -638,7 +639,10 @@ namespace CDPIUI.Views.CreateConfigUtil
                     target.RemoveElement = null;
                     SelectedSitelistStackPanel.Children.Remove(target);
                 }
-                catch { }              
+                catch (Exception exception)
+                {
+                    Logger.Instance.CreateWarningLog(nameof(CreateViaGoodCheck), exception.ToString());
+                }
             }));
 
             return Task.CompletedTask;
@@ -872,20 +876,27 @@ namespace CDPIUI.Views.CreateConfigUtil
 
         }
 
-        private async void ShowErrorDialog(string message = null)
+        private async Task ShowErrorDialog(string message = null)
         {
-            ContentDialog dialog = new ContentDialog
+            try
             {
-                Title = localizer.GetLocalizedString("ContinuationImpossible"),
-                Content = string.IsNullOrEmpty(message) ?
-                    string.Format(localizer.GetLocalizedString("AddOnNotInstalled"),
-                    HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), AddOnId) : message,
-                PrimaryButtonText = "OK",
-                XamlRoot = this.XamlRoot,
-            };
-            await dialog.ShowQueuedAsync();
-            CreateConfigUtilWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
-            window.Close();
+                ContentDialog dialog = new ContentDialog
+                {
+                    Title = localizer.GetLocalizedString("ContinuationImpossible"),
+                    Content = string.IsNullOrEmpty(message) ?
+                        string.Format(localizer.GetLocalizedString("AddOnNotInstalled"),
+                        HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), AddOnId) : message,
+                    PrimaryButtonText = localizer.GetLocalizedString("OkButtonText"),
+                    XamlRoot = this.XamlRoot,
+                };
+                await dialog.ShowQueuedAsync();
+                CreateConfigUtilWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
+                window.Close();
+            }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(CreateViaGoodCheck), exception.ToString());
+            }
         }
     }
 }

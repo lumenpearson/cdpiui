@@ -45,7 +45,11 @@ namespace CDPIUI.Shared.Basic.Filesystem
                     if (File.Exists(testFile))
                         File.Delete(testFile);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // The check result is already known; only an empty test file is left.
+                    System.Diagnostics.Trace.WriteLine($"[DirectoryWritePermissionCheckService] Cannot delete the test file {testFile}: {ex.Message}");
+                }
             }
         }
     }

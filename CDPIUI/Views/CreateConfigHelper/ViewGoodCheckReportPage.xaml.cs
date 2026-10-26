@@ -59,8 +59,6 @@ namespace CDPIUI.Views.CreateConfigHelper
 
         private ObservableCollection<GoodCheckReportHeaderModel> HeaderModels = [];
 
-        private bool ErrorHappens = false;
-
         GoodCheckReportHeaderButton _storeditem;
         public ViewGoodCheckReportPage()
         {
@@ -118,7 +116,6 @@ namespace CDPIUI.Views.CreateConfigHelper
 
         private void LoadHeadersFromFile(string fileName)
         {
-            ErrorHappens = false;
             HeaderModels.Clear();
 
             var (groups, componentId) = GoodCheckResultViewHelper.LoadGroupsFromFile(fileName);
@@ -143,11 +140,9 @@ namespace CDPIUI.Views.CreateConfigHelper
                     bool sResult = int.TryParse(strategy.Success, out var success);
                     bool aResult = float.TryParse(strategy.All, out var all);
 
+                    // A strategy with unreadable counts is left out of the report.
                     if (!sResult || !aResult) 
-                    {
-                        ErrorHappens = true;
                         continue;
-                    }
 
                     if (all != 0 && (success / (all / 100)) >= 65)
                     {

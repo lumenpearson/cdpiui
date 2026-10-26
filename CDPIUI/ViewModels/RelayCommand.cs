@@ -11,7 +11,8 @@ namespace CDPIUI.ViewModels
     {
         private Action<object> execute;
         private Func<object, bool> canExecute;
-        public event EventHandler CanExecuteChanged;
+        // CanExecute is not cached by the callers; the command never raises this event.
+        public event EventHandler CanExecuteChanged { add { } remove { } }
         public RelayCommand(Action<object> executeAction, Func<object, bool> canExecuteFunc = null)
         {
             execute = executeAction;

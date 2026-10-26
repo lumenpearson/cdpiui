@@ -37,7 +37,10 @@ namespace CDPIUI.TrayIcon.Controls
             set
             {
                 _bold = value;
-                MainTextBox.Font = new Font(MainTextBox.Font, _bold? FontStyle.Bold : FontStyle.Regular);
+                // The replaced font was created for this label alone, by the designer or here.
+                var oldFont = MainTextBox.Font;
+                MainTextBox.Font = new Font(oldFont, _bold? FontStyle.Bold : FontStyle.Regular);
+                oldFont.Dispose();
             }
         }
 
@@ -131,7 +134,10 @@ namespace CDPIUI.TrayIcon.Controls
 
         private void SetFont()
         {
-            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", IconGlyph.Font.SizeInPoints);
+            // The replaced font was created by the designer for this label alone.
+            var oldFont = IconGlyph.Font;
+            IconGlyph.Font = new Font(SharedUtils.IsOsSupportedNewGlyph() ? "Segoe Fluent Icons" : "Segoe MDL2 Assets", oldFont.SizeInPoints);
+            oldFont.Dispose();
         }
 
         private void ModernButtonUserControl_MouseClick(object? sender, MouseEventArgs e)
