@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,7 +17,7 @@ using CDPIUI.Shared.Models;
 
 namespace CDPIUI.ViewModels;
 
-public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
+public sealed class BlockCheck2ResultViewModel : ObservableObject
 {
     private readonly BlockCheckManualPresetService _manualPresetService = new();
     private readonly BlockCheckManualStrategyTestService _manualTestService = new();
@@ -29,8 +28,6 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
     private readonly HashSet<string> _automaticAssignmentKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _acknowledgedManualIssueKeys = new(StringComparer.Ordinal);
     private BlockCheckManualPresetResult? _manualPreset;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<BlockCheck2ResultProfileItem> Profiles { get; } = [];
     public ObservableCollection<BlockCheck2ResultProbeItem> Probes { get; } = [];
@@ -564,6 +561,5 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         MinimumSuccessRate = session.RunOptions.Synthesis.MinimumSuccessRate,
     };
 
-    private void Notify([CallerMemberName] string? propertyName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    private void Notify([CallerMemberName] string? propertyName = null) => OnPropertyChanged(propertyName);
 }

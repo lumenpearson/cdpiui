@@ -11,6 +11,7 @@
     xmlns:ucontrols="using:CDPIUI.Controls.Universal"
     xmlns:conv="using:CDPIUI.Converters"
     xmlns:vm="using:CDPIUI.ViewModels"
+    xmlns:local="using:CDPIUI.Views.ConfigImportUtil"
     xmlns:nv="using:CDPIUI.Controls.Navigation">
 
     <Grid Loaded="MainPage_Loaded" Unloaded="MainPage_Unloaded">
@@ -24,16 +25,16 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="PlaceholderGrid" Margin="20" Spacing="20" Visibility="Collapsed">
+        <StackPanel x:Name="PlaceholderGrid" Margin="20" Spacing="20" Visibility="{x:Bind ViewModel.IsPlaceholderVisible, Mode=OneWay}">
             <TextBlock l:Uids.Uid="NoOneComponentInstalledTextBlock" TextWrapping="Wrap"/>
-            <Button Click="OpenComponentsStore_Click">
+            <Button Command="{x:Bind ViewModel.OpenComponentsStoreCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <ImageIcon Source="ms-appx:///Assets/Icons/Store.png" Width="16"/>
                     <TextBlock l:Uids.Uid="GetNewComponentsFromStoreTextBlock"/>
                 </StackPanel>
             </Button>
         </StackPanel>
-        <nv:AnimatedHorizontalContentViewer x:Name="MainContent">
+        <nv:AnimatedHorizontalContentViewer x:Name="MainContent" Visibility="{x:Bind ViewModel.IsMainContentVisible, Mode=OneWay}">
             <nv:AnimatedHorizontalContentItem x:Name="SelectionStep">
                 <Grid Padding="20 0">
                     <StackPanel x:Name="LetsBeginStackPanel">
@@ -81,6 +82,7 @@
 
                     <ListView
                         x:Name="MissingFilesItemsControl"
+                        ItemsSource="{x:Bind ViewModel.MissingFiles}"
                         Grid.Row="1"
                         Margin="0 8 -15 0"
                         SelectionMode="None"
@@ -147,12 +149,20 @@
                         <TextBlock
                     l:Uids.Uid="ConfigImportCompletedStepTitle"
                     Style="{ThemeResource TitleTextBlockStyle}"/>
-                        <InfoBar x:Name="CompletionInfoBar" IsOpen="True" IsClosable="True"/>
+                        <InfoBar
+                            x:Name="CompletionInfoBar"
+                            IsOpen="True"
+                            IsClosable="True"
+                            Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.CompletionState), Mode=OneWay}"
+                            Title="{x:Bind ViewModel.CompletionTitle, Mode=OneWay}"
+                            Message="{x:Bind ViewModel.CompletionMessage, Mode=OneWay}"/>
                     </StackPanel>
 
 
                     <ListView 
                         x:Name="ResultItemsControl"
+                        ItemsSource="{x:Bind ViewModel.Results}"
+                        IsEnabled="{x:Bind ViewModel.AreResultsEnabled, Mode=OneWay}"
                         Margin="0 0 -15 0" 
                         Grid.Row="1" 
                         ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
@@ -303,13 +313,18 @@
                 </Grid>
             </nv:AnimatedHorizontalContentItem>
         </nv:AnimatedHorizontalContentViewer>
-        <ucontrols:UtilityButtonControls x:Name="UtilityButtons" Grid.Row="1" HelpUrl="ConfigImport/1AboutConfigImport">
+        <ucontrols:UtilityButtonControls
+            x:Name="UtilityButtons"
+            Grid.Row="1"
+            HelpUrl="ConfigImport/1AboutConfigImport"
+            IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+            LoadingStateText="{x:Bind ViewModel.LoadingStateText, Mode=OneWay}">
             <Button x:Name="CancelButton" l:Uids.Uid="ExitButton" MinWidth="150" Click="CancelButton_Click" IsEnabled="True"/>
             <Button x:Name="NextButton" 
-                    l:Uids.Uid="GoForwardButton" 
-                    MinWidth="150" 
-                    Click="NextButton_Click" 
-                    IsEnabled="True" 
+                    Content="{x:Bind ViewModel.NextButtonText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsNextVisible, Mode=OneWay}"
+                    MinWidth="150"
+                    Command="{x:Bind ViewModel.NextCommand}"
                     Style="{ThemeResource AccentButtonStyle}"/>
         </ucontrols:UtilityButtonControls>
     </Grid>

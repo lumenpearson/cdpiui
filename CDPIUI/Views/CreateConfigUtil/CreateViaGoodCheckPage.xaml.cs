@@ -1,99 +1,115 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using System.Windows.Forms;
 using CDPIUI.AddOns.GoodCheck;
 using CDPIUI.Controls.Default;
-using CDPIUI.Core;
 using CDPIUI.Core.Basic;
-using CDPIUI.Core.Data;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Core.Store.Database;
-using CDPIUI.Helper.Basic.Settings;
 using CDPIUI.Helper.UserExperience;
-using CDPIUI.Shared;
-using CDPIUI.Shared.Basic.Filesystem;
-using CDPIUI.Shared.Extensions;
-using CommunityToolkit.WinUI;
-using Microsoft.UI.Dispatching;
+using CDPIUI.ViewModels.CreateConfig;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using Unidecode.NET;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using WinUI3Localizer;
-using static CDPIUI.Helper.UIHelper;
 using Application = Microsoft.UI.Xaml.Application;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace CDPIUI.Views.CreateConfigUtil;
 
-/// <summary>
-/// An empty page that can be used on its own or navigated to within a Frame.
-/// </summary>
-public sealed partial class CreateViaGoodCheck : TemplatePage
+public sealed partial class CreateViaGoodCheck : TemplatePage, ICreateViaGoodCheckView
 {
-    private readonly DispatcherQueue _uiDispatcher;
-
-    private enum States
-    {
-        None,
-        LetsBegin,
-        PrepareLoading,
-        SiteListsSettings,
-        StrategyListSettings,
-        AdditionalSettings,
-    }
-
-    private States _currentState = States.None;
-
-    private List<GoodCheckStrategiesList> _strategiesLists = [];
-    private List<GoodCheckSitelistButton> _sitelistButtons = [];
-
-    private List<OneSiteListOneStrategyModeElement> _oneSiteListOneStrategyModeElements = [];
-
-    private ObservableCollection<ComboBoxModel> _resolverItems = [];
-
-    private IniSettingsHelper IniSettingsHelper { get; set; }
-
-    private const string AddOnId = "ASGKOI001";
-
-    private string ComponentId = string.Empty;
-
-    private ILocalizer _localizer = Localizer.Get();
+    private readonly ILocalizer _localizer = Localizer.Get();
 
     public CreateViaGoodCheck()
     {
+        ViewModel = new CreateViaGoodCheckViewModel(this);
         InitializeComponent();
-        ResolverComboBox.ItemsSource = _resolverItems;
-        InitResolverComboBox();
-        _uiDispatcher = DispatcherQueue.GetForCurrentThread();
+
+        ViewModel.SiteListTemplates.CollectionChanged += SiteListTemplates_CollectionChanged;
+        ViewModel.SelectedSiteLists.CollectionChanged += SelectedSiteLists_CollectionChanged;
     }
 
-    private void InitResolverComboBox()
+    public CreateViaGoodCheckViewModel ViewModel { get; }
+
+    public void HideAllPanels()
     {
-        _resolverItems.Clear();
-        _resolverItems.Add(new ComboBoxModel() { DisplayName = _localizer.GetLocalizedString("/GoodCheckAdditionalSettings/NativeResolver"), Id = "native" });
-        _resolverItems.Add(new ComboBoxModel() { DisplayName = _localizer.GetLocalizedString("/GoodCheckAdditionalSettings/Curl"), Id = "curl" });
+        LoadingStackPanel.Visibility = Visibility.Collapsed;
+        LetsBeginStackPanel.Visibility = Visibility.Collapsed;
+        GoodCheckSettingsStackPanel.Visibility = Visibility.Collapsed;
+    }
+
+    public bool SwitchPanel(GoodCheckWizardState oldState, GoodCheckWizardState newState, bool slideToLeft)
+    {
+        var oldPanel = GetPanelForState(oldState);
+        var newPanel = GetPanelForState(newState);
+        if (newPanel == null)
+            return false;
+
+        double width = ContentGrid.ActualWidth;
+        if (width <= 0)
+            width = DisplayArea.Primary.WorkArea.Width;
+
+        PanelSlideTransition.Run(oldPanel, newPanel, width, slideToLeft);
+        return true;
+    }
+
+    public void ClearStrategyChoosers()
+    {
+        OneListOneStrategyStackPanel.Children.Clear();
+    }
+
+    public void AddStrategyChooser(SiteListElement siteList, List<GoodCheckStrategiesList> strategiesLists)
+    {
+        GoodCheckSitelistStrategyChooserControl checkListChooseControl = new()
+        {
+            Title = siteList.Name,
+            PackName = siteList.PackName,
+            FilePath = siteList.Directory,
+            StrategiesLists = strategiesLists
+        };
+        checkListChooseControl.StrategyChanged += (tuple) => ViewModel.SetStrategyForSiteList(tuple.Item1, tuple.Item2);
+
+        OneListOneStrategyStackPanel.Children.Add(checkListChooseControl);
+    }
+
+    public async Task ShowErrorAsync(string message)
+    {
+        try
+        {
+            ContentDialog dialog = new ContentDialog
+            {
+                Title = _localizer.GetLocalizedString("ContinuationImpossible"),
+                Content = message,
+                PrimaryButtonText = _localizer.GetLocalizedString("OkButtonText"),
+                XamlRoot = this.XamlRoot,
+            };
+            await dialog.ShowQueuedAsync();
+            CreateConfigUtilWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
+            window.Close();
+        }
+        catch (Exception exception)
+        {
+            Logger.Instance.CreateWarningLog(nameof(CreateViaGoodCheck), exception.ToString());
+        }
+    }
+
+    public void LeaveWizard()
+    {
+        if (Frame.CanGoBack)
+        {
+            Frame.GoBack();
+        }
+        else
+        {
+            CreateConfigUtilWindow.Instance.Close();
+        }
+    }
+
+    public void OpenWorkPage()
+    {
+        Frame.Navigate(typeof(GoodCheckWorkPage));
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -102,122 +118,110 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
         if (Parameter != null)
         {
-            ComponentId = Parameter.Get("componentId");
+            ViewModel.SetComponent(Parameter.Get("componentId"));
         }
 
-        if (!string.IsNullOrEmpty(ComponentId))
-        {
-            if (ComponentId == HardcodedItemIds.ComponentIds[Core.Store.Data.Components.GoodbyeDPI])
-            {
-                ChangeModeComboBox.IsEnabled = false;
-            }
-
-            HideAll();
-            SetLoadingMode(false);
-            SwitchState(States.LetsBegin);
-        }
+        ViewModel.Start();
     }
 
-    private void HideAll()
+    private UIElement GetPanelForState(GoodCheckWizardState s)
     {
-        LoadingStackPanel.Visibility = Visibility.Collapsed;
-        LetsBeginStackPanel.Visibility = Visibility.Collapsed;
-        GoodCheckSettingsStackPanel.Visibility = Visibility.Collapsed;
+        return s switch
+        {
+            GoodCheckWizardState.PrepareLoading => LoadingStackPanel,
+            GoodCheckWizardState.LetsBegin => LetsBeginStackPanel,
+            GoodCheckWizardState.SiteListsSettings => GoodCheckSettingsStackPanel,
+            GoodCheckWizardState.StrategyListSettings => ChooseStrategiesListStackPanel,
+            GoodCheckWizardState.AdditionalSettings => AdditionalSettingsStackPanel,
+            _ => null
+        };
     }
 
-    private void SetLoadingMode(
-        bool isLoading,
-        bool isIndeterminate = true,
-        bool cancellationAvailable = false,
-        string headerText = ""
-        )
+    private void SiteListTemplates_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
     {
-        if (!_uiDispatcher.HasThreadAccess)
+        if (e.Action == NotifyCollectionChangedAction.Reset)
         {
-            _uiDispatcher.TryEnqueue(() => SetLoadingMode(isLoading, isIndeterminate, cancellationAvailable, headerText));
+            SiteListTemplatesStackPanel.Children.Clear();
             return;
         }
 
-        if (isLoading)
+        foreach (SiteListElement item in e.NewItems?.OfType<SiteListElement>() ?? [])
         {
-            GoBackButton.Visibility = Visibility.Collapsed;
-            GoForwardButton.Visibility = Visibility.Collapsed;
+            var btn = new SitelistButton
+            {
+                Title = item.Name,
+                PackName = item.PackName,
+                PackId = item.PackId,
+                Directory = item.Directory,
+                Tag = item,
+            };
 
-            LoadingProgressBar.IsIndeterminate = isIndeterminate;
-            LoadingHeader.Text = headerText;
-            CancelButton.Visibility = Visibility.Visible;
-            CancelButton.IsEnabled = cancellationAvailable;
-            LoadingStateGrid.Visibility = Visibility.Visible;
+            btn.Click += () =>
+            {
+                SelectSiteListFlyout.Hide();
+                AddSiteListElement(item);
+            };
+
+            SiteListTemplatesStackPanel.Children.Add(btn);
         }
-        else
+    }
+
+    private void SelectedSiteLists_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
         {
-            GoBackButton.Visibility = Visibility.Visible;
-            GoForwardButton.Visibility = Visibility.Visible;
-            CancelButton.Visibility = Visibility.Collapsed;
+            case NotifyCollectionChangedAction.Reset:
+                SelectedSitelistStackPanel.Children.Clear();
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (SiteListElement element in e.OldItems.OfType<SiteListElement>())
+                {
+                    var target = SelectedSitelistStackPanel.Children
+                        .OfType<GoodCheckSitelistButton>()
+                        .FirstOrDefault(c => ReferenceEquals(c.Tag, element));
+                    if (target != null)
+                    {
+                        target.RemoveElement = null;
+                        SelectedSitelistStackPanel.Children.Remove(target);
+                    }
+                }
+                break;
+            case NotifyCollectionChangedAction.Add:
+                foreach (SiteListElement element in e.NewItems.OfType<SiteListElement>())
+                {
+                    var btn = new GoodCheckSitelistButton
+                    {
+                        Title = element.Name,
+                        PackName = element.PackName,
+                        FilePath = element.Directory,
+                        Tag = element,
+                    };
 
-            LoadingStateGrid.Visibility = Visibility.Collapsed;
+                    btn.RemoveElement = () =>
+                    {
+                        _ = ViewModel.RemoveSiteListElementAsync(element);
+                    };
+
+                    SelectedSitelistStackPanel.Children.Add(btn);
+                }
+                break;
         }
+    }
+
+    private void AddSiteListElement(SiteListElement site)
+    {
+        CloseStoryboard.Begin();
+        ViewModel.AddSiteListElement(site);
     }
 
     private void GoBackButton_Click(object sender, RoutedEventArgs e)
     {
-        switch (_currentState)
-        {
-            case States.SiteListsSettings:
-                GoForwardButton.IsEnabled = true;
-                SwitchState(States.LetsBegin, slideToLeft: false);
-                break;
-            case States.LetsBegin:
-                if (Frame.CanGoBack)
-                {
-                    Frame.GoBack();
-                }
-                else
-                {
-                    CreateConfigUtilWindow.Instance.Close();
-                }
-
-                break;
-            default:
-                SwitchState(_currentState - 1, slideToLeft: false);
-                break;
-        }
+        ViewModel.GoBack();
     }
 
     private async void GoForwardButton_Click(object sender, RoutedEventArgs e)
     {
-        switch (_currentState)
-        {
-            case States.LetsBegin:
-                SwitchState(States.PrepareLoading);
-                await InitGoodCheckSiteListsPage();
-                break;
-            case States.SiteListsSettings:
-                SwitchState(States.StrategyListSettings);
-                InitGoodCheckStrategiesListsPage();
-                if (StrategiesListCombobox.SelectedIndex != -1 || ChangeModeComboBox.IsChecked == true)
-                {
-                    GoForwardButton.IsEnabled = true;
-                }
-                else
-                {
-                    GoForwardButton.IsEnabled = false;
-                }
-                break;
-            case States.StrategyListSettings:
-                SwitchState(States.AdditionalSettings);
-                LoadGoodCheckSettings();
-                break;
-            case States.AdditionalSettings:
-                SaveGoodCheckSettings();
-                Frame.Navigate(typeof(GoodCheckWorkPage));
-                StartGoodCheck();
-                break;
-            default:
-                SwitchState(_currentState + 1);
-                break;
-        }
-        await Task.CompletedTask;
+        await ViewModel.GoForwardAsync();
     }
 
     private void GetHelpButton_Click(object sender, RoutedEventArgs e)
@@ -230,38 +234,6 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
     }
 
-    private UIElement GetPanelForState(States s)
-    {
-        return s switch
-        {
-            States.PrepareLoading => LoadingStackPanel,
-            States.LetsBegin => LetsBeginStackPanel,
-            States.SiteListsSettings => GoodCheckSettingsStackPanel,
-            States.StrategyListSettings => ChooseStrategiesListStackPanel,
-            States.AdditionalSettings => AdditionalSettingsStackPanel,
-            _ => null
-        };
-    }
-
-    private void SwitchState(States newState, bool slideToLeft = true)
-    {
-        if (newState == _currentState)
-            return;
-
-        var oldPanel = GetPanelForState(_currentState);
-        var newPanel = GetPanelForState(newState);
-        if (newPanel == null)
-            return;
-
-        double width = ContentGrid.ActualWidth;
-        if (width <= 0)
-            width = DisplayArea.Primary.WorkArea.Width;
-
-        PanelSlideTransition.Run(oldPanel, newPanel, width, slideToLeft);
-
-        _currentState = newState;
-    }
-
     private void SelectedSitelistScrollViewer_LayoutUpdated(object sender, object e)
     {
         SelectedSitelistScrollViewer.MaxHeight = GoodCheckSettingsStackPanel.ActualHeight - GoodCheckSettingsTextContent.ActualHeight;
@@ -270,19 +242,7 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
 
     private void SelectedSitelistStackPanel_LayoutUpdated(object sender, object e)
     {
-        if (_currentState == States.SiteListsSettings)
-        {
-            if (SelectedSitelistStackPanel.Children.Count > 0)
-            {
-                GoForwardButton.IsEnabled = true;
-                SelectedSitelistTip.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                GoForwardButton.IsEnabled = false;
-                SelectedSitelistTip.Visibility = Visibility.Visible;
-            }
-        }
+        ViewModel.RefreshSiteListsState();
     }
 
     private void FileIncorrectWarning_Loaded(object sender, RoutedEventArgs e)
@@ -311,43 +271,6 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         FileIncorrectWarning.Visibility = Visibility.Collapsed;
     }
 
-    private void StrategiesListCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (StrategiesListCombobox.SelectedIndex != -1)
-        {
-            GoForwardButton.IsEnabled = true;
-        }
-        else
-        {
-            GoForwardButton.IsEnabled = false;
-        }
-    }
-
-    private void ChangeModeComboBox_Click(object sender, RoutedEventArgs e)
-    {
-        if (ChangeModeComboBox.IsChecked == true)
-        {
-            OneListOneStrategyStackPanel.Visibility = Visibility.Visible;
-            AllListsOneStrategyPanel.Visibility = Visibility.Collapsed;
-
-
-        }
-        else
-        {
-            OneListOneStrategyStackPanel.Visibility = Visibility.Collapsed;
-            AllListsOneStrategyPanel.Visibility = Visibility.Visible;
-        }
-
-        if (StrategiesListCombobox.SelectedIndex != -1 || ChangeModeComboBox.IsChecked == true)
-        {
-            GoForwardButton.IsEnabled = true;
-        }
-        else
-        {
-            GoForwardButton.IsEnabled = false;
-        }
-    }
-
     private void OneListOneStrategyScrollViewer_LayoutUpdated(object sender, object e)
     {
         OneListOneStrategyScrollViewer.MaxHeight = GoodCheckSettingsStackPanel.ActualHeight - ChooseStrategiesListTextContent.ActualHeight;
@@ -360,31 +283,37 @@ public sealed partial class CreateViaGoodCheck : TemplatePage
         AdditionalSettingsScrollViewer.Height = GoodCheckSettingsStackPanel.ActualHeight - AdditionalSettingsListTextContent.ActualHeight;
     }
 
-    private void ResolverComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void ChooseFileButton_Click(object sender, RoutedEventArgs e)
     {
+        var filePath = string.Empty;
 
-    }
-
-    private async Task ShowErrorDialog(string message = null)
-    {
-        try
+        using (OpenFileDialog openFileDialog = new OpenFileDialog())
         {
-            ContentDialog dialog = new ContentDialog
+            openFileDialog.Title = _localizer.GetLocalizedString("ChooseSiteList");
+            openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            openFileDialog.Filter = $"{_localizer.GetLocalizedString("TextFiles")} (*.txt)|*.txt";
+            openFileDialog.RestoreDirectory = true;
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                Title = _localizer.GetLocalizedString("ContinuationImpossible"),
-                Content = string.IsNullOrEmpty(message) ?
-                    string.Format(_localizer.GetLocalizedString("AddOnNotInstalled"),
-                    HardcodedItemIds.AddOnsIds.GetKeyByValue(AddOnId), AddOnId) : message,
-                PrimaryButtonText = _localizer.GetLocalizedString("OkButtonText"),
-                XamlRoot = this.XamlRoot,
-            };
-            await dialog.ShowQueuedAsync();
-            CreateConfigUtilWindow window = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
-            window.Close();
+                filePath = openFileDialog.FileName;
+            }
+            else
+            {
+                return;
+            }
         }
-        catch (Exception exception)
+
+        SiteListElement siteListElement = await ViewModel.ImportSiteListFileAsync(filePath);
+
+        if (siteListElement == null)
         {
-            Logger.Instance.CreateWarningLog(nameof(CreateViaGoodCheck), exception.ToString());
+            FileIncorrectWarning.IsOpen = true;
+            FileIncorrectWarning.Visibility = Visibility.Visible;
+            OpenStoryboard.Begin();
+            return;
         }
+
+        AddSiteListElement(siteListElement);
     }
 }

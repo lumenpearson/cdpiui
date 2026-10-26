@@ -174,10 +174,15 @@ public class ConPTYHelper
 
         try
         {
-            EnsureArgumentsWriteInsideAllowedRoots(exePath, args, workingDirectory);
-
-            lease = await ExecutableTrust.AcquireAsync(exePath, "process start")
-                ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
+            // The arguments come from the UI: options that write a file must stay in the
+            // application directories and Lua code must be approved, because the component runs
+            // with administrator rights. The files they refer to stay locked with the program.
+            lease = await ExecutableTrust.AcquireAsync(
+                exePath,
+                args,
+                string.IsNullOrWhiteSpace(workingDirectory) ? Path.GetDirectoryName(exePath) : workingDirectory,
+                "process start")
+                ?? throw new UnauthorizedAccessException("The executable is outside the application directories, its arguments are not allowed, or it was not approved.");
 
             CreatePseudoConsoleWithPipes(ref hInputRead, ref hOutputWrite);
             lpAttrList = CreateAttributeList();
@@ -213,8 +218,10 @@ public class ConPTYHelper
         }
         finally
         {
-            lease?.Dispose();
+            // CloseRunHandles ends and waits for a process that still runs (stop and cancel
+            // paths); only then may its files change.
             CloseRunHandles(pi, lpAttrList, hInputRead, hOutputWrite);
+            lease?.Dispose();
 
             SendStopMessage("Process will be stopped");
 
@@ -222,19 +229,6 @@ public class ConPTYHelper
             ChangeProcessState(processState);
             _processInfo = default;
         }
-    }
-
-    // The arguments come from the UI; an option that writes a file must stay in the
-    // application directories, because the component runs with administrator rights.
-    private static void EnsureArgumentsWriteInsideAllowedRoots(string exePath, string args, string workingDirectory)
-    {
-        string? unsafeOption = FileWritingOptions.FindOutsideWrite(
-            args,
-            TrustedPaths.AllowedRoots,
-            string.IsNullOrWhiteSpace(workingDirectory) ? Path.GetDirectoryName(exePath) : workingDirectory,
-            followArgumentFiles: true);
-        if (unsafeOption != null)
-            throw new UnauthorizedAccessException($"The arguments write a file outside the application directories: {unsafeOption}");
     }
 
     // The console sides of the pipes are closed here once the pseudo console holds them; the

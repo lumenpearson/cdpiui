@@ -31,8 +31,6 @@ public class InstallHelper
     private string _targetFolder;
     private string _targetExecutable;
     private readonly List<string> _skipFiles = new List<string> { "Update.exe", "catalog.cat" };
-    private const string UiRootPrefix = "CDPIUI/";
-    private const string LayersPrefix = "layers/";
 
     public Action<InstallState> InstallationStateChanged;
     public Action<double> ProgressChanged;
@@ -246,21 +244,9 @@ public class InstallHelper
     /// Prefixes of the archive folders to apply, in order: layers/0/, layers/1/, ... in packages
     /// made by the application, or CDPIUI/ in a single published patch.
     /// </summary>
-    internal static List<string> GetLayerPrefixes(ZipArchive zip)
-    {
-        var layers = zip.Entries
-            .Select(e => e.FullName.Replace('\\', '/'))
-            .Where(name => name.StartsWith(LayersPrefix, StringComparison.OrdinalIgnoreCase))
-            .Select(name => name.Substring(LayersPrefix.Length).Split('/')[0])
-            .Distinct()
-            .Select(index => { int number; return int.TryParse(index, out number) ? number : -1; })
-            .Where(number => number >= 0)
-            .OrderBy(number => number)
-            .Select(number => $"{LayersPrefix}{number}/")
-            .ToList();
-
-        return layers.Count > 0 ? layers : new List<string> { UiRootPrefix };
-    }
+    internal static List<string> GetLayerPrefixes(ZipArchive zip) =>
+        // The tray verified the catalogs of the same layers (PackageStaging): one shared rule.
+        UpdatePackageLayers.GetPrefixes(zip.Entries.Select(e => e.FullName));
 
     /// <summary>
     /// Moves the staged files into place. Replaced files are kept in the backup folder

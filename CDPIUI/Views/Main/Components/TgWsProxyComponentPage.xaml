@@ -47,21 +47,24 @@
         </Grid.RowDefinitions>
         <ScrollView Padding="0 0">
             <StackPanel Spacing="20" Margin="20 10 20 20">
-                <StackPanel x:Name="ContentStackPanel" Spacing="20" Visibility="Collapsed">
+                <StackPanel x:Name="ContentStackPanel" Spacing="20" Visibility="{x:Bind ViewModel.IsContentVisible, Mode=OneWay}">
                     <controls:SettingsCard l:Uids.Uid="ConfigSettingsCard"
                                            CornerRadius="10"
                                            BorderBrush="{ThemeResource CardStrokeColorDefaultSolidBrush}">
                         <lcontrol:ConfigSelector
                             x:Name="ConfigChooseCombobox"
+                            ItemsSource="{x:Bind ViewModel.ConfigItems}"
+                            SelectedItem="{x:Bind ViewModel.SelectedConfig, Mode=OneWay}"
                             MinWidth="400"
                             Height="47"
                             SelectionChanged="ConfigChooseCombobox_SelectionChanged" />
                     </controls:SettingsCard>
-                    <StackPanel x:Name="TilesStackPanel" Visibility="Collapsed" Spacing="20">
+                    <StackPanel x:Name="TilesStackPanel" Visibility="{x:Bind ViewModel.IsTilesVisible, Mode=OneWay}" Spacing="20">
                         <StackPanel.ChildrenTransitions>
                             <RepositionThemeTransition />
                         </StackPanel.ChildrenTransitions>
                         <ListView x:Name="DataCentersListView"
+                          ItemsSource="{x:Bind ViewModel.DataCenters}"
                           ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
                             <ListView.Header>
                                 <Grid Margin="0 0 0 5">
@@ -84,7 +87,7 @@
                                                 <KeyboardAccelerator Modifiers="Control" Key="V"/>
                                             </Button.KeyboardAccelerators>
                                         </Button>
-                                        <Button x:Name="AddButton" Click="AddButton_Click">
+                                        <Button x:Name="AddButton" Command="{x:Bind ViewModel.AddDataCenterCommand}">
                                             <StackPanel Orientation="Horizontal" Spacing="5">
                                                 <FontIcon Glyph="&#xE710;" FontSize="16" />
                                                 <TextBlock l:Uids.Uid="AddTextBlock"/>
@@ -111,8 +114,8 @@
                                 Guid="{x:Bind Guid, Mode=OneWay}" 
                                 Number="{x:Bind Number, Mode=OneWay}" 
                                 Ip="{x:Bind Ip, Mode=OneWay}"
-                                EditCommand="{Binding DataContext.TgWsProxyEditCommand, ElementName=RootPage}"
-                                RemoveCommand="{Binding DataContext.TgWsProxyRemoveCommand, ElementName=RootPage}"/>
+                                EditCommand="{Binding ViewModel.EditDataCenterCommand, ElementName=RootPage}"
+                                RemoveCommand="{Binding ViewModel.RemoveDataCenterCommand, ElementName=RootPage}"/>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                             <ListView.ItemsPanel>
@@ -126,13 +129,13 @@
                                 <controls:SettingsExpander.Items>
                                     <controls:SettingsCard l:Uids.Uid="BufferSettingsCard">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBox x:Name="BufferSizeTextBox"/>
+                                            <TextBox x:Name="BufferSizeTextBox" Text="{x:Bind ViewModel.BufferSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetBufferButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                             Height="32" Width="32"
-                                            Click="ResetBufferButton_Click">
+                                            Command="{x:Bind ViewModel.ResetBufferSizeCommand}">
                                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                                             </Button>
                                         </StackPanel>
@@ -140,31 +143,31 @@
 
                                     <controls:SettingsCard l:Uids.Uid="WebSocketSettingsCard">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBox x:Name="WebSocketSizeTextBox"/>
+                                            <TextBox x:Name="WebSocketSizeTextBox" Text="{x:Bind ViewModel.PoolSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetWebSocketSizeButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                             Height="32" Width="32"
-                                            Click="ResetWebSocketSizeButton_Click">
+                                            Command="{x:Bind ViewModel.ResetPoolSizeCommand}">
                                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                                             </Button>
                                         </StackPanel>
                                     </controls:SettingsCard>
 
                                     <controls:SettingsCard l:Uids.Uid="AdvancedLoggingSettingsExpander">
-                                        <ToggleSwitch x:Name="AdvancedLoggingToggleSwitch"/>
+                                        <ToggleSwitch x:Name="AdvancedLoggingToggleSwitch" IsOn="{x:Bind ViewModel.IsVerbose, Mode=TwoWay}"/>
                                     </controls:SettingsCard>
 
                                     <controls:SettingsCard l:Uids.Uid="LogSizeSettingsCard">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBox x:Name="LogSizeTextBox"/>
+                                            <TextBox x:Name="LogSizeTextBox" Text="{x:Bind ViewModel.LogSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetLogSizeButton" 
                                             l:Uids.Uid="ResetByDefaultButton"
                                             Grid.Column="3" Padding="6" 
                                             VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                             Height="32" Width="32"
-                                            Click="ResetLogSizeButton_Click">
+                                            Command="{x:Bind ViewModel.ResetLogSizeCommand}">
                                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                                             </Button>
                                         </StackPanel>
@@ -191,35 +194,35 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock l:Uids.Uid="ProxyIpAddressTextBlock"/>
-                                <TextBox x:Name="IPValue" HorizontalAlignment="Stretch"/>
+                                <TextBox x:Name="IPValue" Text="{x:Bind ViewModel.Host, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock l:Uids.Uid="PortTextBlock"/>
-                                <TextBox x:Name="PortValue" HorizontalAlignment="Stretch"/>
+                                <TextBox x:Name="PortValue" Text="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
                             </StackPanel>
                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
                                     Grid.Column="3" Padding="6" 
                                     VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                     Height="32" Width="32"
-                                    Click="ResetButton_Click">
+                                    Command="{x:Bind ViewModel.ResetAddressCommand}">
                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                             </Button>
                             <StackPanel Grid.Row="1" Grid.ColumnSpan="3" >
                                 <TextBlock l:Uids.Uid="KeyTextBlock"/>
-                                <TextBox x:Name="KeyValue" HorizontalAlignment="Stretch"/>
+                                <TextBox x:Name="KeyValue" Text="{x:Bind ViewModel.Secret, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
                             </StackPanel>
                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetKeyButton" l:Uids.Uid="ResetByDefaultButton"
                                     Grid.Row="1" Grid.Column="3" Padding="6" 
                                     VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                     Height="32" Width="32"
-                                    Click="ResetKeyButton_Click">
+                                    Command="{x:Bind ViewModel.ResetSecretCommand}">
                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                             </Button>
                         </Grid>
-                        <ucontrols:LinkedSettingsUserControl x:Name="LinkedSettingsUserControl" ClickCommand="{Binding DataContext.LinkedSettingClickCommand, ElementName=RootPage}"/>
+                        <ucontrols:LinkedSettingsUserControl x:Name="LinkedSettingsUserControl" SettingModelsList="{x:Bind ViewModel.LinkedSettings}" ClickCommand="{x:Bind ViewModel.LinkedSettingClickCommand}"/>
                     </StackPanel>
                 </StackPanel>
-                <lcontrol:ConfigNeededUserControl x:Name="EmptyPlaceholder" ClickCommand="{Binding CreateFromTemplateCommand, ElementName=RootPage}"/>
+                <lcontrol:ConfigNeededUserControl x:Name="EmptyPlaceholder" Visibility="{x:Bind ViewModel.IsEmptyPlaceholderVisible, Mode=OneWay}" ClickCommand="{x:Bind ViewModel.CreateFromTemplateCommand}"/>
                 
             </StackPanel>
         </ScrollView>
@@ -257,8 +260,8 @@
                     <FontIcon Glyph="&#xE754;" FontSize="16" VerticalAlignment="Center"/>
                     <TextBlock l:Uids.Uid="/Flashlight/SaveBeforeQuitTip" Grid.Column="2" VerticalAlignment="Center"/>
                 </Grid>
-                <Button x:Name="CancelButton" l:Uids.Uid="CancelButton" Grid.Column="1" HorizontalAlignment="Stretch" Click="CancelButton_Click"/>
-                <Button x:Name="SaveButton" Grid.Column="3" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SaveButton_Click">
+                <Button x:Name="CancelButton" l:Uids.Uid="CancelButton" Grid.Column="1" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.CancelCommand}"/>
+                <Button x:Name="SaveButton" Grid.Column="3" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.SaveCommand}">
                     <TextBlock l:Uids.Uid="SaveTextBlock"/>
                 </Button>
                 

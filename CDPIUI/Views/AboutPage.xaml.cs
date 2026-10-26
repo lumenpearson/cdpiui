@@ -78,7 +78,6 @@ public sealed partial class AboutPage : TemplatePage
         new () { Name = "Newtonsoft.Json by James Newton-King" },
         new () { Name = "CommunityToolkit.Labs" },
         new () { Name = "CommunityToolkit.WinUI" },
-        new () { Name = "ini-parser by Ricardo Amores Hernández" },
         new () { Name = "Microsoft.Data.Sqlite" },
     };
     public AboutPage()

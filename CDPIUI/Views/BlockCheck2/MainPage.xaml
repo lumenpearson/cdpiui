@@ -12,6 +12,7 @@
     xmlns:tpl="using:CDPIUI.Controls.Default"
     xmlns:universal="using:CDPIUI.Controls.Universal"
     xmlns:vm="using:CDPIUI.ViewModels"
+    xmlns:local="using:CDPIUI.Views.BlockCheck2"
     mc:Ignorable="d">
 
     <tpl:TemplatePage.Resources>
@@ -40,7 +41,9 @@
                     <InfoBar
                         x:Name="InputInfoBar"
                         IsClosable="True"
-                        IsOpen="False"
+                        IsOpen="{x:Bind ViewModel.IsInputNoticeOpen, Mode=TwoWay}"
+                        Title="{x:Bind ViewModel.InputNoticeTitle, Mode=OneWay}"
+                        Message="{x:Bind ViewModel.InputNoticeMessage, Mode=OneWay}"
                         Severity="Warning"
                         Margin="0 0 20 0"/>
 
@@ -66,7 +69,7 @@
                                         <ListBox
                                             x:Name="SiteListBox"
                                             MaxHeight="280"
-                                            ItemsSource="{x:Bind ViewModel.AvailableSiteLists, Mode=OneWay}"
+                                            ItemsSource="{x:Bind ViewModel.Session.AvailableSiteLists, Mode=OneWay}"
                                             SelectionChanged="ListBox_SelectionChanged">
                                             <ListBox.ItemContainerStyle>
                                                 <Style TargetType="ListBoxItem">
@@ -137,7 +140,7 @@
                             Grid.Column="1"
                             Width="20"
                             Height="20"
-                            IsActive="{x:Bind ViewModel.IsSiteListLoading, Mode=OneWay}" />
+                            IsActive="{x:Bind ViewModel.Session.IsSiteListLoading, Mode=OneWay}" />
                         <StackPanel
                             Grid.Column="2"
                             HorizontalAlignment="Right"
@@ -148,7 +151,7 @@
                                 VerticalAlignment="Center" />
                             <TextBlock
                                 VerticalAlignment="Center"
-                                Text="{x:Bind ViewModel.SelectedSiteListCount, Mode=OneWay}"
+                                Text="{x:Bind ViewModel.Session.SelectedSiteListCount, Mode=OneWay}"
                                 Style="{ThemeResource BodyStrongTextBlockStyle}" />
                         </StackPanel>
                     </Grid>
@@ -171,7 +174,7 @@
                             Opacity="0" 
                             Margin="0 0 20 0"/>
                     <ScrollViewer>
-                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.SelectedSiteLists, Mode=OneWay}" Margin="0 0 20 16">
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.Session.SelectedSiteLists, Mode=OneWay}" Margin="0 0 20 16">
                             <ItemsRepeater.Layout>
                                 <StackLayout Spacing="5" />
                             </ItemsRepeater.Layout>
@@ -235,7 +238,7 @@
 
                     <StackPanel
                         VerticalAlignment="Center"
-                        Visibility="{x:Bind ViewModel.HasTargetSources, Mode=OneWay, Converter={StaticResource ReversedBoolToVisibilityConverter}}"
+                        Visibility="{x:Bind ViewModel.Session.HasTargetSources, Mode=OneWay, Converter={StaticResource ReversedBoolToVisibilityConverter}}"
                         Margin="0 0 20 0">
                             <FontIcon Glyph="&#xE7C9;" FontSize="40" HorizontalAlignment="Center" />
                             <TextBlock
@@ -267,7 +270,7 @@
                             <RadioButton
                                 x:Name="QuickModeRadioButton"
                                 GroupName="BlockCheck2RunMode"
-                                Checked="RunModeRadioButton_Checked"
+                                IsChecked="{x:Bind ViewModel.IsQuickModeSelected, Mode=TwoWay}"
                                 Padding="10 0"
                                 HorizontalContentAlignment="Stretch">
                                 <StackPanel Spacing="3">
@@ -294,7 +297,7 @@
                             <RadioButton
                                 x:Name="BalancedModeRadioButton"
                                 GroupName="BlockCheck2RunMode"
-                                Checked="RunModeRadioButton_Checked"
+                                IsChecked="{x:Bind ViewModel.IsBalancedModeSelected, Mode=TwoWay}"
                                 HorizontalContentAlignment="Stretch"
                                 Padding="10 0">
                                 <StackPanel Spacing="3">
@@ -321,7 +324,7 @@
                             <RadioButton
                                 x:Name="ExhaustiveModeRadioButton"
                                 GroupName="BlockCheck2RunMode"
-                                Checked="RunModeRadioButton_Checked"
+                                IsChecked="{x:Bind ViewModel.IsExhaustiveModeSelected, Mode=TwoWay}"
                                 Padding="10 0"
                                 Margin="12"
                                 HorizontalContentAlignment="Stretch">
@@ -354,7 +357,7 @@
                     <StackPanel Spacing="5" Margin="0 0 0 16">
                         <InfoBar
                             IsClosable="False"
-                            IsOpen="{x:Bind ViewModel.IsHttpOnly, Mode=OneWay}"
+                            IsOpen="{x:Bind ViewModel.Session.IsHttpOnly, Mode=OneWay}"
                             Severity="Warning"
                             l:Uids.Uid="BlockCheck2HttpOnlyInfoBar" />
                         
@@ -363,11 +366,11 @@
                             ContentAlignment="Vertical">
                             <controls:SettingsCard.Content>
                                 <StackPanel Orientation="Horizontal" Spacing="16">
-                                    <CheckBox l:Uids.Uid="BlockCheck2HttpCheckBox" IsChecked="{x:Bind ViewModel.IncludeHttp, Mode=TwoWay}" />
-                                    <CheckBox l:Uids.Uid="BlockCheck2Tls12CheckBox" IsChecked="{x:Bind ViewModel.IncludeTls12, Mode=TwoWay}" />
-                                    <CheckBox l:Uids.Uid="BlockCheck2Tls13CheckBox" IsChecked="{x:Bind ViewModel.IncludeTls13, Mode=TwoWay}" />
-                                    <CheckBox l:Uids.Uid="BlockCheck2TlsAutoCheckBox" IsChecked="{x:Bind ViewModel.IncludeTlsAuto, Mode=TwoWay}" />
-                                    <CheckBox l:Uids.Uid="BlockCheck2QuicCheckBox" IsChecked="{x:Bind ViewModel.IncludeQuic, Mode=TwoWay}" Visibility="Collapsed"/>
+                                    <CheckBox l:Uids.Uid="BlockCheck2HttpCheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeHttp, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2Tls12CheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeTls12, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2Tls13CheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeTls13, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2TlsAutoCheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeTlsAuto, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2QuicCheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeQuic, Mode=TwoWay}" Visibility="Collapsed"/>
                                 </StackPanel>
                             </controls:SettingsCard.Content>
                         </controls:SettingsCard>
@@ -378,8 +381,8 @@
                             l:Uids.Uid="BlockCheck2IpVersionsCard">
                             <controls:SettingsCard.Content>
                                 <StackPanel Orientation="Horizontal" Spacing="16">
-                                    <CheckBox l:Uids.Uid="BlockCheck2Ipv4CheckBox" IsChecked="{x:Bind ViewModel.IncludeIpv4, Mode=TwoWay}" />
-                                    <CheckBox l:Uids.Uid="BlockCheck2Ipv6CheckBox" IsChecked="{x:Bind ViewModel.IncludeIpv6, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2Ipv4CheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeIpv4, Mode=TwoWay}" />
+                                    <CheckBox l:Uids.Uid="BlockCheck2Ipv6CheckBox" IsChecked="{x:Bind ViewModel.Session.IncludeIpv6, Mode=TwoWay}" />
                                 </StackPanel>
                             </controls:SettingsCard.Content>
                         </controls:SettingsCard>
@@ -391,7 +394,7 @@
                                 Maximum="60"
                                 SmallChange="1"
                                 SpinButtonPlacementMode="Compact"
-                                Value="{x:Bind ViewModel.ConnectTimeoutSeconds, Mode=TwoWay}" />
+                                Value="{x:Bind ViewModel.Session.ConnectTimeoutSeconds, Mode=TwoWay}" />
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2RequestTimeoutCard">
                             <NumberBox
@@ -400,7 +403,7 @@
                                 Maximum="180"
                                 SmallChange="1"
                                 SpinButtonPlacementMode="Compact"
-                                Value="{x:Bind ViewModel.RequestTimeoutSeconds, Mode=TwoWay}" />
+                                Value="{x:Bind ViewModel.Session.RequestTimeoutSeconds, Mode=TwoWay}" />
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2StartupGraceCard">
                             <NumberBox
@@ -409,7 +412,7 @@
                                 Maximum="10"
                                 SmallChange="0.25"
                                 SpinButtonPlacementMode="Compact"
-                                Value="{x:Bind ViewModel.StartupGraceSeconds, Mode=TwoWay}" />
+                                Value="{x:Bind ViewModel.Session.StartupGraceSeconds, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2RequestsPerDomainCard">
@@ -419,11 +422,11 @@
                                 Maximum="20"
                                 SmallChange="1"
                                 SpinButtonPlacementMode="Compact"
-                                Value="{x:Bind ViewModel.RequestsPerDomain, Mode=TwoWay}" />
+                                Value="{x:Bind ViewModel.Session.RequestsPerDomain, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2TestAllStrategiesCard">
-                            <ToggleSwitch IsOn="{x:Bind ViewModel.TestAllStrategies, Mode=TwoWay}" />
+                            <ToggleSwitch IsOn="{x:Bind ViewModel.Session.TestAllStrategies, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <Button
@@ -442,36 +445,42 @@
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewSourcesCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewSourcesTextBlock"
+                                Text="{x:Bind ViewModel.ReviewSourcesText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewConnectionsCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewConnectionsTextBlock"
+                                Text="{x:Bind ViewModel.ReviewConnectionsText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewModeCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewModeTextBlock"
+                                Text="{x:Bind ViewModel.ReviewModeText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewRequestsCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewRequestsTextBlock"
+                                Text="{x:Bind ViewModel.ReviewRequestsText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewTimeoutsCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewTimeoutsTextBlock"
+                                Text="{x:Bind ViewModel.ReviewTimeoutsText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2ReviewMaximumTimeCard" ContentAlignment="Vertical">
                             <TextBlock
                                 x:Name="ReviewMaximumTimeTextBlock"
+                                Text="{x:Bind ViewModel.ReviewMaximumTimeText, Mode=OneWay}"
                                 TextWrapping="Wrap"
                                 Style="{ThemeResource CaptionTextBlockStyle}"/>
                         </controls:SettingsCard>
@@ -489,7 +498,7 @@
                     </Grid.RowDefinitions>
                     
 
-                    <Grid Grid.Row="2" ColumnSpacing="0"  VerticalAlignment="Bottom" Visibility="{x:Bind ViewModel.IsRunning, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid Grid.Row="2" ColumnSpacing="0"  VerticalAlignment="Bottom" Visibility="{x:Bind ViewModel.Session.IsRunning, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -512,6 +521,7 @@
                             Margin="0 0 20 0">
                             <TextBlock
                                 x:Name="ProgressViewMoreText"
+                                Text="{x:Bind ViewModel.ProgressViewMoreText, Mode=OneWay}"
                                 TextDecorations="Underline" />
                         </HyperlinkButton>
 
@@ -527,18 +537,20 @@
                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                     <TextBlock
                                     x:Name="ProgressPhaseTextBlock"
+                                    Text="{x:Bind ViewModel.ProgressPhaseText, Mode=OneWay}"
                                     Margin="50,0,0,0" />
                                     <TextBlock
                                     l:Uids.Uid="BlockCheck2OverallRemainingLabel"
                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                     <TextBlock
                                     x:Name="OverallRemainingTimeTextBlock"
+                                    Text="{x:Bind ViewModel.OverallRemainingTimeText, Mode=OneWay}"
                                     Margin="50,0,0,0" />
 
                                     <StackPanel
                                     x:Name="AdditionalProgressInfo"
                                     Spacing="3"
-                                    Visibility="Collapsed">
+                                    Visibility="{x:Bind ViewModel.IsAdditionalProgressInfoVisible, Mode=OneWay}">
                                         <Rectangle
                                         Height="2"
                                         Margin="0,6"
@@ -549,27 +561,29 @@
                                         <TextBlock l:Uids.Uid="BlockCheck2CurrentUrlLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.CurrentTargetUrl, Mode=OneWay}"
+                                        Text="{x:Bind ViewModel.Session.CurrentTargetUrl, Mode=OneWay}"
                                         TextTrimming="CharacterEllipsis"
                                         IsTextSelectionEnabled="True" />
                                         <TextBlock l:Uids.Uid="BlockCheck2ConnectionDetailsLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.CurrentTargetConnectionDetails, Mode=OneWay}"
+                                        Text="{x:Bind ViewModel.Session.CurrentTargetConnectionDetails, Mode=OneWay}"
                                         IsTextSelectionEnabled="True" />
                                         <TextBlock l:Uids.Uid="BlockCheck2CurrentStrategyLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.CurrentStrategyId, Mode=OneWay}"
+                                        Text="{x:Bind ViewModel.Session.CurrentStrategyId, Mode=OneWay}"
                                         TextTrimming="CharacterEllipsis"
                                         IsTextSelectionEnabled="True" />
                                         <TextBlock l:Uids.Uid="BlockCheck2StageRemainingLabel" />
                                         <TextBlock
                                         x:Name="StageRemainingTimeTextBlock"
+                                        Text="{x:Bind ViewModel.StageRemainingTimeText, Mode=OneWay}"
                                         Margin="50,0,0,0" />
                                         <TextBlock l:Uids.Uid="BlockCheck2StageProgressLabel" />
                                         <TextBlock
                                         x:Name="ProgressCounterTextBlock"
+                                        Text="{x:Bind ViewModel.ProgressCounterText, Mode=OneWay}"
                                         Margin="50,0,0,0" />
 
                                         <Rectangle
@@ -582,19 +596,19 @@
                                         <TextBlock l:Uids.Uid="BlockCheck2CompletedChecksLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.CompletedChecks, Mode=OneWay}" />
+                                        Text="{x:Bind ViewModel.Session.CompletedChecks, Mode=OneWay}" />
                                         <TextBlock l:Uids.Uid="BlockCheck2SuccessfulChecksLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.SuccessfulChecks, Mode=OneWay}" />
+                                        Text="{x:Bind ViewModel.Session.SuccessfulChecks, Mode=OneWay}" />
                                         <TextBlock l:Uids.Uid="BlockCheck2FailedChecksLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.FailedChecks, Mode=OneWay}" />
+                                        Text="{x:Bind ViewModel.Session.FailedChecks, Mode=OneWay}" />
                                         <TextBlock l:Uids.Uid="BlockCheck2SuccessfulStrategiesLabel" />
                                         <TextBlock
                                         Margin="50,0,0,0"
-                                        Text="{x:Bind ViewModel.SuccessfulStrategies, Mode=OneWay}" />
+                                        Text="{x:Bind ViewModel.Session.SuccessfulStrategies, Mode=OneWay}" />
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -608,7 +622,10 @@
                 <InfoBar
                     x:Name="ProgressInfoBar"
                     IsClosable="False"
-                    IsOpen="False"
+                    IsOpen="{x:Bind ViewModel.IsResultNoticeOpen, Mode=OneWay}"
+                    Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.ResultNoticeSeverity), Mode=OneWay}"
+                    Title="{x:Bind ViewModel.ResultNoticeTitle, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.ResultNoticeMessage, Mode=OneWay}"
                     Grid.Row="0"
                     Margin="20 0"/>
             </navigation:AnimatedHorizontalContentItem>
@@ -617,11 +634,11 @@
         <universal:UtilityButtonControls
             x:Name="UtilityButtons"
             Grid.Row="1"
-            IsLoading="{x:Bind ViewModel.IsRunning, Mode=OneWay}"
-            IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}"
+            IsLoading="{x:Bind ViewModel.Session.IsRunning, Mode=OneWay}"
+            IsIndeterminate="{x:Bind ViewModel.Session.IsProgressIndeterminate, Mode=OneWay}"
             LoadingMaximumValue="1"
-            LoadingValue="{x:Bind ViewModel.ProgressValue, Mode=OneWay}"
-            LoadingStateText="{x:Bind ProgressPhaseTextBlock.Text, Mode=OneWay}"
+            LoadingValue="{x:Bind ViewModel.Session.ProgressValue, Mode=OneWay}"
+            LoadingStateText="{x:Bind ViewModel.ProgressPhaseText, Mode=OneWay}"
             HelpUrl="/Zapret2PresetSelection/1AboutPresetSelection"
             >
             <Button
@@ -637,7 +654,7 @@
             <Button
                 x:Name="CancelButton"
                 l:Uids.Uid="BlockCheck2CancelButton"
-                Click="CancelButton_Click"
+                Command="{x:Bind ViewModel.CancelCommand}"
                 Visibility="Collapsed" />
             <Button
                 x:Name="ViewResultButton"
@@ -647,6 +664,8 @@
                 Visibility="Collapsed" />
             <Button
                 x:Name="NextButton"
+                Content="{x:Bind ViewModel.NextButtonText, Mode=OneWay}"
+                IsEnabled="{x:Bind ViewModel.IsNextEnabled, Mode=OneWay}"
                 Click="NextButton_Click"
                 Style="{ThemeResource AccentButtonStyle}" />
         </universal:UtilityButtonControls>

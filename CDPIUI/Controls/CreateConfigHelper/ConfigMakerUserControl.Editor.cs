@@ -1,98 +1,56 @@
 using System;
 using System.Linq;
-using CDPIUI.Core;
 using CDPIUI.Helper.CreateConfigHelper;
+using CDPIUI.ViewModels.ConfigMaker;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TextControlBoxNS;
 using Windows.UI;
 
 namespace CDPIUI.Controls.CreateConfigHelper;
 
-// The command text editor: text sync, cursor insertion, zoom, background and highlighting.
+// The command text editor: text, cursor, zoom, background and highlighting.
 public sealed partial class ConfigMakerUserControl
 {
-    public void FormatCommand()
-    {
-        if (IsEditorReadOnly)
-        {
-            return;
-        }
-        SetEditorText(ComponentCommandLineFormatter.FormatByFlags(CommandEditor.Text));
-        CommandEditor.SetCursorPosition(0, 0);
-    }
+    private string _highlightSignature = string.Empty;
+
+    string IConfigMakerView.EditorText => CommandEditor.Text;
 
     public void ZoomInButton_Click(object sender, RoutedEventArgs e) => ChangeZoom(5);
 
-    private void CommandEditor_TextChanged(TextControlBox sender)
+    string IConfigMakerView.ReplaceEditorText(string text)
     {
-        if (_updatingEditor)
-        {
-            return;
-        }
-        if (IsEditorReadOnly)
-        {
-            SetEditorText(CommandText, updateProperty: false);
-            return;
-        }
-
-        _updatingEditor = true;
-        CommandText = sender.Text ?? string.Empty;
-        _updatingEditor = false;
-        _presetDocument.CommandText = CommandText;
-        _designerNeedsRefresh = true;
-        RebuildPresetStructure();
-        CommandTextChanged?.Invoke(CommandText);
-        ScheduleDiagnostics();
+        CommandEditor.Text = text;
+        return CommandEditor.Text;
     }
 
-    private void SetEditorText(string text, bool updateProperty = true)
-    {
-        _updatingEditor = true;
-        CommandEditor.Text = text ?? string.Empty;
-        if (updateProperty)
-        {
-            CommandText = CommandEditor.Text;
-        }
-        _presetDocument.CommandText = CommandEditor.Text;
-        _designerNeedsRefresh = true;
-        _updatingEditor = false;
-        RebuildPresetStructure();
-        RebuildDiagnostics();
-        CommandTextChanged?.Invoke(CommandEditor.Text);
-    }
-
-    private void InsertAtCursor(string command)
+    (int Line, int Column) IConfigMakerView.GetCursorPosition()
     {
         Windows.Foundation.Point cursor = CommandEditor.GetCursorPosition();
-        string result = ConfigMakerCommandText.InsertOnOwnLine(
-            CommandEditor.Text,
-            (int)cursor.Y,
-            (int)cursor.X,
-            command,
-            out int newCursorIndex);
-
-        SetEditorText(result.Replace("\n", Environment.NewLine));
-        (int line, int column) = ConfigMakerCommandText.GetLineAndColumn(result, newCursorIndex);
-        CommandEditor.SetCursorPosition(line, column);
-        CommandEditor.Focus(FocusState.Programmatic);
+        return ((int)cursor.Y, (int)cursor.X);
     }
 
-    private void SearchButton_Click(object sender, RoutedEventArgs e) =>
-        EditorSearchControl.ShowSearch(CommandEditor);
+    void IConfigMakerView.SetCursorPosition(int line, int column, bool focus)
+    {
+        CommandEditor.SetCursorPosition(line, column);
+        if (focus)
+        {
+            CommandEditor.Focus(FocusState.Programmatic);
+        }
+    }
+
+    void IConfigMakerView.ClearEditorUndoHistory() => CommandEditor.ClearUndoRedoHistory();
+
+    void IConfigMakerView.RefreshEditorHighlighting() => ApplyEditorTheme();
+
+    private void CommandEditor_TextChanged(TextControlBox sender) => ViewModel.OnEditorTextChanged(sender.Text);
 
     private void ReplaceButton_Click(object sender, RoutedEventArgs e) =>
         EditorSearchControl.ShowReplace(CommandEditor);
 
-    private void ZoomOutButton_Click(object sender, RoutedEventArgs e) => ChangeZoom(-5);
-
-    private void ZoomResetButton_Click(object sender, RoutedEventArgs e) => ChangeZoom(0);
-
-    private void CommandEditor_ZoomChanged(TextControlBox sender, int zoomFactor)
-    {
-        UpdateZoomStatus();
-    }
+    private void CommandEditor_ZoomChanged(TextControlBox sender, int zoomFactor) => UpdateZoomStatus();
 
     private void ChangeZoom(int delta)
     {
@@ -105,44 +63,53 @@ public sealed partial class ConfigMakerUserControl
     private void UpdateZoomStatus() =>
         ZoomResetButton.Content = $"{CommandEditor.ZoomFactor}%";
 
-    private void LoadEditorBackground()
+    private void DiagnosticsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        string savedBackground = SettingsManager.Instance.GetValue<string>(
-            "APPEARANCE",
-            "configEditorBackground");
-        _editorBackground = savedBackground switch
+        if (DiagnosticsListView.SelectedItem is ConfigMakerDiagnosticViewModel diagnostic)
         {
-            "Mica" => "Mica",
-            "MicaTransparent" => "MicaTransparent",
-            "MicaSmoke" => "MicaSmoke",
-            _ => "Black",
-        };
-        DefaultBackgroundItem.IsChecked = _editorBackground == "Black";
-        MicaBackgroundItem.IsChecked = _editorBackground == "Mica";
-        MicaAltBackgroundItem.IsChecked = _editorBackground == "MicaTransparent";
-        MicaSmokeBackgroundItem.IsChecked = _editorBackground == "MicaSmoke";
-        ApplyEditorBackground();
+            GoToDiagnostic(diagnostic);
+        }
     }
 
-    private void EditorBackgroundItem_Click(object sender, RoutedEventArgs e)
+    private void DiagnosticsListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        _editorBackground = sender switch
+        if (DiagnosticsListView.SelectedItem is ConfigMakerDiagnosticViewModel diagnostic)
         {
-            RadioMenuFlyoutItem item when ReferenceEquals(item, MicaBackgroundItem) => "Mica",
-            RadioMenuFlyoutItem item when ReferenceEquals(item, MicaAltBackgroundItem) => "MicaTransparent",
-            RadioMenuFlyoutItem item when ReferenceEquals(item, MicaSmokeBackgroundItem) => "MicaSmoke",
-            _ => "Black",
-        };
-        SettingsManager.Instance.SetValue(
-            "APPEARANCE",
-            "configEditorBackground",
-            _editorBackground);
-        ApplyEditorBackground();
+            GoToDiagnostic(diagnostic);
+        }
+    }
+
+    private void GoToDiagnostic(ConfigMakerDiagnosticViewModel diagnostic)
+    {
+        CommandEditor.SetCursorPosition(
+            Math.Max(0, diagnostic.Source.Line - 1),
+            Math.Max(0, diagnostic.Source.Column - 1));
+        CommandEditor.Focus(FocusState.Programmatic);
+    }
+
+    private void PresetGroupsTreeView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (PresetGroupsTreeView.SelectedNode?.Content is not ConfigMakerPresetTreeItemViewModel item ||
+            item.SourceIndex < 0 ||
+            item.SourceLength <= 0)
+        {
+            return;
+        }
+
+        CommandEditor.Focus(FocusState.Programmatic);
+        CommandEditor.SetCursorPosition(
+            item.SourceLine,
+            item.SourceColumn,
+            scrollIntoView: true,
+            autoClamp: true);
+        CommandEditor.SetSelection(item.SourceIndex, item.SourceLength);
+        CommandEditor.ScrollLineToCenter(item.SourceLine);
+        e.Handled = true;
     }
 
     private void ApplyEditorBackground()
     {
-        EditorPanel.Background = _editorBackground switch
+        EditorPanel.Background = ViewModel.EditorBackground switch
         {
             "Mica" => GetApplicationBrush("LayerFillColorDefaultBrush"),
             "MicaTransparent" => new SolidColorBrush(Color.FromArgb(0, 0, 0, 0)),
@@ -160,19 +127,20 @@ public sealed partial class ConfigMakerUserControl
 
     private void ApplyEditorTheme()
     {
-        bool usesForcedDarkBackground = _editorBackground is "Black" or "MicaSmoke";
+        string editorBackground = ViewModel.EditorBackground;
+        bool usesForcedDarkBackground = editorBackground is "Black" or "MicaSmoke";
         bool isLight = !usesForcedDarkBackground &&
             (ActualTheme == ElementTheme.Light ||
              (ActualTheme == ElementTheme.Default && ((App)Application.Current).CurrentTheme == ElementTheme.Light));
-        string[] errorTokens = Diagnostics
+        string[] errorTokens = ViewModel.Diagnostics
             .Where(item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Error)
             .Select(item => item.Source.Token)
             .ToArray();
-        string[] warningTokens = Diagnostics
+        string[] warningTokens = ViewModel.Diagnostics
             .Where(item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Warning)
             .Select(item => item.Source.Token)
             .ToArray();
-        string newSignature = $"{_editorBackground}|{isLight}|{string.Join(',', errorTokens)}|{string.Join(',', warningTokens)}";
+        string newSignature = $"{editorBackground}|{isLight}|{string.Join(',', errorTokens)}|{string.Join(',', warningTokens)}";
         if (string.Equals(_highlightSignature, newSignature, StringComparison.Ordinal))
         {
             return;

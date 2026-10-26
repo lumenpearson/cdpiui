@@ -37,8 +37,18 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);UPDATE_TOOL</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="CDPIUI.Tests" />
+  </ItemGroup>
+
+  <!-- The tray checks the same layers that this tool installs; the file is shared as source,
+       because the tool must not load CDPIUI.Shared.dll from the folder it replaces. -->
+  <ItemGroup>
+    <Compile Include="..\CDPIUI.Shared\Basic\Filesystem\UpdatePackageLayers.cs" Link="Shared\UpdatePackageLayers.cs" />
   </ItemGroup>
 
 </Project>

@@ -41,23 +41,25 @@
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
+            <!-- The items of a flyout in resources exist only once it is first shown, so x:Bind
+                 cannot set their commands when the window activates (it threw and left every
+                 binding of the window unset). The window assigns them by Tag before ShowAt. -->
             <MenuFlyout x:Key="TaskContextMenu">
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_RunTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Ctrl+R"
-                    Click="RunTaskMenuItem_Click" />
+                    Tag="Run" />
                 <MenuFlyoutItem
-                    Tag="ToggleEnabled"
-                    Click="ToggleTaskEnabledMenuItem_Click" />
+                    Tag="ToggleEnabled" />
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_PropertiesTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Enter"
-                    Click="PropertiesTaskMenuItem_Click" />
+                    Tag="Edit" />
                 <MenuFlyoutItem
                     l:Uids.Uid="CL_DeleteTaskMenuItem"
                     KeyboardAcceleratorTextOverride="Del"
-                    Click="DeleteTaskMenuItem_Click" />
+                    Tag="Delete" />
             </MenuFlyout>
         </Grid.Resources>
         <Grid.RowDefinitions>
@@ -90,7 +92,7 @@
                             x:Name="NewTaskButton"
                             Padding="6"
                             l:Uids.Uid="CL_NewTaskButton"
-                            Click="NewTaskButton_Click">
+                            Command="{x:Bind ViewModel.NewTaskCommand}">
                             <Button.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="N" Modifiers="Control" />
                             </Button.KeyboardAccelerators>
@@ -100,14 +102,14 @@
                             x:Name="EditButton"
                             Padding="6"
                             l:Uids.Uid="CL_EditTaskButton"
-                            Click="EditButton_Click">
+                            Command="{x:Bind ViewModel.EditTaskCommand}">
                             <FontIcon FontSize="16" Glyph="&#xE70F;" />
                         </Button>
                         <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="DeleteButton"
                             Padding="6"
                             l:Uids.Uid="CL_DeleteButton"
-                            Click="DeleteButton_Click">
+                            Command="{x:Bind ViewModel.DeleteTaskCommand}">
                             <Button.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="Delete" />
                             </Button.KeyboardAccelerators>
@@ -117,7 +119,7 @@
                             x:Name="RunButton"
                             Padding="6"
                             l:Uids.Uid="CL_RunTaskButton"
-                            Click="RunTaskButton_Click">
+                            Command="{x:Bind ViewModel.RunTaskCommand}">
                             <Button.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="R" Modifiers="Control" />
                             </Button.KeyboardAccelerators>
@@ -135,21 +137,21 @@
                         <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             Padding="6"
                             l:Uids.Uid="CL_ImportButton"
-                            Click="ImportButton_Click">
+                            Command="{x:Bind ViewModel.ImportTaskCommand}">
                             <FontIcon FontSize="16" Glyph="&#xE8E5;" />
                         </Button>
                         <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="ExportButton"
                             Padding="6"
                             l:Uids.Uid="CL_ExportButton"
-                            Click="ExportButton_Click">
+                            Command="{x:Bind ViewModel.ExportTaskCommand}">
                             <FontIcon FontSize="16" Glyph="&#xE74E;" />
                         </Button>
                         <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
                             x:Name="ReloadButton"
                             Padding="6"
                             l:Uids.Uid="CL_ReloadButton"
-                            Click="ReloadButton_Click">
+                            Command="{x:Bind ViewModel.ReloadCommand}">
                             <Button.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="F5" />
                             </Button.KeyboardAccelerators>
@@ -219,7 +221,9 @@
                     <ListView
                         x:Name="TaskListView"
                         Grid.Row="1"
-                        ItemsSource="{x:Bind Tasks}"
+                        ItemsSource="{x:Bind ViewModel.Tasks}"
+                        SelectedItem="{x:Bind ViewModel.SelectedTaskItem, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.IsTaskListVisible, Mode=OneWay}"
                         DoubleTapped="TaskListView_DoubleTapped"
                         KeyDown="TaskListView_KeyDown"
                         RightTapped="TaskListView_RightTapped"
@@ -253,6 +257,7 @@
                     <StackPanel
                         x:Name="EmptyTaskListPanel"
                         Grid.Row="1"
+                        Visibility="{x:Bind ViewModel.IsEmptyTaskListVisible, Mode=OneWay}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="4">
@@ -273,6 +278,7 @@
             <Grid Grid.Row="3" x:Name="PreviewGrid">
                 <StackPanel
                     x:Name="NoSelectionPanel"
+                    Visibility="{x:Bind ViewModel.IsNoSelectionVisible, Mode=OneWay}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Spacing="6">
@@ -283,7 +289,7 @@
 
                 <navigation:AnimatedSelectorBar
                     x:Name="PreviewSelector"
-                    Visibility="Collapsed">
+                    Visibility="{x:Bind ViewModel.IsPreviewVisible, Mode=OneWay}">
                     <navigation:AnimatedSelectorBarItem l:Uids.Uid="CL_GeneralTab">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <Grid Padding="16,12" ColumnSpacing="22" RowSpacing="12">
@@ -298,13 +304,13 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <TextBlock l:Uids.Uid="CL_NameLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <TextBlock x:Name="PreviewNameTextBlock" Grid.Column="1" TextWrapping="Wrap" />
+                                <TextBlock x:Name="PreviewNameTextBlock" Grid.Column="1" TextWrapping="Wrap" Text="{x:Bind ViewModel.PreviewName, Mode=OneWay}" />
                                 <TextBlock Grid.Row="1" l:Uids.Uid="CL_StatusLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <TextBlock x:Name="PreviewStatusTextBlock" Grid.Row="1" Grid.Column="1" />
+                                <TextBlock x:Name="PreviewStatusTextBlock" Grid.Row="1" Grid.Column="1" Text="{x:Bind ViewModel.PreviewStatus, Mode=OneWay}" />
                                 <TextBlock Grid.Row="2" l:Uids.Uid="CL_PriorityLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <TextBlock x:Name="PreviewPriorityTextBlock" Grid.Row="2" Grid.Column="1" />
+                                <TextBlock x:Name="PreviewPriorityTextBlock" Grid.Row="2" Grid.Column="1" Text="{x:Bind ViewModel.PreviewPriority, Mode=OneWay}" />
                                 <TextBlock Grid.Row="3" l:Uids.Uid="CL_FileLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <TextBlock x:Name="PreviewFileTextBlock" Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                <TextBlock x:Name="PreviewFileTextBlock" Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.PreviewFile, Mode=OneWay}" />
                             </Grid>
                         </ScrollViewer>
                     </navigation:AnimatedSelectorBarItem>
@@ -324,7 +330,7 @@
                                     <TextBlock VerticalAlignment="Center" l:Uids.Uid="CL_TaskTriggerColumn" Style="{ThemeResource CaptionTextBlockStyle}" />
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" l:Uids.Uid="CL_DetailsColumn" Style="{ThemeResource CaptionTextBlockStyle}" />
                                 </Grid>
-                                <ListView Grid.Row="1" ItemsSource="{x:Bind PreviewTriggers}" SelectionMode="None">
+                                <ListView Grid.Row="1" ItemsSource="{x:Bind ViewModel.PreviewTriggers}" SelectionMode="None">
                                     <ListView.ItemContainerStyle>
                                         <Style TargetType="ListViewItem">
                                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -364,7 +370,7 @@
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" l:Uids.Uid="CL_ActionColumn" Style="{ThemeResource CaptionTextBlockStyle}" />
                                     <TextBlock Grid.Column="2" VerticalAlignment="Center" l:Uids.Uid="CL_DetailsColumn" Style="{ThemeResource CaptionTextBlockStyle}" />
                                 </Grid>
-                                <ListView Grid.Row="1" ItemsSource="{x:Bind PreviewActions}" SelectionMode="None">
+                                <ListView Grid.Row="1" ItemsSource="{x:Bind ViewModel.PreviewActions}" SelectionMode="None">
                                     <ListView.ItemContainerStyle>
                                         <Style TargetType="ListViewItem">
                                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
