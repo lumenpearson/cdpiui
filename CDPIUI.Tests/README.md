@@ -44,6 +44,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `AddOns` | `BlockCheckTargetInputParserTests` | BlockCheck2 target list: schemes, ports, protocols, IDN, duplicates, limits |
 | `AddOns` | `ConfigImportGoldenTests` | Import of Flowseal batch files compared with the expected files in `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Parse of `set` commands in imported scripts |
+| `AddOns` | `ConfigShareReadTests` | Read of a `.cdpiconfig` package: valid and damaged packages, size limits |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Paths inside a `.cdpiconfig` package: traversal, device names, links |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Rejection of options that write outside a `.cdpiconfig` package |
 | `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: the system curl path, arguments, exit codes, block pages, cancellation |
