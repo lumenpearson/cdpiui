@@ -47,8 +47,8 @@ internal sealed class ZapretImportContext(ZapretConfigImportOptions options)
         _sourceFiles.Add(fullPath);
         if (IsOutsideRoot(_root, fullPath))
             AddWarning(
-                "REFERENCED_FILE_OUTSIDE_SOURCE",
-                $"The config uses a file outside its folder: {fullPath}",
+                "INCLUDED_FILE_OUTSIDE_SOURCE",
+                $"The config reads a file outside its folder: {fullPath}",
                 _sourceFiles[0]);
     }
 
@@ -65,13 +65,13 @@ internal sealed class ZapretImportContext(ZapretConfigImportOptions options)
         if (IsOutsideRoot(_root, fullPath))
             AddWarning(
                 "REFERENCED_FILE_OUTSIDE_SOURCE",
-                $"The config uses a file outside its folder: {fullPath}",
+                $"The config refers to a file outside its folder. The import does not copy this file: {fullPath}",
                 _sourceFiles.Count > 0 ? _sourceFiles[0] : null);
     }
 
-    // A config may name any file on the disk, and the import copies it into the preset, which the
-    // user can later share. A file outside the folder of the imported config is reported, so the
-    // user sees it in the review before saving.
+    // A config may name any file on the disk. The installer does not copy a file outside the
+    // folder of the imported config into the preset, which the user can later share; the
+    // reference stays, and the warning shows it in the review, so the user can change it.
     private static bool IsOutsideRoot(string? root, string fullPath)
     {
         if (string.IsNullOrEmpty(root))

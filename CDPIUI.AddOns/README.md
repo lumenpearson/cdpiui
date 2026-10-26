@@ -26,7 +26,7 @@ BlockCheck2 finds Zapret2 strategies for a set of sites with `curl` probes. It c
 
 ### ConfigImport
 
-ConfigImport converts `.bat`, `.cmd`, `.txt` and `.json` files into a CDPI UI config with a static analysis. It never runs the source script. It has a special analyzer for `winws` and `winws2`, finds the missing resources, lets the user test the result and copies the resources into `LocalUserStorage`. It sends `.cdpiconfig` packages to ConfigShare. The import window (`cdpiui://Tools/ImportConfig`) uses it. Refer to [ConfigImport/README.md](ConfigImport/README.md).
+ConfigImport converts `.bat`, `.cmd`, `.txt` and `.json` files into a CDPI UI config with a static analysis. It never runs the source script. It has a special analyzer for `winws` and `winws2`, finds the missing resources, lets the user test the result and copies the resources into `LocalUserStorage`. It does not copy a resource outside the folder of the imported file. It sends `.cdpiconfig` packages to ConfigShare. The import window (`cdpiui://Tools/ImportConfig`) uses it. Refer to [ConfigImport/README.md](ConfigImport/README.md).
 
 ### ConfigShare
 
