@@ -3,7 +3,6 @@ using System.IO.Pipes;
 using System.Security.Principal;
 using System.Threading;
 using CDPIUI.Core.ComponentServices;
-using CDPIUI.Shared;
 using CDPIUI.Shared.Migration;
 using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Pipe.Models;
@@ -30,6 +29,11 @@ public class PipeClientService : PipeServiceBase
 
     public event Action<IPipeMessage>? MessageReceived;
 
+    private bool _isInitialized;
+
+    // The key of the tray start that published the pipe name of this connection.
+    private string _sessionKey = string.Empty;
+
     private PipeClientService()
     {
         SettingsManager.Instance.EnumPropertyChanged += SettingsManager_EnumPropertyChanged;
@@ -49,17 +53,16 @@ public class PipeClientService : PipeServiceBase
         }
     }
 
+    // The tray makes a new pipe name at each start, so the pipe stream is made when the GUI connects.
     public void Init()
     {
-        PipeStream = new NamedPipeClientStream(".", SharedConstants.PipeName,
-                        PipeDirection.InOut, PipeOptions.Asynchronous,
-                        TokenImpersonationLevel.Identification);
+        _isInitialized = true;
     }
 
     // Catches and logs its own errors after the check below, so a caller can start it without waiting for it.
     public Task Start()
     {
-        if (PipeStream == null)
+        if (!_isInitialized)
         {
             throw new InvalidOperationException("Call PipeClientService.Instance.Init first.");
         }
@@ -68,13 +71,11 @@ public class PipeClientService : PipeServiceBase
 
     private async Task StartConnectionAsync()
     {
-        if (PipeStream == null)
-            return;
         try
         {
-            await ConnectToTrayAsync((NamedPipeClientStream)PipeStream);
+            await ConnectToTrayAsync();
 
-            if (!PipeStream.IsConnected)
+            if (PipeStream is not NamedPipeClientStream pipeStream || !pipeStream.IsConnected)
             {
                 StartTrayProcess();
                 Logger?.CreateErrorLog(nameof(PipeClientService), "Connection timeout");
@@ -84,7 +85,7 @@ public class PipeClientService : PipeServiceBase
                 return;
             }
 
-            if (!PipePeerVerifier.IsServerExpected((NamedPipeClientStream)PipeStream, Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe")))
+            if (!PipePeerVerifier.IsServerExpected(pipeStream, Path.Combine(Data.Directories.CurrentDirectory, "CDPIUI_TrayIcon.exe")))
             {
                 Logger?.CreateErrorLog(nameof(PipeClientService), "Pipe server is not the application tray process. Connection closed.");
                 Dispose();
@@ -104,14 +105,14 @@ public class PipeClientService : PipeServiceBase
         }
     }
 
-    private async Task ConnectToTrayAsync(NamedPipeClientStream pipeStream)
+    private async Task ConnectToTrayAsync()
     {
         CreateCancellationToken();
 
         CancellationTokenSource.CancelAfter(2000);
         try
         {
-            await pipeStream.ConnectAsync(CancellationToken ?? default);
+            await ConnectToPublishedPipeAsync(Timeout.InfiniteTimeSpan, CancellationToken ?? default);
         }
         catch (OperationCanceledException)
         {
@@ -122,15 +123,74 @@ public class PipeClientService : PipeServiceBase
             Logger?.CreateWarningLog(nameof(PipeClientService), $"Cannot connect to the tray: {ex.Message}");
         }
 
-        if (!pipeStream.IsConnected && IsTrayProcessRunning())
+        if (!IsConnected && IsTrayProcessRunning())
         {
             try
             {
-                await pipeStream.ConnectAsync(TrayStartupWaitMs);
+                await ConnectToPublishedPipeAsync(TimeSpan.FromMilliseconds(TrayStartupWaitMs), default);
             }
             catch (Exception ex) when (ex is TimeoutException or IOException)
             {
                 Logger?.CreateErrorLog(nameof(PipeClientService), $"Tray process is running but did not accept the connection: {ex.Message}");
+            }
+        }
+    }
+
+    // The tray publishes a new pipe name at each start, and only after it has created the pipe.
+    // Thus the name and the key are read again for each attempt: a tray that starts in the
+    // meantime is found, and a name that a program took after its tray ended is left.
+    private async Task ConnectToPublishedPipeAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        string? failedPipeName = null;
+        while (true)
+        {
+            TimeSpan attempt = SessionReadInterval;
+            if (timeout != Timeout.InfiniteTimeSpan)
+            {
+                TimeSpan remaining = timeout - stopwatch.Elapsed;
+                if (remaining <= TimeSpan.Zero)
+                    throw new TimeoutException("The tray did not accept the connection in time.");
+                if (remaining < attempt)
+                    attempt = remaining;
+            }
+
+            PipeSession? session = PipeSessionFile.TryRead(AppContext.BaseDirectory);
+            if (session == null)
+            {
+                await Task.Delay(attempt, cancellationToken);
+                continue;
+            }
+
+            var pipeStream = new NamedPipeClientStream(".", session.PipeName,
+                PipeDirection.InOut, PipeOptions.Asynchronous,
+                TokenImpersonationLevel.Identification);
+            try
+            {
+                await pipeStream.ConnectAsync((int)Math.Ceiling(attempt.TotalMilliseconds), cancellationToken);
+                _sessionKey = session.Key;
+                PipeStream = pipeStream;
+                return;
+            }
+            catch (TimeoutException)
+            {
+                pipeStream.Dispose();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                pipeStream.Dispose();
+                // Once for each name. The name is not logged: only the desktop user may know it.
+                if (failedPipeName != session.PipeName)
+                {
+                    Logger?.CreateWarningLog(nameof(PipeClientService), $"Cannot connect to the published pipe: {ex.Message}");
+                    failedPipeName = session.PipeName;
+                }
+                await Task.Delay(attempt, cancellationToken);
+            }
+            catch
+            {
+                pipeStream.Dispose();
+                throw;
             }
         }
     }
@@ -195,6 +255,8 @@ public class PipeClientService : PipeServiceBase
 
     private const int TrayStartupWaitMs = 15000;
 
+    private static readonly TimeSpan SessionReadInterval = TimeSpan.FromMilliseconds(500);
+
     private static bool IsTrayProcessRunning()
     {
         try
@@ -213,9 +275,9 @@ public class PipeClientService : PipeServiceBase
 
     protected override async Task SendConnectionPacket()
     {
-        // The tray writes a new key at each start, so the key is read again for each connection.
-        string key = PipeSessionKey.TryRead(AppContext.BaseDirectory) ?? string.Empty;
-        await SendMessageAsync(ServiceMessageModel.RequestAuth(key).ToString());
+        // The key comes from the same read of the session file as the pipe name, so both belong to
+        // the tray start that created the pipe.
+        await SendMessageAsync(ServiceMessageModel.RequestAuth(_sessionKey).ToString());
     }
 
     protected override async Task RunMessageActions(IPipeMessage model)

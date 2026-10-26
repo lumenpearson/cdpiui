@@ -67,12 +67,13 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Shared` | `CatalogVerifierTests` | Signature check of update catalogs |
 | `Shared` | `ConditionalTaskFileServiceTests` | Save and load of `.cdpitask` files |
 | `Shared` | `ErrorConvertorTests` | Error code conversion |
-| `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder, the pipe key file |
+| `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder |
 | `Shared` | `FileWritingOptionsTests` | Options in component arguments that write files outside the permitted folders |
 | `Shared` | `GoodbyeDpiMigrationActivationTests` | Activation arguments of the GoodbyeDPI migration: round trip and invalid values |
 | `Shared` | `GuiActivationArgumentsTests` | `--gui-args:` encode, decode and command-line quotes |
 | `Shared` | `OutputCleanupHelperTests` | Removal of escape sequences from console output |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Pipe message round trip |
+| `Shared` | `PipeSessionFileTests` | Pipe name and key format, write and read of the session file, stale and damaged files |
 | `Shared` | `StreamStringTests` | Pipe stream strings |
 | `Shared` | `TasksManageServiceTests` | Task creation and stop with concurrent calls |
 | `Shared` | `TrustedPathValidatorTests` | Trusted path checks |

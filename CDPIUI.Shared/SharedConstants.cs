@@ -39,8 +39,6 @@ public static class SharedConstants
 
     #endregion
 
-    public static string PipeName = "{203ABE1D-01A2-47C0-B33D-8C8F7934CF4F}_CDPIUI";
-
     public static string Schema = "cdpiui";
 
     public static bool IsPreview = false;
