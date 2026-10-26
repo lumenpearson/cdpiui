@@ -1,0 +1,30 @@
+# Expected result of general.bat imported with ConfigImportService for the winws target.
+# [referenced] lists the resources, relative to the folder of the batch file. The test
+# creates them next to a copy of the batch file before the import.
+
+[name]
+general
+
+[target]
+ASGKOI001
+72.0
+
+[variables]
+%BIN%=$GETCURRENTDIR()/bin\
+%LISTS%=$GETCURRENTDIR()/lists\
+
+[issues]
+
+[referenced]
+bin/quic_initial_www_google_com.bin
+bin/tls_clienthello_www_google_com.bin
+lists/ipset-all.txt
+lists/list-general.txt
+
+[startup]
+--wf-tcp=80,443 --wf-udp=443,50000-50100
+--filter-udp=443 --hostlist="%LISTS%list-general.txt" --dpi-desync=fake --dpi-desync-repeats=6 --dpi-desync-fake-quic="%BIN%quic_initial_www_google_com.bin" --new
+--filter-udp=50000-50100 --filter-l7=discord,stun --dpi-desync=fake --dpi-desync-repeats=6 --new
+--filter-tcp=80 --hostlist="%LISTS%list-general.txt" --dpi-desync=fake,split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig --new
+--filter-tcp=443 --hostlist="%LISTS%list-general.txt" --dpi-desync=fake,split --dpi-desync-split-pos=1 --dpi-desync-fake-tls="%BIN%tls_clienthello_www_google_com.bin" --new
+--filter-tcp=443 --ipset="%LISTS%ipset-all.txt" --dpi-desync=fake,disorder2 --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq

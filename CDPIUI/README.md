@@ -25,9 +25,10 @@ After `App` is created, `DispatchPendingActivations` sends them to `App.PreferRe
 
 ### Tray start and `--gui-args:`
 
-At startup, `PipeClientService` connects to the tray pipe. If it cannot connect, it starts `CDPIUI_TrayIcon.exe` as administrator. Then the GUI process stops.
+At startup, `PipeClientService` connects to the tray pipe. The wait limit is 2 seconds. If the tray process is running, the GUI waits 15 more seconds. If it cannot connect, it starts `CDPIUI_TrayIcon.exe` as administrator. Then the GUI process stops.
 
 - The GUI gives `--autorun` to the tray if the setting `APPEARANCE/hideToTrayOnStartup` is true. Else it gives `--show-ui`.
+- If the GUI has its own arguments, it always gives `--show-ui` and the `--gui-args:` argument. A GoodbyeDPI migration argument goes to the tray without encoding.
 - The GUI encodes its own arguments with `GuiActivationArguments.Encode` (`CDPIUI.Shared/Basic/CommandLine`). The result is one `--gui-args:` argument.
 - Each argument is UTF-8 and Base64. A dot separates the arguments. The maximum encoded length is 16 KiB. A longer value is not sent.
 - The tray decodes the value with `GuiActivationArguments.TryDecode`. It starts `CDPIUI.exe` again with the original arguments.
@@ -61,13 +62,15 @@ The `App` constructor does these steps:
 
 1. It registers handlers for unhandled exceptions. A XAML exception is logged and shown in `ErrorContentDialog`. The application does not close.
 2. It connects `PipeClientService.MessageReceived` to `CommandsHandler.HandleCommand`.
-3. It applies the theme from `APPEARANCE/Theme`.
-4. It starts `PipeClientService` and subscribes to `Connected`.
-5. It calls `GetReadyFeatures`.
+3. It calls `CoreErrorsLookupService.Init`.
+4. It applies the theme from `APPEARANCE/Theme`.
+5. It calls `PipeClientService.Init` and subscribes to `Connected`.
+6. It subscribes to `ApplicationTaskMonitor.StoreStateChanged`.
+7. It calls `GetReadyFeatures`.
 
 `GetReadyFeatures` starts `GetReadyFeaturesAsync` and keeps the task in `_localizerReady`. The task restores the database (`DatabaseInitializationService.QuickRestore`), builds the localizer and registers the file associations and the `cdpiui` protocol (`FileAssociationService`).
 
-`OnLaunched` creates `PrepareWindow` and calls `PipeClientService.Start`. `PrepareWindow` closes after the startup actions. `App` also creates it when a Store operation runs and no other window is open.
+`OnLaunched` creates `PrepareWindow` (not during a GoodbyeDPI migration) and calls `PipeClientService.Start`. `PrepareWindow` closes after the startup actions. `App` also creates it when a Store operation runs and no other window is open.
 
 The application closes in `ExitIfIdle` when no window is open and no Store or GoodCheck operation runs.
 
@@ -335,7 +338,7 @@ To add a setting:
 1. Add the `Setting` element to the correct `Group` in `Template/Settings/Settings.xml`.
 2. Read it with `SettingsManager.Instance.GetValue<T>`.
 
-Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` and `ZAPRET2`. Some keys, for example `WELCOMEWIZARD/Shown`, are not in the template. Read these keys with `GetValueOrDefault`.
+Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `CONFIGS` and `ZAPRET2`. `ADDONS/PRESETTEST/dpiSuiteUrl` replaces the address of the DPI test suite of the preset test. The value must be an absolute `https` address. An empty value uses the built-in address. Some keys, for example `WELCOMEWIZARD/Shown`, are not in the template. Read these keys with `GetValueOrDefault`.
 
 ## Folder structure
 
@@ -350,12 +353,13 @@ Frequent groups are `APPEARANCE`, `SYSTEM`, `NOTIFICATIONS`, `PSEUDOCONSOLE`, `C
 | `Extensions` | Extension methods |
 | `Help` | In-app help articles (`EN`, `RU`) |
 | `Helper` | UI helpers: windows, help parser, database, migration, add-on UI, `ContentDialogQueue` |
+| `Properties` | `Resources.resx` and `launchSettings.json` |
 | `Strings` | `.resw` string resources (`en-us`, `ru`) |
 | `Template` | Default settings (`Template/Settings/Settings.xml`) |
 | `ViewModels` | View models and `RelayCommand` |
 | `Views` | Pages, by window |
 | `Windows` | Windows (`CDPIUI` namespace), `Windows/Default/TemplateWindow.cs`, `Windows/Messages` (dialog windows), `Windows/Service` (`PrepareWindow`, `CriticalErrorHandlerWindow`) |
 
-The root contains `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest` and `RemoveLanguageFolders.targets`.
+The root contains `App.xaml`, `App.xaml.cs`, `Program.cs`, `Package.appxmanifest`, `app.manifest`, `nuget.config` and `RemoveLanguageFolders.targets`.
 
 The `CDPIUI.Tests` project does not test this project. See `CDPIUI.Tests/README.md`.

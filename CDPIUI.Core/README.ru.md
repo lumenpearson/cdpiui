@@ -17,6 +17,7 @@
 
 `CDPIUI.TrayIcon` не использует `CDPIUI.Core`. Оба процесса используют `CDPIUI.Shared`.
 Библиотека использует пакеты `Microsoft.Data.Sqlite`, `Newtonsoft.Json` и `Semver`.
+Она также закрепляет `SQLitePCLRaw.lib.e_sqlite3` на версии 2.1.14. Версия, которую приносит `Microsoft.Data.Sqlite`, содержит известную уязвимость SQLite.
 
 ## Общие правила
 
@@ -83,6 +84,7 @@ Workflow релиза упаковывает одну и ту же сборку 
   Отладочные сборки пишут все уровни. Остальные сборки используют настройку `DEBUG/logLevel` (по умолчанию `WARN`).
 - `ErrorsHelper.Convertor` (`CustomErrorConvertor`): преобразует исключения в коды ошибок и `ErrorModel`.
   `HttpRequestException` с кодом состояния даёт `UNEXPECTED_STATUS_CODE`.
+- `IniDocument`: читает и изменяет файл INI (`config.ini` GoodCheck). Сохраняет комментарии, пустые строки и порядок ключей и изменяет только строки тех значений, которые задаются.
 
 ## Communication
 
@@ -91,11 +93,12 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
 - `PipeClientService`: подключается к pipe `SharedConstants.PipeName`.
   - Ждёт 2 секунды. Если процесс трея запущен, ждёт ещё 15 секунд.
   - Если подключения нет, запускает `CDPIUI_TrayIcon.exe` с правами администратора (`runas`) и завершает процесс GUI.
-    Трей получает `--autorun` или `--show-ui`. Он также получает аргументы активации GUI, если они есть.
+    Трей получает `--autorun`, если `APPEARANCE/hideToTrayOnStartup` равно `true`. Иначе он получает `--show-ui`.
+    Если у GUI есть аргументы активации или аргумент миграции GoodbyeDPI, трей получает `--show-ui` и эти аргументы.
   - Закрывает подключение и завершает GUI, если сервер — не ожидаемый `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).
-  - Отправляет пакет авторизации с `Secret.AuthGuid`.
+  - При каждом подключении читает ключ pipe из `.session\pipe.key` в папке приложения и отправляет его в пакете авторизации (см. [Pipe](../CDPIUI.Shared/Pipe/README.ru.md)).
   - Изменение в группе настроек `CONFIGS/<componentId>` отправляет `ProcessIdStartupArgsChanged` и состояние настройки компонента.
-- `PipeHelper`: статические методы, которые отправляют типизированные пакеты (настройки, обновление, уведомления, ConPTY, MSI, прокси, условный запуск).
+- `PipeHelper`: статические методы, которые отправляют типизированные пакеты (например, настройки, обновление, уведомления, ConPTY, MSI, прокси, условный запуск).
 - `CoreCommandsHandler`: обрабатывает пакеты от трея (service, ConPTY, настройки, MSI, приложение, условный запуск).
   Действия условного запуска отправляют `SendConditionalLaunchResult` с признаком успеха или текстом ошибки.
 - `ConPtyHelpCaptureClient`: просит трей запустить исполняемый файл и возвращает его вывод справки (`CaptureHelpAsync`).
@@ -121,7 +124,7 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
    Если задача уже есть, менеджер сначала останавливает её (`StopProcessId`).
 3. `ProcessService.StartProcess` читает выбранный пресет и составляет строку запуска (см. «Пресеты»).
 4. Если исполняемого файла нет или строка запуска пуста, возникает исключение. Тогда задача показывает ошибку.
-5. Для ByeDPI, NoDPI и SpoofDPI `SetupProxy` добавляет адрес и порт и отправляет пакеты прокси (см. «Proxy»).
+5. `SetupProxy` отправляет пакеты прокси. Для ByeDPI, NoDPI и SpoofDPI он также может заменить адрес и порт (см. «Proxy»).
 6. Для NoDPI служба один раз добавляет `--quiet`.
 7. Служба отправляет `CONPTYMessageIds.StartProcessId` с `componentId`, `exePath` и `args`.
 8. Трей запускает процесс и отправляет `MarkProcessIdAsStarted`, `ProcessIdNewOutput` и `MarkProcessIdAsStopped`.
@@ -139,13 +142,13 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
 
 | Поле | Содержимое |
 |---|---|
-| `target` | Первое значение — id компонента. `$ANY` в качестве цели загружает все пресеты. |
+| `target` | Первое значение — id компонента. Если загрузчик получает `$ANY` в качестве цели, он загружает все пресеты. |
 | `name` | Отображаемое имя. Каждый `$WORD(key)` в имени заменяется на `key` из файла локализации набора. |
 | `startup_string` | Командная строка с переменными `%NAME%` и функциями LScript. |
 | `variables` | Список `"%NAME%=value"`. Значение может быть выражением LScript, например `$LOCALCONDITION(...)`. |
 | `jparams` | Логические переключатели, которые читает `$LOCALCONDITION`. |
 | `commaVars`, `availableCommaVarsValues` | Переменные со списком возможных значений. |
-| `configMaker` | Только данные редактора. Во время работы не читается. |
+| `configMaker` | Данные редактора. Запуск компонента их не читает. Их читают `UsedFiles`, `ExpandVariables` и `ExpandFileReference`. |
 
 Выбранный пресет хранится в настройках `CONFIGS/<componentId>/configId` (id набора) и `configFile` (имя файла).
 Компонент Zapret2 также загружает пресеты Zapret (`CSZTBN012`). У этих пресетов `IsLegacy = true`.
@@ -154,6 +157,7 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
 
 1. Если `jparams`, `variables` или `startup_string` равно `null`, возвращает пустую строку.
 2. `GetReadyToUseVariables` выполняет `LScriptCore.ExecuteScript` для значения каждой переменной (`callItemId` — id набора).
+   Значение, которое начинается с `$GETCURRENTDIR` или `$GETSRDIR`, остаётся как есть. Шаг 5 раскрывает его и заключает путь в кавычки.
    Имена не учитывают регистр. Если имя встречается дважды, используется последнее значение.
 3. `ReplaceVariables` заменяет `%NAME%` (буквы, цифры, `_`, `.`, `-`). Значения могут ссылаться на другие переменные.
    Выполняет не более 16 проходов и останавливается на 64 КиБ. Неизвестные имена остаются как есть.
@@ -162,7 +166,7 @@ GUI — клиент pipe. Процесс трея — сервер pipe.
 6. Для устаревшего пресета `Zapret2LegacyConfigService` преобразует результат для winws2.
 
 Преобразование устаревших пресетов хранит кэш в `Store\Items\__ConvertedZPRT`. Настройка
-`ZAPRET2/validateLegacyCacheHashes` (по умолчанию `true`) заставляет его сравнивать хэши файлов перед использованием кэша.
+`ZAPRET2/validateLegacyCacheHashes` (по умолчанию `true`) заставляет его сравнивать хеши файлов перед использованием кэша.
 
 Другие типы для работы с конфигурацией:
 
@@ -192,6 +196,7 @@ LScript — небольшой язык выражений в метаданны
 
 - `ProxyHelper`: `ProxySetupTypes` (`None`, `AllSystem`, `ProxiFyre`, `NoActions`, `AsInConfig`) и `ProxyLikeComponents` (ByeDPI, NoDPI, SpoofDPI).
   `ReplaceArgsForProxy` удаляет параметры адреса и порта и добавляет значения `PROXY/IPAddress` и `PROXY/port`.
+  `SetupProxy` использует его, только если `PROXY/proxyType` равно `AllSystem`, `ProxiFyre` или `NoActions`.
   `IsLoopbackAddress` и `IsValidPort` проверяют ввод пользователя.
 - `WindowsNativeProxySettingsService`: читает и записывает значения прокси Windows Internet Settings в реестре.
 
@@ -212,7 +217,7 @@ LScript — небольшой язык выражений в метаданны
 | `Queue/QueueManagerService` | Очередь FIFO. Устанавливает по одному элементу за раз. Также хранит список элементов с ошибкой. |
 | `Repository/RepositoryLoaderService` | Скачивает репозиторий Магазина (GitHub или GitLab) и читает категории, элементы и готовые комплекты. |
 | `Database/DatabaseHelper` | Таблица SQLite `Items` в `storedata.db`. Одна строка для каждого установленного элемента (`DatabaseStoreItem`). Все запросы, включая `RestorePaths`, читают таблицу под одной блокировкой. При запуске GUI вызывает `RestorePaths`. Если GUI не может восстановить элемент, он заново регистрирует пользовательский элемент или элемент приложения. Для других элементов `UnregisterMissingItem` удаляет строку, если папки элемента нет (`CDPIUI/Helper/Database/DatabaseInitializationService.cs`). |
-| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Запросы к API релизов, загрузки по HTTPS, распаковка архивов и запуск MSI. |
+| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Запросы к API релизов, загрузки по HTTPS, распаковка архивов и запуск MSI. `RequestWorker` отправляет токен Магазина только на хосты GitHub и GitLab. |
 | `MSI/MsiInstallerService`, `MsiInstallerQueueManager` | Отправляют MSI трею для установки и ждут результата (не более 30 минут). |
 | `Application/ApplicationUpdateService` | Готовит патч приложения (`patch.cdpipatch`) и его обязательные патчи. Читает версию каждого обязательного патча из его собственного `requirements.json` и пропускает версии, которые не новее установленной версии или не старше основного патча. Располагает слои по порядку версий, начиная с самой старой. См. [.github/RELEASES.ru.md](../.github/RELEASES.ru.md#gui-side). |
 | `LocalItemsInstallerHelper` | Читает локальные файлы наборов и добавляет их в очередь. |
@@ -261,7 +266,7 @@ LScript — небольшой язык выражений в метаданны
 ## System
 
 - `ZipService` (внутренний): распаковка ZIP с фильтром корневой папки (`$ANY` соответствует одному сегменту), шаблонами пропуска и проверкой каталога.
-- `ArchivePaths`: отклоняет записи архива, которые указывают за пределы целевой папки.
+- `ZipService` и загрузка репозитория Магазина используют `ArchivePaths` из `CDPIUI.Shared`: пути записей должны оставаться в целевой папке, архив должен укладываться в ограничения размера, а ссылки ниже целевой папки отклоняются.
 - `BatchFileEncoding`: читает файлы `.bat` в UTF-8, UTF-16 или в кириллической кодовой странице.
 - `ShellHelper`: открывает папки и файлы и запускает приложения.
 

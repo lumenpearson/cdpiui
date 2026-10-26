@@ -15,13 +15,13 @@ A file can have a warning. This can occur when you open a report from a differen
 1. Select [Replace].
 2. Select the current file.
 
-### Save to CDPIUI
+### Save to CDPI UI
 
 1. Select [Save as new config].
 2. Enter a clear name.
 3. Confirm the save.
 
-CDPIUI adds the preset to [Configs]. It copies the necessary custom lists and external files into the application storage. CDPIUI does not change your original files.
+CDPI UI adds the preset to [Configs]. It copies the necessary custom lists and external files into the application storage. CDPI UI does not change your original files.
 
 If the save button is not available, examine the name, the Zapret2 installation and the warnings about missing files.
 

@@ -1,4 +1,5 @@
 ﻿using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -130,9 +131,13 @@ namespace CDPIUI.TrayIcon.Helper
             bool timedOut = false;
             bool canceled = false;
             int exitCode = -1;
+            ExecutableLease? lease = null;
 
             try
             {
+                lease = await ExecutableTrust.AcquireAsync(exePath, "help output capture")
+                    ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
+
                 CreatePipe(out hInputRead, out hInputWrite, false);
                 CreatePipe(out hOutputRead, out hOutputWrite, false);
 
@@ -206,6 +211,7 @@ namespace CDPIUI.TrayIcon.Helper
                     throw new InvalidOperationException(
                         $"Cannot start process, error: {Marshal.GetLastWin32Error()}");
                 }
+                lease.Dispose();
 
                 ChildProcessJob.Assign(processInfo.hProcess);
                 CloseHandle(processInfo.hThread);
@@ -264,6 +270,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
+                lease?.Dispose();
                 if (processInfo.hProcess != IntPtr.Zero)
                 {
                     if (WaitForSingleObject(processInfo.hProcess, 0) == WAIT_TIMEOUT)
@@ -340,37 +347,68 @@ namespace CDPIUI.TrayIcon.Helper
             }
         }
 
+        // Not awaited by the callers: the lock is held by a running component until it exits.
         public async void RunProcess(string exePath, string args, string workingDirectory)
         {
-            StopActionCaller = StopActionCallers.Unknown;
-            await _processLock.WaitAsync();
             try
             {
-                _outputDefaultBuffer.Clear();
+                StopActionCaller = StopActionCallers.Unknown;
+                await _processLock.WaitAsync();
+                try
+                {
+                    _outputDefaultBuffer.Clear();
 
-                _cancellationTokenSource = new CancellationTokenSource();
-                var token = _cancellationTokenSource.Token;
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    var token = _cancellationTokenSource.Token;
 
-                processState = true;
-                ChangeProcessState(true);
+                    processState = true;
+                    ChangeProcessState(true);
 
-                _ = Task.Run(() => RunProcessWithConPTY(exePath, args, workingDirectory ?? "", token));
+                    _ = Task.Run(() => RunProcessWithConPTY(exePath, args, workingDirectory ?? "", token));
+                }
+                catch (Exception ex)
+                {
+                    ShowErrorMessage(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(ConPTYHelper), ex), _object: "console");
+                    SendStopMessage("Unexpected error happens while trying to stop process");
+
+                    processState = false;
+                    ChangeProcessState(false);
+                }
+                finally
+                {
+                    _processLock.Release();
+                }
             }
             catch (Exception ex)
             {
-                ShowErrorMessage(ErrorHelper.Convertor.GetLoggedErrorCode(nameof(ConPTYHelper), ex), _object: "console");
-                SendStopMessage("Unexpected error happens while trying to stop process");
-
-                processState = false;
-                ChangeProcessState(false);
+                Logger.Instance.CreateErrorLog(nameof(ConPTYHelper), $"Cannot start {exePath}: {ex}");
             }
-            _processLock.Release();
         }
 
         public async void RunProcessWithConPTY(string exePath, string args, string workingDirectory, CancellationToken token, bool disableKillAfterError=false)
         {
-            await _processLock.WaitAsync();
+            try
+            {
+                await _processLock.WaitAsync();
+                try
+                {
+                    await RunProcessWithConPTYCoreAsync(exePath, args, workingDirectory, token);
+                }
+                finally
+                {
+                    // Released also when an error handler or a state event throws.
+                    _processLock.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(ConPTYHelper), $"Process run of {exePath} failed: {ex}");
+            }
+        }
 
+        // The caller holds _processLock.
+        private async Task RunProcessWithConPTYCoreAsync(string exePath, string args, string workingDirectory, CancellationToken token)
+        {
             IntPtr pseudoConsoleHandle = IntPtr.Zero;
             IntPtr hInputRead = IntPtr.Zero;
             IntPtr hInputWrite = IntPtr.Zero;
@@ -380,11 +418,22 @@ namespace CDPIUI.TrayIcon.Helper
             var pi = new PROCESS_INFORMATION();
 
             PrettyErrorCode lastError = PrettyErrorCode.SUCCESS;
+            ExecutableLease? lease = null;
 
             try
             {
-                if (!TrustedPaths.IsAllowed(exePath, "process start"))
-                    throw new UnauthorizedAccessException("The executable is outside the application directories.");
+                // The arguments come from the UI; an option that writes a file must stay in the
+                // application directories, because the component runs with administrator rights.
+                string? unsafeOption = FileWritingOptions.FindOutsideWrite(
+                    args,
+                    TrustedPaths.AllowedRoots,
+                    string.IsNullOrWhiteSpace(workingDirectory) ? Path.GetDirectoryName(exePath) : workingDirectory,
+                    followArgumentFiles: true);
+                if (unsafeOption != null)
+                    throw new UnauthorizedAccessException($"The arguments write a file outside the application directories: {unsafeOption}");
+
+                lease = await ExecutableTrust.AcquireAsync(exePath, "process start")
+                    ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
 
                 CreatePipe(out hInputRead, out hInputWrite, false);
                 CreatePipe(out hOutputRead, out hOutputWrite, false);
@@ -453,6 +502,7 @@ namespace CDPIUI.TrayIcon.Helper
                     var error = Marshal.GetLastWin32Error();
                     throw new Exception($"Cannot start process, error: {error}");
                 }
+                lease.Dispose();
 
                 _processInfo = pi;
                 ChildProcessJob.Assign(pi.hProcess);
@@ -509,7 +559,7 @@ namespace CDPIUI.TrayIcon.Helper
                 }
 
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 
                 Logger.Instance.CreateInfoLog(nameof(ConPTYHelper), $"Process will be stopped {lastError}.");
@@ -523,6 +573,7 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
+                lease?.Dispose();
                 // The process handle was left open on the cancel and error paths.
                 if (pi.hProcess != IntPtr.Zero)
                 {
@@ -565,8 +616,6 @@ namespace CDPIUI.TrayIcon.Helper
                 processState = false;
                 ChangeProcessState(processState);
                 _processInfo = default;
-
-                _processLock.Release();
             }
         }
 

@@ -57,22 +57,21 @@ GUI подключается в `PipeClientService.Start`:
 
 ### Авторизация
 
+Трей создаёт новый случайный ключ (32 байта в шестнадцатеричном виде) при каждом запуске (`PipeSessionKeyWriter`). Он записывает ключ в `<application folder>\.session\pipe.key` до запуска сервера pipe (`PipeSessionKey`). У файла защищённый список доступа: SYSTEM, Administrators и пользователь трея имеют полный доступ, пользователь рабочего стола может его читать. Другие пользователи не могут прочитать ключ. В установке MSI создавать файлы в папке установки могут только администраторы, поэтому никто не может подложить туда ключ до трея.
+
 1. После подключения сервер отправляет `Service/ConnectOK`.
-2. Клиент отправляет `Service/RequestAuth` с ключом `GUID`. Значение — `Secret.AuthGuid`.
-3. Если `Secret.AuthGuid` трея не пуст и значение равно ему, сервер отправляет `Service/AuthOK`.
+2. Клиент читает `pipe.key` и отправляет `Service/RequestAuth` с ключом `GUID`. Значение — этот ключ. Клиент читает файл заново при каждом подключении, потому что у перезапущенного трея новый ключ.
+3. Если ключ трея не пуст и значение равно ему, сервер отправляет `Service/AuthOK`. Сравнение занимает одинаковое время для любого неверного значения.
 4. Во всех остальных случаях сервер отправляет `Service/AuthFAIL` и отключает клиента.
 
 Правила:
 
-- Пустой `Secret.AuthGuid` в трее не авторизует ни одного клиента.
+- Если трей не может записать файл ключа, ключ пуст. Пустой ключ не авторизует ни одного клиента.
 - Сервер отключает клиента, если клиент не авторизован через 15 секунд после подключения.
 - Неудачный `RequestAuth` всегда отключает клиента, даже после более раннего `AuthOK`. Клиент не может повторить попытку в том же подключении.
 - До авторизации сервер отправляет только сообщения `Service` (`PipeServer.CanSend`).
-- До авторизации сервер обрабатывает только `RequestAuth`. Все остальные сообщения он игнорирует и пишет предупреждение в лог.
-- GUI и трей должны быть собраны с одинаковым `Secret.AuthGuid`.
-- В записях лога о полученных, поставленных в очередь и неудачных сообщениях значение `GUID` заменяется на `***` (`PipeServiceBase.RedactSecrets`).
-
-ВНИМАНИЕ: Не собирайте приложение с пустым `AuthGuid`. С пустым значением GUI не может подключиться к трею. `create_secret_stub.ps1` и `create_release_secret.ps1` записывают случайное значение.
+- До авторизации сервер обрабатывает только `RequestAuth`. Все остальные сообщения он игнорирует и записывает предупреждение в журнал.
+- В записях журнала о полученных, поставленных в очередь и неудачных сообщениях значение `GUID` заменяется на `***` (`PipeServiceBase.RedactSecrets`).
 
 ## Кадрирование
 
@@ -103,7 +102,7 @@ cdpiui://<Target>/<MessageType>?<key>=<value>&<key>=<value>&
 
 - Хост и путь разбираются через `Enum.Parse(..., ignoreCase: true)`. `Uri` переводит хост в нижний регистр.
 - Строка запроса разбирается через `HttpUtility.ParseQueryString`.
-- Неизвестная цель или неизвестный тип вызывают исключение. `PipeServiceBase` пишет его в лог и игнорирует сообщение.
+- Неизвестная цель или неизвестный тип вызывают исключение. `PipeServiceBase` записывает его в журнал и игнорирует сообщение.
 - Значение `null` отправляется как пустая строка. Получатель получает `""`, а не `null`.
 
 Используйте `PipePayloadCodec` (URL-безопасный Base64 от UTF-8) для двоичных данных и для путей, которые не должны измениться при передаче.
@@ -120,7 +119,7 @@ cdpiui://<Target>/<MessageType>?<key>=<value>&<key>=<value>&
 | `ConnectOK` | трей → GUI | нет |
 | `RequestAuth` | GUI → трей | `GUID` |
 | `AuthOK` | трей → GUI | нет. GUI вызывает событие `Connected`. |
-| `AuthFAIL` | трей → GUI | нет. GUI пишет ошибку в лог. |
+| `AuthFAIL` | трей → GUI | нет. GUI записывает ошибку в журнал. |
 
 ### Presentation
 
@@ -141,7 +140,7 @@ cdpiui://<Target>/<MessageType>?<key>=<value>&<key>=<value>&
 | `GetProcessIdFullOutput` | GUI → трей | `componentId` | Трей отправляет `ProcessIdFullOutput` для задачи `componentId`. Если `componentId` пуст, трей отправляет его для всех задач. |
 | `GetAllProcessStates` | GUI → трей | нет | Трей отправляет состояние и имя процесса всех задач. |
 | `ProcessIdStartupArgsChanged` | GUI → трей | `componentId` | При следующем запуске трей запросит у GUI новую строку запуска. |
-| `CaptureHelpOutput` | GUI → трей | `componentId`, `requestId`, `exePath` (`PipePayloadCodec`) | Запускает `<exe> --help` на 10 секунд. |
+| `CaptureHelpOutput` | GUI → трей | `componentId`, `requestId`, `exePath` (`PipePayloadCodec`) | Запускает `<exe> --help` с тайм-аутом 10 секунд. |
 | `GetProcessIdState` | GUI → трей | `componentId` | Трей отправляет состояние и имя процесса задачи `componentId`. Если `componentId` пуст, трей отправляет их для всех задач. |
 | `GetStartupString` | трей → GUI | `componentId` | GUI запускает задачу. |
 | `GetAllStartupStrings` | трей → GUI | `componentId` (пустой) | GUI запускает все компоненты автозапуска. |
@@ -254,8 +253,8 @@ GUI читает `operationId` как целое число.
 Если отправка не удалась, `PipeHelper.TrySendMessage` в трее запускает GUI от имени пользователя рабочего стола.
 Для всех целей сообщение передаётся в аргументе `--direct:<message>`.
 
-- Для фоновых сообщений к целям `Service`, `CONPTY`, `Settings`, `Application`, `ConditionalLaunch`, `CompatibilityCheck` и `Update` трей также добавляет `--create-no-window`.
-- Для остальных целей, например `Presentation`, трей не добавляет `--create-no-window`.
+- Для фоновых сообщений (`CONPTY`, `ConditionalLaunch`, `CompatibilityCheck` и `Update`) трей также добавляет `--create-no-window`.
+- Для `ShowWindow` (`Presentation`) трей не добавляет `--create-no-window`, потому что это сообщение открывает окно.
 
 GUI обрабатывает `--direct:` через `CoreCommandsHandler`, затем через `CommandsHandler.HandleCommand`.
 Трей не использует `----ms-protocol:`. GUI обрабатывает `----ms-protocol:` через `CommandUriMapper`, который принимает только публичные маршруты. Поэтому сообщение pipe в `----ms-protocol:`, например `ShowWindow`, не действует.

@@ -337,6 +337,7 @@ namespace CDPIUI.Views.Main.Components
                 case ActionIds.ViewButtonClicked:
                     Controls.Dialogs.ViewApplyArgsContentDialog dialog = new()
                     {
+                        Title = localizer.GetLocalizedString("AppliedFlagsDialogTitle"),
                         DialogTitle = arguments[0],
                         Args = contentDefinition.PrettyViewParams,
                         XamlRoot = this.XamlRoot,

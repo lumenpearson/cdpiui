@@ -96,7 +96,7 @@
                 <TextBlock x:Name="TitleTextBlock" Margin="10 10 10 0" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                 <Grid x:Name="AutorunBadgeGrid" l:Uids.Uid="AutorunBadgeGrid" Grid.Column="1" Margin="0 10 10 0" Visibility="Collapsed">
                     <Border Background="{ThemeResource AccentFillColorTertiaryBrush}" CornerRadius="5"/>
-                    <TextBlock Text="AUTO" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="12" Margin="2 2"/>
+                    <TextBlock l:Uids.Uid="AutorunBadgeTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="12" Margin="2 2"/>
                 </Grid>
             </Grid>
             <Grid x:Name="ImageGrid" Grid.Row="1">

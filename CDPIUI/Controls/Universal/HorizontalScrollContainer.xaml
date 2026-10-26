@@ -6,6 +6,7 @@
     xmlns:local="using:CDPIUI.Controls.Universal"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:l="using:WinUI3Localizer"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -122,26 +123,26 @@
         </ScrollViewer>
         <Button
             x:Name="ScrollBackBtn"
+            l:Uids.Uid="HorizontalScrollBackButton"
             Width="16"
             Height="38"
             Margin="8,-16,0,0"
-            AutomationProperties.Name="Scroll left"
+            AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
             Click="ScrollBackBtn_Click"
             Style="{StaticResource ScrollButtonStyle}"
-            ToolTipService.ToolTip="Scroll left"
             Visibility="Collapsed">
             <FontIcon FontSize="{ThemeResource FlipViewButtonFontSize}" Glyph="&#xedd9;" />
         </Button>
         <Button
             x:Name="ScrollForwardBtn"
+            l:Uids.Uid="HorizontalScrollForwardButton"
             Width="16"
             Height="38"
             Margin="0,-16,8,0"
             HorizontalAlignment="Right"
-            AutomationProperties.Name="Scroll right"
+            AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}"
             Click="ScrollForwardBtn_Click"
-            Style="{StaticResource ScrollButtonStyle}"
-            ToolTipService.ToolTip="Scroll right">
+            Style="{StaticResource ScrollButtonStyle}">
             <FontIcon FontSize="{ThemeResource FlipViewButtonFontSize}" Glyph="&#xEDDA;" />
         </Button>
     </Grid>

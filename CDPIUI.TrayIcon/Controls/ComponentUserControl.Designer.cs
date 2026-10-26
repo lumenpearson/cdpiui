@@ -102,7 +102,6 @@
             OpenSettingsButton.Name = "OpenSettingsButton";
             OpenSettingsButton.Size = new Size(30, 30);
             OpenSettingsButton.TabIndex = 9;
-            BasicToolTip.SetToolTip(OpenSettingsButton, "What a hell");
             OpenSettingsButton.ToolTip = null;
             OpenSettingsButton.ToolTipMessage = null;
             // 

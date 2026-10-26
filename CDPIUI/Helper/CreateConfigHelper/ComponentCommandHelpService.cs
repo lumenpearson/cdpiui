@@ -58,6 +58,8 @@ public sealed partial class ComponentCommandHelpService
     private static readonly ConcurrentDictionary<string, ComponentCommandHelpDocument> Cache = new();
     private static readonly TimeSpan HelpTimeout = TimeSpan.FromSeconds(15);
 
+    private static string Text(string key) => WinUI3Localizer.Localizer.Get().GetLocalizedString(key);
+
     [GeneratedRegex(@"(?<!\S)(-{1,2}[A-Za-z0-9][A-Za-z0-9_.-]*|/[A-Za-z?][A-Za-z0-9?_.-]*)")]
     private static partial Regex OptionNameRegex();
 
@@ -93,7 +95,7 @@ public sealed partial class ComponentCommandHelpService
 
         if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
         {
-            return CreateError(componentId, executablePath, "The component executable was not found.");
+            return CreateError(componentId, executablePath, Text("ConfigMakerHelpExecutableNotFound"));
         }
 
         string cacheKey = $"{executablePath}|{File.GetLastWriteTimeUtc(executablePath).Ticks}|parser:{ParserFormatVersion}";
@@ -133,8 +135,8 @@ public sealed partial class ComponentCommandHelpService
                 string error = !string.IsNullOrWhiteSpace(capture.Error)
                     ? capture.Error
                     : capture.TimedOut
-                        ? "The component did not return help before the timeout."
-                        : $"The component returned no help text (exit code {capture.ExitCode}).";
+                        ? Text("ConfigMakerHelpTimedOut")
+                        : string.Format(Text("ConfigMakerHelpNoOutput"), capture.ExitCode);
                 return CreateError(
                     componentId,
                     executablePath,
@@ -142,7 +144,7 @@ public sealed partial class ComponentCommandHelpService
             }
 
             string warning = capture.TimedOut
-                ? "The help process exceeded the time limit; the displayed output may be incomplete."
+                ? Text("ConfigMakerHelpIncomplete")
                 : string.Empty;
             return Parse(componentId, executablePath, rawText, warning);
         }

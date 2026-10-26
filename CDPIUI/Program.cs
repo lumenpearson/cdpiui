@@ -134,7 +134,8 @@ namespace CDPIUI
             {
                 if (Application.Current is App app)
                 {
-                    app.PreferRequestedActions(args);
+                    // PreferRequestedActions catches and logs its own errors.
+                    _ = app.PreferRequestedActions(args);
                 }
             }
             catch { }
@@ -192,11 +193,14 @@ namespace CDPIUI
             redirectEventHandle = CreateEvent(IntPtr.Zero, true, false, null);
             AllowSetForegroundWindow(keyInstance.ProcessId);
             bool redirected = false;
-            Task.Run(() =>
+            // Main runs before the UI thread and its dispatcher exist, so this method must block
+            // until the redirection ends. The redirection runs on the thread pool, where no
+            // SynchronizationContext is captured, so the await cannot deadlock against the wait below.
+            Task.Run(async () =>
             {
                 try
                 {
-                    keyInstance.RedirectActivationToAsync(args).AsTask().Wait();
+                    await keyInstance.RedirectActivationToAsync(args).AsTask().ConfigureAwait(false);
                     redirected = true;
                 }
                 catch (Exception)

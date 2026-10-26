@@ -25,12 +25,6 @@ namespace CDPIUI.Shared.Secrets
         static string? ProxyKey { get; }
 
         /// <summary>
-        /// Authentication GUID for pipe. 
-        /// If value is empty, pipe may be insecure.
-        /// </summary>
-        static string? AuthGuid { get; set; }
-
-        /// <summary>
         /// Trusted certifications. 
         /// If this value is empty:
         /// SIGNEDPACK files cannot be installed
@@ -41,8 +35,9 @@ namespace CDPIUI.Shared.Secrets
 
     /// <summary>
     /// Example of Secret.cs file.
-    /// To build this application create Secret.cs file and copy example (with interface)
-    /// to that file. Also, rename class in that file as "Secret.cs"
+    /// To build this application, create Secret.cs with a public static class Secret in this
+    /// namespace and copy only the members of this example into it (the interface is already
+    /// defined here). .github/scripts/create_secret_stub.ps1 creates such a file.
     /// </summary>
     internal class SecretExample : ISecret
     {
@@ -51,8 +46,6 @@ namespace CDPIUI.Shared.Secrets
 
         public const string ProxyURL = "";
         public const string ProxyKey = "";
-
-        public static string AuthGuid = "";
 
         public static readonly List<string> TrustedCertificates = [];
     }

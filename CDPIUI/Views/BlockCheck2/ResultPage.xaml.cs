@@ -8,6 +8,7 @@ using CDPIUI.Core.ComponentServices;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.Store.Database;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.UserExperience;
 using CDPIUI.ViewModels;
@@ -357,8 +358,10 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
             UpdateSelectedStrategy();
             if (result.ProbeResult == null)
             {
-                ShowActionError(result.Issues.FirstOrDefault()?.Message ??
-                    Text("BlockCheck2StrategyTestFailedMessage"));
+                BlockCheckIssue firstIssue = result.Issues.FirstOrDefault();
+                ShowActionError(firstIssue != null
+                    ? BlockCheck2IssueText.GetMessage(firstIssue)
+                    : Text("BlockCheck2StrategyTestFailedMessage"));
                 return;
             }
 
@@ -370,8 +373,8 @@ public sealed partial class ResultPage : TemplatePage, IStatusNotificationSource
                 summary.SuccessRate);
             if (result.Issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
             {
-                ShowActionError(result.Issues.First(issue =>
-                    issue.Severity == BlockCheckIssueSeverity.Error).Message);
+                ShowActionError(BlockCheck2IssueText.GetMessage(result.Issues.First(issue =>
+                    issue.Severity == BlockCheckIssueSeverity.Error)));
             }
             else
             {

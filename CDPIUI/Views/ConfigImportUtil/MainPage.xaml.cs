@@ -387,7 +387,7 @@ public sealed partial class MainPage : TemplatePage
             ConfigImportInstallResult installResult = await installer.InstallAsync(selectedResult, item.Name);
             if (!installResult.IsSuccessful)
             {
-                item.SetOperationError(installResult.ErrorCode ?? localizer.GetLocalizedString("ConfigImportUnknownError"));
+                item.SetOperationError(ConfigImportIssueText.GetInstallError(installResult.ErrorCode));
                 return false;
             }
 
@@ -488,7 +488,7 @@ public sealed partial class MainPage : TemplatePage
         string extension = Path.GetExtension(item.MissingPath);
         using var dialog = new System.Windows.Forms.OpenFileDialog
         {
-            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementButton.Content"),
+            Title = localizer.GetLocalizedString("ConfigImportChooseReplacementTextBlock.Text"),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             Filter = string.IsNullOrWhiteSpace(extension)
                 ? $"{localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
@@ -520,7 +520,7 @@ public sealed partial class MainPage : TemplatePage
         || (missingFiles.Count > 0 && missingFiles.All(item => item.IsResolved))
         || (missingFiles.Count > 0 && missingFiles.All(item => item.HasSuggestion));
 
-    private static void EnsureSuccessfulRetarget(ConfigImportResult result)
+    private void EnsureSuccessfulRetarget(ConfigImportResult result)
     {
         if (result.IsSuccessful && result.Config != null)
             return;
@@ -529,9 +529,9 @@ public sealed partial class MainPage : TemplatePage
             Environment.NewLine,
             result.Issues
                 .Where(issue => issue.Severity == ConfigImportIssueSeverity.Error)
-                .Select(issue => issue.Message));
+                .Select(issue => ConfigImportIssueText.GetMessage(issue)));
         throw new InvalidOperationException(string.IsNullOrWhiteSpace(errors)
-            ? "The imported Config could not be converted for the selected component."
+            ? localizer.GetLocalizedString("ConfigImportConvertFailed")
             : errors);
     }
 
@@ -595,7 +595,7 @@ public sealed partial class MainPage : TemplatePage
                 : string.Empty;
             detailsPanel.Children.Add(new TextBlock
             {
-                Text = $"[{issue.Code}]{location} {issue.Message}",
+                Text = $"[{issue.Code}]{location} {ConfigImportIssueText.GetMessage(issue)}",
                 TextWrapping = TextWrapping.Wrap,
             });
         }

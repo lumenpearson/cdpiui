@@ -17,6 +17,7 @@ The library does not start component processes. The elevated tray process
 
 `CDPIUI.TrayIcon` does not use `CDPIUI.Core`. Both processes use `CDPIUI.Shared`.
 The library uses the packages `Microsoft.Data.Sqlite`, `Newtonsoft.Json` and `Semver`.
+It also pins `SQLitePCLRaw.lib.e_sqlite3` to version 2.1.14. The version that `Microsoft.Data.Sqlite` brings has a known SQLite vulnerability.
 
 ## General rules
 
@@ -83,6 +84,7 @@ If `DataDirectory` cannot be found, the library uses `%LOCALAPPDATA%\CDPIUI` and
   Debug builds write all levels. Other builds use the setting `DEBUG/logLevel` (default `WARN`).
 - `ErrorsHelper.Convertor` (`CustomErrorConvertor`): converts exceptions to error codes and `ErrorModel`.
   An `HttpRequestException` with a status code gives `UNEXPECTED_STATUS_CODE`.
+- `IniDocument`: reads and changes an INI file (GoodCheck `config.ini`). It keeps comments, blank lines and the order of keys, and changes only the lines of the values that are set.
 
 ## Communication
 
@@ -91,11 +93,12 @@ The GUI is a pipe client. The tray process is the pipe server.
 - `PipeClientService`: connects to the pipe `SharedConstants.PipeName`.
   - It waits 2 seconds. If the tray process runs, it waits 15 more seconds.
   - If there is no connection, it starts `CDPIUI_TrayIcon.exe` as administrator (`runas`) and stops the GUI process.
-    The tray gets `--autorun` or `--show-ui`. It also gets the GUI activation arguments when they are present.
+    The tray gets `--autorun` when `APPEARANCE/hideToTrayOnStartup` is `true`. Otherwise it gets `--show-ui`.
+    When the GUI has activation arguments or a GoodbyeDPI migration argument, the tray gets `--show-ui` and these arguments.
   - It closes the connection and stops the GUI when the server is not the expected `CDPIUI_TrayIcon.exe` (`PipePeerVerifier`).
-  - It sends the auth packet with `Secret.AuthGuid`.
+  - It reads the pipe key from `.session\pipe.key` in the application folder for each connection and sends it in the auth packet (see [Pipe](../CDPIUI.Shared/Pipe/README.md)).
   - A change in a settings group `CONFIGS/<componentId>` sends `ProcessIdStartupArgsChanged` and the setup state of the component.
-- `PipeHelper`: static methods that send typed packets (settings, update, notification, ConPTY, MSI, proxy, conditional launch).
+- `PipeHelper`: static methods that send typed packets (for example settings, update, notification, ConPTY, MSI, proxy, conditional launch).
 - `CoreCommandsHandler`: handles the packets from the tray (service, ConPTY, settings, MSI, application, conditional launch).
   Conditional launch actions send `SendConditionalLaunchResult` with success or the error text.
 - `ConPtyHelpCaptureClient`: asks the tray to run an executable and returns its help output (`CaptureHelpAsync`).
@@ -121,7 +124,7 @@ The GUI is a pipe client. The tray process is the pipe server.
    If the task exists, the manager stops it first (`StopProcessId`).
 3. `ProcessService.StartProcess` reads the selected preset and makes the startup string (see "Presets").
 4. An exception occurs when the executable is missing or the startup string is empty. The task then shows an error.
-5. For ByeDPI, NoDPI and SpoofDPI, `SetupProxy` adds the address and port and sends proxy packets (see "Proxy").
+5. `SetupProxy` sends proxy packets. For ByeDPI, NoDPI and SpoofDPI, it can also replace the address and port (see "Proxy").
 6. For NoDPI, the service adds `--quiet` one time.
 7. The service sends `CONPTYMessageIds.StartProcessId` with `componentId`, `exePath` and `args`.
 8. The tray starts the process and sends `MarkProcessIdAsStarted`, `ProcessIdNewOutput` and `MarkProcessIdAsStopped`.
@@ -139,13 +142,13 @@ Important `ConfigItem` fields:
 
 | Field | Content |
 |---|---|
-| `target` | The first value is the component id. `$ANY` as a target loads all presets. |
+| `target` | The first value is the component id. When the loader gets `$ANY` as the target, it loads all presets. |
 | `name` | The display name. Each `$WORD(key)` in the name is replaced with `key` from the localization file of the pack. |
 | `startup_string` | The command line with `%NAME%` variables and LScript functions. |
 | `variables` | A list of `"%NAME%=value"`. A value can be an LScript expression, for example `$LOCALCONDITION(...)`. |
 | `jparams` | Boolean switches that `$LOCALCONDITION` reads. |
 | `commaVars`, `availableCommaVarsValues` | Variables with a list of possible values. |
-| `configMaker` | Editor data only. The runtime does not read it. |
+| `configMaker` | Editor data. The component start does not read it. `UsedFiles`, `ExpandVariables` and `ExpandFileReference` read it. |
 
 The selected preset is in the settings `CONFIGS/<componentId>/configId` (the pack id) and `configFile` (the file name).
 The Zapret2 component also loads Zapret (`CSZTBN012`) presets. These presets have `IsLegacy = true`.
@@ -154,6 +157,7 @@ The Zapret2 component also loads Zapret (`CSZTBN012`) presets. These presets hav
 
 1. If `jparams`, `variables` or `startup_string` is `null`, it returns an empty string.
 2. `GetReadyToUseVariables` runs `LScriptCore.ExecuteScript` on each variable value (`callItemId` is the pack id).
+   A value that starts with `$GETCURRENTDIR` or `$GETSRDIR` stays as it is. Step 5 expands it and quotes the path.
    Names are not case-sensitive. When a name occurs two times, the last value is used.
 3. `ReplaceVariables` replaces `%NAME%` (letters, digits, `_`, `.`, `-`). Values can refer to other variables.
    It does a maximum of 16 passes and stops at 64 KiB. Unknown names stay.
@@ -192,6 +196,7 @@ See [LScript/README.md](LScript/README.md).
 
 - `ProxyHelper`: `ProxySetupTypes` (`None`, `AllSystem`, `ProxiFyre`, `NoActions`, `AsInConfig`) and `ProxyLikeComponents` (ByeDPI, NoDPI, SpoofDPI).
   `ReplaceArgsForProxy` removes the address and port options and adds the values of `PROXY/IPAddress` and `PROXY/port`.
+  `SetupProxy` uses it only when `PROXY/proxyType` is `AllSystem`, `ProxiFyre` or `NoActions`.
   `IsLoopbackAddress` and `IsValidPort` validate user input.
 - `WindowsNativeProxySettingsService`: reads and writes the Windows Internet Settings proxy values in the registry.
 
@@ -212,7 +217,7 @@ It uses `CatalogVerifier` from `CDPIUI.Shared` and `Secret.TrustedCertificates`.
 | `Queue/QueueManagerService` | A FIFO queue. It installs one item at a time. It also keeps the list of failed items. |
 | `Repository/RepositoryLoaderService` | Downloads the Store repository (GitHub or GitLab) and reads categories, items and ready kits. |
 | `Database/DatabaseHelper` | The SQLite table `Items` in `storedata.db`. One row for each installed item (`DatabaseStoreItem`). All queries, also `RestorePaths`, read the table under one lock. At start, the GUI calls `RestorePaths`. If the GUI cannot restore an item, it registers the user item or the application item again. For other items, `UnregisterMissingItem` deletes the row when the item folder is missing (`CDPIUI/Helper/Database/DatabaseInitializationService.cs`). |
-| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Release API requests, HTTPS downloads, archive extraction and MSI start. |
+| `Network/APIWorker`, `RequestWorker`, `DownloadWorker` | Release API requests, HTTPS downloads, archive extraction and MSI start. `RequestWorker` sends a Store token only to GitHub and GitLab hosts. |
 | `MSI/MsiInstallerService`, `MsiInstallerQueueManager` | Send an MSI to the tray for installation and wait for the result (maximum 30 minutes). |
 | `Application/ApplicationUpdateService` | Prepares an application patch (`patch.cdpipatch`) and its required patches. It reads the version of each required patch from its own `requirements.json` and skips versions that are not newer than the installed version or not older than the main patch. It puts the layers in version sequence, the oldest first. See [.github/RELEASES.md](../.github/RELEASES.md#gui-side). |
 | `LocalItemsInstallerHelper` | Reads local pack files and adds them to the queue. |
@@ -224,7 +229,7 @@ It uses `CatalogVerifier` from `CDPIUI.Shared` and `Secret.TrustedCertificates`.
 
 `LoadAllStoreDatabase` downloads the repository archive when the cache is missing.
 It also downloads the archive when a sync is forced and the last sync (`STORE/lastSyncTime`) is one day old or more.
-The archive goes into a new folder `Repo.new-<GUID>`. The library replaces `Store\Cache\Repo` only after a full extraction.
+The library extracts the archive into a new folder `Repo.new-<GUID>`. The library replaces `Store\Cache\Repo` only after a full extraction.
 If GitHub fails, the library tries the GitLab mirror.
 
 ### How an item is installed or updated
@@ -261,7 +266,7 @@ For such a pack, the library ignores `ExecutableFile`, `BeforeInstallActions` an
 ## System
 
 - `ZipService` (internal): ZIP extraction with a root folder filter (`$ANY` matches one segment), skip patterns and the catalog check.
-- `ArchivePaths`: rejects archive entries that point outside the target folder.
+- `ZipService` and the Store repository download use `ArchivePaths` from `CDPIUI.Shared`: entry paths must stay in the target folder, the archive must be within the size limits, and links below the target are rejected.
 - `BatchFileEncoding`: reads `.bat` files in UTF-8, UTF-16 or a Cyrillic code page.
 - `ShellHelper`: opens folders and files and starts applications.
 

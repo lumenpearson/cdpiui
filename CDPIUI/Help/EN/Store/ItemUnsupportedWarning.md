@@ -5,7 +5,7 @@ This error usually occurs when you try to download an unsupported item from the 
 ### Possible fixes
 
 - Update the application to the latest version.
-- Change the Store version control on the [Store/Settings] page. Then the application downloads the database from a different source. This source can have a supported version of the item.
+- Change the Store version control on the [Settings] page of the Store. Then the application downloads the database from a different source. This source can have a supported version of the item.
 
 ### If the problem continues
 

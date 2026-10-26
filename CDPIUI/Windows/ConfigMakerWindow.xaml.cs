@@ -220,7 +220,7 @@ public sealed partial class ConfigMakerWindow : TemplateWindow
                 NotificationControl.Show(
                     item.Severity == AddOns.ConfigImport.ConfigImportIssueSeverity.Warning ? InfoBarSeverity.Warning : InfoBarSeverity.Error, 
                     item.Code, 
-                    item.Message);
+                    ConfigImportIssueText.GetMessage(item));
             }
         }
         

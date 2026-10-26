@@ -5,7 +5,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.WindowsAPICodePack.Taskbar;
+using CDPIUI.Helper.Basic;
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -355,9 +355,9 @@ namespace CDPIUI.Default
 
         public static void ToggleLoadingState(TaskbarProgressBarState loadingState, int currentLoadingValue = 0, int maxLoadingValue = 100)
         {
-            TaskbarManager.Instance.SetProgressState(loadingState);
+            TaskbarProgress.SetState(loadingState);
             if (loadingState != TaskbarProgressBarState.Indeterminate)
-                TaskbarManager.Instance.SetProgressValue(currentLoadingValue, maxLoadingValue);
+                TaskbarProgress.SetValue(currentLoadingValue, maxLoadingValue);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

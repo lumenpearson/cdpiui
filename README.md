@@ -67,9 +67,9 @@
 | Часть | Учётная запись | Назначение |
 |---|---|---|
 | Главное окно (`CDPIUI.exe`) | Текущий пользователь, без повышения прав | Окна приложения, Магазин, пресеты, дополнения и настройки |
-| Значок в трее (`CDPIUI_TrayIcon.exe`) | Администратор | Запуск и остановка компонентов, системный прокси, автозапуск, уведомления, условный запуск |
+| Трей (`CDPIUI_TrayIcon.exe`) | Администратор | Запуск и остановка компонентов, системный прокси, автозапуск, уведомления, условный запуск |
 
-Главное окно не запускает компоненты само: оно отправляет запрос трею, а трей запускает компонент и передаёт его состояние и вывод обратно. Трей принимает команды только от главного окна приложения и запускает файлы только из папки установки и папок данных **CDPI UI**.
+Главное окно не запускает компоненты само: оно отправляет запрос трею, а трей запускает компонент и передаёт его состояние и вывод обратно. Трей принимает команды только от главного окна приложения и запускает файлы только из папки установки и папок данных **CDPI UI**. В установке MSI новую или изменённую программу вне папки установки трей запускает, только если это подписанный элемент Магазина или если пользователь подтвердил запуск.
 
 Ещё две утилиты работают на .NET Framework 4.7.2: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора.
 
@@ -86,11 +86,11 @@
 | Задача | Команда |
 |---|---|
 | Модульные тесты | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
-| Сборка portable-версии | `pwsh .github/scripts/build_portable.ps1` |
+| Сборка портативной версии | `pwsh .github/scripts/build_portable.ps1` |
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
 
-Каждый push и pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек и тесты, сборка приложения и `Setup.msi`, сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
+Каждый push в ветки `main`, `dev` и `fix/**` и каждый pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек, тесты и проверка пакетов NuGet на известные уязвимости, сборка приложения и `Setup.msi` (это задание не блокирует проверку), сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
 
 ## Документация
 
@@ -104,7 +104,7 @@
 | Язык условий LScript | [CDPIUI.Core/LScript/README.ru.md](CDPIUI.Core/LScript/README.ru.md) |
 | Общие типы и безопасность | [CDPIUI.Shared/README.ru.md](CDPIUI.Shared/README.ru.md) |
 | Протокол обмена между окном и треем | [CDPIUI.Shared/Pipe/README.ru.md](CDPIUI.Shared/Pipe/README.ru.md) |
-| Значок в трее | [CDPIUI.TrayIcon/README.ru.md](CDPIUI.TrayIcon/README.ru.md) |
+| Трей | [CDPIUI.TrayIcon/README.ru.md](CDPIUI.TrayIcon/README.ru.md) |
 | Дополнения (BlockCheck2, GoodCheck, импорт и обмен пресетами, диагностика, hosts) | [CDPIUI.AddOns/README.ru.md](CDPIUI.AddOns/README.ru.md) |
 | Модульные тесты | [CDPIUI.Tests/README.ru.md](CDPIUI.Tests/README.ru.md) |
 | Установка обновлений | [Update/README.ru.md](Update/README.ru.md) |

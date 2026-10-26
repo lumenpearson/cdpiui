@@ -2,7 +2,7 @@
 
 # Уведомления о сторонних компонентах
 
-CDPI UI распространяется по лицензии Apache License 2.0 (см. `LICENSE`). Установщик и портативная
+CDPI UI распространяется по лицензии Apache License 2.0 (см. `LICENSE.txt`). Установщик и портативная
 сборка также содержат перечисленные ниже библиотеки, каждая — под своей лицензией. Тексты лицензий
 включены в пакеты NuGet и доступны на страницах проектов по ссылкам.
 
@@ -16,26 +16,25 @@ CDPI UI распространяется по лицензии Apache License 2.
 | CommunityToolkit.WinUI (Animations, Behaviors, Controls, Converters, Extensions, Triggers) | MIT | https://github.com/CommunityToolkit/Windows |
 | CommunityToolkit.Labs.WinUI (DataTable, MarkdownTextBlock, Shimmer, TokenView) | MIT | https://github.com/CommunityToolkit/Labs-Windows |
 | HtmlAgilityPack | MIT | https://github.com/zzzprojects/html-agility-pack |
-| ini-parser | MIT | https://github.com/rickyah/ini-parser |
 | Markdig | BSD-2-Clause | https://github.com/xoofx/markdig |
 | Microsoft.Data.Sqlite | MIT | https://github.com/dotnet/efcore |
 | Microsoft.Graphics.Win2D | см. лицензию пакета | https://github.com/microsoft/Win2D |
 | Microsoft.Toolkit.Uwp.Notifications | MIT | https://github.com/CommunityToolkit/WindowsCommunityToolkit |
 | Microsoft.WindowsAppSDK (WinUI 3 и файлы среды выполнения) | см. `license.txt` пакета | https://github.com/microsoft/WindowsAppSDK |
 | Microsoft.Xaml.Behaviors.WinUI.Managed | MIT | https://github.com/microsoft/XamlBehaviors |
-| Microsoft-WindowsAPICodePack-Shell | Лицензия Windows API Code Pack | https://github.com/contre/Windows-API-Code-Pack-1.1 |
 | Newtonsoft.Json | MIT | https://github.com/JamesNK/Newtonsoft.Json |
 | Semver | MIT | https://github.com/WalkerCodeRanger/semver |
 | SQLite (e_sqlite3) | Общественное достояние | https://sqlite.org/copyright.html |
 | SQLitePCLRaw | Apache-2.0 | https://github.com/ericsink/SQLitePCL.raw |
-| System.Security.Cryptography.Pkcs, System.ServiceProcess.ServiceController | MIT | https://github.com/dotnet/runtime |
+| System.Drawing.Common, System.Security.Cryptography.Pkcs, System.ServiceProcess.ServiceController | MIT | https://github.com/dotnet/runtime |
 | TaskScheduler | MIT | https://github.com/dahall/taskscheduler |
 | TextControlBox.WinUI | MIT | https://github.com/FrozenAssassine/TextControlBox-WinUI |
 | Unidecode.NET | MIT | https://github.com/thecoderok/Unidecode.NET |
 | WinUI3Localizer | MIT | https://github.com/AndrewKeepCoding/WinUI3Localizer |
 | WinUIEx | MIT | https://github.com/dotMorten/WinUIEx |
+| Расширение WiX Toolset UI (`WixToolset.UI.wixext`, диалоги `Setup.msi`) | MS-RL | https://github.com/wixtoolset/wix |
 | XBindLeakFix | MIT | https://www.nuget.org/packages/XBindLeakFix |
 
-Библиотеки, которые попадают в сборку только как зависимости перечисленных выше пакетов (например, `RomanNumerals`),
+Библиотеки, которые попадают в сборку только как зависимости перечисленных выше пакетов (например, `Roman-Numerals`),
 перечислены с версиями в файле `CDPIUI.deps.json` сборки; их лицензии включены в
 их пакеты NuGet.

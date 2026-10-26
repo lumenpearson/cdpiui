@@ -10,7 +10,7 @@
 
 ## Основной тип
 
-`HostsFileEditService` (`HostsFileEditorService.cs`, пространство имён `CDPIUI.AddOns.HostsFileEditor`) — статический класс.
+`HostsFileEditService` (`HostsFileEditorService.cs`, пространство имён `CDPIUI.AddOns.HostsFileEditor`) — класс только со статическими методами.
 
 | Метод | Аргумент инструмента | Назначение |
 |---|---|---|
@@ -53,7 +53,7 @@
 
 Страница преобразует код выхода или исключение в текст ошибки с помощью `ErrorsHelper.Convertor.GetPrettyErrorCode("HOSTEDIT", ...)`. Результат `HOSTEDIT_SUCCESS (0x00000000)` означает успех. Страница не показывает ошибку для результата, который начинается с `HOSTEDIT_OPERATION_CANCELLED_BY_USER`. Для остальных результатов страница показывает диалог ошибки.
 
-Карточка «Открыть» вызывает `HostsFileEditHelper.EditHostsFile`. Помощник открывает `%WINDIR%\System32\drivers\etc\hosts` с запросом UAC. Приложение по умолчанию — Блокнот. Выбор приложения управляется группой настроек `FILEOPENACTIONS`. Если `isDialogShown` равно `false` или если `doNotRemindAgain` равно `false`, `EditSitelistAskApplicationContentDialog` сначала спрашивает, какое приложение использовать.
+Карточка «Открыть» вызывает `HostsFileEditHelper.EditHostsFile`. Вспомогательный класс открывает `%WINDIR%\System32\drivers\etc\hosts` с запросом UAC. Приложение по умолчанию — Блокнот. Выбор приложения управляется группой настроек `FILEOPENACTIONS`. Если `isDialogShown` равно `false` или если `doNotRemindAgain` равно `false`, `EditSitelistAskApplicationContentDialog` сначала спрашивает, какое приложение использовать.
 
 Кнопка справки открывает `cdpiui://Help/Utils/EditHostsFileUtility/`.
 
@@ -76,4 +76,5 @@
 
 - Страница не читает файл hosts, чтобы узнать его состояние. Она использует только настройки `HOSTS`. Изменение файла hosts вне CDPI UI не изменяет эти настройки. Например, очистка при удалении MSI выполняет `EditHostFile.exe /remove`, но не изменяет настройки.
 - Каждая операция показывает запрос UAC.
+- Дополнение не проверяет подпись `EditHostFile.exe`. В установке MSI изменять папку установки могут только администраторы. Портативная копия находится вместе с `CDPIUI.exe` и треем в папке, которую пользователь может изменять. Поэтому проверка одного файла её не защищает. Запрос UAC показывает путь к файлу.
 - У дополнения нет тестов в `CDPIUI.Tests`.

@@ -1,7 +1,6 @@
 ﻿using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Pipe.Models;
-using CDPIUI.Shared.Secrets;
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Security.AccessControl;
@@ -185,9 +184,10 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             {
                 if (messageModel.MessageType == ServiceMessageIds.RequestAuth)
                 {
-                    // An empty secret (a build without Secret.cs values) must not let any client in.
-                    if (!string.IsNullOrEmpty(Secret.AuthGuid) &&
-                        messageModel.MessageData != null && SecretEquals(messageModel.MessageData["GUID"], Secret.AuthGuid))
+                    // An empty key (the key file could not be written) must not let any client in.
+                    string key = PipeSessionKeyWriter.Key;
+                    if (!string.IsNullOrEmpty(key) &&
+                        messageModel.MessageData != null && SecretEquals(messageModel.MessageData["GUID"], key))
                     {
                         IsAuthorized = true;
                         _ = SendMessageAsync(ServiceMessageModel.AuthSuccessful().ToString());
@@ -213,16 +213,24 @@ namespace CDPIUI.TrayIcon.Helper.Basic
             await CommandsHandler.HandleCommandAsync(message);
         }
 
+        // Overrides a void member, so it cannot return a Task; nothing may escape it.
         public override async void Dispose()
         {
             try
             {
-                if (_listenerTask != null) await _listenerTask.ConfigureAwait(false);
+                try
+                {
+                    if (_listenerTask != null) await _listenerTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { }
+                finally
+                {
+                    base.Dispose();
+                }
             }
-            catch (OperationCanceledException) { }
-            finally
+            catch (Exception ex)
             {
-                base.Dispose();
+                Basic.Logger.Instance.CreateErrorLog(nameof(PipeServer), $"Pipe server dispose failed: {ex}");
             }
         }
 

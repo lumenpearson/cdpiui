@@ -3,6 +3,7 @@ using CDPIUI.AddOns.BlockCheck2.Execution;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.AddOns.BlockCheck2.Synthesis;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -113,7 +114,7 @@ public sealed class BlockCheck2ResultViewModel : INotifyPropertyChanged
         Issues.Clear();
         foreach (BlockCheckIssue issue in value.Issues)
         {
-            Issues.Add(issue);
+            Issues.Add(BlockCheck2IssueText.Localize(issue));
         }
 
         Notify(nameof(Report));

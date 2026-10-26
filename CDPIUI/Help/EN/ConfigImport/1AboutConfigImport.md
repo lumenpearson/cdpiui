@@ -1,6 +1,6 @@
 # Import presets from files
 
-This utility moves presets from other applications or from saved files into CDPIUI. It finds the launch arguments and the related lists and libraries. Then you can test and save the result.
+This utility moves presets from other applications or from saved files into CDPI UI. It finds the launch arguments and the related lists and libraries. Then you can test and save the result.
 
 [Open the import utility](cdpiui://Tools/ImportConfig)
 
@@ -8,12 +8,12 @@ This utility moves presets from other applications or from saved files into CDPI
 
 - `.bat` and `.cmd` launch scripts of components;
 - `.txt` files with launch arguments;
-- `.json` presets in a supported CDPIUI format;
-- `.cdpiconfig` presets that were shared from CDPIUI with their resources.
+- `.json` presets in a supported CDPI UI format;
+- `.cdpiconfig` presets that were shared from CDPI UI with their resources.
 
 You can select more than one file. The wizard makes a separate result card for each file.
 
-A usual JSON document is not a CDPIUI preset. A report from a different utility or a settings file of an unknown application is also not a preset. The import of these files can fail.
+A usual JSON document is not a CDPI UI preset. A report from a different utility or a settings file of an unknown application is also not a preset. The import of these files can fail.
 
 ### What must I prepare?
 
@@ -23,7 +23,7 @@ A usual JSON document is not a CDPIUI preset. A report from a different utility 
 
 ### Is the analysis safe?
 
-During the analysis, CDPIUI only reads the selected files. It does not run the BAT or CMD script or its commands. It does not change or delete the original files.
+During the analysis, CDPI UI only reads the selected files. It does not run the BAT or CMD script or its commands. It does not change or delete the original files.
 
 The test button on the result page is different. It starts the selected installed component with the imported arguments.
 

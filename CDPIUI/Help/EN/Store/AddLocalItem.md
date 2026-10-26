@@ -43,10 +43,11 @@ Use one of these procedures.
 
 1. Open the Store.
 2. Open the [Settings] page.
-3. Select [Add item from a local package].
-4. Accept the risks.
+3. Select [Add item from local package].
+4. Read the warning. To accept the risks, select [Continue anyway].
+5. Select the package file.
 
-A dialog opens and asks you to install the item.
+A dialog opens and asks you to install the item. For a CDPIPATCH package, the application update dialog opens.
 
 1. Select [Install].
 2. Wait until the installation is complete.

@@ -14,7 +14,7 @@ No. The Store uses the rule *"If it works, do not touch it!"*. The Store does no
 
 The Store regularly checks for updates. It tells you when a new version of the application or of an installed component is available.
 
-To disable these notifications, use the [Notifications] section on the [Settings] page of the main window.
+To disable these notifications, use the [Notification settings] section on the [Settings] page of the main window.
 
 ### Can I add my component to the Store?
 

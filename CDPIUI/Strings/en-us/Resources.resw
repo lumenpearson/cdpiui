@@ -702,7 +702,7 @@ Please, install lates version of "{0}" in Store</value>
     <value>Unfortunately, the Store is currently unavailable. You can still browse your library, but functionality may be limited.</value>
   </data>
   <data name="StoreUpdatesToast.Content" xml:space="preserve">
-    <value>Updates are available for Store items your installed</value>
+    <value>Updates are available for Store items you installed</value>
   </data>
   <data name="ConditionalLaunchActionToast.Content" xml:space="preserve">
     <value>Task execution by Conditional Launch</value>
@@ -1437,7 +1437,7 @@ Make sure you select startup config for this component</value>
     <value>Something isn't work as planned? Tell about it developers</value>
   </data>
   <data name="AutorunCheckBox.Content" xml:space="preserve">
-    <value>Startup automatically </value>
+    <value>Start automatically</value>
   </data>
   <data name="AutorunBadgeGrid.ToolTipService.ToolTip" xml:space="preserve">
     <value>This component starting up with your PC</value>
@@ -3676,7 +3676,7 @@ Here is error code in case you need it: ERR_FLASHLIGHT_BUSY</value>
   <data name="ConfigImportUseSuggestedFileButton.Content" xml:space="preserve">
     <value>Apply</value>
   </data>
-  <data name="ConfigImportChooseReplacementButton.Content" xml:space="preserve">
+  <data name="ConfigImportChooseReplacementTextBlock.Text" xml:space="preserve">
     <value>Choose file</value>
   </data>
   <data name="ConfigImportUseEmptyFileButton.Content" xml:space="preserve">
@@ -3939,7 +3939,7 @@ https://example.org/path</value>
     <value>Selection stopped by user.</value>
   </data>
   <data name="BlockCheck2FailedTitle" xml:space="preserve">
-    <value>Selection run into a problem</value>
+    <value>Selection ran into a problem</value>
   </data>
   <data name="BlockCheck2UnknownFailure" xml:space="preserve">
     <value>No error details are available.</value>
@@ -5576,9 +5576,9 @@ https://discord.com/app</value>
     <value>Selection is complete</value>
   </data>
   <data name="BlockCheck2WorkCompleteStep.Description" xml:space="preserve">
-    <value>The config selection for Zapret 2 is complete. You can access the results of this selection at any time via the [Recent Selections] menu on the main page of this wizard.
+    <value>The config selection for Zapret 2 is complete. You can access the results of this selection at any time via [Scan reports] on the main page of this wizard.
 
-Click [Show Results] to view the results.</value>
+Click [View result] to view the results.</value>
   </data>
   <data name="BlockCheck2TestAllStrategiesCard.Header" xml:space="preserve">
     <value>Continue after finding the best strategies</value>
@@ -6272,5 +6272,377 @@ By enabling this setting, you acknowledge that you have read this information.</
   </data>
   <data name="GoodCheckNoStrategyLists" xml:space="preserve">
     <value>GoodCheck has no strategy lists for this component. Install a strategy pack that supports it or reinstall the add-on.</value>
+  </data>
+  <data name="ConfigMakerActionFailedMessage" xml:space="preserve">
+    <value>The action could not be completed: {0}</value>
+  </data>
+  <data name="ConfigMakerDesignerLoadFailedMessage" xml:space="preserve">
+    <value>Could not load the simple designer: {0}</value>
+  </data>
+  <data name="ConfigMakerHelpExecutableNotFound" xml:space="preserve">
+    <value>The component executable was not found.</value>
+  </data>
+  <data name="ConfigMakerHelpTimedOut" xml:space="preserve">
+    <value>The component did not return help before the timeout.</value>
+  </data>
+  <data name="ConfigMakerHelpNoOutput" xml:space="preserve">
+    <value>The component returned no help text (exit code {0}).</value>
+  </data>
+  <data name="ConfigMakerHelpIncomplete" xml:space="preserve">
+    <value>The help process exceeded the time limit; the displayed output may be incomplete.</value>
+  </data>
+  <data name="AppliedFlagsDialogTitle" xml:space="preserve">
+    <value>Applied flags</value>
+  </data>
+  <data name="SelectConfigLoadingTextBlock.Text" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="HorizontalScrollBackButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Scroll left</value>
+  </data>
+  <data name="HorizontalScrollForwardButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Scroll right</value>
+  </data>
+  <data name="AboutHelpNavigationViewItem.Content" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="StoreCategoryLoadFailed" xml:space="preserve">
+    <value>Could not load the category “{0}”.</value>
+  </data>
+  <data name="PrepareWindowTitle" xml:space="preserve">
+    <value>Getting the app ready</value>
+  </data>
+  <data name="PrepareWindowTextBlock.Text" xml:space="preserve">
+    <value>We're preparing this app (CDPI UI) for you</value>
+  </data>
+  <data name="AutorunBadgeTextBlock.Text" xml:space="preserve">
+    <value>AUTO</value>
+  </data>
+  <data name="AppFeatureNewBadge" xml:space="preserve">
+    <value>NEW</value>
+  </data>
+  <data name="BlockCheck2CustomSiteListEmpty" xml:space="preserve">
+    <value>The custom site list is empty.</value>
+  </data>
+  <data name="ConfigImportConvertFailed" xml:space="preserve">
+    <value>The imported Config could not be converted for the selected component.</value>
+  </data>
+  <data name="ConfigImportIssue_FILE_NOT_FOUND" xml:space="preserve">
+    <value>The source file of the Config was not found.</value>
+  </data>
+  <data name="ConfigImportIssue_TARGET_REQUIRED" xml:space="preserve">
+    <value>No target component is selected.</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_REQUIRED" xml:space="preserve">
+    <value>The selected component has no executable in the database.</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_MISMATCH" xml:space="preserve">
+    <value>The source starts a different executable than the selected component uses.</value>
+  </data>
+  <data name="ConfigImportIssue_UNSUPPORTED_FORMAT" xml:space="preserve">
+    <value>The “{0}” file format is not supported.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_FAILED" xml:space="preserve">
+    <value>The Config could not be imported: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_EXECUTABLE_LAUNCH_NOT_FOUND" xml:space="preserve">
+    <value>The command file does not contain a supported launch of the component executable.</value>
+  </data>
+  <data name="ConfigImportIssue_MULTIPLE_EXECUTABLE_LAUNCHES" xml:space="preserve">
+    <value>The command file launches the component executable more than once, so the launch cannot be selected automatically.</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_EMPTY" xml:space="preserve">
+    <value>The text Config does not contain launch arguments.</value>
+  </data>
+  <data name="ConfigImportIssue_JSON_CONFIG_INVALID" xml:space="preserve">
+    <value>The JSON file is not a supported Config.</value>
+  </data>
+  <data name="ConfigImportIssue_UNRESOLVED_VARIABLE" xml:space="preserve">
+    <value>The batch variable “{0}” could not be resolved.</value>
+  </data>
+  <data name="ConfigImportIssue_INVALID_RESOURCE_PATH" xml:space="preserve">
+    <value>A referenced path could not be resolved: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_REFERENCED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>The Config uses a file outside its folder: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_REFERENCED_FILE_NOT_FOUND" xml:space="preserve">
+    <value>A referenced file was not found: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_MISSING_FILE_REPLACEMENT_NOT_FOUND" xml:space="preserve">
+    <value>The selected replacement file was not found: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_BATCH_READ_FAILED" xml:space="preserve">
+    <value>The batch file could not be read: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_WINWS_LAUNCH_NOT_FOUND" xml:space="preserve">
+    <value>The batch file does not contain a supported winws or winws2 launch.</value>
+  </data>
+  <data name="ConfigImportIssue_MULTIPLE_WINWS_LAUNCHES" xml:space="preserve">
+    <value>The batch file contains more than one winws launch, so the launch cannot be selected automatically.</value>
+  </data>
+  <data name="ConfigImportIssue_GENERATION_MISMATCH" xml:space="preserve">
+    <value>The arguments do not match the winws version that the file uses.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDE_DEPTH_EXCEEDED" xml:space="preserve">
+    <value>The Config includes other Config files too deeply.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDE_CYCLE" xml:space="preserve">
+    <value>A cycle was detected in Config file includes.</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_READ_FAILED" xml:space="preserve">
+    <value>The text Config could not be read: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_TEXT_CONFIG_HAS_NO_OPTIONS" xml:space="preserve">
+    <value>The text file does not contain winws command-line options.</value>
+  </data>
+  <data name="ConfigImportIssue_CONFIG_GENERATION_UNKNOWN" xml:space="preserve">
+    <value>The text file does not contain enough information to distinguish winws1 from winws2.</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDED_CONFIG_NOT_FOUND" xml:space="preserve">
+    <value>The referenced Config file “{0}” was not found.</value>
+  </data>
+  <data name="ConfigImportIssue_CONFIG_INCLUDE_IGNORES_OTHER_ARGUMENTS" xml:space="preserve">
+    <value>A response file replaces the command line, so winws ignores the other arguments.</value>
+  </data>
+  <data name="ConfigImportIssue_UNRESOLVED_BATCH_VARIABLE" xml:space="preserve">
+    <value>The batch variable “{0}” could not be resolved statically.</value>
+  </data>
+  <data name="ConfigImportIssue_CALLED_SCRIPT_READ_FAILED" xml:space="preserve">
+    <value>A called script could not be read: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_GENERATED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>A file that the batch file creates outside the source folder was ignored.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_RESULT_INVALID" xml:space="preserve">
+    <value>The Config cannot be saved because the analysis failed.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_NAME_REQUIRED" xml:space="preserve">
+    <value>Enter a name for the Config.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_MISSING_FILE_RESOLUTION_REQUIRED" xml:space="preserve">
+    <value>Choose what to do with every missing file before saving.</value>
+  </data>
+  <data name="ConfigImportIssue_IMPORT_INSTALL_FAILED" xml:space="preserve">
+    <value>The Config could not be saved: {0}</value>
+  </data>
+  <data name="ConfigShareError_SHARE_UNSAFE_OPTION" xml:space="preserve">
+    <value>The config writes a file outside its package. Such a config cannot be shared.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_EXPORT_FAILED" xml:space="preserve">
+    <value>The config could not be exported.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_IMPORT_FAILED" xml:space="preserve">
+    <value>The config could not be imported.</value>
+  </data>
+  <data name="ConfigShareError_SHARE_INSTALL_FAILED" xml:space="preserve">
+    <value>The config could not be installed. Changes were rolled back.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_EMPTY" xml:space="preserve">
+    <value>Enter at least one domain, URL, or site list.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_HOST_INVALID" xml:space="preserve">
+    <value>The input line does not contain a valid DNS host name.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_INVALID" xml:space="preserve">
+    <value>The input line is not a valid domain or absolute URL.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_IP_VERSIONS_EMPTY" xml:space="preserve">
+    <value>Select at least one IP version.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_PROTOCOLS_EMPTY" xml:space="preserve">
+    <value>Select at least one protocol.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_PROTOCOL_DISABLED" xml:space="preserve">
+    <value>The URL protocol is disabled by the current protocol selection.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_SCHEME_UNSUPPORTED" xml:space="preserve">
+    <value>Only HTTP and HTTPS URLs are supported.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_NO_TARGETS" xml:space="preserve">
+    <value>No check targets could be created for the selected protocols.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_LIMIT_EXCEEDED" xml:space="preserve">
+    <value>The input expands to {0} targets; the limit is {1}.</value>
+  </data>
+  <data name="BlockCheck2Issue_HTTP_ONLY_BROWSER_LIMITATION" xml:space="preserve">
+    <value>Only clear-text HTTP on port 80 is selected. A successful response or redirect does not verify that the HTTPS page used by a browser can load. Enable TLS 1.2 and automatic HTTPS when checking websites such as YouTube.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_EMPTY" xml:space="preserve">
+    <value>The site list contains no domains.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_NOT_FOUND" xml:space="preserve">
+    <value>The site list file was not found: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_PATH_INVALID" xml:space="preserve">
+    <value>The site list path is invalid: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_READ_FAILED" xml:space="preserve">
+    <value>The site list could not be read: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_DIRECTORY_FAILED" xml:space="preserve">
+    <value>Could not prepare the lists for individual sites: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_WRITE_FAILED" xml:space="preserve">
+    <value>Could not create a list for an individual site: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_NOT_AVAILABLE" xml:space="preserve">
+    <value>curl could not be started: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_HTTP3_UNSUPPORTED" xml:space="preserve">
+    <value>The installed curl build has no HTTP/3 support required for QUIC checks.</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_TLS13_UNSUPPORTED" xml:space="preserve">
+    <value>curl does not recognize the TLS 1.3 options required by BlockCheck.</value>
+  </data>
+  <data name="BlockCheck2Issue_CURL_TLS_MAX_UNSUPPORTED" xml:space="preserve">
+    <value>curl does not support --tls-max, so exact TLS versions cannot be verified.</value>
+  </data>
+  <data name="BlockCheck2Issue_DNS_TARGETS_IGNORED" xml:space="preserve">
+    <value>Ignored {0} target(s) for {1} host(s) because the selected DNS resolver returned no address: {2}. This is often DNS blocking, which no DPI bypass strategy fixes: use encrypted DNS (DoH) for these hosts.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_RESOLVABLE_TARGETS" xml:space="preserve">
+    <value>None of the requested URLs has an address in the selected DNS resolver.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_NO_APPLICABLE_STRATEGIES" xml:space="preserve">
+    <value>No selected strategy applies to every target of the requested routes.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_CANCELED" xml:space="preserve">
+    <value>The scan was stopped by the user. The report contains only checks completed before cancellation.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_CANCELED" xml:space="preserve">
+    <value>The run was stopped by the user. The report contains only checks completed before cancellation.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_BASELINE_FAILED" xml:space="preserve">
+    <value>The check without bypass failed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_PREPARE_FAILED" xml:space="preserve">
+    <value>Could not prepare the BlockCheck process environment: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_COMPLETE_FAILED" xml:space="preserve">
+    <value>Could not restore the process environment: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STOP_FAILED" xml:space="preserve">
+    <value>Could not stop the strategy process: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGIES_DO_NOT_START" xml:space="preserve">
+    <value>The last {0} strategies could not be started, so the scan was stopped: {1}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_CONFIG_FAILED" xml:space="preserve">
+    <value>The strategy configuration could not be generated: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_FAILED" xml:space="preserve">
+    <value>The strategy check failed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_TARGET_PROBE_FAILED" xml:space="preserve">
+    <value>The check of a target with the strategy failed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_BYPASS_REQUIRED" xml:space="preserve">
+    <value>All requested routes passed the check without bypass, so no Zapret2 profile is required for them. This does not verify browser rendering or a different protocol such as HTTPS after an HTTP redirect.</value>
+  </data>
+  <data name="BlockCheck2Issue_BEST_EFFORT_CONFIG" xml:space="preserve">
+    <value>No strategy passed the strict threshold for {0} target(s). A best-effort config was generated from the strategy with the strongest observed improvement. It is not a fully validated result and some sites may remain unavailable.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_EFFECTIVE_STRATEGY" xml:space="preserve">
+    <value>None of the tested strategies met the success threshold for the {0} target(s) that failed without Zapret2. A config was not created because it would not improve the result. Try a broader scan mode.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_COMMON_SITE_LIST_STRATEGY" xml:space="preserve">
+    <value>Some domains passed with different strategies, but no single strategy passed for the complete selected site list. The result for this list may be only partially effective.</value>
+  </data>
+  <data name="BlockCheck2Issue_NO_PROFILES" xml:space="preserve">
+    <value>No compatible profile could be generated from the successful check results.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGETS_UNCOVERED" xml:space="preserve">
+    <value>No compatible strategy covers {0} test target(s).</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIRED" xml:space="preserve">
+    <value>The combined config passed after {0} repair iteration(s).</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_LIMIT_REACHED" xml:space="preserve">
+    <value>The combined config still fails after the configured repair iterations.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_NO_CANDIDATE" xml:space="preserve">
+    <value>No remaining compatible strategy can replace the failing profile.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_STALLED" xml:space="preserve">
+    <value>The failing targets could not be matched to a replaceable strategy of the config.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_FAILED" xml:space="preserve">
+    <value>The combined config failed the check, and automatic repair is disabled.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_PREPARE_FAILED" xml:space="preserve">
+    <value>Could not prepare the config check: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_COMPLETE_FAILED" xml:space="preserve">
+    <value>Could not restore the process environment after the config check: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_PROBE_FAILED" xml:space="preserve">
+    <value>The config check failed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_START_FAILED" xml:space="preserve">
+    <value>Could not start the combined config: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_STOP_FAILED" xml:space="preserve">
+    <value>Could not stop the combined config: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_ASSIGNMENTS_EMPTY" xml:space="preserve">
+    <value>Add at least one strategy to the manual config.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_CIRCULAR_UNSUPPORTED" xml:space="preserve">
+    <value>At least one selected strategy cannot be used in a circular combination.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_DUPLICATE_STRATEGY" xml:space="preserve">
+    <value>A duplicate strategy in the same scope was ignored.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SCOPE_OVERLAP" xml:space="preserve">
+    <value>Two manual scopes contain the same site connections. The more specific domain profile will be placed first; check the resulting order.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SCOPE_PARTIAL" xml:space="preserve">
+    <value>The strategy passed {0} of {1} site connection(s) in this scope.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SITE_LIST_INVALID" xml:space="preserve">
+    <value>The selected site list is not associated with the current site.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_INAPPLICABLE" xml:space="preserve">
+    <value>The selected strategy does not support every connection in this scope.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>The selected strategy is absent from the active catalog.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNPROVEN" xml:space="preserve">
+    <value>The strategy did not pass the configured threshold for any tested site in this scope.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_STRATEGY_UNTESTED" xml:space="preserve">
+    <value>This strategy has no check results for the selected scope. Test it before using the config.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TARGET_UNKNOWN" xml:space="preserve">
+    <value>The selected site is absent from this BlockCheck session.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_PREPARE_FAILED" xml:space="preserve">
+    <value>The strategy test could not be completed: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_RESTORE_FAILED" xml:space="preserve">
+    <value>The previous component state could not be restored: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_STOP_FAILED" xml:space="preserve">
+    <value>The temporary strategy could not be stopped: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_STRATEGY_INAPPLICABLE" xml:space="preserve">
+    <value>The selected strategy does not support this connection.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_SESSION_UNAVAILABLE" xml:space="preserve">
+    <value>The original BlockCheck session is unavailable, so a live strategy test cannot be started from this report.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_CATALOG_VERSION_MISMATCH" xml:space="preserve">
+    <value>The report uses catalog “{0}”, while this CDPI UI version contains “{1}”. Unknown strategies cannot be edited or tested.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_SITE_LIST_MISSING" xml:space="preserve">
+    <value>A site list used by the imported report does not exist on this computer. The saved config can be viewed, but this list must be restored before use.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>A strategy used by the imported report is absent from the active catalog.</value>
+  </data>
+  <data name="BlockCheck2Issue_REPORT_TEXT_SCOPE_INFERRED" xml:space="preserve">
+    <value>This legacy text report does not store exact target-to-list mappings. They will be recovered from the referenced list files where available; save a JSON report for lossless import.</value>
   </data>
 </root>

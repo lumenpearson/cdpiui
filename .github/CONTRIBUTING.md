@@ -24,6 +24,7 @@ The `NewSetup` project makes the MSI installer.
 The GUI does not start the components. The GUI sends a request to the tray. The tray starts the component and sends the process state and the output to the GUI.
 
 When the GUI starts and the tray does not operate, the GUI starts the tray and stops. Then the tray starts the GUI again with the initial arguments.
+If `APPEARANCE/hideToTrayOnStartup` is `true` and the GUI has no arguments, the tray does not start the GUI again.
 
 ## Build the application
 
@@ -39,8 +40,7 @@ Do these steps:
    - The class must be `public static class Secret` in the namespace `CDPIUI.Shared.Secrets`.
    - The class must have the members of the `ISecret` interface in [SecretExample.cs](../CDPIUI.Shared/Secrets/SecretExample.cs).
    - Copy only the members. Do not copy the interface, because it is already in that file.
-   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty tokens and a random `AuthGuid`.
-   - `AuthGuid` must not be empty. With an empty `AuthGuid`, the tray authorizes no pipe client, and the GUI cannot connect.
+   - For a local build without Store access, run `pwsh .github/scripts/create_secret_stub.ps1`. The script makes the class with empty tokens.
    - Git ignores this file. Do not add it to the repository.
 2. Restore the NuGet packages.
    - The GUI uses CommunityToolkit Labs packages.
@@ -73,7 +73,7 @@ Some notes about these commands:
 
 The workflow `.github/workflows/ci.yml` does these checks:
 
-- It builds the libraries and runs the unit tests (job `libraries`).
+- It builds the libraries, runs the unit tests and checks the NuGet packages for known vulnerabilities (job `libraries`).
 - It builds the GUI and the release layout, compares the installer file list with the release layout and builds `Setup.msi` (job `gui`).
 - It builds `Update` and `EditHostFile` (job `tools`).
 
@@ -128,7 +128,7 @@ cdpiui/
 - The pipe sends message types by name (`cdpiui://<Target>/<MessageType>`). If you change the name of a pipe enum member, you change the protocol. The GUI and the tray must then come from the same build. The other side cannot read a message with an unknown name.
 - Add unit tests to `CDPIUI.Tests` for the logic in Shared, Core and AddOns.
 
-WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, package signatures). Do not open files or links through the shell from the tray.
+WARNING: The tray operates as administrator. Run files only from the installation folder or a CDPIUI data folder. Make sure that the files pass the checks in `CDPIUI.TrayIcon` (trusted paths, executable trust in `ExecutableTrust`, package signatures). Do not open files or links through the shell from the tray.
 
 ### CDPIUI.TrayIcon
 

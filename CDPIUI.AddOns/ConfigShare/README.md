@@ -48,14 +48,16 @@ The archive cannot contain filesystem links. The reader rejects symbolic link en
 
 ## Options that write files
 
-The tray starts components with administrator rights. Thus a shared preset must not write files outside its package. After the reader replaces the `share://` references, `EnsureNoOutsideWrites` checks each text of the config. It looks for these options:
+The tray starts components with administrator rights. Thus a shared preset must not write files outside its package. After the reader replaces the `share://` references, `EnsureNoOutsideWrites` checks each text of the config with `FileWritingOptions` from `CDPIUI.Shared`. It looks for these options:
 
 - `--debug=@<file>` (`--debug` with other values does not write a file);
 - `--wf-save`;
 - `--hostlist-auto`;
 - `--hostlist-auto-debug`.
 
-The value of such an option must be an absolute path in the extracted package folder. Otherwise, the reader fails with `SHARE_UNSAFE_OPTION`. A relative path is also rejected.
+The value of such an option must be an absolute path in the extracted package folder. Otherwise, the reader fails with `SHARE_UNSAFE_OPTION`. A relative path is also rejected. The check removes the quotes around the path of `--debug=@"<file>"` first.
+
+The tray also checks these options before each component start, for all presets (see [CDPIUI.TrayIcon/README.md](../../CDPIUI.TrayIcon/README.md#elevated-start-of-a-program)).
 
 The export does the same check after it replaces the references. Thus the export fails with `SHARE_UNSAFE_OPTION` for a preset that the reader would reject.
 
@@ -85,6 +87,7 @@ Dependencies that `UsedFiles` does not report must be attached to the preset as 
 |---|---|
 | `ConfigSelector` (`CDPIUI/Controls/ComponentSettings`) | Opens the export dialog through `ConfigShareUI.ShowExportAsync` |
 | `ConfigShareExportContentDialog`, `ConfigShareMessageContentDialog` (`CDPIUI/Controls/Dialogs/ConfigShare/*.xaml`) | Export and message layouts. The code-behind files process the actions and the state changes. |
+| `ConfigMakerUserControl` (`CDPIUI/Controls/CreateConfigHelper`) | Exports the edited preset with `ConfigShareService.ExportAsync` when the user saves it as a `.cdpiconfig` file |
 | `ConfigShareImportDialog` (`CDPIUI/Windows/Messages`) | Opens when the user opens a `.cdpiconfig` file |
 | The ConfigImport wizard | Shows its usual review, test and save steps for `.cdpiconfig` files |
 | `WindowsPresetShare` (`CDPIUI/Helper/AddOns/ConfigShare`) | Windows sharing through [per-window desktop interop](https://learn.microsoft.com/windows/apps/develop/ui/display-ui-objects) |

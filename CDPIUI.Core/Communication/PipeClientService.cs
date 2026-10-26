@@ -165,7 +165,9 @@ namespace CDPIUI.Core.Communication
 
         protected override async Task SendConnectionPacket()
         {
-            await SendMessageAsync(ServiceMessageModel.RequestAuth(Shared.Secrets.Secret.AuthGuid).ToString());
+            // The tray writes a new key at each start, so the key is read again for each connection.
+            string key = PipeSessionKey.TryRead(AppContext.BaseDirectory) ?? string.Empty;
+            await SendMessageAsync(ServiceMessageModel.RequestAuth(key).ToString());
         }
 
         protected override async Task RunMessageActions(IPipeMessage model)

@@ -222,15 +222,47 @@ namespace Update
         private static bool WaitForExit(string processName, TimeSpan timeout)
         {
             var stopwatch = Stopwatch.StartNew();
+            // An exited process can stay in the list for a moment while handles to it are open.
+            var exitedIds = new HashSet<int>();
             while (true)
             {
                 Process[] processes = Process.GetProcessesByName(processName);
-                bool running = processes.Length > 0;
-                foreach (var process in processes) process.Dispose();
+                try
+                {
+                    var running = processes.Where(p => !exitedIds.Contains(p.Id)).ToList();
+                    if (running.Count == 0) return true;
 
-                if (!running) return true;
-                if (stopwatch.Elapsed > timeout) return false;
-                Thread.Sleep(250);
+                    bool waited = false;
+                    foreach (var process in running)
+                    {
+                        TimeSpan remaining = timeout - stopwatch.Elapsed;
+                        if (remaining <= TimeSpan.Zero) return false;
+
+                        // Wait on the process handle: the wait ends as soon as the process exits.
+                        try
+                        {
+                            if (process.WaitForExit((int)Math.Ceiling(remaining.TotalMilliseconds)))
+                                exitedIds.Add(process.Id);
+                            waited = true;
+                        }
+                        catch (Exception)
+                        {
+                            // No access to the handle, or the process exited before the wait.
+                        }
+                    }
+
+                    // Without access to any handle the only way left is to check the list again.
+                    if (!waited)
+                    {
+                        TimeSpan remaining = timeout - stopwatch.Elapsed;
+                        if (remaining <= TimeSpan.Zero) return false;
+                        Thread.Sleep(Math.Min(250, (int)Math.Ceiling(remaining.TotalMilliseconds)));
+                    }
+                }
+                finally
+                {
+                    foreach (var process in processes) process.Dispose();
+                }
             }
         }
 
@@ -508,7 +540,8 @@ namespace Update
                     WorkingDirectory = _targetFolder
                 };
 
-                Process.Start(psi);
+                // The updater does not wait for the application, so only the handle is released.
+                using (Process.Start(psi)) { }
                 FinishStatus = InstallError.OK;
                 CurrentFileChanged?.Invoke($"Launching {_targetExecutable} {param}");
                 Log($"Launching {_targetExecutable} with {param} parameter");

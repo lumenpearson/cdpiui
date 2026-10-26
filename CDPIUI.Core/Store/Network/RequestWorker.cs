@@ -152,7 +152,8 @@ namespace CDPIUI.Core.Store.Network
                     request.Headers.Add("X-Key", Secret.ProxyKey);
                 if (useStoreUserAgent)
                     request.Headers.UserAgent.Add(new ProductInfoHeaderValue("CDPIUI_Components_Store", ApplicationInfo.Version));
-                if (token != null)
+                // The Store tokens are for the repository hosts only; a catalogue entry may point anywhere.
+                if (!string.IsNullOrEmpty(token) && TokenHosts.Contains(sourceUri.Host))
                     request.Headers.Authorization = new AuthenticationHeaderValue(authenticationScheme, token);
 
                 return request;
@@ -163,6 +164,12 @@ namespace CDPIUI.Core.Store.Network
                 throw;
             }
         }
+
+        private static readonly HashSet<string> TokenHosts = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "github.com", "api.github.com", "codeload.github.com", "raw.githubusercontent.com",
+            "objects.githubusercontent.com", "gitlab.com",
+        };
 
         private static Uri CreateProxyUri(string url)
         {

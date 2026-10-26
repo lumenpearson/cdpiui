@@ -34,6 +34,9 @@ namespace CDPIUI.Shared.Logger
         // A log grows without limit otherwise; the previous file is kept as *.old.log.
         private const long MaxLogFileSize = 5 * 1024 * 1024;
 
+        // Failed writes since the last reported one. Changed only under _logLock.
+        private static int _failedWriteCount;
+
         private void LogWrite(string fileName, string logMessage)
         {
             if (string.IsNullOrEmpty(ActualPath)) return;
@@ -62,15 +65,41 @@ namespace CDPIUI.Shared.Logger
                     w.WriteLine(LoggerResources.LoggerReadyMessage + $" {LogLevel} ");
                 WriteMessageToTextWriter(logMessage, w);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Logging must never throw into the caller.
+                ReportWriteFailure(ex);
+                return;
+            }
+            ReportWriteRecovery();
         }
 
         private static void WriteMessageToTextWriter(string logMessage, TextWriter txtWriter)
         {
+            txtWriter.WriteLine("[{0} {1}] {2}", DateTime.Now.ToLongTimeString(),
+                DateTime.Now.ToShortDateString(), logMessage);
+        }
+
+        // Only the first failure of a series goes to Trace; the others are counted, so that a
+        // missing or locked log folder does not flood the debug output.
+        private static void ReportWriteFailure(Exception ex)
+        {
+            if (_failedWriteCount++ > 0) return;
             try
             {
-                txtWriter.WriteLine("[{0} {1}] {2}", DateTime.Now.ToLongTimeString(),
-                    DateTime.Now.ToShortDateString(), logMessage);
+                Trace.WriteLine($"[LoggerBase] Cannot write a log file: {ex}");
+            }
+            catch { }
+        }
+
+        private static void ReportWriteRecovery()
+        {
+            if (_failedWriteCount == 0) return;
+            int failed = _failedWriteCount;
+            _failedWriteCount = 0;
+            try
+            {
+                Trace.WriteLine($"[LoggerBase] Log files are writable again after {failed} failed writes.");
             }
             catch { }
         }
@@ -81,19 +110,8 @@ namespace CDPIUI.Shared.Logger
             {
                 string logMessage = $"[{sender}] [{severity}] {message}";
                 Debug.WriteLine(logMessage);
-                bool write = true;
-                try
-                {
-                    if (severity >= LogLevel)
-                    {
-                        write = true;
-                    }
-                    else
-                    {
-                        write = false;
-                    }
-                }
-                catch { }
+                // A comparison with a null LogLevel is false, so nothing is written then.
+                bool write = severity >= LogLevel;
 
                 if (write)
                     LogWrite(sender, logMessage);

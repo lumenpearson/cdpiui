@@ -2,6 +2,7 @@ using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.Universal;
 using CDPIUI.Core;
+using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.ComponentServices.Helpers;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
@@ -227,7 +228,7 @@ namespace CDPIUI.Views.CreateConfigHelper
         }
 
 
-        private async void SaveKit()
+        private async Task SaveKit()
         {
             ToggleLoadingMode(true, localizer.GetLocalizedString("SavingConfigKit"));
             List<ConfigItem> items = [];
@@ -280,10 +281,17 @@ namespace CDPIUI.Views.CreateConfigHelper
             
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveConfirmationFlyout.Hide();
-            SaveKit();
+            try
+            {
+                await SaveKit();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(EditConfigKitPage), $"Cannot save the config kit: {ex}");
+            }
         }
 
         private async void SaveAsButton_Click(object sender, RoutedEventArgs e)
@@ -321,9 +329,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                 };
 
                 var operationResult = await Task.Run(() =>
-                {
-                    return ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), directory, autoImport:true).Result;
-                });
+                    ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), directory, autoImport:true));
 
                 if (operationResult?.Success != true)
                 {
@@ -360,9 +366,7 @@ namespace CDPIUI.Views.CreateConfigHelper
                     };
 
                     var operationResult = await Task.Run(() =>
-                    {
-                        return ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), filename).Result;
-                    });
+                        ConfigPackMakeHelper.CreateConfigPack(templateModel, ConfigHelper.GetConfigItems(), filename));
 
                     if (operationResult?.Success != true)
                     {

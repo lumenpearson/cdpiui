@@ -17,6 +17,7 @@ namespace CDPIUI.TrayIcon.Helper
         // which stops the components and restores the system proxy settings.
         private const string ShutdownEventName = @"Global\CDPIUI_TrayShutdown";
         private static readonly TimeSpan TrayExitTimeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan ToolExitTimeout = TimeSpan.FromSeconds(15);
 
         private static EventWaitHandle? _shutdownEvent;
         private static RegisteredWaitHandle? _shutdownWait;
@@ -28,7 +29,11 @@ namespace CDPIUI.TrayIcon.Helper
                 _shutdownEvent = new EventWaitHandle(false, EventResetMode.ManualReset, ShutdownEventName);
                 _shutdownWait = ThreadPool.RegisterWaitForSingleObject(_shutdownEvent, (_, _) =>
                 {
-                    try { invoker.BeginInvoke(exit); } catch { }
+                    try { invoker.BeginInvoke(exit); }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(UninstallHelper), $"Cannot exit for uninstall: {ex.Message}");
+                    }
                 }, null, Timeout.Infinite, executeOnlyOnce: true);
             }
             catch (Exception ex)
@@ -63,7 +68,8 @@ namespace CDPIUI.TrayIcon.Helper
             }
             finally
             {
-                try { shutdownEvent?.Reset(); } catch { }
+                try { shutdownEvent?.Reset(); }
+                catch (Exception ex) { ReportCleanupFailure("Cannot reset the shutdown event", ex); }
                 shutdownEvent?.Dispose();
             }
         }
@@ -72,14 +78,31 @@ namespace CDPIUI.TrayIcon.Helper
         {
             var stopwatch = Stopwatch.StartNew();
             string trayName = Path.GetFileNameWithoutExtension(Environment.ProcessPath) ?? "CDPIUI_TrayIcon";
-            while (stopwatch.Elapsed < TrayExitTimeout)
+            while (true)
             {
                 Process[] trays = Process.GetProcessesByName(trayName);
-                bool running = trays.Any(p => p.Id != selfId);
-                foreach (var p in trays) p.Dispose();
-                if (!running) return;
+                try
+                {
+                    Process? tray = trays.FirstOrDefault(p => p.Id != selfId);
+                    if (tray == null) return;
 
-                Thread.Sleep(250);
+                    TimeSpan remaining = TrayExitTimeout - stopwatch.Elapsed;
+                    if (remaining <= TimeSpan.Zero || !tray.WaitForExit(remaining)) return;
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+                {
+                    // The tray exited between the list and the wait; the list is read again.
+                }
+                catch (Exception ex)
+                {
+                    // KillApplicationProcesses ends the tray then.
+                    ReportCleanupFailure("Cannot wait for the tray", ex);
+                    return;
+                }
+                finally
+                {
+                    foreach (var p in trays) p.Dispose();
+                }
             }
         }
 
@@ -93,6 +116,7 @@ namespace CDPIUI.TrayIcon.Helper
                         continue;
 
                     string? path;
+                    // Expected for system and protected processes, and for processes that already exited.
                     try { path = process.MainModule?.FileName; }
                     catch { continue; }
 
@@ -104,7 +128,10 @@ namespace CDPIUI.TrayIcon.Helper
                         process.Kill();
                         process.WaitForExit(5000);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        ReportCleanupFailure($"Cannot end {path}", ex);
+                    }
                 }
             }
         }
@@ -137,39 +164,42 @@ namespace CDPIUI.TrayIcon.Helper
 
         private static void RunServiceControl(string arguments)
         {
-            try
-            {
-                using var process = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "sc.exe"), arguments)
-                {
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                });
-                process?.WaitForExit(15000);
-            }
-            catch { }
+            RunTool(Path.Combine(Environment.SystemDirectory, "sc.exe"), arguments);
         }
 
         private static void RemoveHostsBlock(string installDirectory)
         {
+            // From the installation directory, not from PATH or the current directory.
             string editor = Path.Combine(installDirectory, "EditHostFile.exe");
             if (!File.Exists(editor))
                 return;
 
+            RunTool(editor, "/remove");
+        }
+
+        private static void RunTool(string fileName, string arguments)
+        {
             try
             {
-                using var process = Process.Start(new ProcessStartInfo(editor, "/remove")
+                using var process = Process.Start(new ProcessStartInfo(fileName, arguments)
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 });
-                process?.WaitForExit(15000);
+                if (process == null)
+                    ReportCleanupFailure($"Cannot start {fileName} {arguments}", null);
+                else if (!process.WaitForExit(ToolExitTimeout))
+                    ReportCleanupFailure($"{fileName} {arguments} did not exit in {ToolExitTimeout.TotalSeconds} s", null);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ReportCleanupFailure($"Cannot run {fileName} {arguments}", ex);
+            }
         }
 
         // Files the application creates next to the installed ones; the package does not know them,
         // so the installation directory would otherwise stay behind.
-        private static readonly string[] RuntimeDirectories = ["Logs", ".update-staging", ".update-backup", ".old", ".staging"];
+        private static readonly string[] RuntimeDirectories = ["Logs", ".update-staging", ".update-backup", ".old", ".staging", ".trust", ".session"];
         private static readonly string[] RuntimeFiles = ["update.log", ".update-manifest"];
 
         private static void RemoveRuntimeFiles(string installDirectory)
@@ -181,12 +211,18 @@ namespace CDPIUI.TrayIcon.Helper
                     string path = Path.Combine(installDirectory, name);
                     if (Directory.Exists(path)) Directory.Delete(path, true);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    ReportCleanupFailure($"Cannot delete {name}", ex);
+                }
             }
             foreach (string name in RuntimeFiles)
             {
                 try { File.Delete(Path.Combine(installDirectory, name)); }
-                catch { }
+                catch (Exception ex)
+                {
+                    ReportCleanupFailure($"Cannot delete {name}", ex);
+                }
             }
         }
 
@@ -197,7 +233,17 @@ namespace CDPIUI.TrayIcon.Helper
                 using var taskService = new TaskService();
                 taskService.RootFolder.DeleteTask(AutoStartManager.TaskName, false);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ReportCleanupFailure("Cannot delete the autorun task", ex);
+            }
+        }
+
+        // The cleanup runs as SYSTEM: the tray logger would read the settings and write its files
+        // into the system profile, and the Logs folder is deleted. Failures go to the debug output.
+        private static void ReportCleanupFailure(string message, Exception? ex)
+        {
+            Trace.WriteLine($"[{nameof(UninstallHelper)}] [WARN] {message}{(ex == null ? "" : ": " + ex.Message)}");
         }
     }
 }

@@ -7,8 +7,8 @@ There are three trigger types:
 | Trigger | Function |
 | ------- | -------- |
 | [Hot key] | Starts the task when you push the selected key combination. |
-| [When a process starts] | Starts the task after a process starts. |
-| [When a process stops] | Starts the task after a process stops. |
+| [When process starts] | Starts the task after a process starts. |
+| [When process stops] | Starts the task after a process stops. |
 
 You can enter a process name with the `.exe` extension or without it. A delay makes sure that the process state did not change by accident.
 

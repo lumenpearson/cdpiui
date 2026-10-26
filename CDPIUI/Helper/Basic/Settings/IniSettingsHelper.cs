@@ -1,5 +1,4 @@
-﻿using IniParser;
-using IniParser.Model;
+﻿using CDPIUI.Core.Basic;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,13 +7,10 @@ using System.Text;
 
 namespace CDPIUI.Helper.Basic.Settings
 {
-    // ChatGPT -> piece of shit. 
-
     public class IniSettingsHelper
     {
         private readonly string _filePath;
-        private readonly FileIniDataParser _parser;
-        private IniData _data;
+        private IniDocument _data;
         private readonly object _lock = new object();
 
         public Encoding FileEncoding { get; }
@@ -24,10 +20,6 @@ namespace CDPIUI.Helper.Basic.Settings
             _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
             FileEncoding = encoding ?? Encoding.UTF8;
 
-            _parser = new FileIniDataParser();
-            _parser.Parser.Configuration.KeyValueAssigmentChar = '=';
-            _parser.Parser.Configuration.AssigmentSpacer = string.Empty;
-            _parser.Parser.Configuration.CommentString = "//";
             Reload();
         }
         public void SetValue<T>(string section, string key, T value)
@@ -37,11 +29,7 @@ namespace CDPIUI.Helper.Basic.Settings
 
             lock (_lock)
             {
-                if (!_data.Sections.ContainsSection(section))
-                    _data.Sections.AddSection(section);
-
-                string strValue = value.ToString();
-                _data[section][key] = strValue ?? string.Empty;
+                _data.SetValue(section, key, value?.ToString() ?? string.Empty);
             }
         }
 
@@ -49,12 +37,7 @@ namespace CDPIUI.Helper.Basic.Settings
         {
             lock (_lock)
             {
-                value = null;
-                if (!_data.Sections.ContainsSection(section)) return false;
-                var sectionData = _data[section];
-                if (!sectionData.ContainsKey(key)) return false;
-                value = sectionData[key];
-                return true;
+                return _data.TryGetValue(section, key, out value);
             }
         }
 
@@ -146,10 +129,7 @@ namespace CDPIUI.Helper.Basic.Settings
                 string tempPath = $"{_filePath}.{Guid.NewGuid():N}.tmp";
                 try
                 {
-                    using (var sw = new StreamWriter(tempPath, false, encoding))
-                    {
-                        _parser.WriteData(sw, _data);
-                    }
+                    File.WriteAllText(tempPath, _data.ToString(), encoding);
                     File.Move(tempPath, _filePath, overwrite: true);
                 }
                 finally
@@ -166,10 +146,7 @@ namespace CDPIUI.Helper.Basic.Settings
         {
             lock (_lock)
             {
-                // ReadFile without an encoding reads ASCII and breaks non-Latin values.
-                _data = File.Exists(_filePath)
-                    ? _parser.ReadFile(_filePath, FileEncoding)
-                    : new IniData();
+                _data = IniDocument.Parse(File.Exists(_filePath) ? File.ReadAllText(_filePath, FileEncoding) : string.Empty);
             }
         }
 

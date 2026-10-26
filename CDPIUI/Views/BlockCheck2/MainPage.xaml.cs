@@ -4,6 +4,7 @@ using CDPIUI.Controls.Default;
 using CDPIUI.Controls.Dialogs.BlockCheck2;
 using CDPIUI.Core.Data;
 using CDPIUI.Core.System;
+using CDPIUI.Helper.AddOns.BlockCheck2;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.ViewModels;
@@ -701,7 +702,7 @@ public sealed partial class MainPage : TemplatePage
     private string FormatIssues(IEnumerable<BlockCheckIssue> sourceIssues)
     {
         string[] messages = sourceIssues
-            .Select(issue => issue.Message)
+            .Select(issue => BlockCheck2IssueText.GetMessage(issue))
             .Where(message => !string.IsNullOrWhiteSpace(message))
             .Distinct(StringComparer.CurrentCulture)
             .Take(4)
