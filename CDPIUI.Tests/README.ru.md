@@ -59,6 +59,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Core` | `LScriptCoreTests` | Условия LScript, вложенные аргументы и разбор строк условий |
 | `Core` | `ProcessServiceTests` | Флаг тихого режима в аргументах процесса |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Разбор адреса, порта и формата прокси |
+| `Core` | `StoreRequestCredentialsTests` | Учётные данные запросов Магазина: токен репозитория только в прямых запросах на хосты репозиториев, ключ прокси только в запросах через прокси |
 | `Core` | `ReplaceVariablesTests`, `ReplaceFilesPathTests` | Замена переменных и замена путей к файлам в пресетах |
 | `Core` | `VersionHelperTests` | Сравнение версий |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Преобразование аргументов Zapret Legacy в Zapret2 (с ожидаемыми файлами в `TestData\Zapret1ToZapret2`) |

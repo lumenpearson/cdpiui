@@ -9,7 +9,9 @@ Environment variables (all optional):
   STORE_GITHUB_TOKEN, STORE_GITLAB_TOKEN   Store repository tokens. They are compiled into the
                                            application, so anyone can read them. The script refuses
                                            a token that can change anything (see Test-ReadOnlyToken).
-  STORE_PROXY_URL, STORE_PROXY_KEY         Store reverse proxy
+  STORE_PROXY_URL, STORE_PROXY_KEY         Store reverse proxy. The application sends only the key to
+                                           the proxy, never the Store tokens, so the proxy needs a
+                                           GitHub token of its own.
   TRUSTED_CERTIFICATES                     SHA-1 thumbprints, separated by spaces, commas or semicolons
   CATALOG_CERTIFICATE                      Base64 PFX that signs the catalogs. If TRUSTED_CERTIFICATES
   CATALOG_CERTIFICATE_PASSWORD             is empty, the thumbprint of this certificate is used.

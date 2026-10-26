@@ -204,7 +204,7 @@ The release workflow writes `Secret.cs` with `.github/scripts/create_release_sec
 
 `TrustedCertificates` contains the SHA-1 thumbprints of the certificates that can sign catalogs and `Setup.msi`.
 
-The application is public, so each value in `Secret.cs` is public too. Use only Store tokens that cannot change anything. `create_release_secret.ps1` refuses a GitHub token with scopes and a GitLab token with scopes other than `read_api`, `read_repository` and `read_registry`. The GUI sends a Store token only to GitHub and GitLab hosts (`RequestWorker`). An older `Secret.cs` can contain `AuthGuid`. The application does not use this member.
+The application is public, so each value in `Secret.cs` is public too. Use only Store tokens that cannot change anything. `create_release_secret.ps1` refuses a GitHub token with scopes and a GitLab token with scopes other than `read_api`, `read_repository` and `read_registry`. The GUI sends a Store token only in direct requests to GitHub and GitLab hosts (`RequestWorker`). It does not send the token to the Store proxy. The proxy uses a token of its own. An older `Secret.cs` can contain `AuthGuid`. The application does not use this member.
 
 CAUTION: Do not commit `Secret.cs`. Do not use the stub values in a release build.
 

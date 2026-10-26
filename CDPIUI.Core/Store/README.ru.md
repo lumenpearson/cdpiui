@@ -217,13 +217,13 @@
 `RequestWorker` и `DownloadWorker` применяют к каждой загрузке такие проверки:
 
 - URL должен быть абсолютным URL HTTPS. Это также относится к запросам `DOWNLOAD=` из действий установки. У запроса `DOWNLOAD=` тоже может быть SHA-256: см. `download_easy_designer_annotation_file` в [LScript/README.ru.md](../LScript/README.ru.md).
-- Клиент отправляет токен Магазина только на `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` и `gitlab.com`.
+- Клиент отправляет токен Магазина только на `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` и `gitlab.com`. Он отправляет токен только в прямом запросе, а не через прокси Магазина.
 - Если сервер сообщает размер файла, на диске должно быть достаточно свободного места.
 - Загрузка останавливается, если данные не приходят 60 секунд.
 - Статус ошибки HTTP даёт `ERR_DOWNLOAD_UNEXPECTED_STATUS_CODE_<code>`.
 - Файл сначала попадает в `TempFiles\Downloads`. Клиент удаляет его после операции.
 
-Если `STORE/ProxyEnable` равно `true` и хост Магазина — GitHub, клиент отправляет запросы через прокси Магазина (`Secret.ProxyURL`).
+Если `STORE/ProxyEnable` равно `true` и хост Магазина — GitHub, клиент отправляет запросы через прокси Магазина (`Secret.ProxyURL`). Запрос через прокси содержит заголовок `X-Key` со значением `Secret.ProxyKey`. Он не содержит токен Магазина (`Secret.GitHubToken` или `Secret.GitLabToken`). Поэтому прокси должен использовать собственный токен GitHub. Без токена прокси получает более низкий лимит анонимных запросов API. Прямой запрос не содержит заголовок `X-Key`.
 
 ### SHA-256 загрузки
 
