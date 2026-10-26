@@ -130,6 +130,10 @@ public sealed class ExecutableLeaseTests : IDisposable
     [Fact]
     public void LockedArgumentFileCannotBeChanged()
     {
+        // Sharing modes and open directory handles block these changes only on Windows.
+        if (!OperatingSystem.IsWindows())
+            return;
+
         string program = Write("bin/winws.exe", "program");
         string arguments = Write("bin/args.txt", "--dpi-desync=fake");
 
@@ -142,6 +146,10 @@ public sealed class ExecutableLeaseTests : IDisposable
     [Fact]
     public void WriteTargetFolderCannotBeRenamedWhileGuarded()
     {
+        // Sharing modes and open directory handles block these changes only on Windows.
+        if (!OperatingSystem.IsWindows())
+            return;
+
         string program = Write("bin/winws.exe", "program");
         Directory.CreateDirectory(Path.Combine(_directory, "data", "lists"));
 
