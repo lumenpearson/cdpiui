@@ -183,7 +183,8 @@ namespace CDPIUI.Views.Store
                 else
                 {
                     var window = await ((App)Application.Current).SafeCreateNewWindow<StoreLocalItemInstallingDialog>();
-                    window.SetPackFilePath(filePath);
+                    // Not awaited: the import runs while the dialog is open. SetPackFilePath logs its own errors.
+                    _ = window.SetPackFilePath(filePath);
                 }
             }
         }

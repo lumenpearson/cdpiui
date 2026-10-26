@@ -101,14 +101,21 @@ namespace CDPIUI.Helper.UserExperience
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public async void ShowFontSettingsDialogForXamlRoot(XamlRoot xamlRoot)
+        public async Task ShowFontSettingsDialogForXamlRoot(XamlRoot xamlRoot)
         {
-            FontSettingsContentDialog dialog = new() { XamlRoot = xamlRoot };
-
-            if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
+            try
             {
-                FontFamily = dialog.FontName;
-                FontSize = dialog.FontSize;
+                FontSettingsContentDialog dialog = new() { XamlRoot = xamlRoot };
+
+                if (await dialog.ShowQueuedAsync() == ContentDialogResult.Primary)
+                {
+                    FontFamily = dialog.FontName;
+                    FontSize = dialog.FontSize;
+                }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(ConsoleFontHelper), exception.ToString());
             }
         }
 

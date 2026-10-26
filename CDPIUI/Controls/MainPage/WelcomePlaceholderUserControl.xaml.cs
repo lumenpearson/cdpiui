@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Popups;
@@ -62,11 +63,18 @@ public sealed partial class WelcomePlaceholderUserControl : UserControl
         }
     }
 
-    private async void ShowDialog(string message, string title)
+    private async Task ShowDialog(string message, string title)
     {
-        var dlg = new MessageDialog(message, title);
-        InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>()));
-        await dlg.ShowAsync();
+        try
+        {
+            var dlg = new MessageDialog(message, title);
+            InitializeWithWindow.Initialize(dlg, WindowNative.GetWindowHandle(await ((App)Application.Current).SafeCreateNewWindow<ModernMainWindow>()));
+            await dlg.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WelcomePlaceholderUserControl), exception.ToString());
+        }
     }
 
     private async void GetNewComponentsFromStoreButton_Click(object sender, RoutedEventArgs e)

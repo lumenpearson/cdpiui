@@ -43,7 +43,10 @@ namespace CDPIUI.Core.System
                     if (Directory.Exists(verifyDirectory))
                         Directory.Delete(verifyDirectory, recursive: true);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(ZipService), $"Cannot delete the verification folder {verifyDirectory}: {ex.Message}");
+                }
             }
         }
 
@@ -135,7 +138,7 @@ namespace CDPIUI.Core.System
                     // "*.ext" skips by extension; any other value skips paths that contain it.
                     if (filesToSkip.Any(skip => skip.StartsWith("*.")
                             ? relativePath.EndsWith(skip.Substring(1), StringComparison.OrdinalIgnoreCase)
-                            : relativePath.Contains(skip)))
+                            : relativePath.Contains(skip, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
                     var destinationPath = ArchivePaths.GetDestinationOrThrow(extractTo, relativePath);
@@ -149,12 +152,12 @@ namespace CDPIUI.Core.System
                         if (relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
                             && File.Exists(destinationPath))
                         {
-                            // This code is actually piece of shit. But, i so tired now to make something better. =(
+                            // FileSystemLinksManager replaces a linked list with a link and keeps
+                            // the original as .bak; the lines merge into that original file.
                             if (File.Exists($"{destinationPath}.bak"))
                             {
                                 destinationPath = $"{destinationPath}.bak";
                             }
-                            // End of piece of shit
                             // Whole lines are compared: as a substring, "t.co" was dropped because
                             // the list already had "reddit.com".
                             var destLines = new HashSet<string>(

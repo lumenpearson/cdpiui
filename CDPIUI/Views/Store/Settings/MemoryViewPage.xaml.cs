@@ -70,6 +70,7 @@ namespace CDPIUI.Views.Store.Settings
                     PrepareToConnectedForwardAnimate(NavGrid);
                 }
             }
+            // The connected animation is cosmetic; the navigation goes on without it.
             catch { }
         }
 

@@ -2,9 +2,12 @@
 
 # EditHostFile
 
-`EditHostFile.exe` — консольная утилита на .NET Framework 4.7.2. Она добавляет блок CDPI UI в файл hosts Windows
+`EditHostFile.exe` — консольная утилита на .NET 8. Она добавляет блок CDPI UI в файл hosts Windows
 (`%WINDIR%\system32\drivers\etc\hosts`) или удаляет его оттуда. Её манифест требует
 прав администратора (`EditHostFile/app.manifest`). Вся логика находится в `EditHostFile/Program.cs`.
+
+Как и трей, `EditHostFile.exe` — это один файл, зависящий от среды выполнения (framework-dependent).
+Он использует среду выполнения .NET 8, которую использует и трей. См. [Сборка](#сборка).
 
 ## Аргументы
 
@@ -50,7 +53,11 @@
 | BOM UTF-16 LE | UTF-16 LE с BOM |
 | BOM UTF-16 BE | UTF-16 BE с BOM |
 | Нет BOM, корректный UTF-8 | UTF-8 без BOM |
-| Нет BOM, некорректный UTF-8 | Кодовая страница ANSI |
+| Нет BOM, некорректный UTF-8 | Кодовая страница ANSI системы (например, 1251) |
+
+Кодовая страница ANSI — это кодовая страница, которую возвращает `GetACP`. В .NET 8 нет своих
+кодовых страниц ANSI, а `Encoding.Default` всегда равен UTF-8. Поэтому утилита регистрирует
+`CodePagesEncodingProvider` (`Program.RegisterCodePages`, `Program.GetAnsiEncoding`).
 
 Утилита определяет тип переноса строк так:
 
@@ -91,3 +98,25 @@
 |--------|------|
 | `HostsFileEditService` (`CDPIUI.AddOns/HostsFileEditor/HostsFileEditorService.cs`) | Запускает утилиту из папки приложения с глаголом `runas`. Возвращает код выхода. Страница редактора hosts (`CDPIUI/Views/EditHostsFile/MainPage.xaml.cs`) преобразует код в ошибку с префиксом `HOSTEDIT`. |
 | Очистка при удалении MSI (`CDPIUI_TrayIcon.exe --uninstall-cleanup`, работает от имени SYSTEM) | Запускает `EditHostFile.exe /remove`. Ждёт не более 15 с (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`). |
+
+## Сборка
+
+`EditHostFile/EditHostFile.csproj` — проект в стиле SDK: `net8.0-windows`, x64, `win-x64`.
+Проект встраивает `app.manifest` (`ApplicationManifest`) и `Data/hosts`
+(ресурс `EditHostFile.Data.hosts`). Версия (`1.0.0.0`) и другие данные сборки находятся в файле
+проекта.
+
+```
+dotnet publish EditHostFile/EditHostFile.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
+
+В Linux или macOS добавьте `-p:EnableWindowsTargeting=true`. `.github/scripts/build_portable.ps1`
+использует ту же команду и копирует `EditHostFile.exe` в раскладку релиза.
+
+ВНИМАНИЕ: Не удаляйте `requireAdministrator` из `app.manifest`. Утилита записывает системный файл hosts.
+
+## Тесты
+
+`CDPIUI.Tests/Tools/EditHostFileTests.cs` проверяет определение кодировки, переносы строк, операции
+добавления, удаления и восстановления, а также резервную копию. Тесты используют файлы в
+`Path.GetTempPath()`, а не системный файл hosts.

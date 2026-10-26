@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -43,7 +44,7 @@ namespace CDPIUI
             get { return (string)GetValue(StoreIdProperty); }
             set { 
                 SetValue(StoreIdProperty, value);
-                GetReady();
+                _ = GetReady(); // GetReady catches and logs its own errors.
             }
         }
 
@@ -74,41 +75,48 @@ namespace CDPIUI
                 "Title", typeof(string), typeof(StoreItemMicroButton), new PropertyMetadata(string.Empty)
             );
 
-        private async void GetReady()
+        private async Task GetReady()
         {
-            IsReady = false;
-            TextShimmer.Visibility = Visibility.Visible;
-            ImageShimmer.Visibility = Visibility.Visible;
-            PART_Image.Visibility = Visibility.Collapsed;
-            TextGrid.Visibility = Visibility.Collapsed;
-
-            if (string.IsNullOrEmpty(StoreId))
-                return;
-
-            if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+            try
             {
-                InstallationFontIcon.Glyph = "\uE930";
+                IsReady = false;
+                TextShimmer.Visibility = Visibility.Visible;
+                ImageShimmer.Visibility = Visibility.Visible;
+                PART_Image.Visibility = Visibility.Collapsed;
+                TextGrid.Visibility = Visibility.Collapsed;
+
+                if (string.IsNullOrEmpty(StoreId))
+                    return;
+
+                if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
+                {
+                    InstallationFontIcon.Glyph = "\uE930";
+                }
+                else
+                {
+                    InstallationFontIcon.Glyph = "\uEBD3";
+                }
+                await StoreHelper.Instance.LoadAllStoreDatabase(forseSync:false);
+
+                if (StoreHelper.Instance.GetItemInfoFromStoreId(StoreId) == null)
+                {
+                    PART_Button.IsEnabled = false;
+                }
+
+                TextShimmer.Visibility = Visibility.Collapsed;
+                ImageShimmer.Visibility = Visibility.Collapsed;
+                PART_Image.Visibility = Visibility.Visible;
+                TextGrid.Visibility = Visibility.Visible;
+                IsReady = true;
+                string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
+
+                RemoveHandlers();
+                ConnectHandlers();
             }
-            else
+            catch (Exception exception)
             {
-                InstallationFontIcon.Glyph = "\uEBD3";
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(StoreItemMicroButton), exception.ToString());
             }
-            await StoreHelper.Instance.LoadAllStoreDatabase(forseSync:false);
-
-            if (StoreHelper.Instance.GetItemInfoFromStoreId(StoreId) == null)
-            {
-                PART_Button.IsEnabled = false;
-            }
-
-            TextShimmer.Visibility = Visibility.Collapsed;
-            ImageShimmer.Visibility = Visibility.Collapsed;
-            PART_Image.Visibility = Visibility.Visible;
-            TextGrid.Visibility = Visibility.Visible;
-            IsReady = true;
-            string operationId = StoreHelper.Instance.GetOperationIdFromItemId(StoreId);
-
-            RemoveHandlers();
-            ConnectHandlers();
         }
 
         private Action<Tuple<string, double>> _itemDownloadProgressChangedHandler;
@@ -158,7 +166,7 @@ namespace CDPIUI
                 if (id != StoreId)
                     return;
                 RemoveHandlers();
-                GetReady();
+                _ = GetReady(); // GetReady catches and logs its own errors.
             };
             StoreHelper.Instance.ItemActionsStopped += _itemActionsStoppedHandler;
 
@@ -167,7 +175,7 @@ namespace CDPIUI
                 if (data != StoreId)
                     return;
                 RemoveHandlers();
-                GetReady();
+                _ = GetReady(); // GetReady catches and logs its own errors.
             };
             StoreHelper.Instance.ItemRemoved += _itemRemovedHandler;
         }

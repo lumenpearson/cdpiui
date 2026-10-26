@@ -350,17 +350,19 @@ namespace CDPIUI.Views.Main.Components
                 case ActionIds.ChangeSiteListClicked:
                     if (contentDefinition.IsFileHardLinked)
                     {
-                        RevertFileLink(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.HardLinkTargetFile);
+                        // RevertFileLink catches and logs its own errors.
+                        _ = RevertFileLink(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.HardLinkTargetFile);
                     }
                     else
                     {
-                        ShowChangeListDialog(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.IsIPSet);
+                        // ShowChangeListDialog catches and logs its own errors.
+                        _ = ShowChangeListDialog(arguments[0], contentDefinition.PackId, contentDefinition.EditFilePath, contentDefinition.IsIPSet);
                     }
                     break;
                 case ActionIds.EditButtonClicked:
                     if (!SettingsManager.Instance.GetValue<bool>("FILEOPENACTIONS", "isDialogShown") || !SettingsManager.Instance.GetValueOrDefault<bool>("FILEOPENACTIONS", "doNotRemindAgain", defaultValue: true))
                     {
-                        ShowEditAskDialog(contentDefinition.EditFilePath);
+                        _ = ShowEditAskDialog(contentDefinition.EditFilePath); // ShowEditAskDialog catches and logs its own errors.
                     }
                     else
                     {
@@ -378,13 +380,13 @@ namespace CDPIUI.Views.Main.Components
                     _ = RestartComponentIfRunning();
                     break;
                 case ActionIds.FullButtonElementClicked:
-                    ButtonClick(contentDefinition);
+                    _ = ButtonClick(contentDefinition); // ButtonClick catches and logs its own errors.
                     break;
 
             }
         }
 
-        private async void ShowEditCommaVariableDialog(SettingTileContentDefinition contentDefinition)
+        private async Task ShowEditCommaVariableDialog(SettingTileContentDefinition contentDefinition)
         {
             ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
             CommaVariableItem variable = componentHelper.GetConfigHelper()
@@ -427,116 +429,144 @@ namespace CDPIUI.Views.Main.Components
                 _ = ComponentTasksManager.Instance.RestartTask(ComponentId);
         }
 
-        private async void RevertFileLink(string file, string packId, string fileName, string linkName)
+        private async Task RevertFileLink(string file, string packId, string fileName, string linkName)
         {
-            var result = await FileSystemLinksManager.RemoveLinkForItemId(packId, linkName, fileName);
-
-            Debug.WriteLine(result.Success);
-
-            if (!result.Success)
+            try
             {
-                ErrorContentDialog dialog = new();
-                await dialog.ShowErrorDialogAsync(
-                    string.Format(localizer.GetLocalizedString("ReplaceSiteListException"), 
-                    Path.GetFileName(linkName),
-                    Path.GetFileName(fileName),
-                    result.Error.ErrorCode),
-                    result.Error.FriendlyDescription, 
-                    this.XamlRoot
-                    );
-            }
-            else
-            {
+                var result = await FileSystemLinksManager.RemoveLinkForItemId(packId, linkName, fileName);
 
-                ShowAnim = false;
-                var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
-                _ = Task.Run(() => InitSettingsTiles(item));
-            }
-        }
-
-        private async void ShowChangeListDialog(string file, string packId, string fileName, bool isIPSet)
-        {
-            ChangeSiteListContentDialog changeListContentDialog = new()
-            {
-                XamlRoot = this.XamlRoot,
-                ListTitle = file,
-                PackId = packId,
-                FileName = fileName,
-                IsIpSet = isIPSet,
-            };
-            await changeListContentDialog.ShowQueuedAsync();
-
-            if (changeListContentDialog.IsDialogFinishedSuccessfully)
-            {
-                OperationResultModel<EmptyResult> result;
-                if (changeListContentDialog.SelectionType == FileSelectionType.FromTheStore)
-                {
-                    result = await FileSystemLinksManager.CreateHardLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
-                }
-                else
-                {
-                    result = await FileSystemLinksManager.CreateSymbolicLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
-                }
+                Debug.WriteLine(result.Success);
 
                 if (!result.Success)
                 {
                     ErrorContentDialog dialog = new();
                     await dialog.ShowErrorDialogAsync(
-                        string.Format(localizer.GetLocalizedString("ReplaceSiteListException"), Path.GetFileName(fileName), Path.GetFileName(changeListContentDialog.NewFileName), result.Error.ErrorCode), 
+                        string.Format(localizer.GetLocalizedString("ReplaceSiteListException"), 
+                        Path.GetFileName(linkName),
+                        Path.GetFileName(fileName),
+                        result.Error.ErrorCode),
                         result.Error.FriendlyDescription, 
                         this.XamlRoot
                         );
                 }
                 else
                 {
+
                     ShowAnim = false;
                     var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
                     _ = Task.Run(() => InitSettingsTiles(item));
                 }
-
-                
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
             }
         }
-        private async void ShowEditAskDialog(string file)
+
+        private async Task ShowChangeListDialog(string file, string packId, string fileName, bool isIPSet)
         {
-            EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
+            try
             {
-                XamlRoot = this.XamlRoot,
-                FilePath = file
-            };
-            await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
-            if (editSitelistAskApplicationContentDialog.IsSuccess)
-                SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
+                ChangeSiteListContentDialog changeListContentDialog = new()
+                {
+                    XamlRoot = this.XamlRoot,
+                    ListTitle = file,
+                    PackId = packId,
+                    FileName = fileName,
+                    IsIpSet = isIPSet,
+                };
+                await changeListContentDialog.ShowQueuedAsync();
+
+                if (changeListContentDialog.IsDialogFinishedSuccessfully)
+                {
+                    OperationResultModel<EmptyResult> result;
+                    if (changeListContentDialog.SelectionType == FileSelectionType.FromTheStore)
+                    {
+                        result = await FileSystemLinksManager.CreateHardLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
+                    }
+                    else
+                    {
+                        result = await FileSystemLinksManager.CreateSymbolicLinkForItemId(packId, changeListContentDialog.NewFileName, fileName);
+                    }
+
+                    if (!result.Success)
+                    {
+                        ErrorContentDialog dialog = new();
+                        await dialog.ShowErrorDialogAsync(
+                            string.Format(localizer.GetLocalizedString("ReplaceSiteListException"), Path.GetFileName(fileName), Path.GetFileName(changeListContentDialog.NewFileName), result.Error.ErrorCode), 
+                            result.Error.FriendlyDescription, 
+                            this.XamlRoot
+                            );
+                    }
+                    else
+                    {
+                        ShowAnim = false;
+                        var item = ConfigChooseCombobox.SelectedItem as ConfigSelectorItem;
+                        _ = Task.Run(() => InitSettingsTiles(item));
+                    }
+
+                
+                }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
+            }
+        }
+        private async Task ShowEditAskDialog(string file)
+        {
+            try
+            {
+                EditSitelistAskApplicationContentDialog editSitelistAskApplicationContentDialog = new()
+                {
+                    XamlRoot = this.XamlRoot,
+                    FilePath = file
+                };
+                await editSitelistAskApplicationContentDialog.ShowQueuedAsync();
+                if (editSitelistAskApplicationContentDialog.IsSuccess)
+                    SettingsManager.Instance.SetValue("FILEOPENACTIONS", "isDialogShown", true);
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
+            }
         }
 
-        private async void ButtonClick(SettingTileContentDefinition contentDefinition)
+        private async Task ButtonClick(SettingTileContentDefinition contentDefinition)
         {
-            switch (contentDefinition.ClickId)
+            try
             {
-                case "CFGCREATE":
-                    await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
-                    break;
-                case "CFGEDIT":
-                    ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
-                    var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
+                switch (contentDefinition.ClickId)
+                {
+                    case "CFGCREATE":
+                        await ConfigMakerWindow.CreateForComponentAsync(ComponentId);
+                        break;
+                    case "CFGEDIT":
+                        ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
+                        var item = (ConfigSelectorItem)ConfigChooseCombobox.SelectedItem;
 
-                    if (componentHelper != null && item != null)
-                        ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
-                    break;
-                case "CFGGOODCHECK":
-                    CreateConfigUtilWindow gwindow = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
-                    gwindow.NavigateToPage<CreateViaGoodCheck>(new NameValueCollection() { { "componentId", ComponentId } });
-                    break;
-                case "HELPOFFLINE":
-                    Commands.CommandsHandler.HandleCommand("cdpiui://Help/");
-                    break;
-                case "HELPOFFLINECONFIGCHOOISE":
-                    Commands.CommandsHandler.HandleCommand(
-                        "cdpiui://Help/Autoselection/BestConfigSelection/");
-                    break;
-                case "EDITCOMMAVAR":
-                    ShowEditCommaVariableDialog(contentDefinition);
-                    break;
+                        if (componentHelper != null && item != null)
+                            await ConfigMakerWindow.EditConfig(componentHelper.GetConfigHelper().GetConfigItems().FirstOrDefault(x => x.packId == item.PackId && x.file_name == item.FileName));
+                        break;
+                    case "CFGGOODCHECK":
+                        CreateConfigUtilWindow gwindow = await ((App)Application.Current).SafeCreateNewWindow<CreateConfigUtilWindow>();
+                        gwindow.NavigateToPage<CreateViaGoodCheck>(new NameValueCollection() { { "componentId", ComponentId } });
+                        break;
+                    case "HELPOFFLINE":
+                        Commands.CommandsHandler.HandleCommand("cdpiui://Help/");
+                        break;
+                    case "HELPOFFLINECONFIGCHOOISE":
+                        Commands.CommandsHandler.HandleCommand(
+                            "cdpiui://Help/Autoselection/BestConfigSelection/");
+                        break;
+                    case "EDITCOMMAVAR":
+                        await ShowEditCommaVariableDialog(contentDefinition);
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(DefaultComponentSettingsPage), exception.ToString());
             }
         }
 
@@ -692,7 +722,7 @@ namespace CDPIUI.Views.Main.Components
             ComponentHelper componentHelper = ComponentItemsLoaderHelper.Instance.GetComponentHelperFromId(ComponentId);
             ConfigurationService service = componentHelper.GetConfigHelper();
             if (ConfigChooseCombobox.SelectedItem is ConfigSelectorItem item)
-                ConfigMakerWindow.EditConfig(service.GetConfigItem(item.FileName, item.PackId));
+                _ = ConfigMakerWindow.EditConfig(service.GetConfigItem(item.FileName, item.PackId)); // EditConfig catches and logs its own errors.
         }
     }
 }

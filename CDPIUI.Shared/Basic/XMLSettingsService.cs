@@ -76,12 +76,19 @@ namespace CDPIUI.Shared.Basic
                     {
                         File.Copy(SettingsFilePath, SettingsFilePath + ".corrupt-" + Guid.NewGuid().ToString("N"));
                     }
-                    catch (Exception copyError) when (IsReadFailure(copyError)) { }
+                    catch (Exception copyError) when (IsReadFailure(copyError))
+                    {
+                        // The copy is kept only for diagnostics; the recovery goes on without it.
+                        Trace.WriteLine($"[XMLSettingsService] Cannot keep a copy of the damaged settings file: {copyError.Message}");
+                    }
 
                     if (HasUnrecoverableLoadError)
                     {
                         try { File.WriteAllText(RecoveryNoticePath, LoadError); }
-                        catch (Exception noticeError) when (IsReadFailure(noticeError)) { }
+                        catch (Exception noticeError) when (IsReadFailure(noticeError))
+                        {
+                            Trace.WriteLine($"[XMLSettingsService] Cannot write the recovery notice: {noticeError.Message}");
+                        }
                     }
 
                     SaveSettings(keepBackup: false);
@@ -117,7 +124,7 @@ namespace CDPIUI.Shared.Basic
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase))
                 .ToList();
 
-        private static void ApplySetting(XElement root, IEnumerable<string> groupPath, string key, string type, string valueString)
+        private static void ApplySetting(XElement root, IEnumerable<string> groupPath, string key, string type, string? valueString)
         {
             XElement current = root;
             foreach (var grp in groupPath)
@@ -157,12 +164,21 @@ namespace CDPIUI.Shared.Basic
         /// The UI and the tray share the settings file. Each change is applied to the file as it is on disk
         /// now, so a process with an older copy in memory does not overwrite what the other one saved.
         /// </summary>
-        private void SaveChange(IEnumerable<string> groupPath, string key, string type, string valueString)
+        private void SaveChange(IEnumerable<string> groupPath, string key, string type, string? valueString)
         {
             lock (_reloadLock)
             {
-                using (AcquireFileLock())
+                using (AcquireFileLock(out bool lockTimedOut))
                 {
+                    if (lockTimedOut)
+                    {
+                        // Writing without the lock could overwrite what the other process saves at
+                        // this moment. The change stays in memory only, as after a failed write.
+                        ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
+                        Trace.WriteLine($"[XMLSettingsService] The settings file stayed locked; {key} was not saved.");
+                        return;
+                    }
+
                     if (!_persistenceUnavailable && File.Exists(SettingsFilePath))
                     {
                         try
@@ -186,8 +202,9 @@ namespace CDPIUI.Shared.Basic
 
         // A lock file works for both processes, while a named mutex of the elevated tray would not be
         // accessible to the UI.
-        private IDisposable? AcquireFileLock()
+        private IDisposable? AcquireFileLock(out bool timedOut)
         {
+            timedOut = false;
             string lockPath = SettingsFilePath + ".lock";
             for (int attempt = 1; attempt <= LockAttempts; attempt++)
             {
@@ -206,6 +223,7 @@ namespace CDPIUI.Shared.Basic
                     return null;
                 }
             }
+            timedOut = true;
             return null;
         }
 
@@ -250,7 +268,11 @@ namespace CDPIUI.Shared.Basic
             finally
             {
                 try { File.Delete(temporaryPath); }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // A left temporary file does no harm; the next save replaces it.
+                    Trace.WriteLine($"[XMLSettingsService] Cannot delete the temporary settings file: {ex.Message}");
+                }
             }
         }
 
@@ -458,7 +480,7 @@ namespace CDPIUI.Shared.Basic
         public void SetValue<T>(string group, string key, T value)
         {
             string type;
-            string valueString;
+            string? valueString;
 
             if (value is int)
             {
@@ -488,7 +510,7 @@ namespace CDPIUI.Shared.Basic
             else if (typeof(T) == typeof(List<string>))
             {
                 type = nameof(List<string>);
-                valueString = JoinList((List<string>)(object)value);
+                valueString = JoinList((List<string>?)(object?)value ?? []);
 
                 Debug.WriteLine(valueString);
             }
@@ -562,7 +584,7 @@ namespace CDPIUI.Shared.Basic
             if (typeof(T) == typeof(DateTime) && type == nameof(DateTime) && TryParseDateTime(value, out var dtv))
                 return (T)(object)dtv;
 
-            throw new Exception();
+            throw new InvalidCastException($"A setting of type '{type}' cannot be read as {typeof(T).Name}.");
         }
 
         public static string FormatDouble(double value) =>

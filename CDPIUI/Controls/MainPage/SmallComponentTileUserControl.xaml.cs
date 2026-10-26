@@ -87,7 +87,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
             if (string.IsNullOrEmpty(StoreId)) return;
             ComponentTasksManager.Instance.TaskStateUpdated -= TaskUpdated;
             ComponentTasksManager.Instance.TaskStateUpdated += TaskUpdated;
-            PreferTaskStateActions();
+            _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
         };
     }
 
@@ -198,7 +198,7 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         DispatcherQueue?.TryEnqueue(() =>
         {
             if (tuple.Item1 != StoreId) return;
-            PreferTaskStateActions();
+            _ = PreferTaskStateActions(); // PreferTaskStateActions catches and logs its own errors.
         });
     }
 
@@ -217,11 +217,12 @@ public sealed partial class SmallComponentTileUserControl : UserControl
 
         if (DatabaseHelper.Instance.IsItemInstalled(StoreId))
         {
-            PreferTaskStateActions();
+            // PreferTaskStateActions and CheckComponentState catch and log their own errors.
+            _ = PreferTaskStateActions();
 
             bool isAddToAutorun = SettingsManager.Instance.GetValue<bool>(["CONFIGS", StoreId], "usedForAutorun");
             AutorunCheckBox.IsChecked = isAddToAutorun;
-            CheckComponentState();
+            _ = CheckComponentState();
         }
         SetToolTip();
     }
@@ -236,9 +237,16 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         return (await ComponentTasksManager.Instance.GetTaskFromId(StoreId))?.ProcessManager;
     }
 
-    private async void CheckComponentState()
+    private async Task CheckComponentState()
     {
-        ShowComponentState(await GetComponentState());
+        try
+        {
+            ShowComponentState(await GetComponentState());
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SmallComponentTileUserControl), exception.ToString());
+        }
     }
 
     private async Task<ComponentState> GetComponentState()
@@ -296,24 +304,31 @@ public sealed partial class SmallComponentTileUserControl : UserControl
         }
     }
 
-    private async void PreferTaskStateActions()
+    private async Task PreferTaskStateActions()
     {
-        bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
-
-        if (isRunning)
+        try
         {
-            PlayToolTip.Text = localizer.GetLocalizedString("Stop");
-            PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph()? "\uE62E" : "\uF8AE";
-            ShowComponentState(ComponentState.Running);
-        }
-        else
-        {
-            PlayToolTip.Text = localizer.GetLocalizedString("Start");
-            PlayGlyph.Glyph = "\uF5B0";
-            CheckComponentState();
-        }
+            bool isRunning = await ComponentTasksManager.Instance.IsTaskRunning(StoreId);
 
-        PlayButton.IsChecked = isRunning;
+            if (isRunning)
+            {
+                PlayToolTip.Text = localizer.GetLocalizedString("Stop");
+                PlayGlyph.Glyph = SharedUtils.IsOsSupportedNewGlyph()? "\uE62E" : "\uF8AE";
+                ShowComponentState(ComponentState.Running);
+            }
+            else
+            {
+                PlayToolTip.Text = localizer.GetLocalizedString("Start");
+                PlayGlyph.Glyph = "\uF5B0";
+                _ = CheckComponentState(); // CheckComponentState catches and logs its own errors.
+            }
+
+            PlayButton.IsChecked = isRunning;
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(SmallComponentTileUserControl), exception.ToString());
+        }
     }
 
     private void SetStatusToolTip(string text)

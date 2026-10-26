@@ -109,12 +109,14 @@ namespace CDPIUI.TrayIcon.Forms
                         await WaitForNetworkAsync(TimeSpan.FromSeconds(30));
                         foreach (var task in await TasksHelper.Instance.GetTasksSnapshot())
                         {
-                            if (!task.ProcessManager.IsProcessRunning)
-                                continue;
-
                             try
                             {
-                                await TasksHelper.Instance.RestartTask(task.Id);
+                                // Checked in the queue: a stop that came first must not be undone by the restart.
+                                await ComponentCommandQueue.Run(task.Id, async () =>
+                                {
+                                    if (task.ProcessManager.IsProcessRunning)
+                                        await TasksHelper.Instance.RestartTask(task.Id);
+                                });
                             }
                             catch (Exception ex)
                             {
@@ -150,8 +152,10 @@ namespace CDPIUI.TrayIcon.Forms
         private string GetCurrentIcon()
         {
             int rt = 0;
+            // Tasks are added from pool threads while the icon is updated.
+            var tasks = TasksHelper.Instance.GetTasksSnapshotSync();
 
-            foreach (var task in TasksHelper.Instance.Tasks)
+            foreach (var task in tasks)
             {
                 if (task.ProcessManager.IsProcessRunning)
                 {
@@ -163,7 +167,7 @@ namespace CDPIUI.TrayIcon.Forms
             {
                 return "trayLogoStopped";
             }
-            else if (rt == TasksHelper.Instance.Tasks.Count)
+            else if (rt == tasks.Count)
             {
                 return "trayLogoStarted";
             }
@@ -180,7 +184,10 @@ namespace CDPIUI.TrayIcon.Forms
             if (InvokeRequired)
             {
                 try { BeginInvoke(new Action(() => HandleTaskStateUpdate(taskStateUpdate))); }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException)
+                {
+                    // The window handle was destroyed after the check above; the icon is gone too.
+                }
                 return;
             }
             UpdateIcon(GetCurrentIcon(), GetNowRunningComponentsString());
@@ -195,7 +202,7 @@ namespace CDPIUI.TrayIcon.Forms
         {
             string result = string.Empty;
             int cnt = 0;
-            foreach (var task in TasksHelper.Instance.Tasks)
+            foreach (var task in TasksHelper.Instance.GetTasksSnapshotSync())
             {
                 if (task.ProcessManager.IsProcessRunning)
                 {
@@ -371,8 +378,8 @@ namespace CDPIUI.TrayIcon.Forms
             return rect;
         }
 
-        // Called from WndProc, which must not wait for the pipe.
-        private static async void MaximizeApp()
+        // Called from WndProc, which must not wait for the pipe. Catches and logs its own errors.
+        private static async Task MaximizeApp()
         {
             try
             {
@@ -435,7 +442,7 @@ namespace CDPIUI.TrayIcon.Forms
                         break;
                     case NIN_KEYSELECT:
                         // Enter or Space on the icon focused with the keyboard.
-                        MaximizeApp();
+                        _ = MaximizeApp();
                         break;
                     case WM_CONTEXTMENU:
                         var rect = GetRectIcon();
@@ -444,7 +451,7 @@ namespace CDPIUI.TrayIcon.Forms
 
                     //get what mouse messages you want
                     case WM_LBUTTONDOWN:
-                        MaximizeApp();
+                        _ = MaximizeApp();
                         break;
                     default:
 

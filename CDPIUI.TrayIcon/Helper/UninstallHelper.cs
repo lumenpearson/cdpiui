@@ -29,6 +29,8 @@ namespace CDPIUI.TrayIcon.Helper
                 _shutdownEvent = new EventWaitHandle(false, EventResetMode.ManualReset, ShutdownEventName);
                 _shutdownWait = ThreadPool.RegisterWaitForSingleObject(_shutdownEvent, (_, _) =>
                 {
+                    // The wait fires once; its registration is not needed after that.
+                    _shutdownWait?.Unregister(null);
                     try { invoker.BeginInvoke(exit); }
                     catch (Exception ex)
                     {

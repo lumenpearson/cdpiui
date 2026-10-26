@@ -309,7 +309,8 @@ namespace CDPIUI
                     }
 
                     var window = await SafeCreateNewWindow<StoreLocalItemInstallingDialog>();
-                    window.SetPackFilePath(_file);
+                    // Not awaited: the import runs while the dialog is open. SetPackFilePath logs its own errors.
+                    _ = window.SetPackFilePath(_file);
                     return true; // Only first file will be processed.
                 }
             }
@@ -354,7 +355,7 @@ namespace CDPIUI
                 _ = SafeCreateNewWindow<PrepareWindow>(string.IsNullOrEmpty(directArgs));
             }
 
-            PipeClientService.Instance.Start();
+            _ = PipeClientService.Instance.Start();
         }
 
         // Catches and logs its own errors, so a caller can start it without waiting for it.
@@ -504,6 +505,7 @@ namespace CDPIUI
                 InitializeWithWindow.Initialize(dialog, WindowNative.GetWindowHandle(owner));
                 await dialog.ShowAsync();
                 try { File.Delete(settings.RecoveryNoticePath); }
+                // Best-effort cleanup: a notice that stays only shows the warning once more.
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             }
             catch (Exception ex)
@@ -600,6 +602,7 @@ namespace CDPIUI
             }
             catch
             {
+                // Bringing the window to the front is cosmetic; it is already activated.
             }
         }
 
@@ -699,7 +702,10 @@ namespace CDPIUI
             {
                 WindowsPositionHelper.SaveWindowSizeAndPostionsettings(window);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(App), exception.ToString());
+            }
         }
 
         private void Window_ClosedHandler(object sender, WindowEventArgs e)
@@ -717,7 +723,10 @@ namespace CDPIUI
             {
                 WindowsPositionHelper.SaveWindowSizeAndPostionsettings(window);
             }
-            catch { }
+            catch (Exception exception)
+            {
+                Logger.Instance.CreateWarningLog(nameof(App), exception.ToString());
+            }
             finally
             {
                 window.Closed -= Window_ClosedHandler;
@@ -726,7 +735,9 @@ namespace CDPIUI
                 // Leave visual-tree teardown to WinUI, including diagnostics notifications.
                 try { ReleaseModal(window, isClosing: true); }
                 catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(App), exception.ToString()); }
-                try { OpenWindows.Remove(window); } catch { }
+                // List.Remove does not throw for a missing item; the guard only keeps the cleanup going.
+                try { OpenWindows.Remove(window); }
+                catch (Exception exception) { Logger.Instance.CreateWarningLog(nameof(App), exception.ToString()); }
                 if (migrationWindowClosed)
                     Program.CompleteMigrationActivation();
                 disabledOwners.Remove(window);
@@ -904,12 +915,13 @@ namespace CDPIUI
                     {
                         return rootElement;
                     }
-                } catch
+                } catch (Exception ex)
                 {
-
+                    // The window can be closing and refuse access to its content; try the next one.
+                    Logger.Instance.CreateWarningLog(nameof(App), $"Cannot read the content of a window: {ex.Message}");
                 }
             }
-            throw new Exception($"Unable to get root frame");
+            throw new InvalidOperationException("No open window has content to use as the root frame.");
         }
 
         private ElementTheme GetThemeFromString(string theme)

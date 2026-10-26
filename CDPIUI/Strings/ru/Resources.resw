@@ -2285,7 +2285,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>ВНИМАНИЕ</value>
   </data>
   <data name="PT_Ok" xml:space="preserve">
-    <value>OK</value>
+    <value>ОК</value>
   </data>
   <data name="PT_TargetsLoaded" xml:space="preserve">
     <value>Загружено целей: {0}</value>
@@ -2342,7 +2342,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>DPI</value>
   </data>
   <data name="PT_StatusOk" xml:space="preserve">
-    <value>OK</value>
+    <value>ОК</value>
   </data>
   <data name="PT_StatusFail" xml:space="preserve">
     <value>ОШИБКА</value>
@@ -3395,6 +3395,9 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   </data>
   <data name="UpdateFileInvalidExtension" xml:space="preserve">
     <value>Выбранный файл не является пакетом обновления CDPI UI.</value>
+  </data>
+  <data name="UpdateFileMsiInstallation" xml:space="preserve">
+    <value>Эта копия CDPI UI установлена через Setup.msi. Пакеты обновления (.cdpipatch) подходят только для портативной копии. Используйте Setup.msi новой версии или проверку обновлений в приложении.</value>
   </data>
   <data name="UpdateFileCurrentVersionFormat" xml:space="preserve">
     <value>Текущая версия: {0}</value>
@@ -6647,5 +6650,191 @@ https://discord.com/app</value>
   </data>
   <data name="BlockCheck2Issue_REPORT_TEXT_SCOPE_INFERRED" xml:space="preserve">
     <value>Этот текстовый отчёт старого формата не хранит точное соответствие целей и списков. Оно будет восстановлено по используемым файлам списков, если они есть. Для импорта без потерь сохраняйте отчёт в JSON.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_NAME_INVALID" xml:space="preserve">
+    <value>Lua-действие №{0} содержит недопустимое имя аргумента.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_RESERVED" xml:space="preserve">
+    <value>Аргумент «{0}» зарезервирован для автоматически создаваемых команд.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_ARGUMENT_VALUE_UNSAFE" xml:space="preserve">
+    <value>Lua-действие №{0} содержит символы, небезопасные для создаваемой командной строки.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_PAYLOAD_INVALID" xml:space="preserve">
+    <value>Lua-действие №{0} содержит неизвестный фильтр полезной нагрузки.</value>
+  </data>
+  <data name="BlockCheck2Issue_ACTION_RANGE_INVALID" xml:space="preserve">
+    <value>Lua-действие №{0} содержит недопустимый диапазон in/out.</value>
+  </data>
+  <data name="BlockCheck2Issue_BASELINE_TARGET_UNKNOWN" xml:space="preserve">
+    <value>Базовый результат ссылается на неизвестную цель.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_CONFLICT" xml:space="preserve">
+    <value>У блоба «{0}» противоречащие друг другу источники.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_NAME_DUPLICATE" xml:space="preserve">
+    <value>Имя блоба повторяется в одной стратегии.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_NAME_INVALID" xml:space="preserve">
+    <value>Недопустимое имя блоба.</value>
+  </data>
+  <data name="BlockCheck2Issue_BLOB_SOURCE_UNSAFE" xml:space="preserve">
+    <value>Источник блоба должен быть hex-строкой или относительным путём без выхода из папки.</value>
+  </data>
+  <data name="BlockCheck2Issue_CATALOG_EMPTY" xml:space="preserve">
+    <value>Каталог должен содержать хотя бы одну стратегию.</value>
+  </data>
+  <data name="BlockCheck2Issue_CATALOG_VERSION_MISSING" xml:space="preserve">
+    <value>Не указана версия каталога.</value>
+  </data>
+  <data name="BlockCheck2Issue_CIRCULAR_STRATEGY_EMPTY" xml:space="preserve">
+    <value>Циклическая стратегия не содержит Lua-действий.</value>
+  </data>
+  <data name="BlockCheck2Issue_LUA_FUNCTION_NOT_ALLOWED" xml:space="preserve">
+    <value>Lua-функция «{0}» запрещена во встроенном каталоге.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Число попыток ручной проверки стратегии должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_MANUAL_TEST_FAILED" xml:space="preserve">
+    <value>Не удалось завершить проверку стратегии: {0}</value>
+  </data>
+  <data name="BlockCheck2Issue_PREHOST_CIRCULAR_DISABLED" xml:space="preserve">
+    <value>Стратегии до определения хоста нельзя использовать как циклические запасные — они будут работать как статические.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_REPAIR_ITERATIONS_INVALID" xml:space="preserve">
+    <value>Максимальное число исправлений пресета не может быть отрицательным.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_SYNTHESIS_INVALID" xml:space="preserve">
+    <value>Для проверки пресета нужен успешный результат начальной сборки.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Число попыток проверки пресета на цель должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_PRESET_VALIDATION_RATE_INVALID" xml:space="preserve">
+    <value>Доля успешных проверок пресета должна быть больше нуля и не больше единицы.</value>
+  </data>
+  <data name="BlockCheck2Issue_PROBE_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Результат проверки ссылается на стратегию, которой нет в каталоге.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_ATTEMPTS_MISMATCH" xml:space="preserve">
+    <value>Число попыток сканирования на цель должно быть не меньше минимального числа попыток сборки.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_REPAIR_ITERATIONS_INVALID" xml:space="preserve">
+    <value>Максимальное число исправлений пресета не может быть отрицательным.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SUCCESS_RATE_MISMATCH" xml:space="preserve">
+    <value>Доля успешных сканирований должна быть не меньше минимальной доли успеха сборки.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SYNTHESIS_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Минимальное число попыток сборки должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_SYNTHESIS_RATE_INVALID" xml:space="preserve">
+    <value>Доля успеха сборки должна быть больше нуля и не больше единицы.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_ATTEMPTS_MISMATCH" xml:space="preserve">
+    <value>Число попыток проверки пресета должно быть не меньше минимального числа попыток сборки.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_RATE_INVALID" xml:space="preserve">
+    <value>Доля успешных проверок пресета должна быть больше нуля и не больше единицы.</value>
+  </data>
+  <data name="BlockCheck2Issue_RUN_VALIDATION_RATE_MISMATCH" xml:space="preserve">
+    <value>Доля успешных проверок пресета должна быть не меньше доли успеха сборки.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_ATTEMPTS_INVALID" xml:space="preserve">
+    <value>Число попыток на цель должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_STRATEGY_UNKNOWN" xml:space="preserve">
+    <value>Запрошенной стратегии нет в каталоге.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_SUCCESS_COUNT_INVALID" xml:space="preserve">
+    <value>Число успешных стратегий на маршрут должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_SUCCESS_RATE_INVALID" xml:space="preserve">
+    <value>Доля успешных стратегий должна быть больше нуля и не больше единицы.</value>
+  </data>
+  <data name="BlockCheck2Issue_SCAN_TIER_INVALID" xml:space="preserve">
+    <value>Недопустимый максимальный уровень сканирования.</value>
+  </data>
+  <data name="BlockCheck2Issue_SITE_LIST_INDIVIDUAL_DIRECTORY_MISSING" xml:space="preserve">
+    <value>Если каждый сайт обрабатывается отдельно, нужно указать папку для сохранения.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ACTIONS_EMPTY" xml:space="preserve">
+    <value>Стратегия должна содержать хотя бы одно Lua-действие.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_COST_INVALID" xml:space="preserve">
+    <value>Базовая стоимость стратегии должна быть положительной.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ID_DUPLICATE" xml:space="preserve">
+    <value>Идентификатор стратегии должен быть уникальным.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_ID_INVALID" xml:space="preserve">
+    <value>Идентификатор стратегии может содержать только буквы, цифры, точку, подчёркивание и дефис.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_IP_VERSIONS_EMPTY" xml:space="preserve">
+    <value>Стратегия должна поддерживать хотя бы одну версию IP.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_IP_VERSION_INVALID" xml:space="preserve">
+    <value>Стратегия содержит неизвестную версию IP.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_PROTOCOLS_EMPTY" xml:space="preserve">
+    <value>Стратегия должна поддерживать хотя бы один протокол.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_PROTOCOL_INVALID" xml:space="preserve">
+    <value>Стратегия содержит неизвестный протокол.</value>
+  </data>
+  <data name="BlockCheck2Issue_STRATEGY_SCAN_TIER_INVALID" xml:space="preserve">
+    <value>Стратегия содержит неизвестный уровень сканирования.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_HOST_INVALID" xml:space="preserve">
+    <value>Хост цели не является допустимым DNS-именем.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_ID_DUPLICATE" xml:space="preserve">
+    <value>Идентификатор цели должен быть уникальным.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_ID_INVALID" xml:space="preserve">
+    <value>Идентификатор цели может содержать только буквы, цифры, точку, подчёркивание и дефис.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_INPUT_LIMIT_INVALID" xml:space="preserve">
+    <value>Максимальное число целей должно быть не меньше одной.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_IP_VERSION_INVALID" xml:space="preserve">
+    <value>Неизвестная версия IP у цели.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PATH_INVALID" xml:space="preserve">
+    <value>Путь цели должен начинаться с «/».</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PORT_INVALID" xml:space="preserve">
+    <value>Порт цели вне диапазона 1..65535.</value>
+  </data>
+  <data name="BlockCheck2Issue_TARGET_PROTOCOL_INVALID" xml:space="preserve">
+    <value>Неизвестный протокол цели.</value>
+  </data>
+  <data name="BlockCheck2Issue_UNSUPPORTED_CATALOG_SCHEMA" xml:space="preserve">
+    <value>Схема каталога {0} не поддерживается; ожидается {1}.</value>
+  </data>
+  <data name="OkButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="CommunityContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="SimilarItemInstallingContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="MarkdownTextViewContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="ViewApplyArgsContentDialog.PrimaryButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="ConfigShareMessageContentDialog.CloseButtonText" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="CriticalErrorExitButton.Content" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="ComponentFailureOkButton.Content" xml:space="preserve">
+    <value>ОК</value>
   </data>
 </root>

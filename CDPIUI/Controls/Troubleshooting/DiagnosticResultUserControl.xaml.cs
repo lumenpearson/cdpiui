@@ -189,7 +189,7 @@ public sealed partial class DiagnosticResultUserControl : UserControl
         }
         else
         {
-            UrlOpenHelper.LaunchUrl(HelpUrl);
+            _ = UrlOpenHelper.LaunchUrl(HelpUrl);
         }
     }
 }

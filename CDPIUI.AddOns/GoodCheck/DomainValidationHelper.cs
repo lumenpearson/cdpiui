@@ -14,7 +14,7 @@ namespace CDPIUI.AddOns.GoodCheck
         }
 
         public static async Task<List<string>> GetSupportedTxtFiles(
-            string rootDirectory,
+            string? rootDirectory,
             CheckMode mode = CheckMode.Slow,
             int maxConcurrency = 8,
             CancellationToken cancellationToken = default)

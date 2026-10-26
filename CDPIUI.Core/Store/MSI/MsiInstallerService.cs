@@ -18,8 +18,9 @@ namespace CDPIUI.Core.Store.MSI
             public MsiState State;
         }
 
-        private TaskCompletionSource<string> _tcs;
-        public Action<MsiCallback> callbackAction;
+        // Set by Run; OnResponse comes only after Run sent the request.
+        private TaskCompletionSource<string>? _tcs;
+        public Action<MsiCallback>? callbackAction;
         private readonly string _operationId;
         private readonly string _filename;
         private MsiState _state;
@@ -34,18 +35,19 @@ namespace CDPIUI.Core.Store.MSI
 
         public async Task<MsiCallback> Run(CancellationToken ct = default)
         {
-            _tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _tcs = tcs;
 
             // The task finished only with an answer of the tray: a lost answer or a hanging
             // msiexec kept the Store busy forever, and a cancellation left msiexec running.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(InstallTimeout);
-            using (cts.Token.Register(() => _tcs.TrySetCanceled()))
+            using (cts.Token.Register(() => tcs.TrySetCanceled()))
             {
                 MsiInstallerQueueManager.Instance.SendMsiInstallMessage(_operationId, _filename, this);
                 try
                 {
-                    await _tcs.Task.ConfigureAwait(false);
+                    await tcs.Task.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -75,7 +77,7 @@ namespace CDPIUI.Core.Store.MSI
             _state  = state;
 
             if (state == MsiState.Complete || state == MsiState.CompleteRestartRequest || state == MsiState.ExceptionHappens)
-                _tcs.TrySetResult(string.Empty);
+                _tcs?.TrySetResult(string.Empty);
         }
     }
 }

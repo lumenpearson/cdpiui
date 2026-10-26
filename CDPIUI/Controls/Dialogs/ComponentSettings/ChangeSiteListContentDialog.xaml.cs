@@ -100,7 +100,10 @@ namespace CDPIUI.Controls.Dialogs.ComponentSettings
             {
                 foreach (var file in Directory.EnumerateFiles(item.Directory))
                 {
-                    if (!file.EndsWith(".md") && !file.EndsWith(".json") && !file.EndsWith(".cat"))
+                    string extension = Path.GetExtension(file);
+                    if (!extension.Equals(".md", StringComparison.OrdinalIgnoreCase) &&
+                        !extension.Equals(".json", StringComparison.OrdinalIgnoreCase) &&
+                        !extension.Equals(".cat", StringComparison.OrdinalIgnoreCase))
                     {
                         SiteListModels.Add(new()
                         {

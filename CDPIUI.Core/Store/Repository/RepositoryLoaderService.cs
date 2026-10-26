@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Network;
 using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Shared;
+using CDPIUI.Shared.Exceptions;
 using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Secrets;
@@ -78,12 +79,26 @@ namespace CDPIUI.Core.Store.Repository
             return false;
         }
 
-        public async Task<bool> LoadAllStoreDatabase(bool forseSync, SupportedVersionControls versionControl)
+        private readonly StoreLoadGate<(bool ForseSync, SupportedVersionControls VersionControl)> LoadGate = new();
+
+        public Task<bool> LoadAllStoreDatabase(bool forseSync, SupportedVersionControls versionControl)
         {
             SupportedVersionControls usedVersionControl = versionControl == SupportedVersionControls.None ? VersionControl : versionControl;
+
+            // Several Store buttons ask for the database at the same time on the first launch:
+            // they share one download.
+            return LoadGate.Run(
+                (forseSync, usedVersionControl),
+                () => LoadAllStoreDatabaseCore(forseSync, usedVersionControl));
+        }
+
+        private async Task<bool> LoadAllStoreDatabaseCore(bool forseSync, SupportedVersionControls usedVersionControl)
+        {
             try
             {
-                if (FormattedStoreDatabase != null && !forseSync)
+                // The parsed catalogue is kept only while its folder exists: icons and item pages
+                // are read from there, and the Store cache clean-up deletes it.
+                if (FormattedStoreDatabase != null && !forseSync && Directory.Exists(Directories.StoreRepoCacheDirectory))
                 {
                     return true;
                 }
@@ -181,13 +196,20 @@ namespace CDPIUI.Core.Store.Repository
             }
             finally
             {
-                try { File.Delete(tempZipPath); } catch (IOException) { }
+                try { File.Delete(tempZipPath); }
+                catch (IOException ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary archive {tempZipPath}: {ex.Message}");
+                }
                 try
                 {
                     if (Directory.Exists(newFolder))
                         Directory.Delete(newFolder, recursive: true);
                 }
-                catch (IOException) { }
+                catch (IOException ex)
+                {
+                    Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary folder {newFolder}: {ex.Message}");
+                }
             }
         }
 
@@ -281,7 +303,9 @@ namespace CDPIUI.Core.Store.Repository
 
             try
             {
-                RepositoryInitializationModel repoInitData = JSONConvertor.LoadJson<RepositoryInitializationModel>(localRepoInitFile);
+                // An empty file or "null" gives no model.
+                RepositoryInitializationModel repoInitData = JSONConvertor.LoadJson<RepositoryInitializationModel>(localRepoInitFile)
+                    ?? throw new UnknownFileFormatException();
 
                 StoreLocalizationPaths = repoInitData.localized_strings_directory;
 
@@ -324,7 +348,7 @@ namespace CDPIUI.Core.Store.Repository
                     RepoCategoryInitializationModel? repoCategoryInit = TryLoad<RepoCategoryInitializationModel>(categoryInitPath);
 
                     if (repoCategoryInit?.items == null || repoCategoryInit.items_directories == null ||
-                        !SupportedCategoryTypes.Contains(repoCategoryInit.type))
+                        repoCategoryInit.type == null || !SupportedCategoryTypes.Contains(repoCategoryInit.type))
                     {
                         Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the category: {categoryName}, {categoryPath}");
                         continue;
@@ -361,6 +385,13 @@ namespace CDPIUI.Core.Store.Repository
                         RepoItemModel? repoCategoryItemInit = TryLoad<RepoItemModel>(categoryItemInitPath);
                         if (repoCategoryItemInit == null)
                             continue;
+                        // The pages look items up by id and show their name; one item without
+                        // them stopped the whole page from building.
+                        if (string.IsNullOrWhiteSpace(repoCategoryItemInit.store_id) || string.IsNullOrWhiteSpace(repoCategoryItemInit.name))
+                        {
+                            Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Skip the item without store_id or name: {categoryItemInitPath}");
+                            continue;
+                        }
 
                         repoCategoryItemInit.category_id = repoCategoryInit.store_id;
 
@@ -428,7 +459,17 @@ namespace CDPIUI.Core.Store.Repository
                         continue;
                     }
 
-                    ReadyKitModel? kit = JSONConvertor.LoadJson<ReadyKitModel>(kitInitPath);
+                    // A damaged kit file must not hide the kits after it.
+                    ReadyKitModel? kit;
+                    try
+                    {
+                        kit = JSONConvertor.LoadJson<ReadyKitModel>(kitInitPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Skip the damaged ready kit: {kitName}: {ex.Message}");
+                        continue;
+                    }
                     if (kit == null || string.IsNullOrWhiteSpace(kit.store_id) || kit.items == null || kit.items.Count == 0)
                     {
                         Logger.Instance.CreateDebugLog(nameof(RepositoryLoaderService), $"Skip the invalid ready kit: {kitName}");

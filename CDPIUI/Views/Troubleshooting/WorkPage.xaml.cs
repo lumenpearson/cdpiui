@@ -15,6 +15,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Foundation.Metadata;
@@ -99,6 +100,7 @@ public sealed partial class WorkPage : TemplatePage
         {
             PrepareToConnectedBackwardAnimate(ActionButtonsGrid);
         }
+        // The connected animation is cosmetic; the navigation goes on without it.
         catch { }
     }
 
@@ -113,11 +115,12 @@ public sealed partial class WorkPage : TemplatePage
             navigationParameter = navp;
             switch (navigationParameter)
             {
+                // The checks catch and log their own errors.
                 case NavigationParameters.BeginBasicCheck:
-                    BeginBasicCheck();
+                    _ = BeginBasicCheck();
                     break;
                 case NavigationParameters.BeginStoreRepoCheck:
-                    BeginStoreRepoCheck();
+                    _ = BeginStoreRepoCheck();
                     break;
             }
         }
@@ -202,56 +205,84 @@ public sealed partial class WorkPage : TemplatePage
 
     private object DiagnosticResults = null;
 
-    private async void BeginBasicCheck()
+    private async Task BeginBasicCheck()
     {
-        GetReadyForCheck();
+        try
+        {
+            GetReadyForCheck();
 
-        DiagnosticResults = await TroubleshootingService.Instance.RunBasicDiagnostic();
+            DiagnosticResults = await TroubleshootingService.Instance.RunBasicDiagnostic();
 
-        CheckViewResultActions();
+            CheckViewResultActions();
 
-        DisplayDiagnosticResults<RunBasicDialogStates>((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults, TroubleshootingService.BasicDiagnosticStateModelPairs);
+            DisplayDiagnosticResults<RunBasicDialogStates>((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults, TroubleshootingService.BasicDiagnosticStateModelPairs);
 
-        CheckCompleteActions();
+            CheckCompleteActions();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WorkPage), exception.ToString());
+        }
     }
 
-    private async void BeginBasicFix()
+    private async Task BeginBasicFix()
     {
-        GetReadyForFix();
+        try
+        {
+            GetReadyForFix();
 
-        var result = await TroubleshootingService.Instance.FixAllBasicErrors((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults);
+            var result = await TroubleshootingService.Instance.FixAllBasicErrors((Dictionary<RunBasicDialogStates, bool>)DiagnosticResults);
 
-        FixViewResultActions();
+            FixViewResultActions();
 
-        DisplayFixResult<RunBasicDialogStates>(result, BasicDiagnosticStateModelPairs);
+            DisplayFixResult<RunBasicDialogStates>(result, BasicDiagnosticStateModelPairs);
 
-        FixCompleteActions();
+            FixCompleteActions();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WorkPage), exception.ToString());
+        }
     }
 
-    private async void BeginStoreRepoCheck()
+    private async Task BeginStoreRepoCheck()
     {
-        GetReadyForCheck();
+        try
+        {
+            GetReadyForCheck();
 
-        DiagnosticResults = await TroubleshootingService.Instance.RunStoreDiagnostic();
+            DiagnosticResults = await TroubleshootingService.Instance.RunStoreDiagnostic();
 
-        CheckViewResultActions();
+            CheckViewResultActions();
 
-        DisplayDiagnosticResults<StoreCheckStates>((Dictionary<StoreCheckStates, bool>)DiagnosticResults, TroubleshootingService.StoreDiagnosticStateModelPairs);
+            DisplayDiagnosticResults<StoreCheckStates>((Dictionary<StoreCheckStates, bool>)DiagnosticResults, TroubleshootingService.StoreDiagnosticStateModelPairs);
 
-        CheckCompleteActions();
+            CheckCompleteActions();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WorkPage), exception.ToString());
+        }
     }
 
-    private async void BeginStoreFix()
+    private async Task BeginStoreFix()
     {
-        GetReadyForFix();
+        try
+        {
+            GetReadyForFix();
 
-        var result = await TroubleshootingService.Instance.FixAllStoreErrors((Dictionary<StoreCheckStates, bool>)DiagnosticResults);
+            var result = await TroubleshootingService.Instance.FixAllStoreErrors((Dictionary<StoreCheckStates, bool>)DiagnosticResults);
 
-        FixViewResultActions();
+            FixViewResultActions();
 
-        DisplayFixResult<StoreCheckStates>(result, StoreDiagnosticStateModelPairs);
+            DisplayFixResult<StoreCheckStates>(result, StoreDiagnosticStateModelPairs);
 
-        FixCompleteActions();
+            FixCompleteActions();
+        }
+        catch (Exception exception)
+        {
+            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(WorkPage), exception.ToString());
+        }
     }
 
     private void DisplayDiagnosticResults<T>(Dictionary<T, bool> diagnosticResult, Dictionary<T, DiagnosticStateModel> diagnosticStatesPair) where T : Enum
@@ -353,13 +384,14 @@ public sealed partial class WorkPage : TemplatePage
 
     private void ForwardButton_Click(object sender, RoutedEventArgs e)
     {
+        // The fixes catch and log their own errors.
         if (navigationParameter == NavigationParameters.BeginBasicCheck)
         {
-            BeginBasicFix();
+            _ = BeginBasicFix();
         }
         else if (navigationParameter == NavigationParameters.BeginStoreRepoCheck)
         {
-            BeginStoreFix();
+            _ = BeginStoreFix();
         }
     }
 

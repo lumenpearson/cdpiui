@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using WinUI3Localizer;
@@ -111,7 +112,11 @@ namespace CDPIUI.Helper.CreateConfigHelper
             exList.Clear();
             if (!File.Exists(filePath)) return;
             
-            var dox = XDocument.Load(filePath);
+            // No DTD processing: internal entities cannot blow up the memory of the process.
+            var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+            XDocument dox;
+            using (var reader = XmlReader.Create(filePath, readerSettings))
+                dox = XDocument.Load(reader);
             List<XML_GraphicDesignerConfigItemModel> lst = dox.Root.Element("options")?.Elements("option")?.Select(d =>
                 new XML_GraphicDesignerConfigItemModel
                 {

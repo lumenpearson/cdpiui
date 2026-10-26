@@ -89,7 +89,10 @@ namespace CDPIUI.Shared.Logger
             {
                 Trace.WriteLine($"[LoggerBase] Cannot write a log file: {ex}");
             }
-            catch { }
+            catch
+            {
+                // A failing trace listener has nowhere else to report to; logging must never throw.
+            }
         }
 
         private static void ReportWriteRecovery()
@@ -101,7 +104,10 @@ namespace CDPIUI.Shared.Logger
             {
                 Trace.WriteLine($"[LoggerBase] Log files are writable again after {failed} failed writes.");
             }
-            catch { }
+            catch
+            {
+                // A failing trace listener has nowhere else to report to; logging must never throw.
+            }
         }
 
         private void CreateLog(string message, LogSelevirity severity, string sender)

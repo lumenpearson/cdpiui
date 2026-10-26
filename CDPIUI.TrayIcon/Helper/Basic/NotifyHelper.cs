@@ -102,7 +102,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     case "OPEN_BEGIN_STORE_UPDATE_CHECK":
                         await PipeHelper.SendOpenWindowPacket("StoreWindow", new()
                         {
-                            { "page", "DownloadPage" },
+                            { "page", "DownloadsPage" },
                             { "isUpdateRequested", "true" },
 
                         }, true);
@@ -119,7 +119,7 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                     case "UPDATE:OPEN_DOWNLOAD_PAGE":
                         await PipeHelper.SendOpenWindowPacket("MainWindow", new()
                         {
-                            { "page", "DownloadPage" },
+                            { "page", "AboutPage" },
                             { "isUpdateRequested", "true" },
 
                         }, true);

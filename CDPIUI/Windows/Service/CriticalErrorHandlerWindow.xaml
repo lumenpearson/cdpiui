@@ -86,7 +86,7 @@
                                 </Grid>
                             </Button.Content>
                         </Button>
-                        <Button x:Name="ExitButton" Content="OK" MinWidth="150" Click="ExitButton_Click"/>
+                        <Button x:Name="ExitButton" l:Uids.Uid="CriticalErrorExitButton" Content="OK" MinWidth="150" Click="ExitButton_Click"/>
                     </StackPanel>
                 </Grid>
             </Grid>

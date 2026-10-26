@@ -37,7 +37,7 @@ internal sealed class MigrationImportService
                     SharedConstants.MigratedGoodbyeDpiUiStoreItemId)) ||
                 !DatabaseHelper.Instance.IsItemInstalled(SharedConstants.MigratedGoodbyeDpiUiStoreItemId))
                 return false;
-            JObject data = JObject.Parse(File.ReadAllText(marker));
+            JObject data = ParseObject(File.ReadAllText(marker));
             return data["migrationId"]?.Value<string>() == package.Request.MigrationId.ToString("D") &&
                 data["archiveSha256"]?.Value<string>() == package.Request.ArchiveSha256;
         }
@@ -237,7 +237,7 @@ internal sealed class MigrationImportService
 
         try
         {
-            JObject source = JObject.Parse(json);
+            JObject source = ParseObject(json);
             if (source["custom_parameters"]?.Type == JTokenType.String)
                 source["startup_string"] = source["custom_parameters"]!.Value<string>();
             source.Remove("custom_parameters");
@@ -247,6 +247,23 @@ internal sealed class MigrationImportService
         {
             throw new InvalidDataException($"Preset '{preset.Name}' is not valid JSON.", exception);
         }
+    }
+
+    // Strings that look like dates stay strings, and numbers keep their exact decimal value.
+    private static JObject ParseObject(string json)
+    {
+        using JsonTextReader reader = new(new StringReader(json))
+        {
+            DateParseHandling = DateParseHandling.None,
+            FloatParseHandling = FloatParseHandling.Decimal
+        };
+        JObject result = JObject.Load(reader);
+        while (reader.Read())
+        {
+            if (reader.TokenType != JsonToken.Comment)
+                throw new JsonReaderException("Additional text found after the JSON object.");
+        }
+        return result;
     }
 
     private static void RewriteResourceReferences(

@@ -148,6 +148,8 @@ class Programm
         public TrayApplicationContext(bool runStartupActions = false)
         {
             _trayForm = new EmptyForm();
+            // The first form installs the UI context of this thread.
+            Utils.UiContext = SynchronizationContext.Current;
 
             _trayForm.AddIcon(notify: true);
             UninstallHelper.ListenForShutdown(_trayForm, Application.Exit);
@@ -218,7 +220,10 @@ class Programm
 
             ValueSet userInput = toastArgs.UserInput;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Instance.CreateErrorLog("Tray", $"Cannot handle the notification action: {ex}");
+        }
     }
 
     private static async Task CheckProgramUpdates()

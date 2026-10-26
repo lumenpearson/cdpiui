@@ -1,6 +1,7 @@
 ﻿using CDPIUI.Shared.PrettyErrorConversionService;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -59,7 +60,11 @@ namespace CDPIUI.Shared.ComponentsTask
                     return existTask;
                 }
             }
-            catch { }
+            catch (InvalidOperationException ex)
+            {
+                // Tasks is public, so it can be changed without the lock while it is searched.
+                Trace.WriteLine($"[TasksManageService] Cannot find the task {id}: {ex.Message}");
+            }
             finally
             {
                 _taskOperationLock.Release();
@@ -91,12 +96,19 @@ namespace CDPIUI.Shared.ComponentsTask
         }
 
         /// <summary>
-        /// Add new task to task list
+        /// Add new task to task list. Catches and logs its own errors, so a caller can start it without waiting for it.
         /// </summary>
         /// <param name="id">Task Id</param>
-        public async void AddNewTask(string id)
+        public async Task AddNewTask(string id)
         {
-            await AddNewTaskAsync(id);
+            try
+            {
+                await AddNewTaskAsync(id);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[TasksManageService] Cannot add the task {id}: {ex}");
+            }
         }
 
         /// <summary>
@@ -162,27 +174,43 @@ namespace CDPIUI.Shared.ComponentsTask
         /// </summary>
         /// <param name="id">Task Id</param>
         /// <param name="isSetupComplete">Is task with <see cref="string"/> Id ready to run</param>
-        public async void SetTaskStatus(string id, bool isSetupComplete)
+        /// <remarks>Catches and logs its own errors, so a caller can start it without waiting for it.</remarks>
+        public async Task SetTaskStatus(string id, bool isSetupComplete)
         {
-            var (targetTask, created) = await GetOrAddTask(id, isSetupComplete);
-            if (created)
-                TaskListUpdated?.Invoke();
-            else
-                targetTask.IsSetupComplete = isSetupComplete;
+            try
+            {
+                var (targetTask, created) = await GetOrAddTask(id, isSetupComplete);
+                if (created)
+                    TaskListUpdated?.Invoke();
+                else
+                    targetTask.IsSetupComplete = isSetupComplete;
 
-            TaskSetupStateUpdated?.Invoke(Tuple.Create(id, isSetupComplete));
+                TaskSetupStateUpdated?.Invoke(Tuple.Create(id, isSetupComplete));
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[TasksManageService] Cannot set the setup status of the task {id}: {ex}");
+            }
         }
 
         /// <summary>
         /// Apply setup status to all existed tasks
         /// </summary>
         /// <param name="status">Target status</param>
-        public async void ApplyStatusToAllTasks(bool status)
+        /// <remarks>Catches and logs its own errors, so a caller can start it without waiting for it.</remarks>
+        public async Task ApplyStatusToAllTasks(bool status)
         {
-            foreach (var task in await GetTasksSnapshot())
+            try
             {
-                task.IsSetupComplete = status;
-                TaskSetupStateUpdated?.Invoke(Tuple.Create(task.Id, status));
+                foreach (var task in await GetTasksSnapshot())
+                {
+                    task.IsSetupComplete = status;
+                    TaskSetupStateUpdated?.Invoke(Tuple.Create(task.Id, status));
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[TasksManageService] Cannot apply the setup status to the tasks: {ex}");
             }
         }
 
@@ -207,23 +235,30 @@ namespace CDPIUI.Shared.ComponentsTask
         /// <returns></returns>
         public async Task StopAndRemoveTaskAsync(string id)
         {
-            var existTask = await GetTaskFromId(id);
-
+            TaskModel<T>? existTask;
+            // Found and removed in one lock hold; the stop runs after it, so other task
+            // operations do not wait for the process to exit.
             await _taskOperationLock.WaitAsync();
             try
             {
-
+                existTask = Tasks.FirstOrDefault(t => t.Id == id);
                 if (existTask != null)
-                {
-                    await existTask.ProcessManager.StopProcess();
                     Tasks.Remove(existTask);
-
-                    TaskListUpdated?.Invoke();
-                }
             }
-            catch { }
             finally { _taskOperationLock.Release(); }
 
+            if (existTask == null)
+                return;
+
+            try
+            {
+                await existTask.ProcessManager.StopProcess();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[TasksManageService] Cannot stop and remove the task {id}: {ex}");
+            }
+            TaskListUpdated?.Invoke();
         }
 
         /// <summary>
@@ -252,7 +287,11 @@ namespace CDPIUI.Shared.ComponentsTask
                 {
                     await task.ProcessManager.StopProcess();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // One failed task must not keep the other tasks running.
+                    Trace.WriteLine($"[TasksManageService] Cannot stop the task {task.Id}: {ex}");
+                }
             }
         }
 
@@ -262,6 +301,23 @@ namespace CDPIUI.Shared.ComponentsTask
         public async Task<List<TaskModel<T>>> GetTasksSnapshot()
         {
             await _taskOperationLock.WaitAsync();
+            try
+            {
+                return [.. Tasks];
+            }
+            finally
+            {
+                _taskOperationLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Get a copy of the tasks list without awaiting, for callers that cannot await, such as UI code
+        /// </summary>
+        /// <remarks>Blocks while another task operation holds the lock; those operations do not wait on anything under it.</remarks>
+        public List<TaskModel<T>> GetTasksSnapshotSync()
+        {
+            _taskOperationLock.Wait();
             try
             {
                 return [.. Tasks];

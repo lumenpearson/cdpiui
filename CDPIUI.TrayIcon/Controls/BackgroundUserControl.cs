@@ -25,27 +25,24 @@ namespace CDPIUI.TrayIcon.Controls
             }
         }
 
-        private SolidBrush _backgroundBrush = new SolidBrush(SystemColors.Control);
         private Color _backgroundColor = SystemColors.Control;
         public Color BackgroundColor
         {
             get { return _backgroundColor; }
             set
             {
-                _backgroundBrush = new SolidBrush(_backgroundColor = value);
+                _backgroundColor = value;
                 Invalidate();
             }
         }
 
         private Color _borderColor = Color.FromArgb(255, 0, 0, 0);
-        private Pen _borderPen = new Pen(Color.FromArgb(0, 0, 0, 0), 0);
         public Color BorderColor
         {
             get { return _borderColor; }
             set
             {
                 _borderColor = value;
-                _borderPen = new Pen(_borderColor, _borderWidth);
                 Invalidate();
             }
         }
@@ -57,7 +54,6 @@ namespace CDPIUI.TrayIcon.Controls
             set
             {
                 _borderWidth = value;
-                _borderPen = new Pen(_borderColor, _borderWidth);
                 Invalidate();
             }
         }

@@ -280,7 +280,8 @@ namespace CDPIUI.Default
 
         private void TitleIcon_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+            // Monotonic: a change of the system clock does not count as a double-click.
+            long milliseconds = Environment.TickCount64;
 
             if (milliseconds - LastTimestamp < DoubleClickTimeMS && milliseconds != 0)
             {
@@ -360,8 +361,6 @@ namespace CDPIUI.Default
                 TaskbarProgress.SetValue(currentLoadingValue, maxLoadingValue);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
         #region WINAPI
 
 
@@ -410,6 +409,7 @@ namespace CDPIUI.Default
                 SetPreferredAppMode(2);
                 FlushMenuThemes();
             }
+            // The exports are missing on older systems: the system menu keeps its light theme.
             catch (EntryPointNotFoundException) { }
             catch (DllNotFoundException) { }
         }

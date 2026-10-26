@@ -114,9 +114,10 @@ namespace CDPIUI.Views.Store.Settings.Memory
                             ConditionalTaskEditorWindow.WindowIdPrefix +
                             ConditionalTaskFileService.Load(file).Id);
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         // Invalid task files have no open properties window.
+                        CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MemoryViewConditionalLaunchDetailsPage), $"Cannot read the task \"{file}\": {ex.Message}");
                     }
 
                     File.Delete(file);

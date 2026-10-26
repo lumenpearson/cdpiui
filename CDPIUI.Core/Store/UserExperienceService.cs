@@ -67,7 +67,9 @@ namespace CDPIUI.Core
                 HardcodedItemIds.ComponentIds.ContainsValue(storeId) &&
                 HardcodedItemIds.GoodCheckSupportedComponents.Contains(HardcodedItemIds.ComponentIds.GetKeyByValue(storeId)))
             {
-                items.Add(Store.GetItemInfoFromStoreId(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value));
+                RepoItemModel? goodCheck = Store.GetItemInfoFromStoreId(HardcodedItemIds.AddOnsIds.FirstOrDefault(x => x.Key == AddOns.GoodCheck).Value);
+                if (goodCheck != null)
+                    items.Add(goodCheck);
             }
 
             return items;

@@ -241,7 +241,7 @@ namespace CDPIUI
             else
             {
                 // Links to component documentation were ignored. Only web links are opened.
-                Helper.UrlOpenHelper.LaunchUrl(url);
+                _ = Helper.UrlOpenHelper.LaunchUrl(url);
             }
         }
     }

@@ -69,7 +69,7 @@ namespace CDPIUI
             InitializeComponent();
 
             ViewFullCommand = new RelayCommand(p => ViewFullArgs());
-            EditModeCommand = new RelayCommand(p => EditByeDPIMode());
+            EditModeCommand = new RelayCommand(p => _ = EditByeDPIMode()); // EditByeDPIMode catches and logs its own errors.
 
             BadgesListView.ItemsSource = _badges;
 
@@ -171,17 +171,24 @@ namespace CDPIUI
             _ = dialog.ShowQueuedAsync();
         }
 
-        private async void EditByeDPIMode()
+        private async Task EditByeDPIMode()
         {
-            ChooseGroupModeContentDialog dialog = new(Modes)
+            try
             {
-                XamlRoot = this.XamlRoot,
-            };
-            var result = await dialog.ShowQueuedAsync();
-            if (result == ContentDialogResult.Primary)
+                ChooseGroupModeContentDialog dialog = new(Modes)
+                {
+                    XamlRoot = this.XamlRoot,
+                };
+                var result = await dialog.ShowQueuedAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    Modes = dialog.Result;
+                    NotifyModeChanged();
+                }
+            }
+            catch (Exception exception)
             {
-                Modes = dialog.Result;
-                NotifyModeChanged();
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(CreateConfigDesignerUserControl), exception.ToString());
             }
         }
 

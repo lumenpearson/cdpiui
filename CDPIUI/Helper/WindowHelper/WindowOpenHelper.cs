@@ -50,17 +50,18 @@ namespace CDPIUI.Helper.WindowHelper
 
             Window window;
 
-            if (!string.IsNullOrWhiteSpace(id))
+            var type = GetWindowType(windowName);
+            if (type == null) return;
+
+            // Only template windows have an id. Another window (the classic main window) opens
+            // as a single window; the id was cast to TemplateWindow and threw.
+            if (!string.IsNullOrWhiteSpace(id) && typeof(TemplateWindow).IsAssignableFrom(type))
             {
-                var type = GetWindowType(windowName);
-                if (type == null) return;
                 window = await ((App)Application.Current)
                     .UnsafeCreateNewWindow(type, id: id);
             }
             else
             {
-                var type = GetWindowType(windowName);
-                if (type == null) return;
                 window = await ((App)Application.Current)
                     .SafeCreateNewWindow(type);
             }

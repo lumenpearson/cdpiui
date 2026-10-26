@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using WinUI3Localizer;
@@ -61,27 +62,34 @@ namespace CDPIUI.Views.Store
                 if (!string.IsNullOrEmpty(categoryId))
                 {
                     CategoryId = categoryId;
-                    LoadCategory();
+                    _ = LoadCategory(); // LoadCategory catches and logs its own errors.
                 }
             }
         }
 
-        private async void LoadCategory()
+        private async Task LoadCategory()
         {
-            bool result = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync:false);
-            // bool result = true;
-            if (result)
+            try
             {
-                if (!CreateCategoriesList(StoreHelper.Instance.FormattedStoreDatabase)) return;
-                LoadingProgressGrid.Visibility = Visibility.Collapsed;
-                StoreScrollViewer.Visibility = Visibility.Visible;
+                bool result = await StoreHelper.Instance.LoadAllStoreDatabase(forseSync:false);
+                // bool result = true;
+                if (result)
+                {
+                    if (!CreateCategoriesList(StoreHelper.Instance.FormattedStoreDatabase)) return;
+                    LoadingProgressGrid.Visibility = Visibility.Collapsed;
+                    StoreScrollViewer.Visibility = Visibility.Visible;
+                }
+                else             
+                {
+                    LoadingProgressGrid.Visibility = Visibility.Collapsed;
+                    StoreScrollViewer.Visibility = Visibility.Collapsed;
+                    ErrorGrid.Visibility = Visibility.Visible;
+                    ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
+                }
             }
-            else             
+            catch (Exception exception)
             {
-                LoadingProgressGrid.Visibility = Visibility.Collapsed;
-                StoreScrollViewer.Visibility = Visibility.Collapsed;
-                ErrorGrid.Visibility = Visibility.Visible;
-                ErrorTextBlock.Text = string.Format(localizer.GetLocalizedString("StoreCategoryLoadFailed"), CategoryId);
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(CategoryViewPage), exception.ToString());
             }
         }
 
@@ -97,6 +105,10 @@ namespace CDPIUI.Views.Store
             }
 
             CategoryTitleTextBlock.Text = StoreHelper.Instance.GetLocalizedStoreItemName(category.name, StoreLocalizationHelper.GetStoreLikeLocale());
+            // Ids are compared as the database compares them.
+            HashSet<string> installedIds = DatabaseHelper.Instance.GetAllInstalledItems()
+                .Select(item => item.Id)
+                .ToHashSet(StringComparer.Ordinal);
 
             foreach (RepoItemModel repoCategoryItem in category.items)
             {
@@ -104,7 +116,7 @@ namespace CDPIUI.Views.Store
                     UIHelper.CreateLargeButton(
                         storeId: repoCategoryItem.store_id,
                         imageSource: LScriptLangHelper.ExecuteScript(repoCategoryItem.icon),
-                        price: DatabaseHelper.Instance.IsItemInstalled(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
+                        price: installedIds.Contains(repoCategoryItem.store_id) ? localizer.GetLocalizedString("Installed") : localizer.GetLocalizedString("Get"),
                         title: repoCategoryItem.short_name,
                         backgroundColor: repoCategoryItem.background,
                         action: StoreItemButton_Click,

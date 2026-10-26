@@ -19,13 +19,13 @@ namespace CDPIUI.AddOns.GoodCheck
 
             List<DatabaseStoreItem> configLists = DatabaseHelper.Instance.GetItemsByType("configlist");
 
-            var namePackIdDict = new Dictionary<(string Name, string PackId), List<SiteListElement>>();
+            var namePackIdDict = new Dictionary<(string Name, string? PackId), List<SiteListElement>>();
 
             foreach (DatabaseStoreItem config in configLists)
             {
-                string packId = config.Id;
-                string packName = config.ShortName;
-                string directory = config.Directory;
+                string? packId = config.Id;
+                string? packName = config.ShortName;
+                string? directory = config.Directory;
 
                 List<string> filePaths = await DomainValidationHelper.GetSupportedTxtFiles(directory, DomainValidationHelper.CheckMode.Quick);
 

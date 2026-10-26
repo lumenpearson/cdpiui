@@ -16,6 +16,9 @@
         public string? download_link;
         public string? preffered_version;
         public string? preffered_to_download_file_name;
+        // Optional SHA-256 (hexadecimal) of the downloaded file. Use it only with a fixed version or link:
+        // a new release has a new hash, and the download is then rejected.
+        public string? sha256;
     }
 
 
@@ -44,6 +47,9 @@
         public string? preffered_to_download_file_name;
         public string? archive_root_folder;
         public string? target_executable_file;
+        // Optional SHA-256 (hexadecimal) of the downloaded file. Use it only with a fixed version or link:
+        // a new release has a new hash, and the download is then rejected.
+        public string? sha256;
         public string? before_install_actions;
         public string? after_install_actions;
         public List<string[]>? dependencies;

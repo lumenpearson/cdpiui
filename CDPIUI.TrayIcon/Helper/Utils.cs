@@ -19,6 +19,19 @@ namespace CDPIUI.TrayIcon.Helper
     {
         public static Assembly Assembly = Assembly.GetExecutingAssembly();
 
+        // Captured on the UI thread at startup.
+        public static SynchronizationContext? UiContext { get; set; }
+
+        // Application.Exit must run on the UI thread; pipe commands run on pool threads.
+        public static void ExitApplication()
+        {
+            var context = UiContext;
+            if (context != null && SynchronizationContext.Current != context)
+                context.Post(_ => Application.Exit(), null);
+            else
+                Application.Exit();
+        }
+
         public static string GetDataDirectory()
         {
             try
@@ -122,7 +135,7 @@ namespace CDPIUI.TrayIcon.Helper
                 RunHelper.Run(Path.Combine(Environment.SystemDirectory, "msiexec.exe"), $"/i \"{stagedFile}\" /qn+");
                 _ = PipeHelper.SendApplicationPacket(ApplicationMessageIds.CloseApplicationUI);
                 NotifyHelper.Instance.Dispose();
-                Application.Exit();
+                ExitApplication();
             }
             else
             {

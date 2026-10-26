@@ -1,7 +1,7 @@
 using CDPIUI.Controls.ComponentSettings;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Store.Database;
+using CDPIUI.Helper.Items;
 using Microsoft.UI.Dispatching;
 using System;
 using System.Collections.Generic;
@@ -49,12 +49,13 @@ internal sealed class ComponentPresetListSubscription : IDisposable
         var source = helper;
         try
         {
+            PackNameLookup packNames = new();
             var items = await Task.Run(() => source?.GetConfigHelper().GetConfigItems()
                 .Where(item => !item.MarkAsRemoved)
                 .Select(item => new ConfigSelectorItem
                 {
                     FileName = item.file_name, PackId = item.packId, DisplayName = item.name,
-                    PackDisplayName = DatabaseHelper.Instance.GetItemById(item.packId)?.ShortName ?? item.packId,
+                    PackDisplayName = packNames.GetDisplayName(item.packId),
                     IsLegacyConfig = item.IsLegacy
                 }).ToArray() ?? Array.Empty<ConfigSelectorItem>());
             if (!disposed && request == version && ReferenceEquals(source, helper)) apply(items);

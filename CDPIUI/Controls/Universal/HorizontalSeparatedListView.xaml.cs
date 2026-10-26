@@ -28,7 +28,10 @@ namespace CDPIUI.Controls.Universal
             {
                 InitializeComponent();
             }
-            catch { }
+            catch (Exception exception)
+            {
+                CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(HorizontalSeparatedListView), exception.ToString());
+            }
 
         }
     }

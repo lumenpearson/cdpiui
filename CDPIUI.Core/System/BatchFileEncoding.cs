@@ -30,6 +30,7 @@ namespace CDPIUI.Core.System
             }
             catch (DecoderFallbackException)
             {
+                // The bytes are not valid UTF-8; the fallback below picks the encoding.
             }
 
             // Without a BOM a Cyrillic file is either OEM 866 (what cmd uses) or ANSI 1251 (Notepad).

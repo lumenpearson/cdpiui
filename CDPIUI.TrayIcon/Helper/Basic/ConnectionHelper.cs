@@ -107,7 +107,12 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         if (!IsAuthorized && ReferenceEquals(PipeStream, connectedStream) && connectedStream.IsConnected)
                         {
                             Logger?.CreateWarningLog(nameof(PipeServer), "The client did not authorize in time; disconnecting.");
-                            try { connectedStream.Disconnect(); } catch (Exception) { }
+                            try { connectedStream.Disconnect(); }
+                            catch (Exception ex)
+                            {
+                                // The client can leave at the same time; the pipe is then already closed.
+                                Logger?.CreateDebugLog(nameof(PipeServer), $"Cannot disconnect the client: {ex.Message}");
+                            }
                         }
                     });
                     await HandleConnectionAsync();
@@ -198,7 +203,12 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                         IsAuthorized = false;
                         await SendMessageAsync(ServiceMessageModel.AuthFailure().ToString());
                         Logger?.CreateWarningLog(nameof(PipeServer), "Authorization failed; disconnecting the client.");
-                        try { (PipeStream as NamedPipeServerStream)?.Disconnect(); } catch (Exception) { }
+                        try { (PipeStream as NamedPipeServerStream)?.Disconnect(); }
+                        catch (Exception ex)
+                        {
+                            // The client can leave at the same time; the pipe is then already closed.
+                            Logger?.CreateDebugLog(nameof(PipeServer), $"Cannot disconnect the client: {ex.Message}");
+                        }
                         return;
                     }
                 }
@@ -222,7 +232,10 @@ namespace CDPIUI.TrayIcon.Helper.Basic
                 {
                     if (_listenerTask != null) await _listenerTask.ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) { }
+                catch (OperationCanceledException)
+                {
+                    // The listener stops by cancellation; this is the normal end.
+                }
                 finally
                 {
                     base.Dispose();

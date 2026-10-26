@@ -32,7 +32,7 @@
             </StackPanel>
         </ScrollViewer>
         <Border Grid.Row="2" Background="{ThemeResource ControlFillColorSecondaryBrush}" Padding="24,16">
-            <Button HorizontalAlignment="Right" Content="OK" MinWidth="120" Click="Close_Click" Style="{ThemeResource AccentButtonStyle}"/>
+            <Button l:Uids.Uid="ComponentFailureOkButton" HorizontalAlignment="Right" Content="OK" MinWidth="120" Click="Close_Click" Style="{ThemeResource AccentButtonStyle}"/>
         </Border>
     </Grid>
 </template:TemplateWindow>

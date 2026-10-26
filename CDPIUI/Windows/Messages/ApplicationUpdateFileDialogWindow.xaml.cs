@@ -58,6 +58,11 @@ namespace CDPIUI.Messages
             CurrentVersionTextBlock.Text = string.Format(
                 Text("UpdateFileCurrentVersionFormat"),
                 ApplicationInfo.Version);
+
+            // A .cdpipatch replaces the files of the portable copy. An MSI installation is updated
+            // with Setup.msi only; before, the patch was accepted and then not found as patch.msi.
+            if (State.IsApplicationBuildAsMsi)
+                ShowError(Text("UpdateFileMsiInstallation"));
         }
 
         private void InstallButton_Click(object sender, RoutedEventArgs e)
