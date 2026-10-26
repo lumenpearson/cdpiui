@@ -60,7 +60,7 @@ Use these rules:
 - Give the UI an entry point that accepts its dependencies as parameters, for example `BlockCheckAddOnService`.
 - Put the code that starts processes behind an interface, for example `IBlockCheckStrategyRunner`. Then tests can use a fake implementation.
 - Return stable issue or error codes. Do not return translated texts.
-- Start components and external add-on executables through the tray, for example with `ComponentTasksManager` or a pipe message. The tray starts only files that pass its trusted path checks. The GUI process can start system tools itself, for example `curl.exe` in BlockCheck2.
+- Start components and external add-on executables through the tray, for example with `ComponentTasksManager` or a pipe message. The tray starts only files that pass its trusted path checks. The GUI process can start system tools itself, for example `curl.exe` in BlockCheck2. Start a system tool by its full path, for example `Path.Combine(Environment.SystemDirectory, "curl.exe")`. Windows also looks for a file name without a path in the current folder. Thus a file with the same name in that folder can start instead of the system tool.
 
 WARNING: The tray operates as administrator. Do not send a path or arguments from an untrusted file to the tray without a check. For example, ConfigShare and BlockCheck2 reject options that write files.
 

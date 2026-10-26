@@ -10,11 +10,13 @@ public class CurlBlockCheckProbeRunnerTests
     private sealed class FakeExecutor(Func<IReadOnlyList<string>, CommandExecutionResult> handler) : ICommandExecutor
     {
         public List<IReadOnlyList<string>> Calls { get; } = [];
+        public List<string> Executables { get; } = [];
 
         public Task<CommandExecutionResult> ExecuteAsync(
             string executable, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
         {
             Calls.Add(arguments);
+            Executables.Add(executable);
             return Task.FromResult(handler(arguments));
         }
     }
@@ -72,6 +74,18 @@ public class CurlBlockCheckProbeRunnerTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => runner.BuildArguments(Target((BlockCheckProtocol)42)));
         Assert.Throws<ArgumentNullException>(() => runner.BuildArguments(null!));
+    }
+
+    [Fact]
+    public async Task DefaultExecutableIsTheSystemCurl()
+    {
+        // A bare name is also looked up in the current folder, where a planted curl.exe can wait.
+        FakeExecutor executor = new(_ => new CommandExecutionResult(0, $"{Marker}200|0.1|", ""));
+        CurlBlockCheckProbeRunner runner = new(executor: executor);
+
+        await runner.ProbeAsync(Target(BlockCheckProtocol.Tls12), CancellationToken.None);
+
+        Assert.Equal([Path.Combine(Environment.SystemDirectory, "curl.exe")], executor.Executables);
     }
 
     [Fact]

@@ -11,6 +11,12 @@ public enum TextFileOpenModes
 
 public static class ShellHelper
 {
+    // Full paths: CreateProcess and ShellExecute also look for a bare name in the current
+    // folder, so a planted explorer.exe or notepad.exe there could run, even elevated.
+    public static readonly string ExplorerPath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+    public static readonly string NotepadPath = Path.Combine(Environment.SystemDirectory, "notepad.exe");
+
     /// <summary>
     /// Load all text from file.
     /// </summary>
@@ -29,7 +35,7 @@ public static class ShellHelper
     {
         try
         {
-            Process.Start("explorer.exe", $"\"{dir.Replace("/", "\\")}\"");
+            Process.Start(ExplorerPath, $"\"{dir.Replace("/", "\\")}\"");
         }
         catch (Exception ex)
         {
@@ -45,7 +51,7 @@ public static class ShellHelper
     {
         try
         {
-            Process.Start("explorer.exe", "/select," + $"\"{file.Replace("/", "\\")}\"");
+            Process.Start(ExplorerPath, "/select," + $"\"{file.Replace("/", "\\")}\"");
         }
         catch (Exception ex)
         {
@@ -96,7 +102,7 @@ public static class ShellHelper
         else
         {
             if (useNotepadAsDefault)
-                RunApp("notepad.exe", $"\"{file}\"", askUAC);
+                RunApp(NotepadPath, $"\"{file}\"", askUAC);
             else
                 OpenFileInDefaultApp(file, askUAC);
         }

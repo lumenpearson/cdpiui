@@ -239,12 +239,14 @@ After each strategy start, the runner waits `StartupGraceSeconds`. If the proces
 
 `CurlBlockCheckProbeRunner` first finds out:
 
-- if `curl.exe` is available;
+- if `curl.exe` in the system folder (`%SystemRoot%\System32`) is available;
 - if curl supports `--tls-max`;
 - if curl supports TLS 1.3;
 - if curl supports HTTP/3.
 
 If the curl build cannot do a selected check, the add-on returns a preflight error before it changes the state of the components. The errors are `CURL_NOT_AVAILABLE`, `CURL_TLS_MAX_UNSUPPORTED`, `CURL_TLS13_UNSUPPORTED` and `CURL_HTTP3_UNSUPPORTED`.
+
+The runner starts curl by its full path. It does not use a `curl.exe` from the current folder or from `PATH`. A `curl.exe` in the folder of an opened file thus cannot start instead of the system curl.
 
 Each request uses `--connect-timeout`, `--max-time`, `--output NUL`, a machine-readable `--write-out`, a separate User-Agent and a fixed `-4` or `-6`. HTTP, TLS 1.2 and TLS 1.3 requests use `--http1.1`. TLS requests use a full GET by default, not HEAD. QUIC requests use HEAD and `--http3-only` by default. `TlsAuto` does not force HTTP/1.1 or a TLS version. Thus it is nearer to a usual HTTPS client, but it is not a browser.
 
