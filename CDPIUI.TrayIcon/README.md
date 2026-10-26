@@ -174,19 +174,28 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 The tray starts components (`ConPTYHelper`), the `--help` capture and GoodCheck with administrator rights. The GUI sends the path and the arguments. Before each start, the tray does these checks:
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
-2. An option that writes a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) must point into the application directories (`FileWritingOptions`). The tray also reads the argument files (`@<file>`) of the command line, to a maximum of 4 levels.
-3. In an MSI installation, for a program outside the installation folder, `ExecutableTrust.AcquireAsync` opens the program and each `.exe`, `.dll` and `.sys` file in its folder for reading. While these handles are open, no process can change, rename or delete these files.
-4. This program must have one of these:
-   - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the names and the contents of the locked files.
+2. In an MSI installation, for a program outside the installation folder, `ExecutableTrust.AcquireAsync` opens the program and every code file (`.exe`, `.dll`, `.sys`, `.lua`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.js`, `.com`) of its Store item folder for reading, subfolders included. A program that is not in a Store item gives its own folder. While these handles are open, no process can change, rename or delete these files. A link (symbolic link or junction) in that folder rejects the start, because the lock would not hold the file it points to.
+3. The arguments are checked with the files they refer to locked by the same lease (`FileWritingOptions`):
+   - An option that writes a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) must point into the application directories. The option name is read the way the component reads it: without quotes, split like the MSVC runtime and like Cygwin (winws), and with the unique prefixes that `getopt_long` accepts (`--debu=` is `--debug=`).
+   - The tray reads the argument files (`@<file>`) through locked handles, to a maximum of 4 levels. A missing file, or a file nested deeper, rejects the start.
+   - The tray holds the folders from the application directory down to each file that an option writes (`ExecutableLease.GuardWriteTarget`). While the component runs, they cannot be renamed, deleted or turned into a link. An existing file must not be a link or have a second name (hard link).
+   - Zapret2 runs the Lua code of `--lua-init`: inline, or from `@<file>`. A file of the locked component folder is part of the program fingerprint. Other code (inline, or a file elsewhere, locked like an argument file) must be approved: the tray asks once for each new code and keeps its hash.
+4. In an MSI installation the program must have one of these:
+   - The same fingerprint as at an earlier approved start. The fingerprint is the SHA-256 of the paths (relative to the item folder) and the contents of the locked code files.
    - A Store item catalog (`<item>\catalog.cat`) that has the signature of a pinned certificate and agrees with the code files. Data files (lists and other files) are not compared, because the user can change them.
-   - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level.
-5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.txt`, one line per program: the fingerprint, a tab and the path. Only administrators can change this folder.
+   - The approval of the user. The tray shows a question with the path, the SHA-256 and the signer. The signer is shown only when `WinVerifyTrust` accepts the signature. Programs of the user cannot click its buttons, because Windows blocks input from a lower integrity level. A question that is not answered in 2 minutes counts as No, so a start does not hold the component and pipe locks forever.
+5. The tray saves the approved fingerprints in `<installation folder>\.trust\approved.txt`, one line per entry: the fingerprint, a tab and the path of the program or the folder, or `code:` and the hash of approved Lua code. Only administrators can change this folder.
+6. The tray keeps the handles until the process has exited. On a stop it ends the process and waits for it before it releases them. The process loads its DLLs after it starts and can load more later, so the files must stay locked for the whole run. An update of the item stops the component first, so the handles do not block it.
 
-`ExecutableLease` (the locks and the fingerprint) and `ExecutableApprovals` (the approval file and the Store item folder) are in `CDPIUI.Shared/Security`, so `CDPIUI.Tests` can test them. `ExecutableTrust` in the tray decides and asks the user.
-6. The tray keeps the handles until the process exits. The process loads its DLLs after it starts and can load more later, so the files must stay locked for the whole run. An update of the item stops the component first, so the handles do not block it.
+GoodCheck starts the components itself: the program from the `ZapretFolder`, `GoodbyeDPIFolder` and `ByeDPIFolder` folders of its `config.ini`, with each line of the strategy list (`-s`) as the arguments. In an MSI installation `ExecutableTrust.AcquireGoodCheckChildrenAsync` locks `config.ini` and the strategy list, checks each component folder like a program (every value of these keys, in any section), and checks each strategy like the arguments of a component, without a folder for relative paths.
 
-A portable copy does not do steps 3 and 4, because the user can change the tray itself.
+`ExecutableLease` (the locks, the fingerprint and the write targets) and `ExecutableApprovals` (the approval file and the Store item folder) are in `CDPIUI.Shared/Security`, so `CDPIUI.Tests` can test them. `ExecutableTrust` in the tray decides and asks the user.
 
+A portable copy only does the argument check of step 3 (the file writing options), because the user can change the tray itself.
+
+Limits that the tray cannot close:
+- A process started by the component (`ChildProcessJob` keeps it) can run after the component exits and its files are released.
+- The .NET runtime of the tray, `Update.exe` and `EditHostFile.exe` is the installed one (framework-dependent). User environment variables such as `DOTNET_ROOT`, `DOTNET_ROOT_X64` and `CORECLR_PROFILER*` act on these elevated programs; startup hooks are disabled in Release.
 CAUTION: Do not start a program with administrator rights without `ExecutableTrust.AcquireAsync`.
 
 ## Uninstall cleanup
@@ -238,7 +247,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new key at each start. An empty key authorizes no client. A failed authorization disconnects the client.
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
-  - `IsInStore`: below the `Store` directory of these roots. `GrantAccessRequest` uses it.
+  - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
   - `TrustedPathValidator` rejects a path that has a symbolic link or a junction below the root.
 - Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
 - Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.

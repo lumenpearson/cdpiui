@@ -64,7 +64,7 @@
                     PointerEntered="BackButton_PointerEntered" 
                     PointerExited="BackButton_PointerExited"
                     Click="BackButton_Click"
-                    Visibility="Visible"
+                    Visibility="{x:Bind ViewModel.IsBackButtonVisible, Mode=OneWay}"
                     VerticalAlignment="Bottom">
                     <AnimatedIcon x:Name="SearchAnimatedIcon">
                         <AnimatedIcon.Source>
@@ -77,9 +77,9 @@
                 </Button>
                 <MenuBar Grid.Column="1" Margin="0 ,0 ,0, 0" Height="28">
                     <MenuBarItem l:Uids.Uid="FileMenuItem">
-                        <MenuFlyoutItem x:Name="HomeItem" l:Uids.Uid="HomeMenuItem" Icon="Home" Click="HomeItem_Click"/>
+                        <MenuFlyoutItem x:Name="HomeItem" l:Uids.Uid="HomeMenuItem" Icon="Home" Click="HomeItem_Click" IsEnabled="{x:Bind ViewModel.IsHomeEnabled, Mode=OneWay}"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem x:Name="CreateNewConfigButton" l:Uids.Uid="CreateNewConfigMenuItem" Click="CreateNewConfigButton_Click">
+                        <MenuFlyoutItem x:Name="CreateNewConfigButton" l:Uids.Uid="CreateNewConfigMenuItem" Click="CreateNewConfigButton_Click" IsEnabled="{x:Bind ViewModel.IsCreateNewConfigEnabled, Mode=OneWay}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE710;" />
                             </MenuFlyoutItem.Icon>
@@ -134,7 +134,7 @@
                         </MenuFlyoutItem>
                     </MenuBarItem>
 
-                    <MenuBarItem l:Uids.Uid="EditMenuItem" x:Name="EditMenuItem" Visibility="Collapsed">
+                    <MenuBarItem l:Uids.Uid="EditMenuItem" x:Name="EditMenuItem" Visibility="{x:Bind ViewModel.IsEditorMenuVisible, Mode=OneWay}">
                         <MenuFlyoutItem x:Name="Search" l:Uids.Uid="SearchMenuItem" Click="Search_Click" Icon="Find">
                             <MenuFlyoutItem.KeyboardAccelerators>
                                 <KeyboardAccelerator Modifiers="Control" Key="F"/>
@@ -150,12 +150,12 @@
                             <animations:OpacityAnimation Duration="0:0:0.25" From="0" To="1.0"/>
                         </animations:Implicit.ShowAnimations>
                     </MenuBarItem>
-                    <MenuBarItem l:Uids.Uid="ViewMenuItem" x:Name="ViewMenuItem" Visibility="Collapsed">
+                    <MenuBarItem l:Uids.Uid="ViewMenuItem" x:Name="ViewMenuItem" Visibility="{x:Bind ViewModel.IsEditorMenuVisible, Mode=OneWay}">
                         <MenuFlyoutSubItem l:Uids.Uid="DefaultEditorBackgroundStyleMenuItem">
-                            <RadioMenuFlyoutItem l:Uids.Uid="DefaultBackgroundMenuItem" GroupName="Background" x:Name="DefaultBackgroundMenuItem" Click="EditorBackgroundMenuItem_Click"/>
-                            <RadioMenuFlyoutItem l:Uids.Uid="MicaBackgroundMenuItem" GroupName="Background" x:Name="MicaBackgroundMenuItem" Click="EditorBackgroundMenuItem_Click"/>
-                            <RadioMenuFlyoutItem l:Uids.Uid="MicaAltMenuItem" GroupName="Background" x:Name="MicaAltMenuItem" Click="EditorBackgroundMenuItem_Click"/>
-                            <RadioMenuFlyoutItem l:Uids.Uid="MicaSmokeMenuItem" GroupName="Background" x:Name="MicaSmokeMenuItem" Click="EditorBackgroundMenuItem_Click"/>
+                            <RadioMenuFlyoutItem l:Uids.Uid="DefaultBackgroundMenuItem" GroupName="Background" x:Name="DefaultBackgroundMenuItem" IsChecked="{x:Bind ViewModel.IsDefaultBackground, Mode=OneTime}" Click="EditorBackgroundMenuItem_Click"/>
+                            <RadioMenuFlyoutItem l:Uids.Uid="MicaBackgroundMenuItem" GroupName="Background" x:Name="MicaBackgroundMenuItem" IsChecked="{x:Bind ViewModel.IsMicaBackground, Mode=OneTime}" Click="EditorBackgroundMenuItem_Click"/>
+                            <RadioMenuFlyoutItem l:Uids.Uid="MicaAltMenuItem" GroupName="Background" x:Name="MicaAltMenuItem" IsChecked="{x:Bind ViewModel.IsMicaAltBackground, Mode=OneTime}" Click="EditorBackgroundMenuItem_Click"/>
+                            <RadioMenuFlyoutItem l:Uids.Uid="MicaSmokeMenuItem" GroupName="Background" x:Name="MicaSmokeMenuItem" IsChecked="{x:Bind ViewModel.IsMicaSmokeBackground, Mode=OneTime}" Click="EditorBackgroundMenuItem_Click"/>
                         </MenuFlyoutSubItem>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem l:Uids.Uid="ZoomInMenuItem" x:Name="ZoomInMenuItem" Click="ZoomInMenuItem_Click">
@@ -197,10 +197,10 @@
                         </MenuFlyoutItem>
                     </MenuBarItem>
                     <MenuBarItem l:Uids.Uid="HelpMenuItem">
-                        <MenuFlyoutItem x:Name="CurrentHelpMenuFlyoutItem" Click="CurrentHelpMenuFlyoutItem_Click"/>
+                        <MenuFlyoutItem x:Name="CurrentHelpMenuFlyoutItem" Text="{x:Bind ViewModel.CurrentHelpText, Mode=OneWay}" Click="CurrentHelpMenuFlyoutItem_Click"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem l:Uids.Uid="HelpOfflineMenuItem" x:Name="OfflineHelpButton" Click="OfflineHelpButton_Click"/>
-                        <MenuFlyoutItem l:Uids.Uid="HelpOnlineMenuItem"  x:Name="OnlineHelpButton" Click="OnlineHelpButton_Click">
+                        <MenuFlyoutItem l:Uids.Uid="HelpOfflineMenuItem" x:Name="OfflineHelpButton" Command="{x:Bind ViewModel.OfflineHelpCommand}"/>
+                        <MenuFlyoutItem l:Uids.Uid="HelpOnlineMenuItem"  x:Name="OnlineHelpButton" Command="{x:Bind ViewModel.OnlineHelpCommand}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE774;"/>
                             </MenuFlyoutItem.Icon>
@@ -209,7 +209,7 @@
                             </MenuFlyoutItem.KeyboardAccelerators>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem x:Name="ReportIssueButton" l:Uids.Uid="ReportIssueMenuItem" Click="ReportIssueButton_Click"/>
+                        <MenuFlyoutItem x:Name="ReportIssueButton" l:Uids.Uid="ReportIssueMenuItem" Command="{x:Bind ViewModel.ReportIssueCommand}"/>
                     </MenuBarItem>
                 </MenuBar>
                 <Grid Grid.Column="3" >
@@ -236,14 +236,14 @@
                     <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ProgressRing x:Name="StatusProgressRing" Height="10" Width="10"/>
-                <FontIcon x:Name="StatusProgressIcon" Glyph="&#xF13E;">
+                <ProgressRing x:Name="StatusProgressRing" Height="10" Width="10" Visibility="{x:Bind ViewModel.IsWorking, Mode=OneWay}"/>
+                <FontIcon x:Name="StatusProgressIcon" Glyph="&#xF13E;" Visibility="{x:Bind ViewModel.IsReady, Mode=OneWay}">
                     <animations:Implicit.ShowAnimations>
                         <animations:TranslationAnimation Duration="0:0:0.5" From="-20,0,0" To="0, 0, 0"/>
                         <animations:OpacityAnimation Duration="0:0:0.25" From="0" To="1.0"/>
                     </animations:Implicit.ShowAnimations>
                 </FontIcon>
-                <TextBlock x:Name="StatusTextBlock" Grid.Column="2" VerticalAlignment="Center"/>
+                <TextBlock x:Name="StatusTextBlock" Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"/>
             </Grid>
             <Rectangle Fill="{ThemeResource LayerOnMicaBaseAltFillColorDefault}" Height="32" Width="Auto" 
                 VerticalAlignment="Bottom"/>

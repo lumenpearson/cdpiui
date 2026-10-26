@@ -32,11 +32,11 @@
 
                     <StackPanel Spacing="10">
                         <controls:SettingsCard l:Uids.Uid="ProxiFyreModeCard">
-                            <ComboBox x:Name="ProxiFyreModeComboBox" DisplayMemberPath="DisplayName"/>
+                            <ComboBox x:Name="ProxiFyreModeComboBox" ItemsSource="{x:Bind ViewModel.Modes}" SelectedItem="{x:Bind ViewModel.SelectedMode, Mode=TwoWay}" DisplayMemberPath="DisplayName"/>
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Name="ApplicationWhiteListCard" l:Uids.Uid="ApplicationWhiteListCard" IsClickEnabled="True" Click="ApplicationWhiteListCard_Click"/>
-                        <controls:SettingsCard x:Name="ApplicationBlackListCard" l:Uids.Uid="ApplicationBlackListCard"  IsClickEnabled="True" Click="ApplicationBlackListCard_Click"/>
+                        <controls:SettingsCard x:Name="ApplicationWhiteListCard" l:Uids.Uid="ApplicationWhiteListCard" Description="{x:Bind ViewModel.WhiteListDescription, Mode=OneWay}" IsClickEnabled="True" Command="{x:Bind ViewModel.EditWhiteListCommand}"/>
+                        <controls:SettingsCard x:Name="ApplicationBlackListCard" l:Uids.Uid="ApplicationBlackListCard" Description="{x:Bind ViewModel.BlackListDescription, Mode=OneWay}" IsClickEnabled="True" Command="{x:Bind ViewModel.EditBlackListCommand}"/>
 
                         <ToggleButton x:Name="ProxySettingsVisibleToggleButton">
                             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -53,17 +53,17 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock l:Uids.Uid="ProxyIpAddressTextBlock"/>
-                                <TextBox x:Name="IPValue" HorizontalAlignment="Stretch"/>
+                                <TextBox x:Name="IPValue" Text="{x:Bind ViewModel.IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock l:Uids.Uid="PortTextBlock"/>
-                                <TextBox x:Name="PortValue" HorizontalAlignment="Stretch"/>
+                                <TextBox x:Name="PortValue" Text="{x:Bind ViewModel.Port, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
                             </StackPanel>
                             <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="ResetButton" l:Uids.Uid="ResetByDefaultButton"
                                     Grid.Column="3" Padding="6" 
                                     VerticalAlignment="Bottom" Margin="10 0 0 0" 
                                     Height="32" Width="32"
-                                    Click="ResetButton_Click">
+                                    Command="{x:Bind ViewModel.ResetAddressCommand}">
                                 <FontIcon Glyph="&#xE777;" FontSize="16"/>
                             </Button>
                         </Grid>

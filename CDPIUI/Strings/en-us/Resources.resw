@@ -376,6 +376,12 @@ Please, install lates version of "{0}" in Store</value>
   <data name="GoForwardButton.Content" xml:space="preserve">
     <value>Next</value>
   </data>
+  <data name="ConfigImportNextButton" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="ConfigImportChooseFileTitle" xml:space="preserve">
+    <value>Choose file</value>
+  </data>
   <data name="GoodCheckAdditionalSettingsTip.Text" xml:space="preserve">
     <value>These settings will help you customize the auto-selection experience. When you're ready to continue, simply click "Next"—all settings will be saved automatically.</value>
   </data>

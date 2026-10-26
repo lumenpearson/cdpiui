@@ -65,21 +65,24 @@ public class GoodCheckProcessHelper
 
     private async Task<bool> RunAsync(string executable, string args, string operationId)
     {
-        string? unsafeOption = FileWritingOptions.FindOutsideWrite(
-            args, TrustedPaths.AllowedRoots, Path.GetDirectoryName(executable), followArgumentFiles: true);
-        if (unsafeOption != null)
-        {
-            Logger.Instance.CreateWarningLog(nameof(GoodCheckProcessHelper), $"Rejected GoodCheck start: the arguments write a file outside the application directories: {unsafeOption}");
-            HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
-            return false;
-        }
-
-        using ExecutableLease? lease = await ExecutableTrust.AcquireAsync(executable, "GoodCheck start");
+        using ExecutableLease? lease = await ExecutableTrust.AcquireAsync(executable, args, Path.GetDirectoryName(executable), "GoodCheck start");
         if (lease == null)
         {
             HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
             return false;
         }
+
+        // GoodCheck starts the components itself, from its config.ini and strategy list; in an
+        // MSI installation those are checked and locked like the programs the tray starts.
+        List<ExecutableLease>? childLeases = Utils.IsInstalledByMsi()
+            ? await ExecutableTrust.AcquireGoodCheckChildrenAsync(lease, executable, args)
+            : [];
+        if (childLeases == null)
+        {
+            HandleProcessException("ERR_UNABLE_START_PROCESS", operationId);
+            return false;
+        }
+        using var childLeaseScope = new LeaseScope(childLeases);
 
         await TasksHelper.Instance.StopAllTasks();
 
@@ -158,6 +161,16 @@ public class GoodCheckProcessHelper
             _cancellationTokenSource = null;
             cancellationTokenSource.Dispose();
             await TasksHelper.Instance.ApplyStatusToAllTasks(true);
+        }
+    }
+
+    // Disposes the leases of the components GoodCheck starts when the run ends.
+    private sealed class LeaseScope(List<ExecutableLease> leases) : IDisposable
+    {
+        public void Dispose()
+        {
+            foreach (ExecutableLease lease in leases)
+                lease.Dispose();
         }
     }
 

@@ -165,9 +165,14 @@ public partial class ComponentUserControl : UserControl
             // made a quick double-click start the component twice (a restart) instead of
             // starting and stopping it.
             var id = ComponentId;
+            // A start that still waits for the startup string from the GUI counts as running:
+            // the second click of a double-click cancels it instead of asking for it again.
             ComponentCommandQueue.Post(id, async () =>
             {
-                if (await TasksHelper.Instance.IsTaskRunning(id))
+                var task = await TasksHelper.Instance.GetTaskFromId(id);
+                if (task != null && task.ProcessManager.CancelRequestedStart())
+                    return;
+                if (task != null && task.ProcessManager.IsRunningOrStartRequested)
                     await TasksHelper.Instance.StopTask(id);
                 else
                     await TasksHelper.Instance.CreateAndRunNewTask(id);

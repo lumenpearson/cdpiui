@@ -4,10 +4,8 @@ using System.Threading.Tasks;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Dialogs.CreateConfigHelper;
 using CDPIUI.Controls.Universal;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Store.Data;
-using CDPIUI.Helper.AddOns.BlockCheck2;
 using CDPIUI.ViewModels;
+using CDPIUI.ViewModels.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -16,15 +14,13 @@ using WinUI3Localizer;
 
 namespace CDPIUI.Views.BlockCheck2;
 
-public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplatePage, IStatusNotificationSource, INotifyPropertyChanged
+public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplatePage, IStatusNotificationSource, INotifyPropertyChanged, IBlockCheck2PresetReviewPageView
 {
     private readonly ILocalizer _localizer = Localizer.Get();
-    private readonly BlockCheck2PresetStorageService _presetStorageService = new();
-    private bool _updatingEditingToggle;
-    private bool _savingPreset;
 
     public PresetReviewPage()
     {
+        ViewModel = new BlockCheck2PresetReviewViewModel(this);
         InitializeComponent();
         DataContext = this;
         Editor.UseInlineStatusMessages = false;
@@ -34,7 +30,7 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         Editor.PanelStateChanged += Editor_MenuStateChanged;
     }
 
-    public BlockCheck2ResultViewModel? ViewModel { get; private set; }
+    public BlockCheck2PresetReviewViewModel ViewModel { get; }
     public ConfigMakerUserControl Editor => PresetEditor.Editor;
     public event EventHandler<StatusNotificationRequestedEventArgs>? StatusNotificationRequested;
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -57,98 +53,55 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         }
     }
 
-    public void Load(BlockCheck2ResultViewModel viewModel)
-    {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        if (ViewModel != null)
-        {
-            ViewModel.Draft.PropertyChanged -= Draft_PropertyChanged;
-        }
-        ViewModel = viewModel;
-        ViewModel.Draft.PropertyChanged += Draft_PropertyChanged;
-        PresetEditor.LoadDraft(ViewModel.Draft);
-        UpdateState();
-    }
+    public void Load(BlockCheck2ResultViewModel viewModel) => ViewModel.Load(viewModel);
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
-        if (ViewModel != null)
-        {
-            ViewModel.Draft.PropertyChanged -= Draft_PropertyChanged;
-        }
+        ViewModel.OnNavigatedFrom();
     }
 
-    private void Draft_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
-        UpdateState();
+    public void LoadDraft(BlockCheck2PresetDraft draft) => PresetEditor.LoadDraft(draft);
 
-    private void UpdateState()
+    public void SetExpertEditing(bool enabled) => PresetEditor.SetExpertEditing(enabled);
+
+    public async Task<bool> ConfirmExpertEditingAsync()
     {
-        if (ViewModel == null)
+        ContentDialog dialog = new()
         {
-            return;
-        }
-        BlockCheck2PresetDraft draft = ViewModel.Draft;
-        _updatingEditingToggle = true;
-        AllowEditingCheckBox.IsChecked = draft.IsExpertEditingEnabled;
-        _updatingEditingToggle = false;
-        ExpertInfoBar.IsOpen = draft.IsExpertEditingEnabled;
-        RaiseMenuStateChanged();
+            XamlRoot = XamlRoot,
+            Title = Text("BlockCheck2EnableExpertEditingTitle"),
+            Content = Text("BlockCheck2EnableExpertEditingMessage"),
+            PrimaryButtonText = Text("BlockCheck2EnableExpertEditingButton"),
+            CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+        return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary;
     }
 
-    private async void AllowEditingCheckBox_Click(object sender, RoutedEventArgs e)
+    public async Task<bool> ConfirmDiscardExpertChangesAsync()
     {
-        if (_updatingEditingToggle || ViewModel == null)
+        ContentDialog dialog = new()
         {
-            return;
-        }
-        bool enable = AllowEditingCheckBox.IsChecked == true;
-        if (enable)
-        {
-            ContentDialog dialog = new()
-            {
-                XamlRoot = XamlRoot,
-                Title = Text("BlockCheck2EnableExpertEditingTitle"),
-                Content = Text("BlockCheck2EnableExpertEditingMessage"),
-                PrimaryButtonText = Text("BlockCheck2EnableExpertEditingButton"),
-                CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-            {
-                _updatingEditingToggle = true;
-                AllowEditingCheckBox.IsChecked = false;
-                _updatingEditingToggle = false;
-                return;
-            }
-        }
-        PresetEditor.SetExpertEditing(enable);
-        UpdateState();
+            XamlRoot = XamlRoot,
+            Title = Text("BlockCheck2DiscardExpertChangesTitle"),
+            Content = Text("BlockCheck2DiscardExpertChangesMessage"),
+            PrimaryButtonText = Text("BlockCheck2DiscardExpertChangesButton"),
+            CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+        return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary;
     }
+
+    private async void AllowEditingCheckBox_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.ApplyExpertEditingChoiceAsync();
 
     public async Task NavigateBackToBuilderAsync()
     {
-        if (ViewModel == null)
+        if (!await ViewModel.DiscardExpertChangesAsync())
         {
             return;
         }
-        if (ViewModel.Draft.HasExpertChanges)
-        {
-            ContentDialog dialog = new()
-            {
-                XamlRoot = XamlRoot,
-                Title = Text("BlockCheck2DiscardExpertChangesTitle"),
-                Content = Text("BlockCheck2DiscardExpertChangesMessage"),
-                PrimaryButtonText = Text("BlockCheck2DiscardExpertChangesButton"),
-                CloseButtonText = Text("BlockCheck2CancelDialogButtonText"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-            {
-                return;
-            }
-        }
-        ViewModel.Draft.DiscardExpertChanges();
         if (Frame.CanGoBack)
         {
             Frame.GoBack();
@@ -162,13 +115,10 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         }
     }
 
-    public async Task SaveToApplicationAsync()
-    {
-        if (ViewModel == null || !ViewModel.Draft.CanUseConfig || _savingPreset)
-        {
-            return;
-        }
+    public Task SaveToApplicationAsync() => ViewModel.SaveToApplicationAsync();
 
+    public async Task<string?> AskPresetNameAsync()
+    {
         TextBox nameTextBox = new()
         {
             Header = Text("BlockCheck2PresetNameFieldHeader"),
@@ -198,69 +148,12 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
             dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(nameTextBox.Text);
         if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
         {
-            return;
+            return null;
         }
-
-        _savingPreset = true;
-        SaveToApplicationProgressRing.IsActive = true;
-        UpdateState();
-        try
-        {
-            BlockCheck2PresetStorageResult result = await _presetStorageService.SaveAsync(
-                nameTextBox.Text,
-                ViewModel.Draft);
-            if (!result.Success)
-            {
-                ShowStatus(
-                    InfoBarSeverity.Error,
-                    Text("BlockCheck2PresetSaveFailedTitle"),
-                    PresetSaveErrorMessage(result));
-                return;
-            }
-
-            ShowStatus(
-                InfoBarSeverity.Success,
-                Text("BlockCheck2PresetSavedTitle"),
-                string.Format(
-                    Text("BlockCheck2PresetSavedMessageFormat"),
-                    result.PresetName,
-                    result.CopiedFileCount));
-
-            // Not awaited: the configs are refreshed while the dialog is open. ShowDialog logs its own errors.
-            _ = ShowDialog();
-
-            try
-            {
-                ComponentItemsLoaderHelper.Instance
-                    .GetComponentHelperFromId(HardcodedItemIds.ComponentIds[Components.Zapret2])
-                    ?.ReInitConfigs();
-            }
-            catch (Exception exception)
-            {
-                ShowStatus(
-                    InfoBarSeverity.Warning,
-                    Text("BlockCheck2PresetSavedRefreshFailedTitle"),
-                    exception.Message);
-            }
-        }
-        catch (Exception exception)
-        {
-            ShowStatus(
-                InfoBarSeverity.Error,
-                Text("BlockCheck2PresetSaveFailedTitle"),
-                exception.Message);
-        }
-        finally
-        {
-            _savingPreset = false;
-            SaveToApplicationProgressRing.IsActive = false;
-            UpdateState();
-        }
-
-
+        return nameTextBox.Text;
     }
 
-    private async Task ShowDialog()
+    public async Task ShowSaveCompletedAsync()
     {
         try
         {
@@ -286,26 +179,10 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         }
     }
 
-    private string PresetSaveErrorMessage(BlockCheck2PresetStorageResult result) =>
-        result.ErrorCode switch
-        {
-            "COMPONENT_UNAVAILABLE" => Text("BlockCheck2PresetSaveComponentUnavailableMessage"),
-            "FILE_MISSING" => string.Format(
-                Text("BlockCheck2PresetSaveFileMissingMessageFormat"),
-                result.ErrorDetails),
-            "SAVE_FAILED" => string.Format(
-                Text("BlockCheck2PresetSaveStorageErrorMessageFormat"),
-                result.ErrorDetails),
-            "PRESET_EMPTY" => Text("BlockCheck2PresetSaveEmptyMessage"),
-            _ => string.IsNullOrWhiteSpace(result.ErrorDetails)
-                ? Text("BlockCheck2PresetSaveUnknownMessage")
-                : result.ErrorDetails,
-        };
-
-    private void ShowStatus(InfoBarSeverity severity, string title, string message) =>
+    public void ShowStatus(BlockCheck2NoticeSeverity severity, string title, string message) =>
         StatusNotificationRequested?.Invoke(
             this,
-            new StatusNotificationRequestedEventArgs(severity, title, message));
+            new StatusNotificationRequestedEventArgs(ResultPage.ToInfoBarSeverity(severity), title, message));
 
     private void Editor_StatusNotificationRequested(
         object? sender,
@@ -351,12 +228,10 @@ public sealed partial class PresetReviewPage : CDPIUI.Controls.Default.TemplateP
         await Editor.RefreshHelpAsync();
 
     private void Editor_MenuStateChanged(object? sender, EventArgs e) =>
-        RaiseMenuStateChanged();
+        NotifyMenuStateChanged();
 
-    private void RaiseMenuStateChanged() =>
+    public void NotifyMenuStateChanged() =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 
     private string Text(string key) => _localizer.GetLocalizedString(key);
-
-
 }

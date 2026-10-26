@@ -47,8 +47,8 @@ internal sealed class ConPTYOutputCapture
 
         try
         {
-            lease = await ExecutableTrust.AcquireAsync(exePath, "help output capture")
-                ?? throw new UnauthorizedAccessException("The executable is outside the application directories or was not approved.");
+            lease = await ExecutableTrust.AcquireAsync(exePath, args, ResolveWorkingDirectory(exePath, workingDirectory), "help output capture")
+                ?? throw new UnauthorizedAccessException("The executable is outside the application directories, its arguments are not allowed, or it was not approved.");
 
             CreatePseudoConsoleWithPipes();
             CreateAttributeList();
@@ -67,8 +67,9 @@ internal sealed class ConPTYOutputCapture
         }
         finally
         {
-            lease?.Dispose();
+            // CloseHandles ends and waits for the process; only then may its files change.
             CloseHandles();
+            lease?.Dispose();
 
             if (_outputTask != null && !_outputTask.IsCompleted)
             {
@@ -134,12 +135,15 @@ internal sealed class ConPTYOutputCapture
         }
     }
 
+    private static string ResolveWorkingDirectory(string exePath, string workingDirectory) =>
+        string.IsNullOrWhiteSpace(workingDirectory)
+            ? Path.GetDirectoryName(exePath) ?? Environment.CurrentDirectory
+            : workingDirectory;
+
     private void StartProcess(string exePath, string args, string workingDirectory)
     {
         STARTUPINFOEX startupInfo = CreateHiddenStartupInfo(_attributeList);
-        string resolvedWorkingDirectory = string.IsNullOrWhiteSpace(workingDirectory)
-            ? Path.GetDirectoryName(exePath) ?? Environment.CurrentDirectory
-            : workingDirectory;
+        string resolvedWorkingDirectory = ResolveWorkingDirectory(exePath, workingDirectory);
         bool started = ConPTYNativeMethods.StartProcess(
             exePath,
             args,

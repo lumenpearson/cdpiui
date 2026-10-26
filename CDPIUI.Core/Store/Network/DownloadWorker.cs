@@ -140,11 +140,21 @@ internal class DownloadWorker : IDisposable
 
         // A catalogue entry with a hash pins the file: a changed release asset or a replaced
         // download is rejected before anything is extracted or installed.
-        if (!string.IsNullOrWhiteSpace(expectedSha256) && !HasSha256(tempDestination, expectedSha256))
+        if (!string.IsNullOrWhiteSpace(expectedSha256))
         {
-            Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
-            ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Hash mismatch");
-            return false;
+            string? expected = NormalizeSha256(expectedSha256);
+            if (expected == null)
+            {
+                Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The catalogue gives {url} a SHA-256 in an invalid format: \"{expectedSha256}\". Expected 64 hexadecimal characters, optionally after \"sha256:\".");
+                ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Invalid hash format");
+                return false;
+            }
+            if (!HasSha256(tempDestination, expected))
+            {
+                Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
+                ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Hash mismatch");
+                return false;
+            }
         }
         return true;
     }
@@ -256,12 +266,29 @@ internal class DownloadWorker : IDisposable
         name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
         !name.Contains('\\') && !name.Contains('/');
 
+    /// <summary>
+    /// The 64 hexadecimal characters of a catalogue hash, or null for any other format.
+    /// Whitespace (groups such as "BA7816BF 8F01CFEA ...") and a "sha256:" prefix are allowed;
+    /// any other character makes the value invalid, so a typo is reported as such instead of
+    /// as a mismatch.
+    /// </summary>
+    internal static string? NormalizeSha256(string value)
+    {
+        string hash = value.Trim();
+        if (hash.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+            hash = hash.Substring("sha256:".Length);
+        hash = new string(hash.Where(character => !char.IsWhiteSpace(character)).ToArray());
+        return hash.Length == 64 && hash.All(Uri.IsHexDigit) ? hash : null;
+    }
+
     internal static bool HasSha256(string file, string expectedSha256)
     {
-        string expected = new string(expectedSha256.Where(Uri.IsHexDigit).ToArray());
+        string? expected = NormalizeSha256(expectedSha256);
+        if (expected == null)
+            return false;
         using var stream = File.OpenRead(file);
         string actual = Convert.ToHexString(global::System.Security.Cryptography.SHA256.HashData(stream));
-        return expected.Length == 64 && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
     private void ReportDownloadProgress(long totalRead, long totalBytes, TimeSpan elapsed)

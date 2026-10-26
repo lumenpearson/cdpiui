@@ -89,7 +89,7 @@ internal static class SettingTileFactory
         Action<ActionIds, List<string>, SettingTileContentDefinition> executeAction)
     {
         var viewButton = new Button { Padding = new Thickness(6) };
-        viewButton.Content = new FontIcon { Glyph = "", FontSize = 16 };
+        viewButton.Content = new FontIcon { Glyph = "\uE890", FontSize = 16 };
         viewButton.Click += (s, e) =>
         {
             executeAction?.Invoke(ActionIds.ViewButtonClicked, [list.Title], def);
@@ -103,7 +103,7 @@ internal static class SettingTileFactory
         ILocalizer localizer)
     {
         var editBtn = new Button { Padding = new Thickness(6) };
-        editBtn.Content = new FontIcon { Glyph = "", FontSize = 16 };
+        editBtn.Content = new FontIcon { Glyph = "\uE70F", FontSize = 16 };
         editBtn.Click += (s, e) =>
         {
             executeAction?.Invoke(ActionIds.EditButtonClicked, null, def);
@@ -122,7 +122,7 @@ internal static class SettingTileFactory
         var viewBtn = new Button { Padding = new Thickness(6) };
         MenuFlyout menuFlyout = new() { Placement = FlyoutPlacementMode.TopEdgeAlignedRight };
 
-        FontIcon folderIcon = new() { Glyph = "" };
+        FontIcon folderIcon = new() { Glyph = "\uE838" };
         MenuFlyoutItem openFolderMenuItem = new() { Text = localizer.GetLocalizedString("ViewInFolderButton"), Icon = folderIcon };
         openFolderMenuItem.Click += (s, e) =>
         {
@@ -130,7 +130,7 @@ internal static class SettingTileFactory
         };
         menuFlyout.Items.Add(openFolderMenuItem);
 
-        FontIcon changeIcon = new() { Glyph = def.IsFileHardLinked ? "" : "" };
+        FontIcon changeIcon = new() { Glyph = def.IsFileHardLinked ? "\uE7A7" : "\uE895" };
         MenuFlyoutItem changeIconMenuItem = new()
         {
             Text = def.IsFileHardLinked ? localizer.GetLocalizedString("RevertChangeSiteList") : localizer.GetLocalizedString("ChangeSiteList"),
@@ -142,7 +142,7 @@ internal static class SettingTileFactory
         };
         menuFlyout.Items.Add(changeIconMenuItem);
 
-        FontIcon viewIcon = new() { Glyph = "" };
+        FontIcon viewIcon = new() { Glyph = "\uE890" };
         MenuFlyoutItem viewIconMenuItem = new() { Text = localizer.GetLocalizedString("ViewAppliedFlagsForSiteList"), Icon = viewIcon };
         viewIconMenuItem.Click += (s, e) =>
         {
@@ -151,7 +151,7 @@ internal static class SettingTileFactory
         menuFlyout.Items.Add(viewIconMenuItem);
 
         viewBtn.Flyout = menuFlyout;
-        viewBtn.Content = new FontIcon { Glyph = "", FontSize = 16 };
+        viewBtn.Content = new FontIcon { Glyph = "\uE712", FontSize = 16 };
 
         ToolTipService.SetToolTip(viewBtn, localizer.GetLocalizedString("ViewMoreActionsToolTip"));
         return viewBtn;
@@ -177,7 +177,7 @@ internal static class SettingTileFactory
         SettingTileContentDefinition def,
         Action<ActionIds, List<string>, SettingTileContentDefinition> executeAction)
     {
-        element.ActionIconGlyph = "";
+        element.ActionIconGlyph = "\uE8A7";
         element.IsClickEnabled = true;
 
         element.Description = def.Text;

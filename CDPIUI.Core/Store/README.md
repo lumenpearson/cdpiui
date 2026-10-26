@@ -202,7 +202,7 @@ The client selects the release asset with these rules:
 2. If `preffered_to_download_file_name` is set, the name contains it.
 3. Exactly one asset must agree. No asset gives `INVALID_URI`. More than one asset gives `TOO_MANY_VARIANTS`.
 
-The release API needs a token (`Secret.GitHubToken` or `Secret.GitLabToken`). If the token is empty, the request fails. A build with the secret stub cannot install items from the release API.
+The client sends the release API request with the token (`Secret.GitHubToken` or `Secret.GitLabToken`) when it is set. Without a token the request is anonymous: public repositories work with the lower rate limit of the API, and private repositories return an HTTP error.
 
 ### Update check
 
@@ -270,7 +270,7 @@ A file that is not extracted gets the name `<name><extension>`:
 - Else `<name>` is the last segment of the URL path without its extension.
 - `<extension>` comes from the table above.
 
-For `msi` and `elmsi`, the GUI always sends `<item folder>\<URL file name without extension><extension>` to the tray.
+For `msi` and `elmsi`, the GUI sends the copied file, `<item folder>\<name><extension>`, to the tray.
 
 NOTE: For an `msi` or `elmsi` item, the installer is started from the copied file, so `target_executable_file` also sets the name of the installer.
 

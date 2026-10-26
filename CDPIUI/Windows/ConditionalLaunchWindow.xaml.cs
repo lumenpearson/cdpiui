@@ -1,13 +1,10 @@
 using System;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using CDPIUI.ConditionalLaunch;
-using CDPIUI.Core;
-using CDPIUI.Core.Communication;
+using System.Threading.Tasks;
 using CDPIUI.Default;
 using CDPIUI.Helper.WindowHelper;
 using CDPIUI.Shared.ConditionalLaunch;
+using CDPIUI.ViewModels.ConditionalLaunch;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -20,20 +17,16 @@ using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 
 namespace CDPIUI;
 
-public sealed partial class ConditionalLaunchWindow : TemplateWindow
+public sealed partial class ConditionalLaunchWindow : TemplateWindow, IConditionalLaunchView
 {
-    internal ObservableCollection<ConditionalTaskListItem> Tasks { get; } = [];
-    internal ObservableCollection<ConditionalTriggerListItem> PreviewTriggers { get; } = [];
-    internal ObservableCollection<ConditionalActionListItem> PreviewActions { get; } = [];
-
     private readonly ILocalizer _localizer = Localizer.Get();
-    private readonly string _tasksDirectory;
     private readonly DispatcherTimer _statusInfoBarTimer = new()
     {
         Interval = TimeSpan.FromSeconds(5)
     };
-    private ConditionalTask? _selectedTask;
     private bool _allowInfoBarClose;
+
+    public ConditionalLaunchViewModel ViewModel { get; }
 
     public ConditionalLaunchWindow()
     {
@@ -51,20 +44,21 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
             _allowInfoBarClose = false;
         };
 
-        _tasksDirectory = ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile(
-            SettingsManager.Instance.SettingsFilePath);
+        ViewModel = new ConditionalLaunchViewModel(this);
 
-        LoadTasks();
-
-        ConditionalTaskEditorWindow.TaskSaved += ConditionalTaskEditorWindow_TaskSaved;
         this.Closed += ConditionalLaunchWindow_Closed;
         this.SizeChanged += ConditionalLaunchWindow_SizeChanged;
+    }
+
+    public void ReloadTasksFromStorage()
+    {
+        ViewModel.LoadTasks();
     }
 
     private void ConditionalLaunchWindow_Closed(object sender, WindowEventArgs args)
     {
         _statusInfoBarTimer.Stop();
-        ConditionalTaskEditorWindow.TaskSaved -= ConditionalTaskEditorWindow_TaskSaved;
+        ViewModel.Dispose();
         this.SizeChanged -= ConditionalLaunchWindow_SizeChanged;
         this.Closed -= ConditionalLaunchWindow_Closed;
     }
@@ -74,94 +68,26 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
         TasksBorder.MaxHeight = this.Height - 400;
     }
 
-    private void ConditionalTaskEditorWindow_TaskSaved(string taskId, bool isImport)
-    {
-        LoadTasks(taskId);
-        ShowStatus(Text(isImport ? "CL_TaskImported" : "CL_TaskSaved"), InfoBarSeverity.Success);
-    }
-
-    private void LoadTasks(string? selectedTaskId = null)
-    {
-        selectedTaskId ??= _selectedTask?.Id;
-        var previouslyLoadedTaskIds = Tasks
-            .Select(item => item.Task.Id)
-            .ToArray();
-        Tasks.Clear();
-
-        Directory.CreateDirectory(_tasksDirectory);
-        var invalidFiles = 0;
-        var loadedTasks = Directory.EnumerateFiles(
-                _tasksDirectory,
-                $"*{ConditionalTaskFileService.FileExtension}")
-            .Select(filePath =>
-            {
-                try
-                {
-                    return ConditionalTaskFileService.Load(filePath);
-                }
-                catch
-                {
-                    invalidFiles++;
-                    return null;
-                }
-            })
-            .Where(task => task != null)
-            .Cast<ConditionalTask>()
-            .OrderByDescending(task => task.Priority)
-            .ThenBy(task => task.Name, StringComparer.CurrentCultureIgnoreCase);
-
-        foreach (var task in loadedTasks)
-            Tasks.Add(ConditionalLaunchUiCatalog.CreateTaskListItem(task, _localizer));
-
-        var loadedTaskIds = Tasks
-            .Select(item => item.Task.Id)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var removedTaskId in previouslyLoadedTaskIds.Where(id => !loadedTaskIds.Contains(id)))
-        {
-            ((App)Application.Current).CloseWindow<ConditionalTaskEditorWindow>(
-                ConditionalTaskEditorWindow.WindowIdPrefix + removedTaskId);
-        }
-
-        EmptyTaskListPanel.Visibility = Tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        TaskListView.Visibility = Tasks.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
-        var selected = Tasks.FirstOrDefault(item =>
-                string.Equals(item.Task.Id, selectedTaskId, StringComparison.OrdinalIgnoreCase))
-            ?? Tasks.FirstOrDefault();
-        TaskListView.SelectedItem = selected;
-        UpdatePreview(selected?.Task);
-
-        if (invalidFiles > 0)
-        {
-            ShowStatus(
-                string.Format(Text("CL_InvalidFilesSkippedFormat"), invalidFiles),
-                InfoBarSeverity.Warning);
-        }
-
-        UpdateSelectionButtons();
-    }
-
     private void TaskListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        UpdatePreview((TaskListView.SelectedItem as ConditionalTaskListItem)?.Task);
-        UpdateSelectionButtons();
+        ViewModel.SelectedTaskItem = TaskListView.SelectedItem;
     }
 
     private async void TaskListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if (_selectedTask != null)
+        if (ViewModel.HasSelection)
         {
             e.Handled = true;
-            await OpenEditorAsync(_selectedTask);
+            await ViewModel.EditTaskCommand.ExecuteAsync(null);
         }
     }
 
     private async void TaskListView_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Enter && _selectedTask != null)
+        if (e.Key == VirtualKey.Enter && ViewModel.HasSelection)
         {
             e.Handled = true;
-            await OpenEditorAsync(_selectedTask);
+            await ViewModel.EditTaskCommand.ExecuteAsync(null);
         }
     }
 
@@ -181,15 +107,23 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
         TaskListView.SelectedItem = container.Content;
         if (RootGrid.Resources["TaskContextMenu"] is MenuFlyout menu)
         {
+            foreach (MenuFlyoutItem item in menu.Items.OfType<MenuFlyoutItem>())
+            {
+                item.Command = item.Tag switch
+                {
+                    "Run" => ViewModel.RunTaskCommand,
+                    "ToggleEnabled" => ViewModel.ToggleTaskEnabledCommand,
+                    "Edit" => ViewModel.EditTaskCommand,
+                    "Delete" => ViewModel.DeleteTaskCommand,
+                    _ => item.Command,
+                };
+            }
+
             var toggleItem = menu.Items
                 .OfType<MenuFlyoutItem>()
                 .FirstOrDefault(item => Equals(item.Tag, "ToggleEnabled"));
-            if (toggleItem != null && _selectedTask != null)
-            {
-                toggleItem.Text = Text(_selectedTask.IsEnabled
-                    ? "CL_DisableTaskMenuItem"
-                    : "CL_EnableTaskMenuItem");
-            }
+            if (toggleItem != null && ViewModel.HasSelection)
+                toggleItem.Text = ViewModel.GetToggleEnabledText();
 
             menu.ShowAt(RootGrid, new FlyoutShowOptions
             {
@@ -197,54 +131,6 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
             });
         }
         e.Handled = true;
-    }
-
-    private async void RunTaskMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await RunSelectedTaskAsync();
-    }
-
-    private void ToggleTaskEnabledMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (_selectedTask == null)
-            return;
-
-        var taskId = _selectedTask.Id;
-        var taskName = _selectedTask.Name;
-        var isEnabled = !_selectedTask.IsEnabled;
-        try
-        {
-            _selectedTask.IsEnabled = isEnabled;
-            ConditionalTaskFileService.Save(
-                _selectedTask,
-                _tasksDirectory,
-                _selectedTask.FilePath);
-            LoadTasks(taskId);
-            NotifyTaskEngine();
-            ShowStatus(
-                string.Format(Text(isEnabled
-                    ? "CL_TaskEnabledFormat"
-                    : "CL_TaskDisabledFormat"), taskName),
-                InfoBarSeverity.Success);
-        }
-        catch (Exception ex)
-        {
-            _selectedTask.IsEnabled = !isEnabled;
-            ShowStatus(
-                string.Format(Text("CL_CannotChangeTaskStateFormat"), ex.Message),
-                InfoBarSeverity.Error);
-        }
-    }
-
-    private async void PropertiesTaskMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (_selectedTask != null)
-            await OpenEditorAsync(_selectedTask);
-    }
-
-    private void DeleteTaskMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        DeleteButton_Click(sender, e);
     }
 
     private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
@@ -256,43 +142,7 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
         }
     }
 
-    private async System.Threading.Tasks.Task RunSelectedTaskAsync()
-    {
-        if (_selectedTask == null)
-            return;
-
-        try
-        {
-            await PipeHelper.SendConditionalTaskExecutePacket(_selectedTask.Id);
-            ShowStatus(
-                string.Format(Text("CL_TaskExecutionRequestedFormat"), _selectedTask.Name),
-                InfoBarSeverity.Success);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus(
-                string.Format(Text("CL_CannotRunTaskFormat"), ex.Message),
-                InfoBarSeverity.Error);
-        }
-    }
-
-    private async void NewTaskButton_Click(object sender, RoutedEventArgs e)
-    {
-        await OpenEditorAsync(null);
-    }
-
-    private async void RunTaskButton_Click(object sender, RoutedEventArgs e)
-    {
-        await RunSelectedTaskAsync();
-    }
-
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_selectedTask != null)
-            await OpenEditorAsync(_selectedTask);
-    }
-
-    private async System.Threading.Tasks.Task OpenEditorAsync(ConditionalTask? task)
+    async Task IConditionalLaunchView.OpenEditorAsync(ConditionalTask? task, string tasksDirectory)
     {
         var app = (App)Application.Current;
         var windowId = task == null
@@ -301,7 +151,7 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
         var editor = await app.UnsafeCreateNewWindow<ConditionalTaskEditorWindow>(
             activate: false,
             id: windowId);
-        editor.SetTask(task, _tasksDirectory);
+        editor.SetTask(task, tasksDirectory);
 
         var cornerOffset = (int)Math.Round(
             16 * WindowsPositionHelper.GetScaleFactor(this));
@@ -313,45 +163,23 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
         App.ActivateWindow(editor);
     }
 
-    private void UpdatePreview(ConditionalTask? task)
+    async Task IConditionalLaunchView.OpenImportedTaskEditorAsync(ConditionalTask task, string tasksDirectory)
     {
-        _selectedTask = task;
-        PreviewTriggers.Clear();
-        PreviewActions.Clear();
-        NoSelectionPanel.Visibility = task == null ? Visibility.Visible : Visibility.Collapsed;
-        PreviewSelector.Visibility = task == null ? Visibility.Collapsed : Visibility.Visible;
-        if (task == null)
-            return;
-
-        var item = ConditionalLaunchUiCatalog.CreateTaskListItem(task, _localizer);
-        PreviewNameTextBlock.Text = item.Name;
-        PreviewStatusTextBlock.Text = item.Status;
-        PreviewPriorityTextBlock.Text = item.PriorityLabel;
-        PreviewFileTextBlock.Text = task.FilePath ?? Text("CL_NotSaved");
-
-        foreach (var trigger in task.Triggers)
-        {
-            var type = Text(trigger.Type switch
-            {
-                ConditionalTriggerType.HotKey => "CL_TriggerHotKey",
-                ConditionalTriggerType.ProcessStarted => "CL_TriggerProcessStarted",
-                _ => "CL_TriggerProcessStopped"
-            });
-            PreviewTriggers.Add(new ConditionalTriggerListItem(
-                type,
-                ConditionalLaunchUiCatalog.FormatTrigger(trigger, _localizer),
-                Text("CL_StatusConfigured")));
-        }
-
-        var definitions = ConditionalLaunchUiCatalog.CreateActionDefinitions(_localizer);
-        for (var index = 0; index < task.Actions.Count; index++)
-        {
-            PreviewActions.Add(ConditionalLaunchUiCatalog.CreateActionListItem(
-                task.Actions[index], index + 1, _localizer, definitions));
-        }
+        var editor = await ((App)Application.Current)
+            .UnsafeCreateNewWindow<ConditionalTaskEditorWindow>(
+                activate: false,
+                id: ConditionalTaskEditorWindow.WindowIdPrefix + task.Id);
+        editor.SetTask(task, tasksDirectory, isImport: true);
+        App.ActivateWindow(editor);
     }
 
-    private async void ImportButton_Click(object sender, RoutedEventArgs e)
+    void IConditionalLaunchView.CloseEditor(string taskId)
+    {
+        ((App)Application.Current).CloseWindow<ConditionalTaskEditorWindow>(
+            ConditionalTaskEditorWindow.WindowIdPrefix + taskId);
+    }
+
+    string? IConditionalLaunchView.PickImportFile()
     {
         using OpenFileDialog dialog = new()
         {
@@ -360,122 +188,41 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
             Multiselect = false
         };
 
-        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-            return;
-
-        try
-        {
-            var imported = ConditionalTaskFileService.Load(dialog.FileName);
-            if (Tasks.Any(item => string.Equals(
-                item.Task.Id,
-                imported.Id,
-                StringComparison.OrdinalIgnoreCase)))
-            {
-                imported.Id = Guid.NewGuid().ToString("D");
-            }
-
-            imported.FilePath = null;
-            imported.IsEnabled = false;
-            var editor = await ((App)Application.Current)
-                .UnsafeCreateNewWindow<ConditionalTaskEditorWindow>(
-                    activate: false,
-                    id: ConditionalTaskEditorWindow.WindowIdPrefix + imported.Id);
-            editor.SetTask(imported, _tasksDirectory, isImport: true);
-            App.ActivateWindow(editor);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus(
-                string.Format(Text("CL_CannotImportTaskFormat"), ex.Message),
-                InfoBarSeverity.Error);
-        }
+        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+            ? dialog.FileName
+            : null;
     }
 
-    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    string? IConditionalLaunchView.PickExportFile(string suggestedFileName)
     {
-        if (_selectedTask == null)
-            return;
-
-        try
+        using SaveFileDialog dialog = new()
         {
-            using SaveFileDialog dialog = new()
-            {
-                Title = Text("CL_ExportDialogTitle"),
-                Filter = Text("CL_TaskFileFilter"),
-                FileName = SanitizeFileName(_selectedTask.Name) + ConditionalTaskFileService.FileExtension
-            };
+            Title = Text("CL_ExportDialogTitle"),
+            Filter = Text("CL_TaskFileFilter"),
+            FileName = suggestedFileName
+        };
 
-            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                return;
-
-            ConditionalTaskFileService.Export(_selectedTask, dialog.FileName);
-            ShowStatus(Text("CL_TaskExported"), InfoBarSeverity.Success);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus(string.Format(Text("CL_CannotExportTaskFormat"), ex.Message), InfoBarSeverity.Error);
-        }
+        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+            ? dialog.FileName
+            : null;
     }
 
-    private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+    async Task<bool> IConditionalLaunchView.ConfirmDeleteAsync(string taskName)
     {
-        if (_selectedTask?.FilePath == null)
-            return;
-
         ContentDialog dialog = new()
         {
             Title = Text("CL_DeleteDialogTitle"),
-            Content = string.Format(Text("CL_DeleteDialogContentFormat"), _selectedTask.Name),
+            Content = string.Format(Text("CL_DeleteDialogContentFormat"), taskName),
             PrimaryButtonText = Text("CL_DeleteButtonText"),
             CloseButtonText = Text("CL_CancelButtonText"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = Content.XamlRoot
         };
 
-        if (await dialog.ShowQueuedAsync() != ContentDialogResult.Primary)
-            return;
-
-        try
-        {
-            var deletedTaskId = _selectedTask.Id;
-            File.Delete(_selectedTask.FilePath);
-            ((App)Application.Current).CloseWindow<ConditionalTaskEditorWindow>(
-                ConditionalTaskEditorWindow.WindowIdPrefix + deletedTaskId);
-            LoadTasks();
-            NotifyTaskEngine();
-            ShowStatus(Text("CL_TaskDeleted"), InfoBarSeverity.Success);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus(string.Format(Text("CL_CannotDeleteTaskFormat"), ex.Message), InfoBarSeverity.Error);
-        }
+        return await dialog.ShowQueuedAsync() == ContentDialogResult.Primary;
     }
 
-    private void ReloadButton_Click(object sender, RoutedEventArgs e)
-    {
-        LoadTasks();
-    }
-
-    public void ReloadTasksFromStorage()
-    {
-        LoadTasks();
-    }
-
-    private void UpdateSelectionButtons()
-    {
-        var hasSelection = _selectedTask != null;
-        EditButton.IsEnabled = hasSelection;
-        RunButton.IsEnabled = hasSelection;
-        ExportButton.IsEnabled = hasSelection;
-        DeleteButton.IsEnabled = hasSelection;
-    }
-
-    private static void NotifyTaskEngine()
-    {
-        _ = PipeHelper.SendConditionalTasksReloadPacket();
-    }
-
-    private void ShowStatus(string message, InfoBarSeverity severity)
+    void IConditionalLaunchView.ShowStatus(string message, InfoBarSeverity severity)
     {
         _statusInfoBarTimer.Stop();
         ShowInfoBarAnimation.Stop();
@@ -509,11 +256,4 @@ public sealed partial class ConditionalLaunchWindow : TemplateWindow
     }
 
     private string Text(string resourceKey) => _localizer.GetLocalizedString(resourceKey);
-
-    private static string SanitizeFileName(string value)
-    {
-        foreach (var invalidCharacter in Path.GetInvalidFileNameChars())
-            value = value.Replace(invalidCharacter, '_');
-        return string.IsNullOrWhiteSpace(value) ? "ConditionalTask" : value;
-    }
 }

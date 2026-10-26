@@ -9,7 +9,7 @@ using CDPIUI.Views.Store;
 
 namespace CDPIUI.ViewModels;
 
-internal partial class ViewConfigInKitModel : INotifyPropertyChanged
+public partial class ViewConfigInKitModel : INotifyPropertyChanged
 {
     // Meta
     public string Guid { get; set; }

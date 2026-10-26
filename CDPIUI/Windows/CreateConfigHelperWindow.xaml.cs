@@ -6,6 +6,7 @@ using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Default;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.WindowHelper;
+using CDPIUI.ViewModels.CreateConfig;
 using CDPIUI.Views.CreateConfigHelper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,7 +21,15 @@ namespace CDPIUI;
 public sealed partial class CreateConfigHelperWindow : TemplateWindow
 {
     public static CreateConfigHelperWindow Instanse { get; private set; }
-    public bool IsOperationExitAskAvailable { get; set; } = false;
+
+    public CreateConfigHelperWindowViewModel ViewModel { get; } =
+        new($"cdpiui://Help/Utils/{nameof(CreateConfigHelperWindow)}/");
+
+    public bool IsOperationExitAskAvailable
+    {
+        get => ViewModel.IsOperationExitAskAvailable;
+        set => ViewModel.IsOperationExitAskAvailable = value;
+    }
 
     private bool _isDialogRequested = false;
     private ConfigItem _configItemToEditRequsted = null;
@@ -49,8 +58,6 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
         {
             fe.Loaded += Fe_Loaded;
         }
-
-        SetEditorBackgroundSettings();
 
         SetStatus();
     }
@@ -119,12 +126,7 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     public void SetStatus(bool isWorking = false, string text = "")
     {
-        ContentFrame.DispatcherQueue.TryEnqueue(() =>
-        {
-            StatusProgressIcon.Visibility = isWorking ? Visibility.Collapsed : Visibility.Visible;
-            StatusProgressRing.Visibility = isWorking ? Visibility.Visible : Visibility.Collapsed;
-            StatusTextBlock.Text = string.IsNullOrEmpty(text) ? _localizer.GetLocalizedString("Ready") : text;
-        });
+        ContentFrame.DispatcherQueue.TryEnqueue(() => ViewModel.SetStatus(isWorking, text));
     }
 
     private void Fe_Loaded(object sender, RoutedEventArgs e)
@@ -134,7 +136,7 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
             OpenConfigEditPage(true, configItem: _configItemToEditRequsted);
         }
 
-        BackButton.Visibility = Visibility.Collapsed;
+        ViewModel.IsBackButtonVisible = false;
 
         if (this.Content is FrameworkElement fe)
         {
@@ -184,24 +186,12 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     private void AuditMenuItemsEnabled(Type pageType)
     {
-        HomeItem.IsEnabled = true;
-        CreateNewConfigButton.IsEnabled = true;
-        EditMenuItem.Visibility = Visibility.Collapsed;
-        ViewMenuItem.Visibility = Visibility.Collapsed;
+        bool isConfigEditorPage = pageType == typeof(CreateNewConfigPage);
+        ViewModel.AuditMenuItems(pageType == typeof(Views.CreateConfigHelper.MainPage), isConfigEditorPage);
 
-        ContentFrame.Style = (Style)MainGrid.Resources["ContentFrameDefaultStyle"];
-
-        if (pageType == typeof(Views.CreateConfigHelper.MainPage))
-        {
-            HomeItem.IsEnabled = false;
-        }
-        else if (pageType == typeof(CreateNewConfigPage))
-        {
-            CreateNewConfigButton.IsEnabled = false;
-            EditMenuItem.Visibility = Visibility.Visible;
-            ViewMenuItem.Visibility = Visibility.Visible;
-            ContentFrame.Style = (Style)MainGrid.Resources["ContentFrameTransparentStyle"];
-        }
+        ContentFrame.Style = isConfigEditorPage
+            ? (Style)MainGrid.Resources["ContentFrameTransparentStyle"]
+            : (Style)MainGrid.Resources["ContentFrameDefaultStyle"];
     }
 
     private void ContentFrame_Navigating(object sender, NavigatingCancelEventArgs e)
@@ -232,16 +222,11 @@ public sealed partial class CreateConfigHelperWindow : TemplateWindow
 
     private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
     {
-        BackButton.Visibility = (ContentFrame.CanGoBack && ContentFrame.SourcePageType != typeof(Views.CreateConfigHelper.MainPage)) ? Visibility.Visible : Visibility.Collapsed;
+        ViewModel.IsBackButtonVisible = ContentFrame.CanGoBack && ContentFrame.SourcePageType != typeof(Views.CreateConfigHelper.MainPage);
 
-        UpdateCurrentHelpItem(e.SourcePageType);
+        ViewModel.UpdateCurrentHelpItem(e.SourcePageType.Name);
 
         ContentFrame.ForwardStack.Clear();
-    }
-
-    private void UpdateCurrentHelpItem(Type page)
-    {
-        CurrentHelpMenuFlyoutItem.Text = string.Format(_localizer.GetLocalizedString("/Flashlight/GetHelpFor"), _localizer.GetLocalizedString($"/Flashlight/{page.Name}"));
     }
 
     private void HomeItem_Click(object sender, RoutedEventArgs e)

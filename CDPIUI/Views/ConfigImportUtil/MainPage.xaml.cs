@@ -1,120 +1,98 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CDPIUI.AddOns.ConfigImport;
-using CDPIUI.AddOns.ConfigShare;
 using CDPIUI.Controls.Default;
-using CDPIUI.Controls.Universal;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.ComponentServices.Configuration;
-using CDPIUI.Core.ComponentServices.Helpers;
-using CDPIUI.Core.Store;
-using CDPIUI.Core.Store.Database;
+using CDPIUI.Controls.Dialogs.Universal;
+using CDPIUI.Controls.Navigation;
+using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Helper.AddOns.ConfigImport;
 using CDPIUI.Helper.AddOns.ConfigShare;
-using CDPIUI.Shared.Extensions;
 using CDPIUI.ViewModels;
+using CDPIUI.ViewModels.ConfigImport;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Navigation;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 using WinUI3Localizer;
 
 namespace CDPIUI.Views.ConfigImportUtil;
 
-public sealed partial class MainPage : TemplatePage
+public sealed partial class MainPage : TemplatePage, IConfigImportPageView
 {
-    private readonly ObservableCollection<DatabaseStoreItem> _components = [];
-    private readonly ObservableCollection<ConfigImportPresetViewModel> _results = [];
-    private readonly ObservableCollection<ConfigImportMissingFileViewModel> _missingFiles = [];
-    private readonly ConfigImportService _importService = new();
-    private readonly ConfigImportFileAnalyzer _fileAnalyzer;
-    private readonly ConfigImportInstaller _installer = new();
-    private readonly ConfigImportAutoCorrector _autoCorrector = new();
     private readonly ILocalizer _localizer = Localizer.Get();
 
-    private string _requestedTargetId = string.Empty;
-    private ConfigImportPresetViewModel _activeTestItem;
-    private string _activeTestComponentId = string.Empty;
-    private ConfigImportTestPlaceholder _activeTestPlaceholder;
-    private bool _isUnloaded;
-    private string[] _pendingDroppedFiles;
-    private bool _importingDroppedFiles;
-    private readonly HashSet<ConfigSharePackage> _packagesBeingSaved = [];
+    public ConfigImportPageViewModel ViewModel { get; }
 
     public MainPage()
     {
-        _fileAnalyzer = new ConfigImportFileAnalyzer(_importService);
+        ViewModel = new ConfigImportPageViewModel(this, DispatcherQueue);
         InitializeComponent();
-        LoadComponents();
-        ResultItemsControl.ItemsSource = _results;
-        MissingFilesItemsControl.ItemsSource = _missingFiles;
     }
+
+    public bool IsViewLoaded => IsLoaded;
+
+    public static InfoBarSeverity ToInfoBarSeverity(ConfigImportCompletionState state) => state switch
+    {
+        ConfigImportCompletionState.Success => InfoBarSeverity.Success,
+        ConfigImportCompletionState.Partial => InfoBarSeverity.Warning,
+        ConfigImportCompletionState.Failed => InfoBarSeverity.Error,
+        _ => InfoBarSeverity.Informational,
+    };
+
+    public void QueueDroppedFiles(string[] paths) => ViewModel.QueueDroppedFiles(paths);
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        _isUnloaded = false;
-        _requestedTargetId = Parameter.Get("componentId") ?? string.Empty;
+        ViewModel.OnNavigatedTo(Parameter.Get("componentId"));
     }
 
-    private void LoadComponents()
+    private async void MainPage_Loaded(object sender, RoutedEventArgs e) => await ViewModel.OnLoadedAsync();
+
+    private async void MainPage_Unloaded(object sender, RoutedEventArgs e) => await ViewModel.OnUnloadedAsync();
+
+    public void GoToStep(ConfigImportStep step)
     {
-        _components.Clear();
-        foreach (DatabaseStoreItem item in DatabaseHelper.Instance.GetItemsByType("component")
-                     .Where(ConfigImportTargetFactory.IsImportTarget)
-                     .OrderBy(item => item.ShortName.NullIfEmpty() ?? item.Name, StringComparer.CurrentCultureIgnoreCase))
+        AnimatedHorizontalContentItem item = step switch
         {
-            item.ShortName = string.IsNullOrWhiteSpace(item.ShortName) ? item.Name : item.ShortName;
-            _components.Add(item);
-        }
-        if (_results.Count == 0)
+            ConfigImportStep.Selection => SelectionStep,
+            ConfigImportStep.Progress => ProgressStep,
+            ConfigImportStep.MissingFiles => MissingFilesStep,
+            ConfigImportStep.Completed => CompletedStep,
+            _ => WorkDoneStep,
+        };
+        MainContent.GoTo(item);
+    }
+
+    public string[] PickImportFiles()
+    {
+        var result = ConfigImportHelper.OpenFileSelectionDialog(true);
+        return result.Success ? result.Result : null;
+    }
+
+    public string PickReplacementFile(string missingPath)
+    {
+        string extension = Path.GetExtension(missingPath);
+        using var dialog = new System.Windows.Forms.OpenFileDialog
         {
-            bool available = _components.Count > 0;
-            PlaceholderGrid.Visibility = available ? Visibility.Collapsed : Visibility.Visible;
-            MainContent.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
-            NextButton.IsEnabled = available;
-        }
+            Title = _localizer.GetLocalizedString("ConfigImportChooseFileTitle"),
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            Filter = string.IsNullOrWhiteSpace(extension)
+                ? $"{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*"
+                : $"{extension.TrimStart('.').ToUpperInvariant()} (*{extension})|*{extension}|{_localizer.GetLocalizedString("AllSupported")} (*.*)|*.*",
+            FilterIndex = 1,
+            RestoreDirectory = true,
+        };
+        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.FileName : null;
     }
 
-    private async void MainPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        _isUnloaded = false;
-        StoreHelper.Instance.ItemActionsStopped -= StoreComponentsChanged;
-        StoreHelper.Instance.ItemRemoved -= StoreComponentsChanged;
-        StoreHelper.Instance.ItemActionsStopped += StoreComponentsChanged;
-        StoreHelper.Instance.ItemRemoved += StoreComponentsChanged;
-        LoadComponents();
-        await ImportPendingFilesAsync();
-    }
+    public Task OfferComponentInstallAsync(ConfigItem config) => ConfigShareUI.OfferComponentInstallAsync(XamlRoot, config);
 
-    private void StoreComponentsChanged(string id) => DispatcherQueue.TryEnqueue(() =>
-    {
-        if (!_isUnloaded && _results.Count == 0)
-            LoadComponents();
-    });
-
-    private void OpenComponentsStore_Click(object sender, RoutedEventArgs e) =>
-        CDPIUI.Commands.CommandsHandler.HandleCommand("cdpiui://Store/Category/C001CS");
-
-    private async void MainPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        _isUnloaded = true;
-        StoreHelper.Instance.ItemActionsStopped -= StoreComponentsChanged;
-        StoreHelper.Instance.ItemRemoved -= StoreComponentsChanged;
-        await StopActiveTestAsync();
-        foreach (var item in _results)
-            if (item.Result.SharedPackage != null && !_packagesBeingSaved.Contains(item.Result.SharedPackage))
-                item.Result.SharedPackage.Dispose();
-    }
+    public async Task ShowErrorAsync(string message) =>
+        await new ErrorContentDialog().ShowErrorDialogAsync(
+            _localizer.GetLocalizedString("ConfigShareError"), message, XamlRoot);
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
@@ -122,92 +100,84 @@ public sealed partial class MainPage : TemplatePage
             .FirstOrDefault(window => window.Content?.XamlRoot == XamlRoot)?.Close();
     }
 
-    private async void NextButton_Click(object sender, RoutedEventArgs e)
+    private void UseSuggestedFileButton_Click(object sender, RoutedEventArgs e)
     {
-        // An exception in an async void handler ended the process and left IsLoading set.
-        try
-        {
-            await NextStepAsync();
-        }
-        catch (Exception exception)
-        {
-            CDPIUI.Core.Basic.Logger.Instance.CreateWarningLog(nameof(MainPage), exception.ToString());
-            if (_isUnloaded)
-                return;
-            UtilityButtons.IsLoading = false;
-            ResultItemsControl.IsEnabled = true;
-            NextButton.Visibility = Visibility.Visible;
-            if (IsLoaded)
-                await new CDPIUI.Controls.Dialogs.Universal.ErrorContentDialog().ShowErrorDialogAsync(
-                    _localizer.GetLocalizedString("ConfigShareError"), exception.Message, XamlRoot);
-        }
+        if (sender is Button { Tag: ConfigImportMissingFileViewModel item })
+            ViewModel.UseSuggestedFile(item);
     }
 
-    private async Task NextStepAsync()
+    private void ChooseReplacementButton_Click(object sender, RoutedEventArgs e)
     {
-        if (MainContent.SelectedItem == SelectionStep)
+        if (sender is Button { Tag: ConfigImportMissingFileViewModel item })
+            ViewModel.ChooseReplacementFile(item);
+    }
+
+    private void UseEmptyFileButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ConfigImportMissingFileViewModel item })
+            ViewModel.UseEmptyFile(item);
+    }
+
+    private async void SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ConfigImportPresetViewModel item })
+            await ViewModel.SaveAsync(item);
+    }
+
+    private async void TestButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ConfigImportPresetViewModel item })
+            await ViewModel.ToggleTestAsync(item);
+    }
+
+    private void DetailsButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not HyperlinkButton { Tag: ConfigImportPresetViewModel item } button)
+            return;
+
+        var detailsPanel = new StackPanel { Spacing = 10, Width = 350 };
+
+        string titleText = item.HasDetails
+            ? string.Format(_localizer.GetLocalizedString("ConfigImportErrorView"), item.FileName)
+            : _localizer.GetLocalizedString("ConfigImportSuccess");
+
+        detailsPanel.Children.Add(new TextBlock
         {
-            NextButton.Visibility = Visibility.Collapsed;
-            await ImportConfigsAsync();
-            if (_isUnloaded)
-                return;
-            NextButton.Visibility = Visibility.Visible;
-        }
-        else if (MainContent.SelectedItem == MissingFilesStep)
+            Text = titleText,
+            Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        foreach (ConfigImportIssue issue in item.Result.Issues)
         {
-            NextButton.Visibility = Visibility.Visible;
-            bool flg = false;
-            foreach (var item in _missingFiles)
+            string location = issue.LineNumber.HasValue
+                ? string.Format(_localizer.GetLocalizedString("ConfigImportIssueLine"), issue.LineNumber.Value)
+                : string.Empty;
+            detailsPanel.Children.Add(new TextBlock
             {
-                if (!item.IsResolved && item.HasSuggestion)
-                {
-                    item.UseSuggestion();
-                }
-                if (!item.IsResolved && !item.HasSuggestion)
-                {
-                    NextButton.IsEnabled = false;
-                    flg = true;
-                }
-            }
-            if (!flg)
-                ShowCompletion();
-        }
-        else if (MainContent.SelectedItem == CompletedStep)
-        {
-            NextButton.Visibility = Visibility.Collapsed;
-            ResultItemsControl.IsEnabled = false;
-
-            UtilityButtons.IsLoading = true;
-            UtilityButtons.LoadingStateText = _localizer.GetLocalizedString("Saving");
-
-            List<ConfigImportPresetViewModel> itemsToRemove = [];
-            foreach (var item in _results.ToList())
-            {
-                if (item.CanSave)
-                {
-                    if (await SaveItemAsync(item))
-                        itemsToRemove.Add(item);
-                }
-            }
-
-            foreach (var item in itemsToRemove)
-            {
-                if (string.IsNullOrEmpty(item.OperationError))
-                {
-                    _results.Remove(item);
-                }
-            }
-
-            itemsToRemove.Clear();
-
-            UtilityButtons.IsLoading = false;
-            ResultItemsControl.IsEnabled = true;
-
-            if (_results.Count == 0)
-            {
-                MainContent.GoTo(WorkDoneStep);
-            }
+                Text = $"[{issue.Code}]{location} {ConfigImportIssueText.GetMessage(issue)}",
+                TextWrapping = TextWrapping.Wrap,
+            });
         }
 
+        if (!string.IsNullOrWhiteSpace(item.OperationError))
+        {
+            detailsPanel.Children.Add(new TextBlock
+            {
+                Text = item.OperationError,
+                TextWrapping = TextWrapping.Wrap,
+            });
+        }
+
+        var flyout = new Flyout
+        {
+            Placement = FlyoutPlacementMode.BottomEdgeAlignedRight,
+            Content = new ScrollViewer
+            {
+                MaxHeight = 420,
+                Content = detailsPanel,
+            },
+        };
+        flyout.ShowAt(button);
     }
 }

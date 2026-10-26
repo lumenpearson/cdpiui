@@ -189,7 +189,7 @@
                     x:Name="SaveToApplicationProgressRing"
                     Width="18"
                     Height="18"
-                    IsActive="False" />
+                    IsActive="{x:Bind ViewModel.IsSaving, Mode=OneWay}" />
                 <Button
                     x:Name="BlockCheck2SaveToApplicationButton"
                     
@@ -201,6 +201,7 @@
                 <CheckBox
                     x:Name="AllowEditingCheckBox"
                     l:Uids.Uid="BlockCheck2AllowExpertEditingCheckBox"
+                    IsChecked="{x:Bind ViewModel.IsExpertEditingChecked, Mode=TwoWay}"
                     Click="AllowEditingCheckBox_Click" />
                 <FontIcon FontSize="13" Glyph="&#xE946;">
                     <ToolTipService.ToolTip>
@@ -214,7 +215,7 @@
             x:Name="ExpertInfoBar"
             Grid.Row="1"
             IsClosable="True"
-            IsOpen="False"
+            IsOpen="{x:Bind ViewModel.IsExpertNoticeOpen, Mode=TwoWay}"
             Severity="Warning"
             l:Uids.Uid="BlockCheck2ExpertEditingInfoBar" />
 

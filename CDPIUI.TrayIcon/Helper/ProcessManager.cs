@@ -31,6 +31,20 @@ public class ProcessManager : IProcessService
 
     public bool IsProcessRunning => _conPTYHelper?.processState ?? false;
 
+    // The tray asked the GUI for the startup string (the component never ran, or its arguments
+    // changed) and the start has not arrived yet. A GUI that never answers does not keep it set.
+    private static readonly TimeSpan GuiStartTimeout = TimeSpan.FromSeconds(15);
+    private long _guiStartRequestedTicks;
+    // A stop came while the start was pending: the start the GUI sends next is dropped.
+    private long _guiStartCancelledTicks;
+
+    private static bool IsRecent(long ticks) =>
+        ticks != 0 && DateTime.UtcNow.Ticks - ticks < GuiStartTimeout.Ticks;
+
+    /// <summary>A process runs, a start waits for its turn, or a start was asked from the GUI.</summary>
+    public bool IsRunningOrStartRequested =>
+        (_conPTYHelper?.IsRunningOrStarting ?? false) || IsRecent(Interlocked.Read(ref _guiStartRequestedTicks));
+
     public bool IsErrorHappens => LastError != null;
     public ErrorModel? LastError { get; private set; }
 
@@ -130,6 +144,8 @@ public class ProcessManager : IProcessService
         }
         else
         {
+            Interlocked.Exchange(ref _guiStartCancelledTicks, 0);
+            Interlocked.Exchange(ref _guiStartRequestedTicks, DateTime.UtcNow.Ticks);
             await PipeHelper.SendConPTYPacket(CONPTYMessageIds.GetStartupString, Id, openIfNotConnected: true);
         }
     }
@@ -137,6 +153,14 @@ public class ProcessManager : IProcessService
 
     public async Task StartProcess(string executable, string? args)
     {
+        Interlocked.Exchange(ref _guiStartRequestedTicks, 0);
+        // The answer to a startup string request that a stop has cancelled meanwhile.
+        if (IsRecent(Interlocked.Exchange(ref _guiStartCancelledTicks, 0)))
+        {
+            Logger.Instance.CreateInfoLog(nameof(ProcessManager), $"The start of {Id} was cancelled before the GUI sent its arguments.");
+            return;
+        }
+
         LastError = null;
         IsProcessInfoChanged = false;
         _executable = executable;
@@ -163,6 +187,18 @@ public class ProcessManager : IProcessService
     }
 
 
+
+    /// <summary>
+    /// Cancels a start that waits for the startup string from the GUI: the start the GUI sends
+    /// next is dropped. Returns false when no such start is pending.
+    /// </summary>
+    public bool CancelRequestedStart()
+    {
+        if (!IsRecent(Interlocked.Exchange(ref _guiStartRequestedTicks, 0)))
+            return false;
+        Interlocked.Exchange(ref _guiStartCancelledTicks, DateTime.UtcNow.Ticks);
+        return true;
+    }
 
     public async Task StopProcess(bool output = true)
     {
@@ -292,11 +328,16 @@ public class ProcessManager : IProcessService
             {
                 if (_systemProxyBackup == null)
                 {
-                    _systemProxyBackup = RegeditHelper.ReadProxySnapshot();
-                    RegeditHelper.SaveSnapshotBackup(_systemProxyBackup);
+                    // Kept in memory only once the backup file is written, so a failed write
+                    // does not leave a backup that a later start would reuse.
+                    var snapshot = RegeditHelper.ReadProxySnapshot();
+                    RegeditHelper.SaveSnapshotBackup(snapshot);
+                    _systemProxyBackup = snapshot;
                 }
-                RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
+                // Set before the write: SaveProxySettings can write the registry and then fail
+                // to notify WinINet, and the following StopProxy must still restore the backup.
                 Interlocked.Exchange(ref _systemProxyStarted, 1);
+                RegeditHelper.SaveProxySettings(proxyServer, string.Empty, 1);
             }
         }
         catch (Exception ex)

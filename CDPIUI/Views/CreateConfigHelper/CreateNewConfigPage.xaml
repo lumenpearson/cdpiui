@@ -77,14 +77,14 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <SelectorBar x:Name="MainPivot" SelectionChanged="MainPivot_SelectionChanged" Grid.Row="0" Visibility="Visible">
+                <SelectorBar x:Name="MainPivot" SelectionChanged="MainPivot_SelectionChanged" Grid.Row="0" Visibility="{x:Bind ViewModel.IsTabBarVisible, Mode=OneWay}">
                     <SelectorBarItem l:Uids.Uid="DefaultDesignerPivot" x:Name="DefaultDesigner"/>
                     <SelectorBarItem l:Uids.Uid="GUIDesignerPivot" x:Name="DesignerItem"/>
                 </SelectorBar>
-                <Grid x:Name="GUIDesignerGrid" Visibility="Collapsed" Padding="10 0 20 0" MinWidth="400" Grid.Row="1">
+                <Grid x:Name="GUIDesignerGrid" Visibility="{x:Bind ViewModel.IsDesignerVisible, Mode=OneWay}" Padding="10 0 20 0" MinWidth="400" Grid.Row="1">
                     <ScrollViewer Padding="0 0 15 10">
                         <StackPanel Spacing="2">
-                            <ListView x:Name="GUIDesignerExclusiveListView" SelectionMode="None" Padding="0"
+                            <ListView x:Name="GUIDesignerExclusiveListView" ItemsSource="{x:Bind ViewModel.DesignerExclusiveSettingItemModels}" SelectionMode="None" Padding="0"
                                       ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="local:GraphicDesignerExclusiveSettingItemModel">
@@ -93,9 +93,9 @@
                                             DisplayName="{x:Bind DisplayName, Mode=OneWay}"
                                             SelectedItemGuid="{x:Bind SelectedItemGuid, Mode=OneWay}"
                                             AvailableVariants="{x:Bind Items, Mode=OneWay}"
-                                            NowSelectedGuidChangedCommand="{Binding DataContext.GraphicDesignerSelectedGuidChangedCommand, ElementName=RootPage}"
-                                            ValueChangedCommand="{Binding DataContext.GraphicDesignerTextValueChangedCommand, ElementName=RootPage}"
-                                            ToggledCommand="{Binding DataContext.GraphicDesignerBoolValueToggledCommand, ElementName=RootPage}"/>
+                                            NowSelectedGuidChangedCommand="{Binding ViewModel.GraphicDesignerSelectedGuidChangedCommand, ElementName=RootPage}"
+                                            ValueChangedCommand="{Binding ViewModel.GraphicDesignerTextValueChangedCommand, ElementName=RootPage}"
+                                            ToggledCommand="{Binding ViewModel.GraphicDesignerBoolValueToggledCommand, ElementName=RootPage}"/>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemsPanel>
@@ -104,7 +104,7 @@
                                     </ItemsPanelTemplate>
                                 </ListView.ItemsPanel>
                             </ListView>
-                            <ListView x:Name="GUIDesignerListView" SelectionMode="None" Padding="0"
+                            <ListView x:Name="GUIDesignerListView" ItemsSource="{x:Bind ViewModel.DesignerSettingItemModels}" SelectionMode="None" Padding="0"
                                       ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="local:GraphicDesignerSettingItemModel">
@@ -117,8 +117,8 @@
                                             Type="{x:Bind Type, Mode=OneWay}"
                                             AvailableEnumValues="{x:Bind AvailableEnumValues, Mode=OneWay}"
                                             IsSettingChecked="{x:Bind IsChecked, Mode=OneWay}"
-                                            ValueChangedCommand="{Binding DataContext.GraphicDesignerTextValueChangedCommand, ElementName=RootPage}"
-                                            ToggledCommand="{Binding DataContext.GraphicDesignerBoolValueToggledCommand, ElementName=RootPage}"/>
+                                            ValueChangedCommand="{Binding ViewModel.GraphicDesignerTextValueChangedCommand, ElementName=RootPage}"
+                                            ToggledCommand="{Binding ViewModel.GraphicDesignerBoolValueToggledCommand, ElementName=RootPage}"/>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemsPanel>
@@ -127,11 +127,11 @@
                                     </ItemsPanelTemplate>
                                 </ListView.ItemsPanel>
                             </ListView>
-                            <StackPanel x:Name="AdditionalSettingsPanel" Visibility="Collapsed" Margin="0 5 0 0">
+                            <StackPanel x:Name="AdditionalSettingsPanel" Visibility="{x:Bind ViewModel.IsAdditionalSettingsVisible, Mode=OneWay}" Margin="0 5 0 0">
                                 <TextBlock l:Uids.Uid="AdditionalSettingsTitle" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                                <TextBox x:Name="AdditionalSettingsTextBox"/>
+                                <TextBox x:Name="AdditionalSettingsTextBox" Text="{x:Bind ViewModel.AdditionalSettings, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
-                            <Grid MinHeight="150" x:Name="NotReadyErrorGrid">
+                            <Grid MinHeight="150" x:Name="NotReadyErrorGrid" Visibility="{x:Bind ViewModel.IsNotReadyErrorVisible, Mode=OneWay}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="10"/>
@@ -152,7 +152,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <ucontrols:SearchUserControl Grid.Row="0" Visibility="Collapsed" Margin="0,0,0,0" HorizontalAlignment="Stretch" MaxWidth="600" x:Name="SearchControl"/>
-                    <textcontrolbox:TextControlBox x:Name="StartupStringTextBox" Grid.Row="1" HorizontalAlignment="Stretch" TextChanged="StartupStringTextBox_TextChanged" MinHeight="150" VerticalAlignment="Stretch" Visibility="Collapsed"/>
+                    <textcontrolbox:TextControlBox x:Name="StartupStringTextBox" Grid.Row="1" HorizontalAlignment="Stretch" TextChanged="StartupStringTextBox_TextChanged" MinHeight="150" VerticalAlignment="Stretch" Visibility="{x:Bind ViewModel.IsTextEditorVisible, Mode=OneWay}"/>
                     
                 </Grid>
             </Grid>
@@ -176,18 +176,21 @@
             </Grid.RowDefinitions>
             <ScrollViewer Grid.Column="1" Background="{ThemeResource ControlAltFillColorSecondaryBrush}">
                 <StackPanel Spacing="10" Margin="20 20 20 0">
-                    <TextBlock x:Name="PageTitleTextBlock" FontWeight="Light" FontSize="28"/>
+                    <TextBlock x:Name="PageTitleTextBlock" Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}" FontWeight="Light" FontSize="28"/>
                     <StackPanel Spacing="5">
                         <TextBlock l:Uids.Uid="TargetComponentTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                        <ComboBox x:Name="ComponentChooseComboBox" HorizontalAlignment="Stretch" DisplayMemberPath="Name" SelectionChanged="ComponentChooseComboBox_SelectionChanged"/>
+                        <ComboBox x:Name="ComponentChooseComboBox" HorizontalAlignment="Stretch" DisplayMemberPath="Name"
+                                  ItemsSource="{x:Bind ViewModel.ComponentOptions}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedComponent, Mode=TwoWay}"
+                                  IsEnabled="{x:Bind ViewModel.IsComponentChoiceEnabled, Mode=OneWay}"/>
                     </StackPanel>
                     <StackPanel Spacing="5">
                         <TextBlock l:Uids.Uid="DisplayNameTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                        <TextBox x:Name="DisplayNameTextBox" HorizontalAlignment="Stretch" TextChanged="DisplayNameTextBox_TextChanged"/>
+                        <TextBox x:Name="DisplayNameTextBox" HorizontalAlignment="Stretch" Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
-                    <StackPanel x:Name="VariablesStackPanel" Spacing="5" Visibility="Collapsed">
+                    <StackPanel x:Name="VariablesStackPanel" Spacing="5" Visibility="{x:Bind ViewModel.IsVariablesVisible, Mode=OneWay}">
                         <TextBlock l:Uids.Uid="VariablesTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                        <ListView x:Name="VariablesListView" Margin="0 5 0 0" SelectionMode="None" Padding="0"
+                        <ListView x:Name="VariablesListView" ItemsSource="{x:Bind ViewModel.Variables}" Margin="0 5 0 0" SelectionMode="None" Padding="0"
                               ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:VariableModel">
@@ -195,9 +198,9 @@
                                     VarName="{x:Bind Name, Mode=OneWay}" 
                                     VarValue="{x:Bind Value, Mode=OneWay}"
                                     AvailableVarValues="{x:Bind AvailableValues, Mode=OneWay}"
-                                    RemoveCommand="{Binding DataContext.RemoveVariableCommand, ElementName=RootPage}"
+                                    RemoveCommand="{Binding ViewModel.RemoveVariableCommand, ElementName=RootPage}"
                                     RemoveCommandParameter="{x:Bind}"
-                                    ValueChangedCommand="{Binding DataContext.VariableChangedCommand, ElementName=RootPage}"/>
+                                    ValueChangedCommand="{Binding ViewModel.VariableChangedCommand, ElementName=RootPage}"/>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
@@ -210,19 +213,19 @@
                                 <Flyout x:Name="ConditionFlyout" Opened="ConditionFlyout_Opened">
                                     <StackPanel Width="300">
                                         <TextBlock l:Uids.Uid="VarNameTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBox x:Name="VarNameTextBox" TextChanged="VarNameTextBox_TextChanged" IsSpellCheckEnabled="False"/>
+                                        <TextBox x:Name="VarNameTextBox" Text="{x:Bind ViewModel.ConditionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsSpellCheckEnabled="False"/>
                                         <TextBlock l:Uids.Uid="DescriptionTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 0"/>
-                                        <TextBox x:Name="DescriptionTextBox"/>
+                                        <TextBox x:Name="DescriptionTextBox" Text="{x:Bind ViewModel.ConditionDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock l:Uids.Uid="OnValueTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 0"/>
-                                        <TextBox x:Name="OnValueTextBox" TextChanged="OnValueTextBox_TextChanged" IsSpellCheckEnabled="False"/>
+                                        <TextBox x:Name="OnValueTextBox" Text="{x:Bind ViewModel.ConditionOnValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsSpellCheckEnabled="False"/>
                                         <TextBlock l:Uids.Uid="OffValueTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 0"/>
-                                        <TextBox x:Name="OffValueTextBox" TextChanged="OffValueTextBox_TextChanged" IsSpellCheckEnabled="False"/>
+                                        <TextBox x:Name="OffValueTextBox" Text="{x:Bind ViewModel.ConditionOffValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsSpellCheckEnabled="False"/>
                                         <TextBlock l:Uids.Uid="PreviewSampleTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 0"/>
                                         <Grid RequestedTheme="Dark">
                                             <Border BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}" Background="Black" BorderThickness="1" CornerRadius="5"/>
-                                            <TextBlock x:Name="ConditionPreviewTextBlock" IsTextSelectionEnabled="True" Margin="5" TextWrapping="Wrap" FontFamily="Consolas"/>
+                                            <TextBlock x:Name="ConditionPreviewTextBlock" Text="{x:Bind ViewModel.ConditionPreview, Mode=OneWay}" IsTextSelectionEnabled="True" Margin="5" TextWrapping="Wrap" FontFamily="Consolas"/>
                                         </Grid>
-                                        <Button x:Name="SaveConditionButton" Margin="0 10 0 0" Width="150" Click="SaveConditionButton_Click" IsEnabled="False">
+                                        <Button x:Name="SaveConditionButton" Margin="0 10 0 0" Width="150" Click="SaveConditionButton_Click" IsEnabled="{x:Bind ViewModel.IsConditionSaveAvailable, Mode=OneWay}">
                                             <Button.Content>
                                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                                     <FontIcon Glyph="&#xE74E;" FontSize="16" />
@@ -234,7 +237,7 @@
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <ListView x:Name="ConditionsListView" Margin="0 5 0 0" SelectionMode="None" Padding="0"
+                        <ListView x:Name="ConditionsListView" ItemsSource="{x:Bind ViewModel.Conditions}" Margin="0 5 0 0" SelectionMode="None" Padding="0"
                               ItemContainerStyle="{StaticResource ListViewItemStretchStyle}">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:ConditionVariableModel">
@@ -242,7 +245,7 @@
                                                                OnValue="{x:Bind OnValue, Mode=OneWay}" 
                                                                OffValue="{x:Bind OffValue, Mode=OneWay}" 
                                                                Description="{x:Bind Description, Mode=OneWay}" 
-                                                               RemoveCommand="{Binding DataContext.RemoveConditionCommand, ElementName=RootPage}"
+                                                               RemoveCommand="{Binding ViewModel.RemoveConditionCommand, ElementName=RootPage}"
                                                                RemoveCommandParameter="{x:Bind}"/>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -262,21 +265,21 @@
                         <FontIcon Glyph="&#xE712;" FontSize="16"/>
                         <Button.Flyout>
                             <MenuFlyout Placement="TopEdgeAlignedLeft">
-                                <MenuFlyoutItem x:Name="TestButtonText" Click="TestButton_Click">
+                                <MenuFlyoutItem x:Name="TestButtonText" Text="{x:Bind ViewModel.TestButtonText, Mode=OneWay}" Command="{x:Bind ViewModel.TestCommand}">
                                     <MenuFlyoutItem.Icon>
-                                        <FontIcon x:Name="TestButtonGlyph" Glyph="&#xE768;" FontSize="16" />
+                                        <FontIcon x:Name="TestButtonGlyph" Glyph="{x:Bind ViewModel.TestButtonGlyph, Mode=OneWay}" FontSize="16" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
-                                <MenuFlyoutItem l:Uids.Uid="OpenListsConfigDirectory" x:Name="OpenListsConfigDirectory" Click="OpenListsConfigDirectory_Click" Visibility="Collapsed"/>
-                                <MenuFlyoutItem l:Uids.Uid="OpenBinsConfigDirectory" x:Name="OpenBinsConfigDirectory" Click="OpenBinsConfigDirectory_Click" Visibility="Collapsed"/>
+                                <MenuFlyoutItem l:Uids.Uid="OpenListsConfigDirectory" x:Name="OpenListsConfigDirectory" Command="{x:Bind ViewModel.OpenListsDirectoryCommand}" Visibility="{x:Bind ViewModel.IsListsDirectoryButtonVisible, Mode=OneWay}"/>
+                                <MenuFlyoutItem l:Uids.Uid="OpenBinsConfigDirectory" x:Name="OpenBinsConfigDirectory" Command="{x:Bind ViewModel.OpenBinsDirectoryCommand}" Visibility="{x:Bind ViewModel.IsBinsDirectoryButtonVisible, Mode=OneWay}"/>
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>
-                    <Button x:Name="SaveConfigButton" Grid.Column="2" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SaveConfigButton_Click">
+                    <Button x:Name="SaveConfigButton" Grid.Column="2" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.SaveCommand}">
                         <Button.Content>
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <FontIcon Glyph="&#xE74E;" FontSize="16" />
-                                <TextBlock x:Name="SaveButtonText"/>
+                                <TextBlock x:Name="SaveButtonText" Text="{x:Bind ViewModel.SaveButtonText, Mode=OneWay}"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>

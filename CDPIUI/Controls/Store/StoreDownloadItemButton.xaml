@@ -74,30 +74,30 @@
                         <TextBlock Text="{x:Bind Title, Mode=OneWay}" MaxLines="2" TextWrapping="Wrap"/>
                         <TextBlock Text="{x:Bind Developer, Mode=OneWay}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="NoWrap"/>
                     </StackPanel>
-                    <StackPanel x:Name="VersionStackPanel" Grid.Column="3" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" Margin="20 0" Visibility="Collapsed">
+                    <StackPanel x:Name="VersionStackPanel" Grid.Column="3" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" Margin="20 0" Visibility="{x:Bind ViewModel.IsVersionVisible, Mode=OneWay}">
                         <TextBlock x:Name="CurrentVersionTextBlock" Text="{x:Bind CurrentVersion, Mode=OneWay}"/>
                         <FontIcon x:Name="VersionSeparator" Glyph="&#xEBE7;" FontSize="16"/>
                         <TextBlock Text="{x:Bind ServerVersion, Mode=OneWay}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="CancelButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}" Click="CancelButton_Click">
+                        <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" x:Name="CancelButton" Padding="6" VerticalAlignment="Stretch" Background="Transparent" BorderBrush="Transparent" ToolTipService.ToolTip="{x:Bind Tooltip, Mode=OneWay}" Visibility="{x:Bind ViewModel.IsCancelVisible, Mode=OneWay}" Command="{x:Bind ViewModel.CancelCommand}">
                             <FontIcon Glyph="{x:Bind ActionGlyph, Mode=OneWay}" FontSize="16"/>
                         </Button>
-                        <Grid x:Name="UpdateGrid">
+                        <Grid x:Name="UpdateGrid" Visibility="{x:Bind ViewModel.IsUpdateAreaVisible, Mode=OneWay}">
                             <Button x:Name="UpdateButton" l:Uids.Uid="UpdateNowButton" Style="{ThemeResource AccentButtonStyle}" Visibility="Collapsed" Click="UpdateButton_Click"/>
                         </Grid>
                     </StackPanel>
-                    <StackPanel x:Name="StatusStackPanel" Orientation="Horizontal" Grid.Row="2" Grid.ColumnSpan="5" Margin="0 5 0 2" Spacing="10">
+                    <StackPanel x:Name="StatusStackPanel" Orientation="Horizontal" Grid.Row="2" Grid.ColumnSpan="5" Margin="0 5 0 2" Spacing="10" Visibility="{x:Bind ViewModel.IsStatusVisible, Mode=OneWay}">
                         
-                        <TextBlock x:Name="BigStatusTextBlock"  Text="Getting ready..." Visibility="Visible" />
-                        <TextBlock x:Name="SpeedTextBlock"  Text="" Visibility="Visible" Grid.Column="1"/>
-                        <TextBlock x:Name="TimeTextBlock"  Text="" Visibility="Visible" Grid.Column="1"/>
-                        <TextBlock x:Name="ErrorTextBlock" Visibility="Visible" IsTextSelectionEnabled="True"/>
+                        <TextBlock x:Name="BigStatusTextBlock" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Visibility="Visible" />
+                        <TextBlock x:Name="SpeedTextBlock" Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}" Visibility="Visible" Grid.Column="1"/>
+                        <TextBlock x:Name="TimeTextBlock" Text="{x:Bind ViewModel.TimeText, Mode=OneWay}" Visibility="Visible" Grid.Column="1"/>
+                        <TextBlock x:Name="ErrorTextBlock" Text="{x:Bind ViewModel.ErrorText, Mode=OneWay}" Visibility="Visible" IsTextSelectionEnabled="True"/>
                     </StackPanel>
-                    <Grid x:Name="BigUpdateGrid" Grid.Row="2" Grid.ColumnSpan="6">
+                    <Grid x:Name="BigUpdateGrid" Grid.Row="2" Grid.ColumnSpan="6" Visibility="{x:Bind ViewModel.IsUpdateAreaVisible, Mode=OneWay}">
                         <Button x:Name="BigUpdateButton" l:Uids.Uid="UpdateNowButton" Style="{ThemeResource AccentButtonStyle}" Visibility="Visible"  HorizontalAlignment="Stretch" Margin="0 5" Click="UpdateButton_Click"/>
                     </Grid>
-                    <StackPanel x:Name="DescriptionStackPanel" Grid.Row="3" Grid.ColumnSpan="5" Margin="70 0 0 10" Spacing="5" Visibility="Collapsed">
+                    <StackPanel x:Name="DescriptionStackPanel" Grid.Row="3" Grid.ColumnSpan="5" Margin="70 0 0 10" Spacing="5" Visibility="{x:Bind ViewModel.IsDescriptionVisible, Mode=OneWay}">
                         <TextBlock l:Uids.Uid="VersionNotesTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 0 0 5"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -124,7 +124,7 @@
                         </Grid>
                     </StackPanel>
                 </Grid>
-                <ProgressBar x:Name="ProgressBar" IsIndeterminate="True" Grid.Row="3" Grid.ColumnSpan="5" VerticalAlignment="Bottom" CornerRadius="0" Visibility="Collapsed"/>
+                <ProgressBar x:Name="ProgressBar" IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}" Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}" Grid.Row="3" Grid.ColumnSpan="5" VerticalAlignment="Bottom" CornerRadius="0" Visibility="{x:Bind ViewModel.IsProgressVisible, Mode=OneWay}"/>
             </Grid>
         </Button>
     </Grid>
