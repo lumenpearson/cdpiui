@@ -121,9 +121,16 @@ namespace CDPIUI.TrayIcon.Forms
 
         private async void MaximizeButton_MouseClick(object? sender, EventArgs e)
         {
-            HandleEventHappens();
+            try
+            {
+                HandleEventHappens();
 
-            await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+                await PipeHelper.SendOpenWindowPacket("MainWindow", true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(TrayMenuForm), $"Cannot open the main window: {ex}");
+            }
         }
 
         private void HandleEventHappens()
@@ -215,19 +222,25 @@ namespace CDPIUI.TrayIcon.Forms
             catch (InvalidOperationException) { }
         }
 
-        private async void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate)
+        private void HandleTaskStateUpdate(Tuple<string, bool> taskStateUpdate) =>
+            UpdateComponentControl(taskStateUpdate.Item1, control => control.IsRunning = taskStateUpdate.Item2);
+
+        private void HandleTaskSetupStateUpdate(Tuple<string, bool> taskStateUpdate) =>
+            UpdateComponentControl(taskStateUpdate.Item1, control => control.IsSetupComplete = taskStateUpdate.Item2);
+
+        private void UpdateComponentControl(string id, Action<ComponentUserControl> apply)
         {
             if (IsDisposed || !IsHandleCreated)
                 return;
 
             SafeInvoke(() =>
             {
-                Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
+                Control[] controls = ComponentPanel.Controls.Find(id, false);
                 if (controls.Length > 0)
                 {
                     if (controls[0] is ComponentUserControl componentUserControl)
                     {
-                        componentUserControl.IsRunning = taskStateUpdate.Item2;
+                        apply(componentUserControl);
                     }
                 }
                 else
@@ -235,45 +248,26 @@ namespace CDPIUI.TrayIcon.Forms
                     HandleTasksListUpdate();
                 }
             });
-
-            await Task.CompletedTask;
-        }
-
-        private async void HandleTaskSetupStateUpdate(Tuple<string, bool> taskStateUpdate)
-        {
-            if (IsDisposed || !IsHandleCreated)
-                return;
-
-            SafeInvoke(() =>
-            {
-                Control[] controls = ComponentPanel.Controls.Find(taskStateUpdate.Item1, false);
-                if (controls.Length > 0)
-                {
-                    if (controls[0] is ComponentUserControl componentUserControl)
-                    {
-                        componentUserControl.IsSetupComplete = taskStateUpdate.Item2;
-                    }
-                }
-                else
-                {
-                    HandleTasksListUpdate();
-                }
-            });
-
-            await Task.CompletedTask;
         }
 
         private async void HandleButtonClick(object? sender, EventArgs eventArgs)
         {
-            if (sender is ModernButtonUserControl button)
+            try
             {
-                switch (button.Name)
+                if (sender is ModernButtonUserControl button)
                 {
-                    case "OpenStoreButton":
-                        HandleEventHappens();
-                        await PipeHelper.SendOpenWindowPacket("StoreWindow", true);
-                        break;
+                    switch (button.Name)
+                    {
+                        case "OpenStoreButton":
+                            HandleEventHappens();
+                            await PipeHelper.SendOpenWindowPacket("StoreWindow", true);
+                            break;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateErrorLog(nameof(TrayMenuForm), $"Cannot handle the menu button: {ex}");
             }
         }
 

@@ -1077,15 +1077,42 @@ public sealed partial class ConfigImportService
         public void AddSourceFile(string path)
         {
             string fullPath = Path.GetFullPath(path);
-            if (_sourceFileSet.Add(fullPath))
-                _sourceFiles.Add(fullPath);
+            if (!_sourceFileSet.Add(fullPath))
+                return;
+            _sourceFiles.Add(fullPath);
+            if (IsOutsideRoot(_root, fullPath))
+                AddWarning(
+                    "REFERENCED_FILE_OUTSIDE_SOURCE",
+                    $"The config uses a file outside its folder: {fullPath}",
+                    sourcePath);
         }
+
+        private readonly string? _root = Path.GetDirectoryName(Path.GetFullPath(sourcePath));
 
         public void AddReferencedFile(string path)
         {
             string fullPath = Path.GetFullPath(path);
-            if (_referencedFileSet.Add(fullPath))
-                _referencedFiles.Add(fullPath);
+            if (!_referencedFileSet.Add(fullPath))
+                return;
+            _referencedFiles.Add(fullPath);
+            if (IsOutsideRoot(_root, fullPath))
+                AddWarning(
+                    "REFERENCED_FILE_OUTSIDE_SOURCE",
+                    $"The config uses a file outside its folder: {fullPath}",
+                    sourcePath);
+        }
+
+        // A config may name any file on the disk, and the import copies it into the preset, which the
+        // user can later share. A file outside the folder of the imported config is reported, so the
+        // user sees it in the review before saving.
+        private static bool IsOutsideRoot(string? root, string fullPath)
+        {
+            if (string.IsNullOrEmpty(root))
+                return false;
+            string relativePath = Path.GetRelativePath(root, fullPath);
+            return Path.IsPathRooted(relativePath) ||
+                relativePath.Equals("..", StringComparison.Ordinal) ||
+                relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
         }
 
         public void AddMissingReferencedFile(string path, string pathSource)

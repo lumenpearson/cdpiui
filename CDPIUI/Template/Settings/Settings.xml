@@ -54,6 +54,9 @@
 			<Setting Key="useCurl" Type="bool" Value="false"/>
 			<Setting Key="passesValue" Type="string" Value="1"/>
 		</Group>
+		<Group Name="PRESETTEST">
+			<Setting Key="dpiSuiteUrl" Type="string" Value=""/>
+		</Group>
 	</Group>
 	<Group Name="DEBUG">
 		<Setting Key="logLevel" Type="string" Value="WARN" />

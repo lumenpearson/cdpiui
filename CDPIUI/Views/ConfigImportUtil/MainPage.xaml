@@ -112,12 +112,11 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button
-                                                l:Uids.Uid="ConfigImportChooseReplacementButton"
                                                 Tag="{Binding}"
                                                 Click="ChooseReplacementButton_Click">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                                     <FontIcon Glyph="&#xE8E5;" FontSize="16" />
-                                                    <TextBlock l:Uids.Uid="AutoCorrectSelectManuallyTextBlock"/>
+                                                    <TextBlock l:Uids.Uid="ConfigImportChooseReplacementTextBlock"/>
                                                 </StackPanel>
                                             </Button>
                                             <Button

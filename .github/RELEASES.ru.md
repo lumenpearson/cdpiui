@@ -12,7 +12,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 | Задание | Шаги |
 |-----|-------|
-| `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. |
+| `libraries` | Устанавливает .NET 8 SDK. Запускает `create_secret_stub.ps1`. Собирает `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` и `CDPIUI.TrayIcon` (x64) в конфигурации Release. Запускает `dotnet test CDPIUI.Tests`. Восстанавливает пакеты этих четырёх проектов, `CDPIUI` и `CDPIUI.Tests` с `NuGetAuditMode=all` и завершается с ошибкой, если у прямого или транзитивного пакета есть известная уязвимость средней или более высокой серьёзности (предупреждения NU1902–NU1904 становятся ошибками). |
 | `gui` | Запускает `build_portable.ps1` и `check_setup_files.ps1`. Собирает MSI. Загружает `NewSetup/bin/**/*.msi` как артефакт `setup-msi` на 7 дней. |
 | `tools` | Собирает `Update/Update.csproj` (с восстановлением packages.config) и `EditHostFile/EditHostFile.csproj` в конфигурации Release с помощью `msbuild`. |
 
@@ -37,18 +37,17 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 | Секрет | Назначение |
 |--------|-----|
-| `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | Токены Магазина в `Secret.cs` (`GitHubToken`, `GitLabToken`). |
-| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | Обратный прокси Магазина в `Secret.cs` (`ProxyURL`, `ProxyKey`). |
+| `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | Токены Магазина в `Secret.cs` (`GitHubToken`, `GitLabToken`). Приложение делает их публичными, поэтому у них не должно быть доступа на запись (см. `create_release_secret.ps1`). |
+| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | Обратный прокси Магазина в `Secret.cs` (`ProxyURL`, `ProxyKey`). Ключ есть в каждой копии приложения. Поэтому прокси не должен доверять ключу больше, чем анонимному клиенту: ограничьте на прокси частоту запросов и разрешённые адреса. |
 | `TRUSTED_CERTIFICATES` | SHA-1 отпечатки для `Secret.TrustedCertificates`, разделённые пробелами, запятыми или точками с запятой. |
-| `PIPE_AUTH_GUID` | Секрет pipe `Secret.AuthGuid`. Сохраняйте одно и то же значение для всех релизов. |
-| `CATALOG_CERTIFICATE_PFX_BASE64` | PFX-файл сертификата подписи каталога в Base64. Шаг создания патча записывает его в `RUNNER_TEMP\catalog.pfx` и удаляет после завершения шага. |
+| `CATALOG_CERTIFICATE_PFX_BASE64` | PFX-файл сертификата подписи каталога в Base64. Шаг создания патча записывает его в `RUNNER_TEMP\catalog.pfx` и удаляет его в конце шага. |
 | `CATALOG_CERTIFICATE_PASSWORD` | Пароль PFX-файла. |
 
-Все секреты для workflow необязательны. Шаг "Create Secret.cs" передаёт их в
+Все секреты для workflow необязательны. Шаг «Create Secret.cs» передаёт их в
 `create_release_secret.ps1` как переменные окружения. PFX передаётся в `CATALOG_CERTIFICATE`.
 
 ПРЕДУПРЕЖДЕНИЕ: Задайте `CATALOG_CERTIFICATE_PFX_BASE64` и `CATALOG_CERTIFICATE_PASSWORD` до того, как
-создавать релиз. Без сертификата у каталогов нет подписи, и приложение отклоняет
+создадите релиз. Без сертификата у каталогов нет подписи, и приложение отклоняет
 патч.
 
 ПРЕДУПРЕЖДЕНИЕ: Убедитесь, что `TrustedCertificates` не пуст в релизной сборке. Задайте
@@ -57,7 +56,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
 
 ### Шаги
 
-1. Записать `CDPIUI.Shared/Secrets/Secret.cs` с помощью `create_release_secret.ps1 -Force` (шаг "Create Secret.cs").
+1. Записать `CDPIUI.Shared/Secrets/Secret.cs` с помощью `create_release_secret.ps1 -Force` (шаг «Create Secret.cs»).
 2. Собрать портативную раскладку (`build_portable.ps1`). Скрипт сохраняет файл `Secret.cs` из шага 1.
 3. Проверить список файлов установщика (`check_setup_files.ps1`).
 4. Собрать MSI.
@@ -70,6 +69,7 @@ CI запускается при push в `main`, `dev` и `fix/**`, а такж�
    3. Создать `catalog.cat` (версия 2.0) для всей папки.
    4. Подписать каталог, если сертификат доступен. Если в подписи нет сертификата подписывающего лица, шаг завершается с ошибкой.
    5. Поместить каталог в папку и создать ZIP-файл.
+9. Скопировать `Setup.msi` и подписать его сертификатом каталогов (Authenticode, SHA-256). Если в подписи нет сертификата подписывающего лица, шаг завершается с ошибкой. Без сертификата шаг выводит предупреждение: установленная копия не принимает неподписанный `Setup.msi` как обновление.
 
 ### Результат
 
@@ -111,12 +111,11 @@ Workflow не создаёт релиз на GitHub.
 У этого скрипта нет параметров. Git игнорирует `CDPIUI.Shared/Secrets/Secret.cs`. Скрипт выполняет
 следующие шаги:
 
-- Если файла нет, скрипт записывает класс `Secret` с пустыми токенами, пустым списком
-  `TrustedCertificates` и случайным `AuthGuid`. С этим классом решение компилируется.
-- Если файл есть и его `AuthGuid` пуст, скрипт записывает в него случайный `AuthGuid`.
-- Скрипт не изменяет другие значения в существующем файле.
+- Если файла нет, скрипт записывает класс `Secret` с пустыми токенами и пустым списком
+  `TrustedCertificates`. С этим классом решение компилируется.
+- Скрипт не изменяет существующий файл.
 
-Pipe отклоняет всех клиентов, когда `AuthGuid` пуст. Поэтому у заглушки должно быть значение.
+Ключ pipe не является секретом сборки. Трей создаёт новый ключ при каждом запуске (см. [Pipe](../CDPIUI.Shared/Pipe/README.ru.md)).
 
 ### `create_release_secret.ps1`
 
@@ -128,15 +127,16 @@ Pipe отклоняет всех клиентов, когда `AuthGuid` пус�
 | `STORE_PROXY_URL`, `STORE_PROXY_KEY` | `ProxyURL`, `ProxyKey` |
 | `TRUSTED_CERTIFICATES` | `TrustedCertificates` |
 | `CATALOG_CERTIFICATE`, `CATALOG_CERTIFICATE_PASSWORD` | `TrustedCertificates`, если `TRUSTED_CERTIFICATES` не даёт ни одного отпечатка |
-| `PIPE_AUTH_GUID` | `AuthGuid` |
 
 Правила:
 
 - Скрипт оставляет только отпечатки из 40 шестнадцатеричных символов, в верхнем регистре.
 - Если `TRUSTED_CERTIFICATES` не даёт ни одного отпечатка, скрипт использует отпечаток PFX из `CATALOG_CERTIFICATE`.
 - Если отпечатка нет, скрипт выводит предупреждение. Тогда сборка отклоняет подписанные пакеты и патчи.
-- `AuthGuid` берётся из `PIPE_AUTH_GUID`. Без него скрипт вычисляет значение из `CATALOG_CERTIFICATE` (SHA-256). Без обоих значение случайное, и скрипт выводит предупреждение.
-- `AuthGuid` должен оставаться одинаковым от сборки к сборке. Новое значение изменяет `CDPIUI.Shared.dll` и трей, и тогда каждый патч содержит их.
+- Скрипт проверяет токены Магазина до записи, потому что приложение делает их публичными:
+  - У классического токена GitHub не должно быть областей (заголовок `X-OAuth-Scopes` ответа `https://api.github.com/rate_limit` пуст). У детализированного (fine-grained) токена в этом заголовке нет областей; выдавайте ему только доступ на чтение к публичным репозиториям.
+  - У токена GitLab могут быть только `read_api`, `read_repository` и `read_registry` (`/api/v4/personal_access_tokens/self`).
+  - Если у токена есть другие области или скрипт не может его проверить, скрипт завершается с ошибкой.
 - Если `Secret.cs` существует, скрипт его не изменяет. С `-Force` скрипт заменяет его.
 
 ### `make_patch.ps1`
@@ -203,7 +203,8 @@ CDPIUI/...            the changed files, at their installed paths
 
 Когда операция Магазина завершается без ошибок, GUI отправляет трею сообщение `BeginApplicationUpdate`
 (`CDPIUI.Core/Features/ApplicationUpdate.cs`). Для установки из MSI
-файл называется `patch.msi`. Трей устанавливает его командой `msiexec /i ... /qn+`.
+файл называется `patch.msi`. Трей устанавливает его командой `msiexec /i ... /qn+` только если у него
+есть подпись Authenticode сертификатом из `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`).
 
 ### Сторона трея
 
@@ -211,7 +212,7 @@ CDPIUI/...            the changed files, at their installed paths
 
 1. Проверяют путь с помощью `TrustedPaths.IsAllowed`.
 2. Копируют файл в `<install>\.staging\<GUID>\`. При установке для всех пользователей (per-machine) писать в эту папку могут только администраторы. Поэтому никто не может заменить файл между проверкой и установкой.
-3. Распаковывают копию в `verify\`.
+3. Проверяют ограничения архива (`ArchivePaths`: записи, размер, степень сжатия, ссылки). Затем распаковывают копию в `verify\`.
 4. Проверяют каталог каждой папки `layers/*`. Если слоёв нет, проверяют папку `CDPIUI/`.
 5. Если проверка не пройдена, останавливаются и показывают уведомление `UpdateFailure`.
 6. Запускают `Update.exe --directory-to-zip "<staged file>" --destination-directory "<install>"`.
@@ -231,6 +232,7 @@ CDPIUI/...            the changed files, at their installed paths
 - Подпись каждого подписывающего лица должна быть действительной.
 - Проверяющий модуль не строит цепочку сертификатов, потому что сертификаты закреплены (pinned) и самоподписаны.
 - `Test-FileCatalog ... -FilesToSkip catalog.cat` должен вернуть `Valid` не более чем за 2 минуты.
+- Проверка не учитывает отзыв и срок действия сертификата. Правила для сертификатов описаны в [CDPIUI.Shared/README.ru.md](../CDPIUI.Shared/README.ru.md#security).
 
 Проверяющий модуль запускает `Test-FileCatalog` в `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`.
 Он передаёт пути через переменные окружения.

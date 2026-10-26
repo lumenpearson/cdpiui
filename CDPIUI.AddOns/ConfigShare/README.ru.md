@@ -48,14 +48,16 @@
 
 ## Параметры, которые записывают файлы
 
-Трей запускает компоненты с правами администратора. Поэтому общий пресет не должен записывать файлы за пределами своего пакета. После того как модуль чтения заменит ссылки `share://`, `EnsureNoOutsideWrites` проверяет каждый текст конфигурации. Он ищет такие параметры:
+Трей запускает компоненты с правами администратора. Поэтому общий пресет не должен записывать файлы за пределами своего пакета. После того как модуль чтения заменит ссылки `share://`, `EnsureNoOutsideWrites` проверяет каждый текст конфигурации с помощью `FileWritingOptions` из `CDPIUI.Shared`. Он ищет такие параметры:
 
 - `--debug=@<file>` (`--debug` с другими значениями не записывает файл);
 - `--wf-save`;
 - `--hostlist-auto`;
 - `--hostlist-auto-debug`.
 
-Значение такого параметра должно быть абсолютным путём в папке распакованного пакета. Иначе модуль чтения завершается ошибкой `SHARE_UNSAFE_OPTION`. Относительный путь тоже отклоняется.
+Значение такого параметра должно быть абсолютным путём в папке распакованного пакета. Иначе модуль чтения завершается ошибкой `SHARE_UNSAFE_OPTION`. Относительный путь тоже отклоняется. Сначала проверка убирает кавычки вокруг пути в `--debug=@"<file>"`.
+
+Трей тоже проверяет эти параметры перед каждым запуском компонента, для всех пресетов (см. [CDPIUI.TrayIcon/README.ru.md](../../CDPIUI.TrayIcon/README.ru.md#elevated-start-of-a-program)).
 
 Экспорт выполняет ту же проверку после замены ссылок. Поэтому экспорт завершается ошибкой `SHARE_UNSAFE_OPTION` для пресета, который отклонил бы модуль чтения.
 
@@ -85,6 +87,7 @@ ID комплектов Магазина никогда не подходят к
 |---|---|
 | `ConfigSelector` (`CDPIUI/Controls/ComponentSettings`) | Открывает диалог экспорта через `ConfigShareUI.ShowExportAsync` |
 | `ConfigShareExportContentDialog`, `ConfigShareMessageContentDialog` (`CDPIUI/Controls/Dialogs/ConfigShare/*.xaml`) | Разметка экспорта и сообщений. Файлы code-behind обрабатывают действия и изменения состояния. |
+| `ConfigMakerUserControl` (`CDPIUI/Controls/CreateConfigHelper`) | Экспортирует редактируемый пресет через `ConfigShareService.ExportAsync`, когда пользователь сохраняет его как файл `.cdpiconfig` |
 | `ConfigShareImportDialog` (`CDPIUI/Windows/Messages`) | Открывается, когда пользователь открывает файл `.cdpiconfig` |
 | Мастер ConfigImport | Показывает свои обычные шаги просмотра, проверки и сохранения для файлов `.cdpiconfig` |
 | `WindowsPresetShare` (`CDPIUI/Helper/AddOns/ConfigShare`) | Общий доступ Windows через [per-window desktop interop](https://learn.microsoft.com/windows/apps/develop/ui/display-ui-objects) |

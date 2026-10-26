@@ -744,6 +744,10 @@ namespace CDPIUI
 
         private void ShowMigrationError(string message, string errorCode)
         {
+            // The migration session reports some failures with an English message; the code selects the localized text.
+            string localizedMessage = localizer.GetLocalizedString($"/WelcomeWizard/MigrationError_{errorCode}");
+            if (!string.IsNullOrWhiteSpace(localizedMessage))
+                message = localizedMessage;
             MigrationStatusInfoBar.Title = Localized("MigrationFailedTitle");
             MigrationStatusInfoBar.Message = $"{message}\n\n{errorCode}";
             MigrationStatusInfoBar.Severity = InfoBarSeverity.Error;

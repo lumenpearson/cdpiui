@@ -37,8 +37,8 @@ namespace Update
             }
             else
             {
-                MessageBox.Show("Update.exe is started by CDPI UI to install an application update.",
-                    "CDPI UI Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Strings.StartedWithoutArgumentsMessage,
+                    Strings.StartedWithoutArgumentsTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
     }

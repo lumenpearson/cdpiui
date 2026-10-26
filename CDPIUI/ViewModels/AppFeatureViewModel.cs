@@ -16,6 +16,8 @@ public sealed class AppFeatureViewModel
     public IReadOnlyList<AppFeatureLinkViewModel> Links { get; set; } = [];
     public bool IsNew { get; set; }
 
+    public string BadgeText => Localizer.Get().GetLocalizedString("AppFeatureNewBadge");
+
     public Visibility BadgeVisibility => !IsNew
         ? Visibility.Collapsed
         : Visibility.Visible;

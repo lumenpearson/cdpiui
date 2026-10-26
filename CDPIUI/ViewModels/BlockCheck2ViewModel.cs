@@ -550,7 +550,8 @@ public sealed class BlockCheck2ViewModel : INotifyPropertyChanged
                 .Distinct(StringComparer.OrdinalIgnoreCase));
         if (normalizedContent.Length == 0)
         {
-            throw new InvalidDataException("The custom site list is empty.");
+            throw new InvalidDataException(
+                WinUI3Localizer.Localizer.Get().GetLocalizedString("BlockCheck2CustomSiteListEmpty"));
         }
 
         BlockCheck2SiteListItem? item = SelectedSiteLists.FirstOrDefault(candidate => candidate.IsCustom);

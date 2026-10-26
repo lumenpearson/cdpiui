@@ -124,6 +124,9 @@ namespace CDPIUI.Helper.AddOns
         private const int DpiRangeBytes = 65536;
         private const int MaxParallel = 8;
         private const string DpiSuiteUrl = "https://hyperion-cs.github.io/dpi-checkers/ru/tcp-16-20/suite.v2.json";
+        // Optional override of DpiSuiteUrl in the settings file. An empty value keeps the default.
+        private static readonly string[] DpiSuiteUrlSettingGroup = ["ADDONS", "PRESETTEST"];
+        private const string DpiSuiteUrlSettingKey = "dpiSuiteUrl";
 
         private readonly object _curlLock = new();
         private readonly List<Process> _activeCurls = new();
@@ -271,6 +274,7 @@ namespace CDPIUI.Helper.AddOns
                         if (p != null && !p.HasExited)
                             p.Kill(entireProcessTree: true);
                     }
+                    // The process can exit between the check and Kill: nothing is left to stop.
                     catch { }
                 }
                 _activeCurls.Clear();
@@ -306,7 +310,10 @@ namespace CDPIUI.Helper.AddOns
                 if (item != null && !string.IsNullOrEmpty(item.ShortName))
                     return item.ShortName;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't get the name of pack {preset.packId}: {ex.Message}");
+            }
             return preset.packId;
         }
 
@@ -452,7 +459,14 @@ namespace CDPIUI.Helper.AddOns
                 CancelAllCurls();
                 if (payloadFile != null)
                 {
-                    try { File.Delete(payloadFile); } catch { }
+                    try
+                    {
+                        File.Delete(payloadFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't delete payload file: {ex.Message}");
+                    }
                 }
                 // Whatever ended the test, the component must not keep running with a tested preset.
                 try
@@ -461,7 +475,10 @@ namespace CDPIUI.Helper.AddOns
                     if (wasRunning)
                         await processManager.StartProcess();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't restore the component state after the test: {ex.Message}");
+                }
             }
 
             return BuildRunResult(results, testType, wasCancelled);
@@ -743,7 +760,7 @@ namespace CDPIUI.Helper.AddOns
             try
             {
                 using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(CurlTimeoutSeconds + 2) };
-                string json = await client.GetStringAsync(DpiSuiteUrl, ct);
+                string json = await client.GetStringAsync(GetDpiSuiteUrl(), ct);
                 var entries = JsonSerializer.Deserialize<List<DpiSuiteEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 return entries?.Where(e => e != null && !string.IsNullOrEmpty(e.host)).ToList();
             }
@@ -752,6 +769,27 @@ namespace CDPIUI.Helper.AddOns
                 Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't fetch DPI suite: {ex.Message}");
                 return null;
             }
+        }
+
+        private static string GetDpiSuiteUrl()
+        {
+            try
+            {
+                string custom = SettingsManager.Instance.GetValue<string>(DpiSuiteUrlSettingGroup, DpiSuiteUrlSettingKey);
+                if (string.IsNullOrWhiteSpace(custom))
+                    return DpiSuiteUrl;
+
+                custom = custom.Trim();
+                if (Uri.TryCreate(custom, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps)
+                    return uri.AbsoluteUri;
+
+                Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Ignored DPI suite URL {custom}: not an absolute https URL");
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't read DPI suite URL setting: {ex.Message}");
+            }
+            return DpiSuiteUrl;
         }
 
         private static string CreatePayloadFile()
@@ -889,10 +927,14 @@ namespace CDPIUI.Helper.AddOns
                 foreach (string dir in pathVar.Split(Path.PathSeparator))
                 {
                     if (string.IsNullOrWhiteSpace(dir)) continue;
+                    // A PATH entry can be malformed: skip it and check the next one.
                     try { if (File.Exists(Path.Combine(dir.Trim(), "curl.exe"))) return true; } catch { }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't look for curl.exe: {ex.Message}");
+            }
             return false;
         }
 
@@ -927,6 +969,7 @@ namespace CDPIUI.Helper.AddOns
 
                 using (ct.Register(() =>
                 {
+                    // The process can exit between the check and Kill: nothing is left to stop.
                     try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
                 }))
                 {
@@ -936,6 +979,7 @@ namespace CDPIUI.Helper.AddOns
                     }
                     catch (OperationCanceledException)
                     {
+                        // The process can exit between the check and Kill: nothing is left to stop.
                         try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
                         throw;
                     }
@@ -972,6 +1016,7 @@ namespace CDPIUI.Helper.AddOns
                 if (ok > 0) return (true, sum / ok);
             }
             catch (OperationCanceledException) { throw; }
+            // An unknown or unreachable host throws PingException: that is a failed ping, not an error.
             catch { }
             return (false, -1);
         }

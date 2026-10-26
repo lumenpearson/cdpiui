@@ -58,7 +58,7 @@
         </Grid>
         <StackPanel x:Name="LoadingStackPanel" Grid.Row="2" Visibility="Collapsed">
             <ProgressRing IsIndeterminate="True"/>
-            <TextBlock Text="Loading..." HorizontalAlignment="Center" Margin="0 5 0 0"/> 
+            <TextBlock l:Uids.Uid="SelectConfigLoadingTextBlock" HorizontalAlignment="Center" Margin="0 5 0 0"/> 
         </StackPanel>
         <StackPanel x:Name="ConfigsNotFoundStackPanel" Visibility="Collapsed" Grid.Row="2">
             <TextBlock l:Uids.Uid="ConfigsForComponentNotFound"/>

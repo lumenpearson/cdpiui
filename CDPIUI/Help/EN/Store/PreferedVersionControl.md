@@ -10,7 +10,7 @@ The application regularly connects to the server to get this information:
 - The availability of updates for items from the Store.
 - The latest version of the Store database.
 
-**Note.** You can fully disable the update check. Open [Settings] and clear the related check boxes in the [Notifications] group.
+**Note.** You can fully disable the update check. Open [Settings] and clear the related check boxes in the [Notification settings] group.
 
 The Store also uses the server to download new items to your device.
 
@@ -30,9 +30,9 @@ If the Store and the application updates operate correctly, do not change the pr
 
 ### How do I change the preferred server?
 
-1. Open the Component Store. Use the [Utilities] page of the main window.
+1. Open the Component Store. Use the [Utils] page of the main window.
 2. Open the [Settings] page of the Store.
-3. Set [Preferred version control] to the necessary value.
+3. Set [Preferred version control type] to the necessary value.
 4. Restart the application. The change starts to operate only after the restart.
 
 ### Which version controls are available?

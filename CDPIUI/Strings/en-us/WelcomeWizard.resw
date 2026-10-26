@@ -288,4 +288,19 @@ It this right?</value>
     <value>Store helps you install items from GitHub (Zapret, TG WS Proxy, for example). If GitHub isn't available for you internal proxy may help.
 If you don't have any problems with GitHub – skip this step.</value>
   </data>
+  <data name="MigrationError_MIGRATION_CANCELED" xml:space="preserve">
+    <value>The transfer was canceled.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_NOT_FOUND" xml:space="preserve">
+    <value>The transfer archive was not found.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_INVALID" xml:space="preserve">
+    <value>The transfer archive is damaged or has an unsupported format.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_ACCESS_DENIED" xml:space="preserve">
+    <value>Access to the transfer archive was denied.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_PREPARATION_FAILED" xml:space="preserve">
+    <value>Could not prepare the data for the transfer.</value>
+  </data>
 </root>

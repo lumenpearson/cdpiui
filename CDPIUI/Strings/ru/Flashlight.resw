@@ -156,7 +156,7 @@
     <value>Утилита "netsh.exe" должна присутствовать в системной переменной PATH. В противном случае компоненты не смогут нормально работать и, как следствие, обход выполняться не будет</value>
   </data>
   <data name="CheckProxy" xml:space="preserve">
-    <value>Чтобы использовать такие компоненты как Zapret и GoodbyeDPI необходимо отключить системный прокси. Это не относится к локальным прокси, работающим для определенного диапазона приложений через, например, ProxiFyre</value>
+    <value>Чтобы использовать такие компоненты как Zapret и GoodbyeDPI необходимо отключить системный прокси. Это не относится к локальным прокси, работающим для определённого диапазона приложений через, например, ProxiFyre</value>
   </data>
   <data name="CheckSmartByte" xml:space="preserve">
     <value>Служба "SmartByte" конфликтует с Zapret и другими компонентами. Эта служба должна быть отключена в системе</value>
@@ -261,10 +261,10 @@
     <value>Помощник работы с пресетами — Главная</value>
   </data>
   <data name="ViewGoodCheckReportPage" xml:space="preserve">
-    <value>Просмотр отчета подбора GoodCheck</value>
+    <value>Просмотр отчёта подбора GoodCheck</value>
   </data>
   <data name="ViewGoodCheckSiteListReportPage" xml:space="preserve">
-    <value>Просмотр отчета подбора GoodCheck для списка сайтов</value>
+    <value>Просмотр отчёта подбора GoodCheck для списка сайтов</value>
   </data>
   <data name="HowToFixThisProblem.Content" xml:space="preserve">
     <value>Как исправить эту ошибку?</value>

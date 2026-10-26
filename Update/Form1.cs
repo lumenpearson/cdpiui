@@ -12,19 +12,14 @@ namespace Update
 {
     public partial class MainWindow : Form
     {
-        private const string ErrorMessage = 
-            "An unexpected error occurred while updating the application. " +
-            "Additionally, an attempt to downgrade to the previous version failed.\n" +
-            "You may need to manually reinstall the application to resolve this issue.\n" +
-            "Please follow these steps:\n" +
-            "1. Uninstall the current version of the application.\n" +
-            "2. Download the latest version from GitHub.\n" +
-            "3. Install the downloaded version.\n" +
-            "If the problem persists, contact support.\n" +
-            "ERROR CODE: {0}";
         public MainWindow()
         {
             InitializeComponent();
+
+            Text = Strings.WindowTitle;
+            label2.Text = Strings.Heading;
+            button1.Text = Strings.CancelButton;
+            StatusLabel.Text = Strings.Preparing;
 
             InstallHelper.Instance.ProgressChanged += ProgressChanged;
             InstallHelper.Instance.InstallationStateChanged += InstallationStateChanged;
@@ -68,42 +63,39 @@ namespace Update
             switch (state)
             {
                 case (InstallState.Prepare):
-                    SetStatus("Preparing...");
+                    SetStatus(Strings.Preparing);
                     break;
                 case (InstallState.Unpack):
-                    SetStatus("Unpacking...");
+                    SetStatus(Strings.Unpacking);
                     break;
                 case (InstallState.Copy):
-                    SetStatus("Copying files...");
+                    SetStatus(Strings.CopyingFiles);
                     break;
                 case (InstallState.Finalize):
-                    SetStatus("Finalizing...");
+                    SetStatus(Strings.Finalizing);
                     break;
                 case (InstallState.Completed):
-                    SetStatus("Complete");
-                    if (button1.InvokeRequired)
-                    {
-                        button1.Invoke(new Action(() => button1.Enabled = true));
-                    }
-                    else
-                    {
-                        button1.Enabled = true;
-                    }
+                    SetStatus(Strings.Complete);
+                    EnableCloseButton();
                     button1.Click += (s, e) => Application.Exit();
                     break;
                 case (InstallState.Error):
-                    SetStatus("Exception happens");
-                    if (button1.InvokeRequired)
-                    {
-                        button1.Invoke(new Action(() => button1.Enabled = true));
-                    }
-                    else
-                    {
-                        button1.Enabled = true;
-                    }
+                    SetStatus(Strings.ExceptionHappens);
+                    EnableCloseButton();
                     button1.Click += (s, e) => Application.Exit();
                     break;
             }
+        }
+
+        private void EnableCloseButton()
+        {
+            if (button1.InvokeRequired)
+            {
+                button1.Invoke(new Action(EnableCloseButton));
+                return;
+            }
+            button1.Text = Strings.CloseButton;
+            button1.Enabled = true;
         }
 
         private void CurrentFileChanged(string filename)
@@ -120,7 +112,7 @@ namespace Update
                 BeginInvoke(new Action(() => ErrorOccurred(installError, error)));
                 return;
             }
-            MessageBox.Show(this, string.Format(ErrorMessage, error), "An error occurred",
+            MessageBox.Show(this, string.Format(Strings.ErrorMessage, error), Strings.ErrorTitle,
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
             Application.Exit();
         }
