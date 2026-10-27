@@ -4,6 +4,8 @@
 
 `CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` and `EditHostFile`. The target framework is `net8.0-windows`, because `Update` and `EditHostFile` target `net8.0-windows`. The project sets `DisableTransitiveFrameworkReferences`: the tests do not need the Windows Desktop runtime of `Update`, and they also run on Linux.
 
+`CDPIUI.ElevatedLauncher` is a Native AOT executable. The project does not reference it. It compiles `CDPIUI.ElevatedLauncher/LaunchPolicy.cs` as a linked file (`Tools\ElevatedLauncher\LaunchPolicy.cs`).
+
 ## Run the tests
 
 On Windows:
@@ -42,9 +44,10 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `AddOns` | `BlockCheckTargetInputParserTests` | BlockCheck2 target list: schemes, ports, protocols, IDN, duplicates, limits |
 | `AddOns` | `ConfigImportGoldenTests` | Import of Flowseal batch files compared with the expected files in `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Parse of `set` commands in imported scripts |
+| `AddOns` | `ConfigShareReadTests` | Read of a `.cdpiconfig` package: valid and damaged packages, size limits |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Paths inside a `.cdpiconfig` package: traversal, device names, links |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Rejection of options that write outside a `.cdpiconfig` package |
-| `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: arguments, exit codes, block pages, cancellation |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | curl probe of BlockCheck2 with a fake process: the system curl path, arguments, exit codes, block pages, cancellation |
 | `AddOns` | `StrategyCatalogValidatorTests` | Rules of the BlockCheck2 strategy catalogue and the built-in catalogue |
 | `AddOns` | `ZapretConfigImportServiceTests` | Batch file syntax: shell tail, carets, file modifiers |
 | `Core` | `BatchFileEncodingTests` | Encoding of batch files (Cyrillic, UTF-8 BOM) |
@@ -57,6 +60,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Core` | `LScriptCoreTests` | LScript conditions, nested arguments and the parse of condition strings |
 | `Core` | `ProcessServiceTests` | Quiet flag in process arguments |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Proxy address, port and format parse |
+| `Core` | `StoreRequestCredentialsTests` | Credentials of Store requests: the repository token only in direct requests to the repository hosts, the proxy key only in proxy requests |
 | `Core` | `ReplaceVariablesTests`, `ReplaceFilesPathTests` | Variable replacement and file path replacement in presets |
 | `Core` | `VersionHelperTests` | Version comparison |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Conversion of Zapret Legacy arguments to Zapret2 (with the expected files in `TestData\Zapret1ToZapret2`) |
@@ -67,16 +71,18 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Shared` | `CatalogVerifierTests` | Signature check of update catalogs |
 | `Shared` | `ConditionalTaskFileServiceTests` | Save and load of `.cdpitask` files |
 | `Shared` | `ErrorConvertorTests` | Error code conversion |
-| `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder, the pipe key file |
+| `Shared` | `ExecutableLeaseTests` | Locked files and fingerprint of a program, the approval file, the Store item folder |
 | `Shared` | `FileWritingOptionsTests` | Options in component arguments that write files outside the permitted folders |
 | `Shared` | `GoodbyeDpiMigrationActivationTests` | Activation arguments of the GoodbyeDPI migration: round trip and invalid values |
 | `Shared` | `GuiActivationArgumentsTests` | `--gui-args:` encode, decode and command-line quotes |
 | `Shared` | `OutputCleanupHelperTests` | Removal of escape sequences from console output |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Pipe message round trip |
+| `Shared` | `PipeSessionFileTests` | Pipe name and key format, write and read of the session file, stale and damaged files |
 | `Shared` | `StreamStringTests` | Pipe stream strings |
 | `Shared` | `TasksManageServiceTests` | Task creation and stop with concurrent calls |
 | `Shared` | `TrustedPathValidatorTests` | Trusted path checks |
 | `Shared` | `XmlSettingsServiceTests` | XML settings, values in different cultures |
+| `Tools` | `ElevatedLauncherTests` | `CDPIUI.ElevatedLauncher`: allowed target names, removal of the .NET runtime variables, launcher arguments of `ElevatedLauncherCommand` |
 | `Tools` | `EditHostFileTests` | `EditHostFile`: encoding detection, line breaks, add, remove and recover of the CDPI UI block, backup |
 | `Tools` | `UpdateInstallHelperTests` | `Update`: path checks, layer sequence, skipped files (`catalog.cat`, `Update.exe`), apply and rollback |
 
@@ -92,7 +98,7 @@ To read a test file, use `Path.Combine(AppContext.BaseDirectory, "TestData", "<f
 
 ## Add a test
 
-1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`. Put the tests of `Update` and `EditHostFile` in `Tools`.
+1. Put the test class in the folder of the tested project: `AddOns`, `Core` or `Shared`. Put the tests of `Update`, `EditHostFile` and `CDPIUI.ElevatedLauncher` in `Tools`.
 2. Use the namespace `CDPIUI.Tests.<Folder>`.
 3. Mark each test with `[Fact]` or `[Theory]`. The project imports `Xunit` globally.
 4. If the test writes files, use a new directory in `Path.GetTempPath()`.

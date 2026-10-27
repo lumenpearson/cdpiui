@@ -71,7 +71,7 @@
 
 Главное окно не запускает компоненты само: оно отправляет запрос трею, а трей запускает компонент и передаёт его состояние и вывод обратно. Трей принимает команды только от главного окна приложения и запускает файлы только из папки установки и папок данных **CDPI UI**. В установке MSI новую или изменённую программу вне папки установки трей запускает, только если это подписанный элемент Магазина или если пользователь подтвердил запуск.
 
-Ещё две утилиты работают на .NET 8, как и трей, и поставляются одним файлом каждая: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора.
+Ещё две утилиты работают на .NET 8, как и трей, и поставляются одним файлом каждая: `Update.exe` устанавливает обновления приложения (`.cdpipatch`), `EditHostFile.exe` изменяет файл hosts с правами администратора. Трей и `EditHostFile.exe` запускаются с правами администратора через небольшую программу `CDPIUI_ElevatedLauncher.exe` (Native AOT): она убирает переменные среды .NET пользователя, чтобы они не могли подменить среду выполнения программ с правами администратора.
 
 ## Сборка из исходного кода
 
@@ -91,7 +91,7 @@
 | Проверка списка файлов установщика | `pwsh .github/scripts/check_setup_files.ps1` |
 | Сборка `Setup.msi` | `dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64` |
 
-Каждый push в ветки `main`, `dev` и `fix/**` и каждый pull request проверяется в CI (`.github/workflows/ci.yml`): сборка библиотек, тесты и проверка пакетов NuGet на известные уязвимости, сборка приложения и `Setup.msi` (это задание не блокирует проверку), сборка `Update` и `EditHostFile`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
+Каждый push в ветки `main`, `dev` и `fix/**` и каждый pull request проверяется в CI (`.github/workflows/ci.yml`): поиск секретов (gitleaks), сборка библиотек, тесты и проверка пакетов NuGet на известные уязвимости, сборка приложения и `Setup.msi`, сборка `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher`. Подробности — в [CONTRIBUTING.ru.md](.github/CONTRIBUTING.ru.md).
 
 ## Документация
 
@@ -111,6 +111,7 @@
 | Модульные тесты | [CDPIUI.Tests/README.ru.md](CDPIUI.Tests/README.ru.md) |
 | Установка обновлений | [Update/README.ru.md](Update/README.ru.md) |
 | Редактор файла hosts | [EditHostFile/README.ru.md](EditHostFile/README.ru.md) |
+| Программа запуска с правами администратора | [CDPIUI.ElevatedLauncher/README.ru.md](CDPIUI.ElevatedLauncher/README.ru.md) |
 | Установщик MSI | [NewSetup/README.ru.md](NewSetup/README.ru.md) |
 | CI, релизы и патчи | [.github/RELEASES.ru.md](.github/RELEASES.ru.md) |
 | Лицензии сторонних библиотек | [THIRD-PARTY-NOTICES.ru.md](THIRD-PARTY-NOTICES.ru.md) |

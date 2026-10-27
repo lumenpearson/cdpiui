@@ -41,8 +41,9 @@ class Programm
             return;
         }
 
-        // One tray per machine: the pipe name is global, and a second tray renamed _Update.exe,
-        // started the GUI and registered hot keys before it failed on the pipe.
+        // One tray per machine: the components, the system proxy and the session file in the
+        // application folder are shared by all Windows sessions. A second tray would also rename
+        // _Update.exe, start the GUI and register hot keys.
         if (!TryAcquireSingleInstance())
         {
             Logger.Instance.CreateWarningLog("Startup", "Another tray is already running; exiting.");
@@ -69,6 +70,8 @@ class Programm
 
         StartGuiIfRequested(args);
         FinishUpdate(args);
+        // An autorun task of an earlier version starts the tray with the environment of the user profile.
+        _ = Task.Run(AutoStartManager.MoveTaskToLauncher);
 
         if (args.Contains("--autorun"))
         {
@@ -105,8 +108,9 @@ class Programm
         PackageStaging.CleanUp();
         RegeditHelper.RestoreLeftoverSnapshot();
 
-        // Before the pipe starts, so that the GUI never reads a key of an earlier start.
-        PipeSessionKeyWriter.Create();
+        // Before the pipe starts, so that the GUI never reads a pipe name or a key of an earlier
+        // start. The pipe server publishes the new ones after it has created the pipe.
+        PipeSessionWriter.RemoveEarlierSession();
         PipeServer.Instance.Init();
         PipeServer.Instance.Start();
     }

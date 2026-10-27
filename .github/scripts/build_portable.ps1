@@ -1,9 +1,12 @@
 <#
 .SYNOPSIS
-Builds the x64 release layout of CDPI UI: the GUI publish folder with the tray, Update.exe and
-EditHostFile.exe next to it. NewSetup/NewSetupFiles.wxs takes its files from the same folder.
-Needs msbuild (Visual Studio or microsoft/setup-msbuild) for the GUI and the .NET 8 SDK.
+Builds the x64 release layout of CDPI UI: the GUI publish folder with the tray, Update.exe,
+EditHostFile.exe and CDPIUI_ElevatedLauncher.exe next to it. NewSetup/NewSetupFiles.wxs takes its
+files from the same folder.
+Needs msbuild (Visual Studio or microsoft/setup-msbuild) for the GUI, the .NET 8 SDK, and the C++
+build tools of Visual Studio for the Native AOT launcher.
 The tray, Update.exe and EditHostFile.exe are framework-dependent single-file executables.
+CDPIUI_ElevatedLauncher.exe is a Native AOT executable.
 #>
 param(
     [string] $Configuration = "Release"
@@ -20,6 +23,16 @@ function Invoke-Checked([string] $name, [scriptblock] $command) {
     Write-Output "== $name"
     & $command
     if ($LASTEXITCODE -ne 0) { throw "$name failed with exit code $LASTEXITCODE" }
+}
+
+function Test-ManagedAssembly([string] $path) {
+    try {
+        [void][System.Reflection.AssemblyName]::GetAssemblyName($path)
+        return $true
+    }
+    catch {
+        return $false
+    }
 }
 
 & (Join-Path $PSScriptRoot "create_secret_stub.ps1")
@@ -60,8 +73,20 @@ Invoke-Checked "Publish EditHostFile" {
         -r win-x64 --self-contained false -p:PublishSingleFile=true -o (Join-Path $tools "edithostfile")
 }
 
+# The GUI and the autorun task start the tray and EditHostFile.exe through the launcher. It removes
+# the .NET variables of the user profile (DOTNET_ROOT, CORECLR_PROFILER_PATH and others) that UAC
+# gives to an elevated process. It has no .NET host, so these variables do not act on it.
+Invoke-Checked "Publish CDPIUI.ElevatedLauncher" {
+    dotnet publish (Join-Path $root "CDPIUI.ElevatedLauncher/CDPIUI.ElevatedLauncher.csproj") -c $Configuration -p:Platform=x64 `
+        -r win-x64 -o (Join-Path $tools "launcher")
+}
+$launcher = Join-Path $tools "launcher/CDPIUI_ElevatedLauncher.exe"
+if (-not (Test-Path -LiteralPath $launcher)) { throw "The launcher publish has no CDPIUI_ElevatedLauncher.exe." }
+if (Test-ManagedAssembly $launcher) { throw "CDPIUI_ElevatedLauncher.exe is a .NET assembly. It must be a Native AOT executable." }
+
 Copy-Item -LiteralPath (Join-Path $tools "tray/CDPIUI_TrayIcon.exe") -Destination $publish
 Copy-Item -LiteralPath (Join-Path $tools "update/Update.exe") -Destination $publish
 Copy-Item -LiteralPath (Join-Path $tools "edithostfile/EditHostFile.exe") -Destination $publish
+Copy-Item -LiteralPath $launcher -Destination $publish
 
 Write-Output "Portable layout: $publish"

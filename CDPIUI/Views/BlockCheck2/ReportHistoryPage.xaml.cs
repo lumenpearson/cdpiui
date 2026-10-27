@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 using CDPIUI.AddOns.BlockCheck2.Reporting;
 using CDPIUI.Controls.Default;
+using CDPIUI.Core.System;
 using CDPIUI.Helper.AddOns.BlockCheck2;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -189,7 +190,7 @@ public sealed partial class ReportHistoryPage : TemplatePage
 
         Process.Start(new ProcessStartInfo
         {
-            FileName = "explorer.exe",
+            FileName = ShellHelper.ExplorerPath,
             Arguments = $"/select,\"{item.Entry.FilePath}\"",
             UseShellExecute = true,
         });

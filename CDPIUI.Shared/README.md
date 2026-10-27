@@ -26,7 +26,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 
 | File | Content |
 |---|---|
-| `SharedConstants.cs` | Store repository names, Store item ids, update URLs, `DatabaseFileName`, `PipeName`, the URI scheme `cdpiui` (`Schema`), `IsPreview` |
+| `SharedConstants.cs` | Store repository names, Store item ids, update URLs, `DatabaseFileName`, the URI scheme `cdpiui` (`Schema`), `IsPreview` |
 | `Utils.cs` (`SharedUtils`) | `GenerateNewId`, `IsOsSupportedNewGlyph`, `GetRandomHexNumber` |
 
 `GetRandomHexNumber` uses `RandomNumberGenerator`. Use it for secret values, not `System.Random`.
@@ -38,7 +38,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 | `XMLSettingsService` | Reads and writes `Settings.xml`. The GUI and the tray use it. |
 | `CommandLine/GuiActivationArguments` | Encodes the GUI arguments as `--gui-args:`, so the tray can start the GUI with the same arguments. |
 | `CommandLine/CommandLineTokens` | Splits a component command line into arguments as the Windows command line does. `ConfigCommandLine` in Core uses it. |
-| `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. |
+| `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. `Update.exe` compiles this file as a link (see [Update/README.md](../Update/README.md#build)). |
 | `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no part below the root is a reparse point. |
 | `Filesystem/ApplicationPathMatcher` | Finds the processes and drivers of the application during uninstall. |
 | `Filesystem/DirectoriesManager` | Returns the executable directory if it is writable. Otherwise, or if the caller sets `forceAppData` (MSI installation), it returns `%LOCALAPPDATA%\CDPIUI`. |
@@ -204,7 +204,7 @@ The release workflow writes `Secret.cs` with `.github/scripts/create_release_sec
 
 `TrustedCertificates` contains the SHA-1 thumbprints of the certificates that can sign catalogs and `Setup.msi`.
 
-The application is public, so each value in `Secret.cs` is public too. Use only Store tokens that cannot change anything. `create_release_secret.ps1` refuses a GitHub token with scopes and a GitLab token with scopes other than `read_api`, `read_repository` and `read_registry`. The GUI sends a Store token only to GitHub and GitLab hosts (`RequestWorker`). An older `Secret.cs` can contain `AuthGuid`. The application does not use this member.
+The application is public, so each value in `Secret.cs` is public too. Use only Store tokens that cannot change anything. `create_release_secret.ps1` refuses a GitHub token with scopes and a GitLab token with scopes other than `read_api`, `read_repository` and `read_registry`. The GUI sends a Store token only in direct requests to GitHub and GitLab hosts (`RequestWorker`). It does not send the token to the Store proxy. The proxy uses a token of its own. An older `Secret.cs` can contain `AuthGuid`. The application does not use this member.
 
 CAUTION: Do not commit `Secret.cs`. Do not use the stub values in a release build.
 
@@ -222,6 +222,8 @@ The result is a `CatalogVerification` value: `Success`, `NoSignature`, `NotTrust
 The certificates are pinned by thumbprint, and the chain, the revocation and the expiry date are not checked. This is intentional: the certificates are self-signed, and an expiry check would reject all packages that were signed before the expiry date. To replace a certificate, add the new thumbprint to `TrustedCertificates`, release this build, and only then sign with the new certificate. To revoke a certificate, remove its thumbprint and release a build.
 
 `FileWritingOptions` finds component options that write a file (`--debug=@<file>`, `--wf-save`, `--hostlist-auto`, `--hostlist-auto-debug`) and checks that the file is in the allowed folders. It can also read the argument files (`@<file>`). The tray uses it before each component start, and `ConfigShare` uses it for shared presets.
+
+`ElevatedLauncherCommand` gives the file name of `CDPIUI_ElevatedLauncher.exe`, its target names (`tray`, `hosts`) and its command line. The GUI and the autorun task of the tray start the tray and `EditHostFile.exe` with administrator rights only through the launcher. Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
 
 ## System
 

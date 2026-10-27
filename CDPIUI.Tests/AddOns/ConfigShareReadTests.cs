@@ -89,31 +89,87 @@ public sealed class ConfigShareReadTests : IDisposable
         AssertRejected(CreatePackage(manifest), "SHARE_ARCHIVE_INVALID");
     }
 
+    [Fact]
+    public void EntryOverTheSizeLimitIsRejectedBeforeItIsRead()
+    {
+        // Only the declared size is large: the reader must reject it without reading the entry.
+        string archivePath = CreatePackage(CreateManifest());
+        SetDeclaredLength(archivePath, HostsPath, ConfigShareService.MaxEntryBytes + 1, compressed: false);
+
+        AssertRejected(archivePath, "SHARE_TOO_LARGE");
+    }
+
+    [Fact]
+    public void PackageOverTheTotalLimitIsRejectedBeforeItIsRead()
+    {
+        string[] paths = ["resources/a.txt", "resources/b.txt", "resources/c.txt"];
+        string archivePath = CreatePackage(CreateManifest(paths), paths);
+        // Each entry is in the entry limit, and the ratio is 1, but together they are too large.
+        long length = ConfigShareService.MaxTotalBytes / 3 + 1;
+        foreach (string path in paths)
+            SetDeclaredLength(archivePath, path, length, compressed: true);
+
+        AssertRejected(archivePath, "SHARE_TOO_LARGE");
+    }
+
     private static void AssertRejected(string archivePath, string code)
     {
         var exception = Assert.Throws<ConfigShareException>(() => new ConfigShareService().Read(archivePath));
         Assert.Equal(code, exception.Code);
     }
 
-    private static ConfigShareManifest CreateManifest() => new()
+    private static ConfigShareManifest CreateManifest(params string[] paths)
     {
-        Name = "Shared",
-        Developer = "Tester",
-        Config = new ConfigItem
+        paths = paths.Length == 0 ? [HostsPath] : paths;
+        return new()
         {
-            target = ["component"],
-            startup_string = "--hostlist=share://" + HostsPath,
-        },
-        Resources =
-        [
-            new ConfigShareResource
+            Name = "Shared",
+            Developer = "Tester",
+            Config = new ConfigItem
             {
-                Path = HostsPath,
+                target = ["component"],
+                startup_string = string.Join(' ', paths.Select(path => "--hostlist=share://" + path)),
+            },
+            Resources = paths.Select(path => new ConfigShareResource
+            {
+                Path = path,
                 Length = Encoding.UTF8.GetByteCount(HostsText),
                 Sha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(HostsText))),
-            },
-        ],
-    };
+            }).ToList(),
+        };
+    }
+
+    private string CreatePackage(ConfigShareManifest manifest, string[] resourcePaths)
+    {
+        string archivePath = Path.Combine(_directory, "preset" + ConfigShareService.Extension);
+        using var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create);
+        WriteEntry(archive, "manifest.json", JSONConvertor.SerializeObject(manifest));
+        foreach (string path in resourcePaths)
+            WriteEntry(archive, path, HostsText);
+        return archivePath;
+    }
+
+    /// <summary>
+    /// Changes the sizes that the central directory declares for an entry; the data stays small.
+    /// </summary>
+    private static void SetDeclaredLength(string archivePath, string entryName, long length, bool compressed)
+    {
+        byte[] bytes = File.ReadAllBytes(archivePath);
+        byte[] name = Encoding.UTF8.GetBytes(entryName);
+        for (int offset = 0; offset + 46 <= bytes.Length; offset++)
+        {
+            if (BitConverter.ToUInt32(bytes, offset) != 0x02014b50 ||
+                BitConverter.ToUInt16(bytes, offset + 28) != name.Length ||
+                !bytes.AsSpan(offset + 46, name.Length).SequenceEqual(name))
+                continue;
+            BitConverter.GetBytes((uint)length).CopyTo(bytes, offset + 24);
+            if (compressed)
+                BitConverter.GetBytes((uint)length).CopyTo(bytes, offset + 20);
+            File.WriteAllBytes(archivePath, bytes);
+            return;
+        }
+        throw new InvalidOperationException($"No central directory entry {entryName}.");
+    }
 
     private string CreatePackage(
         ConfigShareManifest? manifest,

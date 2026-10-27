@@ -26,7 +26,7 @@ BlockCheck2 finds Zapret2 strategies for a set of sites with `curl` probes. It c
 
 ### ConfigImport
 
-ConfigImport converts `.bat`, `.cmd`, `.txt` and `.json` files into a CDPI UI config with a static analysis. It never runs the source script. It has a special analyzer for `winws` and `winws2`, finds the missing resources, lets the user test the result and copies the resources into `LocalUserStorage`. It sends `.cdpiconfig` packages to ConfigShare. The import window (`cdpiui://Tools/ImportConfig`) uses it. Refer to [ConfigImport/README.md](ConfigImport/README.md).
+ConfigImport converts `.bat`, `.cmd`, `.txt` and `.json` files into a CDPI UI config with a static analysis. It never runs the source script. It has a special analyzer for `winws` and `winws2`, finds the missing resources, lets the user test the result and copies the resources into `LocalUserStorage`. It does not copy a resource outside the folder of the imported file. It sends `.cdpiconfig` packages to ConfigShare. The import window (`cdpiui://Tools/ImportConfig`) uses it. Refer to [ConfigImport/README.md](ConfigImport/README.md).
 
 ### ConfigShare
 
@@ -60,7 +60,7 @@ Use these rules:
 - Give the UI an entry point that accepts its dependencies as parameters, for example `BlockCheckAddOnService`.
 - Put the code that starts processes behind an interface, for example `IBlockCheckStrategyRunner`. Then tests can use a fake implementation.
 - Return stable issue or error codes. Do not return translated texts.
-- Start components and external add-on executables through the tray, for example with `ComponentTasksManager` or a pipe message. The tray starts only files that pass its trusted path checks. The GUI process can start system tools itself, for example `curl.exe` in BlockCheck2.
+- Start components and external add-on executables through the tray, for example with `ComponentTasksManager` or a pipe message. The tray starts only files that pass its trusted path checks. The GUI process can start system tools itself, for example `curl.exe` in BlockCheck2. Start a system tool by its full path, for example `Path.Combine(Environment.SystemDirectory, "curl.exe")`. Windows also looks for a file name without a path in the current folder. Thus a file with the same name in that folder can start instead of the system tool.
 
 WARNING: The tray operates as administrator. Do not send a path or arguments from an untrusted file to the tray without a check. For example, ConfigShare and BlockCheck2 reject options that write files.
 

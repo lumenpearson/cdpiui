@@ -52,7 +52,9 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
    - The tool waits a maximum of 10 s for each process name. If a process continues to run, the tool does not change files.
 2. **Stage the files.**
    - The tool deletes the old `<install>\.update-staging` and `<install>\.update-backup` folders.
+   - Before it extracts a file, the tool checks the archive limits of the tray (`ArchivePaths.EnsureWithinLimits`): a maximum of 20000 entries, a maximum of 1 GiB of data and a maximum compression ratio of 200 for an entry of 1 MiB or more. If the archive is not within the limits, the tool stops the update. The tray does this check before it starts the tool. The tool does it again, because a package can reach the tool in a different way.
    - The tool extracts the package into a new `.update-staging` folder.
+   - The tool stops the update if an entry gives more data than its header says (`ArchivePaths.ExtractToFileBounded`).
    - The tool reads the archive folders `layers/0/`, `layers/1/`, ... in sequence. The application makes packages with these folders.
    - If the archive has no `layers/` folders, the tool reads the `CDPIUI/` folder. A published patch has this folder.
    - A file in a later layer replaces the same file from an earlier layer.
@@ -139,8 +141,14 @@ On Linux or macOS, add `-p:EnableWindowsTargeting=true`. `.github/scripts/build_
 uses the same command and copies `Update.exe` into the release layout. The publish folder must
 contain only `Update.exe`.
 
+The project does not reference `CDPIUI.Shared`, because the tool must not load
+`CDPIUI.Shared.dll` from the folder that it replaces. It compiles two files of `CDPIUI.Shared` as
+links: `Basic/Filesystem/UpdatePackageLayers.cs` and `Basic/Filesystem/ArchivePaths.cs`. Thus the
+tool and the tray use the same layer rule and the same archive limits. With the `UPDATE_TOOL`
+symbol, these classes are `internal` and are in the `Update` namespace.
+
 ## Tests
 
-`CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` tests the path checks, the layer sequence, the
-staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback. The tests do not
-use the window.
+`CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` tests the path checks, the archive limits, the
+layer sequence, the staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback.
+The tests do not use the window.

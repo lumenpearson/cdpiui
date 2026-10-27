@@ -12,13 +12,15 @@ CI runs on pushes to `main`, `dev` and `fix/**`, and on pull requests. It has re
 
 | Job | Steps |
 |-----|-------|
+| `secrets` | Runs on Ubuntu. Checks out the full history without a stored token. Downloads gitleaks 8.30.1 and checks the archive against its SHA-256. Scans the files with `.gitleaks.toml`. Scans the commits that the pull request or the push adds (`base..HEAD`); older history is not scanned. A finding fails the job. |
 | `libraries` | Installs the .NET 8 SDK. Runs `create_secret_stub.ps1`. Builds `CDPIUI.Shared`, `CDPIUI.Core` (x64), `CDPIUI.AddOns` and `CDPIUI.TrayIcon` (x64) in Release. Runs `dotnet test CDPIUI.Tests`. Restores these four projects, `CDPIUI` and `CDPIUI.Tests` with `NuGetAuditMode=all` and fails if a direct or transitive package has a known vulnerability of moderate or higher severity (warnings NU1902–NU1904 become errors). |
 | `gui` | Runs `build_portable.ps1` and `check_setup_files.ps1`. Builds the MSI. Uploads `NewSetup/bin/**/*.msi` as the `setup-msi` artifact for 7 days. |
-| `tools` | Installs the .NET 8 SDK. Builds `Update/Update.csproj` and `EditHostFile/EditHostFile.csproj` (x64) in Release with `dotnet build`. Publishes each project as a framework-dependent single file (`win-x64`) to `artifacts/tools/<project>`. Fails if the publish folder contains a file other than the `.exe` file. |
+| `tools` | Installs the .NET 8 SDK. Builds `Update/Update.csproj` and `EditHostFile/EditHostFile.csproj` (x64) in Release with `dotnet build`. Publishes each project as a framework-dependent single file (`win-x64`) to `artifacts/tools/<project>`. Fails if the publish folder contains a file other than the `.exe` file. Builds `CDPIUI.ElevatedLauncher` and publishes it with Native AOT to `artifacts/tools/launcher`, with `TreatWarningsAsErrors`: a trim or AOT warning fails the job. Fails if the folder contains a file other than `CDPIUI_ElevatedLauncher.exe` or if this file is a .NET assembly. |
 
-The `gui` job has `continue-on-error`. The WinUI build needs the CommunityToolkit Labs feed and
-the Windows App SDK tools. The job gives only information until the build is reproducible on
-hosted runners.
+Each job must pass. The `gui` job blocks the check like the other jobs.
+
+The workflows refer to each action by its full commit SHA. A tag can move to other code; a SHA
+cannot. The comment after the SHA gives the version tag.
 
 ## Release files (`workflows/build_and_patch.yml`)
 
@@ -38,7 +40,7 @@ A user starts this workflow manually (`workflow_dispatch`).
 | Secret | Use |
 |--------|-----|
 | `STORE_GITHUB_TOKEN`, `STORE_GITLAB_TOKEN` | The Store tokens in `Secret.cs` (`GitHubToken`, `GitLabToken`). The application makes them public, so they must not have write access (see `create_release_secret.ps1`). |
-| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). The key is in each copy of the application. Thus the proxy must not trust the key more than an anonymous client: limit the rate and the allowed targets on the proxy. |
+| `STORE_PROXY_URL`, `STORE_PROXY_KEY` | The Store reverse proxy in `Secret.cs` (`ProxyURL`, `ProxyKey`). The key is in each copy of the application. Thus the proxy must not trust the key more than an anonymous client: limit the rate and the allowed targets on the proxy. The application does not send the Store tokens to the proxy. Give the proxy a GitHub token of its own. |
 | `TRUSTED_CERTIFICATES` | The SHA-1 thumbprints for `Secret.TrustedCertificates`, separated by spaces, commas or semicolons. |
 | `CATALOG_CERTIFICATE_PFX_BASE64` | The PFX file of the catalog signature certificate, in Base64. The patch step writes it to `RUNNER_TEMP\catalog.pfx` and deletes it at the end of the step. |
 | `CATALOG_CERTIFICATE_PASSWORD` | The password of the PFX file. |
@@ -85,7 +87,7 @@ The workflow does not make a GitHub release.
 
 ### `build_portable.ps1`
 
-Parameter: `-Configuration` (default `Release`). The script requires `msbuild` (for the GUI) and the .NET 8 SDK.
+Parameter: `-Configuration` (default `Release`). The script requires `msbuild` (for the GUI), the .NET 8 SDK and the C++ build tools of Visual Studio (for the Native AOT launcher). The hosted `windows-latest` image has them.
 The script does these steps:
 
 1. Run `create_secret_stub.ps1`.
@@ -94,10 +96,15 @@ The script does these steps:
 4. Remove the language folders that contain only `.mui` files, except `en-us` and `ru-ru`. The Windows App SDK copies approximately 90 languages.
 5. Publish `CDPIUI.TrayIcon` as a single file to `artifacts/tools/tray`.
 6. Publish `Update` and `EditHostFile` as single files (x64, `win-x64`, framework-dependent) to `artifacts/tools/update` and `artifacts/tools/edithostfile`.
-7. Copy `CDPIUI_TrayIcon.exe`, `Update.exe` and `EditHostFile.exe` into the publish folder.
+7. Publish `CDPIUI.ElevatedLauncher` with Native AOT (x64, `win-x64`) to `artifacts/tools/launcher`. Fail if `CDPIUI_ElevatedLauncher.exe` is missing or is a .NET assembly.
+8. Copy `CDPIUI_TrayIcon.exe`, `Update.exe`, `EditHostFile.exe` and `CDPIUI_ElevatedLauncher.exe` into the publish folder.
 
 `Update.exe` replaces the application files while it operates. Thus it must not load a DLL from
 the installation folder. The single file contains all the code of the tool.
+
+The GUI and the autorun task start the tray and `EditHostFile.exe` through `CDPIUI_ElevatedLauncher.exe`.
+The launcher must have no .NET host. Otherwise the .NET variables of the user profile act on it.
+Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
 
 ### `check_setup_files.ps1`
 
@@ -221,8 +228,9 @@ signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.Ha
 [Update/README.md](../Update/README.md) describes `Update.exe`. The tray deletes the `.staging`
 folder at each start.
 
-`Update.exe` does not copy a `catalog.cat` file from a patch into the installation folder. It also
-does not remove files that are not in the patch, because a patch contains only the changed files.
+`Update.exe` checks the same archive limits again before it extracts the package. It does not copy
+a `catalog.cat` file from a patch into the installation folder. It also does not remove files that
+are not in the patch, because a patch contains only the changed files.
 
 ### Catalog check
 

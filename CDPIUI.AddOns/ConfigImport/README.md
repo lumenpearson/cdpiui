@@ -22,7 +22,7 @@ The add-on does these tasks:
 6. It finds external BIN, TXT and LUA resources, generated files and missing dependencies.
 7. It suggests a replacement for a missing file. The user can also select an empty file.
 8. It lets the user test the selected component with the imported arguments.
-9. It copies the dependencies to separate folders: `List/Converted`, `Bin/Converted` and `Lua/Converted`.
+9. It copies the dependencies in the folder of the imported file to separate folders: `List/Converted`, `Bin/Converted` and `Lua/Converted`.
 10. It converts a ready `winws1` command line to `winws2` when the user moves the config to Zapret 2.
 11. It sends `.cdpiconfig` packages to the ConfigShare add-on. Refer to [ConfigShare/README.md](../ConfigShare/README.md).
 
@@ -37,6 +37,8 @@ Thus the analysis does not:
 - start programs from the source script;
 - send network requests;
 - change the source folder.
+
+The installer copies only the resources in the folder of the imported file and its subfolders. A config can name any file that the user can read, and the user can share the preset later. Thus the installer does not copy a resource outside this folder. Refer to [Relative paths](#relative-paths).
 
 The **Test** button is a separate operation. It starts the selected installed component through `ComponentTasksManager` with the calculated arguments.
 
@@ -182,7 +184,7 @@ For the initial selection in the UI, the component from the route has priority, 
 - `SourcePath`: the main imported file;
 - `Issues`: the warnings and the errors;
 - `SourceFiles`: the main file and the included config files and scripts;
-- `ReferencedFiles`: the resources that exist and that the installer copies;
+- `ReferencedFiles`: the resources that exist. The installer copies only the resources in the folder of `SourcePath` and its subfolders;
 - `MissingReferencedFiles`: the missing resources;
 - `MissingFileResolutions`: the explicit decisions of the user;
 - `GeneratedFiles`: the files that the source BAT makes before the launch.
@@ -677,7 +679,9 @@ original path: lists\ipset-exclude.txt
 saved path: List\Converted\<importId>\ipset-exclude.txt
 ```
 
-If an external resource is outside the folder of the source config, the installer uses only the file name. This does not permit a write outside the target folder: the installer checks the final destination again.
+The installer does not copy an existing resource outside the folder of the source config. The config keeps the original path of this resource, and the result has the warning `REFERENCED_FILE_OUTSIDE_SOURCE`. The user sees the path in the review and can change it later in the preset. Thus a crafted BAT file cannot add a private file of the user to a preset that the user shares later.
+
+If a missing resource outside the folder of the source config has a replacement, the installer uses only the file name. This does not permit a write outside the target folder: the installer checks the final destination again.
 
 Two saved relative paths can be the same. In this case, the installer adds a suffix to the name of the second file: the first eight hex characters of the SHA-256 of its expected absolute path.
 
@@ -685,7 +689,7 @@ Two saved relative paths can be the same. In this case, the installer adds a suf
 
 The installer makes a resource in one of three ways:
 
-1. It copies an existing `ReferencedFile` and does not overwrite.
+1. It copies an existing `ReferencedFile` in the folder of the source config and does not overwrite.
 2. It writes a `GeneratedFile` as UTF-8 without BOM.
 3. For a missing file with the decision `null`, it makes an empty file. For a missing file with a replacement, it copies the selected file.
 
@@ -815,7 +819,8 @@ Each issue has:
 | `EXECUTABLE_MISMATCH` | Error | The Zapret analysis found a generation that is different from the target |
 | `UNRESOLVED_VARIABLE` | Warning | The general analyzer cannot resolve a BAT variable |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | An external resource is missing |
-| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a resource outside the folder of the imported file. The import does not copy it, and the preset keeps its original path |
+| `INCLUDED_FILE_OUTSIDE_SOURCE` | Warning | The config reads an included config file or a called script outside the folder of the imported file |
 | `INVALID_RESOURCE_PATH` | Warning | The analyzer cannot normalize a resource path |
 | `MISSING_FILE_REPLACEMENT_NOT_FOUND` | Error | The replacement that the user selected does not exist |
 
@@ -840,7 +845,8 @@ For a `.cdpiconfig` file, the issue code is the code of the `ConfigShareExceptio
 | `UNRESOLVED_BATCH_VARIABLE` | Warning | A used BAT variable cannot be resolved |
 | `GENERATED_FILE_OUTSIDE_SOURCE` | Warning | A generated file is outside the source folder |
 | `REFERENCED_FILE_NOT_FOUND` | Warning | A BIN, TXT or LUA file is missing |
-| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a file outside the folder of the imported file. The import copies it into the preset |
+| `REFERENCED_FILE_OUTSIDE_SOURCE` | Warning | The config uses a resource outside the folder of the imported file. The import does not copy it, and the preset keeps its original path |
+| `INCLUDED_FILE_OUTSIDE_SOURCE` | Warning | The config reads an included config file or a called script outside the folder of the imported file |
 
 ### Installer codes
 
@@ -1003,7 +1009,7 @@ Keep these properties in all changes:
 
 `CDPIUI.Tests/AddOns` has tests for this add-on:
 
-- `ConfigImportServiceTests.cs` checks `ConfigImportService.TryParseSet` and the warning `REFERENCED_FILE_OUTSIDE_SOURCE`;
+- `ConfigImportServiceTests.cs` checks `ConfigImportService.TryParseSet`, the warning `REFERENCED_FILE_OUTSIDE_SOURCE` and that the installer does not copy a resource outside the source folder;
 - `ZapretConfigImportServiceTests.cs` checks `TrimShellTail`, `ExpandFileModifiers` and the warning `REFERENCED_FILE_OUTSIDE_SOURCE`;
 - `ConfigImportGoldenTests.cs` imports Flowseal BAT files from `TestData/ConfigImport` with the two analyzers. It compares the results with the expected files next to the BAT files.
 

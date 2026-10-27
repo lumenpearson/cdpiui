@@ -28,34 +28,14 @@ internal sealed class CurlProcessRunner
         ("TLS1.3", new[] { "--tlsv1.3", "--tls-max", "1.3" }),
     };
 
+    // Only the curl of the system folder: CreateProcess also looks for a bare name in the
+    // current folder, so a curl.exe next to an opened file could run instead.
+    private static readonly string CurlPath = Path.Combine(Environment.SystemDirectory, "curl.exe");
+
     private readonly object _curlLock = new();
     private readonly List<Process> _activeCurls = new();
 
-    public static bool IsAvailable()
-    {
-        try
-        {
-            string system32 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "curl.exe");
-            if (File.Exists(system32))
-                return true;
-
-            string pathVar = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            foreach (string dir in pathVar.Split(Path.PathSeparator))
-            {
-                if (string.IsNullOrWhiteSpace(dir))
-                    continue;
-                // A PATH entry can be malformed: skip it and check the next one.
-                try
-                { if (File.Exists(Path.Combine(dir.Trim(), "curl.exe"))) return true; }
-                catch (ArgumentException) { }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateWarningLog(nameof(PresetTestHelper), $"Can't look for curl.exe: {ex.Message}");
-        }
-        return false;
-    }
+    public static bool IsAvailable() => File.Exists(CurlPath);
 
     public void CancelAll()
     {
@@ -77,7 +57,7 @@ internal sealed class CurlProcessRunner
 
     public async Task<(int exit, string stdout, string stderr)> RunAsync(IEnumerable<string> args, CancellationToken ct)
     {
-        var psi = new ProcessStartInfo("curl.exe")
+        var psi = new ProcessStartInfo(CurlPath)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,

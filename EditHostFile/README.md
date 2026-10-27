@@ -96,7 +96,7 @@ The messages are in English. If the Windows UI language is Russian, they are in 
 
 | Caller | Call |
 |--------|------|
-| `HostsFileEditService` (`CDPIUI.AddOns/HostsFileEditor/HostsFileEditorService.cs`) | Starts the tool from the application folder with the `runas` verb. Returns the exit code. The hosts editor page (`CDPIUI/Views/EditHostsFile/MainPage.xaml.cs`) converts the code to an error with the `HOSTEDIT` prefix. |
+| `HostsFileEditService` (`CDPIUI.AddOns/HostsFileEditor/HostsFileEditorService.cs`) | Starts `CDPIUI_ElevatedLauncher.exe hosts /<argument>` from the application folder with the `runas` verb. The launcher starts the tool without the .NET variables of the user profile and returns its exit code. The hosts editor page (`CDPIUI/Views/EditHostsFile/MainPage.xaml.cs`) converts the code to an error with the `HOSTEDIT` prefix. |
 | MSI uninstall cleanup (`CDPIUI_TrayIcon.exe --uninstall-cleanup`, runs as SYSTEM) | Runs `EditHostFile.exe /remove`. Waits a maximum of 15 s (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`). |
 
 ## Build
@@ -114,6 +114,8 @@ On Linux or macOS, add `-p:EnableWindowsTargeting=true`. `.github/scripts/build_
 uses the same command and copies `EditHostFile.exe` into the release layout.
 
 CAUTION: Do not remove `requireAdministrator` from `app.manifest`. The tool writes to the system hosts file.
+
+CAUTION: Do not start the tool elevated directly from the GUI. Start it through `CDPIUI_ElevatedLauncher.exe`. The tool is framework-dependent, so the .NET variables of the user profile (for example `DOTNET_ROOT`) act on it. Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
 
 ## Tests
 
