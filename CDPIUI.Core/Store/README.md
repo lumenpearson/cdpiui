@@ -215,13 +215,13 @@ An update is available when the latest release tag is newer than the installed v
 `RequestWorker` and `DownloadWorker` apply these checks to each download:
 
 - The URL must be an absolute HTTPS URL. This also applies to the `DOWNLOAD=` requests of the install actions. A `DOWNLOAD=` request can also have a SHA-256: see `download_easy_designer_annotation_file` in [LScript/README.md](../LScript/README.md).
-- The client sends the Store token only to `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` and `gitlab.com`.
+- The client sends the Store token only to `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` and `gitlab.com`. It sends the token only in a direct request, not through the Store proxy.
 - If the server gives the file size, the drive must have enough free space.
 - A download stops when no data arrives for 60 seconds.
 - An HTTP error status gives `ERR_DOWNLOAD_UNEXPECTED_STATUS_CODE_<code>`.
 - The file goes to `TempFiles\Downloads` first. The client deletes it after the operation.
 
-When `STORE/ProxyEnable` is `true` and the Store host is GitHub, the client sends the requests through the Store proxy (`Secret.ProxyURL`).
+When `STORE/ProxyEnable` is `true` and the Store host is GitHub, the client sends the requests through the Store proxy (`Secret.ProxyURL`). A proxy request has the `X-Key` header with `Secret.ProxyKey`. It does not have the Store token (`Secret.GitHubToken` or `Secret.GitLabToken`). Thus the proxy must use a GitHub token of its own. Without a token, the proxy gets the lower rate limit of anonymous API requests. A direct request does not have the `X-Key` header.
 
 ### SHA-256 of a download
 

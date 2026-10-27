@@ -6373,7 +6373,10 @@ By enabling this setting, you acknowledge that you have read this information.</
     <value>A referenced path could not be resolved: {0}</value>
   </data>
   <data name="ConfigImportIssue_REFERENCED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
-    <value>The Config uses a file outside its folder: {0}</value>
+    <value>The Config refers to a file outside its folder. The import does not copy this file. Change the path in the preset if necessary: {0}</value>
+  </data>
+  <data name="ConfigImportIssue_INCLUDED_FILE_OUTSIDE_SOURCE" xml:space="preserve">
+    <value>The Config reads a file outside its folder: {0}</value>
   </data>
   <data name="ConfigImportIssue_REFERENCED_FILE_NOT_FOUND" xml:space="preserve">
     <value>A referenced file was not found: {0}</value>

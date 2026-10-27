@@ -13,12 +13,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Secret scan: the files of the commit and the commits that the push or pull request adds.
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          # The token must not stay in .git/config, where the file scan would read it.
+          persist-credentials: false
+
+      # A fixed gitleaks release. The archive is checked against its published SHA-256 before it runs.
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+
+      - name: Scan the files
+        run: '"$RUNNER_TEMP/gitleaks" dir . --config .gitleaks.toml --redact --no-banner'
+
+      # Only the new commits: the older history of the upstream repository has a token that was
+      # published before (audit section 20), and the scan cannot change that history.
+      - name: Scan the new commits
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            echo "No earlier commit to compare with; the file scan covers this push."
+            exit 0
+          fi
+          "$RUNNER_TEMP/gitleaks" git . --config .gitleaks.toml --redact --no-banner --log-opts="$BASE_SHA..HEAD"
+
   libraries:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 8.0.x
 
@@ -56,17 +92,14 @@ jobs:
 
   gui:
     runs-on: windows-latest
-    # The WinUI project needs the CommunityToolkit Labs feed and the Windows App SDK
-    # tooling; keep it informative until the build is reproducible on hosted runners.
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 8.0.x
 
-      - uses: microsoft/setup-msbuild@v2
+      - uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
 
       - name: Build portable layout
         shell: pwsh
@@ -79,7 +112,7 @@ jobs:
       - name: Build Setup.msi
         run: dotnet build NewSetup/NewSetup.wixproj -c Release -p:Platform=x64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: setup-msi
           path: NewSetup/bin/**/*.msi
@@ -88,9 +121,9 @@ jobs:
   tools:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 8.0.x
 
@@ -110,3 +143,23 @@ jobs:
               throw "$name must publish only $name.exe, found: $($files.Name -join ', ')"
             }
           }
+
+      # Native AOT, as build_portable.ps1 publishes it: the launcher has no .NET host, so the .NET
+      # variables of the user profile do not act on it. The native link uses the C++ build tools
+      # of the hosted image. A trim or AOT warning fails the job.
+      - name: Build and publish CDPIUI.ElevatedLauncher
+        shell: pwsh
+        run: |
+          $project = 'CDPIUI.ElevatedLauncher/CDPIUI.ElevatedLauncher.csproj'
+          dotnet build $project -c Release -p:Platform=x64 -p:TreatWarningsAsErrors=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $out = 'artifacts/tools/launcher'
+          dotnet publish $project -c Release -p:Platform=x64 -r win-x64 -p:TreatWarningsAsErrors=true -o $out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $files = @(Get-ChildItem -LiteralPath $out -File | Where-Object { $_.Extension -ne '.pdb' })
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'CDPIUI_ElevatedLauncher.exe') {
+            throw "CDPIUI.ElevatedLauncher must publish only CDPIUI_ElevatedLauncher.exe, found: $($files.Name -join ', ')"
+          }
+          $managed = $true
+          try { [void][System.Reflection.AssemblyName]::GetAssemblyName($files[0].FullName) } catch { $managed = $false }
+          if ($managed) { throw 'CDPIUI_ElevatedLauncher.exe is a .NET assembly. It must be a Native AOT executable.' }

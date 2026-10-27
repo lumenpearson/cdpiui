@@ -19,6 +19,8 @@
 - `Update` применяет патчи приложения.
 - `EditHostFile` изменяет файл hosts с правами администратора.
 
+`CDPIUI.ElevatedLauncher` — небольшая программа Native AOT. GUI и задача автозапуска запускают через неё трей и `EditHostFile` с правами администратора. Перед запуском она удаляет переменные .NET из профиля пользователя (например, `DOTNET_ROOT`). См. [CDPIUI.ElevatedLauncher/README.ru.md](../CDPIUI.ElevatedLauncher/README.ru.md).
+
 Проект `NewSetup` создаёт установщик MSI.
 
 GUI не запускает компоненты. GUI отправляет запрос трею. Трей запускает компонент и отправляет в GUI состояние процесса и его вывод.
@@ -66,7 +68,7 @@ GUI не запускает компоненты. GUI отправляет за�
 Замечания об этих командах:
 
 - Проект GUI нельзя собрать в Linux или macOS.
-- `build_portable.ps1` помещает GUI, однофайловый трей, `Update.exe` и `EditHostFile.exe` в `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`.
+- `build_portable.ps1` помещает GUI, однофайловый трей, `Update.exe`, `EditHostFile.exe` и `CDPIUI_ElevatedLauncher.exe` (Native AOT) в `CDPIUI/bin/x64/Release/net8.0-windows10.0.22621.0/publish`. Для Native AOT нужны средства сборки C++ из Visual Studio (рабочая нагрузка «Разработка классических приложений на C++»).
 - Собирайте установщик MSI после `build_portable.ps1`. Установщик использует [WiX Toolset 6](https://wixtoolset.org/).
 - `NewSetup/NewSetupFiles.wxs` должен перечислять все файлы раскладки релиза. `check_setup_files.ps1` показывает различия.
 - Патчи (`.cdpipatch`) создаёт workflow `build_and_patch.yml`. См. [.github/RELEASES.ru.md](RELEASES.ru.md).
@@ -75,11 +77,16 @@ GUI не запускает компоненты. GUI отправляет за�
 
 Workflow `.github/workflows/ci.yml` выполняет следующие проверки:
 
+- Ищет секреты в файлах и в новых коммитах с помощью gitleaks и `.gitleaks.toml` (задание `secrets`).
 - Собирает библиотеки, запускает модульные тесты и проверяет пакеты NuGet на известные уязвимости (задание (job) `libraries`).
 - Собирает GUI и раскладку релиза, сравнивает список файлов установщика с раскладкой релиза и собирает `Setup.msi` (задание `gui`).
-- Собирает `Update` и `EditHostFile` и публикует каждый инструмент одним файлом (задание `tools`).
+- Собирает `Update` и `EditHostFile` и публикует каждый инструмент одним файлом. Публикует `CDPIUI.ElevatedLauncher` с Native AOT и завершается с ошибкой при предупреждении обрезки или AOT (задание `tools`).
 
-Задания `libraries` и `tools` должны пройти до того, как вы запросите ревью. У задания `gui` включён `continue-on-error`. Его результат носит только информационный характер. См. [.github/RELEASES.ru.md](RELEASES.ru.md).
+Все задания должны пройти до того, как вы запросите ревью. См. [.github/RELEASES.ru.md](RELEASES.ru.md).
+
+Workflow ссылаются на каждое действие (action) по полному SHA коммита, а тег версии указан в комментарии. Чтобы обновить действие, замените SHA на SHA нового тега и измените комментарий.
+
+Если поиск секретов находит ложное срабатывание, добавьте узкое исключение в `.gitleaks.toml`. Если он находит настоящий секрет, сначала отзовите секрет. Затем удалите его из ветки.
 
 ## Структура проекта
 
@@ -105,8 +112,9 @@ cdpiui/
 │   └── Program.cs              # Точка входа. Обеспечивает единственный экземпляр.
 ├── CDPIUI.AddOns/              # Внутренние дополнения. Одна папка на каждое дополнение.
 ├── CDPIUI.Core/                # Логика приложения для GUI: компоненты, пресеты, Магазин, LScript, прокси, обновления
+├── CDPIUI.ElevatedLauncher/    # Запускает трей и EditHostFile с правами администратора без переменных .NET пользователя (Native AOT)
 ├── CDPIUI.Shared/              # Код для GUI, Core и трея: pipe, задачи, логи, настройки, ошибки
-├── CDPIUI.Tests/               # Тесты xUnit для Shared, Core, AddOns, Update и EditHostFile
+├── CDPIUI.Tests/               # Тесты xUnit для Shared, Core, AddOns, Update, EditHostFile и правил программы запуска
 ├── CDPIUI.TrayIcon/            # Приложение трея (WinForms). Работает с правами администратора.
 ├── EditHostFile/               # Редактор файла hosts (.NET 8, консоль). Работает с правами администратора.
 ├── NewSetup/                   # Установщик WiX 6
@@ -128,7 +136,7 @@ cdpiui/
 - Используйте правильные английские имена.
 - Некоторые имена записываются на диск или передаются через pipe. Примеры: ключи настроек, поля JSON Магазина, поля JSON пресетов и значения enum в файлах. Если вы изменяете имя в C#, сохраните хранимое значение. Используйте `[JsonProperty]`, `[JsonPropertyName]` или таблицу сопоставления. Если вы изменяете ключ настройки, читайте и старый ключ.
 - Pipe передаёт типы сообщений по имени (`cdpiui://<Target>/<MessageType>`). Если вы изменяете имя члена enum для pipe, вы изменяете протокол. Тогда GUI и трей должны быть из одной сборки. Другая сторона не может прочитать сообщение с неизвестным именем.
-- Добавляйте модульные тесты в `CDPIUI.Tests` для логики в Shared, Core, AddOns, `Update` и `EditHostFile`.
+- Добавляйте модульные тесты в `CDPIUI.Tests` для логики в Shared, Core, AddOns, `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher`.
 
 ПРЕДУПРЕЖДЕНИЕ: Трей работает с правами администратора. Запускайте файлы только из папки установки или из папки данных CDPIUI. Убедитесь, что файлы проходят проверки в `CDPIUI.TrayIcon` (доверенные пути, доверие к исполняемым файлам в `ExecutableTrust`, подписи пакетов). Не открывайте файлы и ссылки через оболочку из трея.
 
@@ -232,5 +240,6 @@ Shared — общая библиотека GUI и трея.
 | Тесты | [CDPIUI.Tests/README.ru.md](../CDPIUI.Tests/README.ru.md) |
 | Программа обновления | [Update/README.ru.md](../Update/README.ru.md) |
 | Редактор файла hosts | [EditHostFile/README.ru.md](../EditHostFile/README.ru.md) |
+| Программа запуска с правами администратора | [CDPIUI.ElevatedLauncher/README.ru.md](../CDPIUI.ElevatedLauncher/README.ru.md) |
 | Установщик | [NewSetup/README.ru.md](../NewSetup/README.ru.md) |
 | CI и релизы | [.github/RELEASES.ru.md](RELEASES.ru.md) |

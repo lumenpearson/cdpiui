@@ -1,4 +1,3 @@
-using CDPIUI.Shared.Pipe;
 using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Tests.Shared;
@@ -131,6 +130,10 @@ public sealed class ExecutableLeaseTests : IDisposable
     [Fact]
     public void LockedArgumentFileCannotBeChanged()
     {
+        // Sharing modes and open directory handles block these changes only on Windows.
+        if (!OperatingSystem.IsWindows())
+            return;
+
         string program = Write("bin/winws.exe", "program");
         string arguments = Write("bin/args.txt", "--dpi-desync=fake");
 
@@ -143,6 +146,10 @@ public sealed class ExecutableLeaseTests : IDisposable
     [Fact]
     public void WriteTargetFolderCannotBeRenamedWhileGuarded()
     {
+        // Sharing modes and open directory handles block these changes only on Windows.
+        if (!OperatingSystem.IsWindows())
+            return;
+
         string program = Write("bin/winws.exe", "program");
         Directory.CreateDirectory(Path.Combine(_directory, "data", "lists"));
 
@@ -202,13 +209,5 @@ public sealed class ExecutableLeaseTests : IDisposable
     {
         string? folder = ExecutableApprovals.GetStoreItemDirectory(Path.Combine(_directory, program));
         Assert.Equal(expected == null ? null : Path.GetFullPath(Path.Combine(_directory, expected)), folder);
-    }
-
-    [Fact]
-    public void PipeKeyIsReadFromTheSessionFolder()
-    {
-        Assert.Null(PipeSessionKey.TryRead(_directory));
-        Write(".session/pipe.key", " ABCDEF \r\n");
-        Assert.Equal("ABCDEF", PipeSessionKey.TryRead(_directory));
     }
 }

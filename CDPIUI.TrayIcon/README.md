@@ -29,7 +29,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
 3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
-5. It writes a new pipe key to `.session\pipe.key` (`PipeSessionKeyWriter`, see [Pipe](../CDPIUI.Shared/Pipe/README.md)). Then it starts the pipe server.
+5. It deletes the session file `.session\pipe.key` of an earlier start (`PipeSessionWriter`). Then it starts the pipe server. The pipe server makes a random pipe name, creates the pipe, and then writes the name and the new pipe key to `.session\pipe.key` (see [Pipe](../CDPIUI.Shared/Pipe/README.md#session-file)).
 6. If a toast notification started the process, it creates `TrayApplicationContext`, handles the toast and does not do steps 7–11.
 7. If the arguments request it, it starts the GUI as the desktop user (see the table below).
 8. It renames `_Update.exe` to `Update.exe`, if `_Update.exe` exists.
@@ -38,7 +38,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 11. After 60 minutes, it asks the GUI to start the compatibility check, if `NOTIFICATIONS/compatibilityCheck` is `true`.
 12. It creates `TrayApplicationContext`: the icon, the uninstall listener, the Conditional Launch engine and the notification handler.
 
-If the pipe server cannot create the pipe and another tray process runs, the tray stops its own process.
+If the pipe server cannot create the pipe or write the session file, it makes a new pipe name and tries again after 2 seconds. It never adds an instance to a pipe that another program created (`PipeOptions.FirstPipeInstance`).
 
 ### Command-line arguments
 
@@ -54,6 +54,7 @@ If the pipe server cannot create the pipe and another tray process runs, the tra
 
 The GUI starts the tray with `--autorun` or `--show-ui` when the GUI cannot connect to the pipe.
 The autorun task starts the tray with `--autorun`.
+Both start the tray through `CDPIUI_ElevatedLauncher.exe`. Refer to [Environment of an elevated start](#environment-of-an-elevated-start).
 
 ## Folders
 
@@ -63,7 +64,7 @@ The autorun task starts the tray with `--autorun`.
 | `Controls/` | Custom WinForms controls of the tray menu |
 | `Forms/` | `EmptyForm` (hidden window that owns the icon), `TrayMenuForm` (the menu) |
 | `Helper/` | `ProcessManager`, `TasksHelper`, `PipeHelper`, `MsiInstallerHelper`, `PackageStaging`, `TrustedPaths`, `ExecutableTrust`, `UninstallHelper`, `GoodCheckProcessHelper`, `StartupActionDispatcher`, `Utils` |
-| `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe key (`PipeSessionKeyWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
+| `Helper/Basic/` | Pipe server, pipe access (`PipeAccessPolicy`), pipe session file (`PipeSessionWriter`), command handler, ConPTY, job object, run helper, registry, notifications, logger, error helper, taskbar |
 | `Helper/Locale/` | `LocaleHelper`: tray strings in English and Russian, component names. The language is the language that the user selected in the app (`SYSTEM/language`). If this value is missing or unknown, the Windows display language is used |
 | `Helper/Settings/` | `SettingsManager` (`XMLSettingsService`), `AutoStartManager` |
 | `Assets/` | Icons (embedded resources) |
@@ -110,9 +111,11 @@ When one component starts a proxy, the tray stops the other components that use 
 `AutoStartManager` creates the Task Scheduler task `CDPIUI_Autostart`:
 
 - Trigger: logon of the current user.
-- Action: the tray executable with `--autorun`.
+- Action: `CDPIUI_ElevatedLauncher.exe tray --autorun` from the tray directory. The launcher starts the tray with `--autorun`. If the launcher does not exist, `AddToAutorun` fails.
 - Run level: highest. Logon type: interactive token.
 - No execution time limit. The task also runs on battery power.
+
+An earlier version made a task that starts `CDPIUI_TrayIcon.exe` directly. At each start, the tray changes such a task (`AutoStartManager.MoveTaskToLauncher`), if its action starts the tray of the same directory and the launcher exists. The action then starts the launcher with `tray` before the old arguments. The other settings of the task do not change.
 
 If `AddToAutorun` fails, the tray sends `Settings/AutorunFalse` to the GUI and shows a notification.
 
@@ -193,10 +196,34 @@ GoodCheck starts the components itself: the program from the `ZapretFolder`, `Go
 
 A portable copy only does the argument check of step 3 (the file writing options), because the user can change the tray itself.
 
-Limits that the tray cannot close:
-- A process started by the component (`ChildProcessJob` keeps it) can run after the component exits and its files are released.
-- The .NET runtime of the tray, `Update.exe` and `EditHostFile.exe` is the installed one (framework-dependent). User environment variables such as `DOTNET_ROOT`, `DOTNET_ROOT_X64` and `CORECLR_PROFILER*` act on these elevated programs; startup hooks are disabled in Release.
+A limit that the tray cannot close: a process started by the component (`ChildProcessJob` keeps it) can run after the component exits and its files are released.
+
 CAUTION: Do not start a program with administrator rights without `ExecutableTrust.AcquireAsync`.
+
+## Environment of an elevated start
+
+UAC makes the environment of an elevated process from the user profile. Thus the user variables (`HKCU\Environment`) apply to the process, and each process of the user can change these variables. The .NET host and CoreCLR read some of them:
+
+- `DOTNET_ROOT`, `DOTNET_ROOT(x86)` and `DOTNET_ROOT_X64` select the .NET runtime of a framework-dependent program.
+- `CORECLR_ENABLE_PROFILING` with `CORECLR_PROFILER_PATH` (and the `COR_*` names) loads a profiler DLL.
+- `DOTNET_STARTUP_HOOKS`, `DOTNET_ADDITIONAL_DEPS` and `DOTNET_SHARED_STORE` load more assemblies.
+- `COREHOST_TRACE`, `COREHOST_TRACEFILE` and the `DOTNET_*` and `COMPlus_*` runtime settings write traces and dumps or open diagnostic ports.
+
+The tray and `EditHostFile.exe` are framework-dependent .NET programs. With these variables, they would run code of the user with administrator rights. Thus no caller starts them elevated directly. The callers start `CDPIUI_ElevatedLauncher.exe` from the application directory. Refer to [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md).
+
+| Caller | Command |
+|---|---|
+| GUI, when it cannot connect to the pipe (`PipeClientService`) | `CDPIUI_ElevatedLauncher.exe tray --autorun` or `tray --show-ui [...]`, verb `runas` |
+| Autorun task `CDPIUI_Autostart` | `CDPIUI_ElevatedLauncher.exe tray --autorun` |
+| Hosts file editor (`HostsFileEditService`) | `CDPIUI_ElevatedLauncher.exe hosts /add` (or `/remove`, `/recover`), verb `runas` |
+
+The launcher is a Native AOT program. It has no .NET host and no CLR, so these variables do not act on it. It removes each variable whose name starts with `DOTNET_`, `COREHOST_`, `CORECLR_`, `COR_` or `COMPlus_`. Then it starts the program from its own directory with the same arguments.
+
+The processes that the tray starts get the environment of the tray. This environment has no runtime variables. This applies to the components, GoodCheck, `msiexec.exe` and `Update.exe`. `Update.exe` gives the same environment to the tray that it starts after an update.
+
+The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM, and the cleanup runs `EditHostFile.exe /remove`. The SYSTEM profile is not the user profile, so the user variables do not apply.
+
+CAUTION: Do not start the tray or `EditHostFile.exe` directly with the `runas` verb or from a task. Start them through `CDPIUI_ElevatedLauncher.exe`.
 
 ## Uninstall cleanup
 
@@ -238,13 +265,14 @@ Notes:
 - In `DEBUG` builds, the pipe peer check compares only file names. Thus the GUI and the tray can run from different output directories.
 - The tray starts only executables below its own directory or below `%LOCALAPPDATA%\CDPIUI` (`TrustedPaths`). To test components, run the GUI and the tray from the same directory. You can use the publish directory of `.github/scripts/build_portable.ps1`.
 - The tray starts the GUI from `<tray directory>\CDPIUI.exe`. With different output directories, the tray cannot start the GUI.
+- The GUI and the autorun task start the tray through `CDPIUI_ElevatedLauncher.exe` in the same directory. `AddToAutorun` fails if the launcher is not there. A Debug build of the launcher (`dotnet build`) also starts the programs, but it is not Native AOT, so the .NET variables act on it.
 - Two trays cannot run at the same time. Close the installed tray before you start a development build.
 
 ## Security rules
 
 The tray is elevated, and the GUI is not. Treat each pipe message as data from a less trusted process.
 
-- Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new key at each start. An empty key authorizes no client. A failed authorization disconnects the client.
+- Accept pipe clients only after the peer check and the pipe key authorization (see the pipe README). The tray makes a new pipe name and a new key at each start. It writes them to the session file only after it has created the pipe. An empty key authorizes no client. A failed authorization disconnects the client.
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
@@ -257,6 +285,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Start processes with `UseShellExecute = false` (`RunHelper.Run`).
 - Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler can run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.
 - Start the GUI with `RunHelper.RunAsDesktopUser`. It uses the token of the shell process, so the GUI does not run elevated.
+- Start the tray and `EditHostFile.exe` elevated only through `CDPIUI_ElevatedLauncher.exe` (see [Environment of an elevated start](#environment-of-an-elevated-start)).
 - `GrantAccess` gives `Modify` access only to the tray user.
 
 WARNING: Do not add a pipe handler that runs a file or changes access without a `TrustedPaths` check.

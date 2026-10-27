@@ -4,6 +4,8 @@
 
 `CDPIUI.Tests` содержит тесты xUnit для `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` и `EditHostFile`. Целевая платформа — `net8.0-windows`, потому что `Update` и `EditHostFile` используют `net8.0-windows`. Проект задаёт `DisableTransitiveFrameworkReferences`: тестам не нужна среда Windows Desktop от `Update`, и они работают также в Linux.
 
+`CDPIUI.ElevatedLauncher` — исполняемый файл Native AOT. Проект не ссылается на него. Он компилирует `CDPIUI.ElevatedLauncher/LaunchPolicy.cs` как связанный файл (`Tools\ElevatedLauncher\LaunchPolicy.cs`).
+
 ## Запуск тестов
 
 В Windows:
@@ -42,9 +44,10 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `AddOns` | `BlockCheckTargetInputParserTests` | Список целей BlockCheck2: схемы, порты, протоколы, IDN, повторы, ограничения |
 | `AddOns` | `ConfigImportGoldenTests` | Импорт пакетных файлов Flowseal и сравнение с ожидаемыми файлами в `TestData\ConfigImport` |
 | `AddOns` | `ConfigImportServiceTests` | Разбор команд `set` в импортируемых скриптах |
+| `AddOns` | `ConfigShareReadTests` | Чтение пакета `.cdpiconfig`: правильные и повреждённые пакеты, ограничения размера |
 | `AddOns` | `ConfigShareSafeDestinationTests` | Пути внутри пакета `.cdpiconfig`: выход за папку, имена устройств, ссылки |
 | `AddOns` | `ConfigShareWriteOptionsTests` | Отклонение параметров, которые записывают за пределы пакета `.cdpiconfig` |
-| `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: аргументы, коды выхода, страницы блокировки, отмена |
+| `AddOns` | `CurlBlockCheckProbeRunnerTests` | Проверка curl в BlockCheck2 с поддельным процессом: путь к системному curl, аргументы, коды выхода, страницы блокировки, отмена |
 | `AddOns` | `StrategyCatalogValidatorTests` | Правила каталога стратегий BlockCheck2 и встроенный каталог |
 | `AddOns` | `ZapretConfigImportServiceTests` | Синтаксис пакетных файлов: хвост команды оболочки, каретки, модификаторы файлов |
 | `Core` | `BatchFileEncodingTests` | Кодировка пакетных файлов (кириллица, UTF-8 BOM) |
@@ -57,6 +60,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Core` | `LScriptCoreTests` | Условия LScript, вложенные аргументы и разбор строк условий |
 | `Core` | `ProcessServiceTests` | Флаг тихого режима в аргументах процесса |
 | `Core` | `ProxyHelperTests`, `ProxySettingsTests` | Разбор адреса, порта и формата прокси |
+| `Core` | `StoreRequestCredentialsTests` | Учётные данные запросов Магазина: токен репозитория только в прямых запросах на хосты репозиториев, ключ прокси только в запросах через прокси |
 | `Core` | `ReplaceVariablesTests`, `ReplaceFilesPathTests` | Замена переменных и замена путей к файлам в пресетах |
 | `Core` | `VersionHelperTests` | Сравнение версий |
 | `Core` | `Zapret1ToZapret2ConverterTests` | Преобразование аргументов Zapret Legacy в Zapret2 (с ожидаемыми файлами в `TestData\Zapret1ToZapret2`) |
@@ -67,16 +71,18 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Shared` | `CatalogVerifierTests` | Проверка подписи каталогов обновлений |
 | `Shared` | `ConditionalTaskFileServiceTests` | Сохранение и загрузка файлов `.cdpitask` |
 | `Shared` | `ErrorConvertorTests` | Преобразование кодов ошибок |
-| `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина, файл ключа pipe |
+| `Shared` | `ExecutableLeaseTests` | Заблокированные файлы и отпечаток программы, файл разрешений, папка элемента Магазина |
 | `Shared` | `FileWritingOptionsTests` | Параметры в аргументах компонентов, которые записывают файлы за пределы разрешённых папок |
 | `Shared` | `GoodbyeDpiMigrationActivationTests` | Аргументы активации миграции GoodbyeDPI: обратимость и неверные значения |
 | `Shared` | `GuiActivationArgumentsTests` | Кодирование и декодирование `--gui-args:` и кавычки в командной строке |
 | `Shared` | `OutputCleanupHelperTests` | Удаление escape-последовательностей из вывода консоли |
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |
+| `Shared` | `PipeSessionFileTests` | Формат имени pipe и ключа, запись и чтение файла сеанса, устаревшие и повреждённые файлы |
 | `Shared` | `StreamStringTests` | Строки потока pipe |
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |
 | `Shared` | `XmlSettingsServiceTests` | Настройки XML, значения в разных региональных стандартах |
+| `Tools` | `ElevatedLauncherTests` | `CDPIUI.ElevatedLauncher`: разрешённые имена целей, удаление переменных среды выполнения .NET, аргументы программы запуска из `ElevatedLauncherCommand` |
 | `Tools` | `EditHostFileTests` | `EditHostFile`: определение кодировки, переносы строк, добавление, удаление и восстановление блока CDPI UI, резервная копия |
 | `Tools` | `UpdateInstallHelperTests` | `Update`: проверка путей, порядок слоёв, пропускаемые файлы (`catalog.cat`, `Update.exe`), применение и откат |
 
@@ -92,7 +98,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 
 ## Добавление теста
 
-1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`. Тесты `Update` и `EditHostFile` помещайте в `Tools`.
+1. Поместите тестовый класс в папку тестируемого проекта: `AddOns`, `Core` или `Shared`. Тесты `Update`, `EditHostFile` и `CDPIUI.ElevatedLauncher` помещайте в `Tools`.
 2. Используйте пространство имён `CDPIUI.Tests.<Folder>`.
 3. Пометьте каждый тест атрибутом `[Fact]` или `[Theory]`. Проект импортирует `Xunit` глобально.
 4. Если тест записывает файлы, используйте новый каталог в `Path.GetTempPath()`.

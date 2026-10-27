@@ -148,13 +148,9 @@ internal sealed class RequestWorker : IDisposable
         var request = new HttpRequestMessage(HttpMethod.Get, proxyEnable ? CreateProxyUri(url) : sourceUri);
         try
         {
-            if (proxyEnable)
-                request.Headers.Add("X-Key", Secret.ProxyKey);
             if (useStoreUserAgent)
                 request.Headers.UserAgent.Add(new ProductInfoHeaderValue("CDPIUI_Components_Store", ApplicationInfo.Version));
-            // The Store tokens are for the repository hosts only; a catalogue entry may point anywhere.
-            if (!string.IsNullOrEmpty(token) && TokenHosts.Contains(sourceUri.Host))
-                request.Headers.Authorization = new AuthenticationHeaderValue(authenticationScheme, token);
+            AddCredentials(request.Headers, sourceUri, proxyEnable, token, authenticationScheme, Secret.ProxyKey);
 
             return request;
         }
@@ -163,6 +159,25 @@ internal sealed class RequestWorker : IDisposable
             request.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Adds the proxy key to a proxy request, or the repository token to a direct request.
+    /// </summary>
+    internal static void AddCredentials(
+        HttpRequestHeaders headers, Uri source, bool viaProxy, string? token, string authenticationScheme, string proxyKey)
+    {
+        // The proxy fetches with a token of its own: a repository token in a proxy request
+        // would only give the token to the proxy and its logs.
+        if (viaProxy)
+        {
+            headers.Add("X-Key", proxyKey);
+            return;
+        }
+
+        // The Store tokens are for the repository hosts only; a catalogue entry may point anywhere.
+        if (!string.IsNullOrEmpty(token) && TokenHosts.Contains(source.Host))
+            headers.Authorization = new AuthenticationHeaderValue(authenticationScheme, token);
     }
 
     private static readonly HashSet<string> TokenHosts = new(StringComparer.OrdinalIgnoreCase)

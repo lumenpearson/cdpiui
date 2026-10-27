@@ -20,6 +20,7 @@ internal static class ConfigImportIssueText
         { "MISSING_FILE_REPLACEMENT_NOT_FOUND", CodedMessageLocalizer.AfterColon },
         { "INVALID_RESOURCE_PATH", CodedMessageLocalizer.AfterColon },
         { "REFERENCED_FILE_OUTSIDE_SOURCE", CodedMessageLocalizer.AfterColon },
+        { "INCLUDED_FILE_OUTSIDE_SOURCE", CodedMessageLocalizer.AfterColon },
         { "REFERENCED_FILE_NOT_FOUND", CodedMessageLocalizer.AfterColon },
         { "UNSUPPORTED_FORMAT", CodedMessageLocalizer.SingleQuoted },
         { "UNRESOLVED_VARIABLE", CodedMessageLocalizer.SingleQuoted },

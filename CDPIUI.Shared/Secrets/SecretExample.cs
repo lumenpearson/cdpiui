@@ -21,6 +21,7 @@ namespace CDPIUI.Shared.Secrets
         static string? ProxyURL { get; }
         /// <summary>
         /// Access key sent to the Store reverse proxy in the X-Key header.
+        /// The proxy gets no Store token: it fetches with a token of its own.
         /// </summary>
         static string? ProxyKey { get; }
 

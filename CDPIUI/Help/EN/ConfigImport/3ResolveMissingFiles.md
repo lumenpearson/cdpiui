@@ -20,4 +20,6 @@ If each unresolved file has an AutoCorrect recommendation, **Continue** applies 
 
 When you save the preset, CDPI UI copies the necessary resources into its own storage. The original files stay in their location. CDPI UI does not delete them.
 
+CDPI UI copies only the files in the folder of the imported file and its subfolders. If the preset uses a file outside this folder, CDPI UI does not copy it and shows a warning. The preset then keeps the original path of the file. Examine this path. If necessary, change it in the preset editor.
+
 Next: [Review, test and save](cdpiui://Help/ConfigImport/4ReviewTestAndSave/).

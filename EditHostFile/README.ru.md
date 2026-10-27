@@ -96,7 +96,7 @@
 
 | Вызывающий компонент | Вызов |
 |--------|------|
-| `HostsFileEditService` (`CDPIUI.AddOns/HostsFileEditor/HostsFileEditorService.cs`) | Запускает утилиту из папки приложения с глаголом `runas`. Возвращает код выхода. Страница редактора hosts (`CDPIUI/Views/EditHostsFile/MainPage.xaml.cs`) преобразует код в ошибку с префиксом `HOSTEDIT`. |
+| `HostsFileEditService` (`CDPIUI.AddOns/HostsFileEditor/HostsFileEditorService.cs`) | Запускает `CDPIUI_ElevatedLauncher.exe hosts /<argument>` из папки приложения с глаголом `runas`. Программа запуска запускает утилиту без переменных .NET из профиля пользователя и возвращает её код выхода. Страница редактора hosts (`CDPIUI/Views/EditHostsFile/MainPage.xaml.cs`) преобразует код в ошибку с префиксом `HOSTEDIT`. |
 | Очистка при удалении MSI (`CDPIUI_TrayIcon.exe --uninstall-cleanup`, работает от имени SYSTEM) | Запускает `EditHostFile.exe /remove`. Ждёт не более 15 с (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`). |
 
 ## Сборка
@@ -114,6 +114,8 @@ dotnet publish EditHostFile/EditHostFile.csproj -c Release -p:Platform=x64 -r wi
 использует ту же команду и копирует `EditHostFile.exe` в раскладку релиза.
 
 ВНИМАНИЕ: Не удаляйте `requireAdministrator` из `app.manifest`. Утилита записывает системный файл hosts.
+
+ВНИМАНИЕ: Не запускайте утилиту с правами администратора напрямую из GUI. Запускайте её через `CDPIUI_ElevatedLauncher.exe`. Утилита зависит от среды выполнения, поэтому на неё действуют переменные .NET из профиля пользователя (например, `DOTNET_ROOT`). См. [CDPIUI.ElevatedLauncher/README.ru.md](../CDPIUI.ElevatedLauncher/README.ru.md).
 
 ## Тесты
 

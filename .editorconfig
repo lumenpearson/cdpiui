@@ -134,9 +134,9 @@ dotnet_diagnostic.CS8602.severity = suggestion
 # CS8600: Converting null literal or possible null value to non-nullable type.
 dotnet_diagnostic.CS8600.severity = none
 
-# Unused code in the library, tray and test projects (not the GUI project).
+# Unused code in the library, tray, launcher and test projects (not the GUI project).
 # These projects set EnforceCodeStyleInBuild, so the IDE rules also run in the build.
-[{CDPIUI.Core,CDPIUI.AddOns,CDPIUI.Shared,CDPIUI.TrayIcon,CDPIUI.Tests}/**.cs]
+[{CDPIUI.Core,CDPIUI.AddOns,CDPIUI.Shared,CDPIUI.TrayIcon,CDPIUI.ElevatedLauncher,CDPIUI.Tests}/**.cs]
 
 # IDE0051: Unused private member.
 dotnet_diagnostic.IDE0051.severity = warning

@@ -53,8 +53,15 @@ internal static class ConfigImportResourcePlanner
                 generatedContent));
         }
 
+        // A config can name any file the user can read, and the preset may be shared later. Only
+        // the files of the config folder are copied. A file outside keeps its path in the preset,
+        // and the REFERENCED_FILE_OUTSIDE_SOURCE warning shows it in the review.
         foreach (string referencedFile in result.ReferencedFiles)
-            AddResource(referencedFile, Path.GetFullPath(referencedFile), null);
+        {
+            string fullPath = Path.GetFullPath(referencedFile);
+            if (IsInsideDirectory(sourceDirectory, fullPath))
+                AddResource(fullPath, fullPath, null);
+        }
 
         foreach (ConfigImportGeneratedFile generatedFile in result.GeneratedFiles)
         {
@@ -126,14 +133,17 @@ internal static class ConfigImportResourcePlanner
 
     private static string GetSafeRelativePath(string sourceRoot, string sourcePath)
     {
-        string relativePath = Path.GetRelativePath(sourceRoot, sourcePath);
-        if (Path.IsPathRooted(relativePath) ||
+        if (!IsInsideDirectory(sourceRoot, sourcePath))
+            throw new InvalidOperationException($"Referenced file is outside the imported Config directory: {sourcePath}");
+        return Path.GetRelativePath(sourceRoot, sourcePath);
+    }
+
+    private static bool IsInsideDirectory(string directory, string path)
+    {
+        string relativePath = Path.GetRelativePath(directory, path);
+        return !(Path.IsPathRooted(relativePath) ||
             relativePath.Equals("..", StringComparison.Ordinal) ||
             relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
-            relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException($"Referenced file is outside the imported Config directory: {sourcePath}");
-        }
-        return relativePath;
+            relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal));
     }
 }

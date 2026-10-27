@@ -1,0 +1,13 @@
+# Secret scan in CI: the default gitleaks rules with the known false positives of this repository.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "XAML resource keys are not secrets"
+paths = ['''\.xaml$''']
+regexTarget = "line"
+regexes = ['''x:Key="''']
+
+[[allowlists]]
+description = "Local build secrets are git-ignored and never committed"
+paths = ['''CDPIUI\.Shared/Secrets/Secret\.cs$''']
