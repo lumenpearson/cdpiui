@@ -10,4 +10,4 @@ regexes = ['''x:Key="''']
 
 [[allowlists]]
 description = "Local build secrets are git-ignored and never committed"
-paths = ['''CDPIUI\.Shared/Secrets/Secret\.cs$''', '''(^|/)\.claude/''']
+paths = ['''CDPIUI\.Shared/Secrets/Secret\.cs$''']
