@@ -44,19 +44,22 @@ public class PipeServiceBase : IDisposable
 
     public async Task HandleConnectionAsync()
     {
-        if (PipeStream == null)
+        var pipeStream = PipeStream;
+        if (pipeStream == null)
             return;
 
-        StreamString = new StreamString(PipeStream);
+        var streamString = new StreamString(pipeStream);
+        StreamString = streamString;
+        var token = CancellationToken ?? default;
 
         _ = SendConnectionPacket();
 
-        while (PipeStream.IsConnected && !(CancellationToken?.IsCancellationRequested ?? true))
+        while (pipeStream.IsConnected && !token.IsCancellationRequested)
         {
             string message;
             try
             {
-                message = await StreamString.ReadStringAsync();
+                message = await streamString.ReadStringAsync(token);
 
                 if (string.IsNullOrEmpty(message))
                 {
@@ -69,12 +72,18 @@ public class PipeServiceBase : IDisposable
             }
             catch (EndOfStreamException)
             {
-                continue;
+                // EOF also includes a partial frame. Reading again cannot complete it.
+                break;
+            }
+            catch (Exception ex) when (token.IsCancellationRequested &&
+                ex is OperationCanceledException or ObjectDisposedException or IOException)
+            {
+                break;
             }
 
             Logger?.CreateDebugLog(nameof(PipeServiceBase), $"Received message: {RedactSecrets(message)}");
         }
-        Logger?.CreateInfoLog(nameof(PipeServiceBase), $"{CancellationToken?.IsCancellationRequested}, {PipeStream.IsConnected.ToString()}");
+        Logger?.CreateInfoLog(nameof(PipeServiceBase), $"Pipe read loop ended; cancelled: {token.IsCancellationRequested}.");
     }
 
     // The authentication GUID must not end up in log files.
@@ -178,25 +187,18 @@ public class PipeServiceBase : IDisposable
 
     public virtual void Dispose()
     {
-        Disconnected?.Invoke();
-        try
-        {
-            if (PipeStream?.IsConnected == true)
-                PipeStream.WaitForPipeDrain();
-        }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
-        {
-            // The other side has already closed the pipe; there is nothing left to drain.
-        }
+        // A peer that stopped reading must not hold shutdown open in WaitForPipeDrain.
+        // Cancel before closing the stream so an idle read ends as a normal shutdown.
+        CancellationTokenSource?.Cancel();
         PipeStream?.Dispose();
         StreamString = null;
 
         if (CancellationTokenSource != null)
         {
-            CancellationTokenSource.Cancel();
             CancellationTokenSource.Dispose();
             CancellationTokenSource = null;
             CancellationToken = null;
         }
+        Disconnected?.Invoke();
     }
 }

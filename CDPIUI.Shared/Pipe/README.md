@@ -281,6 +281,16 @@ The message goes in the argument `--direct:<message>` for all targets.
 The GUI handles `--direct:` with `CoreCommandsHandler`, then with `CommandsHandler.HandleCommand`.
 The tray does not use `----ms-protocol:`. The GUI handles `----ms-protocol:` with `CommandUriMapper`, which accepts only public routes. Thus a pipe message in `----ms-protocol:`, for example `ShowWindow`, has no effect.
 
+## Connection shutdown
+
+The read loop uses the connection's cancellation token. Cancellation ends an idle read.
+EOF, including a truncated message, ends the loop; the next read cannot complete that message.
+Disposal cancels the connection and closes its stream without waiting for the peer to read pending output.
+Thus a stalled peer cannot hold shutdown open. The tray cancels its listener before it waits for any more input.
+
+If the GUI loses the tray connection, its error reports that the connection closed and asks the user to restart.
+It does not infer an access-denied error from a closed pipe.
+
 ## Add a message
 
 1. Add the value at the end of the enum in `Pipe/Models/PipeMessageIds.cs`.
@@ -289,4 +299,4 @@ The tray does not use `----ms-protocol:`. The GUI handles `----ms-protocol:` wit
 4. Add a handler in `CommandsHandler` (tray) or in `CoreCommandsHandler` / `CDPIUI/Commands/CommandsHandler.cs` (GUI).
 5. In the tray, check each path from the GUI with `TrustedPaths` before you use it.
 
-Tests: `CDPIUI.Tests/Shared/PipeMessageModelTests.cs`, `StreamStringTests.cs`, `PipePayloadCodecTests.cs`, `PipeSessionFileTests.cs`.
+Tests: `CDPIUI.Tests/Shared/PipeMessageModelTests.cs`, `StreamStringTests.cs`, `PipePayloadCodecTests.cs`, `PipeSessionFileTests.cs`, `PipeServiceBaseTests.cs`.

@@ -79,6 +79,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Shared` | `PipeMessageModelTests`, `PipePayloadCodecTests` | Сообщения pipe: сериализация и обратное чтение |
 | `Shared` | `PipeSessionFileTests` | Формат имени pipe и ключа, запись и чтение файла сеанса, устаревшие и повреждённые файлы |
 | `Shared` | `StreamStringTests` | Строки потока pipe |
+| `Shared` | `PipeServiceBaseTests` | Настоящие именованные pipe: отмена чтения без входящих данных, оборванный пакет и закрытие с непрочитанным выводом |
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |
 | `Shared` | `XmlSettingsServiceTests` | Настройки XML, значения в разных региональных стандартах |
