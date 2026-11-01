@@ -70,6 +70,27 @@ public sealed class TrustedPathValidatorTests : IDisposable
         Assert.False(TrustedPathValidator.IsInside(link, [_root]));
     }
 
+    [Fact]
+    public void LinkedRootIsRejected()
+    {
+        string linkedRoot = Path.Combine(_root, "linked-root");
+        Directory.CreateSymbolicLink(linkedRoot, _outside);
+
+        Assert.False(TrustedPathValidator.IsInside(Path.Combine(linkedRoot, "tool.exe"), [linkedRoot]));
+    }
+
+    [Fact]
+    public void LinkedAncestorOfRootIsRejected()
+    {
+        Directory.CreateDirectory(Path.Combine(_outside, "Store"));
+        File.WriteAllText(Path.Combine(_outside, "Store", "tool.exe"), "");
+        string link = Path.Combine(_root, "link");
+        Directory.CreateSymbolicLink(link, _outside);
+        string rootInsideLink = Path.Combine(link, "Store");
+
+        Assert.False(TrustedPathValidator.IsInside(Path.Combine(rootInsideLink, "tool.exe"), [rootInsideLink]));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
