@@ -10,7 +10,6 @@ namespace CDPIUI.TrayIcon.Helper.Basic;
 public class PipeServer : PipeServiceBase
 {
     private int _maxServerInstances = 1;
-    private Task? _listenerTask;
 
     private bool _isAuthorized = false;
 
@@ -46,7 +45,7 @@ public class PipeServer : PipeServiceBase
             throw new InvalidOperationException("Server already started");
         CreateCancellationToken();
 
-        _listenerTask = Task.Run(() => ListenLoopAsync());
+        _ = Task.Run(() => ListenLoopAsync());
     }
 
 
@@ -222,30 +221,8 @@ public class PipeServer : PipeServiceBase
         await CommandsHandler.HandleCommandAsync(message);
     }
 
-    // Overrides a void member, so it cannot return a Task; nothing may escape it.
-    public override async void Dispose()
-    {
-        try
-        {
-            try
-            {
-                if (_listenerTask != null)
-                    await _listenerTask.ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // The listener stops by cancellation; this is the normal end.
-            }
-            finally
-            {
-                base.Dispose();
-            }
-        }
-        catch (Exception ex)
-        {
-            Basic.Logger.Instance.CreateErrorLog(nameof(PipeServer), $"Pipe server dispose failed: {ex}");
-        }
-    }
+    // The listener cannot finish until its pending accept or read is cancelled.
+    public override void Dispose() => base.Dispose();
 
 }
 

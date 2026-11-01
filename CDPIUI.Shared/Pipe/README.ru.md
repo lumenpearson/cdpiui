@@ -282,6 +282,17 @@ GUI читает `operationId` как целое число.
 GUI обрабатывает `--direct:` через `CoreCommandsHandler`, затем через `CommandsHandler.HandleCommand`.
 Трей не использует `----ms-protocol:`. GUI обрабатывает `----ms-protocol:` через `CommandUriMapper`, который принимает только публичные маршруты. Поэтому сообщение pipe в `----ms-protocol:`, например `ShowWindow`, не действует.
 
+<a id="connection-shutdown"></a>
+## Завершение соединения
+
+Цикл чтения использует токен отмены соединения. Отмена прерывает ожидание входящих данных.
+Конец потока, в том числе посреди сообщения, завершает цикл: следующее чтение не может дополнить оборванное сообщение.
+При освобождении соединения его токен отменяется, а поток закрывается без ожидания, пока другая сторона прочитает накопленный вывод.
+Поэтому зависшая другая сторона не задерживает завершение. Трей отменяет свой слушатель до ожидания новых данных.
+
+Если GUI теряет соединение с треем, сообщение об ошибке сообщает о закрытом соединении и предлагает перезапустить приложение.
+Закрытый pipe сам по себе не считается ошибкой отказа в доступе.
+
 ## Добавление сообщения
 
 1. Добавьте значение в конец enum в `Pipe/Models/PipeMessageIds.cs`.
@@ -290,4 +301,4 @@ GUI обрабатывает `--direct:` через `CoreCommandsHandler`, за�
 4. Добавьте обработчик в `CommandsHandler` (трей) или в `CoreCommandsHandler` / `CDPIUI/Commands/CommandsHandler.cs` (GUI).
 5. В трее проверяйте каждый путь от GUI через `TrustedPaths`, прежде чем его использовать.
 
-Тесты: `CDPIUI.Tests/Shared/PipeMessageModelTests.cs`, `StreamStringTests.cs`, `PipePayloadCodecTests.cs`, `PipeSessionFileTests.cs`.
+Тесты: `CDPIUI.Tests/Shared/PipeMessageModelTests.cs`, `StreamStringTests.cs`, `PipePayloadCodecTests.cs`, `PipeSessionFileTests.cs`, `PipeServiceBaseTests.cs`.

@@ -246,14 +246,13 @@ public class PipeClientService : PipeServiceBase
         }
         finally
         {
+            Dispose();
             CoreEvents.Instance.InvokeCriticalCoreExceptionHappens(new ErrorModel()
             {
                 ErrorCode = "ERR_PROCESS_DIED",
-                FriendlyDescription = "One of application process is died by unknown reason. Application can't restart this process, " +
-                                      "because ERR_ACCESS_DENIED happens. Please, restart app manually.",
+                FriendlyDescription = "The connection to the tray process was closed. Restart the application to reconnect.",
                 Object = nameof(PipeClientService)
             });
-            Dispose();
         }
     }
 
