@@ -224,7 +224,9 @@ The launcher is a Native AOT program. It has no .NET host and no CLR, so these v
 
 The processes that the tray starts get the environment of the tray. This environment has no runtime variables. This applies to the components, GoodCheck, `msiexec.exe` and `Update.exe`. `Update.exe` gives the same environment to the tray that it starts after an update.
 
-The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM, and the cleanup runs `EditHostFile.exe /remove`. The SYSTEM profile is not the user profile, so the user variables do not apply.
+During MSI uninstall, the embedded launcher starts the tray cleanup as SYSTEM after validating
+the registered install path. The cleanup runs `EditHostFile.exe /remove`. The SYSTEM profile is
+not the signed-in user's profile, so the user variables do not apply.
 
 CAUTION: Do not start the tray or `EditHostFile.exe` directly with the `runas` verb or from a task. Start them through `CDPIUI_ElevatedLauncher.exe`.
 
