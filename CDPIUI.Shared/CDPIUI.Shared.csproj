@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <Compile Remove="Secrets/SecretExample.cs" />
+    <!-- Windows ACL policy is linked into the Windows tray and Native AOT launcher. -->
+    <Compile Remove="Security/ProtectedInstallLocationPolicy.cs" />
   </ItemGroup>
 
 </Project>

@@ -75,16 +75,16 @@ internal static class Program
             using RegistryKey baseKey = RegistryKey.OpenBaseKey(
                 RegistryHive.LocalMachine, RegistryView.Registry64);
             using RegistryKey? installKey = baseKey.OpenSubKey(@"Software\Storik4\CDPI UI");
+            string? trayUserSid = WindowsIdentity.GetCurrent().User?.Value;
             if (installKey?.GetValue("InstallLocation") is string installLocation &&
                 string.Equals(
                     Path.GetFullPath(installLocation).TrimEnd(Path.DirectorySeparatorChar),
                     Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar),
                     StringComparison.OrdinalIgnoreCase))
             {
-                return true;
+                return ProtectedInstallLocationPolicy.IsProtected(directory, trayUserSid);
             }
 
-            string? trayUserSid = WindowsIdentity.GetCurrent().User?.Value;
             string? desktopUserSid = GetDesktopUserSid()?.Value;
             string? directoryOwnerSid = new DirectoryInfo(directory)
                 .GetAccessControl(AccessControlSections.Owner)

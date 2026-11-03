@@ -280,6 +280,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
   - `TrustedPathValidator` rejects an existing symbolic link or junction in any component, including the root and its parents.
+- Trust an MSI location only when its full directory tree has protected owners and ACLs and contains no reparse points (`ProtectedInstallLocationPolicy`). A matching registry value alone does not make a custom installation path safe.
 - Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
 - Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.
 - Start a program only through `ExecutableTrust.AcquireAsync`, and check its arguments with `FileWritingOptions` (see [Elevated start of a program](#elevated-start-of-a-program)).

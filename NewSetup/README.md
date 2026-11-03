@@ -86,6 +86,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 
 The folder does not inherit entries from its parent. Thus a custom folder such as `C:\CDPI UI`
 does not give write access to all users.
+At runtime, the launcher and elevated tray also check the owners and ACLs of every ancestor and existing item under this folder. An installation placed below a user-writable directory, or with a pre-existing user-writable file, is treated as unsafe and cannot start elevated operations.
 
 ## Installation location in the registry
 
