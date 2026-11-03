@@ -55,12 +55,22 @@ internal class ZipService
         Directory.CreateDirectory(destinationDirectory);
         foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
         {
-            string destination = Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, file));
+            string relativePath = Path.GetRelativePath(sourceDirectory, file);
+            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            // Recheck after creating missing folders before moving the verified file.
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             File.Move(file, destination, overwrite: true);
         }
         foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+        {
+            string relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
+            Directory.CreateDirectory(destination);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
+        }
     }
 
     private static async Task ExtractEntries(
