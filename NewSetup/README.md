@@ -107,7 +107,7 @@ operates as a portable installation and downloads patch updates.
 | Action | Sequence and condition | Function |
 |--------|------------------------|----------|
 | `LaunchApp` | After `InstallFinalize`. Condition: `NOT Installed AND NOT REMOVE AND UILevel >= 4`. | Runs `[WindowsFolder]explorer.exe "[INSTALLLOCATION]CDPIUI.exe"` with `asyncNoWait`. |
-| `UninstallCleanup` | Before `RemoveFiles`. Condition: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Runs the embedded `CDPIUI_ElevatedLauncher.exe` with `cleanup "[INSTALLLOCATION]"`. It requires SYSTEM, matches the directory to the registered MSI location, and checks the directory tree's owners and ACLs before running `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Deferred, not impersonated (runs as SYSTEM), `Return="ignore"`. |
+| `UninstallCleanup` | Before `RemoveRegistryValues` and `RemoveFiles`. Condition: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Runs the embedded `CDPIUI_ElevatedLauncher.exe` with `cleanup "[INSTALLLOCATION]"`. It requires SYSTEM, matches the directory to the registered MSI location, and checks the directory tree's owners and ACLs before running `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Deferred, not impersonated (runs as SYSTEM), `Return="ignore"`. |
 
 Notes on `LaunchApp`:
 

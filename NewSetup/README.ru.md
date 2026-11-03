@@ -107,7 +107,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 | Действие | Последовательность и условие | Функция |
 |--------|------------------------|----------|
 | `LaunchApp` | После `InstallFinalize`. Условие: `NOT Installed AND NOT REMOVE AND UILevel >= 4`. | Выполняет `[WindowsFolder]explorer.exe "[INSTALLLOCATION]CDPIUI.exe"` с `asyncNoWait`. |
-| `UninstallCleanup` | Перед `RemoveFiles`. Условие: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Запускает встроенный в MSI `CDPIUI_ElevatedLauncher.exe` с аргументами `cleanup "[INSTALLLOCATION]"`. Программа требует SYSTEM, сверяет каталог с зарегистрированным путём MSI и проверяет владельцев и ACL дерева перед запуском `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Действие отложенное, без олицетворения (выполняется от имени SYSTEM), `Return="ignore"`. |
+| `UninstallCleanup` | Перед `RemoveRegistryValues` и `RemoveFiles`. Условие: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Запускает встроенный в MSI `CDPIUI_ElevatedLauncher.exe` с аргументами `cleanup "[INSTALLLOCATION]"`. Программа требует SYSTEM, сверяет каталог с зарегистрированным путём MSI и проверяет владельцев и ACL дерева перед запуском `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Действие отложенное, без олицетворения (выполняется от имени SYSTEM), `Return="ignore"`. |
 
 Замечания о `LaunchApp`:
 
