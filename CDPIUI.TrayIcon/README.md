@@ -117,6 +117,8 @@ When one component starts a proxy, the tray stops the other components that use 
 
 An earlier version made a task that starts `CDPIUI_TrayIcon.exe` directly. At each start, the tray changes such a task (`AutoStartManager.MoveTaskToLauncher`), if its action starts the tray of the same directory and the launcher exists. The action then starts the launcher with `tray` before the old arguments. The other settings of the task do not change.
 
+The tray rejects a portable copy if it is elevated under a different account from the desktop user or if another account owns its application directory. It removes a startup task for that copy when it finds one. Use the MSI installation for over-the-shoulder elevation; its installation directory is administrator-protected.
+
 If `AddToAutorun` fails, the tray sends `Settings/AutorunFalse` to the GUI and shows a notification.
 
 ## Conditional Launch

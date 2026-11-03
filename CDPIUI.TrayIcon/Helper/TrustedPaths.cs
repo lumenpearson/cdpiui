@@ -1,4 +1,7 @@
+using System.Security.AccessControl;
+using System.Security.Principal;
 using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32;
 
@@ -19,6 +22,39 @@ public static class TrustedPaths
     ];
 
     public static IEnumerable<string?> AllowedRoots => Roots;
+
+    /// <summary>
+    /// A portable executable and its directory are user-controlled. Do not expose its elevated
+    /// operations to another account; MSI installs use an administrator-protected directory.
+    /// </summary>
+    public static bool HasSafeElevationContext()
+    {
+        bool installedByMsi = Utils.IsInstalledByMsi();
+        if (installedByMsi)
+            return true;
+
+        string applicationDirectory = Utils.GetDataDirectory();
+        if (!TrustedPathValidator.IsInside(applicationDirectory + Path.DirectorySeparatorChar, [applicationDirectory]))
+            return false;
+
+        try
+        {
+            string? trayUserSid = WindowsIdentity.GetCurrent().User?.Value;
+            string? desktopUserSid = PipeAccessPolicy.GetDesktopUserSid()?.Value;
+            string? directoryOwnerSid = new DirectoryInfo(applicationDirectory)
+                .GetAccessControl(AccessControlSections.Owner)
+                .GetOwner(typeof(SecurityIdentifier)) is SecurityIdentifier owner
+                    ? owner.Value
+                    : null;
+
+            return PortableElevationPolicy.IsAllowed(
+                installedByMsi, trayUserSid, desktopUserSid, directoryOwnerSid);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public static string? GetDesktopUserDataDirectory()
     {

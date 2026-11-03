@@ -23,6 +23,9 @@ public static class AutoStartManager
     {
         try
         {
+            if (!TrustedPaths.HasSafeElevationContext())
+                return false;
+
             string? executablePath = Environment.ProcessPath;
             if (executablePath == null)
                 return false;
@@ -91,6 +94,13 @@ public static class AutoStartManager
             if (executablePath == null)
                 return;
             string launcherPath = GetLauncherPath(executablePath);
+
+            if (!TrustedPaths.HasSafeElevationContext())
+            {
+                RemoveTaskForThisCopy(executablePath, launcherPath);
+                return;
+            }
+
             if (!File.Exists(launcherPath))
                 return;
 
@@ -134,6 +144,42 @@ public static class AutoStartManager
     private static string GetLauncherPath(string trayPath)
     {
         return ElevatedLauncherCommand.GetPath(Path.GetDirectoryName(trayPath) ?? string.Empty);
+    }
+
+    internal static void RemoveUnsafePortableAutorunForThisCopy()
+    {
+        string? executablePath = Environment.ProcessPath;
+        if (executablePath == null)
+            return;
+        RemoveTaskForThisCopy(executablePath, GetLauncherPath(executablePath));
+    }
+
+    private static void RemoveTaskForThisCopy(string executablePath, string launcherPath)
+    {
+        try
+        {
+            lock (SyncRoot)
+            using (TaskService taskService = new TaskService())
+            using (Microsoft.Win32.TaskScheduler.Task? task = taskService.GetTask(TaskName))
+            {
+                if (task == null)
+                    return;
+
+                bool targetsThisCopy = task.Definition.Actions
+                    .OfType<ExecAction>()
+                    .Any(action => IsSamePath(action.Path, executablePath) || IsSamePath(action.Path, launcherPath));
+                if (targetsThisCopy)
+                {
+                    taskService.RootFolder.DeleteTask(TaskName, false);
+                    Trace.WriteLine(
+                        $"[{nameof(AutoStartManager)}] Removed elevated autorun for this portable copy because its files are not owned by the tray user.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[{nameof(AutoStartManager)}] Cannot remove unsafe autorun task: {ex.Message}");
+        }
     }
 
     private static bool IsSamePath(string? taskPath, string path)
