@@ -191,6 +191,10 @@ internal class DownloadWorker : IDisposable
 
             copiedPath = Path.Combine(destinationPath, exeName + extension);
         }
+        copiedPath = ArchivePaths.GetDestinationOrThrow(destinationPath, Path.GetFileName(copiedPath));
+        ArchivePaths.EnsureNoReparsePoints(destinationPath, copiedPath);
+        Directory.CreateDirectory(destinationPath);
+        ArchivePaths.EnsureNoReparsePoints(destinationPath, copiedPath);
         File.Copy(tempDestination, copiedPath, true);
         return copiedPath;
     }

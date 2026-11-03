@@ -115,6 +115,7 @@ internal static class StoreRepositoryDownloader
             if (!string.IsNullOrEmpty(destDir))
                 Directory.CreateDirectory(destDir);
 
+            ArchivePaths.EnsureNoReparsePoints(destinationFolder, destinationPath);
             ArchivePaths.ExtractToFileBounded(entry, destinationPath);
         }
     }
