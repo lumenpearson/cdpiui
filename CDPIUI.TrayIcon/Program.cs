@@ -38,9 +38,11 @@ class Programm
     {
         if (args.Contains(UninstallHelper.CleanupArgument))
         {
-            if (WindowsIdentity.GetCurrent().User?.IsWellKnown(WellKnownSidType.LocalSystemSid) != true)
+            if (WindowsIdentity.GetCurrent().User?.IsWellKnown(WellKnownSidType.LocalSystemSid) != true ||
+                !Utils.IsInstalledByMsi() ||
+                !TrustedPaths.HasSafeElevationContext())
             {
-                Trace.WriteLine("[Startup] Refusing uninstall cleanup outside the Windows Installer SYSTEM context.");
+                Trace.WriteLine("[Startup] Refusing uninstall cleanup outside a protected MSI installation in the Windows Installer SYSTEM context.");
                 return;
             }
             UninstallHelper.Cleanup();

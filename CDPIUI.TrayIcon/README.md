@@ -25,7 +25,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 
 `Program.cs` (`Programm.Main`) does these steps:
 
-1. If the arguments contain `--uninstall-cleanup`, it runs `UninstallHelper.Cleanup` and exits.
+1. If the arguments contain `--uninstall-cleanup`, it requires the SYSTEM account and a protected registered MSI folder, then runs `UninstallHelper.Cleanup` and exits.
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
 3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
@@ -230,7 +230,9 @@ CAUTION: Do not start the tray or `EditHostFile.exe` directly with the `runas` v
 
 ## Uninstall cleanup
 
-The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM. `UninstallHelper.Cleanup` does these steps:
+The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM through the embedded
+launcher. The tray independently checks that its folder is the registered MSI location and its
+owners and ACLs are protected. `UninstallHelper.Cleanup` does these steps:
 
 1. It sets the event `Global\CDPIUI_TrayShutdown`. Each running tray exits as if the user clicked Exit, so it stops the components and restores the proxy.
 2. It waits up to 20 seconds for the trays to exit.
