@@ -39,4 +39,8 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\CDPIUI.Shared\Security\PortableElevationPolicy.cs" Link="Shared\PortableElevationPolicy.cs" />
+  </ItemGroup>
+
 </Project>

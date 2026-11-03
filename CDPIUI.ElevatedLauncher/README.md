@@ -35,6 +35,7 @@ CDPIUI_ElevatedLauncher.exe <target> [arguments of the target]
 - The launcher gives the other arguments to the program unchanged. It adds each argument to `ProcessStartInfo.ArgumentList`, so the program gets the same arguments.
 - The working directory of the program is the folder of the launcher.
 - The launcher starts the program with `UseShellExecute = false`. The program gets the token of the launcher and shows no second UAC prompt.
+- Before starting a target, the launcher checks that the folder is the registered MSI install directory or that the portable folder belongs to the tray user and the desktop user is the same account. This also protects the `hosts` target, which does not pass through the tray.
 
 ## Environment
 
