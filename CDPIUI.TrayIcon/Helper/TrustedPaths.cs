@@ -30,10 +30,20 @@ public static class TrustedPaths
     public static bool HasSafeElevationContext()
     {
         bool installedByMsi = Utils.IsInstalledByMsi();
-        if (installedByMsi)
-            return true;
-
         string applicationDirectory = Utils.GetDataDirectory();
+        if (installedByMsi)
+        {
+            try
+            {
+                string? trayUserSid = WindowsIdentity.GetCurrent().User?.Value;
+                return ProtectedInstallLocationPolicy.IsProtected(applicationDirectory, trayUserSid);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         if (!TrustedPathValidator.IsInside(applicationDirectory + Path.DirectorySeparatorChar, [applicationDirectory]))
             return false;
 

@@ -47,6 +47,9 @@
     <ProjectReference Include="..\CDPIUI.Shared\CDPIUI.Shared.csproj" />
   </ItemGroup>
 	<ItemGroup>
+	  <Compile Include="..\CDPIUI.Shared\Security\ProtectedInstallLocationPolicy.cs" Link="Shared\ProtectedInstallLocationPolicy.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Update="Assets\**\*.*">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</None>

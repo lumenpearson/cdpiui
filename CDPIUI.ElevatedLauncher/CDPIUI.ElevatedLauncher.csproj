@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <Compile Include="..\CDPIUI.Shared\Security\PortableElevationPolicy.cs" Link="Shared\PortableElevationPolicy.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\ProtectedInstallLocationPolicy.cs" Link="Shared\ProtectedInstallLocationPolicy.cs" />
   </ItemGroup>
 
 </Project>
