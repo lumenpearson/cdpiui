@@ -42,6 +42,7 @@ public class MsiInstallerHelper
     {
         public string OperationId { get; init; } = "";
         public string FilePath { get; init; } = "";
+        public string? ExpectedSha256 { get; init; }
     }
 
     private readonly Queue<QueueItem> _queue = new Queue<QueueItem>();
@@ -50,7 +51,7 @@ public class MsiInstallerHelper
     private string? _currentOperationId;
     private Process? _currentProcess;
 
-    public void AddToQueue(string operationId, string fileName)
+    public void AddToQueue(string operationId, string fileName, string? expectedSha256)
     {
         lock (SyncRoot)
         {
@@ -60,7 +61,8 @@ public class MsiInstallerHelper
             var item = new QueueItem
             {
                 OperationId = operationId,
-                FilePath = fileName
+                FilePath = fileName,
+                ExpectedSha256 = expectedSha256
             };
 
             _queue.Enqueue(item);
@@ -151,12 +153,12 @@ public class MsiInstallerHelper
 
         if (next != null)
         {
-            _ = ProcessMsi(next.OperationId, next.FilePath);
+            _ = ProcessMsi(next.OperationId, next.FilePath, next.ExpectedSha256);
         }
     }
 
 
-    private async Task ProcessMsi(string operationId, string filePath)
+    private async Task ProcessMsi(string operationId, string filePath, string? expectedSha256)
     {
         string? stagedPath = null;
         try
@@ -165,8 +167,11 @@ public class MsiInstallerHelper
                 throw new UnauthorizedAccessException("The package is outside the application directories.");
 
             // Installers from the store (driver and runtime packages) are signed by their vendors.
-            // The copy is checked and run, so the user's copy cannot be swapped after the check.
+            // Match the staged bytes against the source digest before checking the signature,
+            // so a changed user copy cannot substitute a different but also signed installer.
             stagedPath = PackageStaging.Stage(filePath);
+            if (!PackageStaging.MatchesSha256(stagedPath, expectedSha256))
+                throw new UnauthorizedAccessException("The staged package does not match the downloaded package.");
             if (!PackageStaging.HasValidSignature(stagedPath))
                 throw new UnauthorizedAccessException("The package does not have a valid signature.");
 

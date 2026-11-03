@@ -123,7 +123,7 @@ If `AddToAutorun` fails, the tray sends `Settings/AutorunFalse` to the GUI and s
 
 `ConditionalLaunchEngine` reads the `.cdpitask` files from the tasks directory.
 The default directory comes from the settings file path (`ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile`).
-The GUI can send a different directory in `ReloadTasks`. The tray accepts it only if `TrustedPaths.IsAllowed` accepts it.
+The GUI creates the directory before sending `ReloadTasks`. The tray accepts it only if `TrustedPaths.IsAllowed` accepts it and does not create it itself.
 
 - A `FileSystemWatcher` reloads the tasks when a file changes. After a watcher error, the engine creates a new watcher.
 - Hot key triggers use `RegisterHotKey` on the `EmptyForm` window.
@@ -156,10 +156,11 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
 2. `PackageStaging.Stage` copies the file to `<tray directory>\.staging\<GUID>\`.
-3. The copy must have a valid Authenticode signature (`WinVerifyTrust`, no revocation check).
-4. The tray runs `msiexec.exe /i "<copy>" /passive /norestart` for `.msi`. For other files, it runs `<copy> /install /passive /norestart`.
-5. Exit codes 0 and 1638 give `Complete`. Exit codes 3010 and 1641 give `CompleteRestartRequest`. Other codes give `ExceptionHappens`.
-6. The tray deletes the staging directory.
+3. The staged copy must match the source SHA-256 supplied by the GUI. Store downloads use the digest of the HTTPS response bytes; LScript installs use the digest of the source package.
+4. The copy must have a valid Authenticode signature (`WinVerifyTrust`, no revocation check).
+5. The tray runs `msiexec.exe /i "<copy>" /passive /norestart` for `.msi`. For other files, it runs `<copy> /install /passive /norestart`.
+6. Exit codes 0 and 1638 give `Complete`. Exit codes 3010 and 1641 give `CompleteRestartRequest`. Other codes give `ExceptionHappens`.
+7. The tray deletes the staging directory.
 
 `MSIInstallation/Kill` stops the running installer or removes the operation from the queue.
 

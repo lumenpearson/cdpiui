@@ -123,7 +123,7 @@ GUI запускает трей с `--autorun` или `--show-ui`, когда GU
 
 `ConditionalLaunchEngine` читает файлы `.cdpitask` из папки задач.
 Папка по умолчанию определяется по пути к файлу настроек (`ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile`).
-GUI может отправить другую папку в `ReloadTasks`. Трей принимает её, только если её принимает `TrustedPaths.IsAllowed`.
+Перед отправкой `ReloadTasks` GUI создаёт папку. Трей принимает её, только если её принимает `TrustedPaths.IsAllowed`, и сам папку не создаёт.
 
 - `FileSystemWatcher` перезагружает задачи, когда файл изменяется. После ошибки наблюдателя движок создаёт новый наблюдатель.
 - Триггеры горячих клавиш используют `RegisterHotKey` в окне `EmptyForm`.
@@ -156,10 +156,11 @@ GUI может отправить другую папку в `ReloadTasks`. Тр
 
 1. Путь должен приниматься `TrustedPaths.IsAllowed`.
 2. `PackageStaging.Stage` копирует файл в `<tray directory>\.staging\<GUID>\`.
-3. У копии должна быть действительная подпись Authenticode (`WinVerifyTrust`, без проверки отзыва).
-4. Для `.msi` трей выполняет `msiexec.exe /i "<copy>" /passive /norestart`. Для других файлов он выполняет `<copy> /install /passive /norestart`.
-5. Коды выхода 0 и 1638 дают `Complete`. Коды выхода 3010 и 1641 дают `CompleteRestartRequest`. Другие коды дают `ExceptionHappens`.
-6. Трей удаляет промежуточную папку.
+3. SHA-256 staging-копии должен совпасть с хешем исходного файла, переданным GUI. Для загрузок Store это хеш байтов HTTPS-ответа, для установок LScript — хеш исходного пакета.
+4. У копии должна быть действительная подпись Authenticode (`WinVerifyTrust`, без проверки отзыва).
+5. Для `.msi` трей выполняет `msiexec.exe /i "<copy>" /passive /norestart`. Для других файлов он выполняет `<copy> /install /passive /norestart`.
+6. Коды выхода 0 и 1638 дают `Complete`. Коды выхода 3010 и 1641 дают `CompleteRestartRequest`. Другие коды дают `ExceptionHappens`.
+7. Трей удаляет промежуточную папку.
 
 `MSIInstallation/Kill` останавливает работающий установщик или удаляет операцию из очереди.
 

@@ -27,6 +27,12 @@ public static class PackageStaging
         return stagedPath;
     }
 
+    /// <summary>
+    /// Checks the staged copy against the source digest supplied by the GUI.
+    /// </summary>
+    public static bool MatchesSha256(string path, string? expectedSha256) =>
+        Sha256File.Matches(path, expectedSha256);
+
     public static void Release(string stagedPath)
     {
         try

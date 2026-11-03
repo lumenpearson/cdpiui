@@ -94,8 +94,10 @@ Rules:
 - Trigger types: `HotKey`, `ProcessStarted`, `ProcessStopped`.
 - Action types: see `ConditionalActionType`.
 - `ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile` returns `<data directory>\ConditionalTasks`. The data directory is the parent of the `Settings` directory.
-- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name.
-- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more triggers, one or more actions and a delay from 0 to 86400 seconds.
+- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name. It does not create a missing directory.
+- Task files must be at most 1 MiB; a directory may contain at most 256 task files. The XML reader prohibits DTDs and caps the document at 1 MiB of characters.
+- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more supported triggers, one or more supported actions and a delay from 0 to 86400 seconds. A task can have up to 32 triggers and 64 actions; each trigger or action can have up to 32 parameters.
+- Task text is limited to 64 KiB; parameter names are limited to 128 characters and parameter values to 16 KiB.
 - `Save` and `Export` write a temporary file and then replace the target file.
 
 ## Exceptions

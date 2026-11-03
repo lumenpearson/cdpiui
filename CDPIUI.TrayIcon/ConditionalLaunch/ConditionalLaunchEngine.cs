@@ -49,9 +49,10 @@ internal sealed class ConditionalLaunchEngine : IDisposable
                 return;
 
             _messageWindow = messageWindow;
-            ConfigureTasksDirectory(
-                ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile(
-                    SettingsManager.Instance.SettingsFilePath));
+            string defaultTasksDirectory = ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile(
+                SettingsManager.Instance.SettingsFilePath);
+            if (TrustedPaths.IsAllowed(defaultTasksDirectory, "conditional tasks directory"))
+                ConfigureTasksDirectory(defaultTasksDirectory);
 
             Logger.Instance.CreateDebugLog(
                 nameof(ConditionalLaunchEngine),
@@ -116,11 +117,11 @@ internal sealed class ConditionalLaunchEngine : IDisposable
         }
 
         lock (_sync)
-            ApplyLoadedTasks(directory, loadedTasks);
+            ApplyLoadedTasks(loadedTasks);
     }
 
     // The caller holds _sync.
-    private void ApplyLoadedTasks(string directory, IReadOnlyList<ConditionalTask> loadedTasks)
+    private void ApplyLoadedTasks(IReadOnlyList<ConditionalTask> loadedTasks)
     {
         UnregisterHotKeys();
 
@@ -139,18 +140,9 @@ internal sealed class ConditionalLaunchEngine : IDisposable
             !string.IsNullOrWhiteSpace(binding.Trigger.GetParameter("processName")));
         RegisterHotKeys();
 
-        var fileCount = Directory.EnumerateFiles(
-            directory,
-            $"*{ConditionalTaskFileService.FileExtension}").Count();
         Logger.Instance.CreateDebugLog(
             nameof(ConditionalLaunchEngine),
-            $"Conditional tasks reloaded: {loadedTasks.Count} valid, {_tasks.Count} enabled, {fileCount} files total.");
-        if (fileCount != loadedTasks.Count)
-        {
-            Logger.Instance.CreateWarningLog(
-                nameof(ConditionalLaunchEngine),
-                $"Ignored {fileCount - loadedTasks.Count} invalid conditional task file(s).");
-        }
+            $"Conditional tasks reloaded: {loadedTasks.Count} valid, {_tasks.Count} enabled.");
     }
 
     public bool HandleWindowMessage(ref Message message)
@@ -319,12 +311,12 @@ internal sealed class ConditionalLaunchEngine : IDisposable
 
         _watcher?.Dispose();
 
-        Directory.CreateDirectory(directory);
         _tasksDirectory = directory;
         Logger.Instance.CreateDebugLog(
             nameof(ConditionalLaunchEngine),
             $"Using conditional tasks directory: '{directory}'.");
-        _watcher = new ConditionalTaskFolderWatcher(directory, TaskFilesChanged, TaskWatcherError);
+        if (Directory.Exists(directory))
+            _watcher = new ConditionalTaskFolderWatcher(directory, TaskFilesChanged, TaskWatcherError);
     }
 
     // After a buffer overflow the watcher stops raising events for good: it is created

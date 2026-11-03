@@ -14,6 +14,7 @@ using CDPIUI.Core.System;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Exceptions;
 using CDPIUI.Shared.Extensions;
+using CDPIUI.Shared.Security;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using static CDPIUI.Core.Basic.ErrorsHelper;
 using static CDPIUI.Core.Store.MSI.MsiInstallerService;
@@ -71,7 +72,8 @@ internal class DownloadWorker : IDisposable
 
         try
         {
-            if (!await DownloadToTempFileAsync(url, tempDestination, expectedSha256))
+            string? downloadedSha256 = await DownloadToTempFileAsync(url, tempDestination, expectedSha256);
+            if (downloadedSha256 == null)
                 return false;
 
             _cancellationToken.ThrowIfCancellationRequested();
@@ -92,7 +94,7 @@ internal class DownloadWorker : IDisposable
                 StageChanged?.Invoke(Tuple.Create(OperationId, "ConnectingToService"));
                 if (_extractedFiles.Count == 0)
                     throw new IOException("The installer was not copied.");
-                await InstallMsiAsync(_extractedFiles[^1], removeAfterAction);
+                await InstallMsiAsync(_extractedFiles[^1], removeAfterAction, downloadedSha256);
             }
 
             _cancellationToken.ThrowIfCancellationRequested();
@@ -115,10 +117,10 @@ internal class DownloadWorker : IDisposable
     }
 
     /// <summary>
-    /// Downloads <paramref name="url"/> to <paramref name="tempDestination"/>. Returns false, with
+    /// Downloads <paramref name="url"/> to <paramref name="tempDestination"/>. Returns null, with
     /// the error reported, when the server answers with an error status or the hash does not match.
     /// </summary>
-    private async Task<bool> DownloadToTempFileAsync(string url, string tempDestination, string? expectedSha256)
+    private async Task<string?> DownloadToTempFileAsync(string url, string tempDestination, string? expectedSha256)
     {
         Directory.CreateDirectory(_tempDirectory);
 
@@ -127,15 +129,16 @@ internal class DownloadWorker : IDisposable
         Logger.Instance.CreateDebugLog(nameof(DownloadWorker), $"Uri used: {url}");
 
         _cancellationToken.ThrowIfCancellationRequested();
+        string downloadedSha256;
         try
         {
-            await _requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
+            downloadedSha256 = await _requestWorker.DownloadFileAsync(url, tempDestination, ReportDownloadProgress,
                 cancellationToken: _cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.StatusCode.HasValue)
         {
             ReportFailure($"ERR_DOWNLOAD_{PrettyErrorCode.UNEXPECTED_STATUS_CODE}_{(int)ex.StatusCode.Value}", "Server Error");
-            return false;
+            return null;
         }
 
         // A catalogue entry with a hash pins the file: a changed release asset or a replaced
@@ -147,16 +150,16 @@ internal class DownloadWorker : IDisposable
             {
                 Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The catalogue gives {url} a SHA-256 in an invalid format: \"{expectedSha256}\". Expected 64 hexadecimal characters, optionally after \"sha256:\".");
                 ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Invalid hash format");
-                return false;
+                return null;
             }
-            if (!HasSha256(tempDestination, expected))
+            if (!string.Equals(downloadedSha256, expected, StringComparison.OrdinalIgnoreCase))
             {
                 Logger.Instance.CreateWarningLog(nameof(DownloadWorker), $"The SHA-256 of {url} does not match the catalogue.");
                 ReportFailure("ERR_DOWNLOAD_HASH_MISMATCH", "Hash mismatch");
-                return false;
+                return null;
             }
         }
-        return true;
+        return downloadedSha256;
     }
 
     private string CopyDownloadedFile(
@@ -192,10 +195,10 @@ internal class DownloadWorker : IDisposable
         return copiedPath;
     }
 
-    private async Task InstallMsiAsync(string msiPath, bool removeAfterAction)
+    private async Task InstallMsiAsync(string msiPath, bool removeAfterAction, string downloadedSha256)
     {
         _msiGUID = Guid.NewGuid().ToString();
-        MsiInstallerService msiInstallerHelper = new(_msiGUID, msiPath);
+        MsiInstallerService msiInstallerHelper = new(_msiGUID, msiPath, downloadedSha256);
         msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
         MsiCallback callback = await msiInstallerHelper.Run(_cancellationToken);
         msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;
@@ -284,11 +287,7 @@ internal class DownloadWorker : IDisposable
     internal static bool HasSha256(string file, string expectedSha256)
     {
         string? expected = NormalizeSha256(expectedSha256);
-        if (expected == null)
-            return false;
-        using var stream = File.OpenRead(file);
-        string actual = Convert.ToHexString(global::System.Security.Cryptography.SHA256.HashData(stream));
-        return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+        return expected != null && Sha256File.Matches(file, expected);
     }
 
     private void ReportDownloadProgress(long totalRead, long totalBytes, TimeSpan elapsed)

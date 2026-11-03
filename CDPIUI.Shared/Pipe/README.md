@@ -219,7 +219,7 @@ The GUI reads `operationId` as an integer.
 
 | Type | Direction | Data |
 |---|---|---|
-| `Begin` | GUI → tray | `operationId`, `fileName` |
+| `Begin` | GUI → tray | `operationId`, `fileName`, `sha256` of the source file |
 | `Kill` | GUI → tray | `operationId` |
 | `SetOperationStatus` | tray → GUI | `operationId`, `state`: a `MsiState` name |
 | `RemoveOperationId` | tray → GUI | `operationId`, `state` (empty) |

@@ -320,11 +320,12 @@ internal class CommandsHandler
                 {
                     var operationId = model.MessageData?["operationId"];
                     var fileName = model.MessageData?["fileName"];
+                    var expectedSha256 = model.MessageData?["sha256"];
 
                     if (operationId == null || fileName == null)
                         return;
 
-                    MsiInstallerHelper.Instance.AddToQueue(operationId, fileName);
+                    MsiInstallerHelper.Instance.AddToQueue(operationId, fileName, expectedSha256);
                     return;
                 }
 
