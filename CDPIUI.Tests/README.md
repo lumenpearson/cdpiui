@@ -80,6 +80,7 @@ The reports are in `TestResults/<id>/`. To get a readable report, use a report t
 | `Shared` | `PipeSessionFileTests` | Pipe name and key format, write and read of the session file, stale and damaged files |
 | `Shared` | `StreamStringTests` | Pipe stream strings |
 | `Shared` | `PipeServiceBaseTests` | Real named pipes: cancellation of an idle read, a truncated frame, and shutdown with unread output |
+| `Shared` | `DirectoryAclGuardTests` | Windows ACL updates through a directory handle, rejection of a replaced parent or reparse target, and no elevated creation of a missing directory |
 | `Shared` | `TasksManageServiceTests` | Task creation and stop with concurrent calls |
 | `Shared` | `TrustedPathValidatorTests` | Trusted path checks |
 | `Shared` | `XmlSettingsServiceTests` | XML settings, values in different cultures |

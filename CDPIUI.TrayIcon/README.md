@@ -276,7 +276,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
-  - `TrustedPathValidator` rejects a path that has a symbolic link or a junction in any component, including the root and its parents. A user-owned `Store` root must not redirect an elevated access change outside the Store.
+  - `TrustedPathValidator` rejects an existing symbolic link or junction in any component, including the root and its parents.
 - Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
 - Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.
 - Start a program only through `ExecutableTrust.AcquireAsync`, and check its arguments with `FileWritingOptions` (see [Elevated start of a program](#elevated-start-of-a-program)).
@@ -286,6 +286,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler can run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.
 - Start the GUI with `RunHelper.RunAsDesktopUser`. It uses the token of the shell process, so the GUI does not run elevated.
 - Start the tray and `EditHostFile.exe` elevated only through `CDPIUI_ElevatedLauncher.exe` (see [Environment of an elevated start](#environment-of-an-elevated-start)).
+- `GrantAccess` creates a missing folder in the GUI process. The elevated tray changes access only on an existing directory. It opens the directory without following a reparse point, checks the resolved path, and changes the ACL through that same handle. A path change after validation cannot redirect the ACL change.
 - `GrantAccess` gives `Modify` access only to the tray user.
 
 WARNING: Do not add a pipe handler that runs a file or changes access without a `TrustedPaths` check.
