@@ -24,8 +24,8 @@ public static class TrustedPaths
     public static IEnumerable<string?> AllowedRoots => Roots;
 
     /// <summary>
-    /// A portable executable and its directory are user-controlled. Do not expose its elevated
-    /// operations to another account; MSI installs use an administrator-protected directory.
+    /// A portable executable and its directory are user-controlled. For either installation
+    /// type, do not expose elevated operations when another account can change the application.
     /// </summary>
     public static bool HasSafeElevationContext()
     {

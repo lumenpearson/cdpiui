@@ -49,15 +49,15 @@ class Programm
 
         if (!TrustedPaths.HasSafeElevationContext())
         {
-            Trace.WriteLine("[Startup] Refusing to run the portable tray elevated from another user's directory.");
-            AutoStartManager.RemoveUnsafePortableAutorunForThisCopy();
+            Trace.WriteLine("[Startup] Refusing elevated startup because the application directory is not protected for this account.");
+            AutoStartManager.RemoveUnsafeAutorunForThisCopy();
             if (!args.Contains("--autorun"))
             {
                 bool isRussian = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ru";
                 MessageBox.Show(
                     isRussian
-                        ? "Портативную копию нельзя запускать с правами администратора из каталога другой учётной записи. Для такой конфигурации установите MSI-версию."
-                        : "A portable copy cannot run elevated from another user's directory. Install the MSI build for this setup.",
+                        ? "Нельзя запустить CDPI UI с правами администратора: каталог приложения не защищён от изменения другой учётной записью. Установите приложение в папку с защищёнными правами доступа."
+                        : "CDPI UI cannot run elevated because another account can change its application folder. Install it in a folder with protected permissions.",
                     "CDPI UI",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
