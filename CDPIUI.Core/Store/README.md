@@ -248,7 +248,7 @@ The extension column gives the extension that the release asset must have and th
 
 | Type | Extension | Processing | Checks |
 |---|---|---|---|
-| `signedZip` | `.cdpisignedpack` | Extracted into `<item folder>.verify-<GUID>`. The files move into the item folder only when the catalog is valid. Existing files are replaced. | Archive limits, catalog signature |
+| `signedZip` | `.cdpisignedpack` | Extracted into `<item folder>.verify-<GUID>`. The files move into the item folder only when the catalog is valid. Existing files are replaced. | Archive limits, catalog signature, no reparse points in destination paths |
 | `archive` | `.zip` | Extracted directly into the item folder. `.txt` files are merged. | Archive limits |
 | `configPack` | `.cdpiconfigpack` | The same as `archive` | Archive limits |
 | `WIN32application` | `.exe` | Copied into the item folder | None in the GUI. The tray checks the program when it starts it (see [Elevated start](#elevated-start)). |
