@@ -56,6 +56,7 @@ internal class ZipService
         foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
         {
             string relativePath = Path.GetRelativePath(sourceDirectory, file);
+            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, file);
             string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -66,6 +67,7 @@ internal class ZipService
         foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
         {
             string relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, directory);
             string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(destination);
@@ -112,7 +114,10 @@ internal class ZipService
                 if (entry.FullName.EndsWith("/"))
                 {
                     if (!Directory.Exists(destinationPath))
+                    {
                         Directory.CreateDirectory(destinationPath);
+                        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+                    }
                 }
                 else
                 {
@@ -181,6 +186,7 @@ internal class ZipService
         var destinationDir = Path.GetDirectoryName(destinationPath);
         if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
             Directory.CreateDirectory(destinationDir);
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         return destinationPath;
     }
 
