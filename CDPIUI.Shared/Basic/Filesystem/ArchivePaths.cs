@@ -101,9 +101,21 @@ static class ArchivePaths
         string? current = Path.GetFullPath(destination);
         while (current != null && current.Length >= fullRoot.Length)
         {
-            if ((File.Exists(current) || Directory.Exists(current)) &&
-                File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
-                throw new InvalidDataException($"\"{current}\" is a link; the archive is not extracted through links.");
+            try
+            {
+                // Exists follows a link and reports false for a dangling target. Inspect the
+                // attributes directly so a broken reparse point cannot bypass this check.
+                if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
+                    throw new InvalidDataException($"\"{current}\" is a link; the archive is not extracted through links.");
+            }
+            catch (FileNotFoundException)
+            {
+                // A not-yet-created path component has nothing to inspect.
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // A not-yet-created parent has nothing to inspect.
+            }
             if (string.Equals(current, fullRoot, StringComparison.OrdinalIgnoreCase))
                 break;
             current = Path.GetDirectoryName(current);
