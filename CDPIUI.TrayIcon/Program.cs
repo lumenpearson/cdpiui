@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
+using System.Security.Principal;
 using System.Windows.Forms;
 using CDPIUI.Shared.Basic.CommandLine;
 using CDPIUI.Shared.Migration;
@@ -37,7 +38,30 @@ class Programm
     {
         if (args.Contains(UninstallHelper.CleanupArgument))
         {
+            if (WindowsIdentity.GetCurrent().User?.IsWellKnown(WellKnownSidType.LocalSystemSid) != true)
+            {
+                Trace.WriteLine("[Startup] Refusing uninstall cleanup outside the Windows Installer SYSTEM context.");
+                return;
+            }
             UninstallHelper.Cleanup();
+            return;
+        }
+
+        if (!TrustedPaths.HasSafeElevationContext())
+        {
+            Trace.WriteLine("[Startup] Refusing to run the portable tray elevated from another user's directory.");
+            AutoStartManager.RemoveUnsafePortableAutorunForThisCopy();
+            if (!args.Contains("--autorun"))
+            {
+                bool isRussian = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ru";
+                MessageBox.Show(
+                    isRussian
+                        ? "Портативную копию нельзя запускать с правами администратора из каталога другой учётной записи. Для такой конфигурации установите MSI-версию."
+                        : "A portable copy cannot run elevated from another user's directory. Install the MSI build for this setup.",
+                    "CDPI UI",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
             return;
         }
 
