@@ -51,7 +51,9 @@ one of these prefixes, without case sensitivity:
 The prefixes include `DOTNET_ROOT`, `DOTNET_ROOT(x86)` and `DOTNET_ROOT_X64`. `LaunchPolicy` also
 names these three variables, so a change of the prefixes cannot keep them.
 
-The launcher keeps all other variables, for example `PATH` and `TEMP`.
+The launcher replaces `PATH` with existing Windows system folders. It keeps other variables, for
+example `TEMP`. A user-writable search path could supply a DLL or an unqualified child executable
+to an elevated target.
 
 ## Exit codes
 
