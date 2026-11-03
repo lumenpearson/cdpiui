@@ -61,6 +61,72 @@ public sealed class ConditionalTaskFileServiceTests : IDisposable
     }
 
     [Fact]
+    public void LoadingMissingDirectoryDoesNotCreateIt()
+    {
+        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(_directory);
+
+        Assert.Empty(tasks);
+        Assert.False(Directory.Exists(_directory));
+    }
+
+    [Fact]
+    public void OversizedTaskFileIsRejectedBeforeDeserialization()
+    {
+        Directory.CreateDirectory(_directory);
+        string path = Path.Combine(_directory, "large" + ConditionalTaskFileService.FileExtension);
+        File.WriteAllText(path, new string('x', 1024 * 1024 + 1));
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Load(path));
+    }
+
+    [Fact]
+    public void TooManyTaskFilesFailClosed()
+    {
+        Directory.CreateDirectory(_directory);
+        for (var index = 0; index <= 256; index++)
+            File.WriteAllText(Path.Combine(_directory, $"task-{index:D3}{ConditionalTaskFileService.FileExtension}"), "");
+        var errors = new List<string>();
+
+        IReadOnlyList<ConditionalTask> tasks = ConditionalTaskFileService.LoadDirectory(
+            _directory,
+            (file, _) => errors.Add(file));
+
+        Assert.Empty(tasks);
+        Assert.Single(errors);
+    }
+
+    [Fact]
+    public void DtdTaskFileIsRejected()
+    {
+        Directory.CreateDirectory(_directory);
+        string path = Path.Combine(_directory, "dtd" + ConditionalTaskFileService.FileExtension);
+        File.WriteAllText(path,
+            "<!DOCTYPE ConditionalTask [<!ENTITY x \"value\">]><ConditionalTask>&x;</ConditionalTask>");
+
+        Exception exception = Assert.ThrowsAny<Exception>(() => ConditionalTaskFileService.Load(path));
+
+        Assert.Contains("DTD", exception.ToString());
+    }
+
+    [Fact]
+    public void UnsupportedTriggerTypeIsRejected()
+    {
+        ConditionalTask task = CreateTask("Task");
+        task.Triggers[0].Type = (ConditionalTriggerType)999;
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Validate(task));
+    }
+
+    [Fact]
+    public void UnsupportedActionTypeIsRejected()
+    {
+        ConditionalTask task = CreateTask("Task");
+        task.Actions[0].Type = (ConditionalActionType)999;
+
+        Assert.Throws<InvalidDataException>(() => ConditionalTaskFileService.Validate(task));
+    }
+
+    [Fact]
     public void NullActionIsRejected()
     {
         ConditionalTask task = CreateTask("Task");

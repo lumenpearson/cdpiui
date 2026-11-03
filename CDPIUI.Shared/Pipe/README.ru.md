@@ -219,7 +219,7 @@ GUI читает `operationId` как целое число.
 
 | Тип | Направление | Данные |
 |---|---|---|
-| `Begin` | GUI → трей | `operationId`, `fileName` |
+| `Begin` | GUI → трей | `operationId`, `fileName`, `sha256` исходного файла |
 | `Kill` | GUI → трей | `operationId` |
 | `SetOperationStatus` | трей → GUI | `operationId`, `state`: имя из `MsiState` |
 | `RemoveOperationId` | трей → GUI | `operationId`, `state` (пустой) |
