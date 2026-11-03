@@ -146,7 +146,7 @@ public static class AutoStartManager
         return ElevatedLauncherCommand.GetPath(Path.GetDirectoryName(trayPath) ?? string.Empty);
     }
 
-    internal static void RemoveUnsafePortableAutorunForThisCopy()
+    internal static void RemoveUnsafeAutorunForThisCopy()
     {
         string? executablePath = Environment.ProcessPath;
         if (executablePath == null)
@@ -172,7 +172,7 @@ public static class AutoStartManager
                 {
                     taskService.RootFolder.DeleteTask(TaskName, false);
                     Trace.WriteLine(
-                        $"[{nameof(AutoStartManager)}] Removed elevated autorun for this portable copy because its files are not owned by the tray user.");
+                        $"[{nameof(AutoStartManager)}] Removed elevated autorun for this copy because its application directory is not protected.");
                 }
             }
         }
