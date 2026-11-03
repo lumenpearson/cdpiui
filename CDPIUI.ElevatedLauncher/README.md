@@ -30,6 +30,12 @@ CDPIUI_ElevatedLauncher.exe <target> [arguments of the target]
 | `tray` | `CDPIUI_TrayIcon.exe` | No. It exits with `0` after the start. |
 | `hosts` | `EditHostFile.exe` | Yes. It exits with the exit code of `EditHostFile.exe`. |
 
+The MSI has a separate internal `cleanup "<install directory>"` invocation. It accepts exactly
+one directory, requires the Local System account, verifies that the directory matches the
+registered MSI install location, checks the protected owners and ACLs of its full tree, then runs
+`CDPIUI_TrayIcon.exe --uninstall-cleanup` and waits for it. The MSI embeds this launcher so the
+initial cleanup process does not come from the directory it is validating.
+
 - The target name must be equal to a name in the table. The comparison is case-sensitive.
 - The program is in the folder of the launcher. The launcher never takes a path from the arguments.
 - The launcher gives the other arguments to the program unchanged. It adds each argument to `ProcessStartInfo.ArgumentList`, so the program gets the same arguments.
