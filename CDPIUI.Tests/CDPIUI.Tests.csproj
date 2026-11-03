@@ -40,6 +40,7 @@
   <!-- The launcher is a Native AOT executable; its rules are tested as linked source. -->
   <ItemGroup>
     <Compile Include="..\CDPIUI.ElevatedLauncher\LaunchPolicy.cs" Link="Tools\ElevatedLauncher\LaunchPolicy.cs" />
+    <Compile Include="..\CDPIUI.TrayIcon\Helper\Basic\DirectoryAclGuard.cs" Link="Shared\DirectoryAclGuard.cs" />
   </ItemGroup>
 
 </Project>

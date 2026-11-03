@@ -80,6 +80,7 @@ dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:DebugType=portable --settings co
 | `Shared` | `PipeSessionFileTests` | Формат имени pipe и ключа, запись и чтение файла сеанса, устаревшие и повреждённые файлы |
 | `Shared` | `StreamStringTests` | Строки потока pipe |
 | `Shared` | `PipeServiceBaseTests` | Настоящие именованные pipe: отмена чтения без входящих данных, оборванный пакет и закрытие с непрочитанным выводом |
+| `Shared` | `DirectoryAclGuardTests` | Windows: изменение ACL через handle каталога, отказ при подмене родителя или ссылке, отказ от создания отсутствующего каталога с повышенными правами |
 | `Shared` | `TasksManageServiceTests` | Создание и остановка задач при параллельных вызовах |
 | `Shared` | `TrustedPathValidatorTests` | Проверки доверенных путей |
 | `Shared` | `XmlSettingsServiceTests` | Настройки XML, значения в разных региональных стандартах |
