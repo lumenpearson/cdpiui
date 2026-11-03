@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -54,6 +55,9 @@ internal static class Program
 
         try
         {
+            if (!SetSafeSearchPath(startInfo))
+                return Failure;
+
             using Process? process = Process.Start(startInfo);
             if (process == null)
                 return Failure;
@@ -66,6 +70,40 @@ internal static class Program
         {
             return ex.NativeErrorCode != 0 ? unchecked((int)0x80070000) | (ex.NativeErrorCode & 0xFFFF) : Failure;
         }
+        catch
+        {
+            return Failure;
+        }
+    }
+
+    private static bool SetSafeSearchPath(ProcessStartInfo startInfo)
+    {
+        string systemDirectory = Environment.SystemDirectory;
+        if (string.IsNullOrWhiteSpace(systemDirectory))
+            return false;
+
+        string[] candidates =
+        [
+            systemDirectory,
+            Path.Combine(systemDirectory, "Wbem"),
+            Path.Combine(systemDirectory, "WindowsPowerShell", "v1.0"),
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        ];
+        var directories = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string directory in candidates)
+        {
+            if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory) && seen.Add(directory))
+                directories.Add(directory);
+        }
+
+        if (directories.Count == 0)
+            return false;
+
+        // PATH comes from the unelevated caller. A user-writable entry could supply a DLL or an
+        // unqualified child executable to an elevated target.
+        startInfo.Environment["PATH"] = string.Join(Path.PathSeparator.ToString(), directories);
+        return true;
     }
 
     private static bool IsSafeElevationContext(string directory)
