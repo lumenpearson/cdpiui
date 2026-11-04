@@ -163,3 +163,12 @@ jobs:
           $managed = $true
           try { [void][System.Reflection.AssemblyName]::GetAssemblyName($files[0].FullName) } catch { $managed = $false }
           if ($managed) { throw 'CDPIUI_ElevatedLauncher.exe is a .NET assembly. It must be a Native AOT executable.' }
+
+      - name: Build and run tool smoke tests
+        shell: pwsh
+        run: |
+          dotnet publish ToolsSmokeTest/ToolsSmokeTest.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/tools/smoke
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & artifacts/tools/smoke/ToolsSmokeTest.exe artifacts/tools
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-Content artifacts/tools/smoke/ToolsSmokeTest.report.txt

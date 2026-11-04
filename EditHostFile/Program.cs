@@ -31,6 +31,10 @@ internal class Program
             // There is no console window, for example when the output is redirected.
         }
         Log(Strings.GettingReady);
+
+        if (args.Length == 1 && args[0] == "--smoke-test")
+            return RunSmokeTest();
+
         string pathpart = "hosts";
         if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
@@ -66,6 +70,34 @@ internal class Program
         }
         Log(Strings.WorkFinished);
         return 0;
+    }
+
+    private static int RunSmokeTest()
+    {
+        try
+        {
+            _ = GetAnsiEncoding();
+
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            using Stream stream = assembly.GetManifestResourceStream("EditHostFile.Data.hosts");
+            if (stream == null || stream.Length == 0)
+                return 1;
+
+            const string sample = "before\r\n# [CDOM-B]\nmanaged entries\n# [CDOM-E]\nafter\r\n";
+            string cleaned = RemoveBlock(sample);
+            if (cleaned.Contains("managed entries", StringComparison.Ordinal) ||
+                !cleaned.Contains("before", StringComparison.Ordinal) ||
+                !cleaned.Contains("after", StringComparison.Ordinal))
+                return 2;
+
+            Log("Smoke test passed.");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Log(string.Format(Strings.WorkFailed, ex));
+            return ex.HResult != 0 ? ex.HResult : 1;
+        }
     }
 
     [DllImport("kernel32.dll")]
