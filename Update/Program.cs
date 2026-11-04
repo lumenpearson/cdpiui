@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace Update;
@@ -9,6 +10,12 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--smoke-test")
+        {
+            Environment.ExitCode = RunSmokeTest();
+            return;
+        }
+
         string extractFileName = null;
         string destinationPath = null;
         for (int i = 0; i < args.Length; i++)
@@ -42,6 +49,30 @@ internal static class Program
         {
             MessageBox.Show(Strings.StartedWithoutArgumentsMessage,
                 Strings.StartedWithoutArgumentsTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
+
+    private static int RunSmokeTest()
+    {
+        try
+        {
+            string root = Path.GetTempPath();
+            if (!ArchivePaths.TryGetDestination(root, "smoke.txt", out string destination) ||
+                !Path.IsPathFullyQualified(destination))
+                return 1;
+
+            if (ArchivePaths.TryGetDestination(root, "..\\outside.txt", out _))
+                return 2;
+
+            var prefixes = UpdatePackageLayers.GetPrefixes(new[] { "layers/0/CDPIUI.exe" });
+            if (prefixes.Count != 1 || prefixes[0] != "layers/0/")
+                return 3;
+
+            return 0;
+        }
+        catch
+        {
+            return 4;
         }
     }
 }

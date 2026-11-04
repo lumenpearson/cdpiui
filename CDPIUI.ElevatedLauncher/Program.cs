@@ -31,6 +31,9 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && string.Equals(args[0], "--smoke-test", StringComparison.Ordinal))
+            return RunSmokeTest();
+
         if (args.Length == 0)
             return InvalidArgument;
 
@@ -85,6 +88,35 @@ internal static class Program
         {
             return Failure;
         }
+    }
+
+    private static int RunSmokeTest()
+    {
+        if (!LaunchPolicy.TryGetTargetFileName(LaunchPolicy.TrayTarget, out string trayFile) ||
+            !string.Equals(trayFile, TrayFileName, StringComparison.Ordinal) ||
+            !LaunchPolicy.TryGetTargetFileName(LaunchPolicy.HostsTarget, out string hostsFile) ||
+            !string.Equals(hostsFile, "EditHostFile.exe", StringComparison.Ordinal) ||
+            LaunchPolicy.TryGetTargetFileName("--smoke-test", out _) ||
+            LaunchPolicy.WaitsForExit(LaunchPolicy.TrayTarget) ||
+            !LaunchPolicy.WaitsForExit(LaunchPolicy.HostsTarget))
+            return Failure;
+
+        var environment = new Dictionary<string, string?>
+        {
+            ["DOTNET_STARTUP_HOOKS"] = "untrusted-hook.dll",
+            ["coreclr_enable_profiling"] = "1",
+            ["PATH"] = "safe-path",
+        };
+        LaunchPolicy.RemoveRuntimeVariables(environment);
+        if (environment.Count != 1 || !environment.ContainsKey("PATH"))
+            return Failure;
+
+        var startInfo = new ProcessStartInfo("smoke-test.exe") { UseShellExecute = false };
+        if (!SetSafeSearchPath(startInfo) ||
+            string.IsNullOrWhiteSpace(startInfo.Environment["PATH"]))
+            return Failure;
+
+        return 0;
     }
 
     private static int RunUninstallCleanup(string[] args)
