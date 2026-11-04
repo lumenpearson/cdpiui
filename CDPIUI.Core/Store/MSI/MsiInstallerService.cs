@@ -23,14 +23,16 @@ public class MsiInstallerService
     public Action<MsiCallback>? callbackAction;
     private readonly string _operationId;
     private readonly string _filename;
+    private readonly string _expectedSha256;
     private MsiState _state;
 
     private static readonly TimeSpan InstallTimeout = TimeSpan.FromMinutes(30);
 
-    public MsiInstallerService(string operationId, string filename)
+    public MsiInstallerService(string operationId, string filename, string expectedSha256)
     {
         _operationId = operationId;
         _filename = filename;
+        _expectedSha256 = expectedSha256;
     }
 
     public async Task<MsiCallback> Run(CancellationToken ct = default)
@@ -44,7 +46,8 @@ public class MsiInstallerService
         cts.CancelAfter(InstallTimeout);
         using (cts.Token.Register(() => tcs.TrySetCanceled()))
         {
-            MsiInstallerQueueManager.Instance.SendMsiInstallMessage(_operationId, _filename, this);
+            MsiInstallerQueueManager.Instance.SendMsiInstallMessage(
+                _operationId, _filename, _expectedSha256, this);
             try
             {
                 await tcs.Task.ConfigureAwait(false);

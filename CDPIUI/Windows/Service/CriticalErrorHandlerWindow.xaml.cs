@@ -47,6 +47,7 @@ public sealed partial class CriticalErrorHandlerWindow : TemplateWindow
         )
     {
         InitializeComponent();
+        ApplyLocalizedLabels();
         ((App)Application.Current).ShowWindowModalAsync(this);
 
         // The window may report a failure of the localizer itself, so English is kept as a fallback.
@@ -76,6 +77,30 @@ public sealed partial class CriticalErrorHandlerWindow : TemplateWindow
         AdditionalTextBlock.Text = additionalInfo;
 
         WindowsPositionHelper.SetCustomWindowSizeAndPositionFromSettings(this);
+    }
+
+    private void ApplyLocalizedLabels()
+    {
+        try
+        {
+            // Uids localizes immediately. Apply it after XAML has assigned the English
+            // fallback values, or those values overwrite the translations.
+            WinUI3Localizer.Uids.SetUid(ErrorTitleTextBlock, "CriticalErrorTitle");
+            WinUI3Localizer.Uids.SetUid(WhereLabel, "CriticalErrorWhere");
+            WinUI3Localizer.Uids.SetUid(WhyLabel, "CriticalErrorWhy");
+            WinUI3Localizer.Uids.SetUid(ErrorCodeLabel, "CriticalErrorCode");
+            WinUI3Localizer.Uids.SetUid(AdditionalLabel, "CriticalErrorAdditional");
+            WinUI3Localizer.Uids.SetUid(ContactSupportTextBlock, "CriticalErrorContactSupport");
+            WinUI3Localizer.Uids.SetUid(OpenLogFolder, "CriticalErrorOpenLogFolder");
+            WinUI3Localizer.Uids.SetUid(GetHelpButton, "CriticalErrorReportButton");
+            WinUI3Localizer.Uids.SetUid(CopyLabel, "CriticalErrorCopy");
+            WinUI3Localizer.Uids.SetUid(CopiedLabel, "CriticalErrorCopied");
+            WinUI3Localizer.Uids.SetUid(ExitButton, "CriticalErrorExitButton");
+        }
+        catch
+        {
+            // This window must still show an error when localization itself has failed.
+        }
     }
 
     private void CriticalErrorHandlerWindow_Closed(object sender, WindowEventArgs args)

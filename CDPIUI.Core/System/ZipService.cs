@@ -55,12 +55,24 @@ internal class ZipService
         Directory.CreateDirectory(destinationDirectory);
         foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
         {
-            string destination = Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, file));
+            string relativePath = Path.GetRelativePath(sourceDirectory, file);
+            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, file);
+            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            // Recheck after creating missing folders before moving the verified file.
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             File.Move(file, destination, overwrite: true);
         }
         foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+        {
+            string relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, directory);
+            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
+            Directory.CreateDirectory(destination);
+            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
+        }
     }
 
     private static async Task ExtractEntries(
@@ -102,7 +114,10 @@ internal class ZipService
                 if (entry.FullName.EndsWith("/"))
                 {
                     if (!Directory.Exists(destinationPath))
+                    {
                         Directory.CreateDirectory(destinationPath);
+                        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+                    }
                 }
                 else
                 {
@@ -171,6 +186,7 @@ internal class ZipService
         var destinationDir = Path.GetDirectoryName(destinationPath);
         if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
             Directory.CreateDirectory(destinationDir);
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         return destinationPath;
     }
 

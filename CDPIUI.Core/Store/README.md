@@ -219,15 +219,16 @@ An update is available when the latest release tag is newer than the installed v
 - If the server gives the file size, the drive must have enough free space.
 - A download stops when no data arrives for 60 seconds.
 - An HTTP error status gives `ERR_DOWNLOAD_UNEXPECTED_STATUS_CODE_<code>`.
+- `RequestWorker` hashes the response bytes as it writes them. A catalogue SHA-256 is compared with this digest, without reopening the temporary file.
 - The file goes to `TempFiles\Downloads` first. The client deletes it after the operation.
 
 When `STORE/ProxyEnable` is `true` and the Store host is GitHub, the client sends the requests through the Store proxy (`Secret.ProxyURL`). A proxy request has the `X-Key` header with `Secret.ProxyKey`. It does not have the Store token (`Secret.GitHubToken` or `Secret.GitLabToken`). Thus the proxy must use a GitHub token of its own. Without a token, the proxy gets the lower rate limit of anonymous API requests. A direct request does not have the `X-Key` header.
 
 ### SHA-256 of a download
 
-`DownloadWorker.DownloadAndExtractAsync` has the parameter `expectedSha256`. When it is set, the client calculates the SHA-256 of the downloaded file before the extraction or the installation.
+`DownloadWorker.DownloadAndExtractAsync` has the parameter `expectedSha256`. When it is set, the client compares it with the SHA-256 calculated from the response bytes while they are downloaded.
 
-- Characters that are not hex digits are ignored. The value must have 64 hex digits.
+- An optional `sha256:` prefix and whitespace are allowed. The remaining value must have exactly 64 hex digits.
 - If the hash is different, or the value does not have 64 hex digits, the download fails with `ERR_DOWNLOAD_HASH_MISMATCH`.
 
 A catalogue file can set the hash in the field `sha256`:
@@ -247,7 +248,7 @@ The extension column gives the extension that the release asset must have and th
 
 | Type | Extension | Processing | Checks |
 |---|---|---|---|
-| `signedZip` | `.cdpisignedpack` | Extracted into `<item folder>.verify-<GUID>`. The files move into the item folder only when the catalog is valid. Existing files are replaced. | Archive limits, catalog signature |
+| `signedZip` | `.cdpisignedpack` | Extracted into `<item folder>.verify-<GUID>`. The files move into the item folder only when the catalog is valid. Existing files are replaced. | Archive limits, catalog signature, no reparse points in destination paths |
 | `archive` | `.zip` | Extracted directly into the item folder. `.txt` files are merged. | Archive limits |
 | `configPack` | `.cdpiconfigpack` | The same as `archive` | Archive limits |
 | `WIN32application` | `.exe` | Copied into the item folder | None in the GUI. The tray checks the program when it starts it (see [Elevated start](#elevated-start)). |
@@ -400,7 +401,7 @@ All Store items go to `<DataDirectory>\Store\Items\<store_id>`. `DataDirectory` 
 `MsiInstallerService` sends the installer path to the tray. `MsiInstallerHelper.ProcessMsi` in the tray does these steps:
 
 1. The path must be in an application folder (`TrustedPaths.IsAllowed`). The allowed folders are the tray folder, `%LOCALAPPDATA%\CDPIUI` of the tray user and `%LOCALAPPDATA%\CDPIUI` of the desktop user.
-2. `PackageStaging.Stage` copies the file to `<tray folder>\.staging\<GUID>\`. The tray checks and runs this copy.
+2. `PackageStaging.Stage` copies the file to `<tray folder>\.staging\<GUID>\`. The tray checks that this copy matches the SHA-256 of the bytes received over HTTPS before running it.
 3. `PackageStaging.HasValidSignature` calls `WinVerifyTrust`. The signature must be valid and chain to a trusted root. The revocation is not checked.
 4. A `.msi` file starts with `msiexec.exe /i "<file>" /passive /norestart`. Other files start with `/install /passive /norestart`.
 5. The exit codes `0` and `1638` give `Complete`. `3010` and `1641` give `CompleteRestartRequest`. Other codes give `ExceptionHappens`.

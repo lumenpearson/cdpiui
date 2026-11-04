@@ -340,6 +340,12 @@ public class TroubleshootingService
 
     private async Task<bool> GrantAccess(string file, CancellationToken ct = default)
     {
+        // Create a missing Store folder as the desktop user. The elevated tray only changes
+        // access on an existing directory, so a swapped parent cannot redirect creation.
+        try { Directory.CreateDirectory(file); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        { return false; }
+
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         _tcs = tcs;
 

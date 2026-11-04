@@ -4,6 +4,9 @@
   <!-- SourceDir instructs IsWiX the location of the directory that contains files for this wix library -->
   <?define SourceDir="..\CDPIUI\bin\x64\Release\net8.0-windows10.0.22621.0\publish"?>
   <Fragment>
+    <!-- The uninstall action must not execute a file from the installation directory as SYSTEM
+         until the embedded launcher has verified that directory's owner and ACLs. -->
+    <Binary Id="CleanupLauncher" SourceFile="$(var.SourceDir)\CDPIUI_ElevatedLauncher.exe" />
     <ComponentGroup Id="NewSetupFiles">
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\AK.Toolkit.WinUI3.RichTextBlockExtensions.dll" KeyPath="yes" />
@@ -162,7 +165,7 @@
         <File Source="$(var.SourceDir)\Assets\Wide310x150Logo.scale-200.png" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
-        <File Id="TrayIconExe" Source="$(var.SourceDir)\CDPIUI_TrayIcon.exe" KeyPath="yes" />
+        <File Source="$(var.SourceDir)\CDPIUI_TrayIcon.exe" KeyPath="yes" />
       </Component>
       <Component Directory="INSTALLLOCATION">
         <File Source="$(var.SourceDir)\CDPIUI.AddOns.dll" KeyPath="yes" />

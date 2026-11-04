@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -177,27 +176,11 @@ public class Utils
 
         try
         {
-            bool exists = System.IO.Directory.Exists(file);
-            if (!exists)
-            {
-                DirectoryInfo di = System.IO.Directory.CreateDirectory(file);
-            }
-            DirectoryInfo dInfo = new DirectoryInfo(file);
-            DirectorySecurity dSecurity = dInfo.GetAccessControl();
             // Only the user the tray runs for gets write access: these directories hold
             // the executables that the tray starts elevated.
             SecurityIdentifier user = WindowsIdentity.GetCurrent().User
                 ?? throw new InvalidOperationException("Cannot get the current user.");
-            dSecurity.AddAccessRule(
-                new FileSystemAccessRule(
-                    user,
-                    FileSystemRights.Modify,
-                    InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit,
-                    PropagationFlags.None,
-                    AccessControlType.Allow
-                    )
-                );
-            dInfo.SetAccessControl(dSecurity);
+            DirectoryAclGuard.GrantModify(file, user);
             if (conptySignal)
                 await PipeHelper.SendGrantAccessPacket(true);
             return;

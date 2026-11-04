@@ -39,7 +39,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 | `CommandLine/GuiActivationArguments` | Encodes the GUI arguments as `--gui-args:`, so the tray can start the GUI with the same arguments. |
 | `CommandLine/CommandLineTokens` | Splits a component command line into arguments as the Windows command line does. `ConfigCommandLine` in Core uses it. |
 | `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. `Update.exe` compiles this file as a link (see [Update/README.md](../Update/README.md#build)). |
-| `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no part below the root is a reparse point. |
+| `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no existing part of its full path, including the root and its parents, is a reparse point. |
 | `Filesystem/ApplicationPathMatcher` | Finds the processes and drivers of the application during uninstall. |
 | `Filesystem/DirectoriesManager` | Returns the executable directory if it is writable. Otherwise, or if the caller sets `forceAppData` (MSI installation), it returns `%LOCALAPPDATA%\CDPIUI`. |
 | `Filesystem/FileSystemService` | File extensions, temporary names, `WriteAllTextAtomic`, file and directory sizes. |
@@ -94,8 +94,10 @@ Rules:
 - Trigger types: `HotKey`, `ProcessStarted`, `ProcessStopped`.
 - Action types: see `ConditionalActionType`.
 - `ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile` returns `<data directory>\ConditionalTasks`. The data directory is the parent of the `Settings` directory.
-- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name.
-- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more triggers, one or more actions and a delay from 0 to 86400 seconds.
+- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name. It does not create a missing directory.
+- Task files must be at most 1 MiB; a directory may contain at most 256 task files. The XML reader prohibits DTDs and caps the document at 1 MiB of characters.
+- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more supported triggers, one or more supported actions and a delay from 0 to 86400 seconds. A task can have up to 32 triggers and 64 actions; each trigger or action can have up to 32 parameters.
+- Task text is limited to 64 KiB; parameter names are limited to 128 characters and parameter values to 16 KiB.
 - `Save` and `Export` write a temporary file and then replace the target file.
 
 ## Exceptions
