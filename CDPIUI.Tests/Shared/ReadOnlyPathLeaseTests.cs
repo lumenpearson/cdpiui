@@ -170,6 +170,21 @@ public sealed class ReadOnlyPathLeaseTests : IDisposable
     }
 
     [Fact]
+    public void MutableDirectoryAllowsChildRenamesButKeepsItsOwnNamePinned()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using (var lease = ReadOnlyPathLease.OpenDirectoryForMutation(_root))
+        {
+            File.Move(FilePath, FilePath + ".moved");
+            File.Move(FilePath + ".moved", FilePath);
+            Assert.Throws<IOException>(() => Directory.Move(_root, _root + "-moved"));
+            string anchor = Assert.Single(Directory.EnumerateFiles(_root, ".cdpiui-directory-lease-*"));
+            Assert.Throws<IOException>(() => File.Delete(anchor));
+        }
+        Assert.Empty(Directory.EnumerateFiles(_root, ".cdpiui-directory-lease-*"));
+    }
+
+    [Fact]
     public void ExistingWriterIsRejected()
     {
         if (!OperatingSystem.IsWindows()) return;

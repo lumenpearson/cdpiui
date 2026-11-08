@@ -19,6 +19,7 @@ public sealed class ReadOnlyPathLease : IDisposable
     private readonly object _gate = new();
     private string? _directoryPath;
     private ReadOnlyPathLease? _parent;
+    private FileStream? _anchor;
     private int _dependents;
     private bool _disposed;
     public FileStream? Stream { get; private set; }
@@ -27,6 +28,24 @@ public sealed class ReadOnlyPathLease : IDisposable
 
     public static ReadOnlyPathLease OpenDirectory(string path) => Open(path, directoryOnly: true);
     public static ReadOnlyPathLease OpenFile(string path) => Open(path, directoryOnly: false);
+    public static ReadOnlyPathLease OpenDirectoryForMutation(string path, bool createIfMissing = true)
+    {
+        var lease = createIfMissing ? OpenOrCreateDirectory(path) : OpenDirectory(path);
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            // A pinned child keeps the directory nonempty while namespace changes are
+            // allowed. DeleteOnClose cleans up this exact object on normal exit or crash.
+            lease._anchor = new FileStream(Path.Combine(fullPath, ".cdpiui-directory-lease-" + Guid.NewGuid().ToString("N")),
+                FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
+            SafeFileHandle replacement = OpenHandle(fullPath, 0x0081, directory: true, share: 3);
+            int leaf = lease._directories.Count - 1;
+            lease._directories[leaf].Dispose();
+            lease._directories[leaf] = replacement;
+            return lease;
+        }
+        catch { lease.Dispose(); throw; }
+    }
     public static ReadOnlyPathLease OpenOrCreateDirectory(string path)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -186,6 +205,8 @@ public sealed class ReadOnlyPathLease : IDisposable
         for (int i = _directories.Count - 1; i >= 0; i--)
             _directories[i].Dispose();
         _directories.Clear();
+        _anchor?.Dispose();
+        _anchor = null;
         _parent?.ReleaseParentReference();
         _parent = null;
     }

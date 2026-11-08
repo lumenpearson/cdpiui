@@ -11,6 +11,68 @@ public sealed class WritablePathLeaseTests : IDisposable
     public void Dispose() => Directory.Delete(_root, true);
 
     [Fact]
+    public void HandleRenamePublishesHeldBytesAndPinsTheNewParent()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_root, "source", "data.bin");
+        string destination = Path.Combine(_root, "target", "data.bin");
+        using (var lease = WritablePathLease.CreateForMove(source))
+        {
+            lease.Stream.WriteByte(42);
+            Assert.Throws<IOException>(() => File.Move(source, source + ".replaced"));
+            lease.MoveTo(destination);
+            Assert.False(File.Exists(source));
+            Assert.True(File.Exists(destination));
+            Assert.Throws<IOException>(() => Directory.Move(Path.GetDirectoryName(destination)!, Path.Combine(_root, "moved")));
+        }
+        Assert.Equal(new byte[] { 42 }, File.ReadAllBytes(destination));
+        Assert.Empty(Directory.EnumerateFiles(_root, ".cdpiui-directory-lease-*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void HandleRenameWithoutReplacementPreservesBothFilesOnConflict()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_root, "source.bin");
+        string destination = Path.Combine(_root, "target.bin");
+        File.WriteAllText(source, "new");
+        File.WriteAllText(destination, "old");
+        using (var lease = WritablePathLease.OpenExistingForMove(source))
+            Assert.Throws<IOException>(() => lease.MoveTo(destination));
+        Assert.Equal("new", File.ReadAllText(source));
+        Assert.Equal("old", File.ReadAllText(destination));
+    }
+
+    [Fact]
+    public void HandleReplacementDoesNotWriteThroughAnExistingHardLink()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_root, "source.bin");
+        string destination = Path.Combine(_root, "target.bin");
+        string outside = Path.Combine(_root, "outside.bin");
+        File.WriteAllText(source, "new");
+        File.WriteAllText(outside, "keep");
+        Assert.True(CreateHardLinkW(destination, outside, IntPtr.Zero));
+        using (var lease = WritablePathLease.OpenExistingForMove(source)) lease.MoveTo(destination, replace: true);
+        Assert.Equal("new", File.ReadAllText(destination));
+        Assert.Equal("keep", File.ReadAllText(outside));
+    }
+
+    [Fact]
+    public void ExactHeldFileCanBeMarkedForDeletionAndRemovedOnClose()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string file = Path.Combine(_root, "owned.bin");
+        using (var lease = WritablePathLease.CreateForMove(file))
+        {
+            lease.Stream.WriteByte(42);
+            lease.DeleteOnClose();
+        }
+        Assert.False(File.Exists(file));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(_root));
+    }
+
+    [Fact]
     public void ExistingBytesAreNotTruncatedByOpenAndTheHandleCanAppend()
     {
         if (!OperatingSystem.IsWindows()) return;
