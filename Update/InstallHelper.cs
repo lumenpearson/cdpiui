@@ -456,20 +456,9 @@ public class InstallHelper
 
     internal static bool TryGetDestination(string root, string relativePath, out string destination)
     {
-        destination = null;
-        if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
-            return false;
-
-        string fullRoot = Path.GetFullPath(root);
-        if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
-            fullRoot += Path.DirectorySeparatorChar;
-
-        string fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
-        if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        destination = fullPath;
-        return true;
+        bool valid = ArchivePaths.TryGetDestination(root, relativePath, out string checkedPath);
+        destination = valid ? checkedPath : null;
+        return valid;
     }
 
     private static void Log(string text) => UpdateLog.Write(text);
