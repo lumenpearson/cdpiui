@@ -226,6 +226,114 @@ public class UpdateInstallHelperTests : IDisposable
     }
 
     [Fact]
+    public async Task ApplyRejectsLinkedDestinationFolder()
+    {
+        WriteArchive(("CDPIUI/Assets/a.txt", "new"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        string outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "a.txt"), "outside");
+        Directory.CreateSymbolicLink(Path.Combine(_target, "Assets"), outside);
+
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal("outside", File.ReadAllText(Path.Combine(outside, "a.txt")));
+    }
+
+    [Fact]
+    public async Task ApplyRejectsLinkedStagingFolder()
+    {
+        WriteArchive(("CDPIUI/Assets/a.txt", "new"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        string outside = Path.Combine(_root, "outside");
+        Directory.Move(Staged("Assets"), outside);
+        Directory.CreateSymbolicLink(Staged("Assets"), outside);
+
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal("new", File.ReadAllText(Path.Combine(outside, "a.txt")));
+        Assert.False(File.Exists(Path.Combine(_target, "Assets", "a.txt")));
+    }
+
+    [Fact]
+    public async Task ApplyRejectsLinkedBackupFolder()
+    {
+        File.WriteAllText(Path.Combine(_target, "a.txt"), "old");
+        WriteArchive(("CDPIUI/a.txt", "new"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        string outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        Directory.CreateSymbolicLink(Path.Combine(_target, ".update-backup"), outside);
+
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(_target, "a.txt")));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(outside));
+    }
+
+    [Fact]
+    public async Task StageKeepsBackupLeftByAnEarlierUpdate()
+    {
+        string backup = Path.Combine(_target, ".update-backup");
+        Directory.CreateDirectory(backup);
+        File.WriteAllText(Path.Combine(backup, "recover.txt"), "only surviving original");
+        WriteArchive(("CDPIUI/a.txt", "new"));
+
+        Assert.Null(await CreateHelper().StageAsync());
+        Assert.Equal("only surviving original", File.ReadAllText(Path.Combine(backup, "recover.txt")));
+    }
+
+    [Fact]
+    public async Task ApplyRechecksDestinationAfterProgressCallback()
+    {
+        WriteArchive(("CDPIUI/Assets/a.txt", "new"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        string outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "a.txt"), "outside");
+        string assets = Path.Combine(_target, "Assets");
+        Directory.CreateDirectory(assets);
+        helper.CurrentFileChanged += message =>
+        {
+            if (!message.StartsWith("Copying ", StringComparison.Ordinal))
+                return;
+            Directory.Move(assets, Path.Combine(_root, "displaced-assets"));
+            Directory.CreateSymbolicLink(assets, outside);
+        };
+
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal("outside", File.ReadAllText(Path.Combine(outside, "a.txt")));
+    }
+
+    [Fact]
+    public async Task RollbackKeepsBackupWhenDestinationWasReplacedByLink()
+    {
+        Directory.CreateDirectory(Path.Combine(_target, "Assets"));
+        File.WriteAllText(Path.Combine(_target, "Assets", "a.txt"), "original");
+        WriteArchive(("CDPIUI/Assets/a.txt", "new"), ("CDPIUI/b.txt", "new b"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        File.Delete(Staged("b.txt"));
+        string outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "a.txt"), "outside");
+        helper.ProgressChanged += progress =>
+        {
+            if (progress != 0.5)
+                return;
+            string assets = Path.Combine(_target, "Assets");
+            Directory.Move(assets, Path.Combine(_root, "displaced-assets"));
+            Directory.CreateSymbolicLink(assets, outside);
+        };
+
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal(InstallError.NoOldVersion, helper.FinishStatus);
+        Assert.Equal("outside", File.ReadAllText(Path.Combine(outside, "a.txt")));
+        Assert.Equal("original", File.ReadAllText(Path.Combine(_target, ".update-backup", "Assets", "a.txt")));
+    }
+
+    [Fact]
     public async Task FailedApplyRestoresThePreviousFiles()
     {
         File.WriteAllText(Path.Combine(_target, "a.txt"), "old a");

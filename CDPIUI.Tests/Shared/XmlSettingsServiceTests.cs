@@ -114,6 +114,20 @@ public class XmlSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void SaveIsSkippedWhenLockFileCannotBeOpened()
+    {
+        var settings = new XMLSettingsService(SettingsPath);
+        settings.SetValue("APPEARANCE", "Theme", "Dark");
+        string original = File.ReadAllText(SettingsPath);
+        Directory.CreateDirectory(SettingsPath + ".lock");
+
+        settings.SetValue("APPEARANCE", "Theme", "Light");
+
+        Assert.Equal(original, File.ReadAllText(SettingsPath));
+        Assert.Equal("Light", settings.GetValue<string>("APPEARANCE", "Theme"));
+    }
+
+    [Fact]
     public void ListItemsWithSeparatorsRoundTrip()
     {
         List<string> items = [@"C:\Lists\a;b.txt", "100%.txt", "%3B literal", ""];

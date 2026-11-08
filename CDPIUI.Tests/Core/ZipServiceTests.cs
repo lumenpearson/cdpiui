@@ -42,6 +42,22 @@ public sealed class ZipServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task LinkedBackupIsRejectedBeforeMerging()
+    {
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "list.txt"), "local\n");
+        string outside = Path.Combine(_directory, "outside.txt");
+        File.WriteAllText(outside, "outside\n");
+        File.CreateSymbolicLink(Path.Combine(target, "list.txt.bak"), outside);
+        string archivePath = CreateArchive(("list.txt", "injected\n"));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipService.ExtractZip(archivePath, null, target));
+
+        Assert.Equal("outside\n", File.ReadAllText(outside));
+    }
+
+    [Fact]
     public async Task FolderPatternSelectsEntriesAndAnyMatchesOneSegment()
     {
         string target = Path.Combine(_directory, "item");

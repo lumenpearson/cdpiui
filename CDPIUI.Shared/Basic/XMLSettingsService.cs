@@ -92,14 +92,14 @@ public class XMLSettingsService
     {
         lock (_reloadLock)
         {
-            using (SettingsFileStore.AcquireLock(SettingsFilePath, out bool lockTimedOut))
+            using (IDisposable? settingsLock = SettingsFileStore.AcquireLock(SettingsFilePath))
             {
-                if (lockTimedOut)
+                if (settingsLock == null)
                 {
                     // Writing without the lock could overwrite what the other process saves at
                     // this moment. The change stays in memory only, as after a failed write.
                     SettingsXmlTree.ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
-                    Trace.WriteLine($"[XMLSettingsService] The settings file stayed locked; {key} was not saved.");
+                    Trace.WriteLine($"[XMLSettingsService] Cannot acquire the settings file lock; {key} was not saved.");
                     return;
                 }
 

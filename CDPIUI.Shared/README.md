@@ -65,6 +65,7 @@ Write:
 
 - Each `SetValue` reads the file from the disk again, applies one change and saves the file. Thus a process with an old copy does not overwrite a change from the other process.
 - A `Settings.xml.lock` file with `FileShare.None` locks the write.
+- If the lock cannot be acquired, including an access denial, the change stays in memory and no disk write is attempted.
 - The service writes a temporary file and replaces `Settings.xml` with it. The previous file becomes `Settings.xml.bak`.
 - Supported types: `int`, `double`, `bool`, `string`, `DateTime`, `List<string>`. `double` and `DateTime` use the invariant culture.
 - `List<string>` items are separated by `;`. The service writes `;` as `%3B` and `%` as `%25`.
