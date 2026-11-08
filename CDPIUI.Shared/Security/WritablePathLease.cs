@@ -20,11 +20,25 @@ public sealed class WritablePathLease : IDisposable
     public FileStream Stream { get; private set; } = null!;
     private WritablePathLease() { }
     public static WritablePathLease CreateForMove(string path) => OpenNative(path, 1, movable: true, writable: true);
+    internal static WritablePathLease CreateForMove(string path, byte[]? securityDescriptor) => OpenNative(path, 1, movable: true, writable: true, securityDescriptor);
     public static WritablePathLease OpenExistingForMove(string path) => OpenNative(path, 3, movable: true, writable: false);
+    public static WritablePathLease OpenLock(string path)
+    {
+        var lease = OpenNative(path, 4, movable: true, writable: true);
+        try
+        {
+            if (lease.Stream.Length != 0) throw new UnauthorizedAccessException("A lock must be an ordinary empty file.");
+            // Inspect before setting disposition: an unsafe pre-existing object must not
+            // be deleted as a side effect of rejecting it.
+            lease.DeleteOnClose();
+            return lease;
+        }
+        catch { lease.Dispose(); throw; }
+    }
 
     public static WritablePathLease Open(string path) => OpenNative(path, 4, movable: false, writable: true);
 
-    private static WritablePathLease OpenNative(string path, uint disposition, bool movable, bool writable)
+    private static WritablePathLease OpenNative(string path, uint disposition, bool movable, bool writable, byte[]? securityDescriptor = null)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("A Windows write lease is required.");
@@ -39,7 +53,18 @@ public sealed class WritablePathLease : IDisposable
             // OPEN_ALWAYS preserves existing bytes. The opened object is inspected before
             // the caller can truncate it; OPEN_REPARSE_POINT never follows the leaf link.
             uint access = 0x80000000u | (writable ? 0x40000000u : 0u) | (movable ? 0x00010000u : 0u);
-            SafeFileHandle handle = CreateFileW(fullPath, access, 0, IntPtr.Zero, disposition, 0x02200000, IntPtr.Zero);
+            SafeFileHandle handle;
+            if (securityDescriptor == null) handle = CreateFileW(fullPath, access, 0, IntPtr.Zero, disposition, 0x02200000, IntPtr.Zero);
+            else
+            {
+                GCHandle pinned = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
+                try
+                {
+                    var attributes = new SecurityAttributes { Length = Marshal.SizeOf<SecurityAttributes>(), Descriptor = pinned.AddrOfPinnedObject() };
+                    handle = CreateFileWithSecurity(fullPath, access, 0, ref attributes, disposition, 0x02200000, IntPtr.Zero);
+                }
+                finally { pinned.Free(); }
+            }
             if (handle.IsInvalid)
             {
                 int error = Marshal.GetHRForLastWin32Error();
@@ -111,6 +136,14 @@ public sealed class WritablePathLease : IDisposable
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    private struct SecurityAttributes
+    {
+        public int Length;
+        public IntPtr Descriptor;
+        public int InheritHandle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     private struct Information
     {
         public uint Attributes;
@@ -121,6 +154,10 @@ public sealed class WritablePathLease : IDisposable
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern SafeFileHandle CreateFileW(string path, uint access, uint share,
         IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateFileWithSecurity(string path, uint access, uint share,
+        ref SecurityAttributes security, uint disposition, uint flags, IntPtr template);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

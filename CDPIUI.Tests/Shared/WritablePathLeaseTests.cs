@@ -73,6 +73,22 @@ public sealed class WritablePathLeaseTests : IDisposable
     }
 
     [Fact]
+    public void LockFileIsValidatedBeforeItCanBeDeletedOnClose()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string file = Path.Combine(_root, "settings.lock");
+        using (var lease = WritablePathLease.OpenLock(file))
+        {
+            Assert.Equal(0, lease.Stream.Length);
+            Assert.True(Record.Exception(() => File.OpenWrite(file)) is IOException or UnauthorizedAccessException);
+        }
+        Assert.False(File.Exists(file));
+        File.WriteAllText(file, "unknown contents");
+        Assert.Throws<UnauthorizedAccessException>(() => WritablePathLease.OpenLock(file));
+        Assert.Equal("unknown contents", File.ReadAllText(file));
+    }
+
+    [Fact]
     public void ExistingBytesAreNotTruncatedByOpenAndTheHandleCanAppend()
     {
         if (!OperatingSystem.IsWindows()) return;
