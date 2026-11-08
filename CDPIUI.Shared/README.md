@@ -237,3 +237,5 @@ Polyfills for `netstandard2.1`:
 - `System/Diagnostic/CodeAnalysis/SetsRequiredMembersAttribute.cs`
 
 Do not remove them. The `required` members in this library need them.
+
+Windows file operations: ReadOnlyPathLease holds ordinary files and parents without following links; WritablePathLease checks the opened object and hard-link count before truncation or writes. OpenOrCreateDirectory creates missing directories one at a time under a held parent. ArchivePaths uses these for Windows extraction; WindowsPathNames rejects ambiguous Win32 names and devices. Covered operations and remaining races are documented in docs/AUDIT-STATUS.ru.md (FS-08–12). Non-Windows consumers retain managed extraction without these Windows guarantees.

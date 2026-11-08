@@ -27,12 +27,43 @@ public sealed class ReadOnlyPathLease : IDisposable
 
     public static ReadOnlyPathLease OpenDirectory(string path) => Open(path, directoryOnly: true);
     public static ReadOnlyPathLease OpenFile(string path) => Open(path, directoryOnly: false);
+    public static ReadOnlyPathLease OpenOrCreateDirectory(string path)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            throw new PlatformNotSupportedException("A Windows directory lease is required.");
+        string current = Path.GetFullPath(path);
+        WindowsPathNames.RequireOrdinaryAbsolutePath(current);
+        var missing = new Stack<string>();
+        while (!Directory.Exists(current))
+        {
+            if (missing.Count >= 64) throw new InvalidDataException("Too many missing parent directories.");
+            missing.Push(current);
+            current = Path.GetDirectoryName(current) ?? throw new DirectoryNotFoundException(path);
+        }
+        ReadOnlyPathLease lease = OpenDirectory(current);
+        try
+        {
+            while (missing.Count > 0)
+            {
+                string next = missing.Pop();
+                // Only one immediate child is created while its ordinary parent is held.
+                // If another process supplied that child as a link, the next open rejects it.
+                Directory.CreateDirectory(next);
+                var child = OpenDirectory(next);
+                lease.Dispose();
+                lease = child;
+            }
+            return lease;
+        }
+        catch { lease.Dispose(); throw; }
+    }
     public static ReadOnlyPathLease OpenFileInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, false);
     public static ReadOnlyPathLease OpenDirectoryInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, true);
 
     private static ReadOnlyPathLease OpenChild(string path, ReadOnlyPathLease parent, bool directory)
     {
         string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
         lock (parent._gate)
         {
             if (parent._disposed) throw new ObjectDisposedException(nameof(parent));
@@ -58,6 +89,7 @@ public sealed class ReadOnlyPathLease : IDisposable
         try
         {
             string fullPath = Path.GetFullPath(path);
+            WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
             string parent = directoryOnly ? fullPath : Path.GetDirectoryName(fullPath)!;
             var chain = new List<string>();
             for (string? current = parent; current != null; current = Path.GetDirectoryName(current))

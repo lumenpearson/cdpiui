@@ -172,7 +172,7 @@ public class InstallHelper
 
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, _targetFolder);
             if (!Directory.Exists(_targetFolder))
-                Directory.CreateDirectory(_targetFolder);
+                ArchivePaths.EnsureDirectoryExists(_targetFolder);
 
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, StagingFolder);
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, BackupFolder);
@@ -185,7 +185,7 @@ public class InstallHelper
 
             DeleteDirectory(StagingFolder);
             DeleteDirectory(BackupFolder);
-            Directory.CreateDirectory(StagingFolder);
+            ArchivePaths.EnsureDirectoryExists(StagingFolder);
 
             using (var zip = ZipFile.OpenRead(_archiveFilePath))
             {
@@ -267,7 +267,7 @@ public class InstallHelper
     private Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
     {
         ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
+        ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(stagedPath));
         ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         // An entry that gives more data than its header says stops the update, as in the tray.
         return Task.Run(() => ArchivePaths.ExtractToFileBounded(entry, stagedPath));
@@ -303,13 +303,13 @@ public class InstallHelper
 
                 CurrentFileChanged?.Invoke($"Copying {relativePath}");
                 GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
-                Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(destPath));
                 GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
 
                 bool backedUp = false;
                 if (File.Exists(destPath))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                    ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(backupPath));
                     GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
                     File.Move(destPath, backupPath);
                     backedUp = true;

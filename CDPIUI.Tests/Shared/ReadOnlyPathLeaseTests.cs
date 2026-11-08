@@ -152,6 +152,24 @@ public sealed class ReadOnlyPathLeaseTests : IDisposable
     }
 
     [Fact]
+    public void MissingDirectoriesAreCreatedAndHeldWithoutFollowingLinks()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string path = Path.Combine(_root, "new", "nested");
+        using (var held = ReadOnlyPathLease.OpenOrCreateDirectory(path))
+        {
+            Assert.True(Directory.Exists(path));
+            Assert.Throws<IOException>(() => Directory.Move(path, path + "-moved"));
+        }
+        string outside = Path.Combine(_root, "outside");
+        Directory.CreateDirectory(outside);
+        string link = Path.Combine(_root, "link");
+        Directory.CreateSymbolicLink(link, outside);
+        Assert.Throws<UnauthorizedAccessException>(() => ReadOnlyPathLease.OpenOrCreateDirectory(Path.Combine(link, "must-not-create")));
+        Assert.False(Directory.Exists(Path.Combine(outside, "must-not-create")));
+    }
+
+    [Fact]
     public void ExistingWriterIsRejected()
     {
         if (!OperatingSystem.IsWindows()) return;

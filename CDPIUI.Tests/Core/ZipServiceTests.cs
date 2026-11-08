@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using CDPIUI.Core.System;
 
 namespace CDPIUI.Tests.Core;
@@ -67,6 +68,54 @@ public sealed class ZipServiceTests : IDisposable
             _ => throw new InvalidDataException("Rejected catalog")));
         Assert.Equal("old", File.ReadAllText(Path.Combine(target, "app.bin")));
         File.WriteAllText(file, "released");
+    }
+
+    [Fact]
+    public async Task HardLinkedArchiveDestinationIsRejectedWithoutTruncation()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        string outside = Path.Combine(_directory, "outside.bin");
+        File.WriteAllText(outside, "keep");
+        Assert.True(CreateHardLinkW(Path.Combine(target, "app.bin"), outside, IntPtr.Zero));
+        string archive = CreateArchive(("app.bin", "overwrite"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.ExtractZip(archive, null, target));
+        Assert.Equal("keep", File.ReadAllText(outside));
+    }
+
+    [Fact]
+    public async Task HardLinkedMergeBackupIsRejectedWithoutAppending()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "list.txt"), "local\n");
+        string outside = Path.Combine(_directory, "outside.txt");
+        File.WriteAllText(outside, "keep\n");
+        Assert.True(CreateHardLinkW(Path.Combine(target, "list.txt.bak"), outside, IntPtr.Zero));
+        string archive = CreateArchive(("list.txt", "injected\n"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.ExtractZip(archive, null, target));
+        Assert.Equal("keep\n", File.ReadAllText(outside));
+    }
+
+    [Fact]
+    public async Task HardLinkPlantedDuringCatalogVerificationCannotReceiveSignedBytes()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(source, "app.bin"), "signed");
+        string outside = Path.Combine(_directory, "outside.bin");
+        File.WriteAllText(outside, "keep");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            Assert.True(CreateHardLinkW(Path.Combine(target, "app.bin"), outside, IntPtr.Zero));
+            return Task.CompletedTask;
+        }));
+        Assert.Equal("keep", File.ReadAllText(outside));
     }
 
     [Fact]
@@ -170,4 +219,8 @@ public sealed class ZipServiceTests : IDisposable
         }
         return archivePath;
     }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateHardLinkW(string name, string existing, IntPtr attributes);
 }
