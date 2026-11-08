@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+#if UPDATE_TOOL
+namespace Update;
+#else
 using CDPIUI.Shared.Basic.Filesystem;
-
 namespace CDPIUI.Shared.Security;
+#endif
 
 /// <summary>A bounded, fixed set of ordinary files held against mutation during verification and use.</summary>
 public sealed class ReadOnlyDirectorySnapshot : IDisposable

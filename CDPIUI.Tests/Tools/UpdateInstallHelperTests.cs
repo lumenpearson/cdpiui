@@ -4,6 +4,7 @@ using Update;
 
 namespace CDPIUI.Tests.Tools;
 
+[Collection("Windows path leases")]
 public class UpdateInstallHelperTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "cdpiui-update-tests", Guid.NewGuid().ToString("N"));
@@ -211,6 +212,53 @@ public class UpdateInstallHelperTests : IDisposable
     }
 
     [Fact]
+    public async Task ModifiedStagedBytesAreRejectedBeforeInstallingAnything()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        File.WriteAllText(Path.Combine(_target, "a.txt"), "old");
+        WriteArchive(("CDPIUI/a.txt", "verified"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        File.WriteAllText(Staged("a.txt"), "injected");
+        Assert.False(helper.ApplyStaged(staged));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(_target, "a.txt")));
+        Assert.False(File.Exists(Path.Combine(_target, ".update-backup", "a.txt")));
+    }
+
+    [Fact]
+    public async Task StagedFilesCannotChangeAfterApplyHasStarted()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        WriteArchive(("CDPIUI/a.txt", "verified a"), ("CDPIUI/b.txt", "verified b"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        helper.CurrentFileChanged += message =>
+        {
+            if (message == "Copying a.txt")
+                Assert.Throws<IOException>(() => File.WriteAllText(Staged("b.txt"), "injected"));
+        };
+        Assert.True(helper.ApplyStaged(staged));
+        Assert.Equal("verified b", File.ReadAllText(Path.Combine(_target, "b.txt")));
+    }
+
+    [Fact]
+    public async Task PublishedFilesAndParentsStayPinnedUntilTheTransactionEnds()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        WriteArchive(("CDPIUI/Assets/a.txt", "verified a"), ("CDPIUI/b.txt", "verified b"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        helper.ProgressChanged += progress =>
+        {
+            if (progress != 0.5) return;
+            Assert.Throws<IOException>(() => File.WriteAllText(Path.Combine(_target, "Assets", "a.txt"), "injected"));
+            Assert.Throws<IOException>(() => Directory.Move(Path.Combine(_target, "Assets"), Path.Combine(_root, "displaced")));
+        };
+        Assert.True(helper.ApplyStaged(staged));
+        Assert.Equal("verified a", File.ReadAllText(Path.Combine(_target, "Assets", "a.txt")));
+    }
+
+    [Fact]
     public async Task ApplyKeepsFilesThatAreNotInThePatch()
     {
         File.WriteAllText(Path.Combine(_target, "CDPIUI.exe"), "old exe");
@@ -310,14 +358,13 @@ public class UpdateInstallHelperTests : IDisposable
     }
 
     [Fact]
-    public async Task RollbackKeepsBackupWhenDestinationWasReplacedByLink()
+    public async Task RollbackPreservesOriginalsAndNeverWritesThroughAReplacedParent()
     {
         Directory.CreateDirectory(Path.Combine(_target, "Assets"));
         File.WriteAllText(Path.Combine(_target, "Assets", "a.txt"), "original");
         WriteArchive(("CDPIUI/Assets/a.txt", "new"), ("CDPIUI/b.txt", "new b"));
         var helper = CreateHelper();
         List<string> staged = await helper.StageAsync();
-        File.Delete(Staged("b.txt"));
         string outside = Path.Combine(_root, "outside");
         Directory.CreateDirectory(outside);
         File.WriteAllText(Path.Combine(outside, "a.txt"), "outside");
@@ -326,25 +373,63 @@ public class UpdateInstallHelperTests : IDisposable
             if (progress != 0.5)
                 return;
             string assets = Path.Combine(_target, "Assets");
-            Directory.Move(assets, Path.Combine(_root, "displaced-assets"));
-            Directory.CreateSymbolicLink(assets, outside);
+            if (OperatingSystem.IsWindows())
+                Assert.Throws<IOException>(() => Directory.Move(assets, Path.Combine(_root, "displaced-assets")));
+            else
+            {
+                Directory.Move(assets, Path.Combine(_root, "displaced-assets"));
+                Directory.CreateSymbolicLink(assets, outside);
+            }
+            throw new IOException("Failure after the first publication.");
         };
 
         Assert.False(helper.ApplyStaged(staged));
-        Assert.Equal(InstallError.NoOldVersion, helper.FinishStatus);
         Assert.Equal("outside", File.ReadAllText(Path.Combine(outside, "a.txt")));
-        Assert.Equal("original", File.ReadAllText(Path.Combine(_target, ".update-backup", "Assets", "a.txt")));
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Equal(InstallError.ExtractingFile, helper.FinishStatus);
+            Assert.Equal("original", File.ReadAllText(Path.Combine(_target, "Assets", "a.txt")));
+        }
+        else
+        {
+            Assert.Equal(InstallError.NoOldVersion, helper.FinishStatus);
+            Assert.Equal("original", File.ReadAllText(Path.Combine(_target, ".update-backup", "Assets", "a.txt")));
+        }
     }
 
     [Fact]
-    public async Task FailedApplyRestoresThePreviousFiles()
+    public async Task RollbackKeepsTheOriginalBackupWhenTheNewObjectCannotBeRemoved()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_target, "a.txt");
+        File.WriteAllText(target, "original");
+        WriteArchive(("CDPIUI/a.txt", "new"), ("CDPIUI/b.txt", "new b"));
+        var helper = CreateHelper();
+        List<string> staged = await helper.StageAsync();
+        helper.ProgressChanged += progress =>
+        {
+            if (progress != 0.5) return;
+            File.SetAttributes(target, FileAttributes.ReadOnly);
+            throw new IOException("Force a rollback with an attribute-only change.");
+        };
+        try
+        {
+            Assert.False(helper.ApplyStaged(staged));
+            Assert.Equal(InstallError.NoOldVersion, helper.FinishStatus);
+            Assert.Equal("original", File.ReadAllText(Path.Combine(_target, ".update-backup", "a.txt")));
+        }
+        finally { if (File.Exists(target)) File.SetAttributes(target, FileAttributes.Normal); }
+    }
+
+    [Fact]
+    public async Task MissingStagedFileLeavesThePreviousFilesIntact()
     {
         File.WriteAllText(Path.Combine(_target, "a.txt"), "old a");
         WriteArchive(("CDPIUI/a.txt", "new a"), ("CDPIUI/b.txt", "new b"));
 
         var helper = CreateHelper();
         List<string> staged = await helper.StageAsync();
-        // The second staged file is missing, so its move fails after the first file was applied.
+        // Windows verifies every captured source before changing the first installed file.
         File.Delete(Staged("b.txt"));
 
         Assert.False(helper.ApplyStaged(staged));

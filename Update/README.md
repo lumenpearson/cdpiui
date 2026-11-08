@@ -43,7 +43,7 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
 
 ## Procedure
 
-`Update/InstallHelper.cs` contains all the logic. The procedure starts when the window opens.
+`Update/InstallHelper.cs` coordinates the procedure; `UpdateFileTransaction` applies and rolls back Windows files through held handles. The procedure starts when the window opens.
 
 1. **Stop the application.**
    - Before stopping the tray, the updater acquires its own read-only lease on the package and its parents. It keeps the lease until the procedure ends, independently of the tray lifetime.
@@ -55,7 +55,7 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
    - The tool stops if `<install>\.update-backup` is not empty. Recover this backup before another update; it can contain the only surviving original files of an interrupted update.
    - The tool rejects reparse points in the staging, installation and backup paths, then deletes old staging and an empty backup folder. These path checks do not eliminate concurrent replacement after the final check.
    - Before it extracts a file, the tool checks the archive limits of the tray (`ArchivePaths.EnsureWithinLimits`): a maximum of 20000 entries, a maximum of 1 GiB of data and a maximum compression ratio of 200 for an entry of 1 MiB or more. If the archive is not within the limits, the tool stops the update. The tray does this check before it starts the tool. The tool does it again, because a package can reach the tool in a different way.
-   - The tool extracts the package into a new `.update-staging` folder.
+   - The tool extracts the package into a new `.update-staging` folder, calculating SHA256 while bounded writes consume archive bytes. This hash manifest stays in memory until apply.
    - The tool stops the update if an entry gives more data than its header says (`ArchivePaths.ExtractToFileBounded`).
    - The tool reads the archive folders `layers/0/`, `layers/1/`, ... in sequence. The application makes packages with these folders.
    - If the archive has no `layers/` folders, the tool reads the `CDPIUI/` folder. A published patch has this folder.
@@ -63,11 +63,11 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
    - The tool stops the update if an entry has a rooted path, a `:`, or a path outside the target folder.
    - The tool stops the update if the archive contains no files.
 3. **Apply the files.**
-   - The tool moves each staged file into the installation folder.
-   - Before this, the tool moves the existing file to the same relative path in `<install>\.update-backup`.
+   - Windows apply captures a fixed read-only snapshot of staging and checks every planned hash before changing any installed file.
+   - The existing file moves by its handle to `<install>\.update-backup`. Verified bytes are copied into a unique temporary file and published by handle under pinned parents. Originals and published objects stay held until the transaction finishes; conflicting destination names are not overwritten.
    - The tool does not remove installed files. A patch is differential: it contains only the files that changed. Thus a file that is not in the patch stays in the installation folder.
 4. **Roll back after a failure.**
-   - If a move fails, the tool restores the applied files from the backup folder in reverse sequence.
+   - If apply fails, Windows rollback marks only its own held new objects for deletion and restores originals by handle in reverse sequence. Unsafe parents or conflicts leave the original backup intact.
    - If the restore is incomplete, the status becomes `NoOldVersion`.
    - In that case, an error message tells the user to install the application again. The tool keeps the backup folder for manual recovery.
    - The tool does not start the application. The window closes after the user closes the error message.
@@ -145,7 +145,7 @@ contain only `Update.exe`.
 
 The project does not reference `CDPIUI.Shared`, because the tool must not load
 `CDPIUI.Shared.dll` from the folder that it replaces. It compiles shared source files for
-`UpdatePackageLayers`, `ArchivePaths`, `ReadOnlyPathLease`, `WritablePathLease` and `WindowsPathNames`.
+`UpdatePackageLayers`, `ArchivePaths`, `ReadOnlyPathLease`, `ReadOnlyDirectorySnapshot`, `WritablePathLease` and `WindowsPathNames`.
 Thus the tool and the tray use the same layer rule, archive limits and Windows file rules.
 With the `UPDATE_TOOL` symbol, these sources use the `Update` namespace.
 
@@ -155,4 +155,4 @@ With the `UPDATE_TOOL` symbol, these sources use the `Update` namespace.
 layer sequence, the staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback.
 The tests do not use the window.
 
-FS-09 update: Windows staging/destination/backup directory creation and extraction use the source-linked ReadOnlyPathLease, WritablePathLease and WindowsPathNames. The write target is opened without following a leaf link or truncating existing bytes; its type and link count are checked through the handle. Later File.Move/rollback/cleanup and staging mutation between extraction and apply still need the follow-up documented in docs/AUDIT-STATUS.ru.md.
+FS-09 update: Windows extraction, apply and rollback use checked no-follow handles and extraction hashes. Recursive cleanup, crash recovery, concurrent updater instances and the final restart remain separate work in docs/AUDIT-STATUS.ru.md. Non-Windows tests retain legacy managed apply without these Windows guarantees.
