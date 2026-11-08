@@ -3,11 +3,71 @@ using CDPIUI.Core.System;
 
 namespace CDPIUI.Tests.Core;
 
+[Collection("Windows path leases")]
 public sealed class ZipServiceTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-zip-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose() => Directory.Delete(_directory, true);
+
+    [Fact]
+    public async Task SignedPromotionHoldsVerifiedBytesUntilTheyAreCopied()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        string file = Path.Combine(source, "app.bin");
+        File.WriteAllText(file, "signed");
+
+        await ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            Assert.Throws<IOException>(() => File.WriteAllText(file, "substituted"));
+            Assert.Throws<IOException>(() => Directory.Move(source, source + "-moved"));
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal("signed", File.ReadAllText(Path.Combine(target, "app.bin")));
+        File.WriteAllText(file, "released");
+    }
+
+    [Fact]
+    public async Task SignedPromotionIgnoresFilesAddedAfterTheSnapshot()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "app.bin"), "signed");
+
+        await ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            File.WriteAllText(Path.Combine(source, "late.bin"), "unchecked");
+            Directory.CreateDirectory(Path.Combine(source, "late-directory"));
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal("signed", File.ReadAllText(Path.Combine(target, "app.bin")));
+        Assert.False(File.Exists(Path.Combine(target, "late.bin")));
+        Assert.False(Directory.Exists(Path.Combine(target, "late-directory")));
+    }
+
+    [Fact]
+    public async Task RejectedCatalogLeavesDestinationUntouchedAndReleasesSources()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        string file = Path.Combine(source, "app.bin");
+        File.WriteAllText(file, "new");
+        File.WriteAllText(Path.Combine(target, "app.bin"), "old");
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipService.VerifyAndPromoteAsync(source, target,
+            _ => throw new InvalidDataException("Rejected catalog")));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(target, "app.bin")));
+        File.WriteAllText(file, "released");
+    }
 
     [Fact]
     public async Task DomainListsAreMergedByWholeLines()

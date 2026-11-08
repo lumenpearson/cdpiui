@@ -254,7 +254,7 @@ If a first installation fails, the library removes the item. If an update fails,
 | Content | Behaviour |
 |---|---|
 | Store repository | Extracted to `Repo.new-<GUID>`, then moved into place. |
-| Signed archive (`signedZip`, `.cdpisignedpack`) | Extracted to `<target>.verify-<GUID>`. The library moves the files into place only when the catalog is valid and the destination paths contain no links or junctions. |
+| Signed archive (`signedZip`, `.cdpisignedpack`) | Extracted to `<target>.verify-<GUID>`. Windows handles hold a fixed snapshot of ordinary files and directories from before catalog verification until copying finishes. Files added later are not installed. Destination path checks and multi-file rollback still have the limitations listed in the audit. |
 | Local pack | The old folder moves to `<folder>.previous-<GUID>`. If the move of the new pack fails, the old folder comes back. |
 | Online, not signed archive | Extracted directly into the item folder. There is no rollback. |
 
