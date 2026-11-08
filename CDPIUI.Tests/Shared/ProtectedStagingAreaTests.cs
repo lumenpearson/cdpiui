@@ -4,6 +4,7 @@ using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Tests.Shared;
 
+[Collection("Windows path leases")]
 public sealed class ProtectedStagingAreaTests
 {
     [Theory]

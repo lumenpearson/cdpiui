@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CDPIUI.Core.Security;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Exceptions.Catalog;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.System;
 
@@ -26,15 +27,14 @@ internal class ZipService
             return;
         }
 
-        // A signed archive is checked in a folder of its own and moved into place only when its
+        // A signed archive is checked in a folder of its own and copied into place only when its
         // catalog is valid, so files of a rejected archive never reach the destination.
         string verifyDirectory = extractTo.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
             ".verify-" + Guid.NewGuid().ToString("N");
         try
         {
             await ExtractEntries(zipFilePath, zipFolderToUnpack, verifyDirectory, filesToSkip, mergeTextFiles: false);
-            await VerifyCatalog(verifyDirectory);
-            MoveContents(verifyDirectory, extractTo);
+            await VerifyAndPromoteAsync(verifyDirectory, extractTo, VerifyCatalog);
         }
         finally
         {
@@ -50,24 +50,28 @@ internal class ZipService
         }
     }
 
-    private static void MoveContents(string sourceDirectory, string destinationDirectory)
+    internal static async Task VerifyAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<string, Task> verify)
+    {
+        using var snapshot = ReadOnlyDirectorySnapshot.Capture(sourceDirectory);
+        await verify(sourceDirectory);
+        PromoteSnapshot(snapshot, destinationDirectory);
+    }
+
+    private static void PromoteSnapshot(ReadOnlyDirectorySnapshot snapshot, string destinationDirectory)
     {
         Directory.CreateDirectory(destinationDirectory);
-        foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        foreach (var file in snapshot.Files)
         {
-            string relativePath = Path.GetRelativePath(sourceDirectory, file);
-            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, file);
-            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
+            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, file.RelativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            // Recheck after creating missing folders before moving the verified file.
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            File.Move(file, destination, overwrite: true);
+            using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
+            file.Stream.Position = 0;
+            file.Stream.CopyTo(output);
         }
-        foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        foreach (string relativePath in snapshot.Directories)
         {
-            string relativePath = Path.GetRelativePath(sourceDirectory, directory);
-            ArchivePaths.EnsureNoReparsePoints(sourceDirectory, directory);
             string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
             Directory.CreateDirectory(destination);

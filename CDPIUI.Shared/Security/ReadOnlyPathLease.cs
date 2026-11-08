@@ -16,12 +16,39 @@ namespace CDPIUI.Shared.Security;
 public sealed class ReadOnlyPathLease : IDisposable
 {
     private readonly List<SafeFileHandle> _directories = new();
+    private readonly object _gate = new();
+    private string? _directoryPath;
+    private ReadOnlyPathLease? _parent;
+    private int _dependents;
+    private bool _disposed;
     public FileStream? Stream { get; private set; }
 
     private ReadOnlyPathLease() { }
 
     public static ReadOnlyPathLease OpenDirectory(string path) => Open(path, directoryOnly: true);
     public static ReadOnlyPathLease OpenFile(string path) => Open(path, directoryOnly: false);
+    public static ReadOnlyPathLease OpenFileInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, false);
+    public static ReadOnlyPathLease OpenDirectoryInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, true);
+
+    private static ReadOnlyPathLease OpenChild(string path, ReadOnlyPathLease parent, bool directory)
+    {
+        string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        lock (parent._gate)
+        {
+            if (parent._disposed) throw new ObjectDisposedException(nameof(parent));
+            if (parent._directoryPath == null || !string.Equals(Path.GetDirectoryName(fullPath)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                parent._directoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("The path must be an immediate child of the held directory.", nameof(path));
+            parent._dependents++;
+        }
+        var lease = new ReadOnlyPathLease { _parent = parent };
+        try
+        {
+            lease.OpenLeaf(fullPath, directory);
+            return lease;
+        }
+        catch { lease.Dispose(); throw; }
+    }
 
     private static ReadOnlyPathLease Open(string path, bool directoryOnly)
     {
@@ -44,28 +71,46 @@ public sealed class ReadOnlyPathLease : IDisposable
                 if ((info.Attributes & 0x410) != 0x10)
                     throw new UnauthorizedAccessException($"{directory} is not an ordinary directory.");
             }
-            if (!directoryOnly)
+            if (directoryOnly) lease._directoryPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            else lease.OpenLeaf(fullPath, false);
+            // A deny-write directory handle also prevents renaming unrelated children.
+            // Keep that restriction only on the leaf directory. Every ancestor is pinned
+            // by its held child, so it cannot become empty (a prerequisite for setting a
+            // directory reparse point). Deny-delete still prevents replacing the ancestor.
+            for (int i = 0; i < chain.Count - 1; i++)
             {
-                SafeFileHandle handle = OpenHandle(fullPath, 0x80000000, directory: false);
-                try
-                {
-                    Information info = GetInformation(handle);
-                    if ((info.Attributes & 0x410) != 0 || info.Links != 1)
-                        throw new UnauthorizedAccessException($"{fullPath} is a link or is not an ordinary file.");
-                    lease.Stream = new FileStream(handle, FileAccess.Read);
-                }
-                catch { handle.Dispose(); throw; }
+                SafeFileHandle replacement = OpenHandle(chain[i], 0x0081, directory: true, share: 3);
+                lease._directories[i].Dispose();
+                lease._directories[i] = replacement;
             }
             return lease;
         }
         catch { lease.Dispose(); throw; }
     }
 
-    private static SafeFileHandle OpenHandle(string path, uint access, bool directory)
+    private void OpenLeaf(string fullPath, bool directory)
+    {
+        SafeFileHandle handle = OpenHandle(fullPath, directory ? 0x0081u : 0x80000000u, directory);
+        try
+        {
+            Information info = GetInformation(handle);
+            if (directory ? (info.Attributes & 0x410) != 0x10 : (info.Attributes & 0x410) != 0 || info.Links != 1)
+                throw new UnauthorizedAccessException($"{fullPath} is a link or is not an ordinary {(directory ? "directory" : "file")}.");
+            if (directory)
+            {
+                _directories.Add(handle);
+                _directoryPath = fullPath;
+            }
+            else Stream = new FileStream(handle, FileAccess.Read);
+        }
+        catch { handle.Dispose(); throw; }
+    }
+
+    private static SafeFileHandle OpenHandle(string path, uint access, bool directory, uint share = 1)
     {
         // FILE_LIST_DIRECTORY makes directory sharing restrictions effective. Attribute-only
         // handles do not prevent renames. OPEN_REPARSE_POINT inspects the opened object itself.
-        SafeFileHandle handle = CreateFileW(path, access, 1, IntPtr.Zero, 3,
+        SafeFileHandle handle = CreateFileW(path, access, share, IntPtr.Zero, 3,
             0x00200000u | (directory ? 0x02000000u : 0u), IntPtr.Zero);
         if (handle.IsInvalid)
         {
@@ -85,11 +130,32 @@ public sealed class ReadOnlyPathLease : IDisposable
 
     public void Dispose()
     {
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            if (_dependents == 0) CloseResources();
+        }
+    }
+
+    private void ReleaseParentReference()
+    {
+        lock (_gate)
+        {
+            _dependents--;
+            if (_disposed && _dependents == 0) CloseResources();
+        }
+    }
+
+    private void CloseResources()
+    {
         Stream?.Dispose();
         Stream = null;
         for (int i = _directories.Count - 1; i >= 0; i--)
             _directories[i].Dispose();
         _directories.Clear();
+        _parent?.ReleaseParentReference();
+        _parent = null;
     }
 
     [StructLayout(LayoutKind.Sequential)]
