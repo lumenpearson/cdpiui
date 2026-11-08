@@ -3,6 +3,7 @@ using CDPIUI.Shared.Basic.Filesystem;
 
 namespace CDPIUI.Tests.Shared;
 
+[Collection("Windows path leases")]
 public sealed class ArchiveLimitsTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-limits-" + Guid.NewGuid().ToString("N"));

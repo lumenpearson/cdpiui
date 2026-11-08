@@ -16,6 +16,7 @@ public sealed class WritablePathLease : IDisposable
 {
     private ReadOnlyPathLease? _parent;
     private bool _moveAllowed;
+    public string CurrentPath { get; private set; } = string.Empty;
     public FileStream Stream { get; private set; } = null!;
     private WritablePathLease() { }
     public static WritablePathLease CreateForMove(string path) => OpenNative(path, 1, movable: true, writable: true);
@@ -29,7 +30,7 @@ public sealed class WritablePathLease : IDisposable
             throw new PlatformNotSupportedException("A Windows write lease is required.");
         string fullPath = Path.GetFullPath(path);
         WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
-        var lease = new WritablePathLease { _moveAllowed = movable };
+        var lease = new WritablePathLease { _moveAllowed = movable, CurrentPath = fullPath };
         try
         {
             lease._parent = movable
@@ -84,6 +85,7 @@ public sealed class WritablePathLease : IDisposable
             Array.Copy(name, 0, data, nameOffset, name.Length);
             if (!SetFileInformationByHandle(Stream.SafeFileHandle, 3, data, (uint)data.Length))
                 throw new IOException($"Cannot publish the held file as {fullPath}.", Marshal.GetHRForLastWin32Error());
+            CurrentPath = fullPath;
             var previous = _parent;
             _parent = target;
             transferred = true;

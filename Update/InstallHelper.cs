@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -31,6 +33,7 @@ public class InstallHelper
     private string _targetFolder;
     private string _targetExecutable;
     private readonly List<string> _skipFiles = new List<string> { "Update.exe", "catalog.cat" };
+    private readonly Dictionary<string, byte[]> _stagedHashes = new(StringComparer.OrdinalIgnoreCase);
 
     public Action<InstallState> InstallationStateChanged;
     public Action<double> ProgressChanged;
@@ -162,6 +165,7 @@ public class InstallHelper
     /// <returns>Relative paths of the staged files, or null if the update cannot be applied</returns>
     internal async Task<List<string>> StageAsync()
     {
+        _stagedHashes.Clear();
         try
         {
             if (string.IsNullOrWhiteSpace(_archiveFilePath) || !File.Exists(_archiveFilePath))
@@ -228,9 +232,10 @@ public class InstallHelper
                     }
 
                     CurrentFileChanged?.Invoke($"Extracting {relativePath}");
-                    await ExtractEntryAsync(entry, stagedPath);
+                    string canonicalPath = Path.GetRelativePath(StagingFolder, stagedPath);
+                    _stagedHashes[canonicalPath] = await ExtractEntryAsync(entry, stagedPath);
 
-                    if (stagedSet.Add(relativePath))
+                    if (stagedSet.Add(canonicalPath))
                         staged.Add(relativePath);
                     ProgressChanged?.Invoke((double)++extracted / totalFiles);
                 }
@@ -264,13 +269,24 @@ public class InstallHelper
             .ToList();
     }
 
-    private Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
+    private Task<byte[]> ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
     {
         ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(stagedPath));
         ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         // An entry that gives more data than its header says stops the update, as in the tray.
-        return Task.Run(() => ArchivePaths.ExtractToFileBounded(entry, stagedPath));
+        return Task.Run(() =>
+        {
+            using var lease = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? WritablePathLease.Open(stagedPath) : null;
+            using var portable = lease == null ? new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None) : null;
+            var output = lease?.Stream ?? portable;
+            output.SetLength(0);
+            using var hash = SHA256.Create();
+            using var hashing = new CryptoStream(output, hash, CryptoStreamMode.Write, leaveOpen: true);
+            ArchivePaths.CopyEntryBounded(entry, hashing);
+            hashing.FlushFinalBlock();
+            return hash.Hash;
+        });
     }
 
     /// <summary>
@@ -287,6 +303,22 @@ public class InstallHelper
     /// </summary>
     internal bool ApplyStaged(List<string> stagedFiles)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var transaction = new UpdateFileTransaction(_targetFolder, StagingFolder, BackupFolder, _stagedHashes, Log);
+            bool success = transaction.Apply(stagedFiles,
+                file => CurrentFileChanged?.Invoke($"Copying {file}"),
+                progress => ProgressChanged?.Invoke(progress),
+                () => InstallationStateChanged?.Invoke(InstallState.Copy));
+            if (!success)
+            {
+                FinishStatus = transaction.RollbackComplete
+                    ? transaction.Failure is UnauthorizedAccessException ? InstallError.PermissionDenied : InstallError.ExtractingFile
+                    : InstallError.NoOldVersion;
+                if (!transaction.RollbackComplete) ErrorOccurred?.Invoke(FinishStatus, transaction.Failure?.Message);
+            }
+            return success;
+        }
         // Relative path and whether an installed file was moved to the backup folder.
         var applied = new List<KeyValuePair<string, bool>>();
         try
