@@ -81,6 +81,22 @@ public static class ProtectedStagingArea
             FileShare.None, 81920, FileOptions.None, security);
     }
 
+    public static void CreateVerificationParents(string root, string destination)
+    {
+        string relative = Path.GetRelativePath(root, destination);
+        string[] parts = relative.Split(Path.DirectorySeparatorChar);
+        if (Path.IsPathRooted(relative) || parts.Length > 64 || Array.IndexOf(parts, "..") >= 0)
+            throw new InvalidDataException("The verification path is outside the root or exceeds 64 levels.");
+        RequireProtectedPath(root);
+        string current = root;
+        foreach (string part in parts)
+        {
+            if (part == ".") continue;
+            current = Path.Combine(current, part);
+            CreatePrivateDirectory(current);
+        }
+    }
+
     public static void RequireProtectedPath(string path)
     {
         bool ancestor = false;

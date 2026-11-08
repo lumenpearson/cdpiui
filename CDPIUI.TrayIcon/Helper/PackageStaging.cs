@@ -83,10 +83,10 @@ public static class PackageStaging
                     ArchivePaths.EnsureNoReparsePoints(verifyDirectory, destination);
                     if (entry.FullName.EndsWith("/", StringComparison.Ordinal))
                     {
-                        CreateVerificationParents(verifyDirectory, destination);
+                        ProtectedStagingArea.CreateVerificationParents(verifyDirectory, destination);
                         continue;
                     }
-                    CreateVerificationParents(verifyDirectory, Path.GetDirectoryName(destination)!);
+                    ProtectedStagingArea.CreateVerificationParents(verifyDirectory, Path.GetDirectoryName(destination)!);
                     using FileStream output = ProtectedStagingArea.CreatePrivateFile(destination);
                     ArchivePaths.CopyEntryBounded(entry, output);
                 }
@@ -124,17 +124,6 @@ public static class PackageStaging
             {
                 Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot delete the verification folder: {ex.Message}");
             }
-        }
-    }
-
-    private static void CreateVerificationParents(string root, string destination)
-    {
-        string current = root;
-        foreach (string part in Path.GetRelativePath(root, destination).Split(Path.DirectorySeparatorChar))
-        {
-            if (part == ".") continue;
-            current = Path.Combine(current, part);
-            ProtectedStagingArea.CreatePrivateDirectory(current);
         }
     }
 
