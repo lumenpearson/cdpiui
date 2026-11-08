@@ -167,6 +167,9 @@ public sealed class ReadOnlyPathLease : IDisposable
         {
             int error = Marshal.GetHRForLastWin32Error();
             handle.Dispose();
+            int code = error & 0xFFFF;
+            if (code == 2 && !directory) throw new FileNotFoundException($"Cannot hold {path}.", path);
+            if (code == 3 || (code == 2 && directory)) throw new DirectoryNotFoundException($"Cannot hold {path}.");
             throw new IOException($"Cannot hold {path}.", error);
         }
         return handle;

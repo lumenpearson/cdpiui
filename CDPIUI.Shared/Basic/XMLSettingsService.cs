@@ -48,18 +48,40 @@ public class XMLSettingsService
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
-                _xDocument = new XDocument(new XElement("Settings"));
-                SaveSettings();
+                ReloadUnderFileLock(ex, missing: true);
             }
             catch (Exception ex) when (SettingsFileStore.IsReadFailure(ex))
             {
-                RecoverFromDamagedFile(ex);
+                ReloadUnderFileLock(ex, missing: false);
             }
         }
     }
 
+    // Initial creation and recovery write too. Re-read after taking the lock: a previous
+    // writer may have finished creating or repairing the file while this process waited.
+    private void ReloadUnderFileLock(Exception originalError, bool missing)
+    {
+        using IDisposable? settingsLock = SettingsFileStore.AcquireLock(SettingsFilePath);
+        if (settingsLock == null)
+        {
+            if (missing) _xDocument ??= new XDocument(new XElement("Settings"));
+            else RecoverFromDamagedFile(originalError, persist: false);
+            return;
+        }
+        try { _xDocument = SettingsFileStore.Load(SettingsFilePath); }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            _xDocument = new XDocument(new XElement("Settings"));
+            SaveSettings();
+        }
+        catch (Exception ex) when (SettingsFileStore.IsReadFailure(ex))
+        {
+            RecoverFromDamagedFile(ex, persist: true);
+        }
+    }
+
     // The caller holds _reloadLock.
-    private void RecoverFromDamagedFile(Exception loadError)
+    private void RecoverFromDamagedFile(Exception loadError, bool persist)
     {
         LoadError = loadError.Message;
         try
@@ -76,6 +98,7 @@ public class XMLSettingsService
             _xDocument ??= new XDocument(new XElement("Settings"));
         }
 
+        if (!persist) return;
         SettingsFileStore.KeepDamagedCopy(SettingsFilePath);
 
         if (HasUnrecoverableLoadError)
@@ -103,6 +126,7 @@ public class XMLSettingsService
                     return;
                 }
 
+                bool keepBackup = true;
                 if (!_persistenceUnavailable && File.Exists(SettingsFilePath))
                 {
                     try
@@ -112,11 +136,14 @@ public class XMLSettingsService
                     catch (Exception ex) when (SettingsFileStore.IsReadFailure(ex))
                     {
                         // Keep the copy in memory; saving it replaces the unreadable file.
+                        // Do not replace the last good backup with this unreadable input.
+                        keepBackup = false;
+                        SettingsFileStore.KeepDamagedCopy(SettingsFilePath);
                     }
                 }
 
                 SettingsXmlTree.ApplySetting(_xDocument!.Root!, groupPath, key, type, valueString);
-                SaveSettings();
+                SaveSettings(keepBackup);
             }
         }
     }

@@ -3,6 +3,7 @@ using CDPIUI.Shared.Basic;
 
 namespace CDPIUI.Tests.Shared;
 
+[Collection("Windows path leases")]
 public class XmlSettingsServiceTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-settings-" + Guid.NewGuid().ToString("N"));

@@ -87,7 +87,7 @@ public sealed class ReadOnlyPathLeaseTests : IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         using (var parent = ReadOnlyPathLease.OpenDirectory(_root))
-            Assert.Throws<IOException>(() => ReadOnlyPathLease.OpenFileInHeldDirectory(Path.Combine(_root, "missing"), parent));
+            Assert.Throws<FileNotFoundException>(() => ReadOnlyPathLease.OpenFileInHeldDirectory(Path.Combine(_root, "missing"), parent));
         Directory.Move(_root, _root + "-moved");
         Directory.Move(_root + "-moved", _root);
     }
@@ -231,7 +231,7 @@ public sealed class ReadOnlyPathLeaseTests : IDisposable
     public void MissingFileDoesNotLeaveParentLocked()
     {
         if (!OperatingSystem.IsWindows()) return;
-        Assert.Throws<IOException>(() => ReadOnlyPathLease.OpenFile(Path.Combine(_root, "missing.bin")));
+        Assert.Throws<FileNotFoundException>(() => ReadOnlyPathLease.OpenFile(Path.Combine(_root, "missing.bin")));
         Directory.Move(_root, _root + "-moved");
         Directory.Move(_root + "-moved", _root);
     }

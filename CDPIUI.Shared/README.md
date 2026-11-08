@@ -65,8 +65,12 @@ Write:
 
 - Each `SetValue` reads the file from the disk again, applies one change and saves the file. Thus a process with an old copy does not overwrite a change from the other process.
 - A `Settings.xml.lock` file with `FileShare.None` locks the write.
+- Initial creation and recovery also take this lock and re-read after waiting. Without the lock, recovery stays in memory and writes no `.corrupt-*`, notice or settings file.
 - If the lock cannot be acquired, including an access denial, the change stays in memory and no disk write is attempted.
 - The service writes a temporary file and replaces `Settings.xml` with it. The previous file becomes `Settings.xml.bak`.
+- On Windows, reads, locks, temporary files, backups, diagnostic copies and notices use no-follow handles under pinned parents, with type and hard-link checks. Only a validated empty lock is marked DeleteOnClose. Publication leaves no window with an absent settings name.
+- The existing DACL is supplied when creating temporary and backup files, before writing data. Protected and inherited access rules are preserved. Owner and other new-file metadata are not claimed to be a copy of the original.
+- A malformed primary XML does not replace the last good `.bak` when saving a change from memory.
 - Supported types: `int`, `double`, `bool`, `string`, `DateTime`, `List<string>`. `double` and `DateTime` use the invariant culture.
 - `List<string>` items are separated by `;`. The service writes `;` as `%3B` and `%` as `%25`.
 - `SetValue(group, ...)` raises `PropertyChanged`. `SetValue(groupPath, ...)` raises `EnumPropertyChanged`.
