@@ -51,6 +51,8 @@
     <Compile Include="..\CDPIUI.Shared\Basic\Filesystem\UpdatePackageLayers.cs" Link="Shared\UpdatePackageLayers.cs" />
     <Compile Include="..\CDPIUI.Shared\Basic\Filesystem\ArchivePaths.cs" Link="Shared\ArchivePaths.cs" />
     <Compile Include="..\CDPIUI.Shared\Security\ReadOnlyPathLease.cs" Link="Shared\ReadOnlyPathLease.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\WindowsPathNames.cs" Link="Shared\WindowsPathNames.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\WritablePathLease.cs" Link="Shared\WritablePathLease.cs" />
   </ItemGroup>
 
 </Project>

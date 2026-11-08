@@ -29,6 +29,19 @@ public class ArchivePathsTests
         Assert.False(ArchivePaths.TryGetDestination(Root, relative, out _));
     }
 
+    [Theory]
+    [InlineData(".. /outside.bin")]
+    [InlineData("a/.. /.. /outside.bin")]
+    [InlineData("list.txt.")]
+    [InlineData("a /file.bin")]
+    [InlineData("CON.txt")]
+    [InlineData("dir/LPT1.log")]
+    [InlineData("dir/COM\u00b9.bin")]
+    public void RejectsWindowsPathAliases(string relative)
+    {
+        Assert.False(ArchivePaths.TryGetDestination(Root, relative, out _));
+    }
+
     [Fact]
     public void RejectsSiblingDirectoryWithSamePrefix()
     {

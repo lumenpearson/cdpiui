@@ -143,13 +143,15 @@ dotnet publish Update/Update.csproj -c Release -p:Platform=x64 -r win-x64 --self
 содержать только `Update.exe`.
 
 Проект не ссылается на `CDPIUI.Shared`, потому что инструмент не должен загружать
-`CDPIUI.Shared.dll` из папки, которую он заменяет. Он компилирует два файла `CDPIUI.Shared` как
-ссылки: `Basic/Filesystem/UpdatePackageLayers.cs` и `Basic/Filesystem/ArchivePaths.cs`. Поэтому
-инструмент и трей используют одно правило слоёв и одни ограничения архива. С символом
-`UPDATE_TOOL` эти классы являются `internal` и находятся в пространстве имён `Update`.
+`CDPIUI.Shared.dll` из папки, которую он заменяет. Он компилирует общие исходники
+`UpdatePackageLayers`, `ArchivePaths`, `ReadOnlyPathLease`, `WritablePathLease` и `WindowsPathNames`.
+Поэтому инструмент и трей используют одно правило слоёв, ограничения архива и правила Windows I/O.
+С символом `UPDATE_TOOL` эти исходники используют пространство имён `Update`.
 
 ## Тесты
 
 `CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` проверяет проверку путей, ограничения архива,
 порядок слоёв, правила подготовки файлов (`catalog.cat`, `Update.exe`), шаг применения и откат.
 Тесты не используют окно.
+
+Дополнение FS-09: создание staging/destination/backup каталогов и распаковка в Windows используют source-linked ReadOnlyPathLease, WritablePathLease и WindowsPathNames. Write target открывается без перехода по leaf link и без предварительного усечения; тип/link count проверяются по handle. Это не закрывает последующие File.Move/rollback/cleanup или подмену staging между extraction и apply; точный остаток указан в docs/AUDIT-STATUS.ru.md.

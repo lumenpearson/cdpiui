@@ -238,3 +238,5 @@
 - `System/Diagnostic/CodeAnalysis/SetsRequiredMembersAttribute.cs`
 
 Не удаляйте их. Они нужны членам `required` в этой библиотеке.
+
+Windows файловые операции: ReadOnlyPathLease удерживает обычные файлы/родителей без перехода по ссылкам; WritablePathLease проверяет открытый объект и число hard links до усечения или записи. OpenOrCreateDirectory создаёт недостающие каталоги по одному под удерживаемым родителем. ArchivePaths применяет это при распаковке Windows; WindowsPathNames отклоняет неоднозначные Win32 имена и устройства. Полный охват операций и оставшиеся гонки описаны в docs/AUDIT-STATUS.ru.md (FS-08–12). Для non-Windows сохраняется managed extraction без этих Windows гарантий.

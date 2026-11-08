@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
+#if !UPDATE_TOOL
+using CDPIUI.Shared.Security;
+#endif
 
 // Update.exe compiles this file as well (linked in Update.csproj): it must not load
 // CDPIUI.Shared.dll from the folder it replaces, and it must apply the limits of the tray.
@@ -32,6 +36,8 @@ static class ArchivePaths
         destination = string.Empty;
         if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.Contains(':'))
             return false;
+        foreach (string name in relativePath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries))
+            if (name != "." && name != ".." && !WindowsPathNames.IsOrdinaryName(name)) return false;
 
         string fullRoot = Path.GetFullPath(root);
         if (!fullRoot.EndsWith(Path.DirectorySeparatorChar))
@@ -77,8 +83,26 @@ static class ArchivePaths
     /// </summary>
     public static void ExtractToFileBounded(ZipArchiveEntry entry, string destination)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using var lease = WritablePathLease.Open(destination);
+            lease.Stream.SetLength(0);
+            CopyEntryBounded(entry, lease.Stream);
+            return;
+        }
+        // Windows is the product platform. Retain ordinary extraction for non-Windows
+        // library consumers; Windows handle guarantees are not claimed on those systems.
         using var target = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
         CopyEntryBounded(entry, target);
+    }
+
+    public static void EnsureDirectoryExists(string path)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using var lease = ReadOnlyPathLease.OpenOrCreateDirectory(path);
+        }
+        else Directory.CreateDirectory(path);
     }
 
     public static void CopyEntryBounded(ZipArchiveEntry entry, Stream target)

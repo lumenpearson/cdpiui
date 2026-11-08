@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using CDPIUI.Core.Security;
@@ -59,22 +60,23 @@ internal class ZipService
 
     private static void PromoteSnapshot(ReadOnlyDirectorySnapshot snapshot, string destinationDirectory)
     {
-        Directory.CreateDirectory(destinationDirectory);
+        ArchivePaths.EnsureDirectoryExists(destinationDirectory);
         foreach (var file in snapshot.Files)
         {
             string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, file.RelativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(destination)!);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
+            using var output = WritablePathLease.Open(destination);
+            output.Stream.SetLength(0);
             file.Stream.Position = 0;
-            file.Stream.CopyTo(output);
+            file.Stream.CopyTo(output.Stream);
         }
         foreach (string relativePath in snapshot.Directories)
         {
             string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            Directory.CreateDirectory(destination);
+            ArchivePaths.EnsureDirectoryExists(destination);
             ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
         }
     }
@@ -90,7 +92,7 @@ internal class ZipService
         filesToSkip = filesToSkip ?? Enumerable.Empty<string>();
 
         if (!Directory.Exists(extractTo))
-            Directory.CreateDirectory(extractTo);
+            ArchivePaths.EnsureDirectoryExists(extractTo);
 
         using (var archive = ZipFile.OpenRead(zipFilePath))
         {
@@ -119,7 +121,7 @@ internal class ZipService
                 {
                     if (!Directory.Exists(destinationPath))
                     {
-                        Directory.CreateDirectory(destinationPath);
+                        ArchivePaths.EnsureDirectoryExists(destinationPath);
                         ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
                     }
                 }
@@ -189,7 +191,7 @@ internal class ZipService
         ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         var destinationDir = Path.GetDirectoryName(destinationPath);
         if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
-            Directory.CreateDirectory(destinationDir);
+            ArchivePaths.EnsureDirectoryExists(destinationDir);
         ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         return destinationPath;
     }
@@ -203,11 +205,18 @@ internal class ZipService
             destinationPath = $"{destinationPath}.bak";
         }
         ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+        using var lease = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? WritablePathLease.Open(destinationPath) : null;
+        using var portable = lease == null ? new FileStream(destinationPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
+        var existing = lease?.Stream ?? portable!;
         // Whole lines are compared: as a substring, "t.co" was dropped because
         // the list already had "reddit.com".
-        var destLines = new HashSet<string>(
-            File.ReadLines(destinationPath).Select(line => line.Trim()), StringComparer.Ordinal);
-        bool endsWithNewLine = EndsWithNewLine(destinationPath);
+        var destLines = new HashSet<string>(StringComparer.Ordinal);
+        using (var reader = new StreamReader(existing, Encoding.UTF8, true, 1024, leaveOpen: true))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null) destLines.Add(line.Trim());
+        }
+        bool endsWithNewLine = EndsWithNewLine(existing);
 
         var newLines = new List<string>();
         using (var reader = new StreamReader(entry.Open()))
@@ -222,8 +231,8 @@ internal class ZipService
 
         if (newLines.Count > 0)
         {
-            ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
-            using var stream = File.AppendText(destinationPath);
+            existing.Seek(0, SeekOrigin.End);
+            using var stream = new StreamWriter(existing, new UTF8Encoding(false), 1024, leaveOpen: true);
             if (!endsWithNewLine)
                 await stream.WriteLineAsync();
             foreach (string line in newLines)
@@ -231,9 +240,8 @@ internal class ZipService
         }
     }
 
-    private static bool EndsWithNewLine(string path)
+    private static bool EndsWithNewLine(Stream existing)
     {
-        using var existing = File.OpenRead(path);
         if (existing.Length == 0)
             return true;
         existing.Seek(-1, SeekOrigin.End);

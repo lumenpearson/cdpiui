@@ -144,13 +144,15 @@ uses the same command and copies `Update.exe` into the release layout. The publi
 contain only `Update.exe`.
 
 The project does not reference `CDPIUI.Shared`, because the tool must not load
-`CDPIUI.Shared.dll` from the folder that it replaces. It compiles two files of `CDPIUI.Shared` as
-links: `Basic/Filesystem/UpdatePackageLayers.cs` and `Basic/Filesystem/ArchivePaths.cs`. Thus the
-tool and the tray use the same layer rule and the same archive limits. With the `UPDATE_TOOL`
-symbol, these classes are `internal` and are in the `Update` namespace.
+`CDPIUI.Shared.dll` from the folder that it replaces. It compiles shared source files for
+`UpdatePackageLayers`, `ArchivePaths`, `ReadOnlyPathLease`, `WritablePathLease` and `WindowsPathNames`.
+Thus the tool and the tray use the same layer rule, archive limits and Windows file rules.
+With the `UPDATE_TOOL` symbol, these sources use the `Update` namespace.
 
 ## Tests
 
 `CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` tests the path checks, the archive limits, the
 layer sequence, the staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback.
 The tests do not use the window.
+
+FS-09 update: Windows staging/destination/backup directory creation and extraction use the source-linked ReadOnlyPathLease, WritablePathLease and WindowsPathNames. The write target is opened without following a leaf link or truncating existing bytes; its type and link count are checked through the handle. Later File.Move/rollback/cleanup and staging mutation between extraction and apply still need the follow-up documented in docs/AUDIT-STATUS.ru.md.

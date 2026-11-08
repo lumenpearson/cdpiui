@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CDPIUI.Shared\Security\ReadOnlyPathLease.cs" Link="Shared\ReadOnlyPathLease.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\WindowsPathNames.cs" Link="Shared\WindowsPathNames.cs" />
     <Compile Include="..\CDPIUI.Shared\Security\ProtectedStagingArea.cs" Link="Shared\ProtectedStagingArea.cs" />
   </ItemGroup>
 </Project>
