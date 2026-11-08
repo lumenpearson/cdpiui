@@ -92,14 +92,18 @@ static class ArchivePaths
     }
 
     /// <summary>
-    /// Rejects a destination whose folder chain inside the root, or the file itself, is a symbolic
-    /// link or a junction: a planted link would send the write to another place.
+    /// Rejects a destination outside the root or through a symbolic link or junction, including
+    /// the root's ancestors: a planted link would send the write to another place.
     /// </summary>
     public static void EnsureNoReparsePoints(string root, string destination)
     {
         string fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string? current = Path.GetFullPath(destination);
-        while (current != null && current.Length >= fullRoot.Length)
+        if (!string.Equals(current.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), fullRoot, StringComparison.OrdinalIgnoreCase) &&
+            !current.StartsWith(fullRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"\"{destination}\" is outside of the archive root.");
+
+        while (current != null)
         {
             try
             {
@@ -116,8 +120,6 @@ static class ArchivePaths
             {
                 // A not-yet-created parent has nothing to inspect.
             }
-            if (string.Equals(current, fullRoot, StringComparison.OrdinalIgnoreCase))
-                break;
             current = Path.GetDirectoryName(current);
         }
     }

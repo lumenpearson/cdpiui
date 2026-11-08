@@ -87,6 +87,38 @@ public sealed class ArchiveLimitsTests : IDisposable
     }
 
     [Fact]
+    public void LinkedAncestorOfExtractionRootIsRejected()
+    {
+        string outside = Path.Combine(_directory, "outside");
+        Directory.CreateDirectory(Path.Combine(outside, "nested"));
+        string link = Path.Combine(_directory, "linked-parent");
+        Directory.CreateSymbolicLink(link, outside);
+        string root = Path.Combine(link, "nested");
+
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "file.txt")));
+    }
+
+    [Fact]
+    public void DanglingLinkedAncestorOfMissingExtractionRootIsRejected()
+    {
+        string link = Path.Combine(_directory, "dangling-parent");
+        Directory.CreateSymbolicLink(link, Path.Combine(_directory, "missing-target"));
+        string root = Path.Combine(link, "nested");
+
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "file.txt")));
+    }
+
+    [Fact]
+    public void DestinationOutsideExtractionRootIsRejected()
+    {
+        string root = Path.Combine(_directory, "root");
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(_directory, "root-other", "file.txt")));
+    }
+
+    [Fact]
     public void PlainFoldersPassTheLinkCheck()
     {
         string root = Path.Combine(_directory, "root");
