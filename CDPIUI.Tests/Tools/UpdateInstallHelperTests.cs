@@ -65,6 +65,10 @@ public class UpdateInstallHelperTests : IDisposable
     [InlineData(".. /evil.exe")]
     [InlineData("Assets /evil.exe")]
     [InlineData("CON.txt")]
+    [InlineData(".update-backup/a.bin")]
+    [InlineData(".update-staging/a.bin")]
+    [InlineData(".update-manifest")]
+    [InlineData("help/../.update-backup/a.bin")]
     public void DestinationOutsideTheRootIsRejected(string? relativePath)
     {
         Assert.False(InstallHelper.TryGetDestination(_target, relativePath!, out string destination));

@@ -489,6 +489,12 @@ public class InstallHelper
     internal static bool TryGetDestination(string root, string relativePath, out string destination)
     {
         bool valid = ArchivePaths.TryGetDestination(root, relativePath, out string checkedPath);
+        if (valid)
+        {
+            string first = Path.GetRelativePath(root, checkedPath).Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+            valid = !new[] { ".update-staging", ".update-backup", ".update-manifest", "update.log" }
+                .Contains(first, StringComparer.OrdinalIgnoreCase);
+        }
         destination = valid ? checkedPath : null;
         return valid;
     }

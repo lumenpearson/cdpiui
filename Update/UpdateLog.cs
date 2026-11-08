@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Update;
 
@@ -9,12 +11,22 @@ namespace Update;
 internal static class UpdateLog
 {
     public static void Write(string text)
+        => WriteTo(Path.Combine(AppContext.BaseDirectory, "update.log"), text);
+
+    internal static void WriteTo(string path, string text)
     {
         try
         {
             string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {text}{Environment.NewLine}";
             // In a single-file application, AppContext.BaseDirectory is the folder of Update.exe.
-            File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "update.log"), logLine);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                using var lease = WritablePathLease.Open(path);
+                lease.Stream.Seek(0, SeekOrigin.End);
+                using var writer = new StreamWriter(lease.Stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+                writer.Write(logLine);
+            }
+            else File.AppendAllText(path, logLine);
         }
         catch (Exception)
         {
