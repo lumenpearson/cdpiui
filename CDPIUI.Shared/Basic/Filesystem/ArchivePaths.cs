@@ -77,8 +77,13 @@ static class ArchivePaths
     /// </summary>
     public static void ExtractToFileBounded(ZipArchiveEntry entry, string destination)
     {
-        using Stream source = entry.Open();
         using var target = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
+        CopyEntryBounded(entry, target);
+    }
+
+    public static void CopyEntryBounded(ZipArchiveEntry entry, Stream target)
+    {
+        using Stream source = entry.Open();
         byte[] buffer = new byte[81920];
         long written = 0;
         int read;

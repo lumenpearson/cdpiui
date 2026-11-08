@@ -48,6 +48,7 @@
   </ItemGroup>
 	<ItemGroup>
 	  <Compile Include="..\CDPIUI.Shared\Security\ProtectedInstallLocationPolicy.cs" Link="Shared\ProtectedInstallLocationPolicy.cs" />
+	  <Compile Include="..\CDPIUI.Shared\Security\ProtectedStagingArea.cs" Link="Shared\ProtectedStagingArea.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="Assets\**\*.*">

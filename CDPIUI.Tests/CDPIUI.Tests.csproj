@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="..\CDPIUI.ElevatedLauncher\LaunchPolicy.cs" Link="Tools\ElevatedLauncher\LaunchPolicy.cs" />
     <Compile Include="..\CDPIUI.TrayIcon\Helper\Basic\DirectoryAclGuard.cs" Link="Shared\DirectoryAclGuard.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\ProtectedStagingArea.cs" Link="Shared\ProtectedStagingArea.cs" />
   </ItemGroup>
 
 </Project>

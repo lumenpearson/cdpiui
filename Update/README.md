@@ -22,7 +22,7 @@ Only the elevated tray starts `Update.exe`. The sequence is as follows:
    (`CDPIUI.Core/Features/ApplicationUpdate.cs`).
 2. The tray receives the message (`CDPIUI.TrayIcon/Helper/Basic/CommandsHandler.cs`) and calls
    `Utils.StartUpdate` (`CDPIUI.TrayIcon/Helper/Utils.cs`).
-3. The tray copies the package to `<install>\.staging\<GUID>\`.
+3. The tray copies the package to `<Common Files>\CDPIUI-Staging\<GUID>\`. Directories and files are created with owner Administrators and a protected DACL for Administrators and SYSTEM. An unsafe existing path is rejected. The source is held by a no-follow read lease during copying; a package larger than 1 GiB is rejected.
 4. The tray verifies the signed catalog of each layer (`CDPIUI.TrayIcon/Helper/PackageStaging.cs`).
 5. The tray starts `Update.exe` with this command line:
 
@@ -46,6 +46,7 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
 `Update/InstallHelper.cs` contains all the logic. The procedure starts when the window opens.
 
 1. **Stop the application.**
+   - Before stopping the tray, the updater acquires its own read-only lease on the package and its parents. It keeps the lease until the procedure ends, independently of the tray lifetime.
    - The tool sets the `Global\CDPIUI_TrayShutdown` event. The tray then exits as from its menu: it stops the components and restores the proxy settings.
    - The tool waits a maximum of 20 s for the tray.
    - The tool stops all remaining `goodbyeDPI`, `CDPIUI` and `CDPIUI_TrayIcon` processes (`Process.Kill`).

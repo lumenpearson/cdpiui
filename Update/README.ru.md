@@ -22,7 +22,7 @@
    (`CDPIUI.Core/Features/ApplicationUpdate.cs`).
 2. Трей получает сообщение (`CDPIUI.TrayIcon/Helper/Basic/CommandsHandler.cs`) и вызывает
    `Utils.StartUpdate` (`CDPIUI.TrayIcon/Helper/Utils.cs`).
-3. Трей копирует пакет в `<install>\.staging\<GUID>\`.
+3. Трей копирует пакет в `<Common Files>\CDPIUI-Staging\<GUID>\`. Каталоги и файлы создаются с владельцем Administrators и защищённой DACL только для Administrators и SYSTEM. Небезопасный существующий путь отклоняется. На время копирования исходный файл удерживается readonly lease без перехода по ссылкам; пакет больше 1 ГиБ отклоняется.
 4. Трей проверяет подписанный каталог каждого слоя (`CDPIUI.TrayIcon/Helper/PackageStaging.cs`).
 5. Трей запускает `Update.exe` с такой командной строкой:
 
@@ -45,6 +45,7 @@ Update.exe --directory-to-zip "<staged .cdpipatch>" --destination-directory "<in
 Вся логика находится в `Update/InstallHelper.cs`. Процедура начинается, когда открывается окно.
 
 1. **Остановка приложения.**
+   - До остановки трея updater получает собственный readonly lease на пакет и его родительские каталоги. Он удерживает его до завершения процедуры, независимо от времени жизни трея.
    - Инструмент устанавливает событие `Global\CDPIUI_TrayShutdown`. Тогда трей завершается так же, как из своего меню: он останавливает компоненты и восстанавливает настройки прокси.
    - Инструмент ждёт трей не более 20 с.
    - Инструмент останавливает все оставшиеся процессы `goodbyeDPI`, `CDPIUI` и `CDPIUI_TrayIcon` (`Process.Kill`).

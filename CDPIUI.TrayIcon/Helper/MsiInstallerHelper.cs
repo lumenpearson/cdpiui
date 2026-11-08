@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CDPIUI.Shared.Pipe.Models;
+using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 
 namespace CDPIUI.TrayIcon.Helper;
@@ -161,6 +162,7 @@ public class MsiInstallerHelper
     private async Task ProcessMsi(string operationId, string filePath, string? expectedSha256)
     {
         string? stagedPath = null;
+        ReadOnlyPathLease? stagedLease = null;
         try
         {
             if (!TrustedPaths.IsAllowed(filePath, "package installation"))
@@ -170,6 +172,7 @@ public class MsiInstallerHelper
             // Match the staged bytes against the source digest before checking the signature,
             // so a changed user copy cannot substitute a different but also signed installer.
             stagedPath = PackageStaging.Stage(filePath);
+            stagedLease = ReadOnlyPathLease.OpenFile(stagedPath);
             if (!PackageStaging.MatchesSha256(stagedPath, expectedSha256))
                 throw new UnauthorizedAccessException("The staged package does not match the downloaded package.");
             if (!PackageStaging.HasValidSignature(stagedPath))
@@ -240,6 +243,7 @@ public class MsiInstallerHelper
                 _currentProcess = null;
                 _currentOperationId = null;
             }
+            stagedLease?.Dispose();
             if (stagedPath != null)
                 PackageStaging.Release(stagedPath);
 

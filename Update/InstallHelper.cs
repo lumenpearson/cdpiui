@@ -71,6 +71,27 @@ public class InstallHelper
 
     private async Task RunInstallAsync()
     {
+        ReadOnlyPathLease packageLease;
+        try
+        {
+            // Acquire before asking the tray to exit. Its handles may then close, but the
+            // updater already owns its own read-only lease on the same package and parents.
+            packageLease = ReadOnlyPathLease.OpenFile(_archiveFilePath);
+        }
+        catch (Exception ex)
+        {
+            FinishStatus = File.Exists(_archiveFilePath) ? InstallError.PermissionDenied : InstallError.FileNotFound;
+            Log($"Cannot hold the update package: {ex}");
+            ErrorOccurred?.Invoke(FinishStatus, ex.Message);
+            InstallationStateChanged?.Invoke(InstallState.Error);
+            return;
+        }
+        using (packageLease)
+            await RunHeldInstallAsync();
+    }
+
+    private async Task RunHeldInstallAsync()
+    {
         InstallationStateChanged?.Invoke(InstallState.Prepare);
         Log("Starting extraction process");
         if (!ApplicationProcessCloser.StopApplication())

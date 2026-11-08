@@ -188,7 +188,7 @@
 
 | ID | Статус | Конкретный остаток |
 |---|---|---|
-| FS-07 | Открыт, security | `PackageStaging.Stage` использует path-based CreateDirectory/File.Copy; проверки SHA-256/подписи и запуск MSI/EXE происходят раздельно, без удержания staged bytes. MSI install tree защищён ACL, но portable-каталог принадлежит пользователю. Нужна защищённая сессия staging с удержанием каталогов/файлов до завершения потребителя, а не ещё один File.Exists. |
+| FS-07 | Реализована защита staging; проверка полного MSI/patch потока остаётся | См. проход 3: отдельный admin-owned cache, атомарные ACL, no-follow source lease и leases потребителей. Защита пакета больше не зависит от writable portable root или жизни tray. Очистка orphan sessions остаётся FS-12. |
 | FS-08 | Открыт, security | Signed ZIP: VerifyCatalog → MoveContents не держит весь проверенный набор файлов неизменным до promotion. Проверка reparse points не фиксирует содержимое файла. Нужны leases для всех подписанных файлов и безопасное продвижение; отдельно определить откат частичного multi-file promotion. |
 | FS-09 | Открыт, security | `ExtractToFileBounded` использует FileMode.Create, а merge — AppendText. Между последней проверкой и открытием можно заменить leaf или родителя; hard links не имеют ReparsePoint. Требуются no-follow opens, проверка информации открытого handle и удержание родителей. Текущие изменения не объявляются полным устранением TOCTOU. |
 | FS-10 | Открыт, settings | SaveChange теперь не пишет без lock. Но initial Reload/recovery, `.lock` с DeleteOnClose, `.bak`, recovery notice и их родительские каталоги ещё требуют отдельной no-follow/handle проверки. Lock не защищает от процесса, который намеренно не соблюдает протокол. |
@@ -196,3 +196,30 @@
 | FS-12 | Открыт, cleanup | PackageStaging.Release/CleanUp и рекурсивные удаления Store/verify нуждаются в проверке владения деревом и гонок замены родителей. Не добавлять delete с повторной проверкой пути под видом атомарной защиты. `StoreItemFolders.ReplaceItemFolder` откатывает неудачный Move; online update всё ещё может смешивать версии, как указано в Core README. |
 
 Следующий security-приоритет: FS-07–09 — проектирование и тестирование удерживаемых handles для staging/проверки/promotion/записи. FS-10–12 и живые cancellation/crash/uninstall сценарии остаются в очереди. Этот проход сохраняет обратную совместимость форматов; системный hosts, proxy и установленные компоненты не изменялись.
+
+## Файловый проход 3 — защищённый staging и Windows readonly leases
+
+Продолжение от `f39e8a0`, 8 ноября 2026 года. В соответствии с прямым запросом пользователя работа согласована с чатом «Декомпозировать большие классы» (`01a1bc96-ea11-73a1-a4a1-5cd6db1617fa`). Там закреплён ConfigMaker GUI в отдельном worktree, здесь — security/staging/Update. Общий тестовый csproj объединяется аддитивно. GUI/ConfigMaker этой сессией не изменяются.
+
+### Реализация FS-07
+
+- `ReadOnlyPathLease` открывает существующий файл и всю цепочку родителей от корня тома через Windows handles. Для каждого компонента используется OPEN_REPARSE_POINT; каталог должен быть обычным, файл должен иметь ровно одно имя. Read sharing допускает читателей и запрещает запись, удаление и rename до Dispose. FILE_LIST_DIRECTORY применяется вместо attribute-only handle, который не обеспечивает нужные sharing restrictions.
+- `ProtectedStagingArea` копирует источник через такой lease в `<Common Files>/CDPIUI-Staging/<GUID>/`. Источник не может быть подменён или изменён во время копирования. Размер пакета ограничен 1 ГиБ; ADS-имена отклоняются.
+- Владелец Administrators и защищённая DACL Administrators/SYSTEM задаются при создании каталогов и файла, без промежутка с пользовательским владельцем. Небезопасные существующие пути не исправляются и не принимаются. Проверка предков разрешает создание соседнего каталога, но запрещает изменение/удаление/замену защищённого потомка. Null DACL, пользовательский owner, применимые GENERIC_WRITE/GENERIC_ALL и опасные права отклоняются; InheritOnly ACE не применяется к текущему объекту.
+- Копия остаётся защищённой от непривилегированного пользователя после выхода/падения tray. Store MSI держит дополнительный lease от проверки hash/signature до завершения процесса. ZIP-updater получает собственный lease до остановки tray, чтобы запуск потребителя не оставлял окно передачи защиты.
+- Каталоги и файлы временной распаковки для проверки подписанного patch также создаются с защищёнными ACL/owner. Общая bounded-copy функция применяется к открытому защищённому output stream.
+- Release принимает только пакет в непосредственной GUID-сессии защищённого корня и проверяет дерево. Startup больше не удаляет пакеты вслепую: завершение tray не доказывает завершение MSI. Незавершённые сессии могут оставаться на диске; протокол безопасной сборки и политика квот/возраста относятся к FS-12.
+
+### Проверки и ограничения
+
+- Тесты Windows проверяют блокировку записи, удаления и rename файла/родителя, разрешение второго читателя, передачу lease потребителю, отказ при уже открытом writer, symbolic/dangling/hard links и освобождение handles на ошибках.
+- ACL-тесты проверяют отказ от пользовательского owner, null DACL, опасных прав предка, отказ от принятия/исправления пользовательского каталога и границы Release. Отдельно различаются право создавать соседей и право изменять существующий staging.
+- Elevated ToolsSmokeTest создаёт уникальный `CDPIUI-Staging.Smoke-<GUID>` в Common Files, проверяет копирование, owner/DACL всего дерева, чтение через lease и удаляет только собственную сессию и тестовый корень. Системные hosts/proxy и реальные MSI не запускаются.
+- Первый sandbox-прогон lease не смог открыть handle профиля; вне sandbox проверки прошли. Это ограничение среды, не повод ослаблять sharing. Restore tray потребовал сетевого доступа к настроенным NuGet feeds; аудит пакетов не отключался.
+- Smoke выявил, что существующая MSI install-location policy отклоняет стандартный C:\\ из-за CreateDirectories у Authenticated Users. Для staging введена отдельная политика; `ProtectedInstallLocationPolicy` оставлена без изменений. Это отдельная находка для воспроизведения на установленном MSI, а не заявленное исправление MSI launcher.
+- FS-08 (неизменность всего signed-ZIP набора между VerifyCatalog и promotion), FS-09 (no-follow записи/append, hard links и родители назначения) пока открыты. Новый readonly primitive — основа для этих шагов, а не доказательство их завершения.
+- Полный end-to-end MSI upgrade, tray crash во время установки и patch/update с живыми компонентами требуют изолированной Windows VM. Остатки кэша не удалять вручную при неизвестном активном потребителе.
+- Окончательный локальный результат: 788 passed, 0 failed, 0 skipped (20 новых Windows-регрессий сверх прохода 2); Release x64 tray — 0 warnings/errors; publish Update/ToolsSmokeTest успешен. Elevated smoke: защищённая копия/owner/DACL/read lease/cleanup и все три инструмента — PASS, exit 0. Итог CI этого checkpoint фиксируется в SESSION_CONTINUATION.md.
+- Основание для Windows API: [CreateFileW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew) (no-follow и sharing) и [FileSystemAclExtensions.Create](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions.create?view=net-8.0) (security descriptor при создании).
+
+Следующая точка: проверить завершённый CI прохода 3, затем продолжить FS-08 и FS-09 в том же порядке; отдельно сохранить новую находку о MSI ACL policy и FS-12 cleanup/quota. Согласование пересечений с сессией декомпозиции продолжается перед изменением общего модуля.
