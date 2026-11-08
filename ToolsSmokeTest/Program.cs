@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using CDPIUI.Shared.Security;
 
 internal static class Program
 {
@@ -48,6 +49,43 @@ internal static class Program
             }
         }
         AddReport(report, "[PASS] ToolsSmokeTest: runner has an administrator token.");
+
+        string probeRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles),
+            "CDPIUI-Staging.Smoke-" + Guid.NewGuid().ToString("N"));
+        string probeSource = Path.Combine(toolsDirectory, "smoke-source-" + Guid.NewGuid().ToString("N") + ".bin");
+        string? probePackage = null;
+        try
+        {
+            File.WriteAllText(probeSource, "staging smoke bytes");
+            probePackage = ProtectedStagingArea.Stage(probeRoot, probeSource);
+            ProtectedStagingArea.RequireProtectedTree(probeRoot);
+            using (ReadOnlyPathLease lease = ReadOnlyPathLease.OpenFile(probePackage))
+            {
+                using var reader = new StreamReader(lease.Stream!);
+                if (reader.ReadToEnd() != "staging smoke bytes")
+                    throw new InvalidDataException("Staged contents changed.");
+            }
+            AddReport(report, "[PASS] Protected staging: private owner/DACL, source copy and read lease.");
+        }
+        catch (Exception ex)
+        {
+            AddReport(report, $"[FAIL] Protected staging: {ex}");
+            failures++;
+        }
+        finally
+        {
+            try
+            {
+                if (probePackage != null) ProtectedStagingArea.Release(probeRoot, probePackage);
+                if (Directory.Exists(probeRoot))
+                {
+                    ProtectedStagingArea.RequireProtectedPath(probeRoot);
+                    Directory.Delete(probeRoot, recursive: false);
+                }
+                File.Delete(probeSource);
+            }
+            catch (Exception ex) { AddReport(report, $"[FAIL] Staging probe cleanup: {ex.Message}"); failures++; }
+        }
 
         foreach ((string name, string relativePath) in Tools)
         {

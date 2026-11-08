@@ -27,7 +27,7 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 
 1. If the arguments contain `--uninstall-cleanup`, it requires the SYSTEM account and a protected registered MSI folder, then runs `UninstallHelper.Cleanup` and exits.
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
-3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
+3. It validates the protected package cache (`PackageStaging.CleanUp`). It does not delete orphan packages: an MSI consumer can still be running after the old tray exits.
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
 5. It deletes the session file `.session\pipe.key` of an earlier start (`PipeSessionWriter`). Then it starts the pipe server. The pipe server makes a random pipe name, creates the pipe, and then writes the name and the new pipe key to `.session\pipe.key` (see [Pipe](../CDPIUI.Shared/Pipe/README.md#session-file)).
 6. If a toast notification started the process, it creates `TrayApplicationContext`, handles the toast and does not do steps 7–11.
@@ -157,7 +157,7 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 `MsiInstallerHelper` installs packages one at a time from a queue (`MSIInstallation/Begin`):
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
-2. `PackageStaging.Stage` copies the file to `<tray directory>\.staging\<GUID>\`.
+2. `PackageStaging.Stage` holds the source with a no-follow read lease and copies it to `<Common Files>\CDPIUI-Staging\<GUID>\`. The owner and protected DACL permit mutation only by Administrators and SYSTEM, including after the tray exits. Unsafe existing paths, links and source hard links are rejected; the package limit is 1 GiB.
 3. The staged copy must match the source SHA-256 supplied by the GUI. Store downloads use the digest of the HTTPS response bytes; LScript installs use the digest of the source package.
 4. The copy must have a valid Authenticode signature (`WinVerifyTrust`, no revocation check).
 5. The tray runs `msiexec.exe /i "<copy>" /passive /norestart` for `.msi`. For other files, it runs `<copy> /install /passive /norestart`.
@@ -171,7 +171,7 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 `Utils.StartUpdate` handles `Update/BeginApplicationUpdate`:
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
-2. The tray copies the package to `.staging`.
+2. The tray copies the package to the protected `CDPIUI-Staging` cache. Catalog verification files also receive protected owners and DACLs at creation. Update.exe acquires its own package lease before stopping the tray.
 3. For an `.msi` package, the copy must have an Authenticode signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`). The release workflow signs `Setup.msi` with the catalog certificate. This certificate is self-signed. Thus the tray accepts a chain to an untrusted root, but it does not accept a changed file or another signer. Then the tray runs `msiexec.exe /i "<copy>" /qn+`, closes the GUI and exits.
 4. For a ZIP package, the tray checks the limits of `ArchivePaths` (number of entries, total size, compression ratio) and rejects links. Then it extracts the package and verifies the `catalog.cat` of each layer with `CatalogVerifier` and `Secret.TrustedCertificates`. Then it runs `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
 
@@ -285,7 +285,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
   - `TrustedPathValidator` rejects an existing symbolic link or junction in any component, including the root and its parents.
 - Trust an MSI location only when its full directory tree has protected owners and ACLs and contains no reparse points (`ProtectedInstallLocationPolicy`). A matching registry value alone does not make a custom installation path safe.
-- Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
+- Copy a package to the protected cache before checking it. Check and run that copy. Hold its readonly lease through verification and installer execution. Do not delete an orphan session without establishing that its consumer stopped (audit FS-12).
 - Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.
 - Start a program only through `ExecutableTrust.AcquireAsync`, and check its arguments with `FileWritingOptions` (see [Elevated start of a program](#elevated-start-of-a-program)).
 - Limit an archive with `ArchivePaths` before you extract it.

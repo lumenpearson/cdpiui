@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe.Models;
 using CDPIUI.Shared.Secrets;
+using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32;
 
@@ -122,11 +123,13 @@ public class Utils
             return;
         }
 
+        using ReadOnlyPathLease stagedLease = ReadOnlyPathLease.OpenFile(stagedFile);
         if (string.Equals(Path.GetExtension(stagedFile), ".msi", StringComparison.OrdinalIgnoreCase))
         {
             // The release workflow signs Setup.msi with the certificate that signs the catalogs.
             if (!PackageStaging.HasPinnedSignature(stagedFile, Secret.TrustedCertificates))
             {
+                stagedLease.Dispose();
                 PackageStaging.Release(stagedFile);
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
                 return;
@@ -140,6 +143,7 @@ public class Utils
         {
             if (!await PackageStaging.VerifyUpdatePackageAsync(stagedFile))
             {
+                stagedLease.Dispose();
                 PackageStaging.Release(stagedFile);
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
                 return;

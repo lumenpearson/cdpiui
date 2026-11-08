@@ -13,4 +13,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\CDPIUI.Shared\Security\ReadOnlyPathLease.cs" Link="Shared\ReadOnlyPathLease.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\ProtectedStagingArea.cs" Link="Shared\ProtectedStagingArea.cs" />
+  </ItemGroup>
 </Project>

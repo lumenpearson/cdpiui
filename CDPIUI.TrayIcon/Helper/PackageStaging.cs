@@ -15,16 +15,11 @@ namespace CDPIUI.TrayIcon.Helper;
 /// </summary>
 public static class PackageStaging
 {
-    // Under the installation directory, which only administrators can change in a per-machine installation.
-    private static string Root => Path.Combine(Utils.GetDataDirectory(), ".staging");
+    private static string Root => ProtectedStagingArea.DefaultRoot;
 
     public static string Stage(string sourcePath)
     {
-        string directory = Path.Combine(Root, Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        string stagedPath = Path.Combine(directory, Path.GetFileName(sourcePath));
-        File.Copy(sourcePath, stagedPath);
-        return stagedPath;
+        return ProtectedStagingArea.Stage(Root, sourcePath);
     }
 
     /// <summary>
@@ -37,9 +32,7 @@ public static class PackageStaging
     {
         try
         {
-            string? directory = Path.GetDirectoryName(stagedPath);
-            if (directory != null && Directory.Exists(directory))
-                Directory.Delete(directory, true);
+            ProtectedStagingArea.Release(Root, stagedPath);
         }
         catch (Exception ex)
         {
@@ -48,19 +41,21 @@ public static class PackageStaging
     }
 
     /// <summary>
-    /// Removes packages left from earlier runs, for example by an installer that was started without waiting.
+    /// Validates the persistent cache. Orphan packages need an explicit consumer-lifetime cleanup policy.
     /// </summary>
     public static void CleanUp()
     {
         try
         {
+            // The old tray may have exited during MSI installation. Its absence does not
+            // prove that an installer stopped using the package. Do not delete orphan packages
+            // without a consumer-lifetime protocol (audit FS-12).
             if (Directory.Exists(Root))
-                Directory.Delete(Root, true);
+                ProtectedStagingArea.RequireProtectedPath(Root);
         }
         catch (Exception ex)
         {
-            // An installer from an earlier run can still use the files; the next start tries again.
-            Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot remove old packages: {ex.Message}");
+            Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot validate the package cache: {ex.Message}");
         }
     }
 
@@ -81,18 +76,19 @@ public static class PackageStaging
                 // Update.exe installs exactly these folders (the same rule is compiled into it),
                 // so every file it installs is in a layer whose catalog is checked below.
                 layerPrefixes = UpdatePackageLayers.GetPrefixes(archive.Entries.Select(entry => entry.FullName));
-                Directory.CreateDirectory(verifyDirectory);
+                ProtectedStagingArea.CreatePrivateDirectory(verifyDirectory);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     string destination = ArchivePaths.GetDestinationOrThrow(verifyDirectory, entry.FullName);
                     ArchivePaths.EnsureNoReparsePoints(verifyDirectory, destination);
                     if (entry.FullName.EndsWith("/", StringComparison.Ordinal))
                     {
-                        Directory.CreateDirectory(destination);
+                        CreateVerificationParents(verifyDirectory, destination);
                         continue;
                     }
-                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                    ArchivePaths.ExtractToFileBounded(entry, destination);
+                    CreateVerificationParents(verifyDirectory, Path.GetDirectoryName(destination)!);
+                    using FileStream output = ProtectedStagingArea.CreatePrivateFile(destination);
+                    ArchivePaths.CopyEntryBounded(entry, output);
                 }
             }
 
@@ -128,6 +124,17 @@ public static class PackageStaging
             {
                 Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot delete the verification folder: {ex.Message}");
             }
+        }
+    }
+
+    private static void CreateVerificationParents(string root, string destination)
+    {
+        string current = root;
+        foreach (string part in Path.GetRelativePath(root, destination).Split(Path.DirectorySeparatorChar))
+        {
+            if (part == ".") continue;
+            current = Path.Combine(current, part);
+            ProtectedStagingArea.CreatePrivateDirectory(current);
         }
     }
 
