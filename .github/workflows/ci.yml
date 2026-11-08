@@ -169,6 +169,9 @@ jobs:
         run: |
           dotnet publish ToolsSmokeTest/ToolsSmokeTest.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/tools/smoke
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & artifacts/tools/smoke/ToolsSmokeTest.exe artifacts/tools
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $runner = (Resolve-Path artifacts/tools/smoke/ToolsSmokeTest.exe).Path
+          $toolsDirectory = (Resolve-Path artifacts/tools).Path
+          # This is a Windows GUI executable. Explicitly wait before reading its report or exit code.
+          $smoke = Start-Process -FilePath $runner -ArgumentList ('"{0}"' -f $toolsDirectory) -WindowStyle Hidden -Wait -PassThru
           Get-Content artifacts/tools/smoke/ToolsSmokeTest.report.txt
+          if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
