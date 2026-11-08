@@ -6,6 +6,20 @@ namespace CDPIUI.Tests.Shared;
 
 public sealed class ProtectedStagingAreaTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnsafeVerificationPathsAreRejectedBeforeDirectoryCreation(bool tooDeep)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string root = Path.Combine(Path.GetTempPath(), "not-created-verify-" + Guid.NewGuid().ToString("N"));
+        string destination = tooDeep
+            ? Path.Combine(root, string.Join(Path.DirectorySeparatorChar, Enumerable.Repeat("nested", 65)))
+            : Path.Combine(root, "..", "outside");
+        Assert.Throws<InvalidDataException>(() => ProtectedStagingArea.CreateVerificationParents(root, destination));
+        Assert.False(Directory.Exists(root));
+    }
+
     [Fact]
     public void NullDaclIsRejected()
     {
