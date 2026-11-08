@@ -149,8 +149,18 @@ public class InstallHelper
                 return null;
             }
 
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, _targetFolder);
             if (!Directory.Exists(_targetFolder))
                 Directory.CreateDirectory(_targetFolder);
+
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, StagingFolder);
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, BackupFolder);
+            if (Directory.Exists(BackupFolder) && Directory.EnumerateFileSystemEntries(BackupFolder).Any())
+            {
+                Log("An earlier update backup is still present. Recover it before starting another update.");
+                FinishStatus = InstallError.NoOldVersion;
+                return null;
+            }
 
             DeleteDirectory(StagingFolder);
             DeleteDirectory(BackupFolder);
@@ -233,9 +243,11 @@ public class InstallHelper
             .ToList();
     }
 
-    private static Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
+    private Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
     {
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         // An entry that gives more data than its header says stops the update, as in the tray.
         return Task.Run(() => ArchivePaths.ExtractToFileBounded(entry, stagedPath));
     }
@@ -258,21 +270,26 @@ public class InstallHelper
         var applied = new List<KeyValuePair<string, bool>>();
         try
         {
+            // Check the complete plan before moving the first installed file.
+            foreach (string relativePath in stagedFiles)
+                GetCheckedPaths(relativePath, out _, out _, out _);
+
             for (int i = 0; i < stagedFiles.Count; i++)
             {
                 string relativePath = stagedFiles[i];
                 string destPath, stagedPath, backupPath;
-                TryGetDestination(_targetFolder, relativePath, out destPath);
-                TryGetDestination(StagingFolder, relativePath, out stagedPath);
-                TryGetDestination(BackupFolder, relativePath, out backupPath);
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
 
                 CurrentFileChanged?.Invoke($"Copying {relativePath}");
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
 
                 bool backedUp = false;
                 if (File.Exists(destPath))
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                    GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
                     File.Move(destPath, backupPath);
                     backedUp = true;
                 }
@@ -299,6 +316,18 @@ public class InstallHelper
         }
     }
 
+    private void GetCheckedPaths(string relativePath, out string destination, out string staged, out string backup)
+    {
+        if (!TryGetDestination(_targetFolder, relativePath, out destination) ||
+            !TryGetDestination(StagingFolder, relativePath, out staged) ||
+            !TryGetDestination(BackupFolder, relativePath, out backup))
+            throw new InvalidDataException($"Invalid update path: {relativePath}");
+
+        ArchivePaths.EnsureNoReparsePoints(_targetFolder, destination);
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, staged);
+        ArchivePaths.EnsureNoReparsePoints(BackupFolder, backup);
+    }
+
     private bool Rollback(List<KeyValuePair<string, bool>> applied)
     {
         bool restored = true;
@@ -306,10 +335,13 @@ public class InstallHelper
         {
             string relativePath = applied[i].Key;
             string destPath, backupPath;
-            TryGetDestination(_targetFolder, relativePath, out destPath);
-            TryGetDestination(BackupFolder, relativePath, out backupPath);
             try
             {
+                if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
+                    !TryGetDestination(BackupFolder, relativePath, out backupPath))
+                    throw new InvalidDataException($"Invalid rollback path: {relativePath}");
+                ArchivePaths.EnsureNoReparsePoints(_targetFolder, destPath);
+                ArchivePaths.EnsureNoReparsePoints(BackupFolder, backupPath);
                 if (File.Exists(destPath))
                     File.Delete(destPath);
 
@@ -351,6 +383,7 @@ public class InstallHelper
     {
         try
         {
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, path);
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
         }

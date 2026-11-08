@@ -266,7 +266,10 @@ For such a pack, the library ignores `ExecutableFile`, `BeforeInstallActions` an
 
 ## System
 
+FileSystemLinksManager uses LinkFileTransaction to keep a displaced file until replacement succeeds. Failed publication or restoration moves the old file back; if that also fails, the error gives the recovery path. An existing `.bak` is never overwritten. These are exception rollback guarantees, not a journal for power loss or a handle-based defense against directory replacement.
+
 - `ZipService` (internal): ZIP extraction with a root folder filter (`$ANY` matches one segment), skip patterns and the catalog check.
+- When text merging selects a `.bak` file, that selected path is checked for reparse points before reading and appending.
 - `ZipService` and the Store repository download use `ArchivePaths` from `CDPIUI.Shared`: entry paths must stay in the target folder, the archive must be within the size limits, and links below the target are rejected.
 - `BatchFileEncoding`: reads `.bat` files in UTF-8, UTF-16 or a Cyrillic code page.
 - `ShellHelper`: opens folders and files and starts applications.

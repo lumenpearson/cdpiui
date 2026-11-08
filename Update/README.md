@@ -51,7 +51,8 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
    - The tool stops all remaining `goodbyeDPI`, `CDPIUI` and `CDPIUI_TrayIcon` processes (`Process.Kill`).
    - The tool waits a maximum of 10 s for each process name. If a process continues to run, the tool does not change files.
 2. **Stage the files.**
-   - The tool deletes the old `<install>\.update-staging` and `<install>\.update-backup` folders.
+   - The tool stops if `<install>\.update-backup` is not empty. Recover this backup before another update; it can contain the only surviving original files of an interrupted update.
+   - The tool rejects reparse points in the staging, installation and backup paths, then deletes old staging and an empty backup folder. These path checks do not eliminate concurrent replacement after the final check.
    - Before it extracts a file, the tool checks the archive limits of the tray (`ArchivePaths.EnsureWithinLimits`): a maximum of 20000 entries, a maximum of 1 GiB of data and a maximum compression ratio of 200 for an entry of 1 MiB or more. If the archive is not within the limits, the tool stops the update. The tray does this check before it starts the tool. The tool does it again, because a package can reach the tool in a different way.
    - The tool extracts the package into a new `.update-staging` folder.
    - The tool stops the update if an entry gives more data than its header says (`ArchivePaths.ExtractToFileBounded`).

@@ -107,7 +107,7 @@ internal class ZipService
                     && relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
                     && File.Exists(destinationPath))
                 {
-                    await MergeTextFileAsync(entry, destinationPath);
+                    await MergeTextFileAsync(entry, extractTo, destinationPath);
                     continue;
                 }
 
@@ -190,7 +190,7 @@ internal class ZipService
         return destinationPath;
     }
 
-    private static async Task MergeTextFileAsync(ZipArchiveEntry entry, string destinationPath)
+    private static async Task MergeTextFileAsync(ZipArchiveEntry entry, string extractTo, string destinationPath)
     {
         // FileSystemLinksManager replaces a linked list with a link and keeps
         // the original as .bak; the lines merge into that original file.
@@ -198,6 +198,7 @@ internal class ZipService
         {
             destinationPath = $"{destinationPath}.bak";
         }
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         // Whole lines are compared: as a substring, "t.co" was dropped because
         // the list already had "reddit.com".
         var destLines = new HashSet<string>(
@@ -217,6 +218,7 @@ internal class ZipService
 
         if (newLines.Count > 0)
         {
+            ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
             using var stream = File.AppendText(destinationPath);
             if (!endsWithNewLine)
                 await stream.WriteLineAsync();
