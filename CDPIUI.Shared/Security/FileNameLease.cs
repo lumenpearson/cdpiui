@@ -61,6 +61,36 @@ public sealed class FileNameLease : IDisposable
             throw new IOException("Cannot mark the held file name for deletion.", Marshal.GetHRForLastWin32Error());
     }
 
+    public void RequireSymbolicTarget(string expectedTarget)
+    {
+        if (_file == null) throw new ObjectDisposedException(nameof(FileNameLease));
+        string actual = SymbolicLinkTarget.Read(_file, CurrentPath);
+        string expected = SymbolicLinkTarget.Resolve(expectedTarget, CurrentPath);
+        if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("The held symbolic link has a different target.");
+    }
+
+    public void RequireHardLinkTarget(string expectedTarget)
+    {
+        if (_file == null) throw new ObjectDisposedException(nameof(FileNameLease));
+        if (!GetFileInformationByHandle(_file, out Information actual))
+            throw new IOException("Cannot inspect the held file name.", Marshal.GetHRForLastWin32Error());
+        if ((actual.Attributes & 0x410) != 0 || actual.Links < 2)
+            throw new UnauthorizedAccessException("A hard link to an ordinary file is required.");
+        string full = Path.GetFullPath(expectedTarget);
+        WindowsPathNames.RequireOrdinaryAbsolutePath(full);
+        using var parent = ReadOnlyPathLease.OpenDirectory(Path.GetDirectoryName(full)!);
+        WindowsFileHandles.RequireOrdinaryDirectory(parent.DirectoryHandle);
+        using var target = WindowsFileHandles.OpenRelative(parent.DirectoryHandle, Path.GetFileName(full),
+            0x80000080, 7, 1, false, out _);
+        WindowsFileHandles.RequireOrdinaryDirectory(parent.DirectoryHandle);
+        if (!GetFileInformationByHandle(target, out Information expected))
+            throw new IOException("Cannot inspect the expected hard-link target.", Marshal.GetHRForLastWin32Error());
+        if ((expected.Attributes & 0x410) != 0 || actual.Volume != expected.Volume ||
+            actual.IndexHigh != expected.IndexHigh || actual.IndexLow != expected.IndexLow)
+            throw new UnauthorizedAccessException("The held hard link has a different file identity.");
+    }
+
     public void Dispose()
     {
         _file?.Dispose();

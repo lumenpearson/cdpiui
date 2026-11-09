@@ -38,6 +38,44 @@ public sealed class FileNameLeaseTests : IDisposable
     }
 
     [Fact]
+    public void HardLinkBindingRejectsADifferentFileWithIdenticalContents()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_root, "target.txt"), other = Path.Combine(_root, "other.txt"), link = Path.Combine(_root, "link.txt");
+        File.WriteAllText(target, "same bytes");
+        File.WriteAllText(other, "same bytes");
+        Assert.True(CreateHardLinkW(link, target, IntPtr.Zero));
+        using var lease = FileNameLease.OpenExisting(link);
+        lease.RequireHardLinkTarget(target);
+        Assert.Throws<UnauthorizedAccessException>(() => lease.RequireHardLinkTarget(other));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SymbolicBindingChecksTheEffectiveTargetOfTheHeldLink(bool relative)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_root, "missing.txt"), link = Path.Combine(_root, "link.txt");
+        File.CreateSymbolicLink(link, relative ? "missing.txt" : target);
+        using var lease = FileNameLease.OpenExisting(link);
+        lease.RequireSymbolicTarget(target);
+        Assert.Throws<UnauthorizedAccessException>(() => lease.RequireSymbolicTarget(target + ".other"));
+        Assert.Throws<UnauthorizedAccessException>(() => lease.RequireHardLinkTarget(target));
+    }
+
+    [Fact]
+    public void AnOrdinaryFileDoesNotQualifyAsALinkToItself()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string file = Path.Combine(_root, "file.txt");
+        File.WriteAllText(file, "original");
+        using var lease = FileNameLease.OpenExisting(file);
+        Assert.Throws<UnauthorizedAccessException>(() => lease.RequireHardLinkTarget(file));
+        Assert.Throws<UnauthorizedAccessException>(() => lease.RequireSymbolicTarget(file));
+    }
+
+    [Fact]
     public void RenameConflictPreservesTheHeldOriginalAndExistingDestination()
     {
         if (!OperatingSystem.IsWindows()) return;
