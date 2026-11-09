@@ -68,6 +68,8 @@ public class UpdateInstallHelperTests : IDisposable
     [InlineData(".update-backup/a.bin")]
     [InlineData(".update-staging/a.bin")]
     [InlineData(".update-manifest")]
+    [InlineData(".update-lock")]
+    [InlineData("assets/../.update-lock")]
     [InlineData("help/../.update-backup/a.bin")]
     public void DestinationOutsideTheRootIsRejected(string? relativePath)
     {
