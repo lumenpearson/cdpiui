@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CDPIUI.Shared.Security;
@@ -24,8 +23,6 @@ public enum CatalogVerification
 /// </summary>
 public static class CatalogVerifier
 {
-    private static readonly TimeSpan FileCheckTimeout = TimeSpan.FromMinutes(2);
-
     /// <summary>
     /// Checks the catalog signature and that the files of the directory match the catalog
     /// </summary>
@@ -33,22 +30,42 @@ public static class CatalogVerifier
     /// <param name="directory">Directory the catalog describes</param>
     /// <param name="trustedThumbprints">SHA-1 thumbprints of the certificates allowed to sign catalogs</param>
     /// <param name="filesToSkip">File names that are not compared, in addition to catalog.cat</param>
-    public static async Task<CatalogVerification> VerifyAsync(
+    public static Task<CatalogVerification> VerifyAsync(
         string catalogFile,
         string directory,
         IEnumerable<string> trustedThumbprints,
-        IEnumerable<string>? filesToSkip = null)
+        IEnumerable<string>? filesToSkip = null) => VerifyInternalAsync(catalogFile, directory, trustedThumbprints, filesToSkip, null);
+
+    /// <summary>Verifies exactly the held file set that the caller will subsequently consume.</summary>
+    public static Task<CatalogVerification> VerifySnapshotAsync(string catalogFile, ReadOnlyDirectorySnapshot snapshot,
+        IEnumerable<string> trustedThumbprints, IEnumerable<string>? filesToSkip = null) =>
+        VerifyInternalAsync(catalogFile, snapshot.RootPath, trustedThumbprints, filesToSkip, snapshot);
+
+    private static async Task<CatalogVerification> VerifyInternalAsync(string catalogFile, string directory,
+        IEnumerable<string> trustedThumbprints, IEnumerable<string>? filesToSkip, ReadOnlyDirectorySnapshot? suppliedSnapshot)
     {
-        if (!File.Exists(catalogFile))
-            return CatalogVerification.NoSignature;
-
-        CatalogVerification signature = VerifySignature(File.ReadAllBytes(catalogFile), trustedThumbprints);
-        if (signature != CatalogVerification.Success)
-            return signature;
-
-        return await VerifyFilesAsync(catalogFile, directory, filesToSkip ?? Enumerable.Empty<string>())
-            ? CatalogVerification.Success
-            : CatalogVerification.FilesDoNotMatch;
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return CatalogVerification.Failure;
+        ReadOnlyPathLease catalog;
+        try { catalog = ReadOnlyPathLease.OpenFile(catalogFile); }
+        catch (FileNotFoundException) { return CatalogVerification.NoSignature; }
+        catch (DirectoryNotFoundException) { return CatalogVerification.NoSignature; }
+        using (catalog)
+        {
+            // Bound CMS allocation independently from the 1 GiB package limit.
+            if (catalog.Stream!.Length > 64L * 1024 * 1024) return CatalogVerification.Failure;
+            using var bytes = new MemoryStream();
+            catalog.Stream.CopyTo(bytes);
+            CatalogVerification signature = VerifySignature(bytes.ToArray(), trustedThumbprints);
+            if (signature != CatalogVerification.Success) return signature;
+            string[] skipped = (filesToSkip ?? Enumerable.Empty<string>()).ToArray();
+            var skippedNames = new HashSet<string>(skipped, StringComparer.OrdinalIgnoreCase);
+            using var ownSnapshot = suppliedSnapshot == null ? ReadOnlyDirectorySnapshot.Capture(directory,
+                relative => !skippedNames.Contains(Path.GetFileName(relative))) : null;
+            ReadOnlyDirectorySnapshot snapshot = suppliedSnapshot ?? ownSnapshot!;
+            CatalogManifest? manifest = await CatalogManifestReader.ReadAsync(catalogFile);
+            return manifest != null && manifest.Matches(snapshot, skipped, Path.GetRelativePath(Path.GetFullPath(directory), Path.GetFullPath(catalogFile)))
+                ? CatalogVerification.Success : CatalogVerification.FilesDoNotMatch;
+        }
     }
 
     /// <summary>
@@ -93,54 +110,7 @@ public static class CatalogVerifier
         return CatalogVerification.Success;
     }
 
-    private static string EscapeWildcards(string name) =>
-        name.Replace("`", "``").Replace("[", "`[").Replace("]", "`]").Replace("*", "`*").Replace("?", "`?");
-
     private static string NormalizeThumbprint(string thumbprint) =>
         new string(thumbprint.Where(Uri.IsHexDigit).ToArray());
 
-    private static async Task<bool> VerifyFilesAsync(string catalogFile, string directory, IEnumerable<string> filesToSkip)
-    {
-        // A full path: the elevated tray would otherwise also look in its own, possibly writable, directory.
-        string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
-        var startInfo = new ProcessStartInfo(powershell)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        // Paths go through the environment, so quotes in them cannot change the command.
-        startInfo.ArgumentList.Add("-NoProfile");
-        startInfo.ArgumentList.Add("-NonInteractive");
-        startInfo.ArgumentList.Add("-Command");
-        startInfo.ArgumentList.Add(
-            "(Test-FileCatalog -CatalogFilePath $env:CDPIUI_CATALOG -Path $env:CDPIUI_CATALOG_DIRECTORY -FilesToSkip ($env:CDPIUI_CATALOG_SKIP -split '\\|')).ToString()");
-        startInfo.Environment["CDPIUI_CATALOG"] = Path.GetFullPath(catalogFile);
-        startInfo.Environment["CDPIUI_CATALOG_DIRECTORY"] = Path.GetFullPath(directory);
-        // A file name cannot contain "|". Wildcard characters in names are escaped, because
-        // -FilesToSkip treats them as patterns.
-        startInfo.Environment["CDPIUI_CATALOG_SKIP"] = string.Join("|",
-            new[] { "catalog.cat" }.Concat(filesToSkip.Select(EscapeWildcards)));
-
-        using var process = Process.Start(startInfo);
-        if (process == null)
-            return false;
-
-        Task<string> output = process.StandardOutput.ReadToEndAsync();
-        Task<string> errors = process.StandardError.ReadToEndAsync();
-        Task exited = Task.Run(() => process.WaitForExit());
-
-        if (await Task.WhenAny(exited, Task.Delay(FileCheckTimeout)) != exited)
-        {
-            try
-            { process.Kill(); }
-            // The process has just exited or cannot be ended; the check fails either way.
-            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or NotSupportedException) { }
-            return false;
-        }
-
-        await Task.WhenAll(output, errors);
-        return string.Equals(output.Result.Trim(), "Valid", StringComparison.OrdinalIgnoreCase);
-    }
 }

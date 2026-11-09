@@ -35,7 +35,7 @@ internal class ZipService
         try
         {
             await ExtractEntries(zipFilePath, zipFolderToUnpack, verifyDirectory, filesToSkip, mergeTextFiles: false);
-            await VerifyAndPromoteAsync(verifyDirectory, extractTo, VerifyCatalog);
+            await VerifySnapshotAndPromoteAsync(verifyDirectory, extractTo, VerifyCatalog);
         }
         finally
         {
@@ -51,10 +51,13 @@ internal class ZipService
         }
     }
 
-    internal static async Task VerifyAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<string, Task> verify)
+    internal static Task VerifyAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<string, Task> verify) =>
+        VerifySnapshotAndPromoteAsync(sourceDirectory, destinationDirectory, _ => verify(sourceDirectory));
+
+    private static async Task VerifySnapshotAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<ReadOnlyDirectorySnapshot, Task> verify)
     {
         using var snapshot = ReadOnlyDirectorySnapshot.Capture(sourceDirectory);
-        await verify(sourceDirectory);
+        await verify(snapshot);
         PromoteSnapshot(snapshot, destinationDirectory);
     }
 
@@ -248,9 +251,9 @@ internal class ZipService
         return existing.ReadByte() == '\n';
     }
 
-    private static async Task VerifyCatalog(string directory)
+    private static async Task VerifyCatalog(ReadOnlyDirectorySnapshot snapshot)
     {
-        CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(directory, "catalog.cat"), directory);
+        CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(snapshot.RootPath, "catalog.cat"), snapshot);
         switch (catalogCheckResult)
         {
             case CatalogCheckResult.Success:

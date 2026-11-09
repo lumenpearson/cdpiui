@@ -221,8 +221,11 @@ CAUTION: Do not commit `Secret.cs`. Do not use the stub values in a release buil
 
 1. The signature is decoded as CMS. Each signer certificate must be in the trusted thumbprint list. The certificates are self-signed, so the chain is not built.
 2. Each signature must be valid (`CheckSignature(verifySignatureOnly: true)`).
-3. `powershell.exe` from the system directory runs `Test-FileCatalog` with `-FilesToSkip catalog.cat` and the file names that the caller gives (`filesToSkip`). The paths and the names go through environment variables.
-4. The result must be `Valid` in 2 minutes.
+3. A bounded `ReadOnlyDirectorySnapshot` holds the source tree. System Windows PowerShell explicitly imports the system Security module and reads only the catalog's metadata (`Test-FileCatalog -Detailed`); it never receives the tree path. Limits are 2 minutes, 16 Mi characters of output, 64 Ki characters of errors and 64 MiB of CMS data.
+4. `CatalogItems` must match the captured file set exactly, except for `catalog.cat` and literal `filesToSkip` names. `CryptCATAdminCalcHashFromFileHandle2` hashes held file handles using Windows catalog/SIP rules, including PE and empty-file handling. The external cmdlet's Status string is not the trust decision.
+5. `VerifySnapshotAsync` checks a supplied snapshot when the caller will consume its files afterwards. Core signed promotion verifies and copies the same snapshot. Later files and conversions of empty subdirectories do not join that file set or trigger external traversal.
+
+Existing SHA1/version 1 catalogs remain supported alongside SHA256/version 2 for compatibility. Rejecting SHA1 requires a separate policy change and migration of published packages. Catalog hashes follow Windows SIP rules rather than raw SHA256 of every PE byte. This mechanism requires Windows; non-Windows `VerifyAsync` returns Failure.
 
 The result is a `CatalogVerification` value: `Success`, `NoSignature`, `NotTrustedSignature`, `FilesDoNotMatch` or `Failure`.
 

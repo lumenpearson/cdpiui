@@ -283,7 +283,7 @@ The catalog check (`ZipService.VerifyCatalog`, `CatalogVerifier.VerifyAsync`) ha
 
 1. The file `catalog.cat` must be in the extraction root. If it is missing, the result is `NoSignature`.
 2. Each signer certificate of the catalog must be in `Secret.TrustedCertificates` (SHA-1 thumbprints). The signature must be valid. The chain is not built.
-3. `Test-FileCatalog` (Windows PowerShell) must give `Valid` for the extracted folder. Only `catalog.cat` is skipped. The time limit is 2 minutes.
+3. A bounded readonly snapshot captures the extracted files. Windows PowerShell reads only the signed catalog's member metadata without traversing the folder. Windows catalog/SIP hashes are calculated from held handles; the catalog must match the snapshot exactly, except for `catalog.cat`. The external process has a 2-minute limit. Verification and subsequent copying use the same snapshot.
 
 If one step fails, the extraction folder is deleted and the installation fails. No file reaches the item folder.
 `catalog.cat` moves into the item folder with the other files. `ExecutableTrust` uses it later.
