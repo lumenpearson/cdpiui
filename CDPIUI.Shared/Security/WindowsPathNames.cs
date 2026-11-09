@@ -8,7 +8,7 @@ namespace CDPIUI.Shared.Security;
 #endif
 
 /// <summary>Rejects names whose Win32 interpretation differs from the checked path.</summary>
-internal static class WindowsPathNames
+public static class WindowsPathNames
 {
     public static bool IsOrdinaryName(string name)
     {

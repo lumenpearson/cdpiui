@@ -115,7 +115,7 @@ public class FileSystemService
 
     /// <summary>
     /// Writes text to a temporary file next to the target and swaps it in, so readers never
-    /// see a half-written file and a crash keeps the previous content
+    /// see a half-written file: the name changes from the complete old file to the complete new file.
     /// </summary>
     /// <param name="path">Target file</param>
     /// <param name="contents">Text to write</param>

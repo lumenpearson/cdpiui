@@ -4,6 +4,7 @@ using CDPIUI.Core.LScript;
 using CDPIUI.Core.System;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Store;
 
@@ -102,7 +103,7 @@ public class LocalItemsInstallerHelper
                 }
             }
 
-            if (localItemInitModel.StoreId == SharedConstants.ApplicationStoreId || localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
+            if (StoreItemIds.IsProtected(localItemInitModel.StoreId))
             {
                 throw new AccessViolationException("StoreId is protected by security policy");
             }
@@ -111,7 +112,7 @@ public class LocalItemsInstallerHelper
                 throw new InvalidDataException("StoreId is not a valid identifier");
             }
 
-            Directory.Delete(tempDestination, recursive: true);
+            DeleteDirectory(tempDestination);
 
             if (!isCatalogCheckRequired)
                 localItemInitModel.ExecutableFile = null;
@@ -150,8 +151,7 @@ public class LocalItemsInstallerHelper
                 return;
             }
             if (!StoreItemIds.IsValid(localItemInitModel.StoreId) ||
-                localItemInitModel.StoreId == SharedConstants.ApplicationStoreId ||
-                localItemInitModel.StoreId == SharedConstants.LocalUserItemsId)
+                StoreItemIds.IsProtected(localItemInitModel.StoreId))
             {
                 throw new InvalidDataException("StoreId is not allowed for a local pack");
             }
@@ -173,13 +173,18 @@ public class LocalItemsInstallerHelper
     {
         try
         {
-            if (Directory.Exists(path))
-                Directory.Delete(path, recursive: true);
+            DeleteDirectory(path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Logger.Instance.CreateWarningLog(nameof(LocalItemsInstallerHelper), $"Cannot delete \"{path}\": {ex.Message}");
         }
+    }
+
+    private static void DeleteDirectory(string path)
+    {
+        if (OperatingSystem.IsWindows()) WindowsFileRemoval.DeleteDirectoryIfExists(path);
+        else if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
     }
 
     private string HandleError(Exception ex)
