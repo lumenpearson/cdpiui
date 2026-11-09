@@ -12,7 +12,7 @@ namespace Update;
 namespace CDPIUI.Shared.Security;
 #endif
 
-/// <summary>Windows handles that reject links and hold a file and its parents against mutation.</summary>
+/// <summary>Windows file leases with handle-relative traversal. Empty directory types are checked at child operations.</summary>
 public sealed class ReadOnlyPathLease : IDisposable
 {
     private readonly List<SafeFileHandle> _directories = new();
@@ -25,6 +25,7 @@ public sealed class ReadOnlyPathLease : IDisposable
     public FileStream? Stream { get; private set; }
 
     private ReadOnlyPathLease() { }
+    internal SafeFileHandle DirectoryHandle => _directories.Count > 0 ? _directories[_directories.Count - 1] : throw new ObjectDisposedException(nameof(ReadOnlyPathLease));
 
     public static ReadOnlyPathLease OpenDirectory(string path) => Open(path, directoryOnly: true);
     public static ReadOnlyPathLease OpenFile(string path) => Open(path, directoryOnly: false);
@@ -33,49 +34,22 @@ public sealed class ReadOnlyPathLease : IDisposable
         var lease = createIfMissing ? OpenOrCreateDirectory(path) : OpenDirectory(path);
         try
         {
-            string fullPath = Path.GetFullPath(path);
             // A pinned child keeps the directory nonempty while namespace changes are
-            // allowed. DeleteOnClose cleans up this exact object on normal exit or crash.
-            lease._anchor = new FileStream(Path.Combine(fullPath, ".cdpiui-directory-lease-" + Guid.NewGuid().ToString("N")),
-                FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
-            SafeFileHandle replacement = OpenHandle(fullPath, 0x0081, directory: true, share: 3);
-            int leaf = lease._directories.Count - 1;
-            lease._directories[leaf].Dispose();
-            lease._directories[leaf] = replacement;
-            return lease;
-        }
-        catch { lease.Dispose(); throw; }
-    }
-    public static ReadOnlyPathLease OpenOrCreateDirectory(string path)
-    {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            throw new PlatformNotSupportedException("A Windows directory lease is required.");
-        string current = Path.GetFullPath(path);
-        WindowsPathNames.RequireOrdinaryAbsolutePath(current);
-        var missing = new Stack<string>();
-        while (!Directory.Exists(current))
-        {
-            if (missing.Count >= 64) throw new InvalidDataException("Too many missing parent directories.");
-            missing.Push(current);
-            current = Path.GetDirectoryName(current) ?? throw new DirectoryNotFoundException(path);
-        }
-        ReadOnlyPathLease lease = OpenDirectory(current);
-        try
-        {
-            while (missing.Count > 0)
+            // allowed. Create relative to the held object, never through its mutable name.
+            WindowsFileHandles.RequireOrdinaryDirectory(lease.DirectoryHandle);
+            SafeFileHandle anchor = WindowsFileHandles.OpenRelative(lease.DirectoryHandle,
+                ".cdpiui-directory-lease-" + Guid.NewGuid().ToString("N"), 0xC0010000, 0, 2, false, out _, deleteOnClose: true);
+            try
             {
-                string next = missing.Pop();
-                // Only one immediate child is created while its ordinary parent is held.
-                // If another process supplied that child as a link, the next open rejects it.
-                Directory.CreateDirectory(next);
-                var child = OpenDirectory(next);
-                lease.Dispose();
-                lease = child;
+                WindowsFileHandles.RequireOrdinaryDirectory(lease.DirectoryHandle);
+                lease._anchor = new FileStream(anchor, FileAccess.ReadWrite);
             }
+            catch { anchor.Dispose(); throw; }
             return lease;
         }
         catch { lease.Dispose(); throw; }
     }
+    public static ReadOnlyPathLease OpenOrCreateDirectory(string path) => Open(path, directoryOnly: true, createDirectories: true);
     public static ReadOnlyPathLease OpenFileInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, false);
     public static ReadOnlyPathLease OpenDirectoryInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, true);
 
@@ -94,13 +68,13 @@ public sealed class ReadOnlyPathLease : IDisposable
         var lease = new ReadOnlyPathLease { _parent = parent };
         try
         {
-            lease.OpenLeaf(fullPath, directory);
+            lease.OpenLeaf(fullPath, directory, parent.DirectoryHandle);
             return lease;
         }
         catch { lease.Dispose(); throw; }
     }
 
-    private static ReadOnlyPathLease Open(string path, bool directoryOnly)
+    private static ReadOnlyPathLease Open(string path, bool directoryOnly, bool createDirectories = false)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("A Windows file lease is required.");
@@ -110,40 +84,39 @@ public sealed class ReadOnlyPathLease : IDisposable
             string fullPath = Path.GetFullPath(path);
             WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
             string parent = directoryOnly ? fullPath : Path.GetDirectoryName(fullPath)!;
-            var chain = new List<string>();
-            for (string? current = parent; current != null; current = Path.GetDirectoryName(current))
-                chain.Add(current);
-            chain.Reverse();
-            foreach (string directory in chain)
+            string root = Path.GetPathRoot(fullPath)!;
+            SafeFileHandle rootHandle = OpenHandle(root, 0x0081, directory: true, share: 3);
+            lease._directories.Add(rootHandle);
+            WindowsFileHandles.RequireOrdinaryDirectory(rootHandle);
+            string relative = Path.GetRelativePath(root, parent);
+            string[] components = relative == "." ? Array.Empty<string>()
+                : relative.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            if (components.Length > 256) throw new InvalidDataException("The directory chain is too deep.");
+            foreach (string name in components)
             {
-                SafeFileHandle handle = OpenHandle(directory, 0x0081, directory: true);
+                SafeFileHandle heldParent = lease.DirectoryHandle;
+                WindowsFileHandles.RequireOrdinaryDirectory(heldParent);
+                SafeFileHandle handle = WindowsFileHandles.OpenRelative(heldParent, name, 0x0081, 3,
+                    createDirectories ? 3u : 1u, true, out _);
                 lease._directories.Add(handle);
-                Information info = GetInformation(handle);
-                if ((info.Attributes & 0x410) != 0x10)
-                    throw new UnauthorizedAccessException($"{directory} is not an ordinary directory.");
+                WindowsFileHandles.RequireOrdinaryDirectory(handle);
+                WindowsFileHandles.RequireOrdinaryDirectory(heldParent);
             }
-            if (directoryOnly) lease._directoryPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            else lease.OpenLeaf(fullPath, false);
-            // A deny-write directory handle also prevents renaming unrelated children.
-            // Keep that restriction only on the leaf directory. Every ancestor is pinned
-            // by its held child, so it cannot become empty (a prerequisite for setting a
-            // directory reparse point). Deny-delete still prevents replacing the ancestor.
-            for (int i = 0; i < chain.Count - 1; i++)
-            {
-                SafeFileHandle replacement = OpenHandle(chain[i], 0x0081, directory: true, share: 3);
-                lease._directories[i].Dispose();
-                lease._directories[i] = replacement;
-            }
+            if (directoryOnly) lease._directoryPath = fullPath;
+            else lease.OpenLeaf(fullPath, false, lease.DirectoryHandle);
             return lease;
         }
         catch { lease.Dispose(); throw; }
     }
 
-    private void OpenLeaf(string fullPath, bool directory)
+    private void OpenLeaf(string fullPath, bool directory, SafeFileHandle parent)
     {
-        SafeFileHandle handle = OpenHandle(fullPath, directory ? 0x0081u : 0x80000000u, directory);
+        WindowsFileHandles.RequireOrdinaryDirectory(parent);
+        SafeFileHandle handle = WindowsFileHandles.OpenRelative(parent, Path.GetFileName(fullPath),
+            directory ? 0x0081u : 0x80000000u, directory ? 3u : 1u, 1, directory, out _);
         try
         {
+            WindowsFileHandles.RequireOrdinaryDirectory(parent);
             Information info = GetInformation(handle);
             if (directory ? (info.Attributes & 0x410) != 0x10 : (info.Attributes & 0x410) != 0 || info.Links != 1)
                 throw new UnauthorizedAccessException($"{fullPath} is a link or is not an ordinary {(directory ? "directory" : "file")}.");

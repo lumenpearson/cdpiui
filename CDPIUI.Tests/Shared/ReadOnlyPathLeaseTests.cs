@@ -185,6 +185,67 @@ public sealed class ReadOnlyPathLeaseTests : IDisposable
     }
 
     [Fact]
+    public void MutationLeaseKeepsAnInitiallyEmptyDirectoryOrdinary()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string empty = Path.Combine(_root, "empty");
+        using (var lease = ReadOnlyPathLease.OpenDirectoryForMutation(empty))
+        {
+            using var attributes = CreateFileW(empty, 0x100, 7, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero);
+            Assert.False(attributes.IsInvalid);
+            byte[] data = JunctionData(_root);
+            Assert.False(DeviceIoControl(attributes, 0x000900A4, data, data.Length, IntPtr.Zero, 0, out _, IntPtr.Zero));
+            Assert.Equal(145, Marshal.GetLastWin32Error());
+        }
+        Assert.Empty(Directory.EnumerateFileSystemEntries(empty));
+    }
+
+    [Fact]
+    public void ChangedEmptyParentIsRejectedBeforeOpeningItsChild()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string empty = Path.Combine(_root, "empty");
+        string target = Path.Combine(_root, "other");
+        Directory.CreateDirectory(empty);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "data.bin"), "other bytes");
+        using var parent = ReadOnlyPathLease.OpenDirectory(empty);
+        using var attributes = CreateFileW(empty, 0x100, 7, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero);
+        Assert.False(attributes.IsInvalid);
+        byte[] data = JunctionData(target);
+        Assert.True(DeviceIoControl(attributes, 0x000900A4, data, data.Length, IntPtr.Zero, 0, out _, IntPtr.Zero));
+        try
+        {
+            // Even an already-converted root must never redirect the native child
+            // creation to the junction target, before any post-open check can run.
+            Exception? error = Record.Exception(() =>
+            {
+                using var created = WindowsFileHandles.OpenRelative(parent.DirectoryHandle, "must-not-escape.bin",
+                    0xC0010000, 0, 2, false, out _, deleteOnClose: true);
+                Assert.False(File.Exists(Path.Combine(target, "must-not-escape.bin")));
+            });
+            if (error != null) Assert.True(error is IOException or UnauthorizedAccessException, error.ToString());
+            Assert.False(File.Exists(Path.Combine(target, "must-not-escape.bin")));
+            Assert.Throws<UnauthorizedAccessException>(() =>
+            {
+                using var child = ReadOnlyPathLease.OpenFileInHeldDirectory(Path.Combine(empty, "data.bin"), parent);
+            });
+            Assert.Throws<UnauthorizedAccessException>(() => WindowsFileHandles.Enumerate(parent.DirectoryHandle).ToArray());
+            Assert.Throws<UnauthorizedAccessException>(() => ReadOnlyPathLease.OpenOrCreateDirectory(Path.Combine(empty, "new")));
+            Assert.Throws<UnauthorizedAccessException>(() => ReadOnlyPathLease.OpenDirectoryForMutation(empty));
+            Assert.Throws<UnauthorizedAccessException>(() => WritablePathLease.Open(Path.Combine(empty, "new.bin")));
+            Assert.Equal(new[] { "data.bin" }, Directory.EnumerateFileSystemEntries(target).Select(Path.GetFileName));
+        }
+        finally
+        {
+            // Restore only the tag set by this test, through the same object handle.
+            byte[] header = new byte[8];
+            BitConverter.GetBytes(0xA0000003u).CopyTo(header, 0);
+            Assert.True(DeviceIoControl(attributes, 0x000900AC, header, header.Length, IntPtr.Zero, 0, out _, IntPtr.Zero));
+        }
+    }
+
+    [Fact]
     public void ExistingWriterIsRejected()
     {
         if (!OperatingSystem.IsWindows()) return;

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <InternalsVisibleTo Include="CDPIUI.Tests" />
   </ItemGroup>
 
   <ItemGroup>
