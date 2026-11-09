@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CDPIUI.Shared.Logger;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Shared.Basic.Filesystem;
 
@@ -120,6 +121,16 @@ public class FileSystemService
     /// <param name="contents">Text to write</param>
     public static void WriteAllTextAtomic(string path, string contents)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            WindowsAtomicFile.WriteAsync(path, stream =>
+            {
+                using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+                writer.Write(contents);
+                return Task.CompletedTask;
+            }).GetAwaiter().GetResult();
+            return;
+        }
         string fullPath = Path.GetFullPath(path);
         string tempPath = fullPath + ".tmp-" + Guid.NewGuid().ToString("N");
         try
@@ -147,6 +158,13 @@ public class FileSystemService
         // Creating the destination first would truncate the source when both are the same file.
         if (string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(destinationPath), StringComparison.OrdinalIgnoreCase))
             return;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using var sourceLease = ReadOnlyPathLease.OpenFile(sourcePath);
+            await WindowsAtomicFile.WriteAsync(destinationPath, stream => sourceLease.Stream!.CopyToAsync(stream)).ConfigureAwait(false);
+            return;
+        }
 
         using Stream source = File.OpenRead(sourcePath);
         using Stream destination = File.Create(destinationPath);
