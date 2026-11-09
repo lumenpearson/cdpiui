@@ -5,8 +5,13 @@ namespace CDPIUI.Core.Features;
 /// <summary>Publishes a prepared link and restores the displaced file if publication fails.</summary>
 internal static class LinkFileTransaction
 {
-    internal static void Restore(string destination, string? backup)
+    internal static void Restore(string destination, string? backup, string? expectedTarget = null)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            WindowsLinkFileTransaction.Restore(destination, backup, expectedTarget);
+            return;
+        }
         if (backup == null)
         {
             File.Delete(destination);
@@ -49,8 +54,9 @@ internal static class LinkFileTransaction
         }
     }
 
-    internal static string? Replace(string destination, bool replacingLink, Action<string> createLink)
+    internal static string? Replace(string destination, bool replacingLink, Action<string> createLink, string? expectedTarget = null, bool symbolic = false, string? previousTarget = null)
     {
+        if (OperatingSystem.IsWindows()) return WindowsLinkFileTransaction.Replace(destination, replacingLink, createLink, expectedTarget, symbolic, previousTarget);
         string temporary = $"{destination}.{Guid.NewGuid():N}.link";
         string? displaced = null;
         bool published = false;
