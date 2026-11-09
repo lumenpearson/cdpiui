@@ -14,12 +14,17 @@ public enum CatalogCheckResult
 
 public class CertificateCheck
 {
-    public static async Task<CatalogCheckResult> CheckCatalog(string catalogFile, string compareDirectory)
+    public static Task<CatalogCheckResult> CheckCatalog(string catalogFile, string compareDirectory) =>
+        CheckCatalogCore(() => CatalogVerifier.VerifyAsync(catalogFile, compareDirectory, Secret.TrustedCertificates));
+
+    internal static Task<CatalogCheckResult> CheckCatalog(string catalogFile, ReadOnlyDirectorySnapshot snapshot) =>
+        CheckCatalogCore(() => CatalogVerifier.VerifySnapshotAsync(catalogFile, snapshot, Secret.TrustedCertificates));
+
+    private static async Task<CatalogCheckResult> CheckCatalogCore(Func<Task<CatalogVerification>> verify)
     {
         try
         {
-            CatalogVerification verification = await CatalogVerifier.VerifyAsync(
-                catalogFile, compareDirectory, Secret.TrustedCertificates);
+            CatalogVerification verification = await verify();
 
             return verification switch
             {
