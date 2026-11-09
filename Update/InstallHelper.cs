@@ -34,6 +34,8 @@ public class InstallHelper
     private string _targetExecutable;
     private readonly List<string> _skipFiles = new List<string> { "Update.exe", "catalog.cat" };
     private readonly Dictionary<string, byte[]> _stagedHashes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _lifecycleGate = new();
+    private bool _running;
 
     public Action<InstallState> InstallationStateChanged;
     public Action<double> ProgressChanged;
@@ -48,14 +50,23 @@ public class InstallHelper
 
     public void Init(string archiveFilePath, string targetFolder, string targetExecutable)
     {
-        _archiveFilePath = archiveFilePath;
-        _targetFolder = targetFolder;
-        _targetExecutable = targetExecutable;
-        FinishStatus = InstallError.None;
+        lock (_lifecycleGate)
+        {
+            if (_running) throw new InvalidOperationException("The running installation cannot be reconfigured.");
+            _archiveFilePath = archiveFilePath;
+            _targetFolder = targetFolder;
+            _targetExecutable = targetExecutable;
+            FinishStatus = InstallError.None;
+        }
     }
 
     public void StartInstall()
     {
+        lock (_lifecycleGate)
+        {
+            if (_running) return;
+            _running = true;
+        }
         Task.Run(async () =>
         {
             try
@@ -69,6 +80,7 @@ public class InstallHelper
                 ErrorOccurred?.Invoke(FinishStatus, ex.Message);
                 InstallationStateChanged?.Invoke(InstallState.Error);
             }
+            finally { lock (_lifecycleGate) _running = false; }
         });
     }
 
@@ -90,7 +102,13 @@ public class InstallHelper
             return;
         }
         using (packageLease)
-            await RunHeldInstallAsync();
+            await UpdateInstallationGate.RunAsync(_targetFolder, RunHeldInstallAsync, error =>
+            {
+                FinishStatus = InstallError.PermissionDenied;
+                Log($"Cannot acquire the update directory lock: {error}");
+                ErrorOccurred?.Invoke(FinishStatus, error.Message);
+                InstallationStateChanged?.Invoke(InstallState.Error);
+            });
     }
 
     private async Task RunHeldInstallAsync()
@@ -492,7 +510,7 @@ public class InstallHelper
         if (valid)
         {
             string first = Path.GetRelativePath(root, checkedPath).Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
-            valid = !new[] { ".update-staging", ".update-backup", ".update-manifest", "update.log" }
+            valid = !new[] { ".update-staging", ".update-backup", ".update-manifest", "update.log", UpdateInstallationGate.LockFileName }
                 .Contains(first, StringComparer.OrdinalIgnoreCase);
         }
         destination = valid ? checkedPath : null;

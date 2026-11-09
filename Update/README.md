@@ -45,6 +45,8 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
 
 `Update/InstallHelper.cs` coordinates the procedure; `UpdateFileTransaction` applies and rolls back Windows files through held handles. The procedure starts when the window opens.
 
+Before stopping the application, `UpdateInstallationGate` acquires an exclusive no-follow `<install>\.update-lock`. It remains held across every await, staging/apply/cleanup and the restart attempt. Another updater for the same directory cannot enter the procedure or stop the tray. The lock must be an ordinary single-name empty file before delete-on-close is set; links and nonempty files remain untouched and block installation. Operation errors release the lock. Different installation directories have independent locks. `.update-lock` is reserved and rejected in patches. Repeated `StartInstall` calls on one instance are ignored, and `Init` rejects reconfiguration while it is running.
+
 1. **Stop the application.**
    - Before stopping the tray, the updater acquires its own read-only lease on the package and its parents. It keeps the lease until the procedure ends, independently of the tray lifetime.
    - The tool sets the `Global\CDPIUI_TrayShutdown` event. The tray then exits as from its menu: it stops the components and restores the proxy settings.
