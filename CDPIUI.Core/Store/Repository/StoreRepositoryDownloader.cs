@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.Network;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Secrets;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Store.Repository;
 
@@ -45,7 +46,8 @@ internal static class StoreRepositoryDownloader
                 useStoreUserAgent: true,
                 completionOption: HttpCompletionOption.ResponseContentRead);
 
-            File.Delete(tempZipPath);
+            if (OperatingSystem.IsWindows()) WindowsFileRemoval.DeleteFileIfExists(tempZipPath);
+            else File.Delete(tempZipPath);
 
             return true;
         }
@@ -78,12 +80,17 @@ internal static class StoreRepositoryDownloader
                     completionOption: HttpCompletionOption.ResponseContentRead);
             }
 
-            Directory.CreateDirectory(newFolder);
+            ArchivePaths.EnsureDirectoryExists(newFolder);
             ExtractWithoutRootFolder(tempZipPath, newFolder);
 
-            if (Directory.Exists(targetFolder))
-                Directory.Delete(targetFolder, recursive: true);
-            Directory.Move(newFolder, targetFolder);
+            if (OperatingSystem.IsWindows())
+                WindowsDirectoryTransaction.Replace(newFolder, targetFolder, cleanupFailed: (path, error) =>
+                    Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Previous cache retained at \"{path}\": {error.Message}"));
+            else
+            {
+                if (Directory.Exists(targetFolder)) Directory.Delete(targetFolder, recursive: true);
+                Directory.Move(newFolder, targetFolder);
+            }
         }
         finally
         {
@@ -113,7 +120,7 @@ internal static class StoreRepositoryDownloader
 
             string? destDir = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrEmpty(destDir))
-                Directory.CreateDirectory(destDir);
+                ArchivePaths.EnsureDirectoryExists(destDir);
 
             ArchivePaths.EnsureNoReparsePoints(destinationFolder, destinationPath);
             ArchivePaths.ExtractToFileBounded(entry, destinationPath);
@@ -123,17 +130,20 @@ internal static class StoreRepositoryDownloader
     private static void DeleteTemporaryFiles(string tempZipPath, string newFolder)
     {
         try
-        { File.Delete(tempZipPath); }
-        catch (IOException ex)
+        {
+            if (OperatingSystem.IsWindows()) WindowsFileRemoval.DeleteFileIfExists(tempZipPath);
+            else File.Delete(tempZipPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary archive {tempZipPath}: {ex.Message}");
         }
         try
         {
-            if (Directory.Exists(newFolder))
-                Directory.Delete(newFolder, recursive: true);
+            if (OperatingSystem.IsWindows()) WindowsFileRemoval.DeleteDirectoryIfExists(newFolder);
+            else if (Directory.Exists(newFolder)) Directory.Delete(newFolder, recursive: true);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary folder {newFolder}: {ex.Message}");
         }

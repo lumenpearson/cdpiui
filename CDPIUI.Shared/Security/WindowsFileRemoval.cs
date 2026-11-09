@@ -27,6 +27,27 @@ public static class WindowsFileRemoval
     public static bool DeleteDirectoryIfExists(string path) => DeleteDirectory(path, requireEmpty: false);
     public static bool DeleteEmptyDirectoryIfExists(string path) => DeleteDirectory(path, requireEmpty: true);
 
+    internal static void DeleteHeldDirectory(SafeFileHandle root, string ownAnchorName, Action closeOwnAnchor)
+    {
+        var entries = new List<Entry>();
+        try
+        {
+            WindowsFileHandles.RequireOrdinaryDirectory(root);
+            int count = 0;
+            Capture(root, 0, entries, ref count, ownAnchorName);
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                if (entries[i].Directory) WindowsFileHandles.RequireOrdinaryDirectory(entries[i].Handle);
+                MarkForDeletion(entries[i].Handle);
+                entries[i].Handle.Dispose();
+            }
+            closeOwnAnchor();
+            WindowsFileHandles.RequireOrdinaryDirectory(root);
+            MarkForDeletion(root);
+        }
+        finally { for (int i = entries.Count - 1; i >= 0; i--) entries[i].Handle.Dispose(); }
+    }
+
     private static bool DeleteDirectory(string path, bool requireEmpty)
     {
         string full = CheckedPath(path);
@@ -79,10 +100,11 @@ public static class WindowsFileRemoval
         return true;
     }
 
-    private static void Capture(SafeFileHandle directory, int depth, List<Entry> entries, ref int count)
+    private static void Capture(SafeFileHandle directory, int depth, List<Entry> entries, ref int count, string? ignoredRootName = null)
     {
         foreach (WindowsFileHandles.Entry item in WindowsFileHandles.Enumerate(directory))
         {
+            if (depth == 0 && string.Equals(item.Name, ignoredRootName, StringComparison.OrdinalIgnoreCase)) continue;
             if (++count > MaxEntries || depth >= MaxDepth) throw new InvalidDataException("The removal tree exceeds its entry or depth limit.");
             bool isDirectory = (item.Attributes & FileAttributes.Directory) != 0;
             if (isDirectory && (item.Attributes & FileAttributes.ReparsePoint) != 0)

@@ -6,6 +6,7 @@ using CDPIUI.Shared;
 using CDPIUI.Shared.Models;
 using CDPIUI.Shared.PrettyErrorConversionService;
 using CDPIUI.Shared.Basic.Filesystem;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Store;
 
@@ -134,6 +135,12 @@ internal static class StoreItemFolders
     // The previous version is restored when the new folder cannot be moved in.
     private static void ReplaceItemFolder(string itemFolder, string packFilePath)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            WindowsDirectoryTransaction.Replace(packFilePath, itemFolder, cleanupFailed: (path, error) =>
+                Logger.Instance.CreateWarningLog(nameof(StoreHelper), $"Previous version retained at \"{path}\": {error.Message}"));
+            return;
+        }
         string? previous = null;
         if (Directory.Exists(itemFolder))
         {
