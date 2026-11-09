@@ -5,6 +5,7 @@ using CDPIUI.Core.Store.ViewModels;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Models;
 using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Basic.Filesystem;
 
 namespace CDPIUI.Core.Store;
 
@@ -16,21 +17,22 @@ internal static class StoreItemFolders
     /// <summary>
     /// Deletes the folder of an item, retrying while its files are still in use.
     /// </summary>
-    public static async Task DeleteItemDirectoryAsync(string directory)
+    public static async Task<bool> DeleteItemDirectoryAsync(string itemId, string directory)
     {
         for (int attempt = 1; ; attempt++)
         {
             try
             {
-                Directory.Delete(directory, recursive: true);
-                break;
+                StoreItemDirectoryOperations.Delete(Directories.StoreItemsDirectory, itemId, directory);
+                return true;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                if (attempt == 5)
+                int code = ex.HResult & 0xFFFF;
+                if (attempt == 5 || ex is not IOException || (code != 32 && code != 33 && code != 145))
                 {
                     Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Cannot delete \"{directory}\": {ex.Message}");
-                    break;
+                    return false;
                 }
                 await Task.Delay(500 * attempt);
             }
@@ -44,17 +46,14 @@ internal static class StoreItemFolders
     public static void DeleteFolderWithoutRecord(string itemId)
     {
         if (!StoreItemIds.IsValid(itemId) ||
-            itemId == SharedConstants.ApplicationStoreId ||
-            itemId == SharedConstants.LocalUserItemsId ||
+            StoreItemIds.IsProtected(itemId) ||
             DatabaseHelper.Instance.GetItemById(itemId) != null)
             return;
 
         string itemFolder = Path.Combine(Directories.StoreItemsDirectory, itemId);
-        if (!Directory.Exists(itemFolder) || !StoreItemIds.IsItemFolder(itemFolder))
-            return;
         try
         {
-            Directory.Delete(itemFolder, recursive: true);
+            StoreItemDirectoryOperations.Delete(Directories.StoreItemsDirectory, itemId, itemFolder);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -87,17 +86,9 @@ internal static class StoreItemFolders
 
     public static OperationResultModel<EmptyResult> CreateItemDirectory(string itemId, string itemFolder, bool clean)
     {
-        if (itemId == SharedConstants.ApplicationStoreId || itemId == SharedConstants.LocalUserItemsId)
-            clean = false;
-
         try
         {
-            if (Path.Exists(itemFolder) && !string.Equals(itemFolder, Directories.DataDirectory, StringComparison.OrdinalIgnoreCase))
-            {
-                if (clean)
-                    Directory.Delete(itemFolder, recursive: true);
-            }
-            Directory.CreateDirectory(itemFolder);
+            StoreItemDirectoryOperations.Create(Directories.StoreItemsDirectory, itemId, itemFolder, clean);
         }
         catch (Exception ex)
         {
@@ -113,6 +104,9 @@ internal static class StoreItemFolders
     {
         try
         {
+            if (!StoreItemIds.MatchesItemFolder(Directories.StoreItemsDirectory, itemId, itemFolder) ||
+                (StoreItemIds.IsProtected(itemId) && itemId != SharedConstants.ApplicationStoreId))
+                throw new UnauthorizedAccessException("The local pack cannot replace this Store folder.");
             if (itemId != SharedConstants.ApplicationStoreId)
             {
                 // The installed version is replaced only by a pack that can be installed.
@@ -124,7 +118,7 @@ internal static class StoreItemFolders
             }
             else
             {
-                File.Copy(packFilePath, Path.Combine(itemFolder, "patch.cdpipatch"), overwrite: true);
+                FileSystemService.CopyFileAsync(packFilePath, Path.Combine(itemFolder, "patch.cdpipatch")).GetAwaiter().GetResult();
             }
         }
         catch (Exception ex)
