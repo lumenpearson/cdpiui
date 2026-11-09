@@ -2,6 +2,7 @@ using System.Diagnostics;
 using CDPIUI.Core.Basic;
 using CDPIUI.Core.Store.MSI;
 using CDPIUI.Shared.Exceptions;
+using CDPIUI.Shared.Security;
 using static CDPIUI.Core.Store.MSI.MsiInstallerService;
 
 namespace CDPIUI.Core.LScript;
@@ -77,7 +78,7 @@ public class LScriptMsiHandler()
 
         string msiPath = Path.Combine(filepath);
         string msiGUID = Guid.NewGuid().ToString();
-        MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath);
+        MsiInstallerService msiInstallerHelper = new(msiGUID, msiPath, Sha256File.Compute(msiPath));
         msiInstallerHelper.callbackAction += HandleMsiInstallerMessage;
         MsiCallback callback = await msiInstallerHelper.Run(cancellationToken);
         msiInstallerHelper.callbackAction -= HandleMsiInstallerMessage;

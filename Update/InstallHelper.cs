@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -31,6 +33,9 @@ public class InstallHelper
     private string _targetFolder;
     private string _targetExecutable;
     private readonly List<string> _skipFiles = new List<string> { "Update.exe", "catalog.cat" };
+    private readonly Dictionary<string, byte[]> _stagedHashes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _lifecycleGate = new();
+    private bool _running;
 
     public Action<InstallState> InstallationStateChanged;
     public Action<double> ProgressChanged;
@@ -45,14 +50,23 @@ public class InstallHelper
 
     public void Init(string archiveFilePath, string targetFolder, string targetExecutable)
     {
-        _archiveFilePath = archiveFilePath;
-        _targetFolder = targetFolder;
-        _targetExecutable = targetExecutable;
-        FinishStatus = InstallError.None;
+        lock (_lifecycleGate)
+        {
+            if (_running) throw new InvalidOperationException("The running installation cannot be reconfigured.");
+            _archiveFilePath = archiveFilePath;
+            _targetFolder = targetFolder;
+            _targetExecutable = targetExecutable;
+            FinishStatus = InstallError.None;
+        }
     }
 
     public void StartInstall()
     {
+        lock (_lifecycleGate)
+        {
+            if (_running) return;
+            _running = true;
+        }
         Task.Run(async () =>
         {
             try
@@ -66,10 +80,38 @@ public class InstallHelper
                 ErrorOccurred?.Invoke(FinishStatus, ex.Message);
                 InstallationStateChanged?.Invoke(InstallState.Error);
             }
+            finally { lock (_lifecycleGate) _running = false; }
         });
     }
 
     private async Task RunInstallAsync()
+    {
+        ReadOnlyPathLease packageLease;
+        try
+        {
+            // Acquire before asking the tray to exit. Its handles may then close, but the
+            // updater already owns its own read-only lease on the same package and parents.
+            packageLease = ReadOnlyPathLease.OpenFile(_archiveFilePath);
+        }
+        catch (Exception ex)
+        {
+            FinishStatus = File.Exists(_archiveFilePath) ? InstallError.PermissionDenied : InstallError.FileNotFound;
+            Log($"Cannot hold the update package: {ex}");
+            ErrorOccurred?.Invoke(FinishStatus, ex.Message);
+            InstallationStateChanged?.Invoke(InstallState.Error);
+            return;
+        }
+        using (packageLease)
+            await UpdateInstallationGate.RunAsync(_targetFolder, RunHeldInstallAsync, error =>
+            {
+                FinishStatus = InstallError.PermissionDenied;
+                Log($"Cannot acquire the update directory lock: {error}");
+                ErrorOccurred?.Invoke(FinishStatus, error.Message);
+                InstallationStateChanged?.Invoke(InstallState.Error);
+            });
+    }
+
+    private async Task RunHeldInstallAsync()
     {
         InstallationStateChanged?.Invoke(InstallState.Prepare);
         Log("Starting extraction process");
@@ -141,6 +183,7 @@ public class InstallHelper
     /// <returns>Relative paths of the staged files, or null if the update cannot be applied</returns>
     internal async Task<List<string>> StageAsync()
     {
+        _stagedHashes.Clear();
         try
         {
             if (string.IsNullOrWhiteSpace(_archiveFilePath) || !File.Exists(_archiveFilePath))
@@ -149,12 +192,36 @@ public class InstallHelper
                 return null;
             }
 
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, _targetFolder);
             if (!Directory.Exists(_targetFolder))
-                Directory.CreateDirectory(_targetFolder);
+                ArchivePaths.EnsureDirectoryExists(_targetFolder);
 
-            DeleteDirectory(StagingFolder);
-            DeleteDirectory(BackupFolder);
-            Directory.CreateDirectory(StagingFolder);
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, StagingFolder);
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, BackupFolder);
+            bool windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (windows)
+            {
+                try { WindowsFileRemoval.DeleteEmptyDirectoryIfExists(BackupFolder); }
+                catch (IOException error) when ((error.HResult & 0xFFFF) == 145)
+                {
+                    Log("An earlier update backup is still present. Recover it before starting another update.");
+                    FinishStatus = InstallError.NoOldVersion;
+                    return null;
+                }
+            }
+            else if (Directory.Exists(BackupFolder) && Directory.EnumerateFileSystemEntries(BackupFolder).Any())
+            {
+                Log("An earlier update backup is still present. Recover it before starting another update.");
+                FinishStatus = InstallError.NoOldVersion;
+                return null;
+            }
+
+            if (!DeleteDirectory(StagingFolder) || (!windows && !DeleteDirectory(BackupFolder)))
+            {
+                FinishStatus = InstallError.PermissionDenied;
+                return null;
+            }
+            ArchivePaths.EnsureDirectoryExists(StagingFolder);
 
             using (var zip = ZipFile.OpenRead(_archiveFilePath))
             {
@@ -197,9 +264,10 @@ public class InstallHelper
                     }
 
                     CurrentFileChanged?.Invoke($"Extracting {relativePath}");
-                    await ExtractEntryAsync(entry, stagedPath);
+                    string canonicalPath = Path.GetRelativePath(StagingFolder, stagedPath);
+                    _stagedHashes[canonicalPath] = await ExtractEntryAsync(entry, stagedPath);
 
-                    if (stagedSet.Add(relativePath))
+                    if (stagedSet.Add(canonicalPath))
                         staged.Add(relativePath);
                     ProgressChanged?.Invoke((double)++extracted / totalFiles);
                 }
@@ -233,11 +301,24 @@ public class InstallHelper
             .ToList();
     }
 
-    private static Task ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
+    private Task<byte[]> ExtractEntryAsync(ZipArchiveEntry entry, string stagedPath)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(stagedPath));
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
+        ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(stagedPath));
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, stagedPath);
         // An entry that gives more data than its header says stops the update, as in the tray.
-        return Task.Run(() => ArchivePaths.ExtractToFileBounded(entry, stagedPath));
+        return Task.Run(() =>
+        {
+            using var lease = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? WritablePathLease.Open(stagedPath) : null;
+            using var portable = lease == null ? new FileStream(stagedPath, FileMode.Create, FileAccess.Write, FileShare.None) : null;
+            var output = lease?.Stream ?? portable;
+            output.SetLength(0);
+            using var hash = SHA256.Create();
+            using var hashing = new CryptoStream(output, hash, CryptoStreamMode.Write, leaveOpen: true);
+            ArchivePaths.CopyEntryBounded(entry, hashing);
+            hashing.FlushFinalBlock();
+            return hash.Hash;
+        });
     }
 
     /// <summary>
@@ -254,25 +335,46 @@ public class InstallHelper
     /// </summary>
     internal bool ApplyStaged(List<string> stagedFiles)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var transaction = new UpdateFileTransaction(_targetFolder, StagingFolder, BackupFolder, _stagedHashes, Log);
+            bool success = transaction.Apply(stagedFiles,
+                file => CurrentFileChanged?.Invoke($"Copying {file}"),
+                progress => ProgressChanged?.Invoke(progress),
+                () => InstallationStateChanged?.Invoke(InstallState.Copy));
+            if (!success)
+            {
+                FinishStatus = transaction.RollbackComplete
+                    ? transaction.Failure is UnauthorizedAccessException ? InstallError.PermissionDenied : InstallError.ExtractingFile
+                    : InstallError.NoOldVersion;
+                if (!transaction.RollbackComplete) ErrorOccurred?.Invoke(FinishStatus, transaction.Failure?.Message);
+            }
+            return success;
+        }
         // Relative path and whether an installed file was moved to the backup folder.
         var applied = new List<KeyValuePair<string, bool>>();
         try
         {
+            // Check the complete plan before moving the first installed file.
+            foreach (string relativePath in stagedFiles)
+                GetCheckedPaths(relativePath, out _, out _, out _);
+
             for (int i = 0; i < stagedFiles.Count; i++)
             {
                 string relativePath = stagedFiles[i];
                 string destPath, stagedPath, backupPath;
-                TryGetDestination(_targetFolder, relativePath, out destPath);
-                TryGetDestination(StagingFolder, relativePath, out stagedPath);
-                TryGetDestination(BackupFolder, relativePath, out backupPath);
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
 
                 CurrentFileChanged?.Invoke($"Copying {relativePath}");
-                Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
+                ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(destPath));
+                GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
 
                 bool backedUp = false;
                 if (File.Exists(destPath))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                    ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(backupPath));
+                    GetCheckedPaths(relativePath, out destPath, out stagedPath, out backupPath);
                     File.Move(destPath, backupPath);
                     backedUp = true;
                 }
@@ -299,6 +401,18 @@ public class InstallHelper
         }
     }
 
+    private void GetCheckedPaths(string relativePath, out string destination, out string staged, out string backup)
+    {
+        if (!TryGetDestination(_targetFolder, relativePath, out destination) ||
+            !TryGetDestination(StagingFolder, relativePath, out staged) ||
+            !TryGetDestination(BackupFolder, relativePath, out backup))
+            throw new InvalidDataException($"Invalid update path: {relativePath}");
+
+        ArchivePaths.EnsureNoReparsePoints(_targetFolder, destination);
+        ArchivePaths.EnsureNoReparsePoints(StagingFolder, staged);
+        ArchivePaths.EnsureNoReparsePoints(BackupFolder, backup);
+    }
+
     private bool Rollback(List<KeyValuePair<string, bool>> applied)
     {
         bool restored = true;
@@ -306,10 +420,13 @@ public class InstallHelper
         {
             string relativePath = applied[i].Key;
             string destPath, backupPath;
-            TryGetDestination(_targetFolder, relativePath, out destPath);
-            TryGetDestination(BackupFolder, relativePath, out backupPath);
             try
             {
+                if (!TryGetDestination(_targetFolder, relativePath, out destPath) ||
+                    !TryGetDestination(BackupFolder, relativePath, out backupPath))
+                    throw new InvalidDataException($"Invalid rollback path: {relativePath}");
+                ArchivePaths.EnsureNoReparsePoints(_targetFolder, destPath);
+                ArchivePaths.EnsureNoReparsePoints(BackupFolder, backupPath);
                 if (File.Exists(destPath))
                     File.Delete(destPath);
 
@@ -338,7 +455,9 @@ public class InstallHelper
         DeleteDirectory(StagingFolder);
         try
         {
-            if (File.Exists(ObsoleteManifestPath))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                WindowsFileRemoval.DeleteFileIfExists(ObsoleteManifestPath);
+            else if (File.Exists(ObsoleteManifestPath))
                 File.Delete(ObsoleteManifestPath);
         }
         catch (Exception ex)
@@ -347,16 +466,24 @@ public class InstallHelper
         }
     }
 
-    private void DeleteDirectory(string path)
+    private bool DeleteDirectory(string path)
     {
         try
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                WindowsFileRemoval.DeleteDirectoryIfExists(path);
+                return true;
+            }
+            ArchivePaths.EnsureNoReparsePoints(_targetFolder, path);
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
+            return true;
         }
         catch (Exception ex)
         {
             Log($"Failed to delete {path}: {ex.Message}");
+            return false;
         }
     }
 
@@ -402,20 +529,15 @@ public class InstallHelper
 
     internal static bool TryGetDestination(string root, string relativePath, out string destination)
     {
-        destination = null;
-        if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.IndexOf(':') >= 0)
-            return false;
-
-        string fullRoot = Path.GetFullPath(root);
-        if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
-            fullRoot += Path.DirectorySeparatorChar;
-
-        string fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
-        if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        destination = fullPath;
-        return true;
+        bool valid = ArchivePaths.TryGetDestination(root, relativePath, out string checkedPath);
+        if (valid)
+        {
+            string first = Path.GetRelativePath(root, checkedPath).Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+            valid = !new[] { ".update-staging", ".update-backup", ".update-manifest", "update.log", UpdateInstallationGate.LockFileName }
+                .Contains(first, StringComparer.OrdinalIgnoreCase);
+        }
+        destination = valid ? checkedPath : null;
+        return valid;
     }
 
     private static void Log(string text) => UpdateLog.Write(text);

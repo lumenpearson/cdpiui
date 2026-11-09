@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using CDPIUI.Core.Security;
 using CDPIUI.Shared.Basic.Filesystem;
 using CDPIUI.Shared.Exceptions.Catalog;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.System;
 
@@ -26,21 +28,22 @@ internal class ZipService
             return;
         }
 
-        // A signed archive is checked in a folder of its own and moved into place only when its
+        // A signed archive is checked in a folder of its own and copied into place only when its
         // catalog is valid, so files of a rejected archive never reach the destination.
         string verifyDirectory = extractTo.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
             ".verify-" + Guid.NewGuid().ToString("N");
         try
         {
             await ExtractEntries(zipFilePath, zipFolderToUnpack, verifyDirectory, filesToSkip, mergeTextFiles: false);
-            await VerifyCatalog(verifyDirectory);
-            MoveContents(verifyDirectory, extractTo);
+            await VerifySnapshotAndPromoteAsync(verifyDirectory, extractTo, VerifyCatalog);
         }
         finally
         {
             try
             {
-                if (Directory.Exists(verifyDirectory))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    WindowsFileRemoval.DeleteDirectoryIfExists(verifyDirectory);
+                else if (Directory.Exists(verifyDirectory))
                     Directory.Delete(verifyDirectory, recursive: true);
             }
             catch (Exception ex)
@@ -50,17 +53,14 @@ internal class ZipService
         }
     }
 
-    private static void MoveContents(string sourceDirectory, string destinationDirectory)
+    internal static Task VerifyAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<string, Task> verify) =>
+        VerifySnapshotAndPromoteAsync(sourceDirectory, destinationDirectory, _ => verify(sourceDirectory));
+
+    private static async Task VerifySnapshotAndPromoteAsync(string sourceDirectory, string destinationDirectory, Func<ReadOnlyDirectorySnapshot, Task> verify)
     {
-        Directory.CreateDirectory(destinationDirectory);
-        foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
-        {
-            string destination = Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Move(file, destination, overwrite: true);
-        }
-        foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
-            Directory.CreateDirectory(Path.Combine(destinationDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+        using var snapshot = ReadOnlyDirectorySnapshot.Capture(sourceDirectory);
+        await verify(snapshot);
+        VerifiedFilePromotion.Publish(snapshot, destinationDirectory);
     }
 
     private static async Task ExtractEntries(
@@ -74,7 +74,7 @@ internal class ZipService
         filesToSkip = filesToSkip ?? Enumerable.Empty<string>();
 
         if (!Directory.Exists(extractTo))
-            Directory.CreateDirectory(extractTo);
+            ArchivePaths.EnsureDirectoryExists(extractTo);
 
         using (var archive = ZipFile.OpenRead(zipFilePath))
         {
@@ -95,14 +95,17 @@ internal class ZipService
                     && relativePath.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
                     && File.Exists(destinationPath))
                 {
-                    await MergeTextFileAsync(entry, destinationPath);
+                    await MergeTextFileAsync(entry, extractTo, destinationPath);
                     continue;
                 }
 
                 if (entry.FullName.EndsWith("/"))
                 {
                     if (!Directory.Exists(destinationPath))
-                        Directory.CreateDirectory(destinationPath);
+                    {
+                        ArchivePaths.EnsureDirectoryExists(destinationPath);
+                        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+                    }
                 }
                 else
                 {
@@ -170,11 +173,12 @@ internal class ZipService
         ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         var destinationDir = Path.GetDirectoryName(destinationPath);
         if (!Directory.Exists(destinationDir) && !string.IsNullOrEmpty(destinationDir))
-            Directory.CreateDirectory(destinationDir);
+            ArchivePaths.EnsureDirectoryExists(destinationDir);
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
         return destinationPath;
     }
 
-    private static async Task MergeTextFileAsync(ZipArchiveEntry entry, string destinationPath)
+    private static async Task MergeTextFileAsync(ZipArchiveEntry entry, string extractTo, string destinationPath)
     {
         // FileSystemLinksManager replaces a linked list with a link and keeps
         // the original as .bak; the lines merge into that original file.
@@ -182,11 +186,19 @@ internal class ZipService
         {
             destinationPath = $"{destinationPath}.bak";
         }
+        ArchivePaths.EnsureNoReparsePoints(extractTo, destinationPath);
+        using var lease = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? WritablePathLease.Open(destinationPath) : null;
+        using var portable = lease == null ? new FileStream(destinationPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
+        var existing = lease?.Stream ?? portable!;
         // Whole lines are compared: as a substring, "t.co" was dropped because
         // the list already had "reddit.com".
-        var destLines = new HashSet<string>(
-            File.ReadLines(destinationPath).Select(line => line.Trim()), StringComparer.Ordinal);
-        bool endsWithNewLine = EndsWithNewLine(destinationPath);
+        var destLines = new HashSet<string>(StringComparer.Ordinal);
+        using (var reader = new StreamReader(existing, Encoding.UTF8, true, 1024, leaveOpen: true))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null) destLines.Add(line.Trim());
+        }
+        bool endsWithNewLine = EndsWithNewLine(existing);
 
         var newLines = new List<string>();
         using (var reader = new StreamReader(entry.Open()))
@@ -201,7 +213,8 @@ internal class ZipService
 
         if (newLines.Count > 0)
         {
-            using var stream = File.AppendText(destinationPath);
+            existing.Seek(0, SeekOrigin.End);
+            using var stream = new StreamWriter(existing, new UTF8Encoding(false), 1024, leaveOpen: true);
             if (!endsWithNewLine)
                 await stream.WriteLineAsync();
             foreach (string line in newLines)
@@ -209,18 +222,17 @@ internal class ZipService
         }
     }
 
-    private static bool EndsWithNewLine(string path)
+    private static bool EndsWithNewLine(Stream existing)
     {
-        using var existing = File.OpenRead(path);
         if (existing.Length == 0)
             return true;
         existing.Seek(-1, SeekOrigin.End);
         return existing.ReadByte() == '\n';
     }
 
-    private static async Task VerifyCatalog(string directory)
+    private static async Task VerifyCatalog(ReadOnlyDirectorySnapshot snapshot)
     {
-        CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(directory, "catalog.cat"), directory);
+        CatalogCheckResult catalogCheckResult = await CertificateCheck.CheckCatalog(Path.Combine(snapshot.RootPath, "catalog.cat"), snapshot);
         switch (catalogCheckResult)
         {
             case CatalogCheckResult.Success:

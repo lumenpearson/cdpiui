@@ -254,7 +254,7 @@ If a first installation fails, the library removes the item. If an update fails,
 | Content | Behaviour |
 |---|---|
 | Store repository | Extracted to `Repo.new-<GUID>`, then moved into place. |
-| Signed archive (`signedZip`, `.cdpisignedpack`) | Extracted to `<target>.verify-<GUID>`. The library moves the files into place only when the catalog is valid. |
+| Signed archive (`signedZip`, `.cdpisignedpack`) | Extracted to `<target>.verify-<GUID>`. Windows handles hold a fixed snapshot of ordinary files and directories from before catalog verification until copying finishes. Files added later are not installed. Destination path checks and multi-file rollback still have the limitations listed in the audit. |
 | Local pack | The old folder moves to `<folder>.previous-<GUID>`. If the move of the new pack fails, the old folder comes back. |
 | Online, not signed archive | Extracted directly into the item folder. There is no rollback. |
 
@@ -266,7 +266,10 @@ For such a pack, the library ignores `ExecutableFile`, `BeforeInstallActions` an
 
 ## System
 
+FileSystemLinksManager uses LinkFileTransaction to keep a displaced file until replacement succeeds. Failed publication or restoration moves the old file back; if that also fails, the error gives the recovery path. An existing `.bak` is never overwritten. These are exception rollback guarantees, not a journal for power loss or a handle-based defense against directory replacement.
+
 - `ZipService` (internal): ZIP extraction with a root folder filter (`$ANY` matches one segment), skip patterns and the catalog check.
+- When text merging selects a `.bak` file, that selected path is checked for reparse points before reading and appending.
 - `ZipService` and the Store repository download use `ArchivePaths` from `CDPIUI.Shared`: entry paths must stay in the target folder, the archive must be within the size limits, and links below the target are rejected.
 - `BatchFileEncoding`: reads `.bat` files in UTF-8, UTF-16 or a Cyrillic code page.
 - `ShellHelper`: opens folders and files and starts applications.

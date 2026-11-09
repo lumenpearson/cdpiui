@@ -1,13 +1,143 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using CDPIUI.Core.System;
 
 namespace CDPIUI.Tests.Core;
 
+[Collection("Windows path leases")]
 public sealed class ZipServiceTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-zip-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose() => Directory.Delete(_directory, true);
+
+    [Fact]
+    public async Task ConflictInALaterSignedFileLeavesEarlierInstalledFilesUntouched()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(source, "first.bin"), "new-first");
+        File.WriteAllText(Path.Combine(source, "second.bin"), "new-second");
+        File.WriteAllText(Path.Combine(target, "first.bin"), "old-first");
+        Directory.CreateDirectory(Path.Combine(target, "second.bin"));
+
+        await Assert.ThrowsAnyAsync<Exception>(() => ZipService.VerifyAndPromoteAsync(source, target,
+            _ => Task.CompletedTask));
+
+        Assert.Equal("old-first", File.ReadAllText(Path.Combine(target, "first.bin")));
+        Assert.True(Directory.Exists(Path.Combine(target, "second.bin")));
+        Assert.Equal(["first.bin"], Directory.GetFiles(target).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public async Task SignedPromotionHoldsVerifiedBytesUntilTheyAreCopied()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        string file = Path.Combine(source, "app.bin");
+        File.WriteAllText(file, "signed");
+
+        await ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            Assert.Throws<IOException>(() => File.WriteAllText(file, "substituted"));
+            Assert.Throws<IOException>(() => Directory.Move(source, source + "-moved"));
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal("signed", File.ReadAllText(Path.Combine(target, "app.bin")));
+        File.WriteAllText(file, "released");
+    }
+
+    [Fact]
+    public async Task SignedPromotionIgnoresFilesAddedAfterTheSnapshot()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "app.bin"), "signed");
+
+        await ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            File.WriteAllText(Path.Combine(source, "late.bin"), "unchecked");
+            Directory.CreateDirectory(Path.Combine(source, "late-directory"));
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal("signed", File.ReadAllText(Path.Combine(target, "app.bin")));
+        Assert.False(File.Exists(Path.Combine(target, "late.bin")));
+        Assert.False(Directory.Exists(Path.Combine(target, "late-directory")));
+    }
+
+    [Fact]
+    public async Task RejectedCatalogLeavesDestinationUntouchedAndReleasesSources()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        string file = Path.Combine(source, "app.bin");
+        File.WriteAllText(file, "new");
+        File.WriteAllText(Path.Combine(target, "app.bin"), "old");
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipService.VerifyAndPromoteAsync(source, target,
+            _ => throw new InvalidDataException("Rejected catalog")));
+        Assert.Equal("old", File.ReadAllText(Path.Combine(target, "app.bin")));
+        File.WriteAllText(file, "released");
+    }
+
+    [Fact]
+    public async Task HardLinkedArchiveDestinationIsRejectedWithoutTruncation()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        string outside = Path.Combine(_directory, "outside.bin");
+        File.WriteAllText(outside, "keep");
+        Assert.True(CreateHardLinkW(Path.Combine(target, "app.bin"), outside, IntPtr.Zero));
+        string archive = CreateArchive(("app.bin", "overwrite"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.ExtractZip(archive, null, target));
+        Assert.Equal("keep", File.ReadAllText(outside));
+    }
+
+    [Fact]
+    public async Task HardLinkedMergeBackupIsRejectedWithoutAppending()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "list.txt"), "local\n");
+        string outside = Path.Combine(_directory, "outside.txt");
+        File.WriteAllText(outside, "keep\n");
+        Assert.True(CreateHardLinkW(Path.Combine(target, "list.txt.bak"), outside, IntPtr.Zero));
+        string archive = CreateArchive(("list.txt", "injected\n"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.ExtractZip(archive, null, target));
+        Assert.Equal("keep\n", File.ReadAllText(outside));
+    }
+
+    [Fact]
+    public async Task HardLinkPlantedDuringCatalogVerificationCannotReceiveSignedBytes()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(source, "app.bin"), "signed");
+        string outside = Path.Combine(_directory, "outside.bin");
+        File.WriteAllText(outside, "keep");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipService.VerifyAndPromoteAsync(source, target, _ =>
+        {
+            Assert.True(CreateHardLinkW(Path.Combine(target, "app.bin"), outside, IntPtr.Zero));
+            return Task.CompletedTask;
+        }));
+        Assert.Equal("keep", File.ReadAllText(outside));
+    }
 
     [Fact]
     public async Task DomainListsAreMergedByWholeLines()
@@ -39,6 +169,22 @@ public sealed class ZipServiceTests : IDisposable
 
         Assert.Equal(["linked"], File.ReadAllLines(Path.Combine(target, "list.txt")));
         Assert.Equal(["reddit.com", "t.co"], File.ReadAllLines(Path.Combine(target, "list.txt.bak")));
+    }
+
+    [Fact]
+    public async Task LinkedBackupIsRejectedBeforeMerging()
+    {
+        string target = Path.Combine(_directory, "item");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "list.txt"), "local\n");
+        string outside = Path.Combine(_directory, "outside.txt");
+        File.WriteAllText(outside, "outside\n");
+        File.CreateSymbolicLink(Path.Combine(target, "list.txt.bak"), outside);
+        string archivePath = CreateArchive(("list.txt", "injected\n"));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipService.ExtractZip(archivePath, null, target));
+
+        Assert.Equal("outside\n", File.ReadAllText(outside));
     }
 
     [Fact]
@@ -94,4 +240,8 @@ public sealed class ZipServiceTests : IDisposable
         }
         return archivePath;
     }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateHardLinkW(string name, string existing, IntPtr attributes);
 }

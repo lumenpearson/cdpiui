@@ -18,10 +18,14 @@
 
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <InternalsVisibleTo Include="CDPIUI.Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Secrets/SecretExample.cs" />
+    <!-- Windows ACL policy is linked into the Windows tray and Native AOT launcher. -->
+    <Compile Remove="Security/ProtectedInstallLocationPolicy.cs" />
+    <Compile Remove="Security/ProtectedStagingArea.cs" />
   </ItemGroup>
 
 </Project>

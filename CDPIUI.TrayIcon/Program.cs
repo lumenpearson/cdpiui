@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
+using System.Security.Principal;
 using System.Windows.Forms;
 using CDPIUI.Shared.Basic.CommandLine;
 using CDPIUI.Shared.Migration;
@@ -37,7 +38,32 @@ class Programm
     {
         if (args.Contains(UninstallHelper.CleanupArgument))
         {
+            if (WindowsIdentity.GetCurrent().User?.IsWellKnown(WellKnownSidType.LocalSystemSid) != true ||
+                !Utils.IsInstalledByMsi() ||
+                !TrustedPaths.HasSafeElevationContext())
+            {
+                Trace.WriteLine("[Startup] Refusing uninstall cleanup outside a protected MSI installation in the Windows Installer SYSTEM context.");
+                return;
+            }
             UninstallHelper.Cleanup();
+            return;
+        }
+
+        if (!TrustedPaths.HasSafeElevationContext())
+        {
+            Trace.WriteLine("[Startup] Refusing elevated startup because the application directory is not protected for this account.");
+            AutoStartManager.RemoveUnsafeAutorunForThisCopy();
+            if (!args.Contains("--autorun"))
+            {
+                bool isRussian = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ru";
+                MessageBox.Show(
+                    isRussian
+                        ? "Нельзя запустить CDPI UI с правами администратора: каталог приложения не защищён от изменения другой учётной записью. Установите приложение в папку с защищёнными правами доступа."
+                        : "CDPI UI cannot run elevated because another account can change its application folder. Install it in a folder with protected permissions.",
+                    "CDPI UI",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
             return;
         }
 

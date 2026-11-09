@@ -161,23 +161,9 @@ public sealed partial class ConditionalLaunchViewModel : ObservableObject, IDisp
 
         Directory.CreateDirectory(_tasksDirectory);
         var invalidFiles = 0;
-        var loadedTasks = Directory.EnumerateFiles(
+        var loadedTasks = ConditionalTaskFileService.LoadDirectory(
                 _tasksDirectory,
-                $"*{ConditionalTaskFileService.FileExtension}")
-            .Select(filePath =>
-            {
-                try
-                {
-                    return ConditionalTaskFileService.Load(filePath);
-                }
-                catch
-                {
-                    invalidFiles++;
-                    return null;
-                }
-            })
-            .Where(task => task != null)
-            .Cast<ConditionalTask>()
+                (_, _) => invalidFiles++)
             .OrderByDescending(task => task.Priority)
             .ThenBy(task => task.Name, StringComparer.CurrentCultureIgnoreCase);
 

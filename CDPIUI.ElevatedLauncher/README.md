@@ -30,11 +30,18 @@ CDPIUI_ElevatedLauncher.exe <target> [arguments of the target]
 | `tray` | `CDPIUI_TrayIcon.exe` | No. It exits with `0` after the start. |
 | `hosts` | `EditHostFile.exe` | Yes. It exits with the exit code of `EditHostFile.exe`. |
 
+The MSI has a separate internal `cleanup "<install directory>"` invocation. It accepts exactly
+one directory, requires the Local System account, verifies that the directory matches the
+registered MSI install location, checks the protected owners and ACLs of its full tree, then runs
+`CDPIUI_TrayIcon.exe --uninstall-cleanup` and waits for it. The MSI embeds this launcher so the
+initial cleanup process does not come from the directory it is validating.
+
 - The target name must be equal to a name in the table. The comparison is case-sensitive.
 - The program is in the folder of the launcher. The launcher never takes a path from the arguments.
 - The launcher gives the other arguments to the program unchanged. It adds each argument to `ProcessStartInfo.ArgumentList`, so the program gets the same arguments.
 - The working directory of the program is the folder of the launcher.
 - The launcher starts the program with `UseShellExecute = false`. The program gets the token of the launcher and shows no second UAC prompt.
+- Before starting a target, the launcher checks that a registered MSI install directory has protected owners and ACLs throughout its path and file tree, or that the portable folder belongs to the tray user and the desktop user is the same account. This also protects the `hosts` target, which does not pass through the tray.
 
 ## Environment
 
@@ -50,7 +57,9 @@ one of these prefixes, without case sensitivity:
 The prefixes include `DOTNET_ROOT`, `DOTNET_ROOT(x86)` and `DOTNET_ROOT_X64`. `LaunchPolicy` also
 names these three variables, so a change of the prefixes cannot keep them.
 
-The launcher keeps all other variables, for example `PATH` and `TEMP`.
+The launcher replaces `PATH` with existing Windows system folders. It keeps other variables, for
+example `TEMP`. A user-writable search path could supply a DLL or an unqualified child executable
+to an elevated target.
 
 ## Exit codes
 

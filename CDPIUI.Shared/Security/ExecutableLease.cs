@@ -276,9 +276,11 @@ public sealed class ExecutableLease : IDisposable
         private struct ByHandleFileInformation
         {
             public uint FileAttributes;
-            public long CreationTime;
-            public long LastAccessTime;
-            public long LastWriteTime;
+            // FILETIME consists of two DWORDs with four-byte alignment. A managed long
+            // introduces padding here and shifts NumberOfLinks onto the file index.
+            public uint CreationTimeLow, CreationTimeHigh;
+            public uint LastAccessTimeLow, LastAccessTimeHigh;
+            public uint LastWriteTimeLow, LastWriteTimeHigh;
             public uint VolumeSerialNumber;
             public uint FileSizeHigh;
             public uint FileSizeLow;

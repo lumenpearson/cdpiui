@@ -49,12 +49,11 @@ WiX завершается с ошибкой, если указанного в �
 2. Добавьте или удалите соответствующие компоненты WiX в `NewSetupFiles.wxs`.
 3. Запустите `check_setup_files.ps1`.
 
-`Product.wxs` использует два фиксированных ID файлов:
+`Product.wxs` использует фиксированный ID файла GUI:
 
 | ID | Файл | Назначение |
 |----|------|-----|
 | `CdpiUiExe` | `CDPIUI.exe` | Версия пакета. Ярлыки в меню «Пуск» и на рабочем столе. |
-| `TrayIconExe` | `CDPIUI_TrayIcon.exe` | Пользовательское действие `UninstallCleanup`. |
 
 ## Пакет и обновления
 
@@ -86,6 +85,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 
 Папка не наследует записи от родительской папки. Поэтому пользовательская папка, например `C:\CDPI UI`,
 не даёт право записи всем пользователям.
+Во время работы программа запуска и трей с правами администратора также проверяют владельцев и ACL всех родительских папок и существующих элементов внутри этой папки. Установка внутри каталога, доступного для записи обычному пользователю, или с уже существующим пользовательским файлом считается небезопасной; повышенные операции не запускаются.
 
 ## Расположение установки в реестре
 
@@ -107,7 +107,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 | Действие | Последовательность и условие | Функция |
 |--------|------------------------|----------|
 | `LaunchApp` | После `InstallFinalize`. Условие: `NOT Installed AND NOT REMOVE AND UILevel >= 4`. | Выполняет `[WindowsFolder]explorer.exe "[INSTALLLOCATION]CDPIUI.exe"` с `asyncNoWait`. |
-| `UninstallCleanup` | Перед `RemoveFiles`. Условие: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Выполняет `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Отложенное, без олицетворения (выполняется от имени SYSTEM), `Return="ignore"`. |
+| `UninstallCleanup` | Перед `RemoveRegistryValues` и `RemoveFiles`. Условие: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Запускает встроенный в MSI `CDPIUI_ElevatedLauncher.exe` с аргументами `cleanup "[INSTALLLOCATION]"`. Программа требует SYSTEM, сверяет каталог с зарегистрированным путём MSI и проверяет владельцев и ACL дерева перед запуском `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Действие отложенное, без олицетворения (выполняется от имени SYSTEM), `Return="ignore"`. |
 
 Замечания о `LaunchApp`:
 
@@ -117,6 +117,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 Замечания о `UninstallCleanup`:
 
 - Действие не выполняется, когда крупное обновление удаляет старый продукт.
+- Исполняемый файл launcher встроен в MSI. Действие не запускает программу из каталога установки до проверки защиты этого каталога.
 - `--uninstall-cleanup` (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`) выполняет следующие шаги:
 
 1. Устанавливает событие `Global\CDPIUI_TrayShutdown`.

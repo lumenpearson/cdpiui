@@ -22,7 +22,7 @@ Only the elevated tray starts `Update.exe`. The sequence is as follows:
    (`CDPIUI.Core/Features/ApplicationUpdate.cs`).
 2. The tray receives the message (`CDPIUI.TrayIcon/Helper/Basic/CommandsHandler.cs`) and calls
    `Utils.StartUpdate` (`CDPIUI.TrayIcon/Helper/Utils.cs`).
-3. The tray copies the package to `<install>\.staging\<GUID>\`.
+3. The tray copies the package to `<Common Files>\CDPIUI-Staging\<GUID>\`. Directories and files are created with owner Administrators and a protected DACL for Administrators and SYSTEM. An unsafe existing path is rejected. The source is held by a no-follow read lease during copying; a package larger than 1 GiB is rejected.
 4. The tray verifies the signed catalog of each layer (`CDPIUI.TrayIcon/Helper/PackageStaging.cs`).
 5. The tray starts `Update.exe` with this command line:
 
@@ -43,17 +43,21 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
 
 ## Procedure
 
-`Update/InstallHelper.cs` contains all the logic. The procedure starts when the window opens.
+`Update/InstallHelper.cs` coordinates the procedure; `UpdateFileTransaction` applies and rolls back Windows files through held handles. The procedure starts when the window opens.
+
+Before stopping the application, `UpdateInstallationGate` acquires an exclusive no-follow `<install>\.update-lock`. It remains held across every await, staging/apply/cleanup and the restart attempt. Another updater for the same directory cannot enter the procedure or stop the tray. The lock must be an ordinary single-name empty file before delete-on-close is set; links and nonempty files remain untouched and block installation. Operation errors release the lock. Different installation directories have independent locks. `.update-lock` is reserved and rejected in patches. Repeated `StartInstall` calls on one instance are ignored, and `Init` rejects reconfiguration while it is running.
 
 1. **Stop the application.**
+   - Before stopping the tray, the updater acquires its own read-only lease on the package and its parents. It keeps the lease until the procedure ends, independently of the tray lifetime.
    - The tool sets the `Global\CDPIUI_TrayShutdown` event. The tray then exits as from its menu: it stops the components and restores the proxy settings.
    - The tool waits a maximum of 20 s for the tray.
    - The tool stops all remaining `goodbyeDPI`, `CDPIUI` and `CDPIUI_TrayIcon` processes (`Process.Kill`).
    - The tool waits a maximum of 10 s for each process name. If a process continues to run, the tool does not change files.
 2. **Stage the files.**
-   - The tool deletes the old `<install>\.update-staging` and `<install>\.update-backup` folders.
+   - The tool stops if `<install>\.update-backup` is not empty. Recover this backup before another update; it can contain the only surviving original files of an interrupted update.
+   - The tool rejects reparse points in the staging, installation and backup paths, then deletes old staging and an empty backup folder. These path checks do not eliminate concurrent replacement after the final check.
    - Before it extracts a file, the tool checks the archive limits of the tray (`ArchivePaths.EnsureWithinLimits`): a maximum of 20000 entries, a maximum of 1 GiB of data and a maximum compression ratio of 200 for an entry of 1 MiB or more. If the archive is not within the limits, the tool stops the update. The tray does this check before it starts the tool. The tool does it again, because a package can reach the tool in a different way.
-   - The tool extracts the package into a new `.update-staging` folder.
+   - The tool extracts the package into a new `.update-staging` folder, calculating SHA256 while bounded writes consume archive bytes. This hash manifest stays in memory until apply.
    - The tool stops the update if an entry gives more data than its header says (`ArchivePaths.ExtractToFileBounded`).
    - The tool reads the archive folders `layers/0/`, `layers/1/`, ... in sequence. The application makes packages with these folders.
    - If the archive has no `layers/` folders, the tool reads the `CDPIUI/` folder. A published patch has this folder.
@@ -61,17 +65,17 @@ The project has no manifest of its own. The .NET SDK embeds the default manifest
    - The tool stops the update if an entry has a rooted path, a `:`, or a path outside the target folder.
    - The tool stops the update if the archive contains no files.
 3. **Apply the files.**
-   - The tool moves each staged file into the installation folder.
-   - Before this, the tool moves the existing file to the same relative path in `<install>\.update-backup`.
+   - Windows apply captures a fixed read-only snapshot of staging and checks every planned hash before changing any installed file.
+   - The existing file moves by its handle to `<install>\.update-backup`. Verified bytes are copied into a unique temporary file and published by handle under pinned parents. Originals and published objects stay held until the transaction finishes; conflicting destination names are not overwritten.
    - The tool does not remove installed files. A patch is differential: it contains only the files that changed. Thus a file that is not in the patch stays in the installation folder.
 4. **Roll back after a failure.**
-   - If a move fails, the tool restores the applied files from the backup folder in reverse sequence.
+   - If apply fails, Windows rollback marks only its own held new objects for deletion and restores originals by handle in reverse sequence. Unsafe parents or conflicts leave the original backup intact.
    - If the restore is incomplete, the status becomes `NoOldVersion`.
    - In that case, an error message tells the user to install the application again. The tool keeps the backup folder for manual recovery.
    - The tool does not start the application. The window closes after the user closes the error message.
 5. **Finish the update.**
-   - The tool deletes the staging folder and the backup folder.
-   - The tool deletes the `<install>\.update-manifest` file, if it exists. Earlier versions of the tool wrote this file.
+   - On Windows, a bounded no-follow preflight captures the staging/backup tree; held objects are removed from the bottom up. Directory links and preflight failures preserve the tree. File links are unlinked without following targets. An incomplete rollback preserves its backup.
+   - The obsolete `<install>\.update-manifest` is deleted by a no-follow handle. Preparation of a new update removes only an empty backup directory; staging cleanup errors abort extraction.
    - The tool starts the tray.
 
 ### Skipped files
@@ -142,13 +146,15 @@ uses the same command and copies `Update.exe` into the release layout. The publi
 contain only `Update.exe`.
 
 The project does not reference `CDPIUI.Shared`, because the tool must not load
-`CDPIUI.Shared.dll` from the folder that it replaces. It compiles two files of `CDPIUI.Shared` as
-links: `Basic/Filesystem/UpdatePackageLayers.cs` and `Basic/Filesystem/ArchivePaths.cs`. Thus the
-tool and the tray use the same layer rule and the same archive limits. With the `UPDATE_TOOL`
-symbol, these classes are `internal` and are in the `Update` namespace.
+`CDPIUI.Shared.dll` from the folder that it replaces. It compiles shared source files for
+`UpdatePackageLayers`, `ArchivePaths`, `ReadOnlyPathLease`, `ReadOnlyDirectorySnapshot`, `WritablePathLease` and `WindowsPathNames`.
+Thus the tool and the tray use the same layer rule, archive limits and Windows file rules.
+With the `UPDATE_TOOL` symbol, these sources use the `Update` namespace.
 
 ## Tests
 
 `CDPIUI.Tests/Tools/UpdateInstallHelperTests.cs` tests the path checks, the archive limits, the
 layer sequence, the staging rules (`catalog.cat`, `Update.exe`), the apply step and the rollback.
 The tests do not use the window.
+
+FS-09 update: Windows extraction, apply and rollback use checked no-follow handles and extraction hashes. Recursive cleanup, crash recovery, concurrent updater instances and the final restart remain separate work in docs/AUDIT-STATUS.ru.md. Non-Windows tests retain legacy managed apply without these Windows guarantees.

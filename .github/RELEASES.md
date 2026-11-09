@@ -219,14 +219,13 @@ signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.Ha
 `CDPIUI.TrayIcon/Helper/Utils.cs` and `CDPIUI.TrayIcon/Helper/PackageStaging.cs` do these steps:
 
 1. Check the path with `TrustedPaths.IsAllowed`.
-2. Copy the file to `<install>\.staging\<GUID>\`. In a per-machine installation, only administrators can write to this folder. Thus nobody can replace the file between the check and the installation.
+2. Hold the source with a no-follow read lease and copy it to `<Common Files>\CDPIUI-Staging\<GUID>\`. New directories and files have owner Administrators and protected DACLs for Administrators/SYSTEM. Unsafe existing paths and packages larger than 1 GiB are rejected. The staged bytes remain protected when the tray exits.
 3. Check the limits of the archive (`ArchivePaths`: entries, size, compression ratio, links). Then extract the copy to `verify\`.
 4. Verify the catalog of each `layers/*` folder. If there are no layers, verify the `CDPIUI/` folder.
 5. If a check fails, stop and show the `UpdateFailure` notification.
 6. Start `Update.exe --directory-to-zip "<staged file>" --destination-directory "<install>"`.
 
-[Update/README.md](../Update/README.md) describes `Update.exe`. The tray deletes the `.staging`
-folder at each start.
+[Update/README.md](../Update/README.md) describes `Update.exe`, which acquires its own package lease before stopping the tray. Startup validates the cache but does not delete orphan sessions: an installer may still use them. Consumer-aware garbage collection remains audit FS-12.
 
 `Update.exe` checks the same archive limits again before it extracts the package. It does not copy
 a `catalog.cat` file from a patch into the installation folder. It also does not remove files that

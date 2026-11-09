@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
+#if !UPDATE_TOOL
+using CDPIUI.Shared.Security;
+#endif
 
 // Update.exe compiles this file as well (linked in Update.csproj): it must not load
 // CDPIUI.Shared.dll from the folder it replaces, and it must apply the limits of the tray.
@@ -32,6 +36,8 @@ static class ArchivePaths
         destination = string.Empty;
         if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath) || relativePath.Contains(':'))
             return false;
+        foreach (string name in relativePath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries))
+            if (name != "." && name != ".." && !WindowsPathNames.IsOrdinaryName(name)) return false;
 
         string fullRoot = Path.GetFullPath(root);
         if (!fullRoot.EndsWith(Path.DirectorySeparatorChar))
@@ -77,8 +83,31 @@ static class ArchivePaths
     /// </summary>
     public static void ExtractToFileBounded(ZipArchiveEntry entry, string destination)
     {
-        using Stream source = entry.Open();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using var lease = WritablePathLease.Open(destination);
+            lease.Stream.SetLength(0);
+            CopyEntryBounded(entry, lease.Stream);
+            return;
+        }
+        // Windows is the product platform. Retain ordinary extraction for non-Windows
+        // library consumers; Windows handle guarantees are not claimed on those systems.
         using var target = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
+        CopyEntryBounded(entry, target);
+    }
+
+    public static void EnsureDirectoryExists(string path)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using var lease = ReadOnlyPathLease.OpenOrCreateDirectory(path);
+        }
+        else Directory.CreateDirectory(path);
+    }
+
+    public static void CopyEntryBounded(ZipArchiveEntry entry, Stream target)
+    {
+        using Stream source = entry.Open();
         byte[] buffer = new byte[81920];
         long written = 0;
         int read;
@@ -92,20 +121,34 @@ static class ArchivePaths
     }
 
     /// <summary>
-    /// Rejects a destination whose folder chain inside the root, or the file itself, is a symbolic
-    /// link or a junction: a planted link would send the write to another place.
+    /// Rejects a destination outside the root or through a symbolic link or junction, including
+    /// the root's ancestors: a planted link would send the write to another place.
     /// </summary>
     public static void EnsureNoReparsePoints(string root, string destination)
     {
         string fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string? current = Path.GetFullPath(destination);
-        while (current != null && current.Length >= fullRoot.Length)
+        if (!string.Equals(current.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), fullRoot, StringComparison.OrdinalIgnoreCase) &&
+            !current.StartsWith(fullRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"\"{destination}\" is outside of the archive root.");
+
+        while (current != null)
         {
-            if ((File.Exists(current) || Directory.Exists(current)) &&
-                File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
-                throw new InvalidDataException($"\"{current}\" is a link; the archive is not extracted through links.");
-            if (string.Equals(current, fullRoot, StringComparison.OrdinalIgnoreCase))
-                break;
+            try
+            {
+                // Exists follows a link and reports false for a dangling target. Inspect the
+                // attributes directly so a broken reparse point cannot bypass this check.
+                if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
+                    throw new InvalidDataException($"\"{current}\" is a link; the archive is not extracted through links.");
+            }
+            catch (FileNotFoundException)
+            {
+                // A not-yet-created path component has nothing to inspect.
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // A not-yet-created parent has nothing to inspect.
+            }
             current = Path.GetDirectoryName(current);
         }
     }

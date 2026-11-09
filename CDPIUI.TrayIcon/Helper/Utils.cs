@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using CDPIUI.Shared;
 using CDPIUI.Shared.Pipe.Models;
 using CDPIUI.Shared.Secrets;
+using CDPIUI.Shared.Security;
 using CDPIUI.TrayIcon.Helper.Basic;
 using Microsoft.Win32;
 
@@ -123,11 +123,13 @@ public class Utils
             return;
         }
 
+        using ReadOnlyPathLease stagedLease = ReadOnlyPathLease.OpenFile(stagedFile);
         if (string.Equals(Path.GetExtension(stagedFile), ".msi", StringComparison.OrdinalIgnoreCase))
         {
             // The release workflow signs Setup.msi with the certificate that signs the catalogs.
             if (!PackageStaging.HasPinnedSignature(stagedFile, Secret.TrustedCertificates))
             {
+                stagedLease.Dispose();
                 PackageStaging.Release(stagedFile);
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
                 return;
@@ -141,6 +143,7 @@ public class Utils
         {
             if (!await PackageStaging.VerifyUpdatePackageAsync(stagedFile))
             {
+                stagedLease.Dispose();
                 PackageStaging.Release(stagedFile);
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
                 return;
@@ -177,27 +180,11 @@ public class Utils
 
         try
         {
-            bool exists = System.IO.Directory.Exists(file);
-            if (!exists)
-            {
-                DirectoryInfo di = System.IO.Directory.CreateDirectory(file);
-            }
-            DirectoryInfo dInfo = new DirectoryInfo(file);
-            DirectorySecurity dSecurity = dInfo.GetAccessControl();
             // Only the user the tray runs for gets write access: these directories hold
             // the executables that the tray starts elevated.
             SecurityIdentifier user = WindowsIdentity.GetCurrent().User
                 ?? throw new InvalidOperationException("Cannot get the current user.");
-            dSecurity.AddAccessRule(
-                new FileSystemAccessRule(
-                    user,
-                    FileSystemRights.Modify,
-                    InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit,
-                    PropagationFlags.None,
-                    AccessControlType.Allow
-                    )
-                );
-            dInfo.SetAccessControl(dSecurity);
+            DirectoryAclGuard.GrantModify(file, user);
             if (conptySignal)
                 await PipeHelper.SendGrantAccessPacket(true);
             return;

@@ -31,7 +31,11 @@ public class MsiInstallerQueueManager
     private readonly List<MsiInstallerModel> _installerModels = [];
     private readonly object _modelsLock = new();
 
-    public void SendMsiInstallMessage(string operationId, string filename, MsiInstallerService installerHelper)
+    public void SendMsiInstallMessage(
+        string operationId,
+        string filename,
+        string expectedSha256,
+        MsiInstallerService installerHelper)
     {
         lock (_modelsLock)
         {
@@ -41,7 +45,8 @@ public class MsiInstallerQueueManager
                 MsiInstallerHelper = installerHelper
             });
         }
-        _ = PipeHelper.SendMSIPacket(MSIInstallationMessageIds.Begin, operationId, filename);
+        _ = PipeHelper.SendMSIPacket(
+            MSIInstallationMessageIds.Begin, operationId, filename, expectedSha256);
     }
 
     public void RemoveMsiInstallerModel(string operationId, bool notify = true)

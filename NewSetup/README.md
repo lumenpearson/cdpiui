@@ -49,12 +49,11 @@ When the publish output changes, do these steps:
 2. Add or remove the related components in `NewSetupFiles.wxs`.
 3. Run `check_setup_files.ps1`.
 
-`Product.wxs` uses two fixed file IDs:
+`Product.wxs` uses a fixed file ID for the GUI:
 
 | ID | File | Use |
 |----|------|-----|
 | `CdpiUiExe` | `CDPIUI.exe` | Package version. Start menu and desktop shortcuts. |
-| `TrayIconExe` | `CDPIUI_TrayIcon.exe` | `UninstallCleanup` custom action. |
 
 ## Package and upgrades
 
@@ -86,6 +85,7 @@ D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)
 
 The folder does not inherit entries from its parent. Thus a custom folder such as `C:\CDPI UI`
 does not give write access to all users.
+At runtime, the launcher and elevated tray also check the owners and ACLs of every ancestor and existing item under this folder. An installation placed below a user-writable directory, or with a pre-existing user-writable file, is treated as unsafe and cannot start elevated operations.
 
 ## Installation location in the registry
 
@@ -107,7 +107,7 @@ operates as a portable installation and downloads patch updates.
 | Action | Sequence and condition | Function |
 |--------|------------------------|----------|
 | `LaunchApp` | After `InstallFinalize`. Condition: `NOT Installed AND NOT REMOVE AND UILevel >= 4`. | Runs `[WindowsFolder]explorer.exe "[INSTALLLOCATION]CDPIUI.exe"` with `asyncNoWait`. |
-| `UninstallCleanup` | Before `RemoveFiles`. Condition: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Runs `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Deferred, not impersonated (runs as SYSTEM), `Return="ignore"`. |
+| `UninstallCleanup` | Before `RemoveRegistryValues` and `RemoveFiles`. Condition: `REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE`. | Runs the embedded `CDPIUI_ElevatedLauncher.exe` with `cleanup "[INSTALLLOCATION]"`. It requires SYSTEM, matches the directory to the registered MSI location, and checks the directory tree's owners and ACLs before running `CDPIUI_TrayIcon.exe --uninstall-cleanup`. Deferred, not impersonated (runs as SYSTEM), `Return="ignore"`. |
 
 Notes on `LaunchApp`:
 
@@ -117,6 +117,7 @@ Notes on `LaunchApp`:
 Notes on `UninstallCleanup`:
 
 - The action does not run when a major upgrade removes the old product.
+- The launcher binary is embedded in the MSI. The action does not run an executable from the installed folder before validating that folder.
 - `--uninstall-cleanup` (`CDPIUI.TrayIcon/Helper/UninstallHelper.cs`) does these steps:
 
 1. Set the `Global\CDPIUI_TrayShutdown` event.

@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Shared.Basic;
 
@@ -27,7 +29,9 @@ internal static class SettingsFileStore
         // so internal entities cannot blow up the memory of the elevated process.
         var readerSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
         XDocument document;
-        using (var reader = XmlReader.Create(path, readerSettings))
+        using var lease = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ReadOnlyPathLease.OpenFile(path) : null;
+        using var portable = lease == null ? new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
+        using (var reader = XmlReader.Create(lease?.Stream ?? portable!, readerSettings))
             document = XDocument.Load(reader);
         if (document.Root?.Name != "Settings")
             throw new XmlException("The settings document must have a Settings root element.");
@@ -36,14 +40,15 @@ internal static class SettingsFileStore
 
     // A lock file works for both processes, while a named mutex of the elevated tray would not be
     // accessible to the UI.
-    public static IDisposable? AcquireLock(string settingsFilePath, out bool timedOut)
+    public static IDisposable? AcquireLock(string settingsFilePath)
     {
-        timedOut = false;
         string lockPath = settingsFilePath + ".lock";
         for (int attempt = 1; attempt <= LockAttempts; attempt++)
         {
             try
             {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return WritablePathLease.OpenLock(lockPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settingsFilePath))!);
                 return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
                     1, FileOptions.DeleteOnClose);
@@ -57,7 +62,6 @@ internal static class SettingsFileStore
                 return null;
             }
         }
-        timedOut = true;
         return null;
     }
 
@@ -68,6 +72,16 @@ internal static class SettingsFileStore
     /// <returns>False if the file cannot be written for lack of rights, so no later save can succeed</returns>
     public static bool Save(XDocument document, string settingsFilePath, bool keepBackup)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try
+            {
+                WindowsSettingsFiles.Save(document, settingsFilePath, keepBackup, SaveAttempts, SaveRetryDelayMs);
+                return true;
+            }
+            catch (UnauthorizedAccessException ex) { Debug.WriteLine(ex); return false; }
+            catch (IOException ex) { Debug.WriteLine(ex); return true; }
+        }
         string temporaryPath = settingsFilePath + ".tmp-" + Guid.NewGuid().ToString("N");
         try
         {
@@ -118,6 +132,11 @@ internal static class SettingsFileStore
     {
         try
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                WindowsSettingsFiles.KeepDamagedCopy(settingsFilePath);
+                return;
+            }
             File.Copy(settingsFilePath, settingsFilePath + ".corrupt-" + Guid.NewGuid().ToString("N"));
         }
         catch (Exception copyError) when (IsReadFailure(copyError))
@@ -130,7 +149,11 @@ internal static class SettingsFileStore
     public static void WriteRecoveryNotice(string noticePath, string? text)
     {
         try
-        { File.WriteAllText(noticePath, text); }
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                WindowsSettingsFiles.WriteNotice(noticePath, text);
+            else File.WriteAllText(noticePath, text);
+        }
         catch (Exception noticeError) when (IsReadFailure(noticeError))
         {
             Trace.WriteLine($"[XMLSettingsService] Cannot write the recovery notice: {noticeError.Message}");

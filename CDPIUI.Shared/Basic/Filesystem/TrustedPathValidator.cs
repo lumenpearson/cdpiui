@@ -10,8 +10,8 @@ namespace CDPIUI.Shared.Basic.Filesystem;
 public static class TrustedPathValidator
 {
     /// <summary>
-    /// Checks that a path is inside one of the roots and that no directory between the root
-    /// and the path, and not the path itself, is a symbolic link or a junction
+    /// Checks that a path is inside one of the roots and that no component of its full path,
+    /// including the root and its parents, is a symbolic link or a junction
     /// </summary>
     /// <param name="path">Path to check</param>
     /// <param name="roots">Allowed root directories</param>
@@ -38,17 +38,24 @@ public static class TrustedPathValidator
             if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            return !HasLinkBelowRoot(fullRoot, fullPath);
+            return !HasLinkInPath(fullPath);
         }
 
         return false;
     }
 
-    private static bool HasLinkBelowRoot(string fullRoot, string fullPath)
+    private static bool HasLinkInPath(string fullPath)
     {
-        string current = fullRoot.TrimEnd(Path.DirectorySeparatorChar);
-        string[] parts = fullPath.Substring(fullRoot.Length)
-            .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+        string current = Path.GetPathRoot(fullPath)!;
+        try
+        {
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                return true;
+        }
+        catch { return true; }
+
+        string[] parts = fullPath.Substring(current.Length)
+            .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (string part in parts)
         {

@@ -1,4 +1,5 @@
 using CDPIUI.Core.Basic;
+using CDPIUI.Core.Data;
 using CDPIUI.Core.Store.Application;
 using CDPIUI.Core.Store.Database;
 using CDPIUI.Core.Store.Network;
@@ -230,16 +231,21 @@ public partial class StoreHelper :
         var item = DatabaseHelper.Instance.GetItemById(itemId);
 
         if (item == null ||
-            item.Id == SharedConstants.ApplicationStoreId ||
-            item.Id == SharedConstants.LocalUserItemsId)
+            item.Id is not string installedId || StoreItemIds.IsProtected(installedId))
             return;
+
+        if (item.Directory is not string directory || !StoreItemIds.MatchesItemFolder(Directories.StoreItemsDirectory, installedId, directory))
+        {
+            Logger.Instance.CreateErrorLog(nameof(StoreHelper), $"Cannot remove {item.Id}: its directory does not match the Store item.");
+            return;
+        }
 
         // The component has to exit before its files can be deleted (issue #37).
         await StopComponentForFileChanges(item);
 
         // The directory comes from the item database; never delete anything outside the item folders.
-        if (Path.Exists(item.Directory) && StoreItemIds.IsItemFolder(item.Directory))
-            await StoreItemFolders.DeleteItemDirectoryAsync(item.Directory);
+        if (!await StoreItemFolders.DeleteItemDirectoryAsync(installedId, directory))
+            return;
         DatabaseHelper.Instance.DeleteItemById(itemId);
 
         ItemRemoved?.Invoke(itemId);

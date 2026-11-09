@@ -167,6 +167,31 @@ public sealed class ExecutableLeaseTests : IDisposable
     }
 
     [Fact]
+    public void OrdinaryExistingWriteTargetIsAllowed()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string program = Write("bin/winws.exe", "program");
+        string target = Write("data/auto.txt", "keep");
+        using var lease = ExecutableLease.Open(program);
+        lease.GuardWriteTarget(target, [Path.Combine(_directory, "data")]);
+        File.AppendAllText(target, "!");
+        Assert.Equal("keep!", File.ReadAllText(target));
+    }
+
+    [Fact]
+    public void ExistingHardLinkedWriteTargetIsRejected()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string program = Write("bin/winws.exe", "program");
+        string target = Write("data/auto.txt", "keep");
+        string alias = Path.Combine(_directory, "alias.txt");
+        Assert.True(CreateHardLinkW(alias, target, IntPtr.Zero));
+        using var lease = ExecutableLease.Open(program);
+        Assert.Throws<UnauthorizedAccessException>(() => lease.GuardWriteTarget(target, [Path.Combine(_directory, "data")]));
+        Assert.Equal("keep", File.ReadAllText(target));
+    }
+
+    [Fact]
     public void WriteTargetOutsideTheRootsIsRejected()
     {
         string program = Write("bin/winws.exe", "program");
@@ -210,4 +235,8 @@ public sealed class ExecutableLeaseTests : IDisposable
         string? folder = ExecutableApprovals.GetStoreItemDirectory(Path.Combine(_directory, program));
         Assert.Equal(expected == null ? null : Path.GetFullPath(Path.Combine(_directory, expected)), folder);
     }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool CreateHardLinkW(string name, string existing, IntPtr attributes);
 }

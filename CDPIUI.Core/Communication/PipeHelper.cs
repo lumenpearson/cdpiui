@@ -91,7 +91,8 @@ public static class PipeHelper
     public static async Task SendMSIPacket(
         MSIInstallationMessageIds messageId,
         string operationId,
-        string? fileName = null)
+        string? fileName = null,
+        string? expectedSha256 = null)
     {
         MSIInstallationMessageModel model = new()
         {
@@ -99,7 +100,8 @@ public static class PipeHelper
             MessageData = new()
         {
             { "operationId", operationId },
-            { "fileName", fileName }
+            { "fileName", fileName },
+            { "sha256", expectedSha256 }
         }
         };
 
@@ -204,16 +206,16 @@ public static class PipeHelper
 
     public static async Task SendConditionalTasksReloadPacket()
     {
+        string tasksDirectory = ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile(
+            SettingsManager.Instance.SettingsFilePath);
+        Directory.CreateDirectory(tasksDirectory);
+
         ConditionalLaunchMessageModel model = new()
         {
             MessageType = ConditionalLaunchMessageIds.ReloadTasks,
             MessageData = new()
             {
-                {
-                    "tasksDirectory",
-                    ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile(
-                        SettingsManager.Instance.SettingsFilePath)
-                }
+                { "tasksDirectory", tasksDirectory }
             }
         };
 

@@ -1,0 +1,438 @@
+# Состояние форка по AUDIT-2.md
+
+Дата сверки: 8 ноября 2026 года. Это рабочий журнал продолжения аудита, а не заключение о безопасности релиза.
+
+## Источники и границы проверки
+
+- Исходный аудит: `F:/Telegram/AUDIT-2.md`, SHA-256 `EE7516160403ECE00373A19D9327E0567F5F37457CD1DB92A872750C8E370194`. Файл не изменялся.
+- Аудит описывает upstream `Storik4pro/cdpiui` на `f6f59c6`. После fetch upstream/main по-прежнему указывает на `f6f59c6bf5d4bb15a8ce42f8b94c8a0aa7658436`.
+- Опубликованный fork main: `d72ad478bc05c6ab9e53f46da1a2b6c58690b202`, на 345 коммитов впереди upstream, без отставания.
+- Продолжение: `audit-defects`, исходный HEAD этой сверки `9c2b9bdfe61ab95cf407cec239b4047a2f54b502`, ещё 17 коммитов поверх fork main, открытый draft [PR #10](https://github.com/lumenpearson/cdpiui/pull/10).
+- Локальный checkout `cdpiui` на `57c5558` отстаёт от origin/main на 139 коммитов. Это не потерянные изменения и не состояние опубликованного форка. Он не переключался и не сбрасывался.
+- История origin/main содержит merge PR #3 (security-hardening), #4 (maintenance-pass), #5 (refactoring), #6/#8 (mvvm), #9 (security-final). Их работу нельзя повторно объявлять неначатой.
+- Прочитаны аудит, история изменений, текущие реализации ключевых защит, тесты, README модулей, handover `session-recovery-20261101/SESSION_CONTINUATION.md` и последние содержательные сообщения Claude в `59b837bf-6f85-42af-acff-1223e0f1f115.jsonl`.
+
+Пометки **✔ в исходном аудите означают проверку достоверности находки автором**, а не исправление. Статус ниже выводится из кода и истории. «Реализовано» означает наличие исправления, не повторный живой прогон каждого пользовательского сценария. Пункты с несколькими независимыми подпунктами не считаются полностью закрытыми по одному тесту.
+
+## Откуда продолжена работа
+
+Последний содержательный ответ Claude: проверка профильных переменных .NET через Планировщик завершена; через launcher runtime-переменные не прошли, контрольная прошла. Запись реального hosts через launcher и ручное подтверждение UAC тогда отдельно не проверялись. Это исторический результат Claude, здесь профиль пользователя повторно не изменялся.
+
+После Claude в PR #10 уже добавлены исправления pipe, ACL через handle, ограничения XML задач, SHA-256 staging MSI, проверки portable/MSI доверия, embedded SYSTEM cleanup и reparse-проверки. Последняя задача — smoke-запуск опубликованных инструментов.
+
+Старый handover «функции и стиль не начаты» описывает последующие этапы повторного аудита. В качестве описания всей истории форка он неточен: декомпозиция, форматирование и MVVM уже присутствуют в main.
+
+Отдельная запрошенная проверка PR #10 в чате `01a1a7da-185d-73e1-9edf-5de49e4da937` завершилась ошибкой лимита до выполнения ревью. Успешного независимого ревью из этого чата нет.
+
+## Безопасность: разделы 2–3 и 20
+
+| Пункт | Состояние | Основание и остаток |
+|---|---|---|
+| C1: Everyone pipe, статический GUID, произвольный elevated start | Базовые исправления в main; архитектурный план частично | `PipeAccessPolicy`, случайный pipe/session key, проверка peer, `ExecutableTrust`, `ExecutableLease`, проверки аргументов. Коммиты `fe36066`, `4b77021`, `688759c`. Полностью типизированный протокол только с ID не введён; файловые пути ещё передаются и проверяются. |
+| C2: произвольный Everyone FullControl | Ограниченная замена реализована, усилена в PR10 | Команда не удалена целиком: путь ограничен, ACL применяется через проверенный handle в `DirectoryAclGuard`, GUI сам создаёт каталог. `c8ab7af`; Windows-регрессии в `DirectoryAclGuardTests`. Не называть это буквальным выполнением требования удалить команду. |
+| C3: произвольный MSI/EXE и TOCTOU пакета | Реализованы проверки, усилены в PR10 | Проверка подписи и staging в tray (`0a93c11`), ожидаемый SHA-256 staging-копии (`13e1860`). Код находится в `PackageStaging`/`MsiInstallerHelper`. |
+| H1: компоненты в пользовательском каталоге | Частично; остаётся архитектурный долг | Вместо полного переноса введены fingerprint, approval и leases на кодовые файлы. Компоненты всё ещё могут находиться в LocalAppData. Обязательное admin-only хранилище `ProgramData/Components` и установка только повышенной стороной не реализованы в форме плана. |
+| H2: Highest autorun и доступная на запись установка | Реализованы дополнительные ограничения в PR10; зависит от H1 | Проверка владельцев/DACL/всей цепочки MSI и portable-каталогов: `f06655d`, `3f16742`, `3ec5bb2`. Небезопасный контекст отклоняется. Это не завершает перенос хранилища компонентов. |
+| H3: захват pipe / impersonation | Реализовано в main | Случайное имя, FirstPipeInstance, повтор создания, peer validation; `b922dde`, `688759c`. Новые тесты реального pipe и отмены добавлены в PR10 (`a2946b3`). |
+| M1: elevated shell для логов | Изменения реализованы в main | Desktop-user запуск и абсолютные системные пути; `RunHelper`, `e49d163`. |
+| M2: ReloadTasks создаёт произвольную папку | Исправлено в PR10 | Повышенный tray не создаёт папку задач; GUI создаёт её сам (`13e1860`). |
+| M3: XML/settings и задачи | Реализованы ограничения; продолжается проверка файловых операций | Запрет DTD/лимиты в чтении настроек и задач; `8c58c96`, `13e1860`. |
+| GUID в логах, debug default | Исправления реализованы | Session key заменяет старый секрет; настройки уровня лога берутся из шаблона (`0acfe15`). |
+| S1: ZIP traversal и запись до проверки подписи | Реализовано, продолжено в PR10 | `ArchivePaths`, staging/catalog verification; `d206830`, `4668ee1`, `e39e97b`, `dfdb479`, `6782559`; текущая работа дополнительно проверяет предков extraction root. |
+| S2: traversal Update.exe | Реализовано | `8bf30e7`; Update компилирует общий `ArchivePaths` как linked source и применяет общие архивные лимиты (`5994042`). |
+| S3: извлечение сертификата вместо проверки подписи | Замена реализована | `CatalogVerifier`/WinVerifyTrust, `7521f30`, `CatalogVerifierTests`. Исходный PoC обхода старой реализации не следует выдавать за выполненный. |
+| S4: неподписанные пакеты / LScript | Реализованы запреты | `bd0f647`, `30a477e`, проверки импортируемых аргументов и путей. Дополнительные trust gaps закрывались в `4cd0e6b`. |
+| S5: сквозное доверие к Магазину | Не завершено | HTTPS и опциональный SHA-256 есть (`b385a4f`, `72a4df1`, `DownloadHashTests`). `VersionControlData` всё ещё загружает zipball/main; обязательного подписанного индекса и обязательного хеша каждого артефакта нет. |
+| Токен репозитория уходит на Store proxy | Исправлено в main | `674df7e`, `StoreRequestCredentialsTests`. |
+| StoreId / DOWNLOAD filename / temp file | Исправления реализованы | Валидаторы ID/имён, HTTPS, уникальные временные имена; `b385a4f`, `DownloadFileNameTests`, `dc085c5`. |
+| requirements.json / MSI update trust | Изменения реализованы, включены в повторный аудит | Catalog/package validation выполняется перед запуском в tray; `0a93c11`, `4cd0e6b`, `13e1860`. |
+| Раздел 20: PAT в публичной истории | Только частично закрывается кодом | Gitleaks в CI есть (`735e307`, `7c198ac`). Отзыв старого токена и проверку его использования нельзя подтвердить из git. История не переписывалась; само наличие секрета в старой истории не устранено. Не публиковать значение и не проверять его работоспособность. |
+
+## Сводный план раздела 16
+
+| Пункт | Состояние и свидетельства |
+|---|---|
+| 0.1 public URI / ShowWindow allowlist | Реализовано: `ab56f0b`, обработчики активации; сырые внешние pipe-сообщения отклоняются. |
+| 0.2 аргументы импортируемых пресетов | Реализованы показ и проверки: `91d699e`, `FileWritingOptionsTests`, `ConfigShareWriteOptionsTests`. |
+| 0.3 DOWNLOAD filename | Реализовано: `DownloadFileNameTests`, безопасная комбинация путей. |
+| 1.1 таймаут pipe / сохранение аргументов | Реализованы повторы и передача аргументов: `1fb1abf`; отмена, обрыв и объяснение смерти tray усилены в `a2946b3`. |
+| 1.2 размеры свёрнутого окна | Реализовано: `907ef2a`. |
+| 1.3 дубликаты задач / меню | Реализовано: `67abc7f`, `b5cbbf5`, последующая сериализация команд `e801d34`, `136e070`; `TasksManageServiceTests`. |
+| 1.4 GoodCheck через БД / config.ini | Реализовано: `3f00d61`, `2f7ae6d`. |
+| 1.5 apply_config | Реализовано путём прекращения генерации неизвестной команды: `f31bb22`. |
+| 1.6 версия установленного пакета | Реализовано: `9786dde`. |
+| 1.7 остановка перед обновлением | Реализовано: `340b6b6`; живые сценарии драйвера требуют отдельного системного прогона. |
+| 1.8 готовность локализатора | Реализовано: `e901e71`; критическое окно дополнительно проверялось в предыдущей сессии PR10. |
+| 1.9 quiet / конфликты / MSI1603 / errors / useProxy | Исправления реализованы: `cf96261`, `9c4c1db`, `d6549e9`, `a6ababa`, `7edc97c`; соответствующие unit tests. |
+| 2.1 proxy snapshot/restore | Реализовано: `40c4bad`, `fd625e0`, `RegeditHelper.RestoreLeftoverSnapshot`. Живой crash/restart сценарий не повторён при этой сверке. |
+| 2.2 Job object / shutdown | Реализовано: `6815d95`, `ChildProcessJob`, завершение при закрытии задания. |
+| 2.3 uninstall cleanup | Реализовано в main и усилено в PR10: `3fe6ee5`, `5d31bdd`, `bd5c999`, `c63a5b3`, `1ba5cf7`. Последнее исправляет порядок до RemoveRegistryValues. Полный install/uninstall на отдельной VM остаётся проверкой релиза. |
+| 2.4 Update staging/rollback | Реализовано: `0578bb6`, `779e10e`; `UpdateInstallHelperTests`. |
+| 2.5 Store staging / чужие компоненты | Реализованы изменения Store installation: сохранение старой версии при ошибке, изоляция неудачной первой установки (`94a7a6f`, `StoreHelper.Installation`). Не считать все виды отмены/зависимостей проверенными живым запуском. |
+| 2.6 hosts encoding/atomic/recover | Реализовано: `d13acdf`, `63e7a09`; `EditHostFileTests`. Реальный системный hosts текущие smoke-тесты не меняют. |
+| 2.7 безопасная замена ссылок | Исправления присутствуют в `FileSystemLinksManager`; отдельная повторная проверка cross-volume/отказа прав остаётся в backlog. |
+| 3.1 Zapret conversion/cache | Реализованы исправления и golden tests: `74586cf`, `Zapret1ToZapret2ConverterTests`. Неподтверждённые upstream-семантики wf-tcp/badseq/compat-Lua требуют сверки с winws отдельно. |
+| 3.2 пути и кавычки | Реализовано: `ReplaceFilesPathTests`, `ConfigCommandLineTests`, `66faab6`. |
+| 3.3 BlockCheck DNS/заглушки/ошибки запуска | Изменения и tests присутствуют: `CurlBlockCheckProbeRunnerTests`, службы scan/execution. Требуется живой сетевой сценарий с заблокированными целями, а не только моки. |
+| 3.4 ранжирование и GoodCheck log | Исправления реализованы: `ec240b0`, изменения GoodCheck parser/log monitor и `BlockCheckReportTests`. |
+| 3.5 ConPTY Unicode/error/handles | Реализованы изменения и декомпозиция: `d20f2bc`, `7edc97c`, `ConPTYNativeMethods`/reader/watcher. |
+| 3.6 второй tray / pipe session | Реализовано: mutex, ожидание живого tray, случайный pipe/session file (`0a45b6d`, `688759c`). |
+| 4: инженерные практики | Значительная часть реализована; см. таблицу ниже. Общее завершение этапа не подтверждено. |
+
+## Остальные находки разделов 4–6, 9–14, 21–24
+
+| Группа исходного аудита | Реализованные изменения / остаток |
+|---|---|
+| 4: кодек pipe, settings, семафоры, async MSI | `04da03c`, `d71de58`, `fd0b1ea`, `9f42050`, `30a477e`; тесты PipeMessage, StreamString, XmlSettings, TasksManage. Изменённый persistence код повторно проверяется как часть файлового аудита. |
+| 5: global exceptions, оставшийся winws, GoodCheck subscriptions | `e0e7071`, `1ca25c9`, `798bb3b`, `63450ce`, `cd397f2`, `d6d0cbe`. Это уже выполненная работа, а не будущий план с нуля. |
+| 5: локализация/доступность | Локализованы окна/диалоги, добавлены accessible names: `1c7817c`, `564052d`, `9e5e484`, `ca4ea43`, `1589bfb`. Числа 76 строк и 27 AutomationProperties из старого аудита больше не являются текущими метриками. |
+| 9.1–9.3 URI, второй GUI, geometry | `ab56f0b`, `5dc48d3`, `907ef2a`. |
+| 9.4–9.7 activation args, localization, preset ranking | `1fb1abf`, `e901e71`, `ec240b0`; полный перечень мелких UI-сценариев ещё требует отдельного regression pass. |
+| 10.1–10.12 Store/version/transaction/queues/download/MSI/links | Реализации переработаны в StoreHelper partials, StoreUpdatesChecker, DownloadWorker, MsiInstallerQueueManager; `9786dde`, `7636d4c`, `94a7a6f`, `651075d`. Не объединять все 12 находок в один статус «полностью проверено»: таймаут тела HTTP, отмена MSI и cross-volume links остаются отдельными проверками. |
+| 11.1–11.11 config/converter/LScript/import/export | Значительная часть реализована, покрыта тестами ProcessService, ConfigItemContent, ReplaceFilesPath, ConfigImportGolden, LScript, converter. `66faab6`, `9fdfa54`, `032185b`; семантики winws, помеченные неподтверждёнными, не закрыты одним успешным build. |
+| 12: proxy, tray menu, job objects, ConPTY, MSI status | Реализованы перечисленные выше изменения; `d317778`, `ac5735f`, `d20f2bc`, `ffc88e1`. Повторный полный живой проход tray не завершён. |
+| 13.1–13.11 Shared/Update/hosts/MSI/errors/tasks | Реализованы указанные выше исправления, `376ed7f`, `dc085c5`, `5bafb69`. Ограничения задач и доверие к uninstall дополнены PR10. |
+| 14.1–14.12 AddOns | Исправления diagnostics/GoodCheck/import/BlockCheck присутствуют; `9c4c1db`, `3f00d61`, `cbb9f0c`, `1c7cc56`, `b681cc2`, `944743b`. Сетевые/системные сценарии и весь перечень мелких подпунктов ещё не перепроверены по одному. |
+| 21.1 empty ProxyServer | `08119cb`, `ProxySettingsTests`. |
+| 21.2 закрытие несохранённого пресета | `4056575`. |
+| 21.3 формирование patch до перемещения UI | Исправления ApplicationUpdateService, `c773687`, `UpdateInstallHelperTests`; исходный порядок больше не следует считать актуальным. |
+| 21.4 dependencies == null | `76ddd0c`. |
+| 21.5 make_patch parser | Скрипт переработан, используется PowerShell 7: `691e81e`, `824bb1f`. Старое неподтверждённое предположение не равно текущей ошибке. |
+| 21.6 Update.exe отсутствует в MSI | Исправлен release layout; CI main/PR10 проверяет список файлов MSI и собирает пакет. |
+| 22.1 tray controls/environment/arguments/ConPTY | `d317778`, `ac5735f`, `b5cbbf5`, `5bafb69`, `d20f2bc`, `651075d`. |
+| 22.2 Store exceptions/HTTP/DBNull/locales | `7636d4c`, `a9d092e`, `2d9d4f9`, `0864c1f`. |
+| 22.3 Shared output/key parsing/random | `ebc5f50`, `456f3f3`, переработка XMLSettingsService. |
+| 22.4 AddOns BAT/atomic synthesis/report limits | `e691a4a`, `b681cc2`, tests ConfigImport/BlockCheckReport. |
+| 22.5 GUI pages | `e9af308`, `8aa911b`, `6dd1d5a`, `9acd4fc`, последующие MVVM fixes `077691f`/`8f10696`. |
+| 22.6 GUI controls/helpers | `66e7d09`, `d531db4`, `0b200f5`, `10dae1f`; часть состояния затем перенесена в view models. |
+| 22.7 Update before handle / hosts newline | `9e47d12`, `EditHostFileTests`. |
+| 23: низкоприоритетные находки | Есть отдельные исправления групп: `3de9f91` (tray/core), `bb5362d` (AddOns), `c053223` (BlockCheck), `86a9f80` (GUI), `824bb1f` (installer/patch). Это доказательство выполненной работы; новый построчный контроль каждого подпункта не завершён. |
+| 17–19, 24–25, 27–28, 32, 37 | История, уточнения, метрики, требования сохранения функций и сравнительный контекст. Не являются одним закрываемым дефектом. Сохраняются как требования к изменениям; старые метрики не переносить на новую ревизию без пересчёта. |
+
+## Раздел 29: новые функции
+
+| Пункт | Текущее состояние |
+|---|---|
+| 29.1 Starting → Ready / Failed, health profiles | Не реализован полный поток: `ComponentStateReader` использует IsProcessRunning; нет ComponentHealthProfile, ProcessReady/ProcessFailed и readyTimeoutSec. |
+| 29.2 подписки на списки с provider и отдельными custom-файлами | Нет полного ListSubscriptionService/UpdateLists и соответствующего UI. Имеющийся Store subscription — не выполнение этой функции. |
+| 29.3 ConditionalLaunch v2 | Не реализован: enum содержит HotKey, ProcessStarted, ProcessStopped. Нет ProcessRunning/NetworkChanged/Schedule/SessionUnlocked/ResumeFromSleep и владения компонентом. |
+| 29.4 Google Global Cache resolver | Реализация GoogleVideoNodeResolver и общий поток выбора ближайшего узла не найдены. |
+| 29.5 Android .bbd | Адаптер ByeDpiAndroidFormat и полный импорт/экспорт .bbd не найдены. |
+| 29.6 перезагрузка после MSI | Частично: коды 3010/1641 и CoreEvents.RestartRequired/IsRestartPending существуют. Не подтверждено полное соответствие всем предложенным UI-точкам и подтверждённому действию shutdown. |
+| 29.7 migration runner / post-update wizard | Нет SettingsMigrationRunner/ISettingsMigration и полного трёхшагового потока. Defaults из шаблона и существующее окно «Что нового» не заменяют миграции схемы. |
+| 29.8 cache/channel/localized release notes | Полный набор не реализован/не подтверждён. Не найдены lastUpdateCheck и предлагаемый поток каналов; требуется отдельная реализация с тестами. |
+| 29.9 animations system/on/off / low performance | Полный предложенный глобальный режим и предложение для слабого ПК не подтверждены; наличие анимированных контролов не закрывает пункт. |
+| 29.10 StartupTrace / diagnostic ZIP | Полный StartupTrace и безопасный обезличенный экспорт не найдены. Существующие логи/diagnostics не заменяют этот поток. |
+
+## Разделы 6, 30–36: инженерные практики и стиль
+
+| Требование | Состояние |
+|---|---|
+| CI build/test/secrets/portable/MSI | Реализовано. Последний исходный run `41883768621`: libraries/gui/secrets success, tools failure. Ниже описана обнаруженная гонка и её исправление. |
+| xUnit и regression assets | Реализовано. При этой сверке полный suite: 749 passed, 0 failed, 0 skipped. Это число тестов, не процент покрытия строк. |
+| Update/EditHostFile .NET8 x64 | Реализовано: `e54c449`; Native AOT launcher — `4ce988b`. |
+| CPM/global.json/package mapping | Реализовано: Directory.Packages.props, global.json, nuget.config (`809ce28`, `8c58c96`). Directory.Build.props отсутствует. |
+| Nullable / warnings as errors | Частично: CS8600 всё ещё none, CS8602 suggestion в .editorconfig; общего TreatWarningsAsErrors нет. AOT launcher проверяется строго. |
+| Зависимости / лицензии | Удалены уязвимые и неиспользуемые зависимости, добавлены THIRD-PARTY-NOTICES (`19a12af`, `26c90ba`). Microsoft.Toolkit.Uwp.Notifications 7.1.3 ещё используется; переход на AppNotifications не завершён. |
+| WiX file list | Путь и список исправлены, CI сверяет с publish. Это контроль списка, а не полная автоматическая генерация WiX. |
+| 33: именование | `3c1558c`, `af0a0ea`; совместимость сериализованных имён требует сохранения. Не переименовывать ключи Store вслепую. |
+| 34 / 36.0–2: .editorconfig/формат/декомпозиция | Значительная работа уже выполнена: `a0efd14`, `af0a0ea`, PR #5, множество split-коммитов. Повторный style pass и строгость анализаторов не закончены. |
+| 35 / 36.5: MVVM | Уже есть ViewModels, ObservableObject и commands, PR #6/#8. Это не полный переход всего GUI на CommunityToolkit.Mvvm. |
+| 35 / 36.5: DI/Hosting/ILogger/Options/STJ/CsWin32 | Общий переход не завершён: сохраняются синглтоны, собственный logger, Newtonsoft.Json и ручной interop. Это будущие миграции, не основание переписывать всё вместе с security fixes. |
+| 30 A–C | Большая часть точечных A/B исправлений реализована; доверие к Store/хранилищу компонентов и protocol v2 в C не завершены. |
+| 30 D | Новые функции из 29 в основном остаются backlog. Не выдавать старые аналогичные функции за реализацию нового дизайна. |
+| 30 E / 31 | Частично: tests, CI, notices, localization, MVVM есть; подпись релизов, nullable baseline, обновлённые метрики доступности и соблюдение всей дизайн-системы требуют отдельной проверки. |
+
+## Изменения этого продолжения и проверки
+
+1. В логе tools job `126762659685` видно: Get-Content сообщает об отсутствующем отчёте в 18:08:27 UTC, а три PASS приходят в 18:08:30–31. PowerShell не дождался GUI executable. Workflow теперь использует Start-Process -Wait -PassThru, читает отчёт после завершения и проверяет ExitCode именно этого процесса.
+2. В ArchivePaths проверялись root и его потомки, но не родители root. Регрессионные тесты LinkedAncestorOfExtractionRootIsRejected и DanglingLinkedAncestorOfMissingExtractionRootIsRejected падали на исходной версии: исключение не выбрасывалось. Теперь проверяется вся цепочка до корня тома, а назначение вне extraction root отклоняется.
+3. Полный suite после исправления: 749/749, без пропусков. Release publish Update.exe прошёл. Проверка исправленного CI-ожидания в повышенном PowerShell завершилась с кодом 0; runner и все три инструмента дали PASS, отчёт создан после времени начала запуска.
+4. Path-based reparse checks не доказывают отсутствие всех гонок между проверкой и записью. Проверка атомарности/handle-based операций в остальных файловых потоках остаётся открытой.
+
+## Очередь продолжения
+
+1. CI154 на `e69269d` завершён: libraries, tools, secrets, gui — success. Держать PR черновым до завершения проверки дефектов.
+2. Продолжить файловый аудит: staging/promotion, FileSystemLinksManager, settings/backup, cleanup и гонки замены каталогов. Проверять по конкретным операциям и регрессиям, не отмечать весь раздел закрытым после одного fix.
+3. Отдельно воспроизвести cancellation/timeout Store/MSI, rollback при заблокированной DLL, полный install/uninstall на изолированной Windows VM.
+4. Завершить H1/S5: определить модель защищённого хранилища и подписанного Store index. Не превращать опциональный хеш в обязательный без согласованного формата каталога.
+5. Подтвердить отзыв исторических credentials у владельца; кодом это не удостоверить.
+6. После стабилизации дефектов — функции раздела 29, затем оставшиеся engineering/style migrations отдельными изменениями с совместимостью форматов.
+
+Чужие рабочие деревья и исходный аудит не перезаписывались. Все изменения продолжения выполняются в cdpiui-s2/audit-defects.
+
+## Файловый проход 2 — staging, links, settings, backup, cleanup
+
+Продолжение от `e69269d`, 8 ноября 2026 года. Это дополнительные исправления, а не закрытие всего файлового аудита.
+
+### Подтверждённые дефекты и исправления
+
+| ID | Область | Результат |
+|---|---|---|
+| FS-01 | `Update/InstallHelper.ApplyStaged` | До исправления symlink/junction в папке назначения, staging или backup позволял переносить файлы вне ожидаемого дерева. Три теста воспроизвели успешный небезопасный apply. Теперь весь план проверяется до первого переноса, пути проверяются повторно после progress callback и создания папок; rollback проверяет собственные пути. |
+| FS-02 | Update backup/cleanup | Новый StageAsync безусловно удалял непустую `.update-backup`, оставленную предыдущим обновлением. Тест воспроизвёл удаление единственного оригинала. Теперь операция останавливается со статусом NoOldVersion, backup сохраняется для ручного восстановления. Cleanup также отклоняет reparse points в пути удаляемой папки. |
+| FS-03 | `ZipService.MergeTextFileAsync` | Выбор `.bak` происходил после проверки исходного пути. Тест с `.bak`-symlink воспроизвёл запись во внешний файл. Проверяется именно выбранный backup, до чтения и перед append. Проверка hard links и конкурентной подмены после проверки остаётся открытой. |
+| FS-04 | `SettingsFileStore` / `XMLSettingsService.SaveChange` | При UnauthorizedAccessException открытие lock возвращало null, но признак timeout оставался false: SetValue сохранял файл без lock. Тест использует каталог на месте `.lock` и воспроизвёл запись. Теперь единственное основание для записи — ненулевой объект полученной блокировки; без него изменение остаётся в памяти. |
+| FS-05 | Замена soft/hard link | Старый файл удалялся/переносился в backup до финального Move без восстановления при ошибке. `LinkFileTransaction` сохраняет вытесненный файл и возвращает его при ошибке публикации. Старый `.bak` больше не перезаписывается. Ошибка cleanup временного файла не маскирует ошибку операции. |
+| FS-06 | Восстановление original вместо link | Раньше RemoveLink сначала удалял рабочую ссылку, затем пытался переместить backup: sharing violation оставлял путь пустым. Теперь ссылка временно сохраняется и возвращается, если backup нельзя перенести. При ошибке самого отката сообщение содержит пути сохранённых файлов. Отсутствующий backup не удаляет работающую ссылку; dangling link без original удаляется. |
+
+### Проверки
+
+- Шесть тестов FS-01–04 запускались на прежнем коде: 6 failed / 0 passed; внешние записи, обход lock и удаление backup подтверждены.
+- Добавлено 19 регрессий: 1 settings, 1 ZIP backup, 6 updater, 11 link transaction. Windows sharing violations моделируются настоящими открытыми файлами без разрешения rename/delete, без изменения пользовательских настроек или системных файлов. Отдельно проверен полный цикл публикации настоящей symbolic link и восстановления оригинала.
+- Два updater-сценария моделируют подмену каталогов через существующие события прогресса: после уведомления до apply и после первого файла перед rollback. Внешний файл сохраняется; при небезопасном rollback оригинал остаётся в backup.
+- Полный набор после изменений: 768 passed, 0 failed, 0 skipped. Release publish Update.exe и smoke-запуск трёх инструментов прошли; итог CI нового коммита фиксируется в SESSION_CONTINUATION.md.
+- Изменения поведения documented в README Update/Core/Shared на EN/RU.
+
+### Оставшиеся окна гонок и следующие проверки
+
+| ID | Статус | Конкретный остаток |
+|---|---|---|
+| FS-07 | Реализована защита staging; проверка полного MSI/patch потока остаётся | См. проход 3: отдельный admin-owned cache, атомарные ACL, no-follow source lease и leases потребителей. Защита пакета больше не зависит от writable portable root или жизни tray. Очистка orphan sessions остаётся FS-12. |
+| FS-08 | Защита исходного снимка реализована; назначение и rollback открыты | Signed ZIP удерживает фиксированный набор обычных файлов и каталогов до конца копирования; поздние добавления не устанавливаются. Проверки назначения относятся к FS-09, атомарность нескольких файлов — к FS-12. См. проход 4. |
+| FS-09 | ZIP и Windows updater apply/rollback исправлены; прочие операции открыты | No-follow write/append и guarded creation дополнены hash при extraction, readonly staging snapshot и native file publication/rollback updater. Settings, links, runtime write-target и recursive cleanup ещё требуют следующих проходов; см. проходы 5–7. |
+| FS-10 | Windows settings I/O исправлен; crash/recovery policy см. FS-11 | Initial/recovery и SaveChange используют lock; settings/backup/lock/diagnostic/notice открываются no-follow и проверяются по handles. Atomic publication удерживает родителей, DACL копируется до записи данных. Lock сам по себе не ограничивает процесс, намеренно нарушающий протокол; защиту записи дают handles. См. проход8. |
+| FS-11 | Открыт, durability | LinkFileTransaction откатывает исключения, но не обеспечивает crash consistency между файловой системой и Settings.xml. При power loss нужен журнал восстановления. Новый updater сохраняет старый backup, но не сериализует два одновременно запущенных Update.exe. |
+| FS-12 | Открыт, cleanup | PackageStaging.Release/CleanUp и рекурсивные удаления Store/verify нуждаются в проверке владения деревом и гонок замены родителей. Не добавлять delete с повторной проверкой пути под видом атомарной защиты. `StoreItemFolders.ReplaceItemFolder` откатывает неудачный Move; online update всё ещё может смешивать версии, как указано в Core README. |
+
+Следующий security-приоритет: FS-07–09 — проектирование и тестирование удерживаемых handles для staging/проверки/promotion/записи. FS-10–12 и живые cancellation/crash/uninstall сценарии остаются в очереди. Этот проход сохраняет обратную совместимость форматов; системный hosts, proxy и установленные компоненты не изменялись.
+
+## Файловый проход 3 — защищённый staging и Windows readonly leases
+
+Продолжение от `f39e8a0`, 8 ноября 2026 года. В соответствии с прямым запросом пользователя работа согласована с чатом «Декомпозировать большие классы» (`01a1bc96-ea11-73a1-a4a1-5cd6db1617fa`). Там закреплён ConfigMaker GUI в отдельном worktree, здесь — security/staging/Update. Общий тестовый csproj объединяется аддитивно. GUI/ConfigMaker этой сессией не изменяются.
+
+### Реализация FS-07
+
+- `ReadOnlyPathLease` открывает существующий файл и всю цепочку родителей от корня тома через Windows handles. Для каждого компонента используется OPEN_REPARSE_POINT; каталог должен быть обычным, файл должен иметь ровно одно имя. Read sharing допускает читателей и запрещает запись, удаление и rename до Dispose. FILE_LIST_DIRECTORY применяется вместо attribute-only handle, который не обеспечивает нужные sharing restrictions.
+- `ProtectedStagingArea` копирует источник через такой lease в `<Common Files>/CDPIUI-Staging/<GUID>/`. Источник не может быть подменён или изменён во время копирования. Размер пакета ограничен 1 ГиБ; ADS-имена отклоняются.
+- Владелец Administrators и защищённая DACL Administrators/SYSTEM задаются при создании каталогов и файла, без промежутка с пользовательским владельцем. Небезопасные существующие пути не исправляются и не принимаются. Проверка предков разрешает создание соседнего каталога, но запрещает изменение/удаление/замену защищённого потомка. Null DACL, пользовательский owner, применимые GENERIC_WRITE/GENERIC_ALL и опасные права отклоняются; InheritOnly ACE не применяется к текущему объекту.
+- Копия остаётся защищённой от непривилегированного пользователя после выхода/падения tray. Store MSI держит дополнительный lease от проверки hash/signature до завершения процесса. ZIP-updater получает собственный lease до остановки tray, чтобы запуск потребителя не оставлял окно передачи защиты.
+- Каталоги и файлы временной распаковки для проверки подписанного patch также создаются с защищёнными ACL/owner. Общая bounded-copy функция применяется к открытому защищённому output stream.
+- Release принимает только пакет в непосредственной GUID-сессии защищённого корня и проверяет дерево. Startup больше не удаляет пакеты вслепую: завершение tray не доказывает завершение MSI. Незавершённые сессии могут оставаться на диске; протокол безопасной сборки и политика квот/возраста относятся к FS-12.
+
+### Проверки и ограничения
+
+- Тесты Windows проверяют блокировку записи, удаления и rename файла/родителя, разрешение второго читателя, передачу lease потребителю, отказ при уже открытом writer, symbolic/dangling/hard links и освобождение handles на ошибках.
+- ACL-тесты проверяют отказ от пользовательского owner, null DACL, опасных прав предка, отказ от принятия/исправления пользовательского каталога и границы Release. Отдельно различаются право создавать соседей и право изменять существующий staging.
+- Elevated ToolsSmokeTest создаёт уникальный `CDPIUI-Staging.Smoke-<GUID>` в Common Files, проверяет копирование, owner/DACL всего дерева, чтение через lease и удаляет только собственную сессию и тестовый корень. Системные hosts/proxy и реальные MSI не запускаются.
+- Первый sandbox-прогон lease не смог открыть handle профиля; вне sandbox проверки прошли. Это ограничение среды, не повод ослаблять sharing. Restore tray потребовал сетевого доступа к настроенным NuGet feeds; аудит пакетов не отключался.
+- Smoke выявил, что существующая MSI install-location policy отклоняет стандартный C:\\ из-за CreateDirectories у Authenticated Users. Для staging введена отдельная политика; `ProtectedInstallLocationPolicy` оставлена без изменений. Это отдельная находка для воспроизведения на установленном MSI, а не заявленное исправление MSI launcher.
+- FS-08 (неизменность всего signed-ZIP набора между VerifyCatalog и promotion), FS-09 (no-follow записи/append, hard links и родители назначения) пока открыты. Новый readonly primitive — основа для этих шагов, а не доказательство их завершения.
+- Полный end-to-end MSI upgrade, tray crash во время установки и patch/update с живыми компонентами требуют изолированной Windows VM. Остатки кэша не удалять вручную при неизвестном активном потребителе.
+- Окончательный локальный результат: 790 passed, 0 failed, 0 skipped (22 новых Windows-регрессии сверх прохода 2); Release x64 tray — 0 warnings/errors; publish Update/ToolsSmokeTest успешен. Elevated smoke: защищённая копия/owner/DACL/read lease/cleanup и все три инструмента — PASS, exit 0. Каталоги проверки ограничены 64 уровнями; traversal/избыточная глубина отвергаются до создания дерева. Итог CI этого checkpoint фиксируется в SESSION_CONTINUATION.md.
+- Основание для Windows API: [CreateFileW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew) (no-follow и sharing) и [FileSystemAclExtensions.Create](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions.create?view=net-8.0) (security descriptor при создании).
+
+Следующая точка: проверить завершённый CI прохода 3, затем продолжить FS-08 и FS-09 в том же порядке; отдельно сохранить новую находку о MSI ACL policy и FS-12 cleanup/quota. Согласование пересечений с сессией декомпозиции продолжается перед изменением общего модуля.
+
+## Файловый проход 4 — фиксированный снимок signed ZIP (FS-08)
+
+8 ноября 2026 года, продолжение от `4b5a0ba`. CI этого базового коммита завершён: tools, secrets, libraries и gui — success, [run 42516916898](https://github.com/lumenpearson/cdpiui/actions/runs/42516916898).
+
+- `ReadOnlyDirectorySnapshot` захватывает обычные файлы и каталоги до проверки каталога и удерживает их до конца promotion. Рекурсивная обработка начинается только после no-follow открытия каждого дочернего каталога; symbolic/junction/hard links отвергаются. Ограничения: 20000 элементов, 1 ГиБ данных и 64 уровня.
+- `ZipService` больше не перечисляет исходное дерево после проверки и не переоткрывает исходные файлы по имени. Копируется фиксированный список через удерживаемые streams; поздно добавленные файлы и каталоги не устанавливаются. Ошибка проверки не меняет назначение и освобождает handles.
+- Дочерние leases разделяют время жизни удерживаемого родителя, без повторного открытия всей цепочки для каждого файла. Dispose родителя не освобождает защиту, пока жив дочерний lease; ошибка открытия освобождает ссылку.
+- Обнаружен и воспроизведён побочный эффект исходного FS-07 primitive: deny-write всех предков блокировал rename посторонних соседних каталогов. После захвата цепочки предки переходят на read/write sharing без delete sharing; каждый удерживаемый потомок не даёт предку стать пустым, а NTFS не разрешает установить reparse point на непустой каталог. Строгая блокировка сохраняется на конечном каталоге. Временная строгая фаза захвата цепочки остаётся короткой; Windows filesystem тесты этих primitives выделены в непараллельную collection.
+- Отдельные настоящие Windows-тесты подтверждают: соседний каталог можно переименовать во время независимого lease; открытие writable handle предка допустимо, но FSCTL_SET_REPARSE_POINT возвращает ERROR_DIR_NOT_EMPTY; удерживаемый дочерний каталог нельзя перенести. Основание: [FSCTL_SET_REPARSE_POINT](https://learn.microsoft.com/en-us/windows-hardware/drivers/ifs/fsctl-set-reparse-point).
+- Регрессии подмены файла и позднего добавления воспроизведены на прежнем promotion (2 FAIL), затем прошли с фиксированным снимком. Полный локальный suite: 801 passed, 0 failed, 0 skipped.
+- Ruling: destination пока сохраняет прежнюю модель проверок пути и копирования. Это намеренно отдельный шаг FS-09; текущая защита источника не заявляется защитой назначения или crash-consistent транзакцией. Неудачное копирование нескольких файлов ещё может оставить смешанную версию (FS-12).
+
+Следующая точка: FS-09 — no-follow открытие назначения без предварительного усечения, проверка типа и числа hard links по открытому handle, удержание родителей при создании и записи. Затем settings/backup/cleanup и сериализация updater.
+
+## Файловый проход 5 — Windows no-follow запись и имена путей (FS-09)
+
+8 ноября 2026 года, продолжение от `a0ff9d4`. Его [CI 42518432026](https://github.com/lumenpearson/cdpiui/actions/runs/42518432026) полностью зелёный (tools/secrets/libraries/gui).
+
+- `WritablePathLease` открывает leaf с OPEN_REPARSE_POINT и OPEN_ALWAYS, сохраняя существующие байты до проверки. Тип объекта и единственное имя проверяются по полученному handle, затем caller может усечь/записать. FileShare.None удерживает файл, readonly directory leases удерживают родителей.
+- Недостающие каталоги создаются по одному под удерживаемым обычным родителем; уже подставленный link отклоняется до перехода внутрь. Это применяется к ZIP назначениям и созданию staging/destination/backup каталогов updater.
+- Windows `ExtractToFileBounded`, signed promotion и `.txt` merge используют новый write lease. Merge читает, определяет конец строки и дописывает через один handle, включая выбранный `.bak`. Для non-Windows library consumers сохранён прежний managed I/O; гарантии Windows handles к нему не приписываются.
+- `WindowsPathNames` отклоняет Win32 aliases: trailing dot/space в компонентах, управляющие/недопустимые символы, DOS device names (включая COM с надстрочными цифрами). ArchivePaths проверяет сырые компоненты до нормализации; native opens также проверяют полный путь. Device-path prefixes не принимаются. Обычные `.`/`..` архивов сохраняются только при результате внутри root.
+- Воспроизведены 7 отказов validation и 3 настоящие hard-link регрессии: архивный destination, `.bak` при merge, destination, подставленный во время catalog verification. После исправления все проходят, внешние байты сохраняются.
+- Подтверждена отдельная ошибка `ExecutableLease`: managed long для FILETIME давал неверное выравнивание BY_HANDLE_FILE_INFORMATION и считывание числа ссылок из file index. Обычный existing write target ошибочно отклонялся как hard link (RED). DWORD-пары исправляют layout; обычный файл можно дописать, настоящий hard link отвергается (GREEN). Это не объявляется устранением всей гонки runtime write target.
+- Полный локальный suite: 819 passed, 0 failed, 0 skipped. Tray Release x64 — 0 warnings/errors, Update и ToolsSmokeTest publish успешны. Текущий ToolsSmokeTest включает общий WindowsPathNames; запуск всех инструментов проверяется также CI без нового локального UAC.
+- Ruling: FS-09 закрыт только для описанных открытий ZIP write/append и создания каталогов. `File.Move`/rollback/recursive cleanup updater ещё используют имена и повторные path checks; между staging и apply требуется защита извлечённых байтов. Settings initial/recovery/lock/backup, LinkFileTransaction publication и запись дочернего компонента через GuardWriteTarget ещё требуют отдельных решений. Многофайловая атомарность и crash recovery остаются FS-11/12.
+
+Новый срок прямого запроса пользователя: до14:00 9ноября2026 Europe/Moscow =11:00UTC. Продолжать самостоятельно, сохранять журнал и согласовывать пересечения с декомпозицией. Следующая точка — оставшийся updater staging/apply и затем FS-10 settings; не считать общий файловый аудит завершённым.
+
+Дополнение прохода5: отдельный `InstallHelper.TryGetDestination` сохранял дублированный validator и принимал Win32 aliases. Три updater-регрессии воспроизведены RED, validator делегирует ArchivePaths с сохранением null-out при отказе. Suite822/822,0skipped. Локальный elevated ToolsSmokeTest после пересборки Update завершён exit0: защищённый staging probe и Update/EditHostFile/ElevatedLauncher PASS. UAC был обнаружен, но к получению window уже исчез; никаких кликов в чужих окнах не делалось.
+
+## Файловый проход6 — перенос и удаление конкретного открытого файла
+
+Native foundation после ec45260: OpenDirectoryForMutation удерживает directory name без delete sharing, разрешая rename дочерних имён. Уникальный пустой child с DeleteOnClose не даёт каталогу стать пустым/превратиться в junction и убирается по своему handle при выходе или crash. CreateForMove создаёт новый ordinary file с DELETE access; OpenExistingForMove открывает существующий файл только для чтения/rename. MoveTo использует SetFileInformationByHandle(FileRenameInfo) на источнике и удерживает всю цепочку назначения. Конфликт без replacement сохраняет оба файла; replacement удаляет имя hard link, не записывая во внешний файл. DeleteOnClose помечает только удерживаемый объект, без повторного path lookup.
+
+Ruling: выбран документированный common case RootDirectory=NULL с абсолютным destination под удерживаемой цепочкой, вместо относительного RootDirectory ABI. Сам источник переименовывается по handle, все родители назначения закреплены. Основание: https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_rename_info и https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle .
+
+Пять новых native-регрессий RED→GREEN; полный suite до следующего этапа827/827,0skipped. Это foundation, ещё не изменение updater apply. Следующие3регрессии updater уже воспроизведены RED: staged bytes меняются доapply, во время Copying callback и уже опубликованный файл/родитель меняются до конца транзакции. Для updater нужен hash, снятый при bounded extraction, immutable snapshot с проверкой всех hash до первого изменения, native backup/publish/rollback и удержание опубликованных файлов до завершения.
+
+## Файловый проход7 — Windows updater: проверенные байты и native транзакция
+
+Продолжение от `98f32d9`, 8 ноября 2026 года.
+
+- SHA256 считается в CryptoStream во время bounded extraction, не из пользовательского staging после закрытия write handle. Hash manifest хранится в памяти; более поздний слой обновляет hash. Список дедуплицируется по каноническому относительному пути.
+- `UpdateFileTransaction` захватывает readonly-снимок всего staging и сверяет каждый запланированный hash до изменения первого установленного файла. Пропавший/изменённый источник или несовпадение плана прерывает apply. Snapshot source-linked в Update без зависимости от DLL из заменяемой установки.
+- Оригинал открывается no-follow с READ/DELETE, проверяется и переносится в backup по handle. Проверенные байты копируются из snapshot stream в CREATE_NEW temporary file; тот публикуется по handle без overwrite конфликтующего назначения. Backup originals и новые опубликованные объекты удерживаются до завершения всех файлов и progress callbacks.
+- Rollback удерживает родителя, помечает для удаления только собственный новый открытый объект и восстанавливает оригинал по handle. Небезопасный путь или конфликт не уничтожает backup. `WritablePathLease.CurrentPath` отражает успешный rename до освобождения прежнего родителя, чтобы откат видел фактическое положение объекта.
+- Три воспроизведённые updater-регрессии RED→GREEN: подмена staging до apply, подмена другого staged file в Copying callback, изменение опубликованного файла/родителя до завершения. Дополнительный тест меняет readonly attribute нового файла через attribute-only операцию и вызывает rollback: при отказе удаления единственный оригинал остаётся в backup, статус NoOldVersion.
+- Ruling: прежний rollback/link тест удалял второй staged file до apply, что теперь отклоняется preflight. Он изменён на реальную ошибку после первой публикации; Windows удержание родителя блокирует подмену и позволяет вернуть оригинал. Legacy non-Windows путь по-прежнему сохраняет backup при подменённом родителе. Проверяется более сильное новое поведение, защита ради старого теста не ослаблялась.
+- Проверки: updater39/39; весь suite831/831,0skipped; Update Release single-file publish PASS. Windows path test collection дополнена updater и ArchiveLimits, чтобы краткий acquisition общих предков не пересекался с чужими filesystem tests.
+- Остаток: recursive staging/backup cleanup, updater log append, резервирование служебных updater путей, сериализация двух Update, durable journal/crash recovery и final restart. Core signed ZIP multi-file rollback, SettingsFileStore и runtime write target тоже остаются отдельными задачами. Нельзя объявлять весь FS-09–12 закрытым.
+
+Дополнение прохода7: updater log append теперь использует Windows write lease, отказываясь от symbolic/hard links без изменения внешних байтов. Два настоящих лог-регрессионных сценария воспроизведены RED→GREEN; обычный append сохраняется. План архива после канонизации отклоняет .update-staging, .update-backup, .update-manifest и update.log в первом компоненте; четыре reserved-path регрессии RED→GREEN. Полный suite838/838,0skipped, Update publishPASS. CI ada2a4b завершён: все4success, run42521704337. Следующая очередь — FS10SettingsFileStore и затем FS11/12; backup/staging recursive cleanup всё ещё не заявлен безопасным.
+
+## Файловый проход8 — SettingsFileStore (FS-10)
+
+Продолжение от8a204f3, ночь8–9ноября2026. CI базового коммита42522168072 — все4success.
+
+- Windows Load читает XML через ReadOnlyPathLease; DTD остаётся запрещённым. Symbolic/dangling/hard links и небезопасные родители не читаются. Native missing-file/path ошибки сохраняют смысл FileNotFound/DirectoryNotFound для initial creation.
+- `.lock` открывается no-follow/exclusive, проверяется обычный тип, единственное имя и нулевая длина. DeleteOnClose задаётся только после проверки. Ранее symbolic `.lock` удалял внешний target при закрытии: это воспроизведено на собственном временном файле и исправлено. Небезопасный/непустой lock не удаляется и не разрешает запись settings.
+- XMLSettingsService initial creation и recovery теперь берут общий lock и перечитывают источник после ожидания. Без lock восстановление только в памяти: нет diagnostic copy, notice и записи XML. Публичный API, форматы, ValueCodec и SettingsXmlTree не менялись.
+- WindowsSettingsFiles (малый отдельный backend) создаёт CREATE_NEW temporary через checked handle. Исходный XML при необходимости копируется через readonly stream в backup temporary. После закрытия источника native rename публикует backup и атомарно заменяет имя Settings.xml; окна отсутствия основного файла нет. Вся цепочка родителей удерживается. Неопубликованные temporary удаляются только через собственные handles/CurrentPath, без нового File.Delete по имени.
+- Diagnostic copy читает только обычный исходник; notice пишет через проверенный write handle. SaveChange после ошибки чтения не записывает испорченный primary поверх последнего хорошего `.bak`.
+- Дополнительная проверка поймала регрессию нового rename-пути до коммита: temporary наследовал DACL родителя вместо существующих access rules. Теперь DACL снимается с удерживаемого оригинала и передаётся в SECURITY_ATTRIBUTES при создании temporary/backup/diagnostic, до записи приватных байтов. Проверены protected и inherited ACL, отсутствие роста ACE после повторных saves. Сравниваются реальные rules и protection, а не косметический SDDL marker AUTO_INHERITED.
+- Ruling: сохраняется DACL; owner/прочие new-file metadata не обещаны идентичными оригиналу. Settings — пользовательские данные, не источник доверия по владельцу. Код не пытается получать SeRestorePrivilege или менять владельцев существующих файлов. Нужда в точном сохранении owner/ADS/EFS требует отдельного решения; текущая гарантия — проверенные paths/bytes и сохранение access rules.
+- Проверки:10 public safety regressions RED→GREEN (settings/backup/lock links, notice, parent, initial/recovery lock), испорченный primary/last-good backup RED→GREEN, validated lock и typed missing-file contracts RED→GREEN,2 ACL regressions. Полный suite852/852,0skipped,22sec; tray Release x64 0warnings/errors; Update single-file publishPASS. Нет оснований расширять native API ради speculative performance optimization: последний suite сопоставим с21sec baseline838.
+- Координация: чужая декомпозиция независимо проверила именно ada2a4b+ecc7828 —969/969 и GUIx64Release0/0 в отдельной короткой копии. Более новые security/GUI коммиты этим числом не покрыты; они требуют следующего joint run.
+
+Основание API: [GetKernelObjectSecurity](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-getkernelobjectsecurity), [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/windows/win32/api/wtypesbase/ns-wtypesbase-security_attributes). Следующая очередь: links/FS-11 crash consistency и updater serialization, затем FS-12 cleanup/Core multi-file promotion, runtime write target и final restart/MSI policy. Все эти пункты остаются открытыми.
+
+## Файловый проход 9 — исправление подмены пустого каталога (FS-09/10)
+
+9 ноября 2026 года, продолжение от `d65477f`. В независимом разборе обнаружено существенное ограничение прежнего directory lease: FILE_WRITE_ATTRIBUTES позволяет превратить **пустой** удерживаемый каталог в junction. Запрет delete sharing сам по себе этого не предотвращает. Поэтому прежние утверждения о неизменности типа любого открытого каталога и достаточности абсолютного пути уточняются этим проходом.
+
+- `WindowsFileHandles` выполняет одно-компонентные открытия и создание через `NtCreateFile` относительно уже открытого родителя, с OBJ_DONT_REPARSE/FILE_OPEN_REPARSE_POINT. Только корень тома/ресурса открывается по полному имени; все следующие компоненты — по handles. Родитель и открытый объект проверяются до использования. Ни один из режимов открытия не усекает существующие данные.
+- `OpenOrCreateDirectory` больше не создаёт следующий компонент через абсолютный `Directory.CreateDirectory`. Anchor для mutation lease также создаётся относительно handle с CREATE_NEW/DeleteOnClose. Только после проверки обычного типа родителя он считается закреплённым. Удерживаемый anchor не позволяет каталогу стать пустым и превратиться в junction во время namespace mutation.
+- Все write leases теперь используют такой mutation parent и открывают файл относительно него. DACL нового файла передаётся в OBJECT_ATTRIBUTES при создании до записи данных; прежние проверки hard links/типа сохраняются.
+- Переименование использует `NtSetInformationFile(FileRenameInformation)` с RootDirectory открытого назначения и единственным именем. Локальный `SetFileInformationByHandle` с relative RootDirectory отверг операцию; абсолютного fallback нет. Предыдущий ruling прохода 6 об абсолютном destination заменён этим решением.
+- Снимок перечисляет содержимое через `NtQueryDirectoryFile` открытого каталога; `Directory.EnumerateFileSystemEntries` и `File.GetAttributes` по переоткрываемому пути больше не используются для snapshot traversal.
+- Реальная регрессия сначала воспроизвела чтение чужих байтов после conversion пустого родителя. Теперь child read, enumeration, создание каталога/файла и mutation lease отвергают такой родитель. Отдельно проверено, что низкоуровневое relative creation не создаёт файл в junction target и что mutation anchor предотвращает conversion изначально пустого каталога. Тест возвращает собственный reparse tag в исходное состояние через тот же handle.
+- Проверки: полный Windows suite **854/854, 0 skipped**, TRX `CDPIUI.Tests/TestResults/native-relative-full.trx`; целевые settings/update/snapshot/write **69/69**; Tray Release x64 **0 warnings/errors**, Update и ToolsSmokeTest single-file publish PASS.
+- Ограничение локального elevated smoke этого checkpoint: новый RunAs запрос не был подтверждён; Computer Use показывал перекрытое, затем устаревшее изображение UAC и не смог надёжно прочитать сведения приложения. Отчёт `ToolsSmokeTest.report.txt` от 8 ноября 20:20 UTC относится к прежнему запуску и не выдаётся за новую проверку. Полный native suite выполнялся успешно без изменения системных настроек.
+
+Остаток: внешний `Test-FileCatalog` ещё разрешает пути самостоятельно; изменение пустой подпапки после snapshot требует отдельной защиты/проверки состава каталога. Это не объявляется полным закрытием source verification. Links publication/restore, updater serialization/durable journal, recursive cleanup, Core multi-file rollback, runtime write target и final restart/MSI policy остаются открытыми. Независимый reviewer сообщил finding, но полный review не завершился из-за ошибки платформы; общего clean-review заключения нет.
+
+Основание native API: [NtCreateFile](https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile), [FILE_RENAME_INFORMATION](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information). Проверен локальный Windows/NTFS; сторонним file-system filters и non-Windows такой же контракт не приписывается.
+
+## Файловый проход 10 — catalog metadata и тот же снимок для проверки/копирования
+
+9 ноября 2026 года, продолжение от `a49ae65`. Его [CI 42567627617](https://github.com/lumenpearson/cdpiui/actions/runs/42567627617) завершён: tools/secrets/libraries/gui SUCCESS.
+
+- Воспроизведены два реальных сценария прежнего внешнего обхода: отсутствующий signed member можно было предоставить через поздний junction и получить Success; conversion пустой папки также заставлял PowerShell обращаться к данным вне захваченного набора. Исправление не основывается на повторном path check.
+- `CatalogManifestReader` передаёт системному Windows PowerShell только путь самого удерживаемого catalog file. Явный импорт системного Security module устраняет зависимость от пользовательского PSModulePath; autoload в локальном окружении реально не работал. `Test-FileCatalog -Detailed` используется как читатель CatalogItems, не как внешний обход/решение о доверии. Собственное имя каталога явно исключается: Windows PowerShell 5.1 иначе пытается хешировать его как файл набора. Пути передаются через environment, wildcard characters экранируются.
+- CMS подпись проверяется из no-follow удерживаемого файла до запуска reader. Вывод — ограниченный ASCII/base64 протокол, строгие UTF8, имена, SHA1/SHA256 digest, отсутствие aliases/дубликатов и не более20000members. Ограничения: CMS64MiB, stdout16Mi characters, stderr64Ki characters, процесс2min. Неуспешный exit/повреждённый/слишком большой ответ отвергается.
+- `WindowsCatalogHash` использует системный wintrust.dll и `CryptCATAdminCalcHashFromFileHandle2` по захваченным handles. Это те же Windows catalog/SIP правила, что использует cmdlet, включая PE и empty-file metadata. Состав каталога точно сопоставляется со снимком, а не с новым path enumeration; отсутствующие и лишние проверяемые файлы не принимаются.
+- `VerifySnapshotAsync` связывает проверку с уже захваченным набором. Core signed promotion передаёт один snapshot в CertificateCheck/CatalogVerifier и затем копирует его streams; повторного, более позднего снимка для проверки нет. Отдельный тест подтверждает отказ, когда signed member появился только после захвата исходного снимка.
+- Явно исключённые пользовательские data files могут оставаться намеренными symbolic/hard links: содержимое и target не открываются. Исключения применяются только к файлам; одноимённый каталог не скрывает своё поддерево. Snapshot сохраняет метаданные SkippedFiles отдельно от удерживаемых Files. Tray trust берёт code snapshot с прежним CodeExtensions policy и больше не перечисляет dataFiles через Directory.EnumerateFiles(AllDirectories).
+- Тесты: оба junction-сценария RED→GREEN; version1/SHA1 и version2/SHA256 с text/Unicode/empty/PE files; буквальные имена исключений; custom catalog name с квадратными скобками внутри/вне source; intentional skipped symbolic/hard links с эксклюзивно закрытым target; исключение имени каталога не исключает его children; protocol malformed UTF8/names/hash/algorithm/duplicates/20001entries. Полный Windows suite **881/881,0skipped,56sec**; Tray x64Release **0warnings/errors**. Testscsproj/GUI/Program не изменялись.
+
+Ruling: сохраняется совместимость с существующими version1/SHA1 каталогами. Отказ от SHA1 требует отдельной миграции опубликованных пакетов. Catalog/SIP hash не объявляется raw SHA256 каждого байта PE. Этот проход закрывает описанный внешний обход в CatalogVerifier и связывает Core verification/copy set; runtime handoff к процессу, многофайловая атомарность, crash recovery и cleanup этим не закрыты. Следующие пункты — link namespace publication/restore, updater serialization/durable journal и FS-12 cleanup.
+
+Основания: [PowerShell CatalogHelper](https://github.com/PowerShell/PowerShell/blob/master/src/System.Management.Automation/security/CatalogHelper.cs), [Test-FileCatalog](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.security/test-filecatalog?view=powershell-7.5), [CryptCATAdminCalcHashFromFileHandle2](https://learn.microsoft.com/en-us/windows/win32/api/mscat/nf-mscat-cryptcatadmincalchashfromfilehandle2). Локальные native tests использовали установленный Windows PowerShell5.1; сертификат тестового CMS создавался только в памяти, в хранилище сертификатов ничего не устанавливалось.
+
+## Файловый проход 11 — foundation для намеренных file links
+
+Продолжение от `f5438c6`; его [CI 42571560880](https://github.com/lumenpearson/cdpiui/actions/runs/42571560880) полностью SUCCESS.
+
+`FileNameLease` открывает конкретное имя обычного файла, symbolic/dangling file link или hard link относительно закреплённого ordinary mutation parent. Он предоставляет только native rename без replacement и delete-on-close этого открытого объекта; API записи содержимого нет. Для этого единственного namespace-сценария разрешается reparse leaf при FILE_OPEN_REPARSE_POINT. Обычные read/write leases по-прежнему отвергают links, а все промежуточные каталоги проверяются/закрепляются. Directory links не принимаются. Общая сборка relative rename buffer перенесена в WindowsFileHandles; WritablePathLease использует ту же проверенную операцию.
+
+Пять новых native случаев проверяют symbolic/dangling/hard links, сохранение target bytes после переноса/удаления имени, закрепление нового родителя, конфликт с существующим destination и отказ directory link. Целевые native/settings/update тесты71/71; полный suite **886/886,0skipped**. Update single-file publishPASS; ToolsSmokeTest publishPASS в отдельную `artifacts/tools/smoke-namelease`: основной EXE остаётся заблокированным незавершённым UAC-запросом, его не перезаписывали силой. Нового локального elevated smoke не заявляем.
+
+Это только foundation: LinkFileTransaction ещё не переведён. Следующий шаг обязан проверить, что захвачен именно ожидаемый symbolic target или hard-link file identity; простой захват произвольного temporary после callback не закрывает creation/capture race. Backup/restore и cleanup должны работать с открытыми объектами и сохранять неизвестный temporary при отсутствии доказанной идентичности. Общая FS-11 crash consistency остаётся открытой.
+
+## Файловый проход 12 — Windows links: publication, binding и restore
+
+Продолжение от `c2f4e3e`; его CI завершён по всем четырём заданиям SUCCESS.
+
+- Windows `LinkFileTransaction` делегирует небольшому `WindowsLinkFileTransaction`. Mutation parent удерживается до вызова creator и до завершения операции; raw destination leaf проверяется до creator, включая запрет ADS/Win32 aliases. Prepared, original, displaced и backup имена захватываются в FileNameLease; переносы и удаления выполняются по этим handles. Безусловного path cleanup неизвестного temporary в Windows-пути больше нет.
+- `FileSystemLinksManager` передаёт ожидаемый target и тип новой ссылки. Symbolic target читается через FSCTL_GET_REPARSE_POINT удерживаемого leaf без перехода в него; проверяются tag/границы/UTF16 и эффективный абсолютный/относительный путь. Hard link сопоставляется с ordinary target по volume/file index; одинаковые байты другого файла не заменяют идентичность. Обычный файл с единственным именем не принимается за hard link к самому себе.
+- При замене известной ссылки также проверяется прежний target из metadata. Устаревшая запись HARDLINKS не разрешает удалить новый обычный файл пользователя под видом старой ссылки. Current link/backup удерживаются до завершения publish/rollback. Existing `.bak` не перезаписывается.
+- Restore принимает только соседний `destination + .bak`, отвергает symbolic backup и проверяет target текущей ссылки до её удаления/переноса. Проверка File.Exists произвольного backup из metadata перед этими проверками удалена. Отсутствующий/занятый backup оставляет текущий файл; конфликт отката сохраняет recovery paths в ошибке. Если исходного backup не было, удаляется только открытое имя проверенной ссылки, включая dangling symbolic link.
+- Ruling о partial creation: если callback завершился ошибкой до capture/validation, принадлежность текущего temporary не доказана. Он сохраняется с diagnostic trace. Старый тест, ожидавший удаления любого partial по имени, уточнён для Windows: неизвестный объект не удаляется. Реальные creators CreateSymbolicLink/CreateHardLink не публикуют частично записанный пользовательский файл; неподтверждённые artifacts остаются частью FS-12 cleanup политики.
+- Воспроизведены RED→GREEN: подмена родителя во время creator, подмена prepared symbolic/hard link другой целью (включая другой file identity при одинаковых байтах), несвязанный backup path, restore поверх обычного user replacement, stale HARDLINKS metadata и вызов creator для ADS destination. Проверены реальные hard/absolute/relative symbolic links с полным publish/restore и сохранением target bytes. Четыре native binding cases также проверяют ordinary-file refusal и exact identity.
+- Дополнительная проверка предположений: POSIX FileRenameInfoEx replacement на локальном NTFS не обошёл отсутствие delete sharing у readonly file/name lease/anchor. Контрольный случай с не удерживаемым target успешно переименован; отрицательный результат не объясняется неподдерживаемым API. Нового bypass по этой гипотезе не найдено.
+- Проверки: целевой links/native набор27/27 до дополнительных stale/alias/POSIX случаев; окончательный полный Windows suite **903/903,0skipped**, TRX `links-full.trx`; Tray x64Release0warnings/errors. Публичные методы FileSystemLinksManager и XML-формат HARDLINKS сохранены. GUI/Program/Tests.csproj не изменялись.
+
+Остаток FS-11: это не durable транзакция filesystem + Settings XML. Crash после rename и до записи metadata требует journal/recovery; отсутствие ожидаемого hard-link target после внешнего удаления не разрешает автоматически удалять оставшийся файл. Сериализация двух updater, безопасный recursive cleanup и Core multi-file rollback ещё открыты. Non-Windows внутренний путь сохраняет managed операции без гарантий Windows handles.
+
+Основания: [FSCTL_GET_REPARSE_POINT](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_get_reparse_point), [Symbolic Link Reparse Data Buffer](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/b41f1cbf-10df-4a47-98d4-1c52a833d913), [FILE_RENAME_INFORMATION](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information).
+
+## Файловый проход 13 — сериализация updater (часть FS-11)
+
+Продолжение от `5cf1e17`; [CI 42577236506](https://github.com/lumenpearson/cdpiui/actions/runs/42577236506) — tools/secrets/libraries/gui SUCCESS.
+
+`UpdateInstallationGate` получает `.update-lock` через validated native OpenLock до входа в RunHeldInstallAsync: до shutdown приложения, StageAsync и любых cleanup/restart. Lease удерживается через весь async callback. Ошибки приобретения lock сообщаются отдельно и не запускают процедуру; исключение самой операции сохраняется и освобождает lock в using. Другой target root независим. Непустые/symbolic/hard-linked lock entries не принимаются и не удаляются. `.update-lock` и его канонические варианты зарезервированы в архивном validator. Per-instance lifecycle lock не позволяет второму StartInstall испортить FinishStatus первого или Init заменить пути во время работы.
+
+Проверки на собственных временных каталогах: второй callback не входит, пока первый ожидает; marker первого не изменяется; после завершения и после исключения следующий запуск допускается; исходное operation exception не превращается в lock error; три unsafe lock случая сохраняют данные; разные roots допускаются одновременно. Четыре gate случая сначала воспроизведены RED, два новых reserved-path случая также RED→GREEN. Реальный старый RunHeldInstallAsync для воспроизведения не запускался: он останавливает настоящий трей, поэтому проверялся выделенный целостный gated operation с файловым marker. Целевые gate/updater **51/51**; полный Windows suite **911/911,0skipped** (`update-gate-full.trx`), Update single-file publish PASS.
+
+Ruling: это сериализация кооперирующих updater процессов, не durable journal и не общий mutex с MSI/uninstall или сторонними writers. Crash recovery, безопасный recursive cleanup и final restart остаются открытыми. Следующая точка — FS-12 cleanup через ограниченный no-follow preflight и удаление конкретных удерживаемых объектов.
+
+## Файловый проход 14 — ограниченная очистка по handles (FS-12)
+
+Продолжение от `38ec905`; его CI tools/secrets/libraries/gui SUCCESS.
+
+- `WindowsFileRemoval` захватывает дерево через NtQueryDirectoryFile/NtCreateFile относительно directory handles. Объекты получают DELETE access без delete sharing. Directory links, неправильный тип, unsafe parents, занятые объекты и превышение20000entries/64levels прерывают preflight до удаления объектов дерева. Guard anchor находится только в родителе, вне дерева. Содержимое файлов не читается.
+- После полного capture удаляются конкретные handles снизу вверх, без нового path lookup/recursive walk. Поздние entries не подхватываются: непустой directory остаётся. Ошибка во время самого удаления может оставить частично очищенное собственное дерево; atomic cleanup не обещается. File symbolic/dangling/hard links удаляются как имена, target bytes сохраняются. Directory links не обходятся/не удаляются этим tree API. Readonly attributes/DACL не ослабляются. Volume/share root запрещён, отсутствующий родитель не создаётся. Caller обязан передать собственный/зарезервированный scope; utility не разрешает удалять произвольные user folders.
+- Включено в Windows updater staging/backup cleanup и старый `.update-manifest`, Core signed ZIP verification finally, tray package verification finally и ProtectedStagingArea.Release после прежней проверки owner/DACL. ToolsSmokeTest использует тот же cleanup для своих probes. Source-link добавлен в Update/ToolsSmokeTest; updater не получает новой DLL dependency.
+- `DeleteEmptyDirectoryIfExists` проверяет/удаляет пустой backup по одному root handle. Непустой backup даёт NoOldVersion без обхода/удаления содержимого. Отдельно воспроизведено RED, что updater извлекал новые файлы после неудачного staging cleanup; теперь StageAsync прерывается до распаковки и сохраняет занятые данные.
+- Уточнён native open: FILE_OPEN_REPARSE_POINT позволяет читать final file-link metadata при сохранённом OBJ_DONT_REPARSE (native test). Необязательное ослабление OBJ flags удалено из FileNameLease/helper. Ordinary read/write link checks остаются. POSIX control также проверен для metadata+DELETE handle cleanup: held name не заменяется.
+- Проверки: file-link targets; directory link/root/ancestor refusal; busy-file preflight/retry; depth65;20001entries без удаления; empty-only recovery preservation; readonly alias без сброса attributes; missing parents; volume root prohibition. Integrated74/74 до последних guards; guards/POSIX17/17; stage/backup47/47; окончательный Windows suite **926/926,0skipped**, `removal-full.trx`; Tray x64Release0warnings/errors; Update/ToolsSmokeTest publishPASS (runner `artifacts/tools/smoke-cleanup`). Основной локальный runner EXE занят; force overwrite и неподтверждённый elevated smoke не выдаются за успешную проверку.
+
+Остаток: GC осиротевших persistent sessions выключен до consumer-lifetime protocol. Store item folder cleanup и другие callers требуют отдельного включения. Core multi-file rollback, durable filesystem/settings journal, runtime write handoff, final restart и MSI policy открыты; live MSI install/uninstall на компьютере пользователя не выполнялся.
+
+Координация: параллельная декомпозиция зафиксировала отдельный joint pin **5cf1e17+a87f27b**, `cdpiui-joint-5cf1e17-20261109`:1328/1328 и GUI0warnings/errors, без product-пересечений. Gate/cleanup изменения этим числом не покрыты.
+
+## Файловый проход 15 — откат публикации signed Core snapshot (FS-11)
+
+Продолжение от `a99d0d0`. Его CI libraries/tools/gui SUCCESS; secrets job завершился на Install gitleaks (`curl` exit22), обе scan steps SKIPPED. Это неполная проверка секретов, не сообщение о найденном секрете; новый запуск CI нужен. Workflow/проверку не ослабляли.
+
+`ZipService.VerifySnapshotAndPromoteAsync` передаёт тот же удерживаемый и проверенный snapshot в `VerifiedFilePromotion`. Весь набор сначала подготавливается: native parents, тип/единственное имя существующих файлов, DACL и CREATE_NEW temporary с копией проверенных bytes. До окончания подготовки оригиналы не перемещаются. Затем exact held originals переносятся в уникальные соседние backup, prepared files публикуются native rename без replacement. Все handles остаются до завершения batch и callback. Конфликт с новым посторонним объектом не разрешает его перезаписать.
+
+При ошибке новые собственные файлы/temporary удаляются по handles, оригиналы восстанавливаются в обратном порядке. Ошибка отката сохраняет оригинальный backup и сообщает recovery path вместе с исходной ошибкой. После успешной публикации удаляются открытые originals; ошибка cleanup явно сообщает, что новые файлы уже установлены и какой original сохранён. Ошибки закрытия ресурсов агрегируются с первичной ошибкой; parent reference освобождается даже при ошибке FileStream.Dispose.
+
+Добавлены внутренние borrowed-directory mutation contexts с reference lifetime и shared directory cache: цепочки предков не дублируются на каждый файл/rename. Native child validation, ordinary type checks и directory anchor остаются; direct child only, новый borrow после Dispose запрещён, действующий dependent сохраняет parent/anchor. Публичные Core API и Tests.csproj не менялись.
+
+Воспроизведён реальный RED: конфликт на втором signed file оставлял первый с новыми bytes. Исправление GREEN. Дополнительные native проверки: fault после двух замен; rollback нового файла; поздний посторонний destination; busy/readonly/symbolic второй target без частичной замены; удержание всех оригиналов до конца; protected DACL с единственным исходным разрешением; rollback failure из-за readonly нового файла с сохранённым backup и recovery path; nested/empty directories и trailing separator; borrowed lifetime/non-child refusal. Окончательный Windows suite **939/939,0skipped**, `promotion-full.trx`; Tray x64 Release **0 warnings/errors**; Update single-file publish PASS.
+
+Ruling: это восстановление при ошибке работающего процесса. Durable crash journal, атомарное переключение всего набора для независимых читателей и общий installation mutex Core/Store/MSI не заявляются. Созданные пустые directories могут остаться после отказа. Копируются DACL permissions/protection; идентичность owner/ADS/EFS/всех attribute flags не обещается. Readonly originals отвергаются до замены. Windows может нормализовать служебный SE_DACL_AUTO_INHERITED flag при создании: тест проверяет реальные ACE и protection, а не текстовое равенство SDDL. Остальные audit пункты из прохода14 остаются открытыми.
+
+## Файловый проход 16 — общие atomic write/copy/probe helpers
+
+Продолжение от `94d873b`; его CI libraries/tools/gui/secrets полностью SUCCESS. Предыдущая ошибка скачивания gitleaks не повторилась; проверки не отключались.
+
+`FileSystemService.WriteAllTextAtomic` на Windows использует `WindowsAtomicFile`: существующий no-follow mutation parent (не создаёт отсутствующие родители), ordinary/single-link original для DACL, CREATE_NEW temporary с этими разрешениями до записи, завершённые bytes + disk flush, native atomic replacement одного имени. Перед replacement read lease original закрывается, parent/temporary удерживаются; поздняя file alias заменяется как имя, target bytes не открываются/не меняются. UTF8 без BOM сохранён. При writer failure/cancellation оригинал остаётся; собственный temporary удаляется по handle. Ошибка cleanup/close сообщает retained path и сохраняет первичную ошибку в AggregateException.
+
+`CopyFileAsync` удерживает no-follow ordinary single-link source через весь async copy и использует тот же atomic output. Existing destination aliases отвергаются до копирования, совпадающий canonical source/destination остаётся no-op. Обычные linked sources теперь явно отвергаются: прежнее неявное чтение произвольной цели для экспорта не сохраняется. Если продукту нужен экспорт намеренно связанного списка, требуется отдельное связывание с ожидаемой целью; обход проверки ради совместимости не добавлялся.
+
+Write permission probe использует held existing parent + CREATE_NEW file и delete-on-close до пробной записи/flush. Windows path-based File.Delete/finally удалён; отсутствующие directories не создаются. Проверка через directory link возвращает отказ. Non-Windows fallback сохранён с прежними managed операциями без native гарантий.
+
+Четыре реальные RED→GREEN: atomic text через linked parent; hard-linked copy destination; symbolic source export; положительная probe через linked directory. Дополнительно: pending await держит original/parent; fault/cancellation сохраняет bytes и убирает temporary; late symbolic destination заменяется как имя с сохранением target; protected DACL и literal UTF8 bytes;100000-byte copy/same-path no-op; probe без artifacts/missing parent creation. Target11/11, полный Windows suite **950/950,0skipped**, `common-write-full.trx`; Tray x64Release0warnings/errors. Свежий локальный опубликованный Update.exe из прохода15 реально запущен скрыто с `--smoke-test`, exit0; это не elevated runner/MSI проверка. Все три инструмента отдельно прошли CI tools на94d873b.
+
+Ruling: atomicity одного имени не заменяет durable journal или согласованный набор filesystem/settings. Owner/ADS/EFS/все metadata flags не обещаются. Общие helper API сохранены; GUI/Program/Tests.csproj не менялись. Store cleanup/directory promotion, runtime handoff/final restart/MSI policy остаются следующими открытыми областями.
+
+## Файловый проход 17 — Store root/id binding и native cleanup
+
+Продолжение от `e7b954b`; его CI libraries/tools/gui/secrets SUCCESS.
+
+Старый собранный StoreItemIds.IsValid реально вернул true для CON/nul/COM1/LPT0, case aliases localuserstorage/cdpiuiappst и строки с завершающим newline. Regex заменён на абсолютные якоря \A/\z, используется общий ordinary Windows name validator; зарезервированные IDs принимаются только в каноническом написании. Отдельный IsProtected проверяет их без учёта регистра во всех новых destructive guards. WindowsPathNames стал общим публичным validator, его linked native consumers не меняют реализацию.
+
+`StoreItemDirectoryOperations` связывает directory с точным immediate `itemsRoot + itemId`; nested/другой item/prefix-sibling/invalid path не принимаются. Delete/Create-clean используют native bounded no-follow cleanup, protected folders не удаляются даже при case alias. Protected canonical creation не выполняет clean. StoreItemFolders переведён на этот backend, отсутствие DB record не даёт более широкого path delete. StoreHelper.RemoveItemAsync проверяет соответствие DB directory/ID до остановки компонента и сохраняет DB record/event state, если файловая очистка не удалась. Retrying оставлено только для busy/lock/directory-not-empty ошибок, policy отказ не повторяется пять раз.
+
+Local pack reserved-ID guards используют case-insensitive protection; Windows cleanup собственных offline folders также native. CopyLocalPack дополнительно проверяет root/ID, запрещает LocalUserStorage replacement и копирует app patch через atomic no-follow CopyFileAsync. Его обычная directory promotion пока остаётся следующим открытым подпунктом; старую Directory.Move/previous cleanup здесь не объявляем исправленной.
+
+Проверки:17 новых native/pure cases —7 unsafe IDs,4 canonical positives, exact folder mapping,3 protected casing refusals с сохранёнными собственными marker, directory-link preflight до первого удаления, busy clean сохранение + успешный retry. Тестовый itemsRoot — только GUID Temp; настоящие installed Store/DB не удалялись/не запускались. Полный suite **967/967,0skipped**, `store-scope-full.trx`. Последний run собран после nullable/root namespace поправок; transient MSB3026 от ещё закрывавшегося предыдущего testhost разрешился автоматически, оба полных прогона прошли. Tray x64Release0warnings/errors.
+
+Ограничения: это не общий Store install/uninstall mutex и не durable filesystem/database transaction. Обычные различающиеся регистром component IDs и миграция SQLite collation требуют отдельного рассмотрения; здесь устранены защищённые aliases. Directory promotion, repository/cache cleanup, runtime handoff/final restart/MSI policy остаются открытыми. GUI/Program/Tests.csproj не менялись.
+
+## Файловый проход 18 — native directory namespace transaction и Store cache
+
+Продолжение от `80c17c1`; его CI libraries/tools/gui/secrets SUCCESS.
+
+Ruling по нативному эксперименту: локальный NTFS отказал directory rename при открытом собственном no-delete anchor. После закрытия только anchor контрольный rename без snapshot прошёл, а вариант с удерживаемыми nested snapshot files продолжил возвращать Windows error5. Эксперимент/patch/tests/TRX сохранены вне продукта в session-recovery-20261101/directory-rename-probe-20261109-0845. Защита проверенных файлов не ослаблялась; prototype с обещанием такого directory handoff не включён. VerifiedFilePromotion остаётся отдельным способом потребления held verified bytes.
+
+Новый `WindowsDirectoryTransaction` занимается только namespace roots. `DirectoryNameLease` захватывает ordinary directory с DELETE/LIST/ATTR относительно held parent, удерживает конкретное имя и anchor. Для native rename закрывается только собственный anchor; дальше выполняется exact-root rename без replacement, CurrentPath обновляется до дальнейших проверок, ordinary anchor восстанавливается на том же открытом объекте. Root parents закреплены; файловые bytes детей этим API не замораживаются. Linked roots/ancestors и volume/share roots отвергаются; вложенные друг в друга source/target запрещены. Normalization проверяет volume root до удаления separator, чтобы C:\ не превратился в drive-relative C:.
+
+Original переносится в уникальный sibling previous, prepared — в destination. При ошибке восстанавливаются оба удерживаемых root без удаления конфликтующего нового объекта. Если restore невозможен, ошибка сохраняет обе версии и сообщает реальные recovery paths. После commit старый root очищается прямо по его исходному handle: bounded no-follow preflight, собственный anchor исключается по известному удерживаемому имени, child dispositions снизу вверх, anchor закрывается только перед root disposition. Повторного открытия previous по изменяемому path нет. Cleanup refusal сохраняет previous и сообщает caller; после начавшегося удаления возможен частичный cleanup собственного старого дерева, как у обычного native removal.
+
+Включено в StoreItemFolders local folder replacement и StoreRepositoryDownloader cache replacement. Старый cache больше не удаляется до успешного перемещения нового. Repository extraction создаёт directories через native helper; temporary/cache cleanup и RepositoryLoader.ClearRepoCache используют bounded Windows removal. Non-Windows fallback сохранён. Не добавлялась проверка подписи Store index и не объявляется закрытым signed-pack queue/metadata handoff.
+
+Проверки13 новых случаев: реальный success; busy source после original backup с восстановлением; callback fault после публикации; конфликт restore с посторонним root с сохранением трёх каталогов/recovery paths; отказ при active verified snapshot без освобождения его файлов; root/ancestor links; previous directory-link refusal и сохранение old/outside markers; unlink file alias без изменения target; missing destination/trailing separator/parent release; чистая normalization root guard. Target native/removal/lease54/54; полный Windows suite **980/980,0skipped**, `directory-transaction-full.trx`; Tray x64Release0warnings/errors; Update single-file publish PASS. Никакие настоящие installed components/Store cache не переустанавливались: все native scenarios выполнялись в GUID Temp.
+
+Остаток: эта операция не связывает подпись с mutable child bytes и не заменяет durable filesystem/database journal, общий Store/MSI mutex или isolated install/uninstall. Остальные cleanup callers, runtime code/argument leases, write leaf handoff и final restart остаются следующими областями. GUI/Program/Tests.csproj не менялись.

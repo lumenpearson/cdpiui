@@ -3,6 +3,7 @@ using CDPIUI.Shared.Basic;
 
 namespace CDPIUI.Tests.Shared;
 
+[Collection("Windows path leases")]
 public class XmlSettingsServiceTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-settings-" + Guid.NewGuid().ToString("N"));
@@ -111,6 +112,20 @@ public class XmlSettingsServiceTests : IDisposable
             settings.SetValue("APPEARANCE", "Theme", "Light");
 
         Assert.Equal("Dark", new XMLSettingsService(SettingsPath).GetValue<string>("APPEARANCE", "Theme"));
+    }
+
+    [Fact]
+    public void SaveIsSkippedWhenLockFileCannotBeOpened()
+    {
+        var settings = new XMLSettingsService(SettingsPath);
+        settings.SetValue("APPEARANCE", "Theme", "Dark");
+        string original = File.ReadAllText(SettingsPath);
+        Directory.CreateDirectory(SettingsPath + ".lock");
+
+        settings.SetValue("APPEARANCE", "Theme", "Light");
+
+        Assert.Equal(original, File.ReadAllText(SettingsPath));
+        Assert.Equal("Light", settings.GetValue<string>("APPEARANCE", "Theme"));
     }
 
     [Fact]

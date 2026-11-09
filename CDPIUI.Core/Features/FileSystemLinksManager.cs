@@ -28,7 +28,7 @@ public static class FileSystemLinksManager
     {
         try
         {
-            ReplaceWithLink(itemId, linkTo, temporaryPath => File.CreateSymbolicLink(temporaryPath, linkFrom));
+            ReplaceWithLink(itemId, linkTo, linkFrom, symbolic: true, temporaryPath => File.CreateSymbolicLink(temporaryPath, linkFrom));
             SettingsManager.Instance.SetValue(
                 ["HARDLINKS", itemId, linkTo], "targetFile", linkFrom);
 
@@ -55,20 +55,12 @@ public static class FileSystemLinksManager
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(linkFrom)) throw new ArgumentException("A recorded link target is required.", nameof(linkFrom));
             Debug.WriteLine($">>> {linkTo} {itemId}");
             string? backupFile = SettingsManager.Instance.GetValue<string>(
                 ["HARDLINKS", itemId, linkTo], "backupFile");
             bool hadOriginal = !string.IsNullOrEmpty(backupFile) && backupFile != "NaN";
-            if (hadOriginal && !File.Exists(backupFile))
-            {
-                throw new FileNotFoundException(
-                    $"Backup file \"{backupFile}\" not found. Hardlink remove cannot be complete.");
-            }
-            File.Delete(linkTo);
-            // Without an original file the link is only removed.
-            // hadOriginal is true only for a non-empty backupFile.
-            if (hadOriginal)
-                File.Move(backupFile!, linkTo);
+            LinkFileTransaction.Restore(linkTo, hadOriginal ? backupFile : null, linkFrom);
 
             SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "backupFile", "NaN");
             SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "targetFile", "NaN");
@@ -96,7 +88,7 @@ public static class FileSystemLinksManager
     {
         try
         {
-            ReplaceWithLink(itemId, linkTo, temporaryPath =>
+            ReplaceWithLink(itemId, linkTo, linkFrom, symbolic: false, temporaryPath =>
             {
                 // Fails, for example, between two volumes; that was reported as success.
                 if (!CreateHardLink(temporaryPath, linkFrom, nint.Zero))
@@ -126,33 +118,13 @@ public static class FileSystemLinksManager
     /// worked: the original was deleted before the link was created, so a failed
     /// CreateSymbolicLink (no privilege without developer mode) left nothing in its place.
     /// </summary>
-    private static void ReplaceWithLink(string itemId, string linkTo, Action<string> createLink)
+    private static void ReplaceWithLink(string itemId, string linkTo, string linkFrom, bool symbolic, Action<string> createLink)
     {
-        string temporaryPath = $"{linkTo}.{Guid.NewGuid():N}.link";
-        createLink(temporaryPath);
-        try
-        {
-            bool isExistingLink = IsFileLinked(itemId, linkTo) != null ||
-                (File.Exists(linkTo) && (File.GetAttributes(linkTo) & FileAttributes.ReparsePoint) != 0);
-            if (isExistingLink && File.Exists(linkTo))
-            {
-                // Linking again: the backup of the original file is already there.
-                File.Delete(linkTo);
-            }
-            else if (File.Exists(linkTo))
-            {
-                string backupFilePath = $"{linkTo}.bak";
-                File.Move(linkTo, backupFilePath, overwrite: true);
-                SettingsManager.Instance.SetValue(
-                    ["HARDLINKS", itemId, linkTo], "backupFile", backupFilePath);
-            }
-            File.Move(temporaryPath, linkTo);
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath))
-                File.Delete(temporaryPath);
-        }
+        if (string.IsNullOrWhiteSpace(linkFrom)) throw new ArgumentException("A link target is required.", nameof(linkFrom));
+        string? previousTarget = IsFileLinked(itemId, linkTo);
+        string? backup = LinkFileTransaction.Replace(linkTo, previousTarget != null, createLink, linkFrom, symbolic, previousTarget);
+        if (backup != null)
+            SettingsManager.Instance.SetValue(["HARDLINKS", itemId, linkTo], "backupFile", backup);
     }
 
     #region WINAPI

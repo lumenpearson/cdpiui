@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace CDPIUI.Shared.ConditionalLaunch;
@@ -166,6 +167,16 @@ public static class ConditionalTaskFileService
     public const string FileExtension = ".cdpitask";
     public const string DirectoryName = "ConditionalTasks";
 
+    private const int MaximumTaskFileBytes = 1024 * 1024;
+    private const long MaximumTaskDocumentCharacters = 1024 * 1024;
+    private const int MaximumTasksPerDirectory = 256;
+    private const int MaximumTriggersPerTask = 32;
+    private const int MaximumActionsPerTask = 64;
+    private const int MaximumParametersPerModel = 32;
+    private const int MaximumParameterNameLength = 128;
+    private const int MaximumParameterValueLength = 16 * 1024;
+    private const int MaximumTaskTextLength = 64 * 1024;
+
     private static readonly XmlSerializer Serializer = new(typeof(ConditionalTask));
 
     public static string GetTasksDirectoryFromSettingsFile(string settingsFilePath)
@@ -184,13 +195,35 @@ public static class ConditionalTaskFileService
     /// <param name="onError">Receives the path and the error of every file that is skipped</param>
     public static IReadOnlyList<ConditionalTask> LoadDirectory(string directoryPath, Action<string, Exception>? onError = null)
     {
-        Directory.CreateDirectory(directoryPath);
+        // Loading may run in the elevated tray process. Creating this directory there would
+        // write through a path that was validated earlier and could have been replaced since.
+        if (!Directory.Exists(directoryPath))
+            return [];
+
+        List<string> files = [];
+        try
+        {
+            foreach (var filePath in Directory.EnumerateFiles(directoryPath, $"*{FileExtension}"))
+            {
+                if (files.Count == MaximumTasksPerDirectory)
+                {
+                    onError?.Invoke(filePath, new InvalidDataException(
+                        $"A conditional task directory cannot contain more than {MaximumTasksPerDirectory} files."));
+                    return [];
+                }
+                files.Add(filePath);
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // The directory may have been removed after the existence check.
+            return [];
+        }
 
         var tasks = new List<ConditionalTask>();
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         // Sorted, so the same copy of a duplicated task wins on every load.
-        foreach (var filePath in Directory.EnumerateFiles(directoryPath, $"*{FileExtension}")
-                     .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+        foreach (var filePath in files.OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
         {
             try
             {
@@ -213,7 +246,16 @@ public static class ConditionalTaskFileService
     public static ConditionalTask Load(string filePath)
     {
         using var stream = File.OpenRead(filePath);
-        if (Serializer.Deserialize(stream) is not ConditionalTask task)
+        if (stream.Length > MaximumTaskFileBytes)
+            throw new InvalidDataException($"The conditional task file exceeds {MaximumTaskFileBytes} bytes.");
+
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings
+        {
+            DtdProcessing = DtdProcessing.Prohibit,
+            XmlResolver = null,
+            MaxCharactersInDocument = MaximumTaskDocumentCharacters,
+        });
+        if (Serializer.Deserialize(reader) is not ConditionalTask task)
             throw new InvalidDataException("The file does not contain a conditional task.");
 
         Normalize(task);
@@ -295,19 +337,42 @@ public static class ConditionalTaskFileService
         if ((int)task.Priority is < -1 or > 1)
             throw new InvalidDataException("The conditional task priority is invalid.");
         Normalize(task);
+        if (task.Triggers.Count > MaximumTriggersPerTask)
+            throw new InvalidDataException($"A conditional task cannot contain more than {MaximumTriggersPerTask} triggers.");
         if (task.Triggers.Count == 0)
             throw new InvalidDataException("At least one conditional task trigger is required.");
         if (task.Triggers.Any(trigger => trigger == null))
             throw new InvalidDataException("The conditional task contains an invalid trigger.");
+        if (task.Triggers.Any(trigger => !Enum.IsDefined(typeof(ConditionalTriggerType), trigger.Type)))
+            throw new InvalidDataException("The conditional task contains an unsupported trigger type.");
         if (task.Triggers.Any(trigger => trigger.DelaySeconds is < 0 or > 86400))
             throw new InvalidDataException("The process trigger delay must be between 0 and 86400 seconds.");
         if (task.Actions == null || task.Actions.Count == 0)
             throw new InvalidDataException("At least one action is required.");
+        if (task.Actions.Count > MaximumActionsPerTask)
+            throw new InvalidDataException($"A conditional task cannot contain more than {MaximumActionsPerTask} actions.");
         if (task.Actions.Any(action => action == null))
             throw new InvalidDataException("The conditional task contains an invalid action.");
+        if (task.Actions.Any(action => !Enum.IsDefined(typeof(ConditionalActionType), action.Type)))
+            throw new InvalidDataException("The conditional task contains an unsupported action type.");
         if (task.Triggers.Cast<ConditionalParameterizedModel>().Concat(task.Actions)
             .Any(model => model.Parameters == null || model.Parameters.Any(parameter => parameter == null)))
             throw new InvalidDataException("The conditional task contains an invalid parameter.");
+
+        var models = task.Triggers.Cast<ConditionalParameterizedModel>().Concat(task.Actions).ToList();
+        if (models.Any(model => model.Parameters.Count > MaximumParametersPerModel))
+            throw new InvalidDataException($"A trigger or action cannot contain more than {MaximumParametersPerModel} parameters.");
+        if (models.SelectMany(model => model.Parameters).Any(parameter =>
+                parameter.Name == null || parameter.Value == null ||
+                parameter.Name.Length > MaximumParameterNameLength ||
+                parameter.Value.Length > MaximumParameterValueLength))
+            throw new InvalidDataException("The conditional task contains an oversized parameter.");
+
+        long textLength = task.Name.Length + models
+            .SelectMany(model => model.Parameters)
+            .Sum(parameter => (long)parameter.Name.Length + parameter.Value.Length);
+        if (textLength > MaximumTaskTextLength)
+            throw new InvalidDataException($"A conditional task cannot contain more than {MaximumTaskTextLength} characters of text.");
     }
 
     private static void Normalize(ConditionalTask task)

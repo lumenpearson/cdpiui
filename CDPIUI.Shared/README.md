@@ -39,7 +39,7 @@ The pipe protocol is in [Pipe/README.md](Pipe/README.md).
 | `CommandLine/GuiActivationArguments` | Encodes the GUI arguments as `--gui-args:`, so the tray can start the GUI with the same arguments. |
 | `CommandLine/CommandLineTokens` | Splits a component command line into arguments as the Windows command line does. `ConfigCommandLine` in Core uses it. |
 | `Filesystem/ArchivePaths` | Checks archive entries: the path must stay in the target folder, the archive must be within the limits (20000 entries, 1 GiB, compression ratio 200 for entries from 1 MiB), and no folder or file below the target may be a link. `ExtractToFileBounded` stops when an entry gives more data than its header says. `Update.exe` compiles this file as a link (see [Update/README.md](../Update/README.md#build)). |
-| `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no part below the root is a reparse point. |
+| `Filesystem/TrustedPathValidator` | Checks that a path is in an allowed root directory and that no existing part of its full path, including the root and its parents, is a reparse point. |
 | `Filesystem/ApplicationPathMatcher` | Finds the processes and drivers of the application during uninstall. |
 | `Filesystem/DirectoriesManager` | Returns the executable directory if it is writable. Otherwise, or if the caller sets `forceAppData` (MSI installation), it returns `%LOCALAPPDATA%\CDPIUI`. |
 | `Filesystem/FileSystemService` | File extensions, temporary names, `WriteAllTextAtomic`, file and directory sizes. |
@@ -65,7 +65,12 @@ Write:
 
 - Each `SetValue` reads the file from the disk again, applies one change and saves the file. Thus a process with an old copy does not overwrite a change from the other process.
 - A `Settings.xml.lock` file with `FileShare.None` locks the write.
+- Initial creation and recovery also take this lock and re-read after waiting. Without the lock, recovery stays in memory and writes no `.corrupt-*`, notice or settings file.
+- If the lock cannot be acquired, including an access denial, the change stays in memory and no disk write is attempted.
 - The service writes a temporary file and replaces `Settings.xml` with it. The previous file becomes `Settings.xml.bak`.
+- On Windows, reads, locks, temporary files, backups, diagnostic copies and notices use no-follow handles under pinned parents, with type and hard-link checks. Only a validated empty lock is marked DeleteOnClose. Publication leaves no window with an absent settings name.
+- The existing DACL is supplied when creating temporary and backup files, before writing data. Protected and inherited access rules are preserved. Owner and other new-file metadata are not claimed to be a copy of the original.
+- A malformed primary XML does not replace the last good `.bak` when saving a change from memory.
 - Supported types: `int`, `double`, `bool`, `string`, `DateTime`, `List<string>`. `double` and `DateTime` use the invariant culture.
 - `List<string>` items are separated by `;`. The service writes `;` as `%3B` and `%` as `%25`.
 - `SetValue(group, ...)` raises `PropertyChanged`. `SetValue(groupPath, ...)` raises `EnumPropertyChanged`.
@@ -94,8 +99,10 @@ Rules:
 - Trigger types: `HotKey`, `ProcessStarted`, `ProcessStopped`.
 - Action types: see `ConditionalActionType`.
 - `ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile` returns `<data directory>\ConditionalTasks`. The data directory is the parent of the `Settings` directory.
-- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name.
-- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more triggers, one or more actions and a delay from 0 to 86400 seconds.
+- `LoadDirectory` skips files that are not valid and files with a duplicate `Id`. The files are sorted by name. It does not create a missing directory.
+- Task files must be at most 1 MiB; a directory may contain at most 256 task files. The XML reader prohibits DTDs and caps the document at 1 MiB of characters.
+- `Validate` requires a GUID `Id`, a name and a priority from -1 to 1. It also requires one or more supported triggers, one or more supported actions and a delay from 0 to 86400 seconds. A task can have up to 32 triggers and 64 actions; each trigger or action can have up to 32 parameters.
+- Task text is limited to 64 KiB; parameter names are limited to 128 characters and parameter values to 16 KiB.
 - `Save` and `Export` write a temporary file and then replace the target file.
 
 ## Exceptions
@@ -214,8 +221,11 @@ CAUTION: Do not commit `Secret.cs`. Do not use the stub values in a release buil
 
 1. The signature is decoded as CMS. Each signer certificate must be in the trusted thumbprint list. The certificates are self-signed, so the chain is not built.
 2. Each signature must be valid (`CheckSignature(verifySignatureOnly: true)`).
-3. `powershell.exe` from the system directory runs `Test-FileCatalog` with `-FilesToSkip catalog.cat` and the file names that the caller gives (`filesToSkip`). The paths and the names go through environment variables.
-4. The result must be `Valid` in 2 minutes.
+3. A bounded `ReadOnlyDirectorySnapshot` holds the source tree. System Windows PowerShell explicitly imports the system Security module and reads only the catalog's metadata (`Test-FileCatalog -Detailed`); it never receives the tree path. Limits are 2 minutes, 16 Mi characters of output, 64 Ki characters of errors and 64 MiB of CMS data.
+4. `CatalogItems` must match the captured file set exactly, except for `catalog.cat` and literal `filesToSkip` names. `CryptCATAdminCalcHashFromFileHandle2` hashes held file handles using Windows catalog/SIP rules, including PE and empty-file handling. The external cmdlet's Status string is not the trust decision.
+5. `VerifySnapshotAsync` checks a supplied snapshot when the caller will consume its files afterwards. Core signed promotion verifies and copies the same snapshot. Later files and conversions of empty subdirectories do not join that file set or trigger external traversal.
+
+Existing SHA1/version 1 catalogs remain supported alongside SHA256/version 2 for compatibility. Rejecting SHA1 requires a separate policy change and migration of published packages. Catalog hashes follow Windows SIP rules rather than raw SHA256 of every PE byte. This mechanism requires Windows; non-Windows `VerifyAsync` returns Failure.
 
 The result is a `CatalogVerification` value: `Success`, `NoSignature`, `NotTrustedSignature`, `FilesDoNotMatch` or `Failure`.
 
@@ -234,3 +244,5 @@ Polyfills for `netstandard2.1`:
 - `System/Diagnostic/CodeAnalysis/SetsRequiredMembersAttribute.cs`
 
 Do not remove them. The `required` members in this library need them.
+
+Windows file operations: ReadOnlyPathLease holds ordinary files and parents without following links; WritablePathLease checks the opened object and hard-link count before truncation or writes. OpenOrCreateDirectory creates missing directories one at a time under a held parent. ArchivePaths uses these for Windows extraction; WindowsPathNames rejects ambiguous Win32 names and devices. Covered operations and remaining races are documented in docs/AUDIT-STATUS.ru.md (FS-08–12). Non-Windows consumers retain managed extraction without these Windows guarantees.

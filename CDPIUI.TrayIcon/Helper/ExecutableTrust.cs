@@ -438,13 +438,14 @@ public static class ExecutableTrust
         if (!File.Exists(catalog))
             return false;
 
-        var dataFiles = Directory.EnumerateFiles(itemDirectory, "*", SearchOption.AllDirectories)
-            .Where(file => !ExecutableLease.CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+        using var snapshot = ReadOnlyDirectorySnapshot.Capture(itemDirectory,
+            file => ExecutableLease.CodeExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase));
+        var dataFiles = snapshot.SkippedFiles
             .Select(Path.GetFileName)
             .OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
-        CatalogVerification result = await CatalogVerifier.VerifyAsync(catalog, itemDirectory, Secret.TrustedCertificates, dataFiles);
+        CatalogVerification result = await CatalogVerifier.VerifySnapshotAsync(catalog, snapshot, Secret.TrustedCertificates, dataFiles);
         if (result != CatalogVerification.Success)
             Logger.Instance.CreateInfoLog(nameof(ExecutableTrust), $"Catalog check of {itemDirectory}: {result}");
         return result == CatalogVerification.Success;

@@ -25,9 +25,9 @@ The pipe protocol is in [CDPIUI.Shared/Pipe/README.md](../CDPIUI.Shared/Pipe/REA
 
 `Program.cs` (`Programm.Main`) does these steps:
 
-1. If the arguments contain `--uninstall-cleanup`, it runs `UninstallHelper.Cleanup` and exits.
+1. If the arguments contain `--uninstall-cleanup`, it requires the SYSTEM account and a protected registered MSI folder, then runs `UninstallHelper.Cleanup` and exits.
 2. It gets the mutex `Global\CDPIUI_TrayInstance`. It waits up to 10 seconds. If another tray has the mutex, it exits. An abandoned mutex is accepted.
-3. It deletes the `.staging` directory (`PackageStaging.CleanUp`).
+3. It validates the protected package cache (`PackageStaging.CleanUp`). It does not delete orphan packages: an MSI consumer can still be running after the old tray exits.
 4. It restores a proxy backup that a previous tray left (`RegeditHelper.RestoreLeftoverSnapshot`).
 5. It deletes the session file `.session\pipe.key` of an earlier start (`PipeSessionWriter`). Then it starts the pipe server. The pipe server makes a random pipe name, creates the pipe, and then writes the name and the new pipe key to `.session\pipe.key` (see [Pipe](../CDPIUI.Shared/Pipe/README.md#session-file)).
 6. If a toast notification started the process, it creates `TrayApplicationContext`, handles the toast and does not do steps 7–11.
@@ -117,13 +117,15 @@ When one component starts a proxy, the tray stops the other components that use 
 
 An earlier version made a task that starts `CDPIUI_TrayIcon.exe` directly. At each start, the tray changes such a task (`AutoStartManager.MoveTaskToLauncher`), if its action starts the tray of the same directory and the launcher exists. The action then starts the launcher with `tray` before the old arguments. The other settings of the task do not change.
 
+The tray rejects a portable copy if it is elevated under a different account from the desktop user or if another account owns its application directory. It removes a startup task for that copy when it finds one. Use the MSI installation for over-the-shoulder elevation; its installation directory is administrator-protected.
+
 If `AddToAutorun` fails, the tray sends `Settings/AutorunFalse` to the GUI and shows a notification.
 
 ## Conditional Launch
 
 `ConditionalLaunchEngine` reads the `.cdpitask` files from the tasks directory.
 The default directory comes from the settings file path (`ConditionalTaskFileService.GetTasksDirectoryFromSettingsFile`).
-The GUI can send a different directory in `ReloadTasks`. The tray accepts it only if `TrustedPaths.IsAllowed` accepts it.
+The GUI creates the directory before sending `ReloadTasks`. The tray accepts it only if `TrustedPaths.IsAllowed` accepts it and does not create it itself.
 
 - A `FileSystemWatcher` reloads the tasks when a file changes. After a watcher error, the engine creates a new watcher.
 - Hot key triggers use `RegisterHotKey` on the `EmptyForm` window.
@@ -155,11 +157,12 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 `MsiInstallerHelper` installs packages one at a time from a queue (`MSIInstallation/Begin`):
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
-2. `PackageStaging.Stage` copies the file to `<tray directory>\.staging\<GUID>\`.
-3. The copy must have a valid Authenticode signature (`WinVerifyTrust`, no revocation check).
-4. The tray runs `msiexec.exe /i "<copy>" /passive /norestart` for `.msi`. For other files, it runs `<copy> /install /passive /norestart`.
-5. Exit codes 0 and 1638 give `Complete`. Exit codes 3010 and 1641 give `CompleteRestartRequest`. Other codes give `ExceptionHappens`.
-6. The tray deletes the staging directory.
+2. `PackageStaging.Stage` holds the source with a no-follow read lease and copies it to `<Common Files>\CDPIUI-Staging\<GUID>\`. The owner and protected DACL permit mutation only by Administrators and SYSTEM, including after the tray exits. Unsafe existing paths, links and source hard links are rejected; the package limit is 1 GiB.
+3. The staged copy must match the source SHA-256 supplied by the GUI. Store downloads use the digest of the HTTPS response bytes; LScript installs use the digest of the source package.
+4. The copy must have a valid Authenticode signature (`WinVerifyTrust`, no revocation check).
+5. The tray runs `msiexec.exe /i "<copy>" /passive /norestart` for `.msi`. For other files, it runs `<copy> /install /passive /norestart`.
+6. Exit codes 0 and 1638 give `Complete`. Exit codes 3010 and 1641 give `CompleteRestartRequest`. Other codes give `ExceptionHappens`.
+7. The tray deletes the staging directory.
 
 `MSIInstallation/Kill` stops the running installer or removes the operation from the queue.
 
@@ -168,7 +171,7 @@ Component start and stop notifications show only if `NOTIFICATIONS/procState` is
 `Utils.StartUpdate` handles `Update/BeginApplicationUpdate`:
 
 1. The path must be accepted by `TrustedPaths.IsAllowed`.
-2. The tray copies the package to `.staging`.
+2. The tray copies the package to the protected `CDPIUI-Staging` cache. Catalog verification files also receive protected owners and DACLs at creation. Update.exe acquires its own package lease before stopping the tray.
 3. For an `.msi` package, the copy must have an Authenticode signature of a certificate from `Secret.TrustedCertificates` (`PackageStaging.HasPinnedSignature`). The release workflow signs `Setup.msi` with the catalog certificate. This certificate is self-signed. Thus the tray accepts a chain to an untrusted root, but it does not accept a changed file or another signer. Then the tray runs `msiexec.exe /i "<copy>" /qn+`, closes the GUI and exits.
 4. For a ZIP package, the tray checks the limits of `ArchivePaths` (number of entries, total size, compression ratio) and rejects links. Then it extracts the package and verifies the `catalog.cat` of each layer with `CatalogVerifier` and `Secret.TrustedCertificates`. Then it runs `Update.exe --directory-to-zip "<copy>" --destination-directory "<tray directory>"`.
 
@@ -221,13 +224,17 @@ The launcher is a Native AOT program. It has no .NET host and no CLR, so these v
 
 The processes that the tray starts get the environment of the tray. This environment has no runtime variables. This applies to the components, GoodCheck, `msiexec.exe` and `Update.exe`. `Update.exe` gives the same environment to the tray that it starts after an update.
 
-The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM, and the cleanup runs `EditHostFile.exe /remove`. The SYSTEM profile is not the user profile, so the user variables do not apply.
+During MSI uninstall, the embedded launcher starts the tray cleanup as SYSTEM after validating
+the registered install path. The cleanup runs `EditHostFile.exe /remove`. The SYSTEM profile is
+not the signed-in user's profile, so the user variables do not apply.
 
 CAUTION: Do not start the tray or `EditHostFile.exe` directly with the `runas` verb or from a task. Start them through `CDPIUI_ElevatedLauncher.exe`.
 
 ## Uninstall cleanup
 
-The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM. `UninstallHelper.Cleanup` does these steps:
+The MSI uninstaller runs `CDPIUI_TrayIcon.exe --uninstall-cleanup` as SYSTEM through the embedded
+launcher. The tray independently checks that its folder is the registered MSI location and its
+owners and ACLs are protected. `UninstallHelper.Cleanup` does these steps:
 
 1. It sets the event `Global\CDPIUI_TrayShutdown`. Each running tray exits as if the user clicked Exit, so it stops the components and restores the proxy.
 2. It waits up to 20 seconds for the trays to exit.
@@ -276,8 +283,9 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Check each path from the GUI with `TrustedPaths` before you run, install or change it:
   - `IsAllowed`: below the tray directory, `%LOCALAPPDATA%\CDPIUI` of the tray user, or `%LOCALAPPDATA%\CDPIUI` of the desktop user.
   - `IsInStore`: below the `Store` directory of these roots; in an MSI installation not below the installation folder, whose programs start without a check. `GrantAccessRequest` uses it.
-  - `TrustedPathValidator` rejects a path that has a symbolic link or a junction below the root.
-- Copy a package to `.staging` before you check it. Check and run the copy, not the original file.
+  - `TrustedPathValidator` rejects an existing symbolic link or junction in any component, including the root and its parents.
+- Trust an MSI location only when its full directory tree has protected owners and ACLs and contains no reparse points (`ProtectedInstallLocationPolicy`). A matching registry value alone does not make a custom installation path safe.
+- Copy a package to the protected cache before checking it. Check and run that copy. Hold its readonly lease through verification and installer execution. Do not delete an orphan session without establishing that its consumer stopped (audit FS-12).
 - Use only signed packages: Authenticode for installers, an Authenticode signature with a pinned thumbprint for `Setup.msi`, catalogs with pinned thumbprints for application updates.
 - Start a program only through `ExecutableTrust.AcquireAsync`, and check its arguments with `FileWritingOptions` (see [Elevated start of a program](#elevated-start-of-a-program)).
 - Limit an archive with `ArchivePaths` before you extract it.
@@ -286,6 +294,7 @@ The tray is elevated, and the GUI is not. Treat each pipe message as data from a
 - Do not use `ShellExecute` from the tray to open a file or a URL. File associations come from the user, so the handler can run elevated. Use `RunHelper.RunAsDesktopUser`, as `NotifyHelper.OpenFileInDefaultApp` does with `explorer.exe`.
 - Start the GUI with `RunHelper.RunAsDesktopUser`. It uses the token of the shell process, so the GUI does not run elevated.
 - Start the tray and `EditHostFile.exe` elevated only through `CDPIUI_ElevatedLauncher.exe` (see [Environment of an elevated start](#environment-of-an-elevated-start)).
+- `GrantAccess` creates a missing folder in the GUI process. The elevated tray changes access only on an existing directory. It opens the directory without following a reparse point, checks the resolved path, and changes the ACL through that same handle. A path change after validation cannot redirect the ACL change.
 - `GrantAccess` gives `Modify` access only to the tray user.
 
 WARNING: Do not add a pipe handler that runs a file or changes access without a `TrustedPaths` check.

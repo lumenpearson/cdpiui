@@ -3,6 +3,7 @@ using CDPIUI.Shared.Basic.Filesystem;
 
 namespace CDPIUI.Tests.Shared;
 
+[Collection("Windows path leases")]
 public sealed class ArchiveLimitsTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cdpiui-limits-" + Guid.NewGuid().ToString("N"));
@@ -84,6 +85,38 @@ public sealed class ArchiveLimitsTests : IDisposable
 
         Assert.Throws<InvalidDataException>(() =>
             ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "lists", "list.txt")));
+    }
+
+    [Fact]
+    public void LinkedAncestorOfExtractionRootIsRejected()
+    {
+        string outside = Path.Combine(_directory, "outside");
+        Directory.CreateDirectory(Path.Combine(outside, "nested"));
+        string link = Path.Combine(_directory, "linked-parent");
+        Directory.CreateSymbolicLink(link, outside);
+        string root = Path.Combine(link, "nested");
+
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "file.txt")));
+    }
+
+    [Fact]
+    public void DanglingLinkedAncestorOfMissingExtractionRootIsRejected()
+    {
+        string link = Path.Combine(_directory, "dangling-parent");
+        Directory.CreateSymbolicLink(link, Path.Combine(_directory, "missing-target"));
+        string root = Path.Combine(link, "nested");
+
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(root, "file.txt")));
+    }
+
+    [Fact]
+    public void DestinationOutsideExtractionRootIsRejected()
+    {
+        string root = Path.Combine(_directory, "root");
+        Assert.Throws<InvalidDataException>(() =>
+            ArchivePaths.EnsureNoReparsePoints(root, Path.Combine(_directory, "root-other", "file.txt")));
     }
 
     [Fact]

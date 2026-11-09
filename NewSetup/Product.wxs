@@ -47,12 +47,13 @@
     <!-- Started through Explorer, the GUI runs as the signed-in user and not with the rights of the
          installer; it is not started by silent (/qn) or basic-UI installations. -->
     <CustomAction Id="LaunchApp" Directory="INSTALLLOCATION" ExeCommand="[WindowsFolder]explorer.exe &quot;[INSTALLLOCATION]CDPIUI.exe&quot;" Return="asyncNoWait" />
-    <!-- Closes the tray so it stops the components and restores the proxy settings, then ends the remaining
-         application processes and removes the WinDivert driver and the autorun task created by the application. -->
-    <CustomAction Id="UninstallCleanup" FileRef="TrayIconExe" ExeCommand="--uninstall-cleanup" Execute="deferred" Impersonate="no" Return="ignore" />
+    <!-- This runs before RemoveRegistryValues so the launcher and tray can verify INSTALLLOCATION
+         against the registered MSI path. It then checks the protected folder before running the
+         tray as SYSTEM to stop components and remove application-created resources. -->
+    <CustomAction Id="UninstallCleanup" BinaryRef="CleanupLauncher" ExeCommand="cleanup &quot;[INSTALLLOCATION]&quot;" Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
       <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE AND UILevel &gt;= 4" />
-      <Custom Action="UninstallCleanup" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="UninstallCleanup" Before="RemoveRegistryValues" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
   </Package>
 </Wix>

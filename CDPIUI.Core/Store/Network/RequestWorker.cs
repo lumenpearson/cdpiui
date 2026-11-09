@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using CDPIUI.Shared.Secrets;
 
@@ -62,7 +63,7 @@ internal sealed class RequestWorker : IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
-    public async Task DownloadFileAsync(
+    public async Task<string> DownloadFileAsync(
         string url,
         string destinationPath,
         Action<long, long, TimeSpan>? progress = null,
@@ -81,6 +82,7 @@ internal sealed class RequestWorker : IDisposable
         using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buffer = new byte[81920];
         long totalRead = 0;
         var stopwatch = Stopwatch.StartNew();
@@ -104,6 +106,7 @@ internal sealed class RequestWorker : IDisposable
             if (read == 0)
                 break;
 
+            hash.AppendData(buffer, 0, read);
             await fileStream.WriteAsync(buffer, 0, read, cancellationToken);
             totalRead += read;
 
@@ -114,6 +117,8 @@ internal sealed class RequestWorker : IDisposable
                 lastUpdate = now;
             }
         }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
     }
 
     private static readonly TimeSpan ReadStallTimeout = TimeSpan.FromSeconds(60);

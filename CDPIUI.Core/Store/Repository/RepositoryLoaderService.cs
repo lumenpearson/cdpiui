@@ -9,6 +9,7 @@ using CDPIUI.Shared;
 using CDPIUI.Shared.Exceptions;
 using CDPIUI.Shared.Extensions;
 using CDPIUI.Shared.PrettyErrorConversionService;
+using CDPIUI.Shared.Security;
 
 namespace CDPIUI.Core.Store.Repository;
 
@@ -160,8 +161,8 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
     {
         string targetFolder = Directories.StoreRepoCacheDirectory;
 
-        if (Directory.Exists(targetFolder))
-            Directory.Delete(targetFolder, recursive: true);
+        if (OperatingSystem.IsWindows()) WindowsFileRemoval.DeleteDirectoryIfExists(targetFolder);
+        else if (Directory.Exists(targetFolder)) Directory.Delete(targetFolder, recursive: true);
     }
 
 
