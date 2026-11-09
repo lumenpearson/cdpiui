@@ -12,6 +12,27 @@ public sealed class ZipServiceTests : IDisposable
     public void Dispose() => Directory.Delete(_directory, true);
 
     [Fact]
+    public async Task ConflictInALaterSignedFileLeavesEarlierInstalledFilesUntouched()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string source = Path.Combine(_directory, "verify");
+        string target = Path.Combine(_directory, "installed");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(source, "first.bin"), "new-first");
+        File.WriteAllText(Path.Combine(source, "second.bin"), "new-second");
+        File.WriteAllText(Path.Combine(target, "first.bin"), "old-first");
+        Directory.CreateDirectory(Path.Combine(target, "second.bin"));
+
+        await Assert.ThrowsAnyAsync<Exception>(() => ZipService.VerifyAndPromoteAsync(source, target,
+            _ => Task.CompletedTask));
+
+        Assert.Equal("old-first", File.ReadAllText(Path.Combine(target, "first.bin")));
+        Assert.True(Directory.Exists(Path.Combine(target, "second.bin")));
+        Assert.Equal(["first.bin"], Directory.GetFiles(target).Select(Path.GetFileName));
+    }
+
+    [Fact]
     public async Task SignedPromotionHoldsVerifiedBytesUntilTheyAreCopied()
     {
         if (!OperatingSystem.IsWindows()) return;

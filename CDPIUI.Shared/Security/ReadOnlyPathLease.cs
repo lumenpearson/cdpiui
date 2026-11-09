@@ -25,13 +25,20 @@ public sealed class ReadOnlyPathLease : IDisposable
     public FileStream? Stream { get; private set; }
 
     private ReadOnlyPathLease() { }
-    internal SafeFileHandle DirectoryHandle => _directories.Count > 0 ? _directories[_directories.Count - 1] : throw new ObjectDisposedException(nameof(ReadOnlyPathLease));
+    internal SafeFileHandle DirectoryHandle => _directories.Count > 0 ? _directories[_directories.Count - 1]
+        : _directoryPath != null && _parent != null ? _parent.DirectoryHandle
+        : throw new ObjectDisposedException(nameof(ReadOnlyPathLease));
 
     public static ReadOnlyPathLease OpenDirectory(string path) => Open(path, directoryOnly: true);
     public static ReadOnlyPathLease OpenFile(string path) => Open(path, directoryOnly: false);
     public static ReadOnlyPathLease OpenDirectoryForMutation(string path, bool createIfMissing = true)
     {
         var lease = createIfMissing ? OpenOrCreateDirectory(path) : OpenDirectory(path);
+        return AttachMutationAnchor(lease);
+    }
+
+    private static ReadOnlyPathLease AttachMutationAnchor(ReadOnlyPathLease lease)
+    {
         try
         {
             // A pinned child keeps the directory nonempty while namespace changes are
@@ -52,23 +59,41 @@ public sealed class ReadOnlyPathLease : IDisposable
     public static ReadOnlyPathLease OpenOrCreateDirectory(string path) => Open(path, directoryOnly: true, createDirectories: true);
     public static ReadOnlyPathLease OpenFileInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, false);
     public static ReadOnlyPathLease OpenDirectoryInHeldDirectory(string path, ReadOnlyPathLease parent) => OpenChild(path, parent, true);
+    internal static ReadOnlyPathLease OpenOrCreateMutationDirectoryInHeldDirectory(string path, ReadOnlyPathLease parent) =>
+        AttachMutationAnchor(OpenChild(path, parent, true, createDirectory: true));
 
-    private static ReadOnlyPathLease OpenChild(string path, ReadOnlyPathLease parent, bool directory)
+    // A reference keeps the actual directory chain and its mutation anchor alive, without
+    // reopening the chain for every file in a large verified batch.
+    internal static ReadOnlyPathLease RetainMutationDirectoryForChild(string path, ReadOnlyPathLease parent)
     {
-        string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string fullPath = Path.GetFullPath(path);
         WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
+        RetainParent(fullPath, parent);
+        var lease = new ReadOnlyPathLease { _parent = parent, _directoryPath = Path.GetDirectoryName(fullPath) };
+        return parent._anchor != null ? lease : AttachMutationAnchor(lease);
+    }
+
+    private static void RetainParent(string fullPath, ReadOnlyPathLease parent)
+    {
         lock (parent._gate)
         {
             if (parent._disposed) throw new ObjectDisposedException(nameof(parent));
             if (parent._directoryPath == null || !string.Equals(Path.GetDirectoryName(fullPath)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
                 parent._directoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("The path must be an immediate child of the held directory.", nameof(path));
+                throw new ArgumentException("The path must be an immediate child of the held directory.", "path");
             parent._dependents++;
         }
+    }
+
+    private static ReadOnlyPathLease OpenChild(string path, ReadOnlyPathLease parent, bool directory, bool createDirectory = false)
+    {
+        string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
+        RetainParent(fullPath, parent);
         var lease = new ReadOnlyPathLease { _parent = parent };
         try
         {
-            lease.OpenLeaf(fullPath, directory, parent.DirectoryHandle);
+            lease.OpenLeaf(fullPath, directory, parent.DirectoryHandle, createDirectory);
             return lease;
         }
         catch { lease.Dispose(); throw; }
@@ -109,11 +134,11 @@ public sealed class ReadOnlyPathLease : IDisposable
         catch { lease.Dispose(); throw; }
     }
 
-    private void OpenLeaf(string fullPath, bool directory, SafeFileHandle parent)
+    private void OpenLeaf(string fullPath, bool directory, SafeFileHandle parent, bool createDirectory = false)
     {
         WindowsFileHandles.RequireOrdinaryDirectory(parent);
         SafeFileHandle handle = WindowsFileHandles.OpenRelative(parent, Path.GetFileName(fullPath),
-            directory ? 0x0081u : 0x80000000u, directory ? 3u : 1u, 1, directory, out _);
+            directory ? 0x0081u : 0x80000000u, directory ? 3u : 1u, createDirectory ? 3u : 1u, directory, out _);
         try
         {
             WindowsFileHandles.RequireOrdinaryDirectory(parent);

@@ -21,6 +21,10 @@ public sealed class WritablePathLease : IDisposable
     public static WritablePathLease CreateForMove(string path) => OpenNative(path, 1, movable: true, writable: true);
     internal static WritablePathLease CreateForMove(string path, byte[]? securityDescriptor) => OpenNative(path, 1, movable: true, writable: true, securityDescriptor);
     public static WritablePathLease OpenExistingForMove(string path) => OpenNative(path, 3, movable: true, writable: false);
+    internal static WritablePathLease CreateForMove(string path, ReadOnlyPathLease parent, byte[]? securityDescriptor) =>
+        OpenNative(path, 1, movable: true, writable: true, securityDescriptor, parent);
+    internal static WritablePathLease OpenExistingForMove(string path, ReadOnlyPathLease parent) =>
+        OpenNative(path, 3, movable: true, writable: false, heldParent: parent);
     public static WritablePathLease OpenLock(string path)
     {
         var lease = OpenNative(path, 4, movable: true, writable: true);
@@ -37,7 +41,7 @@ public sealed class WritablePathLease : IDisposable
 
     public static WritablePathLease Open(string path) => OpenNative(path, 4, movable: false, writable: true);
 
-    private static WritablePathLease OpenNative(string path, uint disposition, bool movable, bool writable, byte[]? securityDescriptor = null)
+    private static WritablePathLease OpenNative(string path, uint disposition, bool movable, bool writable, byte[]? securityDescriptor = null, ReadOnlyPathLease? heldParent = null)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("A Windows write lease is required.");
@@ -46,7 +50,9 @@ public sealed class WritablePathLease : IDisposable
         var lease = new WritablePathLease { _moveAllowed = movable, CurrentPath = fullPath };
         try
         {
-            lease._parent = ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!, createIfMissing: disposition != 3);
+            lease._parent = heldParent == null
+                ? ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!, createIfMissing: disposition != 3)
+                : ReadOnlyPathLease.RetainMutationDirectoryForChild(fullPath, heldParent);
             // OPEN_ALWAYS preserves existing bytes. The opened object is inspected before
             // the caller can truncate it; OPEN_REPARSE_POINT never follows the leaf link.
             uint access = 0x80000000u | (writable ? 0x40000000u : 0u) | (movable ? 0x00010000u : 0u);
@@ -69,13 +75,16 @@ public sealed class WritablePathLease : IDisposable
         catch { lease.Dispose(); throw; }
     }
 
-    public void MoveTo(string destination, bool replace = false)
+    public void MoveTo(string destination, bool replace = false) => MoveTo(destination, null, replace);
+
+    internal void MoveTo(string destination, ReadOnlyPathLease? heldParent, bool replace = false)
     {
         if (_parent == null) throw new ObjectDisposedException(nameof(WritablePathLease));
         if (!_moveAllowed) throw new InvalidOperationException("The file was not opened with rename access.");
         string fullPath = Path.GetFullPath(destination);
         WindowsPathNames.RequireOrdinaryAbsolutePath(fullPath);
-        var target = ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!);
+        var target = heldParent == null ? ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!)
+            : ReadOnlyPathLease.RetainMutationDirectoryForChild(fullPath, heldParent);
         bool transferred = false;
         try
         {
@@ -103,9 +112,12 @@ public sealed class WritablePathLease : IDisposable
 
     public void Dispose()
     {
-        Stream?.Dispose();
-        _parent?.Dispose();
-        _parent = null;
+        try { Stream?.Dispose(); }
+        finally
+        {
+            _parent?.Dispose();
+            _parent = null;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
