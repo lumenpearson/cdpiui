@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 #nullable enable
@@ -45,7 +46,7 @@ internal static class WindowsFileHandles
     // NtCreateFile dispositions: OPEN=1, CREATE=2, OPEN_IF=3. No mode truncates bytes.
     public static SafeFileHandle OpenRelative(SafeFileHandle directory, string name, uint access,
         uint share, uint disposition, bool isDirectory, out bool created,
-        bool deleteOnClose = false, byte[]? securityDescriptor = null)
+        bool deleteOnClose = false, byte[]? securityDescriptor = null, bool allowLeafReparse = false)
     {
         if (!WindowsPathNames.IsOrdinaryName(name)) throw new ArgumentException("A single ordinary name is required.", nameof(name));
         bool retained = false;
@@ -62,7 +63,9 @@ internal static class WindowsFileHandles
             var attributes = new ObjectAttributes
             {
                 Length = Marshal.SizeOf<ObjectAttributes>(), Root = directory.DangerousGetHandle(), Name = unicode,
-                Attributes = 0x1040, // OBJ_CASE_INSENSITIVE | OBJ_DONT_REPARSE
+                // Intentional file-name operations may inspect the reparse leaf itself.
+                // The parent is still held, ordinary, and the name has one component.
+                Attributes = allowLeafReparse ? 0x40u : 0x1040u, // OBJ_CASE_INSENSITIVE | OBJ_DONT_REPARSE
                 SecurityDescriptor = pinned.IsAllocated ? pinned.AddrOfPinnedObject() : IntPtr.Zero,
             };
             uint options = 0x00200000u | 0x20u | (isDirectory ? 1u : 0x40u) | (deleteOnClose ? 0x1000u : 0u);
@@ -92,10 +95,29 @@ internal static class WindowsFileHandles
         public Entry(string name, FileAttributes attributes) { Name = name; Attributes = attributes; }
     }
 
-    public static void Rename(SafeFileHandle file, byte[] information)
+    public static void Rename(SafeFileHandle file, SafeFileHandle directory, string name, bool replace)
     {
-        int status = NtSetInformationFile(file, out _, information, (uint)information.Length, 10); // FileRenameInformation
-        if (status != 0) ThrowStatus(status, "the held rename target", false);
+        if (!WindowsPathNames.IsOrdinaryName(name)) throw new ArgumentException("A single ordinary name is required.", nameof(name));
+        bool retained = false;
+        try
+        {
+            directory.DangerousAddRef(ref retained);
+            RequireOrdinaryDirectory(directory);
+            byte[] text = Encoding.Unicode.GetBytes(name);
+            int rootOffset = IntPtr.Size == 8 ? 8 : 4;
+            int lengthOffset = rootOffset + IntPtr.Size;
+            int nameOffset = lengthOffset + 4;
+            byte[] information = new byte[nameOffset + text.Length + 2];
+            Array.Copy(BitConverter.GetBytes(replace ? 1u : 0u), 0, information, 0, 4);
+            byte[] root = IntPtr.Size == 8 ? BitConverter.GetBytes(directory.DangerousGetHandle().ToInt64())
+                : BitConverter.GetBytes(directory.DangerousGetHandle().ToInt32());
+            Array.Copy(root, 0, information, rootOffset, root.Length);
+            Array.Copy(BitConverter.GetBytes((uint)text.Length), 0, information, lengthOffset, 4);
+            Array.Copy(text, 0, information, nameOffset, text.Length);
+            int status = NtSetInformationFile(file, out _, information, (uint)information.Length, 10); // FileRenameInformation
+            if (status != 0) ThrowStatus(status, "the held rename target", false);
+        }
+        finally { if (retained) directory.DangerousRelease(); }
     }
 
     public static IEnumerable<Entry> Enumerate(SafeFileHandle directory)
