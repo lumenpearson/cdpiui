@@ -80,9 +80,9 @@ internal static class Program
                 if (Directory.Exists(probeRoot))
                 {
                     ProtectedStagingArea.RequireProtectedPath(probeRoot);
-                    Directory.Delete(probeRoot, recursive: false);
+                    WindowsFileRemoval.DeleteDirectoryIfExists(probeRoot);
                 }
-                File.Delete(probeSource);
+                WindowsFileRemoval.DeleteFileIfExists(probeSource);
             }
             catch (Exception ex) { AddReport(report, $"[FAIL] Staging probe cleanup: {ex.Message}"); failures++; }
         }

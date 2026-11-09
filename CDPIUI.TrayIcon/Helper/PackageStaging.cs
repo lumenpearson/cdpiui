@@ -119,7 +119,7 @@ public static class PackageStaging
         finally
         {
             try
-            { if (Directory.Exists(verifyDirectory)) Directory.Delete(verifyDirectory, true); }
+            { WindowsFileRemoval.DeleteDirectoryIfExists(verifyDirectory); }
             catch (Exception ex)
             {
                 Logger.Instance.CreateWarningLog(nameof(PackageStaging), $"Cannot delete the verification folder: {ex.Message}");

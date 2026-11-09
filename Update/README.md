@@ -74,8 +74,8 @@ Before stopping the application, `UpdateInstallationGate` acquires an exclusive 
    - In that case, an error message tells the user to install the application again. The tool keeps the backup folder for manual recovery.
    - The tool does not start the application. The window closes after the user closes the error message.
 5. **Finish the update.**
-   - The tool deletes the staging folder and the backup folder.
-   - The tool deletes the `<install>\.update-manifest` file, if it exists. Earlier versions of the tool wrote this file.
+   - On Windows, a bounded no-follow preflight captures the staging/backup tree; held objects are removed from the bottom up. Directory links and preflight failures preserve the tree. File links are unlinked without following targets. An incomplete rollback preserves its backup.
+   - The obsolete `<install>\.update-manifest` is deleted by a no-follow handle. Preparation of a new update removes only an empty backup directory; staging cleanup errors abort extraction.
    - The tool starts the tray.
 
 ### Skipped files

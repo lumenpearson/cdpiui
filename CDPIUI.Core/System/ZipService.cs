@@ -41,7 +41,9 @@ internal class ZipService
         {
             try
             {
-                if (Directory.Exists(verifyDirectory))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    WindowsFileRemoval.DeleteDirectoryIfExists(verifyDirectory);
+                else if (Directory.Exists(verifyDirectory))
                     Directory.Delete(verifyDirectory, recursive: true);
             }
             catch (Exception ex)

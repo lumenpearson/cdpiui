@@ -158,6 +158,6 @@ public static class ProtectedStagingArea
         using ReadOnlyPathLease rootLease = ReadOnlyPathLease.OpenDirectory(root);
         RequireProtectedPath(root);
         RequireProtectedTree(session);
-        Directory.Delete(session, true);
+        WindowsFileRemoval.DeleteDirectoryIfExists(session);
     }
 }

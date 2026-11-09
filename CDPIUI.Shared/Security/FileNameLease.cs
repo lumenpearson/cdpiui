@@ -24,7 +24,7 @@ public sealed class FileNameLease : IDisposable
         {
             lease._parent = ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(full)!, createIfMissing: false);
             lease._file = WindowsFileHandles.OpenRelative(lease._parent.DirectoryHandle, Path.GetFileName(full),
-                0x80010080, 1, 1, false, out _, allowLeafReparse: true); // READ, DELETE, attributes; no data writes.
+                0x80010080, 1, 1, false, out _); // READ, DELETE, attributes; no data writes.
             if (!GetFileInformationByHandle(lease._file, out Information info))
                 throw new IOException("Cannot inspect the held file name.", Marshal.GetHRForLastWin32Error());
             if ((info.Attributes & 0x10) != 0) throw new IOException("A file name, not a directory, is required.");

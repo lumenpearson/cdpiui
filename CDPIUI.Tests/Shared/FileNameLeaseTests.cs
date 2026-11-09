@@ -38,6 +38,17 @@ public sealed class FileNameLeaseTests : IDisposable
     }
 
     [Fact]
+    public void StrictNativeOpenInspectsAFileReparseLeafWithoutFollowingIt()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string link = Path.Combine(_root, "link.txt"), target = Path.Combine(_root, "missing.txt");
+        File.CreateSymbolicLink(link, target);
+        using var parent = ReadOnlyPathLease.OpenDirectory(_root);
+        using var held = WindowsFileHandles.OpenRelative(parent.DirectoryHandle, "link.txt", 0x10080, 3, 1, false, out _);
+        Assert.Equal(target, SymbolicLinkTarget.Read(held, link));
+    }
+
+    [Fact]
     public void HardLinkBindingRejectsADifferentFileWithIdenticalContents()
     {
         if (!OperatingSystem.IsWindows()) return;

@@ -78,6 +78,20 @@ public class UpdateInstallHelperTests : IDisposable
     }
 
     [Fact]
+    public async Task StageDoesNotExtractIntoADirectoryWhoseCleanupFailed()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        WriteArchive(("layers/0/new.bin", "new"));
+        Directory.CreateDirectory(Path.GetDirectoryName(Staged("busy.bin"))!);
+        File.WriteAllText(Staged("busy.bin"), "stale but in use");
+        using var busy = new FileStream(Staged("busy.bin"), FileMode.Open, FileAccess.Read, FileShare.Read);
+        var helper = CreateHelper();
+        Assert.Null(await helper.StageAsync());
+        Assert.False(File.Exists(Staged("new.bin")));
+        Assert.Equal("stale but in use", File.ReadAllText(Staged("busy.bin")));
+    }
+
+    [Fact]
     public void RootedDestinationIsRejected()
     {
         string rooted = Path.Combine(Path.GetTempPath(), "evil.exe");
