@@ -47,32 +47,17 @@ public sealed class WritablePathLease : IDisposable
         var lease = new WritablePathLease { _moveAllowed = movable, CurrentPath = fullPath };
         try
         {
-            lease._parent = movable
-                ? ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!, createIfMissing: disposition != 3)
-                : ReadOnlyPathLease.OpenOrCreateDirectory(Path.GetDirectoryName(fullPath)!);
+            lease._parent = ReadOnlyPathLease.OpenDirectoryForMutation(Path.GetDirectoryName(fullPath)!, createIfMissing: disposition != 3);
             // OPEN_ALWAYS preserves existing bytes. The opened object is inspected before
             // the caller can truncate it; OPEN_REPARSE_POINT never follows the leaf link.
             uint access = 0x80000000u | (writable ? 0x40000000u : 0u) | (movable ? 0x00010000u : 0u);
-            SafeFileHandle handle;
-            if (securityDescriptor == null) handle = CreateFileW(fullPath, access, 0, IntPtr.Zero, disposition, 0x02200000, IntPtr.Zero);
-            else
-            {
-                GCHandle pinned = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
-                try
-                {
-                    var attributes = new SecurityAttributes { Length = Marshal.SizeOf<SecurityAttributes>(), Descriptor = pinned.AddrOfPinnedObject() };
-                    handle = CreateFileWithSecurity(fullPath, access, 0, ref attributes, disposition, 0x02200000, IntPtr.Zero);
-                }
-                finally { pinned.Free(); }
-            }
-            if (handle.IsInvalid)
-            {
-                int error = Marshal.GetHRForLastWin32Error();
-                handle.Dispose();
-                throw new IOException($"Cannot open {fullPath} for writing.", error);
-            }
+            WindowsFileHandles.RequireOrdinaryDirectory(lease._parent.DirectoryHandle);
+            uint nativeDisposition = disposition == 1 ? 2u : disposition == 3 ? 1u : 3u;
+            SafeFileHandle handle = WindowsFileHandles.OpenRelative(lease._parent.DirectoryHandle,
+                Path.GetFileName(fullPath), access, 0, nativeDisposition, false, out _, securityDescriptor: securityDescriptor);
             try
             {
+                WindowsFileHandles.RequireOrdinaryDirectory(lease._parent.DirectoryHandle);
                 if (!GetFileInformationByHandle(handle, out Information info))
                     throw new IOException("Cannot inspect the write target.", Marshal.GetHRForLastWin32Error());
                 if ((info.Attributes & 0x410) != 0 || info.Links != 1)
@@ -96,20 +81,21 @@ public sealed class WritablePathLease : IDisposable
         try
         {
             if (Stream.CanWrite) Stream.Flush(flushToDisk: true);
-            // RootDirectory=NULL is the documented common case. Every destination parent
-            // is pinned and nonempty, so this absolute name cannot traverse a replaced or
-            // converted parent. Rename acts on the held source, and replaces a target name
-            // rather than opening and writing through the target object.
-            byte[] name = Encoding.Unicode.GetBytes(fullPath);
+            // Resolve only one name relative to the held destination directory. The
+            // anchor pins its ordinary type throughout the namespace mutation.
+            WindowsFileHandles.RequireOrdinaryDirectory(target.DirectoryHandle);
+            byte[] name = Encoding.Unicode.GetBytes(Path.GetFileName(fullPath));
             int rootOffset = IntPtr.Size == 8 ? 8 : 4;
             int lengthOffset = rootOffset + IntPtr.Size;
             int nameOffset = lengthOffset + 4;
             byte[] data = new byte[nameOffset + name.Length + 2];
             Array.Copy(BitConverter.GetBytes(replace ? 1u : 0u), 0, data, 0, 4);
+            byte[] root = IntPtr.Size == 8 ? BitConverter.GetBytes(target.DirectoryHandle.DangerousGetHandle().ToInt64())
+                : BitConverter.GetBytes(target.DirectoryHandle.DangerousGetHandle().ToInt32());
+            Array.Copy(root, 0, data, rootOffset, root.Length);
             Array.Copy(BitConverter.GetBytes((uint)name.Length), 0, data, lengthOffset, 4);
             Array.Copy(name, 0, data, nameOffset, name.Length);
-            if (!SetFileInformationByHandle(Stream.SafeFileHandle, 3, data, (uint)data.Length))
-                throw new IOException($"Cannot publish the held file as {fullPath}.", Marshal.GetHRForLastWin32Error());
+            WindowsFileHandles.Rename(Stream.SafeFileHandle, data);
             CurrentPath = fullPath;
             var previous = _parent;
             _parent = target;
@@ -136,28 +122,12 @@ public sealed class WritablePathLease : IDisposable
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct SecurityAttributes
-    {
-        public int Length;
-        public IntPtr Descriptor;
-        public int InheritHandle;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     private struct Information
     {
         public uint Attributes;
         public uint CreationLow, CreationHigh, AccessLow, AccessHigh, WriteLow, WriteHigh;
         public uint Volume, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
     }
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileW(string path, uint access, uint share,
-        IntPtr security, uint disposition, uint flags, IntPtr template);
-
-    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileWithSecurity(string path, uint access, uint share,
-        ref SecurityAttributes security, uint disposition, uint flags, IntPtr template);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

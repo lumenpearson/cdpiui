@@ -53,6 +53,7 @@
     <Compile Include="..\CDPIUI.Shared\Security\ReadOnlyPathLease.cs" Link="Shared\ReadOnlyPathLease.cs" />
     <Compile Include="..\CDPIUI.Shared\Security\ReadOnlyDirectorySnapshot.cs" Link="Shared\ReadOnlyDirectorySnapshot.cs" />
     <Compile Include="..\CDPIUI.Shared\Security\WindowsPathNames.cs" Link="Shared\WindowsPathNames.cs" />
+    <Compile Include="..\CDPIUI.Shared\Security\WindowsFileHandles.cs" Link="Shared\WindowsFileHandles.cs" />
     <Compile Include="..\CDPIUI.Shared\Security\WritablePathLease.cs" Link="Shared\WritablePathLease.cs" />
   </ItemGroup>
 

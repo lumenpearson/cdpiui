@@ -49,13 +49,14 @@ public sealed class ReadOnlyDirectorySnapshot : IDisposable
     {
         // Do not use AllDirectories: a child must be opened without following links before
         // it is enumerated. Every directory needs only one handle, regardless of its depth.
-        foreach (string entry in Directory.EnumerateFileSystemEntries(path))
+        foreach (WindowsFileHandles.Entry item in WindowsFileHandles.Enumerate(parent.DirectoryHandle))
         {
             if (++count > ArchivePaths.MaxEntries || depth >= 64)
                 throw new InvalidDataException("The verification tree exceeds its entry or depth limit.");
-            string name = Path.GetFileName(entry);
+            string name = item.Name;
+            string entry = Path.Combine(path, name);
             string childRelative = Path.Combine(relative, name);
-            FileAttributes attributes = File.GetAttributes(entry);
+            FileAttributes attributes = item.Attributes;
             if ((attributes & FileAttributes.ReparsePoint) != 0)
                 throw new UnauthorizedAccessException("The verification tree contains a link.");
             if ((attributes & FileAttributes.Directory) != 0)
