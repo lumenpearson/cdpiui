@@ -35,18 +35,23 @@ internal static class WindowsFileHandles
         public uint Volume, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
     }
 
+    public static FileAttributes GetAttributes(SafeFileHandle handle)
+    {
+        if (!GetFileInformationByHandle(handle, out Information info))
+            throw new IOException("Cannot inspect the held object.", Marshal.GetHRForLastWin32Error());
+        return (FileAttributes)info.Attributes;
+    }
+
     public static void RequireOrdinaryDirectory(SafeFileHandle directory)
     {
-        if (!GetFileInformationByHandle(directory, out Information info))
-            throw new IOException("Cannot inspect the parent directory.", Marshal.GetHRForLastWin32Error());
-        if ((info.Attributes & 0x410) != 0x10)
+        if ((GetAttributes(directory) & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != FileAttributes.Directory)
             throw new UnauthorizedAccessException("The parent is no longer an ordinary directory.");
     }
 
     // NtCreateFile dispositions: OPEN=1, CREATE=2, OPEN_IF=3. No mode truncates bytes.
     public static SafeFileHandle OpenRelative(SafeFileHandle directory, string name, uint access,
         uint share, uint disposition, bool isDirectory, out bool created,
-        bool deleteOnClose = false, byte[]? securityDescriptor = null, bool allowLeafReparse = false)
+        bool deleteOnClose = false, byte[]? securityDescriptor = null)
     {
         if (!WindowsPathNames.IsOrdinaryName(name)) throw new ArgumentException("A single ordinary name is required.", nameof(name));
         bool retained = false;
@@ -63,9 +68,9 @@ internal static class WindowsFileHandles
             var attributes = new ObjectAttributes
             {
                 Length = Marshal.SizeOf<ObjectAttributes>(), Root = directory.DangerousGetHandle(), Name = unicode,
-                // Intentional file-name operations may inspect the reparse leaf itself.
-                // The parent is still held, ordinary, and the name has one component.
-                Attributes = allowLeafReparse ? 0x40u : 0x1040u, // OBJ_CASE_INSENSITIVE | OBJ_DONT_REPARSE
+                // FILE_OPEN_REPARSE_POINT still allows inspection of the final link
+                // object. Keep OBJ_DONT_REPARSE for all single-component operations.
+                Attributes = 0x1040, // OBJ_CASE_INSENSITIVE | OBJ_DONT_REPARSE
                 SecurityDescriptor = pinned.IsAllocated ? pinned.AddrOfPinnedObject() : IntPtr.Zero,
             };
             uint options = 0x00200000u | 0x20u | (isDirectory ? 1u : 0x40u) | (deleteOnClose ? 0x1000u : 0u);

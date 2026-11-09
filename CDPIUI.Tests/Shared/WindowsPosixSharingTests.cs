@@ -16,20 +16,23 @@ public sealed class WindowsPosixSharingTests : IDisposable
     [InlineData("read")]
     [InlineData("name")]
     [InlineData("anchor")]
+    [InlineData("metadata_delete")]
     public void PosixReplacementCannotUnlinkAHeldName(string kind)
     {
         if (!OperatingSystem.IsWindows()) return;
         string target = Path.Combine(_root, "target.bin");
         IDisposable held;
+        using var parent = ReadOnlyPathLease.OpenDirectoryForMutation(_root);
         if (kind == "anchor")
         {
             held = ReadOnlyPathLease.OpenDirectoryForMutation(_root);
-            target = Assert.Single(Directory.EnumerateFiles(_root, ".cdpiui-directory-lease-*"));
+            target = Directory.EnumerateFiles(_root, ".cdpiui-directory-lease-*").First();
         }
         else
         {
             File.WriteAllText(target, "held bytes");
-            held = kind == "read" ? ReadOnlyPathLease.OpenFile(target) : FileNameLease.OpenExisting(target);
+            held = kind == "read" ? ReadOnlyPathLease.OpenFile(target) : kind == "name" ? FileNameLease.OpenExisting(target)
+                : WindowsFileHandles.OpenRelative(parent.DirectoryHandle, "target.bin", 0x10080, 3, 1, false, out _);
         }
         using (held)
         using (var source = WritablePathLease.CreateForMove(Path.Combine(_root, "source.bin")))

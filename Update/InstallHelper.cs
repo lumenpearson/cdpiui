@@ -198,15 +198,29 @@ public class InstallHelper
 
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, StagingFolder);
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, BackupFolder);
-            if (Directory.Exists(BackupFolder) && Directory.EnumerateFileSystemEntries(BackupFolder).Any())
+            bool windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (windows)
+            {
+                try { WindowsFileRemoval.DeleteEmptyDirectoryIfExists(BackupFolder); }
+                catch (IOException error) when ((error.HResult & 0xFFFF) == 145)
+                {
+                    Log("An earlier update backup is still present. Recover it before starting another update.");
+                    FinishStatus = InstallError.NoOldVersion;
+                    return null;
+                }
+            }
+            else if (Directory.Exists(BackupFolder) && Directory.EnumerateFileSystemEntries(BackupFolder).Any())
             {
                 Log("An earlier update backup is still present. Recover it before starting another update.");
                 FinishStatus = InstallError.NoOldVersion;
                 return null;
             }
 
-            DeleteDirectory(StagingFolder);
-            DeleteDirectory(BackupFolder);
+            if (!DeleteDirectory(StagingFolder) || (!windows && !DeleteDirectory(BackupFolder)))
+            {
+                FinishStatus = InstallError.PermissionDenied;
+                return null;
+            }
             ArchivePaths.EnsureDirectoryExists(StagingFolder);
 
             using (var zip = ZipFile.OpenRead(_archiveFilePath))
@@ -441,7 +455,9 @@ public class InstallHelper
         DeleteDirectory(StagingFolder);
         try
         {
-            if (File.Exists(ObsoleteManifestPath))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                WindowsFileRemoval.DeleteFileIfExists(ObsoleteManifestPath);
+            else if (File.Exists(ObsoleteManifestPath))
                 File.Delete(ObsoleteManifestPath);
         }
         catch (Exception ex)
@@ -450,17 +466,24 @@ public class InstallHelper
         }
     }
 
-    private void DeleteDirectory(string path)
+    private bool DeleteDirectory(string path)
     {
         try
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                WindowsFileRemoval.DeleteDirectoryIfExists(path);
+                return true;
+            }
             ArchivePaths.EnsureNoReparsePoints(_targetFolder, path);
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
+            return true;
         }
         catch (Exception ex)
         {
             Log($"Failed to delete {path}: {ex.Message}");
+            return false;
         }
     }
 
