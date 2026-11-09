@@ -11,6 +11,40 @@ public sealed class WritablePathLeaseTests : IDisposable
     public void Dispose() => Directory.Delete(_root, true);
 
     [Fact]
+    public void BorrowedMutationContextSurvivesOwnerDisposalAndReleasesItsAnchor()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string directory = Path.Combine(_root, "context");
+        var parent = ReadOnlyPathLease.OpenDirectoryForMutation(directory);
+        string file = Path.Combine(directory, "new.bin");
+        using (var lease = WritablePathLease.CreateForMove(file, parent, null))
+        {
+            parent.Dispose();
+            lease.Stream.WriteByte(42);
+            Assert.Throws<IOException>(() => Directory.Move(directory, directory + "-moved"));
+            // New borrows after disposal are forbidden, even while a dependent holds resources.
+            Assert.Throws<ObjectDisposedException>(() => WritablePathLease.CreateForMove(Path.Combine(directory, "late.bin"), parent, null));
+        }
+        Assert.Equal(new byte[] { 42 }, File.ReadAllBytes(file));
+        Assert.Equal(["new.bin"], Directory.GetFiles(directory).Select(Path.GetFileName));
+        Directory.Move(directory, directory + "-moved");
+    }
+
+    [Fact]
+    public void BorrowedMutationContextRejectsNonChildBeforeCreatingAnything()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        string directory = Path.Combine(_root, "context");
+        using (var parent = ReadOnlyPathLease.OpenDirectoryForMutation(directory))
+        {
+            Assert.Throws<ArgumentException>(() => WritablePathLease.CreateForMove(Path.Combine(_root, "outside.bin"), parent, null));
+            Assert.Throws<ArgumentException>(() => WritablePathLease.CreateForMove(Path.Combine(directory, "nested", "file.bin"), parent, null));
+        }
+        Assert.Empty(Directory.EnumerateFileSystemEntries(directory));
+        Assert.False(File.Exists(Path.Combine(_root, "outside.bin")));
+    }
+
+    [Fact]
     public void HandleRenamePublishesHeldBytesAndPinsTheNewParent()
     {
         if (!OperatingSystem.IsWindows()) return;

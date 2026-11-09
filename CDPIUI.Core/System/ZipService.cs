@@ -60,30 +60,7 @@ internal class ZipService
     {
         using var snapshot = ReadOnlyDirectorySnapshot.Capture(sourceDirectory);
         await verify(snapshot);
-        PromoteSnapshot(snapshot, destinationDirectory);
-    }
-
-    private static void PromoteSnapshot(ReadOnlyDirectorySnapshot snapshot, string destinationDirectory)
-    {
-        ArchivePaths.EnsureDirectoryExists(destinationDirectory);
-        foreach (var file in snapshot.Files)
-        {
-            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, file.RelativePath);
-            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            ArchivePaths.EnsureDirectoryExists(Path.GetDirectoryName(destination)!);
-            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            using var output = WritablePathLease.Open(destination);
-            output.Stream.SetLength(0);
-            file.Stream.Position = 0;
-            file.Stream.CopyTo(output.Stream);
-        }
-        foreach (string relativePath in snapshot.Directories)
-        {
-            string destination = ArchivePaths.GetDestinationOrThrow(destinationDirectory, relativePath);
-            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-            ArchivePaths.EnsureDirectoryExists(destination);
-            ArchivePaths.EnsureNoReparsePoints(destinationDirectory, destination);
-        }
+        VerifiedFilePromotion.Publish(snapshot, destinationDirectory);
     }
 
     private static async Task ExtractEntries(
