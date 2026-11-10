@@ -3,6 +3,8 @@ name: Contribution metadata
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, edited, labeled, unlabeled, assigned, unassigned, milestoned, demilestoned, ready_for_review, converted_to_draft]
+  issues:
+    types: [edited, labeled, unlabeled, assigned, unassigned, milestoned, demilestoned, reopened, closed]
   workflow_dispatch:
     inputs:
       pull_request:
@@ -17,7 +19,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: contribution-metadata-${{ github.event.pull_request.number || inputs.pull_request }}
+  group: contribution-metadata-${{ github.event_name }}-${{ github.event.pull_request.number || inputs.pull_request || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
@@ -34,4 +36,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_request }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: python .github/scripts/contribution_metadata.py

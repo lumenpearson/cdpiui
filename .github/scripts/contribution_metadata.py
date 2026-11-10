@@ -7,6 +7,8 @@ import sys
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+from task_contract import validate_issue
+
 
 TYPES = {"bug", "security", "audit", "refactor", "verification", "docs", "release", "process"}
 AREAS = {"security", "reliability", "architecture", "native-qa", "integration", "ux", "documentation", "release"}
@@ -32,7 +34,7 @@ def referenced_issues(body, repository):
     return numbers
 
 
-def validate(pr, known_issue_numbers, repository):
+def validate(pr, known_issues, repository):
     if not isinstance(pr, dict):
         return ["The pull request payload must be an object."]
     errors = []
@@ -56,8 +58,12 @@ def validate(pr, known_issue_numbers, repository):
     milestone = pr.get("milestone") or {}
     if not isinstance(milestone, dict) or not re.match(r"^G[1-5] — ", milestone.get("title", "")):
         errors.append("Set the G1–G5 milestone that owns this work.")
-    if not referenced_issues(pr.get("body"), repository) & known_issue_numbers:
+    linked = referenced_issues(pr.get("body"), repository) & set(known_issues)
+    if not linked:
         errors.append("Link an existing issue in this repository from the Related work section.")
+    elif not isinstance(known_issues, dict) or not any(
+            not validate_issue(known_issues[number], require_open=True) for number in linked):
+        errors.append("Link an open owning task with a complete detailed contract and matching issue metadata; see docs/task-lifecycle.md.")
     return errors
 
 
@@ -70,12 +76,58 @@ def required_metadata(pr):
             milestone.get("number"), milestone.get("title"))
 
 
+def check_pull_request(request, repository, number):
+    pr = request(f"pulls/{number}")
+    if pr["state"] != "open":
+        print("The pull request is closed. No delivery state is inferred.")
+        return 0
+    sha = pr["head"]["sha"]
+    request(f"statuses/{sha}", {"state": "pending", "context": "Contribution metadata", "description": "Read current issue, label, owner and milestone data."})
+    known = {}
+    for issue_number in referenced_issues(pr.get("body"), repository):
+        try:
+            issue = request(f"issues/{issue_number}")
+            if "pull_request" not in issue:
+                known[issue_number] = issue
+        except HTTPError as error:
+            if error.code != 404:
+                raise
+    errors = validate(pr, known, repository)
+    latest = request(f"pulls/{number}")
+    if required_metadata(pr) != required_metadata(latest):
+        print("Metadata or HEAD changed during validation. The new event or a manual run must validate it.")
+        return 1
+    for issue_number, issue in known.items():
+        current = request(f"issues/{issue_number}")
+        if "pull_request" in current or required_metadata(issue) != required_metadata(current):
+            print("A linked task changed during validation. Do not publish stale success.")
+            return 1
+    state = "failure" if errors else "success"
+    run_url = f"{os.environ['GITHUB_SERVER_URL']}/{repository}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+    request(f"statuses/{sha}", {"state": state, "context": "Contribution metadata",
+                              "description": "Complete the required PR fields; see the workflow log." if errors else "Issue, description, labels, owner and milestone are valid.",
+                              "target_url": run_url})
+    for error in errors:
+        print(f"ERROR: {error}")
+    print(f"Metadata result: {state}; PR {number}; HEAD {sha}.")
+    return 1 if errors else 0
+
+
+def affected_pull_requests(request, repository, issue_number):
+    """Read all open PR pages; an issue edit only rechecks its actual dependants."""
+    result = []
+    page = 1
+    while True:
+        batch = request(f"pulls?state=open&per_page=100&page={page}")
+        result.extend(pr["number"] for pr in batch if issue_number in referenced_issues(pr.get("body"), repository))
+        if len(batch) < 100:
+            return result
+        page += 1
+
+
 def run_live():
     """Execute only from the trusted base branch on a GitHub-hosted runner."""
     repository = os.environ["GITHUB_REPOSITORY"]
-    number = int(os.environ["PR_NUMBER"])
-    if number < 1:
-        raise ValueError("PR_NUMBER must be positive.")
     api = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
     token = os.environ["GITHUB_TOKEN"]
 
@@ -88,35 +140,17 @@ def run_live():
         with urlopen(req, timeout=30) as response:
             return json.load(response)
 
-    pr = request(f"pulls/{number}")
-    if pr["state"] != "open":
-        print("The pull request is closed. No delivery state is inferred.")
-        return 0
-    sha = pr["head"]["sha"]
-    request(f"statuses/{sha}", {"state": "pending", "context": "Contribution metadata", "description": "Read current issue, label, owner and milestone data."})
-    known = set()
-    for issue_number in referenced_issues(pr.get("body"), repository):
-        try:
-            issue = request(f"issues/{issue_number}")
-            if "pull_request" not in issue:
-                known.add(issue_number)
-        except HTTPError as error:
-            if error.code != 404:
-                raise
-    errors = validate(pr, known, repository)
-    latest = request(f"pulls/{number}")
-    if required_metadata(pr) != required_metadata(latest):
-        print("Metadata or HEAD changed during validation. The new event or a manual run must validate it.")
-        return 1
-    state = "failure" if errors else "success"
-    run_url = f"{os.environ['GITHUB_SERVER_URL']}/{repository}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
-    request(f"statuses/{sha}", {"state": state, "context": "Contribution metadata",
-                              "description": "Complete the required PR fields; see the workflow log." if errors else "Issue, description, labels, owner and milestone are valid.",
-                              "target_url": run_url})
-    for error in errors:
-        print(f"ERROR: {error}")
-    print(f"Metadata result: {state}; PR {number}; HEAD {sha}.")
-    return 1 if errors else 0
+    if os.environ.get("PR_NUMBER"):
+        numbers = [int(os.environ["PR_NUMBER"])]
+    else:
+        issue_number = int(os.environ["ISSUE_NUMBER"])
+        if issue_number < 1:
+            raise ValueError("ISSUE_NUMBER must be positive.")
+        numbers = affected_pull_requests(request, repository, issue_number)
+    if any(number < 1 for number in numbers):
+        raise ValueError("PR_NUMBER must be positive.")
+    results = [check_pull_request(request, repository, number) for number in numbers]
+    return int(any(results))
 
 
 if __name__ == "__main__":

@@ -47,3 +47,10 @@ The final configuration snapshot distinguishes active external settings from rep
 
 No release date, estimate, human reviewer or test execution is invented to fill an optional field.
 Historic fixes and active unmerged work retain their actual dispositions.
+
+## Future task intake and close-out
+
+Follow [the detailed task lifecycle](../task-lifecycle.md) for every future fork task.
+Create or reuse its detailed issue before implementation and verify actual Project fields.
+After scoped acceptance, post the closing evidence, close as completed and set Done immediately.
+Codex and Claude use the root agent instructions. The contribution check validates an active owning task contract.

@@ -20,6 +20,8 @@
 
 ## Maintainer checks
 
+- [ ] Link an open owning task with the complete contract in docs/task-lifecycle.md.
+- [ ] Read back actual issue and Project fields; body classification alone is insufficient.
 - [ ] Set exactly one `type:` label and at least one `area:` label.
 - [ ] Set an assignee and the owning G1–G5 milestone.
 - [ ] Add the PR to the delivery Project. Set Status, Priority, Area and Risk.
@@ -29,3 +31,6 @@
 - [ ] Update EN/RU instructions and release notes when behavior changes.
 
 An unchecked item is outstanding work. A merged PR does not complete a release gate by itself.
+
+After acceptance, add the issue closing record and immediately close as completed with Project Status Done.
+Keep broader integration or release work open when its own criteria remain incomplete.
