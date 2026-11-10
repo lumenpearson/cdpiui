@@ -113,6 +113,10 @@ After a new commit, verify a successful status on that new HEAD.
 The workflow first becomes active after it enters the default branch.
 Observe a successful real status before making it a required branch check.
 Dependabot PRs use the same acceptance rules. The maintainer must add an issue, milestone and completed description before integration.
+Routine dependency updates enter G5 with `type:process` and `area:release`.
+These defaults do not assert a vulnerability or prove compatibility.
+For a confirmed advisory, link the security issue and set its G1 milestone and security labels during triage.
+The first automated intake is tracked in [issue #120](https://github.com/lumenpearson/cdpiui/issues/120).
 
 ## Measure process health
 
