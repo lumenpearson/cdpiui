@@ -50,7 +50,7 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
     private bool _isErrorVisible;
     private string _errorCode = string.Empty;
     private bool _isDownloadProgressVisible;
-    private string _statusText = "Getting ready...";
+    private string _statusText = string.Empty;
     private bool _isSpeedVisible = true;
     private string _speedText = string.Empty;
     private bool _isProgressIndeterminate = true;
@@ -64,6 +64,7 @@ public sealed partial class StoreSmallDownloadDialogViewModel : ObservableObject
     {
         _acceptLicensesAsync = acceptLicensesAsync;
         _dispatcherQueue = dispatcherQueue;
+        _statusText = _localizer.GetLocalizedString("GettingReady");
     }
 
     public string StoreId => _storeId;

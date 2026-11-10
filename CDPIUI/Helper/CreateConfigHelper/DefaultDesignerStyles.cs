@@ -16,10 +16,10 @@ internal class DarkDefaultHighlighter : SyntaxHighlightLanguage
         IEnumerable<string> errorTokens = null,
         IEnumerable<string> warningTokens = null)
     {
-        Name = "CMD Prompt";
+        Name = WinUI3Localizer.Localizer.Get().GetLocalizedString("CmdSyntaxHighlightingName");
         Author = "Storik4";
         Filter = [];
-        Description = "Syntax highlighting for CMD";
+        Description = WinUI3Localizer.Localizer.Get().GetLocalizedString("CmdSyntaxHighlightingDescription");
         Highlights =
         [
             new SyntaxHighlights("(\\*)", "#dd0077", "#dd0077"),
@@ -39,10 +39,10 @@ internal class LightDefaultHighlighter : SyntaxHighlightLanguage
         IEnumerable<string> errorTokens = null,
         IEnumerable<string> warningTokens = null)
     {
-        Name = "CMD Prompt";
+        Name = WinUI3Localizer.Localizer.Get().GetLocalizedString("CmdSyntaxHighlightingName");
         Author = "Storik4";
         Filter = [];
-        Description = "Syntax highlighting for CMD";
+        Description = WinUI3Localizer.Localizer.Get().GetLocalizedString("CmdSyntaxHighlightingDescription");
         Highlights =
         [
             new SyntaxHighlights("(:.*)", "#00C000", "#00C000"),

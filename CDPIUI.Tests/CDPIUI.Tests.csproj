@@ -37,9 +37,10 @@
     <ProjectReference Include="..\EditHostFile\EditHostFile.csproj" />
   </ItemGroup>
 
-  <!-- The launcher is a Native AOT executable; its rules are tested as linked source. -->
+  <!-- Test the Native AOT launcher rules and pure GUI recovery guards as linked source. -->
   <ItemGroup>
     <Compile Include="..\CDPIUI.ElevatedLauncher\LaunchPolicy.cs" Link="Tools\ElevatedLauncher\LaunchPolicy.cs" />
+    <Compile Include="..\CDPIUI\Helper\Basic\EmergencyRecovery.cs" Link="UI\EmergencyRecovery.cs" />
   </ItemGroup>
 
 </Project>

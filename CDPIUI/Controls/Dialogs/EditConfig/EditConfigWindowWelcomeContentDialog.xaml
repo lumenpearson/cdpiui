@@ -76,7 +76,7 @@
                         </ucontrols:LargeToggleButton.Icon>
                     </ucontrols:LargeToggleButton>
                     <ucontrols:LargeToggleButton x:Name="EditConfigKitButton" l:Uids.Uid="EditConfigKitMenuItem" ActionIcon="&#xE76C;" Click="ToggleButton_Click">
-                        
+
                     </ucontrols:LargeToggleButton>
                     <ucontrols:LargeButton l:Uids.Uid="ExitMenuItem" x:Name="ExitButton" Click="ExitButton_Click">
                         <ucontrols:LargeButton.Icon>
@@ -132,7 +132,7 @@
                                                 FontSize="10"
                                                 FontWeight="SemiBold"
                                                 Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                                                Text="LEGACY" />
+                                                l:Uids.Uid="LegacyBadge" />
                                         </Border>
                                         <TextBlock
                                             Foreground="{ThemeResource TextFillColorTertiary}"
@@ -194,7 +194,7 @@
                 </Grid>
                 <Button Grid.Row="2" l:Uids.Uid="EditButton" x:Name="EditKitButton" Click="EditKitButton_Click" CornerRadius="0" HorizontalAlignment="Right" MinWidth="150" IsEnabled="{x:Bind ConfigKitsListView.SelectedItem, Converter={StaticResource ObjToBool}, Mode=OneWay}"/>
             </Grid>
-            
+
         </Grid>
     </Grid>
 </ContentDialog>

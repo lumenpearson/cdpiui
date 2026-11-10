@@ -1,0 +1,22 @@
+{
+  "AskCommunity": "Community",
+  "AskCommunityDescription": "Ask something in official CDPI UI community. Explore new communities, recommended by developer ",
+  "Autoselection": "Config autoselection",
+  "AutoselectionDescription": "Select best config for component automatically. Create new config with best parameters",
+  "ConditionalLaunch": "Setup launch conditions ",
+  "ConditionalLaunchDescription": "Make you own conditions for launch component.\nHotkeys and process state changing conditions are supported",
+  "Donate": "Leave a tip",
+  "DonateDescription": "Support development ❤️",
+  "OpenLocalHelp": "Local help",
+  "OpenLocalHelpDescription": "Learn more about this app without Internet connection",
+  "OpenStore": "Components Store",
+  "OpenStoreDescription": "Manage installed Components, Config Kits and AddOns",
+  "RecoverApp": "Troubleshooting ",
+  "RecoverAppDescription": "Troubleshooting application problems automatically ",
+  "ReplaceHostsFile": "Replace hosts file",
+  "ReplaceHostsFileDescription": "Add new domains to hosts file for bypass discord connection problems and GitHub server availability",
+  "ReportAProblem": "Report a problem",
+  "ReportAProblemDescription": "Something work not as planned? Tell about it developers!",
+  "StopService": "Stop service",
+  "StopServiceDescription": "Stopping service may help if Internet connection are broken. Also if you changed component config service stopping is recommended for best effect"
+}

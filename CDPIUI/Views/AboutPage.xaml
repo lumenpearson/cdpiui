@@ -51,7 +51,7 @@
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-        
+
 
         <TextBlock
             l:Uids.Uid="AboutPageTextBlock"
@@ -97,13 +97,13 @@
                     </controls:SettingsCard.Description>
                     <Button x:Name="UpdateButton" Style="{ThemeResource AccentButtonStyle}" Click="UpdateButton_Click">
                         <Grid>
-                            <TextBlock x:Name="UpdateButtonTextBlock" Text="Check for updates"/>
+                            <TextBlock x:Name="UpdateButtonTextBlock"/>
                             <ProgressRing x:Name="UpdateProgressRing" IsIndeterminate="True" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" Width="18" Height="18" Visibility="Collapsed" />
                         </Grid>
                     </Button>
                 </controls:SettingsCard>
-                
-                
+
+
                 <TextBlock l:Uids.Uid="UsefulLinksTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 0"/>
                 <StackPanel>
                     <HyperlinkButton x:Name="DonateButton" Click="DonateButton_Click" Padding="0 5 5 5">
@@ -129,8 +129,8 @@
                         </StackPanel>
                     </HyperlinkButton>
                 </StackPanel>
-                
-                
+
+
                 <TextBlock l:Uids.Uid="AboutAppTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0 10 0 5"/>
                 <StackPanel>
                     <Grid>

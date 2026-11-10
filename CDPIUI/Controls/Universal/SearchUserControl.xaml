@@ -110,7 +110,7 @@
         </Button>
 
         <TextBox l:Uids.Uid="ReplaceTextBox" Height="30" Grid.Row="3" Grid.Column="2" Margin="0,4,0,0" HorizontalAlignment="Stretch" KeyDown="ReplaceTextBox_KeyDown" GotFocus="TextBoxes_GotFocus" x:Name="textToReplaceTextBox" IsSpellCheckEnabled="False"/>
-        <Button l:Uids.Uid="ReplaceButton" Height="32" Width="32" Grid.Row="3" Grid.Column="3" Margin="5,4,0,0" Padding="0" CornerRadius="4" BorderThickness="0" Background="Transparent" x:Name="StartReplaceButton" FontFamily="Segoe MDL2 Assets" Content="&#xF0AF;" Click="ReplaceCurrentButton_Click"/>
-        <Button l:Uids.Uid="ReplaceAllButton" Height="32" Width="32" Grid.Row="3" Grid.Column="4" Margin="5,4,0,0" Padding="0" CornerRadius="4" BorderThickness="0" Background="Transparent" x:Name="ReplaceAllButton" Content="All" Click="ReplaceAllButton_Click"/>
+        <Button l:Uids.Uid="ReplaceButton" Height="32" Width="32" Grid.Row="3" Grid.Column="3" Margin="5,4,0,0" Padding="0" CornerRadius="4" BorderThickness="0" Background="Transparent" x:Name="StartReplaceButton" FontFamily="Segoe MDL2 Assets" Click="ReplaceCurrentButton_Click"/>
+        <Button l:Uids.Uid="ReplaceAllButton" Height="32" Width="32" Grid.Row="3" Grid.Column="4" Margin="5,4,0,0" Padding="0" CornerRadius="4" BorderThickness="0" Background="Transparent" x:Name="ReplaceAllButton" Click="ReplaceAllButton_Click"/>
     </Grid>
 </UserControl>

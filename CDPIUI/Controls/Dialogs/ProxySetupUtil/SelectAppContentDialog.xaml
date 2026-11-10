@@ -9,7 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:l="using:WinUI3Localizer" xmlns:lcontrol="using:CDPIUI"
-    Title="Add application"
+    l:Uids.Uid="SelectAppContentDialog"
     DefaultButton="Primary"
     Style="{ThemeResource DefaultContentDialogStyle}"
     Padding="0">

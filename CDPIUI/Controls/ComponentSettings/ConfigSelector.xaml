@@ -34,7 +34,7 @@
                                 FontSize="10"
                                 FontWeight="SemiBold"
                                 Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                                Text="LEGACY" />
+                                l:Uids.Uid="LegacyBadge" />
                         </Border>
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorTertiary}"

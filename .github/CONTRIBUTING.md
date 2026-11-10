@@ -106,7 +106,7 @@ cdpiui/
 │   ├── Extensions/             # Extension methods of the GUI
 │   ├── Help/                   # The help articles. One folder for each language (EN, RU).
 │   ├── Helper/                 # GUI helpers that use translations or XAML types
-│   ├── Strings/                # The UI translations (.resw). One folder for each language (en-us, ru).
+│   ├── Strings/                # Generated in the build output from Localization/*.json.
 │   ├── Template/               # Files that the build copies to the output folder
 │   ├── ViewModels/             # View models
 │   ├── Views/                  # Pages. The pages of one window are in a folder with the window name.
@@ -216,18 +216,11 @@ A new preset pack or a new subscription does not need code.
 
 The developer documents use the term "preset" for a ready settings file of a component. The English UI uses the word "Config" for a preset. The Russian UI uses the word "Пресет".
 
-To add a language, do these steps:
+Edit translations in `Localization/<code>/*.json` (`en-us` and `ru`). This is the shared source for UI, tray, updater, and hosts editor copy. Keep keys and formatting arguments such as `{0}` and `{1}` consistent across languages.
 
-1. Make the `.resw` files in `CDPIUI/Strings/<code>`. The code has the format `en-us` or `ru`.
-2. Add the `.resw` files to `CDPIUI.csproj` as `Content` with `PreserveNewest`.
-3. Translate the license agreement into `CDPIUI/ELUA/<CODE>/ELUA.md`. `<CODE>` is the Store language code, for example `EN` or `RU`.
-4. Translate the help articles into `CDPIUI/Help/<CODE>/`.
-5. Translate the Store texts in the [Store repository](https://github.com/Storik4pro/cdpiui-store).
-6. In the `Resources.resw` file of each language, add a string. The key is the language code. The value is the name of the language.
-7. Add the language to `Languages` in `CDPIUI/Helper/UserExperience/LocalizationHelper.cs`.
-8. In `InitializeLocalizer` in `CDPIUI/App.xaml.cs`, add the system culture of the new language.
-9. For the tray, add a dictionary to `CDPIUI.TrayIcon/Helper/Locale/LocaleHelper.cs`.
-10. In `GetLocaleString` of the same file, add a case for the two-letter ISO code.
+The build automatically generates `.resw` under `obj` and copies them to `Strings` for WinUI3Localizer. Do not edit generated files. C# translation dictionaries and `Pick(english, russian)` are no longer used.
+
+See [Localization/README.md](../Localization/README.md) for the format, examples, language selection, checks, and adding a language. License agreements, help articles, and [Store content](https://github.com/Storik4pro/cdpiui-store) are translated in their own directories.
 
 ## Documents
 

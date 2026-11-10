@@ -1,4 +1,4 @@
-﻿namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls
 {
     partial class ModernButtonUserControl
     {
@@ -45,7 +45,7 @@
             MainTextBox.Name = "MainTextBox";
             MainTextBox.Size = new Size(192, 32);
             MainTextBox.TabIndex = 1;
-            MainTextBox.Text = "SampleName";
+            MainTextBox.Text = string.Empty;
             MainTextBox.TextAlign = ContentAlignment.MiddleLeft;
             MainTextBox.Click += MainTextBox_Click;
             // 

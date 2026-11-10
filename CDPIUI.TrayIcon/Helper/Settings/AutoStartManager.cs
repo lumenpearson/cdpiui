@@ -46,7 +46,7 @@ public static class AutoStartManager
                 }
 
                 TaskDefinition taskDefinition = taskService.NewTask();
-                taskDefinition.RegistrationInfo.Description = "Starting CDPI UI with highest rights when user logs in.";
+                taskDefinition.RegistrationInfo.Description = LocaleHelper.GetLocaleString("AutorunTaskDescription");
                 taskDefinition.RegistrationInfo.Author = "CDPI UI Tray Icon";
 
                 LogonTrigger trigger = new LogonTrigger

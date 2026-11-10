@@ -23,11 +23,11 @@ namespace CDPIUI.Controls.Universal;
 public sealed partial class CopyButton : Button
 {
     public static readonly DependencyProperty CopiedMessageProperty =
-        DependencyProperty.Register("CopiedMessage", typeof(string), typeof(CopyButton), new PropertyMetadata("Copied to clipboard"));
+        DependencyProperty.Register("CopiedMessage", typeof(string), typeof(CopyButton), new PropertyMetadata(null));
 
     public string CopiedMessage
     {
-        get { return (string)GetValue(CopiedMessageProperty); }
+        get { return (string)GetValue(CopiedMessageProperty) ?? WinUI3Localizer.Localizer.Get().GetLocalizedString("CopyButton.CopiedMessage"); }
         set { SetValue(CopiedMessageProperty, value); }
     }
 

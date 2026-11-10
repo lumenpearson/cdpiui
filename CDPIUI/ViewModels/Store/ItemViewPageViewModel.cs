@@ -36,18 +36,18 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
     private bool _errorHappens;
     private bool _loaded;
 
-    private string _itemName = "Item Name";
+    private string _itemName = string.Empty;
     private ImageSource _itemIcon = new BitmapImage(new Uri("ms-appx:///Assets/Store/empty.png"));
-    private string _developer = "Item Developer";
+    private string _developer = string.Empty;
     private string _stars = "NaN";
-    private string _categoryName = "Item Category";
-    private string _smallDescription = "Item Small Description Text";
-    private string _fullDescription = "Item Full Description Text";
+    private string _categoryName = string.Empty;
+    private string _smallDescription = string.Empty;
+    private string _fullDescription = string.Empty;
     private bool _isWarningVisible = true;
     private string _warningText = "";
     private bool _isActionEnabled = true;
     private bool _isActionVisible = true;
-    private string _actionText = "Item Action Button Text";
+    private string _actionText = string.Empty;
     private bool _isMoreVisible;
     private bool _isUnsupportedWarningVisible;
     private bool _isLinksVisible = true;
@@ -301,7 +301,7 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
     /// <summary>Called when the page is opened without an item id.</summary>
     public void ShowTemplate()
     {
-        ItemName = "Template page";
+        ItemName = _localizer.GetLocalizedString("StoreTemplatePage");
     }
 
     /// <summary>Stops the queue handlers; called when the page is left.</summary>

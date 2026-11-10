@@ -1,0 +1,20 @@
+{
+  "Bytes": "Байт",
+  "BytesPs": "байт/с",
+  "GB": "ГБ",
+  "GBPs": "ГБ/с",
+  "Hour": "Около часа",
+  "KiloBytes": "КБ",
+  "KiloBytesPs": "КБ/с",
+  "LeftMinutes": "Осталось около {0} мин.",
+  "LeftSmall": "Осталось меньше минуты",
+  "MegaBytes": "МБ",
+  "MegaBytesPs": "МБ/с",
+  "Min": "мин.",
+  "MoreThanThreeHours": "Более трех часов (0_0)",
+  "OneMinute": "Одна минута",
+  "Sec": "Считанные секунды",
+  "TB": "ТБ",
+  "TBPs": "ТБ/с",
+  "TwoHours": "Около двух часов"
+}

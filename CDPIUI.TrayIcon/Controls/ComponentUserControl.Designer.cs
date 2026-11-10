@@ -1,4 +1,4 @@
-﻿namespace CDPIUI.TrayIcon.Controls
+namespace CDPIUI.TrayIcon.Controls
 {
     partial class ComponentUserControl
     {
@@ -60,7 +60,7 @@
             MainTextBox.Name = "MainTextBox";
             MainTextBox.Size = new Size(192, 32);
             MainTextBox.TabIndex = 5;
-            MainTextBox.Text = "SampleName";
+            MainTextBox.Text = string.Empty;
             MainTextBox.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // ComponentWorkButton

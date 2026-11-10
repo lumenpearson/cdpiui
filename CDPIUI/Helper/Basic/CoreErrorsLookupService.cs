@@ -37,6 +37,6 @@ public class CoreErrorsLookupService
         ErrorShowingHelper.RaiseCriticalException(
             errorModel.Object,
             string.Format("{0} ({1}) {2}", errorModel.ErrorCode, errorModel.HResult, errorModel.StatusCode),
-            $"APPLICATION CORE EXCEPTION HAPPENS.\n Core log: {errorModel.FriendlyDescription}");
+            errorModel.FriendlyDescription);
     }
 }

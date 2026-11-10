@@ -11,6 +11,7 @@ using CDPIUI.Core;
 using CDPIUI.Core.System;
 using CDPIUI.Default;
 using CDPIUI.Helper;
+using CDPIUI.Helper.Basic;
 using CDPIUI.Helper.WindowHelper;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -35,47 +36,38 @@ namespace CDPIUI;
 /// </summary>
 public sealed partial class CriticalErrorHandlerWindow : TemplateWindow
 {
-    private const string WhereTemplate = "UNKNOWN";
-    private const string InfoNotProvided = "This information is not provided.";
     private const string FlashlightError = "ERR_FLASHLIGHT_BUSY";
 
+    // Embedded JSON remains available when the GUI localizer itself could not start.
+    public string EmergencyText(string key) => Helper.UserExperience.EmergencyLocalization.Get(key);
 
     public CriticalErrorHandlerWindow(
-        string where = WhereTemplate,
-        string why = InfoNotProvided,
+        string where = null,
+        string why = null,
         string errorCode = FlashlightError
-        )
+        ) : base(useSavedSettings: false)
     {
         InitializeComponent();
         ((App)Application.Current).ShowWindowModalAsync(this);
 
-        // The window may report a failure of the localizer itself, so English is kept as a fallback.
-        string localizedTitle = null;
-        try
-        { localizedTitle = WinUI3Localizer.Localizer.Get().GetLocalizedString("CriticalErrorWindowTitle"); }
-        // A broken localizer is one of the errors this window reports: the English title is used.
-        catch { }
-        WindowTitle = string.IsNullOrEmpty(localizedTitle) ? "Critical error" : localizedTitle;
-        IconUri = @"Assets/Icons/Error.ico";
-        this.CustomTitleBarUserControl = TitleBarUserControl;
+        WindowTitle = EmergencyText("CriticalErrorWindowTitle");
+        EmergencyRecovery.BestEffort(() => IconUri = @"Assets/Icons/Error.ico");
 
         DisableResizeFeature();
 
 
         this.Closed += CriticalErrorHandlerWindow_Closed;
 
-        WhereTextBlock.Text = where;
-        WhyTextBlock.Text = why;
-        ErrorCodeTextBlock.Text = errorCode;
+        WhereTextBlock.Text = string.IsNullOrWhiteSpace(where) ? EmergencyText("CriticalErrorUnknown") : where;
+        WhyTextBlock.Text = string.IsNullOrWhiteSpace(why) ? EmergencyText("CriticalErrorInfoNotProvided") : why;
+        ErrorCodeTextBlock.Text = string.IsNullOrWhiteSpace(errorCode) ? FlashlightError : errorCode;
 
-        string additionalInfo =
-            $"Application: CDPI UI\n" +
-            $"Version: {ApplicationInfo.Version}\n" +
-            $"System: {Environment.OSVersion.ToString()}\n" +
-            $"Architecture: {RuntimeInformation.OSArchitecture.ToString()}";
+        string version = EmergencyRecovery.Read(() => ApplicationInfo.Version, EmergencyText("CriticalErrorUnknown"));
+        string additionalInfo = EmergencyRecovery.Read(() => string.Format(EmergencyText("CriticalErrorEnvironment"),
+            version, Environment.OSVersion, RuntimeInformation.OSArchitecture), EmergencyText("CriticalErrorInfoNotProvided"));
         AdditionalTextBlock.Text = additionalInfo;
 
-        WindowsPositionHelper.SetCustomWindowSizeAndPositionFromSettings(this);
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(700, 520));
     }
 
     private void CriticalErrorHandlerWindow_Closed(object sender, WindowEventArgs args)

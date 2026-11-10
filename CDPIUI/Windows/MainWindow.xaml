@@ -30,7 +30,7 @@
                 <Setter Property="Padding" Value="0"/>
             </Style>
         </Grid.Resources>
-        
+
         <Grid x:Name="AppTitleBar"
               Canvas.ZIndex="1"
               Height="{Binding ElementName=NavView, Path=CompactPaneLength}"
@@ -41,7 +41,7 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            
+
             <Button x:Name="BackButton" l:Uids.Uid="FrameGoBackButton" AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" 
                     Background="Transparent"
                     BorderBrush="Transparent"
@@ -102,7 +102,7 @@
                 ItemInvoked="NavView_ItemInvoked"
                 BackRequested="NavView_BackRequested"
                 DisplayModeChanged="NavigationViewControl_DisplayModeChanged"
-                
+
                 AlwaysShowHeader="False"
                 Margin="0, 43, 0, 0">
             <NavigationView.HeaderTemplate>
@@ -223,7 +223,7 @@
         </NavigationView>
         <FlyoutBase.AttachedFlyout>
             <Flyout>
-                <TextBlock Text="Dfsfsd"/>
+                <TextBlock />
             </Flyout>
         </FlyoutBase.AttachedFlyout>
     </Grid>

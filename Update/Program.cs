@@ -9,6 +9,7 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        Strings.Language = Localization.LocalePreference.FromArguments(args);
         string extractFileName = null;
         string destinationPath = null;
         for (int i = 0; i < args.Length; i++)

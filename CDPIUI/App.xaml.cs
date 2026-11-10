@@ -37,7 +37,8 @@ public partial class App : Application
         PipeClientService.Instance.MessageReceived += (m) => CommandsHandler.HandleCommand(m);
         CoreErrorsLookupService.Instance.Init();
 
-        UpdateThemeForAllWindows(GetThemeFromString(SettingsManager.Instance.GetValue<string>("APPEARANCE", "Theme")));
+        UpdateThemeForAllWindows(EmergencyRecovery.Read(
+            () => GetThemeFromString(SettingsManager.Instance.GetValue<string>("APPEARANCE", "Theme")), ElementTheme.Default));
 
         PipeClientService.Instance.Init();
         PipeClientService.Instance.Connected += PipeConnected;
@@ -125,7 +126,10 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Logger.Instance.CreateErrorLog(nameof(App), $"Cannot prepare the application: {ex}");
+            EmergencyRecovery.BestEffort(() => Logger.Instance.CreateErrorLog(nameof(App), $"Cannot prepare the application: {ex}"));
+            // Resource/settings failures must have visible text before regular windows can open.
+            ErrorShowingHelper.RaiseCriticalException(nameof(GetReadyFeaturesAsync), ex);
+            throw;
         }
     }
 

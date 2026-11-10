@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="RemoveLanguageFolders.targets" />
   
   <PropertyGroup>
@@ -173,66 +173,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="ELUA\RU\ELUA.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\Flashlight.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\GoodCheckAdditionalSettings.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\GraphicDesignerDescriptions.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\Help.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\Resources.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\SettingTiles.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\Troubleshooting.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\UIHelper.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\WelcomeWizard.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\en-us\Widgets.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\Flashlight.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\GoodCheckAdditionalSettings.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\GraphicDesignerDescriptions.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\Help.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\Resources.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\SettingTiles.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\Troubleshooting.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\UIHelper.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\WelcomeWizard.resw">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Strings\ru\Widgets.resw">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -418,12 +358,6 @@
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN;MSIFILE</DefineConstants>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\Resources.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\Resources.resw" />
-  </ItemGroup>
   <ItemGroup>
     <Content Include="Help\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -681,62 +615,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <PRIResource Remove="Strings\en-us\Flashlight.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\SettingTiles.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\Flashlight.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\SettingTiles.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\GoodCheckAdditionalSettings.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\GoodCheckAdditionalSettings.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\UIHelper.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\UIHelper.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\GraphicDesignerDescriptions.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\GraphicDesignerDescriptions.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\Help.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\Help.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\Troubleshooting.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\Troubleshooting.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\Widgets.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\Widgets.resw" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\CDPIUI.AddOns\CDPIUI.AddOns.csproj" />
     <ProjectReference Include="..\CDPIUI.Core\CDPIUI.Core.csproj" />
     <ProjectReference Include="..\CDPIUI.Shared\CDPIUI.Shared.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\en-us\WelcomeWizard.resw" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Remove="Strings\ru\WelcomeWizard.resw" />
-  </ItemGroup>
+  <Import Project="..\build\Localization.targets" />
 </Project>

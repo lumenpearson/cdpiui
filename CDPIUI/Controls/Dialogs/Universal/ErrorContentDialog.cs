@@ -19,11 +19,9 @@ namespace CDPIUI.Controls.Dialogs.Universal;
 
 internal class ErrorContentDialog
 {
-    private string GetLocalizedString(string locId, string defaultString)
+    private string GetLocalizedString(string locId)
     {
-        ILocalizer localizer = Localizer.Get();
-        string result = localizer.GetLocalizedString(locId);
-        return string.IsNullOrEmpty(result) ? defaultString : result;
+        return CDPIUI.Helper.UserExperience.EmergencyLocalization.Get(locId);
     }
 
     private StackPanel _errorDetailsPanel;
@@ -33,9 +31,9 @@ internal class ErrorContentDialog
     {
         var dialog = new ContentDialog()
         {
-            Title = GetLocalizedString("UnexpectedError", "Unexpected Error"),
+            Title = GetLocalizedString("UnexpectedError"),
             XamlRoot = xamlRoot,
-            PrimaryButtonText = GetLocalizedString("OkButtonText", "OK"),
+            PrimaryButtonText = GetLocalizedString("OkButtonText"),
             DefaultButton = ContentDialogButton.Primary
         };
         var scrollView = new ScrollView();
@@ -52,7 +50,7 @@ internal class ErrorContentDialog
 
         _moreButton = new HyperlinkButton()
         {
-            Content = GetLocalizedString("ViewMore", "More"),
+            Content = GetLocalizedString("ViewMore"),
             Margin = new Thickness(0, 10, 0, 0),
             Padding = new Thickness(0)
         };
@@ -92,7 +90,7 @@ internal class ErrorContentDialog
         icon.FontSize = 16;
 
         TextBlock textBlock1 = new TextBlock();
-        textBlock1.Text = GetLocalizedString("CopyErrorText", "Copy error text");
+        textBlock1.Text = GetLocalizedString("CopyErrorText");
         textBlock1.Style = (Style)Application.Current.Resources["BodyTextBlockStyle"];
 
         StackPanel stackPanel1 = new StackPanel();
@@ -106,7 +104,7 @@ internal class ErrorContentDialog
         var copyButton = new CopyButton()
         {
             Content = stackPanel1,
-            CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage", "Copied to clipboard."),
+            CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage"),
         };
 
         copyButton.Click += (sender, e) =>
@@ -133,6 +131,6 @@ internal class ErrorContentDialog
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-        _moreButton.Content = _errorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore", "More") : GetLocalizedString("ViewLess", "Less");
+        _moreButton.Content = _errorDetailsPanel.Visibility == Visibility.Collapsed ? GetLocalizedString("ViewMore") : GetLocalizedString("ViewLess");
     }
 }

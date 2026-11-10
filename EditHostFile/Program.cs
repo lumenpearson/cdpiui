@@ -21,6 +21,7 @@ internal class Program
 
     static int Main(string[] args)
     {
+        Strings.Language = Localization.LocalePreference.FromArguments(args);
         RegisterCodePages();
         try
         {

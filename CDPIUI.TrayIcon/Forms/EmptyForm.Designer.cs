@@ -1,4 +1,4 @@
-﻿namespace CDPIUI.TrayIcon.Forms
+namespace CDPIUI.TrayIcon.Forms
 {
     partial class EmptyForm
     {
@@ -43,7 +43,7 @@
             ShowIcon = false;
             ShowInTaskbar = false;
             SizeGripStyle = SizeGripStyle.Hide;
-            Text = "EmptyForm";
+            Text = "CDPI UI";
             ResumeLayout(false);
         }
 

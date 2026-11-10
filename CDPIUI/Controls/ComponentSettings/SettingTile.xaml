@@ -44,7 +44,7 @@
                     <FontIcon Glyph="&#xE712;" FontSize="16"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem x:Name="AddWidgetToHomePageMenuItem" l:Uids.Uid="AddWidgetToHomePageMenuItem" Text="Add widget to home page" Click="AddWidgetToHomePageMenuItem_Click">
+                            <MenuFlyoutItem x:Name="AddWidgetToHomePageMenuItem" l:Uids.Uid="AddWidgetToHomePageMenuItem" Click="AddWidgetToHomePageMenuItem_Click">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon x:Name="AddWidgetFontIcon" Glyph="&#xE718;" />
                                 </MenuFlyoutItem.Icon>

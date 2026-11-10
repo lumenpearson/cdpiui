@@ -1,4 +1,4 @@
-﻿using CDPIUI.TrayIcon.Helper;
+using CDPIUI.TrayIcon.Helper;
 using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -47,7 +47,7 @@ namespace CDPIUI.TrayIcon.Forms
             ExitButton.BackColor = Color.Transparent;
             ExitButton.Bold = false;
             ExitButton.DisplayImage = null;
-            ExitButton.DisplayText = "Exit";
+            ExitButton.DisplayText = string.Empty;
             ExitButton.ForeColor = Color.White;
             ExitButton.Glyph = "";
             ExitButton.Location = new Point(0, 36);
@@ -61,7 +61,7 @@ namespace CDPIUI.TrayIcon.Forms
             MaximizeButton.BackColor = Color.Transparent;
             MaximizeButton.Bold = true;
             MaximizeButton.DisplayImage = null;
-            MaximizeButton.DisplayText = "Maximize";
+            MaximizeButton.DisplayText = string.Empty;
             MaximizeButton.ForeColor = Color.White;
             MaximizeButton.Glyph = "";
             MaximizeButton.Location = new Point(0, 2);
@@ -137,7 +137,7 @@ namespace CDPIUI.TrayIcon.Forms
             ShowIcon = false;
             ShowInTaskbar = false;
             SizeGripStyle = SizeGripStyle.Hide;
-            Text = "TrayMenuForm";
+            Text = "CDPI UI";
             TopMost = true;
             MainPanel.ResumeLayout(false);
             BasicActionsPanel.ResumeLayout(false);

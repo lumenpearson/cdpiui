@@ -71,15 +71,18 @@ public sealed partial class AboutPage : TemplatePage
 
     private ObservableCollection<AcknowledgmentsModel> _requrementsList = new ObservableCollection<AcknowledgmentsModel>()
     {
-        new () { Name = "TextControlBox-WinUI by FrozenAssassine" },
-        new () { Name = "WinUI3Localizer by Andrew KeepCoding" },
-        new () { Name = "WinUIEx by Morten Nielsen" },
-        new () { Name = "TaskScheduler by David Hall" },
-        new () { Name = "Newtonsoft.Json by James Newton-King" },
+        new () { Name = LibraryCredit("TextControlBox-WinUI", "FrozenAssassine") },
+        new () { Name = LibraryCredit("WinUI3Localizer", "Andrew KeepCoding") },
+        new () { Name = LibraryCredit("WinUIEx", "Morten Nielsen") },
+        new () { Name = LibraryCredit("TaskScheduler", "David Hall") },
+        new () { Name = LibraryCredit("Newtonsoft.Json", "James Newton-King") },
         new () { Name = "CommunityToolkit.Labs" },
         new () { Name = "CommunityToolkit.WinUI" },
         new () { Name = "Microsoft.Data.Sqlite" },
     };
+    private static string LibraryCredit(string library, string author) =>
+        string.Format(Localizer.Get().GetLocalizedString("AboutLibraryCredit"), library, author);
+
     public AboutPage()
     {
         InitializeComponent();
