@@ -2234,5 +2234,10 @@
   "PT_ReportBest": "Best config: {0}",
   "PT_ReportNone": "none",
   "AboutLibraryCredit": "{0} by {1}",
-  "CmdSyntaxHighlightingName": "Command Prompt"
+  "CmdSyntaxHighlightingName": "Command Prompt",
+  "ConfigMakerVariableDefaultSwitch.OnContent": "On",
+  "ConfigMakerVariableDefaultSwitch.OffContent": "Off",
+  "CommonToggleSwitch.OnContent": "On",
+  "CommonToggleSwitch.OffContent": "Off",
+  "CopyButton.AutomationProperties.Name": "Copy"
 }

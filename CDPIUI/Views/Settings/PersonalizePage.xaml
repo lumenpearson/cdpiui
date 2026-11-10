@@ -127,7 +127,7 @@
                             <TextBlock Grid.Column="2" l:Uids.Uid="AppRestartNeededTextBlock" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
                         </Grid>
                     </controls:SettingsCard.Description>
-                    <ToggleSwitch x:Name="PreferSystemWindowTitleBarToggleSwitch" Toggled="PreferSystemWindowTitleBarToggleSwitch_Toggled"/>
+                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="PreferSystemWindowTitleBarToggleSwitch" Toggled="PreferSystemWindowTitleBarToggleSwitch_Toggled"/>
                 </controls:SettingsCard>
 
                 <controls:SettingsCard x:Name="SelectFontSettingsCard" l:Uids.Uid="SelectFontSettingsCard" Click="SelectFontButton_Click" IsClickEnabled="True" IsActionIconVisible="False">
@@ -172,10 +172,10 @@
                             <ComboBox x:Name="MainGridColumnSelector" Width="Auto" DisplayMemberPath="DisplayName"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="FlashlightWidgetSettingsCard">
-                            <ToggleSwitch x:Name="ShowFlashlightToggleSwitch" Toggled="ShowFlashlightToggleSwitch_Toggled"/>
+                            <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="ShowFlashlightToggleSwitch" Toggled="ShowFlashlightToggleSwitch_Toggled"/>
                         </controls:SettingsCard>
                         <controls:SettingsCard l:Uids.Uid="WidgetsSettingsCard">
-                            <ToggleSwitch x:Name="ShowWidgetsToggleSwitch" Toggled="ShowWidgetsToggleSwitch_Toggled"/>
+                            <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="ShowWidgetsToggleSwitch" Toggled="ShowWidgetsToggleSwitch_Toggled"/>
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>

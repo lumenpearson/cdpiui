@@ -56,11 +56,42 @@ public class LocalizationCatalogTests
         };
         foreach (string folder in new[] { "Controls", "Views", "Windows" })
         foreach (string path in Directory.EnumerateFiles(Path.Combine(RepositoryRoot, "CDPIUI", folder), "*.xaml", SearchOption.AllDirectories))
-        foreach (var attribute in XDocument.Load(path).Descendants().Attributes())
         {
-            if (visibleProperties.Contains(attribute.Name.LocalName) && !attribute.Value.StartsWith('{') &&
-                Regex.IsMatch(attribute.Value, @"\p{L}") && !invariantNames.Contains(attribute.Value))
-                Assert.Fail($"Visible text must come from localization: {path}: {attribute}");
+            var document = XDocument.Load(path);
+            foreach (var setter in document.Descendants().Where(element => element.Name.LocalName == "Setter"))
+            {
+                string property = (string?)setter.Attribute("Property") ?? "";
+                string value = (string?)setter.Attribute("Value") ?? "";
+                if (visibleProperties.Contains(property) && !value.StartsWith('{') && Regex.IsMatch(value, @"\p{L}") && !invariantNames.Contains(value))
+                    Assert.Fail($"Visible style text must come from localization: {path}: {setter}");
+            }
+            foreach (var attribute in document.Descendants().Attributes())
+            {
+                if (visibleProperties.Contains(attribute.Name.LocalName) && !attribute.Value.StartsWith('{') &&
+                    Regex.IsMatch(attribute.Value, @"\p{L}") && !invariantNames.Contains(attribute.Value))
+                    Assert.Fail($"Visible text must come from localization: {path}: {attribute}");
+            }
+        }
+    }
+
+    [Fact]
+    public void VisibleToggleStateLabelsUseTheApplicationLocale()
+    {
+        var english = Read(Path.Combine(RepositoryRoot, "Localization", "en-us", "Resources.json"));
+        var russian = Read(Path.Combine(RepositoryRoot, "Localization", "ru", "Resources.json"));
+        XNamespace localizer = "using:WinUI3Localizer";
+        foreach (string folder in new[] { "Controls", "Views", "Windows" })
+        foreach (string path in Directory.EnumerateFiles(Path.Combine(RepositoryRoot, "CDPIUI", folder), "*.xaml", SearchOption.AllDirectories))
+        foreach (var toggle in XDocument.Load(path).Descendants().Where(element => element.Name.LocalName == "ToggleSwitch"))
+        {
+            if ((string?)toggle.Attribute("OnContent") == "" && (string?)toggle.Attribute("OffContent") == "")
+                continue; // The compact config editor intentionally hides both state labels.
+            string? uid = (string?)toggle.Attribute(localizer + "Uids.Uid");
+            Assert.True(uid != null, $"Toggle state labels must not inherit the Windows language: {path}");
+            Assert.Equal("On", english[uid + ".OnContent"]);
+            Assert.Equal("Off", english[uid + ".OffContent"]);
+            Assert.Equal("Вкл.", russian[uid + ".OnContent"]);
+            Assert.Equal("Откл.", russian[uid + ".OffContent"]);
         }
     }
 

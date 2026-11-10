@@ -2234,5 +2234,10 @@
   "PT_ReportBest": "Лучший пресет: {0}",
   "PT_ReportNone": "нет",
   "AboutLibraryCredit": "{0}, автор: {1}",
-  "CmdSyntaxHighlightingName": "Командная строка"
+  "CmdSyntaxHighlightingName": "Командная строка",
+  "ConfigMakerVariableDefaultSwitch.OnContent": "Вкл.",
+  "ConfigMakerVariableDefaultSwitch.OffContent": "Откл.",
+  "CommonToggleSwitch.OnContent": "Вкл.",
+  "CommonToggleSwitch.OffContent": "Откл.",
+  "CopyButton.AutomationProperties.Name": "Копировать"
 }

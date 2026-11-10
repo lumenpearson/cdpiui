@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="..\CDPIUI.ElevatedLauncher\LaunchPolicy.cs" Link="Tools\ElevatedLauncher\LaunchPolicy.cs" />
     <Compile Include="..\CDPIUI\Helper\Basic\EmergencyRecovery.cs" Link="UI\EmergencyRecovery.cs" />
+    <Compile Include="..\CDPIUI\Helper\Basic\StartupInitialization.cs" Link="UI\StartupInitialization.cs" />
   </ItemGroup>
 
 </Project>

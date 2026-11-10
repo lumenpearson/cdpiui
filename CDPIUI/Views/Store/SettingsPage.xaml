@@ -112,7 +112,7 @@
                             </Button>
                         </StackPanel>
                     </controls:SettingsCard.Description>
-                    <ToggleSwitch IsOn="{x:Bind storenet:StoreProxyHelper.UseProxyForStoreConnections, Mode=TwoWay}"/>
+                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" IsOn="{x:Bind storenet:StoreProxyHelper.UseProxyForStoreConnections, Mode=TwoWay}"/>
                 </controls:SettingsCard>
 
                 <controls:SettingsCard x:Name="MemoryManagentSettingsCard" l:Uids.Uid="MemoryManagentSettingsCard" IsClickEnabled="True" Click="MemoryManagentSettingsCard_Click">

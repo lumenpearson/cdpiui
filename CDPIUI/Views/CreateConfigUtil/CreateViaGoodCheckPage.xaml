@@ -245,7 +245,7 @@
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/AutomaticConnectivityTestTextBlock">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticConnectivityTest" IsOn="{x:Bind ViewModel.AutomaticConnectivityTest, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="AutomaticConnectivityTest" IsOn="{x:Bind ViewModel.AutomaticConnectivityTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/ConnectivityTestURLs" Visibility="{Binding IsOn, ElementName=AutomaticConnectivityTest, Converter={StaticResource BoolToVis}}">
@@ -255,14 +255,14 @@
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/SkipCertVerifys">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="SkipCertVerify" IsOn="{x:Bind ViewModel.SkipCertVerify, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="SkipCertVerify" IsOn="{x:Bind ViewModel.SkipCertVerify, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
                             <TextBlock l:Uids.Uid="/GoodCheckAdditionalSettings/AddressTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/GGC">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticGoogleCacheTest" IsOn="{x:Bind ViewModel.AutomaticGoogleCacheTest, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="AutomaticGoogleCacheTest" IsOn="{x:Bind ViewModel.AutomaticGoogleCacheTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
@@ -274,7 +274,7 @@
                             <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/DohResolversHeader"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/UseDOH">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="UseDoH" IsOn="{x:Bind ViewModel.UseDoH, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="UseDoH" IsOn="{x:Bind ViewModel.UseDoH, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/DOHResolvers"

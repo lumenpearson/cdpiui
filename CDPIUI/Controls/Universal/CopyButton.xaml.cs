@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using CDPIUI.Helper;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -27,7 +28,7 @@ public sealed partial class CopyButton : Button
 
     public string CopiedMessage
     {
-        get { return (string)GetValue(CopiedMessageProperty) ?? WinUI3Localizer.Localizer.Get().GetLocalizedString("CopyButton.CopiedMessage"); }
+        get { return (string)GetValue(CopiedMessageProperty) ?? EmergencyLocalization.Get("CopyButton.CopiedMessage"); }
         set { SetValue(CopiedMessageProperty, value); }
     }
 
@@ -49,6 +50,12 @@ public sealed partial class CopyButton : Button
     {
         Click -= CopyButton_Click;
         base.OnApplyTemplate();
+        // The normal XAML UID or the error dialog can supply more specific labels.
+        // Defaults must also work when the regular localizer is unavailable.
+        if (ReadLocalValue(Microsoft.UI.Xaml.Automation.AutomationProperties.NameProperty) == DependencyProperty.UnsetValue)
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, EmergencyLocalization.Get("CopyButton.ToolTipService.ToolTip"));
+        if (ReadLocalValue(ToolTipService.ToolTipProperty) == DependencyProperty.UnsetValue)
+            ToolTipService.SetToolTip(this, EmergencyLocalization.Get("CopyButton.ToolTipService.ToolTip"));
         Click += CopyButton_Click;
     }
 }

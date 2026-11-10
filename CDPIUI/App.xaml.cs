@@ -108,11 +108,12 @@ public partial class App : Application
     }
 
     // Windows read their strings from the localizer, so they are created only after it is built.
-    private Task _localizerReady = Task.CompletedTask;
+    private readonly StartupInitialization _startupInitialization = new();
+    private Task _localizerReady => _startupInitialization.Ready;
 
     public void GetReadyFeatures()
     {
-        _localizerReady = GetReadyFeaturesAsync();
+        _startupInitialization.Start(GetReadyFeaturesAsync);
     }
 
     private async Task GetReadyFeaturesAsync()

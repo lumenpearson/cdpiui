@@ -426,7 +426,7 @@
                         </controls:SettingsCard>
 
                         <controls:SettingsCard l:Uids.Uid="BlockCheck2TestAllStrategiesCard">
-                            <ToggleSwitch IsOn="{x:Bind ViewModel.Session.TestAllStrategies, Mode=TwoWay}" />
+                            <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" IsOn="{x:Bind ViewModel.Session.TestAllStrategies, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <Button

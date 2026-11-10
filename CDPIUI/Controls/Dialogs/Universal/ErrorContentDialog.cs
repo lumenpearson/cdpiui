@@ -106,6 +106,8 @@ internal class ErrorContentDialog
             Content = stackPanel1,
             CopiedMessage = GetLocalizedString("CopyButton.CopiedMessage"),
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(copyButton, GetLocalizedString("CopyErrorText"));
+        ToolTipService.SetToolTip(copyButton, GetLocalizedString("CopyErrorText"));
 
         copyButton.Click += (sender, e) =>
         {

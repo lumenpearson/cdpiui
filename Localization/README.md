@@ -26,6 +26,10 @@ Product names, physical key names, protocol identifiers, file names, command syn
 
 Exception dialogs read embedded JSON directly through `EmergencyLocalization`, without calling WinUI3Localizer. Missing, empty, malformed, or unreadable selected-language resources fall back to English. If both catalogs fail, a nonempty resource ID remains visible. Preference-read failures fall back to Windows UI language. The critical window uses the system title bar and does not read saved window preferences or create the custom title bar (which has its own regular localization bindings). Process-fatal conditions such as stack exhaustion, out-of-memory, or an unavailable native UI runtime cannot be recovered by a localization service.
 
+The startup readiness barrier exists before initialization begins. A synchronous failure can activate the critical window and reenter the application launch handler; regular window creation still waits for the same pending barrier and receives its failure. Repeated initialization requests do not start a second initializer.
+
+Visible toggle switches localize `OnContent` and `OffContent` through their JSON UID, independently of the Windows language. The compact config-editor switch intentionally hides both labels. Settings breadcrumbs and the selected editor description refresh when the application language changes; the page detaches its language event when unloaded. Copy-control tooltips and accessible names also use catalogs, including in error dialogs where the regular localizer is unavailable.
+
 ## Verification
 
 Run `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release`. Localization tests check JSON parsing/duplicate keys, language parity, formatting-argument parity, embedded-resource lookup for every entry, language selection, standalone tool localization, visible XAML literals, and injected failures in JSON/resource/preference reads. The invariant-name allowlist is intentionally short; use a resource for new UI text.
