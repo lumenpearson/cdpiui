@@ -1,0 +1,70 @@
+name: Detailed delivery task
+description: Record any fork task before implementation, investigation or verification.
+title: "[Task] "
+labels: ["type:process"]
+assignees: [lumenpearson]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use clear English and at least 180 words across the completed record.
+        Replace the intake type label during triage when necessary.
+        Set actual labels, milestone and Project 7 fields before work starts.
+        A form does not populate private Project fields. See docs/task-lifecycle.md.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and expected result
+      description: Give the user scenario, current limitation, source revision and required result.
+    validations: {required: true}
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and boundaries
+      description: Name the affected responsibilities, compatibility boundaries and explicit completion scope.
+    validations: {required: true}
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Give at least two concrete checklist items. Separate local, integrated and release acceptance.
+      placeholder: "- [ ] The named result meets its measurable condition."
+    validations: {required: true}
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Give commands, negative cases, environment, review and required native or source-only checks.
+    validations: {required: true}
+  - type: textarea
+    id: recovery
+    attributes:
+      label: Risk and recovery
+      description: Explain the impact, priority, risk, compatibility and recovery procedure.
+    validations: {required: true}
+  - type: textarea
+    id: references
+    attributes:
+      label: Dependencies and documentation
+      description: Link related issues, plans, PRs, owning source and operator documentation. State blockers or explain their absence.
+    validations: {required: true}
+  - type: textarea
+    id: classification
+    attributes:
+      label: Project classification
+      description: Fill every line using the canonical taxonomy in docs/governance/README.md. Set matching actual issue and Project fields.
+      value: |
+        Type:
+        Area:
+        Priority:
+        Risk:
+        Gate:
+        Owner: @lumenpearson
+        Project: https://github.com/users/lumenpearson/projects/7
+    validations: {required: true}
+  - type: textarea
+    id: progress
+    attributes:
+      label: Progress and evidence
+      description: Record the execution owner, branch or worktree, initial revision and actual verification state. Add later evidence as comments.
+    validations: {required: true}

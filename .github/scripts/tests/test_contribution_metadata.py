@@ -3,9 +3,13 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import sys
 import unittest
+from task_fixture import valid_issue
 from unittest.mock import patch
 
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 MODULE = Path(__file__).parents[1] / "contribution_metadata.py"
 spec = importlib.util.spec_from_file_location("contribution_metadata", MODULE)
@@ -35,7 +39,7 @@ Refs #42.
 
 class MetadataTests(unittest.TestCase):
     def errors(self, pr):
-        return metadata.validate(pr, {42}, "lumenpearson/cdpiui")
+        return metadata.validate(pr, {42: valid_issue()}, "lumenpearson/cdpiui")
 
     def test_complete_current_metadata_passes(self):
         self.assertEqual([], self.errors(valid_pr()))
@@ -115,12 +119,18 @@ class MetadataTests(unittest.TestCase):
 
 
 class LiveStatusTests(unittest.TestCase):
-    def run_with_latest(self, change):
+    def run_with_latest(self, change, issue_change=None, latest_issue_change=None):
         pr = valid_pr()
         pr.update(state="open", head={"sha": "a" * 40, "repo": {"pushed_at": "2026-11-10T12:00:00Z"}})
         latest = copy.deepcopy(pr)
         change(latest)
-        reads = iter([pr, {"number": 42}, latest])
+        issue = valid_issue()
+        if issue_change:
+            issue_change(issue)
+        latest_issue = copy.deepcopy(issue)
+        if latest_issue_change:
+            latest_issue_change(latest_issue)
+        reads = iter([pr, issue, latest, latest_issue])
         writes = []
 
         def request(req, timeout):
@@ -145,6 +155,11 @@ class LiveStatusTests(unittest.TestCase):
         self.assertEqual(["pending", "success"], [data["state"] for _, data in writes])
         self.assertTrue(all(url.endswith("/statuses/" + "a" * 40) for url, _ in writes))
 
+    def test_incomplete_linked_issue_publishes_failure(self):
+        result, writes = self.run_with_latest(lambda pr: None, lambda issue: issue.update(body="Only an incomplete note."))
+        self.assertEqual(1, result)
+        self.assertEqual("failure", writes[-1][1]["state"])
+
     def test_head_change_does_not_publish_success_for_stale_validation(self):
         result, writes = self.run_with_latest(lambda pr: pr["head"].update(sha="b" * 40))
         self.assertEqual(1, result)
@@ -160,10 +175,50 @@ class LiveStatusTests(unittest.TestCase):
                 self.assertEqual(0, result)
                 self.assertEqual(["pending", "success"], [data["state"] for _, data in writes])
 
+    def test_linked_issue_change_does_not_publish_stale_success(self):
+        result, writes = self.run_with_latest(lambda pr: None, latest_issue_change=lambda issue: issue.update(body="Changed task contract."))
+        self.assertEqual(1, result)
+        self.assertEqual(["pending"], [data["state"] for _, data in writes])
+
     def test_required_metadata_change_does_not_publish_stale_success(self):
         result, writes = self.run_with_latest(lambda pr: pr.update(assignees=[]))
         self.assertEqual(1, result)
         self.assertEqual(["pending"], [data["state"] for _, data in writes])
+
+
+class IssueEventTests(unittest.TestCase):
+    def test_all_open_pr_pages_are_checked_for_the_edited_issue(self):
+        pages = []
+
+        def request(path):
+            pages.append(path)
+            if path.endswith("page=1"):
+                return [{"number": n, "body": "## Related work\nRefs #999."} for n in range(1, 100)] + [
+                    {"number": 100, "body": "## Related work\nRefs #42."}]
+            return [{"number": 101, "body": "## Related work\nhttps://github.com/lumenpearson/cdpiui/issues/42"},
+                    {"number": 102, "body": "## Related work\n`Refs #42`"},
+                    {"number": 103, "body": "## Related work\nhttps://github.com/other/repo/issues/42"}]
+
+        self.assertEqual([100, 101], metadata.affected_pull_requests(request, "lumenpearson/cdpiui", 42))
+        self.assertEqual(2, len(pages))
+
+    def test_unrelated_issue_event_does_not_write_a_status(self):
+        env = {"GITHUB_REPOSITORY": "lumenpearson/cdpiui", "GITHUB_TOKEN": "unit-test-placeholder",
+               "PR_NUMBER": "", "ISSUE_NUMBER": "42"}
+        with patch.dict(metadata.os.environ, env), patch.object(metadata, "urlopen", return_value=io.BytesIO(b"[]")) as urlopen:
+            self.assertEqual(0, metadata.run_live())
+        self.assertEqual(1, urlopen.call_count)
+        self.assertIsNone(urlopen.call_args.args[0].data)
+
+    def test_related_issue_event_revalidates_the_affected_pr(self):
+        env = {"GITHUB_REPOSITORY": "lumenpearson/cdpiui", "GITHUB_TOKEN": "unit-test-placeholder",
+               "PR_NUMBER": "", "ISSUE_NUMBER": "42"}
+        page = [{"number": 10, "body": "## Related work\nRefs #42."}]
+        with patch.dict(metadata.os.environ, env), patch.object(metadata, "urlopen", return_value=io.BytesIO(json.dumps(page).encode())), \
+                patch.object(metadata, "check_pull_request", return_value=1) as check:
+            self.assertEqual(1, metadata.run_live())
+        check.assert_called_once()
+        self.assertEqual(("lumenpearson/cdpiui", 10), check.call_args.args[1:])
 
 
 if __name__ == "__main__":

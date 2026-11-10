@@ -125,3 +125,10 @@ Check blocked age, ready work, review wait, failed checks and reopened defects.
 Measure cycle time from actual Status changes; do not assign artificial historical start dates.
 Review all unresolved High-risk work before a release decision.
 Keep test counts attached to their exact revisions; a larger count alone does not prove better coverage.
+
+## Future task intake and close-out
+
+Follow [the detailed task lifecycle](task-lifecycle.md) for every future fork task.
+Create or reuse its detailed issue before implementation and verify actual Project fields.
+After scoped acceptance, post the closing evidence, close as completed and set Done immediately.
+Codex and Claude use the root agent instructions. The contribution check validates an active owning task contract.
