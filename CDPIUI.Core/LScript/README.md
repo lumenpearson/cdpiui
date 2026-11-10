@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../../docs/README.md) · [engineering process](../../docs/engineering.md).
+
+
 # LScript reference
 
 LScript is a small expression language. Store metadata, preset variables and preset startup strings use it.

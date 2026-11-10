@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # CDPIUI.AddOns
 
 `CDPIUI.AddOns` is the library of the internal add-ons of CDPI UI. Each add-on has one folder. The GUI project `CDPIUI` contains the pages, the dialogs and the translations of the add-ons.

@@ -1,5 +1,8 @@
 **English** | [Русский](CONTRIBUTING.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # Contributing to CDPI UI
 
 This document tells you how the application operates, how to build it and how to change it.
@@ -50,7 +53,7 @@ Do these steps:
    - Each package comes from one feed only (`packageSourceMapping` in `nuget.config`). When you add a Labs package, check on which feed it is published and add a pattern if it is not on the Labs feed.
    - Package versions are in `Directory.Packages.props`. A project lists a package without a version. To add or update a package, change its version there.
 3. Build `CDPI.sln` for the `x64` platform. The application does not support other platforms.
-4. Start `CDPIUI.TrayIcon` as administrator.
+4. For an installed or portable build, start the tray through `CDPIUI_ElevatedLauncher.exe tray`. Accept the UAC prompt for the launcher. A direct elevated start from the IDE does not test the launcher environment boundary.
 5. Start the GUI (`CDPIUI`) as a usual user.
 
 CAUTION: Do not start the GUI as administrator. Some GUI functions do not operate with elevation. For example, you cannot drop files from Explorer into an elevated window.

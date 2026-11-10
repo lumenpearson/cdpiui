@@ -4,6 +4,8 @@ useDefault = true
 
 [[allowlists]]
 description = "XAML resource keys are not secrets"
+targetRules = ["generic-api-key"]
+condition = "AND"
 paths = ['''\.xaml$''']
 regexTarget = "line"
 regexes = ['''x:Key="''']
@@ -11,3 +13,11 @@ regexes = ['''x:Key="''']
 [[allowlists]]
 description = "Local build secrets are git-ignored and never committed"
 paths = ['''CDPIUI\.Shared/Secrets/Secret\.cs$''']
+
+[[allowlists]]
+description = "Public audit finding ID for issue 46 is not an API credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)docs/audit/findings\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"key": "4-pipe-framing-failure",\s*$''']

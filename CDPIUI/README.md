@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # CDPIUI
 
 `CDPIUI` is the WinUI 3 GUI project (.NET 8, Windows App SDK). It shows the windows of the application.
@@ -25,7 +28,7 @@ After `App` is created, `DispatchPendingActivations` sends them to `App.PreferRe
 
 ### Tray start and `--gui-args:`
 
-At startup, `PipeClientService` connects to the tray pipe. The wait limit is 2 seconds. If the tray process is running, the GUI waits 15 more seconds. If it cannot connect, it starts `CDPIUI_TrayIcon.exe` as administrator. Then the GUI process stops.
+At startup, `PipeClientService` connects to the tray pipe. The wait limit is 2 seconds. If the tray process is running, the GUI waits 15 more seconds. If it cannot connect, it starts the tray through `CDPIUI_ElevatedLauncher.exe` with administrator rights. The Native AOT launcher removes the .NET runtime variables of the user before it starts the tray. Then the GUI process stops.
 
 - The GUI gives `--autorun` to the tray if the setting `APPEARANCE/hideToTrayOnStartup` is true. Else it gives `--show-ui`.
 - If the GUI has its own arguments, it always gives `--show-ui` and the `--gui-args:` argument. A GoodbyeDPI migration argument goes to the tray without encoding.

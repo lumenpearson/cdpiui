@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # CDPIUI.Shared
 
 `CDPIUI.Shared` — это библиотека `netstandard2.1` (C# 12, nullable включён).

@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # EditHostFile
 
 `EditHostFile.exe` — консольная утилита на .NET 8. Она добавляет блок CDPI UI в файл hosts Windows

@@ -1,0 +1,49 @@
+name: Public audit finding
+description: Track an existing disclosed finding, evidence and remaining verification.
+title: "[Audit ID] "
+labels: ["type:audit", "area:security"]
+assignees: [lumenpearson]
+body:
+  - type: markdown
+    attributes:
+      value: Use this form for disclosed findings. Follow SECURITY.md for new unpatched vulnerabilities.
+  - type: input
+    id: source
+    attributes:
+      label: Finding ID and source
+      description: Document section, original line range, source SHA and affected revision.
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Trust boundary, cause and impact
+      description: State attacker prerequisites and the affected file, symbol or subsystem.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and evidence status
+      description: Separate historical claims, executed reproduction, proposed checks and current results.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Fix and regression plan
+      description: Link existing fix commits or describe the smallest required change and its regression check.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Closure criteria and remaining risk
+      description: Include integration, independent review, exact-head CI and appropriate native verification.
+    validations:
+      required: true
+  - type: textarea
+    id: relationships
+    attributes:
+      label: Related work and dependencies
+      description: Link the security index, duplicate source IDs, related PRs and blocked work.

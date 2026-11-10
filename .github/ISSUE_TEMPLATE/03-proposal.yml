@@ -1,0 +1,32 @@
+name: Change proposal
+description: Define a capability or process change before implementation.
+title: "[Proposal] "
+labels: [enhancement]
+assignees: [lumenpearson]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User need and current limitation
+      description: Describe a concrete scenario and the result the user needs.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, alternatives and compatibility
+      description: Define boundaries, affected stored formats or APIs, alternatives and trade-offs.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+      description: Give measurable behavior, negative cases and a verification method.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and open decisions
+      description: Link the owning milestone and related issues. State any blocker and its owner.

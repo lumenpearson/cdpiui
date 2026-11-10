@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discuss the fork or ask a question
+    url: https://github.com/lumenpearson/cdpiui/discussions
+    about: Use Discussions for questions and design decisions.
+  - name: Report a new security vulnerability
+    url: https://github.com/lumenpearson/cdpiui/security
+    about: Read SECURITY.md. Do not publish credentials or an undisclosed exploit in a public issue.

@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # CDPIUI.Tests
 
 `CDPIUI.Tests` contains the xUnit tests for `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` and `EditHostFile`. The target framework is `net8.0-windows`, because `Update` and `EditHostFile` target `net8.0-windows`. The project sets `DisableTransitiveFrameworkReferences`: the tests do not need the Windows Desktop runtime of `Update`, and they also run on Linux.

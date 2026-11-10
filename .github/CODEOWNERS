@@ -1,0 +1,10 @@
+# The fork maintainer owns triage and integration. Independent review is recorded in the PR.
+* @lumenpearson
+
+# Keep security, release and contribution policy ownership explicit.
+/.github/ @lumenpearson
+/CDPIUI.Shared/Security/ @lumenpearson
+/CDPIUI.ElevatedLauncher/ @lumenpearson
+/NewSetup/ @lumenpearson
+/Update/ @lumenpearson
+/docs/ @lumenpearson

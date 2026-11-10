@@ -373,3 +373,7 @@ FodyWeavers.xsd
 
 # Mono registry written by local builds outside Windows
 .mono/
+
+# Local agent evidence and isolated execution ledgers
+.pipeline-local/
+.superpowers/

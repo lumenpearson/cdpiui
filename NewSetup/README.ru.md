@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # NewSetup
 
 NewSetup — это проект WiX Toolset 6 (`WixToolset.Sdk/6.0.2`). Он собирает MSI для x64 с установкой для всех пользователей (per-machine).
