@@ -40,51 +40,51 @@
 
 ## Task 2: Repository governance and delivery dashboard
 
-- [ ] Verify Issues, Discussions and Projects are enabled.
-- [ ] Create the 18 labels with descriptions. Preserve unrelated existing labels.
-- [ ] Create five milestones from the previous plan, with measurable exit criteria and no invented deadlines.
-- [ ] Create and link `CDPI UI — Delivery & Release Gates`, initially private.
-- [ ] Configure Inbox, Ready, In progress, Review, Verification, Blocked and Done.
-- [ ] Configure Priority P0–P3, Area, Risk, and native Milestone/Assignees/Linked pull requests fields.
-- [ ] Configure Delivery, Gate readiness and Blockers views. Add auto-add for this fork's issues and PRs.
-- [ ] Read back the linked project, view filters, custom fields and visible cards.
+- [x] Verify Issues, Discussions and Projects are enabled.
+- [x] Create the 18 labels with descriptions. Preserve unrelated existing labels.
+- [x] Create five milestones from the previous plan, with measurable exit criteria and no invented deadlines.
+- [x] Create and link `CDPI UI — Delivery & Release Gates`, initially private.
+- [x] Configure Inbox, Ready, In progress, Review, Verification, Blocked and Done.
+- [x] Configure Priority P0–P3, Area, Risk, and native Milestone/Assignees/Linked pull requests fields.
+- [x] Configure Delivery, Gate readiness and Blockers views. Add auto-add for this fork's issues and PRs.
+- [x] Read back the linked project, view filters, custom fields and visible cards.
 
 ## Task 3: Work queue and audit traceability
 
-- [ ] Publish a delivery contract issue and the nine original acceptance tasks with criteria, dependencies, triage owner and risk.
-- [ ] Read the available original audit or record its absence. Extract each independent security finding, including FS-01–FS-12.
-- [ ] Give each security finding its own issue: source revision, affected boundary, reproduction procedure, cause, impact, fix, regression checks and remaining verification.
-- [ ] Distinguish historical reproduction, newly executed reproduction and a proposed procedure. Never claim an unexecuted PoC ran.
-- [ ] Link findings to exact commits/PRs. Close only those whose defined implementation acceptance is proven in `main`; keep release acceptance separate.
-- [ ] Add remaining functional requests and review debt as distinct queue entries when the available audit identifies them.
-- [ ] Assign each issue a milestone and one type/area label. Set project priority, risk and status. Explain blocked dependencies.
-- [ ] Pin the delivery contract, security index and release acceptance issue.
-- [ ] Complete metadata on existing PRs, preserve their technical content and link the audit issues.
+- [x] Publish a delivery contract issue and the nine original acceptance tasks with criteria, dependencies, triage owner and risk.
+- [x] Read the available original audit or record its absence. Extract each independent security finding, including FS-01–FS-12.
+- [x] Give each security finding its own issue: source revision, affected boundary, reproduction procedure, cause, impact, fix, regression checks and remaining verification.
+- [x] Distinguish historical reproduction, newly executed reproduction and a proposed procedure. Never claim an unexecuted PoC ran.
+- [x] Link findings to exact commits/PRs. Close only those whose defined implementation acceptance is proven in `main`; keep release acceptance separate.
+- [x] Add remaining functional requests and review debt as distinct queue entries when the available audit identifies them.
+- [x] Assign each issue a milestone and one type/area label. Set project priority, risk and status. Explain blocked dependencies.
+- [x] Pin the delivery contract, security index and release acceptance issue.
+- [x] Complete metadata on existing PRs, preserve their technical content and link the audit issues.
 
 ## Task 4: Documentation and Discussions
 
-- [ ] Inventory tracked Markdown by origin and scope. Classify main README, upstream documents, fork documents and legal/notices.
-- [ ] Publish a documentation index, engineering process, security policy, style guide, release gates and audit index.
-- [ ] Align fork documentation to short, active technical English and consistent terms. Keep EN/RU navigation and facts consistent.
-- [ ] Improve upstream-created documents with targeted corrections and links. Preserve their structure and voice.
-- [ ] Organize Discussions by purpose; publish a pinned fork change index and evidence-based discussions for each change family.
-- [ ] Link Discussions to PRs, audit issues, documents and release gates. Use the same terminology throughout.
+- [x] Inventory tracked Markdown by origin and scope. Classify main README, upstream documents, fork documents and legal/notices.
+- [x] Publish a documentation index, engineering process, security policy, style guide, release gates and audit index.
+- [x] Align fork documentation to short, active technical English and consistent terms. Keep EN/RU navigation and facts consistent.
+- [x] Improve upstream-created documents with targeted corrections and links. Preserve their structure and voice.
+- [x] Organize Discussions by purpose; publish a pinned fork change index and evidence-based discussions for each change family.
+- [x] Link Discussions to PRs, audit issues, documents and release gates. Use the same terminology throughout.
 
 ## Task 5: Automated contribution and release checks
 
-- [ ] Add structured bug, feature and audit issue forms, a PR template, CODEOWNERS and Dependabot configuration.
-- [ ] Add a metadata workflow and deterministic checker for PR title/body, issue links, type/area labels, assignee and milestone.
-- [ ] Test the checker with valid and invalid payloads, including hostile PR text. Use read-only permissions and environment inputs.
-- [ ] Keep existing code CI. Add checks only where they have a measured purpose; pin actions to verified full SHAs.
+- [x] Add structured bug, feature and audit issue forms, a PR template, CODEOWNERS and Dependabot configuration.
+- [x] Add a metadata workflow and deterministic checker for PR title/body, issue links, type/area labels, assignee and milestone.
+- [x] Test the checker with valid and invalid payloads, including hostile PR text. Use read-only permissions and environment inputs.
+- [x] Keep existing code CI. Add checks only where they have a measured purpose; pin actions to verified full SHAs.
 - [ ] Configure main branch protection after required checks exist: PRs, current-head CI, resolved conversations, no force push or deletion. Do not invent a second human reviewer.
-- [ ] Document independent review requirements and exceptions with evidence. Leave release publication as an explicit release decision.
+- [x] Document independent review requirements and exceptions with evidence. Leave release publication as an explicit release decision.
 
 ## Task 6: Verification and delivery
 
 - [ ] Run document link checks, structured configuration parsing, checker tests and `git diff --check`.
-- [ ] Obtain independent review and correct material findings.
-- [ ] Commit only this task's files with a complete message, push the isolated branch and create a fully described PR.
-- [ ] Apply labels, assignee, milestone and Project fields to the PR. Attach it to this chat.
+- [x] Obtain independent review and correct material findings.
+- [x] Commit only this task's files with a complete message, push the isolated branch and create a fully described PR.
+- [x] Apply labels, assignee, milestone and Project fields to the PR. Attach it to this chat.
 - [ ] Verify Actions on the exact PR HEAD. Record unavailable checks and unresolved external settings truthfully.
 - [ ] Read back all GitHub writes, compare issue/project counts and save dashboard screenshots.
 - [ ] Release the browser UI queue. Deliver links, exact changes, checks and any remaining limitations.
@@ -100,3 +100,12 @@
 - Metadata validation must run against current API metadata and the current head. Handle label, assignment, milestone and body changes; provide a manual recovery run. Bootstrap without making its own first run mandatory.
 - Check state transitions explicitly: accepted issue closure, reopening, merged PR closure and unmerged PR closure. Do not enable a raw-close-to-Done rule.
 - Configure the dashboard and repository settings through the Codex browser. Verify branch rules and Discussions after saving.
+
+## Execution checkpoint
+
+The external metadata readback contains 99 unique content URLs: 89 issues and 10 PRs, including setup PR #111.
+The audit subset has 78 findings. All Priority, Area, Risk and Status values match the publication plan.
+The linked Project is number 7. Discussions #100–#110 explain the fork changes and delivery rules.
+The current main history base is `7ead95f7756057f67cd113671a7f84cf422e8d32`.
+Its file tree equals the recorded d72 baseline; product PR10 ancestry requires its own reconciliation.
+The remaining activation and hosted verification results belong in [setup issue #11](https://github.com/lumenpearson/cdpiui/issues/11).
