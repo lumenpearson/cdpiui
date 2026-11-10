@@ -18,7 +18,7 @@
         <FontIcon Glyph="&#xE789;" />
     </control:SettingsExpander.HeaderIcon>
 
-    <ToggleSwitch IsOn="{x:Bind ue:AdHelper.Instance.ShowAd, Mode=TwoWay}"/>
+    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" IsOn="{x:Bind ue:AdHelper.Instance.ShowAd, Mode=TwoWay}"/>
     <control:SettingsExpander.ItemTemplate>
         <DataTemplate x:DataType="ue:AdViewModel">
             <control:SettingsCard ContentAlignment="Left" IsEnabled="{x:Bind ue:AdHelper.Instance.ShowAd, Mode=OneWay}">

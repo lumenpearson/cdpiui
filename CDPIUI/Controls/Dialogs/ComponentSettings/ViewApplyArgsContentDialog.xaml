@@ -11,8 +11,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:uexp="using:CDPIUI.Helper.UserExperience"
     mc:Ignorable="d"
-    Title="Applied flags"
-    PrimaryButtonText="OK"
+
+
     DefaultButton="Primary"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
 

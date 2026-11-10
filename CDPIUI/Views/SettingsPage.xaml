@@ -167,7 +167,7 @@
                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
 
                 <controls:SettingsCard l:Uids.Uid="Zapret2LegacyHashValidationSettingsCard">
-                    <ToggleSwitch
+                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch"
                         x:Name="Zapret2LegacyHashValidationToggleSwitch"
                         Toggled="Zapret2LegacyHashValidationToggleSwitch_Toggled" />
                 </controls:SettingsCard>

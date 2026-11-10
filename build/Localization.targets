@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <LocalizationSourceDirectory>$(MSBuildThisFileDirectory)..\Localization</LocalizationSourceDirectory>
+    <GeneratedLocalizationDirectory>$(MSBuildProjectDirectory)\obj\localization\$(Platform)\$(Configuration)</GeneratedLocalizationDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <EnglishLocalizationJson Include="$(LocalizationSourceDirectory)\en-us\*.json"
+                             Exclude="$(LocalizationSourceDirectory)\en-us\Tray.json;$(LocalizationSourceDirectory)\en-us\Update.json;$(LocalizationSourceDirectory)\en-us\EditHostFile.json" />
+    <RussianLocalizationJson Include="$(LocalizationSourceDirectory)\ru\*.json"
+                             Exclude="$(LocalizationSourceDirectory)\ru\Tray.json;$(LocalizationSourceDirectory)\ru\Update.json;$(LocalizationSourceDirectory)\ru\EditHostFile.json" />
+    <Content Include="@(EnglishLocalizationJson->'$(GeneratedLocalizationDirectory)\en-us\%(Filename).resw')">
+      <Link>Strings\en-us\%(Filename).resw</Link>
+      <TargetPath>Strings\en-us\%(Filename).resw</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="@(RussianLocalizationJson->'$(GeneratedLocalizationDirectory)\ru\%(Filename).resw')">
+      <Link>Strings\ru\%(Filename).resw</Link>
+      <TargetPath>Strings\ru\%(Filename).resw</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <!-- Resources was also compiled into the PRI before this migration. -->
+    <PRIResource Include="$(GeneratedLocalizationDirectory)\en-us\Resources.resw" Link="Strings\en-us\Resources.resw" />
+    <PRIResource Include="$(GeneratedLocalizationDirectory)\ru\Resources.resw" Link="Strings\ru\Resources.resw" />
+  </ItemGroup>
+  <Target Name="GenerateLocalizationResources" BeforeTargets="PrepareForBuild">
+    <Exec Command="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)Generate-Localization.ps1&quot; -SourceDirectory &quot;$(LocalizationSourceDirectory)&quot; -OutputDirectory &quot;$(GeneratedLocalizationDirectory)&quot;" />
+  </Target>
+</Project>

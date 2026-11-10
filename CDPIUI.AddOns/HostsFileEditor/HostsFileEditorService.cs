@@ -14,7 +14,9 @@ public class HostsFileEditService
     }
     private static Process? RunEditorWithFlag(Flags flag)
     {
-        string startupString = $"/{flag}";
+        string language = CDPIUI.Shared.Localization.LocalePreference.Resolve(
+            Core.SettingsManager.Instance.GetValueOrDefault<string>("SYSTEM", "language", defaultValue: ""));
+        string startupString = $"/{flag} --language {language}";
         string directory = Core.Data.Directories.CurrentDirectory;
         string path = Path.Combine(directory, "EditHostFile.exe");
         string launcherPath = ElevatedLauncherCommand.GetPath(directory);

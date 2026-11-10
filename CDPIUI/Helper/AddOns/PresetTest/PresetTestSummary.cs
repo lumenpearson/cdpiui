@@ -55,21 +55,21 @@ internal static class PresetTestSummary
 
             string file = Path.Combine(logsDir, $"test_results_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt");
             var sb = new StringBuilder();
-            sb.AppendLine($"Preset test results for component {componentId} ({testType})");
+            sb.AppendLine(string.Format(PresetTestLog.Text("PT_ReportTitle"), componentId, testType));
             sb.AppendLine();
             foreach (PresetTestResult r in results)
             {
                 if (r.Failed)
-                    sb.AppendLine($"{r.PresetName} : did not start");
+                    sb.AppendLine(string.Format(PresetTestLog.Text("PT_ReportNotStarted"), r.PresetName));
                 else if (testType == PresetTestType.Standard)
-                    sb.AppendLine($"{r.PresetName} : HTTP OK {r.HttpOk}, ERR {r.HttpErr}, UNSUP {r.Unsupported}, Ping OK {r.PingOk}, Fail {r.PingFail}");
+                    sb.AppendLine(string.Format(PresetTestLog.Text("PT_ReportStandard"), r.PresetName, r.HttpOk, r.HttpErr, r.Unsupported, r.PingOk, r.PingFail));
                 else
-                    sb.AppendLine($"{r.PresetName} : OK {r.DpiOk}, FAIL {r.DpiFail}, UNSUP {r.DpiUnsupported}, BLOCKED {r.DpiBlocked}");
+                    sb.AppendLine(string.Format(PresetTestLog.Text("PT_ReportDpi"), r.PresetName, r.DpiOk, r.DpiFail, r.DpiUnsupported, r.DpiBlocked));
             }
 
             PresetTestResult best = FindBest(results, testType);
             sb.AppendLine();
-            sb.AppendLine($"Best config: {(best != null ? best.PresetName : "none")}");
+            sb.AppendLine(string.Format(PresetTestLog.Text("PT_ReportBest"), best?.PresetName ?? PresetTestLog.Text("PT_ReportNone")));
 
             File.WriteAllText(file, sb.ToString(), Encoding.UTF8);
             log.Tagged("PT_Info", TestLogColor.Cyan, string.Format(PresetTestLog.Text("PT_ResultsSaved"), file));

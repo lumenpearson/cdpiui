@@ -96,6 +96,42 @@ public sealed partial class SettingsPage : TemplatePage
 
         BreadcrumbBar.ItemsSource = _breadcrumbBarModels;
         CreateBreadcrumbBarNavigation();
+        Loaded += SettingsPage_Loaded;
+        Unloaded += SettingsPage_Unloaded;
+    }
+
+    private bool _localizationEventsConnected;
+
+    private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!_localizationEventsConnected)
+        {
+            _localizationEventsConnected = true;
+            _localizer.LanguageChanged += Localizer_LanguageChanged;
+        }
+        RefreshLocalizedText();
+    }
+
+    private void SettingsPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _localizationEventsConnected = false;
+        _localizer.LanguageChanged -= Localizer_LanguageChanged;
+    }
+
+    private void Localizer_LanguageChanged(object sender, LanguageChangedEventArgs e)
+    {
+        if (DispatcherQueue.HasThreadAccess)
+            RefreshLocalizedText();
+        else
+            DispatcherQueue.TryEnqueue(RefreshLocalizedText);
+    }
+
+    private void RefreshLocalizedText()
+    {
+        if (!_localizationEventsConnected)
+            return;
+        CreateBreadcrumbBarNavigation();
+        UpdateTextFileOpenSettings();
     }
 
     private ObservableCollection<BreadcrumbBarModel> _breadcrumbBarModels = [];

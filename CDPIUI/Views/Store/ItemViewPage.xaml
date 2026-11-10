@@ -238,7 +238,7 @@
                                     </ListView>
 
                                 </StackPanel>
-                                
+
                             </Flyout>
                         </Button.Flyout>
                     </Button>
@@ -265,7 +265,7 @@
                         </HyperlinkButton>
                     </StackPanel>
                 </Grid>
-                
+
                 <Grid x:Name="ItemWarningAera" Visibility="{x:Bind ViewModel.IsWarningVisible, Mode=OneWay}">
                     <Border Background="{ThemeResource ControlFillColorDefaultBrush}" CornerRadius="10"/>
                     <Grid CornerRadius="10">
@@ -339,14 +339,14 @@
                             <RowDefinition Height="2"/>
                             <RowDefinition Height="auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock x:Name="RequirementsTitle" Text="Requirements Title" Style="{ThemeResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" Margin="20, 0, 0, 0"/>
+                        <TextBlock x:Name="RequirementsTitle" Style="{ThemeResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" Margin="20, 0, 0, 0"/>
                         <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
-                            
+
                         </StackPanel>
                     </Grid>
                 </Grid>
             </StackPanel>
         </ScrollViewer>
-        
+
     </Grid>
 </tpl:TemplatePage>

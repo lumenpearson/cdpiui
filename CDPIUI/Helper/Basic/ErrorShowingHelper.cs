@@ -24,8 +24,8 @@ public class ErrorShowingHelper
     /// <param name="why">Why this happens</param>
     public static void RaiseCriticalException(string sender, string errorCode, string why)
     {
-        Logger.Instance.CreateErrorLog(sender, $"{errorCode} => {why}");
-        ShowWindow(sender, $"Because exception happens \n{why}", errorCode);
+        EmergencyRecovery.BestEffort(() => Logger.Instance.CreateErrorLog(sender, $"{errorCode} => {why}"));
+        ShowWindow(sender, why, errorCode);
     }
 
     /// <summary>
@@ -36,10 +36,11 @@ public class ErrorShowingHelper
     /// <param name="exception">Exception</param>
     public static void RaiseCriticalException(string sender, System.Exception exception)
     {
-        string readyToUseErrorCode = ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_INTERNAL", exception);
+        string readyToUseErrorCode = EmergencyRecovery.Read(
+            () => ErrorsHelper.Convertor.GetPrettyErrorCode("ERR_INTERNAL", exception), "ERR_INTERNAL");
 
-        Logger.Instance.CreateErrorLog(sender, $"{readyToUseErrorCode} => {exception}");
-        ShowWindow(sender, $"Because exception happens \n{exception}", readyToUseErrorCode);
+        EmergencyRecovery.BestEffort(() => Logger.Instance.CreateErrorLog(sender, $"{readyToUseErrorCode} => {exception}"));
+        ShowWindow(sender, EmergencyRecovery.Describe(exception), readyToUseErrorCode);
     }
 
     // Core errors (a lost tray, for example) are raised on pool threads, where creating the
@@ -56,6 +57,6 @@ public class ErrorShowingHelper
         if (dispatcher == null || dispatcher.HasThreadAccess)
             Show();
         else if (!dispatcher.TryEnqueue(Show))
-            Logger.Instance.CreateErrorLog(nameof(ErrorShowingHelper), $"Cannot show the critical error window for {errorCode}");
+            EmergencyRecovery.BestEffort(() => Logger.Instance.CreateErrorLog(nameof(ErrorShowingHelper), $"Cannot show the critical error window for {errorCode}"));
     }
 }

@@ -11,7 +11,6 @@
     xmlns:ex="using:WinUIEx"
     xmlns:l="using:WinUI3Localizer"
     xmlns:labs="using:CommunityToolkit.Labs.WinUI"
-    Title="StoreLocalItemInstallingDialog"
     xmlns:template="using:CDPIUI.Default"
     xmlns:wc="using:CDPIUI.Controls.WindowControls">
 
@@ -64,7 +63,7 @@
                 <Rectangle Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="{ThemeResource AccentAcrylicBackgroundFillColorDefaultBrush}"/>
                 <Rectangle x:Name="ItemColorRectangle" Grid.Column="0" Fill="{x:Bind ViewModel.ItemColor, Mode=OneWay}" 
                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                
+
                 <Image x:Name="ItemImage" Source="{x:Bind ViewModel.ItemIcon, Mode=OneWay}" Width="60" VerticalAlignment="Center"/>
                 <labs:Shimmer x:Name="ImageShimmer" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}"/>
             </Grid>

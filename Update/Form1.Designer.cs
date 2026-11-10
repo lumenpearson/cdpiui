@@ -1,4 +1,4 @@
-﻿namespace Update
+namespace Update
 {
     partial class MainWindow
     {
@@ -42,7 +42,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(181, 13);
             this.label2.TabIndex = 0;
-            this.label2.Text = "Patching application (CDPI UI)";
+            this.label2.Text = Strings.Heading;
             this.label2.UseWaitCursor = true;
             // 
             // ProgressBar
@@ -61,7 +61,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
-            this.button1.Text = "Cancel";
+            this.button1.Text = Strings.CancelButton;
             this.button1.UseVisualStyleBackColor = true;
             this.button1.UseWaitCursor = true;
             // 
@@ -73,7 +73,7 @@
             this.StatusLabel.Name = "StatusLabel";
             this.StatusLabel.Size = new System.Drawing.Size(61, 13);
             this.StatusLabel.TabIndex = 3;
-            this.StatusLabel.Text = "Preparing...";
+            this.StatusLabel.Text = Strings.Preparing;
             this.StatusLabel.UseWaitCursor = true;
             // 
             // MainWindow
@@ -89,7 +89,7 @@
             this.MinimizeBox = false;
             this.Name = "MainWindow";
             this.ShowIcon = false;
-            this.Text = "Update Assistant";
+            this.Text = Strings.WindowTitle;
             this.UseWaitCursor = true;
             this.ResumeLayout(false);
             this.PerformLayout();

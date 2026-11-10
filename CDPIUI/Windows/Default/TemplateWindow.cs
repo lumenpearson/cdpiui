@@ -152,7 +152,9 @@ public partial class TemplateWindow : WindowEx
         set => _mainFrameProperty = value;
     }
 
-    public TemplateWindow()
+    public TemplateWindow() : this(useSavedSettings: true) { }
+
+    protected TemplateWindow(bool useSavedSettings)
     {
         this.Title = "CDPI UI";
 
@@ -163,9 +165,13 @@ public partial class TemplateWindow : WindowEx
             rootElement.RequestedTheme = ((App)Application.Current).CurrentTheme;
         }
 
-        WindowsPositionHelper.SetWindowBorderMargin(this);
+        if (useSavedSettings)
+            WindowsPositionHelper.SetWindowBorderMargin(this);
 
-        TitleBarMode = (TitleBarModes)SettingsManager.Instance.GetValue<int>("APPEARANCE", "titleBarMode");
+        // The critical-error window must still open when settings initialization failed.
+        TitleBarMode = useSavedSettings
+            ? (TitleBarModes)SettingsManager.Instance.GetValue<int>("APPEARANCE", "titleBarMode")
+            : TitleBarModes.System;
 
         Activated += DefaultWindow_Activated;
 

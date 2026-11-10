@@ -9,7 +9,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:l="using:WinUI3Localizer"
-    Title="Edit variable"
     Style="{ThemeResource DefaultContentDialogStyle}"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
 

@@ -19,7 +19,7 @@
             <RowDefinition Height="20"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <TextBlock x:Name="DiskNameTextBlock" Text="Windows (C:)" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+        <TextBlock x:Name="DiskNameTextBlock" Style="{ThemeResource SubtitleTextBlockStyle}"/>
         <ProgressBar x:Name="MainProgressBar" Grid.Row="2" MinHeight="10" Value="0" CornerRadius="5" Style="{StaticResource WideProgressBarStyle}"/>
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>

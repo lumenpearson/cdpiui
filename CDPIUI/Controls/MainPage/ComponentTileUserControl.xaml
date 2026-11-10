@@ -198,7 +198,7 @@
                                                 <x:Double x:Key="SettingsCardWrapThreshold">100</x:Double>
                                                 <x:Double x:Key="SettingsCardWrapNoIconThreshold">200</x:Double>
                                             </controls:SettingsCard.Resources>
-                                            <ToggleSwitch x:Name="ConfigSettingToggleSwitch" IsOn="{x:Bind Value, Mode=OneWay}" Tag="{x:Bind Id, Mode=OneWay}" Toggled="ConfigSettingToggleSwitch_Toggled"/>
+                                            <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="ConfigSettingToggleSwitch" IsOn="{x:Bind Value, Mode=OneWay}" Tag="{x:Bind Id, Mode=OneWay}" Toggled="ConfigSettingToggleSwitch_Toggled"/>
                                         </controls:SettingsCard>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>

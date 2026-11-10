@@ -11,7 +11,7 @@
     mc:Ignorable="d"
     xmlns:l="using:WinUI3Localizer"
     Style="{ThemeResource DefaultContentDialogStyle}"
-    PrimaryButtonText="OK">
+   >
 
     <Grid Width="400">
         <ListView x:Name="ItemsListView" Margin="0 5 0 0" SelectionMode="None" Padding="0"
@@ -33,6 +33,6 @@
                 </ItemsPanelTemplate>
             </ListView.ItemsPanel>
         </ListView>
-        
+
     </Grid>
 </ContentDialog>

@@ -52,4 +52,10 @@
     <Compile Include="..\CDPIUI.Shared\Basic\Filesystem\ArchivePaths.cs" Link="Shared\ArchivePaths.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\CDPIUI.Shared\Localization\*.cs" Link="Localization\%(Filename).cs" />
+    <EmbeddedResource Include="..\Localization\en-us\Update.json" LogicalName="Localization.en-us.Update.json" />
+    <EmbeddedResource Include="..\Localization\ru\Update.json" LogicalName="Localization.ru.Update.json" />
+  </ItemGroup>
+
 </Project>

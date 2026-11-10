@@ -145,7 +145,7 @@ public class Utils
                 NotifyHelper.ShowMessage("CDPI UI", LocaleHelper.GetLocaleString("UpdateFailure"), "UPDATE:OPEN_LOG");
                 return;
             }
-            RunHelper.Run(Path.Combine(GetDataDirectory(), "Update.exe"), $"--directory-to-zip \"{stagedFile}\" --destination-directory \"{GetDataDirectory()}\"");
+            RunHelper.Run(Path.Combine(GetDataDirectory(), "Update.exe"), $"--directory-to-zip \"{stagedFile}\" --destination-directory \"{GetDataDirectory()}\" --language {LocaleHelper.GetLanguage()}");
         }
     }
 

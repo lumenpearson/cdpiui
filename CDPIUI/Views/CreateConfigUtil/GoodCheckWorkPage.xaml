@@ -59,13 +59,13 @@
                         <TextBlock l:Uids.Uid="GoodCheckSelectionNow"/>
                         <TextBlock x:Name="SiteListProgressText" Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
                         <TextBlock l:Uids.Uid="GoodCheckSelectionTime"/>
-                        <TextBlock x:Name="AllTimeText" Text="Pending..." Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
+                        <TextBlock x:Name="AllTimeText" Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
 
                         <StackPanel x:Name="AdditionalInfo" Visibility="Collapsed">
                             <Rectangle Fill="{ThemeResource SmokeFillColorDefaultBrush}" Height="2" Margin="0 5 0 5"/>
                             <TextBlock l:Uids.Uid="GoodCheckCurrentSelection" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                             <TextBlock l:Uids.Uid="GoodCheckSelectionTime"/>
-                            <TextBlock x:Name="TimeText" Text="Pending..." Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
+                            <TextBlock x:Name="TimeText" Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
                             <TextBlock l:Uids.Uid="GoodCheckSelectionPercent"/>
                             <TextBlock x:Name="SiteListProgress" Style="{ThemeResource CaptionTextBlockStyle}" Margin="50 0 0 0"/>
                             <TextBlock l:Uids.Uid="GoodCheckBadStrategy"/>

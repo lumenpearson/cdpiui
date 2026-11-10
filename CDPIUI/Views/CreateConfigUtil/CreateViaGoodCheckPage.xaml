@@ -133,12 +133,12 @@
                             </StackPanel.ChildrenTransitions>
                         </StackPanel>
                     </ScrollViewer>
-                    
+
                     <StackPanel x:Name="SelectedSitelistTip" VerticalAlignment="Center" Grid.Row="1" Visibility="{x:Bind ViewModel.IsSelectedSiteListTipVisible, Mode=OneWay}">
                         <TextBlock l:Uids.Uid="GoodCheckEmptySiteListsTip1" HorizontalAlignment="Center" />
                         <TextBlock l:Uids.Uid="GoodCheckEmptySiteListsTip2" HorizontalAlignment="Center" />
                     </StackPanel>
-                    
+
                 </Grid>
             </StackPanel>
 
@@ -221,7 +221,7 @@
                                 </StackPanel>
                             </ToggleButton.Content>
                         </ToggleButton>
-                        
+
                         <StackPanel x:Name="AdditionalHideableSettingsStackPanel" 
                                     Spacing="5" 
                                     Visibility="{Binding IsChecked, ElementName=AdvansedToggleButton, Converter={StaticResource BoolToVis}}">
@@ -245,7 +245,7 @@
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/AutomaticConnectivityTestTextBlock">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticConnectivityTest" IsOn="{x:Bind ViewModel.AutomaticConnectivityTest, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="AutomaticConnectivityTest" IsOn="{x:Bind ViewModel.AutomaticConnectivityTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/ConnectivityTestURLs" Visibility="{Binding IsOn, ElementName=AutomaticConnectivityTest, Converter={StaticResource BoolToVis}}">
@@ -255,14 +255,14 @@
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/SkipCertVerifys">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="SkipCertVerify" IsOn="{x:Bind ViewModel.SkipCertVerify, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="SkipCertVerify" IsOn="{x:Bind ViewModel.SkipCertVerify, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
                             <TextBlock l:Uids.Uid="/GoodCheckAdditionalSettings/AddressTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/GGC">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="AutomaticGoogleCacheTest" IsOn="{x:Bind ViewModel.AutomaticGoogleCacheTest, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="AutomaticGoogleCacheTest" IsOn="{x:Bind ViewModel.AutomaticGoogleCacheTest, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
 
@@ -271,10 +271,10 @@
                                     <TextBox x:Name="GoogleCacheMappingURLs" Text="{x:Bind ViewModel.GoogleCacheMappingUrls, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/DohResolversHeader" Text="DoH resolvers"/>
+                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/DohResolversHeader"/>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/UseDOH">
                                 <controls:SettingsCard.Content>
-                                    <ToggleSwitch x:Name="UseDoH" IsOn="{x:Bind ViewModel.UseDoH, Mode=TwoWay}"/>
+                                    <ToggleSwitch l:Uids.Uid="CommonToggleSwitch" x:Name="UseDoH" IsOn="{x:Bind ViewModel.UseDoH, Mode=TwoWay}"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
                             <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/DOHResolvers"
@@ -286,37 +286,37 @@
 
                             <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" l:Uids.Uid="/GoodCheckAdditionalSettings/FakesHeader"/>
 
-                            <controls:SettingsCard Header="FAKE SNI">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/FakeSni">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="FakeSNI" Text="{x:Bind ViewModel.FakeSni, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard Header="FAKE Hex Stream TCP">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/FakeHexStreamTcp">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="FakeHexStreamTCP" Text="{x:Bind ViewModel.FakeHexStreamTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard Header="FAKE Hex Stream UDP">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/FakeHexStreamUdp">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="FakeHexStreamUDP" Text="{x:Bind ViewModel.FakeHexStreamUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard Header="FAKE Hex Bytes TCP">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/FakeHexBytesTcp">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="FakeHexBytesTCP" Text="{x:Bind ViewModel.FakeHexBytesTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard Header="FAKE Hex Bytes UDP">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/FakeHexBytesUdp">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="FakeHexBytesUDP" Text="{x:Bind ViewModel.FakeHexBytesUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/Bin" Header="PayloadTCP" >
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/PayloadTcp" >
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="PayloadTCP" Text="{x:Bind ViewModel.PayloadTcp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
                             </controls:SettingsCard>
-                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/Bin" Header="PayloadUDP">
+                            <controls:SettingsCard l:Uids.Uid="/GoodCheckAdditionalSettings/PayloadUdp">
                                 <controls:SettingsCard.Content>
                                     <TextBox x:Name="PayloadUDP" Text="{x:Bind ViewModel.PayloadUdp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="350"/>
                                 </controls:SettingsCard.Content>
@@ -325,7 +325,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </StackPanel>
-            
+
         </Grid>
 
         <Grid x:Name="LoadingStateGrid" Grid.Row="1" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}">
@@ -336,7 +336,7 @@
         </Grid>
         <Grid x:Name="ActionButtonsGrid" Grid.Row="2">
             <Rectangle Fill="{ThemeResource ControlFillColorSecondaryBrush}"/>
-            
+
             <Grid Padding="20">
                 <Button AutomationProperties.Name="{Binding (ToolTipService.ToolTip), RelativeSource={RelativeSource Self}}" l:Uids.Uid="GetHelpButton" x:Name="GetHelpButton" Padding="6" Click="GetHelpButton_Click">
                     <Button.Content>
@@ -361,11 +361,11 @@
             Opacity="0"
             Loaded="FileIncorrectWarning_Loaded"
             Closing="FileIncorrectWarning_Closing">
-            
+
             <InfoBar.RenderTransform>
                 <TranslateTransform x:Name="InfoBarTranslate" X="200"/>
             </InfoBar.RenderTransform>
-            
+
             <InfoBar.Resources>
                 <Storyboard x:Name="OpenStoryboard">
                     <DoubleAnimation Storyboard.TargetName="InfoBarTranslate"

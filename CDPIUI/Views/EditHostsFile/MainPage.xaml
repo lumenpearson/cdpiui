@@ -35,7 +35,7 @@
                             <ColumnDefinition Width="auto"/>
                         </Grid.ColumnDefinitions>
                         <FontIcon x:Name="StatusFontIcon" Glyph="&#xEC61;" FontSize="16"/>
-                        <TextBlock x:Name="StatusTextBlock" Grid.Column="2" Text="Replaced"/>
+                        <TextBlock x:Name="StatusTextBlock" Grid.Column="2"/>
                     </Grid>
                 </Grid>
                 <TextBlock l:Uids.Uid="ActionsTextBlock" Style="{ThemeResource BodyStrongTextBlockStyle}"/>

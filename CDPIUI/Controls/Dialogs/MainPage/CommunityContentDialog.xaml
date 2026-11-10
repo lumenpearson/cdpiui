@@ -10,7 +10,7 @@
     mc:Ignorable="d"
     xmlns:l="using:WinUI3Localizer"
     xmlns:viewmodels="using:CDPIUI.ViewModels"
-    PrimaryButtonText="OK"
+
     Style="{ThemeResource DefaultContentDialogStyle}">
 
     <Grid>

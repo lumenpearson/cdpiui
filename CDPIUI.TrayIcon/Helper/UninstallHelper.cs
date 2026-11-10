@@ -182,7 +182,7 @@ public static class UninstallHelper
         if (!File.Exists(editor))
             return;
 
-        RunTool(editor, "/remove");
+        RunTool(editor, $"/remove --language {LocaleHelper.GetLanguage()}");
     }
 
     private static void RunTool(string fileName, string arguments)

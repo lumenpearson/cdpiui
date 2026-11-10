@@ -37,7 +37,8 @@ public partial class App : Application
         PipeClientService.Instance.MessageReceived += (m) => CommandsHandler.HandleCommand(m);
         CoreErrorsLookupService.Instance.Init();
 
-        UpdateThemeForAllWindows(GetThemeFromString(SettingsManager.Instance.GetValue<string>("APPEARANCE", "Theme")));
+        UpdateThemeForAllWindows(EmergencyRecovery.Read(
+            () => GetThemeFromString(SettingsManager.Instance.GetValue<string>("APPEARANCE", "Theme")), ElementTheme.Default));
 
         PipeClientService.Instance.Init();
         PipeClientService.Instance.Connected += PipeConnected;
@@ -107,11 +108,12 @@ public partial class App : Application
     }
 
     // Windows read their strings from the localizer, so they are created only after it is built.
-    private Task _localizerReady = Task.CompletedTask;
+    private readonly StartupInitialization _startupInitialization = new();
+    private Task _localizerReady => _startupInitialization.Ready;
 
     public void GetReadyFeatures()
     {
-        _localizerReady = GetReadyFeaturesAsync();
+        _startupInitialization.Start(GetReadyFeaturesAsync);
     }
 
     private async Task GetReadyFeaturesAsync()
@@ -125,7 +127,10 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Logger.Instance.CreateErrorLog(nameof(App), $"Cannot prepare the application: {ex}");
+            EmergencyRecovery.BestEffort(() => Logger.Instance.CreateErrorLog(nameof(App), $"Cannot prepare the application: {ex}"));
+            // Resource/settings failures must have visible text before regular windows can open.
+            ErrorShowingHelper.RaiseCriticalException(nameof(GetReadyFeaturesAsync), ex);
+            throw;
         }
     }
 

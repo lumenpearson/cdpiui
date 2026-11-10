@@ -10,7 +10,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:controls="using:CommunityToolkit.Labs.WinUI.MarkdownTextBlock"
     mc:Ignorable="d"
-    PrimaryButtonText="OK">
+   >
 
     <Grid>
         <ScrollViewer>

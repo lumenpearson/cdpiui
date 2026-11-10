@@ -165,6 +165,7 @@ internal static class SettingTileFactory
         {
             IsOn = def.InitialToggleState
         };
+        Uids.SetUid(toggle, "CommonToggleSwitch");
         toggle.Toggled += (s, e) =>
         {
             executeAction?.Invoke(ActionIds.SwitchToggled, [toggle.IsOn.ToString()], def);

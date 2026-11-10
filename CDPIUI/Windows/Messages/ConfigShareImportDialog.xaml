@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <template:TemplateWindow
     x:Class="CDPIUI.Messages.ConfigShareImportDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -7,7 +7,7 @@
     xmlns:wc="using:CDPIUI.Controls.WindowControls"
     xmlns:l="using:WinUI3Localizer"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls">
-    
+
     <template:TemplateWindow.SystemBackdrop>
         <MicaBackdrop/>
     </template:TemplateWindow.SystemBackdrop>
@@ -52,7 +52,7 @@
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
-                
+
                 <CheckBox x:Name="AlwaysAskCheckBox" l:Uids.Uid="ConfigShareAlwaysAskDrop" Visibility="Collapsed" Click="AlwaysAskCheckBox_Click" Margin="0,12,0,0"/>
                 <InfoBar x:Name="ErrorBar" IsClosable="False" Severity="Error" IsOpen="False" />
                 <InfoBar x:Name="SuccessBar" IsClosable="False" Severity="Success" IsOpen="False" />
@@ -61,11 +61,11 @@
 
         <StackPanel x:Name="ProgressPanel" Grid.Row="2" Grid.ColumnSpan="2" Padding="20 10">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock x:Name="ProgressText" Text="Getting ready..."/>
+                <TextBlock x:Name="ProgressText"/>
             </StackPanel>
             <ProgressBar x:Name="Progress" IsIndeterminate="True"/>
         </StackPanel>
-        
+
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="20,0,20,20" >
             <Button x:Name="InstallButton" l:Uids.Uid="AddButton" Style="{ThemeResource AccentButtonStyle}" IsEnabled="False" Click="Install_Click" Width="120" />
             <Button x:Name="CancelButton" l:Uids.Uid="CancelButton" Style="{ThemeResource AccentButtonStyle}" Click="Cancel_Click" Width="120"/>
