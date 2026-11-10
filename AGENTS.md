@@ -4,6 +4,9 @@ These rules apply to every future task in `lumenpearson/cdpiui` and its linked w
 Read [the task lifecycle](docs/task-lifecycle.md), [engineering rules](docs/engineering.md) and [delivery gates](docs/delivery-gates.md) before implementation.
 User instructions take precedence. Preserve the scope of the user's authorization.
 
+If a required policy document is absent in an older branch, read its published version with `git show origin/main:<path>`.
+This read does not require a checkout, merge or index change. Use the owner-controlled adoption procedure in the task lifecycle.
+
 ## Start every task with an issue
 
 1. Search open and closed issues for the same goal. Reuse the owning issue when its scope matches.

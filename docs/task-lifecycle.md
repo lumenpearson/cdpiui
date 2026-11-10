@@ -118,6 +118,27 @@ Use the GitHub API or connector first. Use the authenticated Codex browser when 
 The current repository token can lack private Project access. Do not add a credential or broaden access to avoid that fallback.
 Respect the shared exclusive UI queue even for snapshots and read-only browser calls.
 
+## Adopt rules in an active worktree
+
+Apply the same lifecycle to current tasks without taking control of another session's working copy.
+Map the branch, worktree, execution owner and owning issue before an update.
+An owner can read the published instructions with `git show origin/main:AGENTS.md` and the corresponding document paths.
+This applies the rules to the current task without changing its source, index or branch.
+
+On an owner-confirmed safe boundary, add only missing `AGENTS.md`, `CLAUDE.md` and `docs/task-lifecycle.md` from one recorded policy revision.
+Verify the exact bytes and preserve the index, HEAD, existing files and all unrelated uncommitted changes.
+If a target exists with different content, stop that file update and let its owner resolve it.
+Do not stash, reset, pull, rebase, merge, switch branches or create a commit in another active worktree to install these instructions.
+The files can remain an explicit local policy overlay until their owner integrates them with the task's normal reviewed change.
+An older branch can read missing referenced policy documents from `origin/main` through Git.
+
+A clean worktree with no active execution owner can receive a verified fast-forward from the published main branch.
+Check branch identity, cleanliness and the expected old HEAD again immediately before the update.
+Keep backup refs and frozen verification worktrees at their recorded identities.
+Record each branch's tracked policy, local overlay, context adoption or frozen-snapshot disposition separately.
+For existing issues, preserve their original descriptions, criteria and evidence when adding missing contract sections.
+Keep task states tied to actual acceptance. Policy adoption does not accept application, native or release work.
+
 ## Local validation
 
 ```text
