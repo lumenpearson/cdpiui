@@ -42,7 +42,9 @@ Give each interactive test session exclusive ownership of the UI queue.
 
 ## Write commits
 
-Use a conventional subject: `fix:`, `feat:`, `refactor:`, `test:`, `docs:`, `ci:`, `build:`, `perf:`, `chore:` or `revert:`.
+Use a specific English imperative subject, for example `Fix pipe cancellation after tray exit`.
+The local STE100 commit hook requires this form and prepares an exact changed-file inventory.
+PR titles use the conventional form required by the contribution metadata check, for example `fix: preserve settings after cancellation`.
 Keep the subject specific. Explain the reason, resulting behavior and verification in the commit body.
 Add an issue reference, for example `Refs #123`.
 Record a breaking change and its migration when applicable.
