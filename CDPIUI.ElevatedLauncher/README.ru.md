@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # CDPIUI.ElevatedLauncher
 
 `CDPIUI_ElevatedLauncher.exe` запускает программы CDPI UI с правами администратора: трей (`CDPIUI_TrayIcon.exe`)

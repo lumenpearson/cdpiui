@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # Update
 
 `Update.exe` is a .NET 8 WinForms tool. It installs an application patch

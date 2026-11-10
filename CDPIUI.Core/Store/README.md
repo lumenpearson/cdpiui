@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../../docs/README.md) · [engineering process](../../docs/engineering.md).
+
+
 # Store catalogue and item checks
 
 This document describes the Store repository that the GUI reads, the JSON fields of the catalogue and the checks for each download type.

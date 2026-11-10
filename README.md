@@ -2,6 +2,14 @@
 
 Добро пожаловать в **CDPI UI** — современный и мощный инструмент для управления популярными средствами изменения трафика ([Zapret](https://github.com/bol-van/zapret), [TGWSProxy](https://github.com/Flowseal/TgWsProxy), [ByeDPI](https://github.com/hufrea/byedpi), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) и другие!).
 
+## Об этом форке
+
+Это форк `lumenpearson/cdpiui` проекта [Storik4pro/cdpiui](https://github.com/Storik4pro/cdpiui). Он содержит исправления безопасности и надёжности, тесты и изменения архитектуры. История и авторство оригинального проекта сохранены.
+
+Работа организована через [доску разработки](https://github.com/users/lumenpearson/projects/7), [этапы G1–G5](https://github.com/lumenpearson/cdpiui/milestones), [реестр аудита](docs/audit/README.md) и [Discussions](https://github.com/lumenpearson/cdpiui/discussions). [Указатель документации](docs/README.md) объединяет инструкции проекта; правила новых сообщений об уязвимостях описаны в [SECURITY.md](SECURITY.md).
+
+Разделы ниже сохраняют описание и ссылки оригинального проекта. Ссылка на последний релиз Storik4pro относится к upstream; готовность отдельного выпуска форка подтверждается этапом G5. Числа размера и памяти в исходном описании не являются новым измерением этой ветки.
+
 <details>
 <summary>Скриншоты</summary>
 <img width="1280" height="697" alt="изображение" src="https://github.com/user-attachments/assets/9f5e1fc7-3846-4e3f-a1af-204fd30fd7d9" />

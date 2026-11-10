@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # CDPIUI.ElevatedLauncher
 
 `CDPIUI_ElevatedLauncher.exe` starts the elevated programs of CDPI UI: the tray (`CDPIUI_TrayIcon.exe`)

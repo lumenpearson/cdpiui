@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../../docs/README.md) · [процесс разработки](../../docs/engineering.md).
+
+
 # ConfigShare
 
 Файл `.cdpiconfig` — это ZIP-архив с одним пресетом и ресурсами, которые использует пресет. `ConfigShareService` экспортирует, проверяет, распаковывает и устанавливает такие архивы. `ConfigImportService` и `ConfigImportInstaller` передают этот формат в `ConfigShareService`.

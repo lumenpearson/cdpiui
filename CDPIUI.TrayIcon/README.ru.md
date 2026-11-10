@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # CDPIUI.TrayIcon
 
 `CDPIUI.TrayIcon` — это фоновый процесс CDPI UI (`CDPIUI_TrayIcon.exe`).

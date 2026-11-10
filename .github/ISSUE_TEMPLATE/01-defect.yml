@@ -1,0 +1,49 @@
+name: Defect
+description: Record a reproducible behavior defect and its acceptance criteria.
+title: "[Defect] "
+labels: ["type:bug"]
+assignees: [lumenpearson]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials or private user files. Use disposable reproduction inputs.
+  - type: input
+    id: revision
+    attributes:
+      label: Affected revision and environment
+      description: Commit or release, Windows version, MSI or portable, and component version.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and impact
+      description: Explain who is affected and the boundary that fails.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: List inputs, prerequisites and ordered steps. Distinguish a proposed procedure from an executed one.
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Expected and actual results
+      description: Give the observed result and the required behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and verification
+      description: Give checkable criteria, regression checks and any native or installed-product requirement.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and evidence
+      description: Link related issues, PRs, logs with secrets removed, and source findings.

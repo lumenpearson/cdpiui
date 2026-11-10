@@ -1,5 +1,8 @@
 [English](README.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # CDPIUI.Tests
 
 `CDPIUI.Tests` содержит тесты xUnit для `CDPIUI.Shared`, `CDPIUI.Core`, `CDPIUI.AddOns`, `Update` и `EditHostFile`. Целевая платформа — `net8.0-windows`, потому что `Update` и `EditHostFile` используют `net8.0-windows`. Проект задаёт `DisableTransitiveFrameworkReferences`: тестам не нужна среда Windows Desktop от `Update`, и они работают также в Linux.

@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # EditHostFile
 
 `EditHostFile.exe` is a .NET 8 console tool. It adds or removes the CDPI UI block

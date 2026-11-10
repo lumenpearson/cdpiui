@@ -1,5 +1,8 @@
 **English** | [Русский](RELEASES.ru.md)
 
+Project documentation: [index](../docs/README.md) · [engineering process](../docs/engineering.md).
+
+
 # CI and releases
 
 The workflows are in `.github/workflows`. The scripts that they run are in `.github/scripts`.

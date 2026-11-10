@@ -1,5 +1,8 @@
 **English** | [Русский](README.ru.md)
 
+Project documentation: [index](../../docs/README.md) · [engineering process](../../docs/engineering.md).
+
+
 # BlockCheck2 for Zapret2
 
 ## 1. Purpose and scope

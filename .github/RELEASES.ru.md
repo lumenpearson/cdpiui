@@ -1,5 +1,8 @@
 [English](RELEASES.md) | **Русский**
 
+Документация проекта: [указатель](../docs/README.md) · [процесс разработки](../docs/engineering.md).
+
+
 # CI и релизы
 
 Файлы workflow находятся в `.github/workflows`. Скрипты, которые они запускают, находятся в `.github/scripts`.

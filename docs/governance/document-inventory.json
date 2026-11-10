@@ -1,0 +1,1163 @@
+{
+  "baseline": "d72ad478bc05c6ab9e53f46da1a2b6c58690b202",
+  "method": "git log --follow --diff-filter=A plus upstream tree membership; latest author is not used alone",
+  "documents": [
+    {
+      "path": ".github/CONTRIBUTING.md",
+      "firstIntroduction": "fec613abc49b6fee52267f2c2701d2990cef92c7\tStorik4pro\tCreate CONTRIBUTING.md",
+      "first_commit": "fec613abc49b6fee52267f2c2701d2990cef92c7",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": ".github/CONTRIBUTING.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": ".github/RELEASES.md",
+      "firstIntroduction": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4\tlumenpearson\tAdd first drafts of the updater, hosts editor, installer and CI documents",
+      "first_commit": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": ".github/RELEASES.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/BlockCheck2/README.md",
+      "firstIntroduction": "f5ef254edc4f5e6a6c1530a7c85a7ecb6887af77\tStorik4pro\tAdd internal help for BlockCheck2 AddOn",
+      "first_commit": "f5ef254edc4f5e6a6c1530a7c85a7ecb6887af77",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/BlockCheck2/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/ConfigImport/README.md",
+      "firstIntroduction": "db70d1993019117ad24dcd4519fbcbf1f6b478a6\tStorik4pro\tAdd internal help for ConfigImport AddOn",
+      "first_commit": "db70d1993019117ad24dcd4519fbcbf1f6b478a6",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/ConfigImport/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/ConfigShare/README.md",
+      "firstIntroduction": "d6594fe3e639d85f94eb222667c5642a1f55d8b9\tStorik4pro\tAdd support for Config share feature",
+      "first_commit": "d6594fe3e639d85f94eb222667c5642a1f55d8b9",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/ConfigShare/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/GoodCheck/README.md",
+      "firstIntroduction": "86b09416df576c98154ce2fb9153c7c205619bbe\tlumenpearson\tDocument the add-ons in ASD-STE100",
+      "first_commit": "86b09416df576c98154ce2fb9153c7c205619bbe",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/GoodCheck/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/HostsFileEditor/README.md",
+      "firstIntroduction": "86b09416df576c98154ce2fb9153c7c205619bbe\tlumenpearson\tDocument the add-ons in ASD-STE100",
+      "first_commit": "86b09416df576c98154ce2fb9153c7c205619bbe",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/HostsFileEditor/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/README.md",
+      "firstIntroduction": "86b09416df576c98154ce2fb9153c7c205619bbe\tlumenpearson\tDocument the add-ons in ASD-STE100",
+      "first_commit": "86b09416df576c98154ce2fb9153c7c205619bbe",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/Troubleshooting/README.md",
+      "firstIntroduction": "86b09416df576c98154ce2fb9153c7c205619bbe\tlumenpearson\tDocument the add-ons in ASD-STE100",
+      "first_commit": "86b09416df576c98154ce2fb9153c7c205619bbe",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.AddOns/Troubleshooting/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/LScript/README.md",
+      "firstIntroduction": "b209ea9aa7c77f36d451da1bf36eaadb777c3316\tlumenpearson\tAdd the project documents for the GUI, Core, LScript, Shared, the pipe, the tray and the tests (review in progress)",
+      "first_commit": "b209ea9aa7c77f36d451da1bf36eaadb777c3316",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/LScript/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/README.md",
+      "firstIntroduction": "b209ea9aa7c77f36d451da1bf36eaadb777c3316\tlumenpearson\tAdd the project documents for the GUI, Core, LScript, Shared, the pipe, the tray and the tests (review in progress)",
+      "first_commit": "b209ea9aa7c77f36d451da1bf36eaadb777c3316",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/Store/README.md",
+      "firstIntroduction": "d86177ba575cbda6ca3978669cb678b177fd17f4\tlumenpearson\tDocument the main window and the Store catalogue format",
+      "first_commit": "d86177ba575cbda6ca3978669cb678b177fd17f4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Core/Store/README.ru.md",
+      "firstIntroduction": "d86177ba575cbda6ca3978669cb678b177fd17f4\tlumenpearson\tDocument the main window and the Store catalogue format",
+      "first_commit": "d86177ba575cbda6ca3978669cb678b177fd17f4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.ElevatedLauncher/README.md",
+      "firstIntroduction": "4ce988b66e00383286bef6fc35e8e4dea562ef4e\tlumenpearson\tStart the elevated programs through a Native AOT launcher",
+      "first_commit": "4ce988b66e00383286bef6fc35e8e4dea562ef4e",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.ElevatedLauncher/README.ru.md",
+      "firstIntroduction": "4ce988b66e00383286bef6fc35e8e4dea562ef4e\tlumenpearson\tStart the elevated programs through a Native AOT launcher",
+      "first_commit": "4ce988b66e00383286bef6fc35e8e4dea562ef4e",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Shared/Pipe/README.md",
+      "firstIntroduction": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4\tlumenpearson\tAdd first drafts of the updater, hosts editor, installer and CI documents",
+      "first_commit": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Shared/Pipe/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Shared/README.md",
+      "firstIntroduction": "b209ea9aa7c77f36d451da1bf36eaadb777c3316\tlumenpearson\tAdd the project documents for the GUI, Core, LScript, Shared, the pipe, the tray and the tests (review in progress)",
+      "first_commit": "b209ea9aa7c77f36d451da1bf36eaadb777c3316",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Shared/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Tests/README.md",
+      "firstIntroduction": "b209ea9aa7c77f36d451da1bf36eaadb777c3316\tlumenpearson\tAdd the project documents for the GUI, Core, LScript, Shared, the pipe, the tray and the tests (review in progress)",
+      "first_commit": "b209ea9aa7c77f36d451da1bf36eaadb777c3316",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.Tests/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.TrayIcon/README.md",
+      "firstIntroduction": "82fb1fc81a43adf5915671477862545a28924d70\tlumenpearson\tFix tray messages to a closed GUI, per-component output requests, update layers and updater errors",
+      "first_commit": "82fb1fc81a43adf5915671477862545a28924d70",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI.TrayIcon/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI/ELUA/EN/ELUA.md",
+      "firstIntroduction": "58c32dbc66a0712a22e9ef6fb0af80888abf338c\tStorik4pro\tAdd ELUA",
+      "first_commit": "58c32dbc66a0712a22e9ef6fb0af80888abf338c",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "preserve legal meaning and attribution",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/ELUA/RU/ELUA.md",
+      "firstIntroduction": "58c32dbc66a0712a22e9ef6fb0af80888abf338c\tStorik4pro\tAdd ELUA",
+      "first_commit": "58c32dbc66a0712a22e9ef6fb0af80888abf338c",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "preserve legal meaning and attribution",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Autoselection/1WhatAutoSelectionIs.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Autoselection/BestConfigSelection.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConditionalLaunch/CreatingTasks.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConditionalLaunch/Overview.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConditionalLaunch/TriggersAndActions.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConfigImport/1AboutConfigImport.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConfigImport/2ChooseImportFiles.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConfigImport/3ResolveMissingFiles.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConfigImport/4ReviewTestAndSave.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/ConfigImport/5ConfigImportTroubleshooting.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/CreateConfigHelper/SaveConfigKitAs.md",
+      "firstIntroduction": "af263196907e8b28d6ff6808947841950fddd67b\tlumenpearson\tRewrite the English help in ASD-STE100 and complete the help articles",
+      "first_commit": "af263196907e8b28d6ff6808947841950fddd67b",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/GettingStarted/AddingCustomSiteListsToConfig.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/GettingStarted/FirstSteps.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/GettingStarted/LearnMoreAboutUI.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Store/AddLocalItem.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Store/FixDatabaseLoadIssue.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Store/ItemUnsupportedWarning.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Store/PreferedVersionControl.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Store/WelcomeToStore.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/TroubleshootingComponentExceptions/BasicTroubleshooting.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Utils/EditHostsFileUtility.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Utils/TroubleshootingUtility.md",
+      "firstIntroduction": "af263196907e8b28d6ff6808947841950fddd67b\tlumenpearson\tRewrite the English help in ASD-STE100 and complete the help articles",
+      "first_commit": "af263196907e8b28d6ff6808947841950fddd67b",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/WelcomeToHelp.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2ManualPresetBuilding/1ManualPresetOverview.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2ManualPresetBuilding/2ChooseManualStrategies.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2ManualPresetBuilding/3OrganizeManualPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2ManualPresetBuilding/4FinishManualPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/1AboutPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/2ChooseSitesAndMode.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/3DuringPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/4ResultsAndPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/5SavePreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/EN/Zapret2PresetSelection/6TroubleshootingPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Autoselection/1WhatAutoSelectionIs.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Autoselection/BestConfigSelection.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConditionalLaunch/CreatingTasks.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConditionalLaunch/Overview.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConditionalLaunch/TriggersAndActions.md",
+      "firstIntroduction": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4\tStorik4pro\tAdd new help",
+      "first_commit": "f291d6d5af7a8fd765fe3e13dbfc99011152e5a4",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConfigImport/1AboutConfigImport.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConfigImport/2ChooseImportFiles.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConfigImport/3ResolveMissingFiles.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConfigImport/4ReviewTestAndSave.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/ConfigImport/5ConfigImportTroubleshooting.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/CreateConfigHelper/SaveConfigKitAs.md",
+      "firstIntroduction": "a89cac1648fc8de40baecbeee2cafd71fbad1b20\tStorik4pro\tAdd new help",
+      "first_commit": "a89cac1648fc8de40baecbeee2cafd71fbad1b20",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/GettingStarted/AddingCustomSiteListsToConfig.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/GettingStarted/FirstSteps.md",
+      "firstIntroduction": "5480702a7bf91ea27c0cddbea86167b971866cd3\tStorik4pro\tAdd Help",
+      "first_commit": "5480702a7bf91ea27c0cddbea86167b971866cd3",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/GettingStarted/LearnMoreAboutUI.md",
+      "firstIntroduction": "5480702a7bf91ea27c0cddbea86167b971866cd3\tStorik4pro\tAdd Help",
+      "first_commit": "5480702a7bf91ea27c0cddbea86167b971866cd3",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Store/AddLocalItem.md",
+      "firstIntroduction": "c59a112237bbad5cc7c9abf66173a8e5db52a624\tStorik4pro\tAdd new help",
+      "first_commit": "c59a112237bbad5cc7c9abf66173a8e5db52a624",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Store/FixDatabaseLoadIssue.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Store/ItemUnsupportedWarning.md",
+      "firstIntroduction": "c59a112237bbad5cc7c9abf66173a8e5db52a624\tStorik4pro\tAdd new help",
+      "first_commit": "c59a112237bbad5cc7c9abf66173a8e5db52a624",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Store/PreferedVersionControl.md",
+      "firstIntroduction": "c59a112237bbad5cc7c9abf66173a8e5db52a624\tStorik4pro\tAdd new help",
+      "first_commit": "c59a112237bbad5cc7c9abf66173a8e5db52a624",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Store/WelcomeToStore.md",
+      "firstIntroduction": "f18f90f42267258fbfeb02abc3cf8ed06c4741de\tStorik4pro\tAdd new offline help pages",
+      "first_commit": "f18f90f42267258fbfeb02abc3cf8ed06c4741de",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/TroubleshootingComponentExceptions/BasicTroubleshooting.md",
+      "firstIntroduction": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1\tStorik4pro\tAdd new help pages",
+      "first_commit": "a6d7bbd8f4984c574bdf70b35004cd2c37cf21b1",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Utils/EditHostsFileUtility.md",
+      "firstIntroduction": "c53e1519a0f3bb0565d69192c66075e135aaa15b\tStorik4pro\tAdd new help pages",
+      "first_commit": "c53e1519a0f3bb0565d69192c66075e135aaa15b",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Utils/TroubleshootingUtility.md",
+      "firstIntroduction": "af263196907e8b28d6ff6808947841950fddd67b\tlumenpearson\tRewrite the English help in ASD-STE100 and complete the help articles",
+      "first_commit": "af263196907e8b28d6ff6808947841950fddd67b",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/WelcomeToHelp.md",
+      "firstIntroduction": "5480702a7bf91ea27c0cddbea86167b971866cd3\tStorik4pro\tAdd Help",
+      "first_commit": "5480702a7bf91ea27c0cddbea86167b971866cd3",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2ManualPresetBuilding/1ManualPresetOverview.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2ManualPresetBuilding/2ChooseManualStrategies.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2ManualPresetBuilding/3OrganizeManualPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2ManualPresetBuilding/4FinishManualPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/1AboutPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/2ChooseSitesAndMode.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/3DuringPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/4ResultsAndPreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/5SavePreset.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/Help/RU/Zapret2PresetSelection/6TroubleshootingPresetSelection.md",
+      "firstIntroduction": "3aba3569963435a87e23f5c156cddbd2d2974a0e\tStorik4pro\tUpdate help",
+      "first_commit": "3aba3569963435a87e23f5c156cddbd2d2974a0e",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "ru"
+    },
+    {
+      "path": "CDPIUI/README.md",
+      "firstIntroduction": "b209ea9aa7c77f36d451da1bf36eaadb777c3316\tlumenpearson\tAdd the project documents for the GUI, Core, LScript, Shared, the pipe, the tray and the tests (review in progress)",
+      "first_commit": "b209ea9aa7c77f36d451da1bf36eaadb777c3316",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "CDPIUI/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "EditHostFile/README.md",
+      "firstIntroduction": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4\tlumenpearson\tAdd first drafts of the updater, hosts editor, installer and CI documents",
+      "first_commit": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "EditHostFile/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "NewSetup/README.md",
+      "firstIntroduction": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4\tlumenpearson\tAdd first drafts of the updater, hosts editor, installer and CI documents",
+      "first_commit": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "NewSetup/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "README.md",
+      "firstIntroduction": "c0566cd6deff99789643e98fd39bbc10c7f5d948\tStorik4pro\tinitial commit",
+      "first_commit": "c0566cd6deff99789643e98fd39bbc10c7f5d948",
+      "first_author": "Storik4pro",
+      "upstream_path_present": true,
+      "policy": "targeted improvements only",
+      "language": "en"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "firstIntroduction": "26c90ba0310859234d18557f40ade310459f1ea5\tlumenpearson\tFix the build notes in CONTRIBUTING and list third-party licenses",
+      "first_commit": "26c90ba0310859234d18557f40ade310459f1ea5",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "preserve legal meaning and attribution",
+      "language": "en"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "preserve legal meaning and attribution",
+      "language": "ru"
+    },
+    {
+      "path": "Update/README.md",
+      "firstIntroduction": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4\tlumenpearson\tAdd first drafts of the updater, hosts editor, installer and CI documents",
+      "first_commit": "3a0ffd3580ff0e4d218a08474dfdbdf22ec37dc4",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "Update/README.ru.md",
+      "firstIntroduction": "57c555849add990d3a33fbe06ef04df49f9c8953\tlumenpearson\tAdd Russian versions of the developer documents",
+      "first_commit": "57c555849add990d3a33fbe06ef04df49f9c8953",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "ru",
+      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+    },
+    {
+      "path": "docs/delivery-gates.md",
+      "first_commit": "this governance change",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles",
+      "language": "en",
+      "changes": "New fork engineering documentation."
+    },
+    {
+      "path": "docs/documentation-style.md",
+      "first_commit": "this governance change",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles",
+      "language": "en",
+      "changes": "New fork engineering documentation."
+    },
+    {
+      "path": "docs/engineering.md",
+      "first_commit": "this governance change",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles",
+      "language": "en",
+      "changes": "New fork engineering documentation."
+    },
+    {
+      "path": "docs/README.md",
+      "first_commit": "this governance change",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles",
+      "language": "en",
+      "changes": "New fork engineering documentation."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-10-fork-development-pipeline.md",
+      "first_commit": "this governance change",
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles",
+      "language": "en",
+      "changes": "New fork engineering documentation."
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "firstIntroduction": "This governance change",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "New fork governance document; source evidence and acceptance boundaries."
+    },
+    {
+      "path": "SECURITY.md",
+      "firstIntroduction": "This governance change",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "New fork governance document; source evidence and acceptance boundaries."
+    },
+    {
+      "path": "docs/audit/README.md",
+      "firstIntroduction": "This governance change",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "New fork governance document; source evidence and acceptance boundaries."
+    },
+    {
+      "path": "docs/fork-changes.md",
+      "firstIntroduction": "This governance change",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "New fork governance document; source evidence and acceptance boundaries."
+    },
+    {
+      "path": "docs/governance/README.md",
+      "firstIntroduction": "This governance change",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; equivalent Russian facts",
+      "language": "en",
+      "changes": "New fork governance document; source evidence and acceptance boundaries."
+    }
+  ],
+  "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",
+  "baseline_tree": "33323ba54f948dc7379061e805330bcb08fd610d",
+  "history_note": "Current main has the same file tree as the recorded baseline. Historical first-introduction commit pins are retained."
+}
