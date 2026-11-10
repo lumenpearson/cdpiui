@@ -1195,6 +1195,26 @@
       "policy": "ASD-STE100 principles for English",
       "language": "en",
       "changes": "Detailed future-task intake, evidence and immediate acceptance rules."
+    },
+    {
+      "path": "Localization/README.md",
+      "firstIntroduction": "4479ffcec3fbe21321ea727db879282e06055618\tleather147\tMove application translations into JSON catalogs",
+      "first_commit": "4479ffcec3fbe21321ea727db879282e06055618",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Document JSON catalog editing, generated WinUI compatibility, selected-language lookup, recovery boundaries and verification."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-10-json-localization.md",
+      "firstIntroduction": "4479ffcec3fbe21321ea727db879282e06055618\tleather147\tMove application translations into JSON catalogs",
+      "first_commit": "4479ffcec3fbe21321ea727db879282e06055618",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Record JSON localization implementation, exception recovery requirements, and open delivery acceptance boundaries."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",
