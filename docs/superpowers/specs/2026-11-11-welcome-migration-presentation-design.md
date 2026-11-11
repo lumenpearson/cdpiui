@@ -171,4 +171,16 @@ Portable callback fault permutations are distinct from the uncut native localize
 choose private helper/test organization and assertion grouping within the named interface and six
 native groups; it may not alter operating boundaries, notification order, counts or accepted corpus.
 All interface/scope choices here belong to the executor under autonomous authorization, not to a
-new user approval. Actual Project admission and fresh builder verdict are recorded above; product implementation has not started.
+new user approval. Actual Project admission and fresh builder verdict are recorded above. At the
+original design checkpoint, product implementation had not started.
+
+## Delivery ordering after the external UI stop
+
+Physical user Esc under shared lease167 stopped Computer Use after the managed product checkpoint.
+All UI, native GUI execution and queue handoffs remain held. Technical source preparation/build/
+pinning, read-only review and hosted CI can continue. After independent whole-range source review,
+publish a clearly incomplete stacked draft to obtain exact-head CI, with native runtime and actual
+PR Project readback unchecked. This changes delivery order, not acceptance. A later explicit user
+UI/native scope, fresh prelaunch review/current peer idle/new grant, actual190run, retained-runtime
+review and completed/Done readback remain required. Do not mark Task2 or issue231 complete from
+the source draft, compiled fixture or hosted CI. Source changes require appropriate new verification.

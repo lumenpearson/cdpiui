@@ -102,6 +102,14 @@ composition snapshots are immutable inputs; Task2 consumes the resulting product
 
 ### Task2: Qualify actual Welcome composition and close the local stage
 
+**External-stop ordering amendment:** physical user Esc167 holds UI/native execution and queue
+handoffs. After technical compilation/pinning and independent whole-range SOURCE review, a clearly
+incomplete stacked draft and hosted final-head CI may precede runtime execution. Keep native and
+actual PR Project checks outstanding. The run, retained-runtime review, case-specific acceptance
+and completed/Done steps below remain required; this amendment does not complete Task2 or waive
+the user stop. Later changed source needs new verification, and a new user UI/native scope plus
+fresh prelaunch/peer idle/grant must precede any native GUI launch.
+
 **Files:** NEW F:/cdpiui-verify source-pinned fixture/archive, ignored case/bootstrap/source/pin/
 run/resource/corpus/process/queue evidence, dedicated report and additive inventory.
 

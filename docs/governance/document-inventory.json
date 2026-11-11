@@ -1628,13 +1628,13 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-welcome-migration-presentation-verification.md",
-      "firstIntroduction": null,
-      "first_commit": null,
+      "firstIntroduction": "be8808356fd7846ffc9b8bf297b042aa72705fe3\tleather147\tExtract Welcome migration display state into a typed owner",
+      "first_commit": "be8808356fd7846ffc9b8bf297b042aa72705fe3",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
       "language": "en",
-      "changes": "Record actual admission, observed47case TDD/eager-lookup mutation/exact restoration/full2672, normal build/source and compiled contracts, retained preparation failures and explicit pending native/local delivery gates."
+      "changes": "Record observed47case TDD/mutation/full2672, normal/API preservation, technical190fixture compilation and pins, external USERSTOP interlocks, unexecuted runtime boundaries and source-draft/CI ordering."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",
