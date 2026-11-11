@@ -1,7 +1,7 @@
 # Accepted class decomposition integration
 
-Owner: Root under [issue14](https://github.com/lumenpearson/cdpiui/issues/14). Existing Project87
-intake readback confirms In progress/P2/Architecture/Medium/G2/lumenpearson, type:refactor and
+Owner: Root under [issue14](https://github.com/lumenpearson/cdpiui/issues/14). Existing Project 7
+intake, verified under UI grant v87, confirms In progress/P2/Architecture/Medium/G2/lumenpearson, type:refactor and
 area:architecture before implementation. The original issue criteria remain open.
 
 ## Sources and delivery boundary

@@ -41,24 +41,24 @@ implementation or interface framework is introduced.
 
 Interfaces: current default + reviewed Root/peer blobs → composed source/provenance manifest.
 
-- [x] Record default API SHA and actual Project87 fields, preserve frozen Root/peer refs and oldnormal100E
+- [x] Record default API SHA and actual Project 7 fields under UI grant v87, preserve frozen Root/peer refs and oldnormal100E
   artifact, then create new integration branch in the already isolated worktree.
 - [x] Run fresh default tests/GUI and preserve source/compiled baselines. ExpectedGREEN; on failure
   investigate rather than attributing a pre-existing problem to the transplant.
-- [ ] Compose scoped Root/peer Git blobs, clean App three-way merge and additive current-default XML;
+- [x] Compose scoped Root/peer Git blobs, clean App three-way merge and additive current-default XML;
   preserve all upstream non-owned paths and relevant owned documentation, record full provenance.
-- [ ] Focused/full GREEN, normal GUI0-0 and API0unintendedloss; verify exact complete input/tree/XML
+- [x] Focused/full GREEN, normal GUI0-0 and API0unintendedloss; verify exact complete input/tree/XML
   proof and source checkpoint. Commit only the named source and reviewable documentation.
 
 ### Task 2: Qualify the actual native union
 
 Interfaces: composed source pin → immutable149 fixture/source/build/pins/runtime proof.
 
-- [ ] Preflight Root137+peer12 exact source/case labels/private probes/context/logger/readiness/resource
+- [x] Preflight Root137+peer12 exact source/case labels/private probes/context/logger/readiness/resource
   inputs; prepare a fresh archive, exact boundaries/counts/31bootstraps, independent pre-build review.
-- [ ] Compile0-0, pin actual binaries/resources/source/runner/verifier and actual fresh filename count;
+- [x] Compile0-0, pin actual binaries/resources/source/runner/verifier and actual fresh filename count;
   independent prelaunchREADY plus new explicit exclusive UI grant.
-- [ ] One149unique/Root137prefix/peer141projection/COMPLETE/exit0 run, then all source/IO/hash/streams/
+- [x] One149unique/Root137prefix/peer141projection/COMPLETE/exit0 run, then all source/IO/hash/streams/
   owned-process checks, idle/requestfalse/release. Preserve any failed/rejected attempt intact.
 
 ### Task 3: Final review and publish the qualified revision

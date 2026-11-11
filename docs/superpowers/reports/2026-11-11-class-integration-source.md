@@ -3,7 +3,7 @@
 Owner: [issue14](https://github.com/lumenpearson/cdpiui/issues/14), Root,
 `dev/audit-class-integration`, existing isolated checkout
 `C:/Users/lumen/.codex/worktrees/audit-class-decomposition/cdpiui`.
-Actual Project87 intake: In progress/P2/Architecture/Medium/G2/lumenpearson, type:refactor and
+Actual Project 7 intake, verified under UI grant v87: In progress/P2/Architecture/Medium/G2/lumenpearson, type:refactor and
 area:architecture. No broad integration acceptance or main merge is recorded.
 
 ## Source provenance
@@ -65,10 +65,45 @@ execution owner was confirmed. Its EE checkout/ref is preserved. This stage does
 chat, change MSI/security/pipe code, waive G1 acceptance, or merge PR10. The G2 PR must remain draft
 with the dependency visible; issues13/14/15 stay open while their criteria remain incomplete.
 
-## Remaining qualification
+## Actual union149 qualification
 
-A new named committed source pin, immutable union149 native fixture, independent source/prelaunch
-and final reviews, and exact-head PR CI are the next gates. Proposed149 preserves Root137 prefix
-and the peer141 label projection; prior137/141 are separate historical corpora. No union native build
-or execution is claimed here. All Root UI calls are paused until a new explicit grant. Full startup,
-visual/installed-product and broader acceptance remain separate from the bounded fixture.
+Source checkpoint: `b41b724c7d930a1fa9209c75c88ffce5c4775213`,212 owned changed paths including
+190 product inputs with their provenance hashes. The normal commit hook refused automatic prose
+generation for this large diff. A complete manually validated detailed message passed the same hook;
+its exact file inventory was retained. No hook was bypassed and no history was rewritten.
+
+Immutable fixture: `F:/cdpiui-verify/cdpiui-class-integration-b41b724-20261111`.
+Independent pre-build source review reconstructed1574 inputs,21 literal cut files,1553 unchanged,
+31 bootstraps with27 Root and3 corrected peer case partials byte-identical,35 allowed extras,
+no reparse points and the exact empty Secret template. No helper or App.Modal was cut. The existing
+App cut completes the actual StartupInitialization owner with a no-op, replacing fixture startup
+only; real application startup and settings initialization remain unexecuted.
+
+Build:0 warnings/errors,78.82s. Independent post-build review verified54 pins (5 own binaries,
+20 packaged resources and29 source/evidence inputs), all522 prior binary filenames/hashes, embedded
+asInvoker/uiAccess=false, non-admin execution and fresh paths. All20 packaged resources match their
+generated copies, with5206 entries equal to the current JSON dictionaries.
+Fixture DLL SHA256: `EB1A6C7ADD132324467D2FC72DD3D1A7100D72A5C974C64B4C216F5F04463B11`.
+Runner SHA256: `7685AC057F2B176DCFF9D97D62BFE7D7D35CC9A04AFB843D787A32E3A565F3D1`.
+Verifier SHA256: `72EB07EBD6350E42CAAAD0C0E519161271625186C76F3D20EE84E5FD50655613`.
+
+After independent READY0Critical/Important, the canonical request was atomically marked ready and
+an explicit free88→Root89 grant was read back with every other participant paused. One hidden owned
+process ran UTC2026-11-11T09:01:29.6351047Z→09:01:35.2378129+00:00, PID78128, exit0.
+All149 unique groups match the declared sequence, preserving exact Root137 prefix and the complete
+ordered peer141 projection. One COMPLETE,0 FAIL and empty stdout/stderr were recorded.
+
+All54 pins, every522 prior binary hash and all packaged resources remained unchanged. Source and
+boundary proofs passed after execution. Three literal inputs16/16/15 bytes and two real serializer
+golden reports354/260 bytes with exact fields/hashes were retained. Only six declared filenames
+were added (522→528); forbidden outputs were absent. Normal GUI D1B46B remained unchanged.
+The owned process is gone. Idle receipt/requestfalse/all-UI-paused state preceded guarded89→90
+release, owner null. No CUA, desktop input, foreign window, privilege or real backend/MSI action occurred.
+
+Raw evidence in the new workspace includes `native-execution.log`, `class-integration-host-*`,
+`native-approved-pins.json`, `native-build-baseline.json`, `native-accepted-corpora.json`,
+`native-explicit-grant-v89.json` and `native-owner-released-v90.json`.
+The existing intentionally unloaded selector graph may remain event-rooted until this bounded
+process exits; only timer stop/unattached state is proved. Full visual/installed/startup and G1
+acceptance are separate. Final whole-change evidence/documentation review and exact-head draft-PR
+CI remain pending; issues13/14/15 stay open and no main integration is claimed.
