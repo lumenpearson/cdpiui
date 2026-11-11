@@ -107,5 +107,18 @@ Raw evidence in the new workspace includes `native-execution.log`, `class-integr
 `native-explicit-grant-v89.json` and `native-owner-released-v90.json`.
 The existing intentionally unloaded selector graph may remain event-rooted until this bounded
 process exits; only timer stop/unattached state is proved. Full visual/installed/startup and G1
-acceptance are separate. Final whole-change evidence/documentation review and exact-head draft-PR
-CI remain pending; issues13/14/15 stay open and no main integration is claimed.
+acceptance are separate.
+
+## Independent review and publication gate
+
+Fresh read-only reviewer `/root/class_integration_review` accepted the bounded integration at
+product `b41b724c7d930a1fa9209c75c88ffce5c4775213` and reviewed documentation
+`bc5cdf74d119b9ef4fcc27f058e8f597f82d5e82`, against default6c00:0 unresolved Critical,
+Important or Minor findings. The reviewer independently reproduced all190 product hashes
+(179 exact Root,9 exact peer,2 composed inputs), current XML and App merge, all1574 fixture inputs,
+54 pins,522 baseline hashes, actual149 labels/logs/streams/IO/process and89→90 queue receipts.
+The Project 7/UI grant wording and overly broad helper-cut statement were corrected and read back.
+
+Real startup/Loading/interactive picker/installed-product/GC-detachment and full historical G1
+compatibility remain outside this bounded verdict. Publication and exact-head draft-PR CI are the
+next gates. Issues13/14/15 remain open and no main merge or broad issue14 acceptance is claimed.

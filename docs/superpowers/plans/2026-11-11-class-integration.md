@@ -65,7 +65,7 @@ Interfaces: composed source pin → immutable149 fixture/source/build/pins/runti
 
 Interfaces: all source/contract/runtime proofs → independently reviewed exact PR HEAD/checks.
 
-- [ ] Update current docs/provenance/limits; fresh strongest-model independent whole-change review,
+- [x] Update current docs/provenance/limits; fresh strongest-model independent whole-change review,
   resolve actionable findings with the appropriate verification and final source checkpoint.
 - [ ] Refresh current default, preserve any newer change, prepare exact PR body/metadata and publish
   isolated branch/PR with Refs#14; verify required checks on final HEAD and read actual metadata.
