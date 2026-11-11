@@ -1508,8 +1508,8 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-blockcheck-review-presentation-verification.md",
-      "firstIntroduction": "Local MainPage review presentation verification under issue221; product introduction recorded after checkpoint commit.",
-      "first_commit": null,
+      "firstIntroduction": "1c2d44336fe4bb97bc100a5102fc7a7667d65068\tleather147\tExtract MainPage review summary presentation",
+      "first_commit": "1c2d44336fe4bb97bc100a5102fc7a7667d65068",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",

@@ -44,14 +44,14 @@ links for owner/interface/existing preview; design/plan/report and additive inve
 existing FormatDuration. Produces six observable strings and UpdateReviewSummary(preview). Host
 preserves six private setters, supplied-preview method and one constructor-owned synchronous bridge.
 
-- [ ] Read issue/spec/actual intake; preserve source/compiled/normal-output baselines and frozen refs.
+- [x] Read issue/spec/actual intake; preserve source/compiled/normal-output baselines and frozen refs.
   Obtain a fresh design-builder verdict before product code.
-- [ ] Write focused tests first for the named contract and observe expected missing-component RED.
-- [ ] Implement the interface, exact direct adapter, cold owner and original policy; wire host forwards
+- [x] Write focused tests first for the named contract and observe expected missing-component RED.
+- [x] Implement the interface, exact direct adapter, cold owner and original policy; wire host forwards
   and one bridge without touching lifecycle or existing owners. Run focused GREEN.
-- [ ] Apply a controlled early preset cache and observe behavior assertions fail; restore exact bytes/
+- [x] Apply a controlled early preset cache and observe behavior assertions fail; restore exact bytes/
   hash and run focused/full GREEN and normal GUI Release/x64 with0 warnings/errors.
-- [ ] Verify source/compiled public preservation, exact footprint, literal policy, all15 mappings,
+- [x] Verify source/compiled public preservation, exact footprint, literal policy, all15 mappings,
   host setters/bridge/remainder, governance and redacted scans. Record failures and commit checkpoint.
 
 ### Task 2: Qualify actual composition and accept locally
@@ -62,11 +62,11 @@ postchecks; dedicated report and additive inventory.
 **Interfaces:** consumes Task1 source pin and accepted160 recipe/corpus. Produces reviewed actual
 host/source/preview cases and explicit local delivery evidence without accepting parent integration.
 
-- [ ] Read Task1 evidence and brief; preserve all160 labels/old case bytes/21cuts. Derive fresh inputs,
+- [x] Read Task1 evidence and brief; preserve all160 labels/old case bytes/21cuts. Derive fresh inputs,
   extras/corpus and positive actual-host assertions before build, with no new IO or cuts.
-- [ ] Obtain independent pre-build review; build0-0, derive actual binary/resource/source/runner/
+- [x] Obtain independent pre-build review; build0-0, derive actual binary/resource/source/runner/
   verifier pins and all prior output hashes, then obtain independent prelaunch READY.
-- [ ] Coordinate a new explicit lease; execute one owned process, prove exact labels/COMPLETE/exit0,
+- [x] Coordinate a new explicit lease; execute one owned process, prove exact labels/COMPLETE/exit0,
   streams/hash/resource/source/IO/absence/process cleanup; idle/requestfalse and guarded release.
 - [ ] Update evidence and obtain fresh whole-branch review; resolve Critical/Important through observed
   RED→GREEN, record all rulings/deferred minors and preserve original artifacts.

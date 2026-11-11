@@ -20,6 +20,8 @@ The existing product footprint is exactly MainPageViewModel.cs and Review.cs. Th
 are added: the source interface, its direct Session adapter and the presentation owner. Session,
 options/site lists, numeric/progress/completion owners, duration and preview models, lifecycle,
 navigation, resources, packages, Core/AddOns/Shared and operating code remain unchanged.
+Product checkpoint: `1c2d44336fe4bb97bc100a5102fc7a7667d65068`. Later evidence commits do not
+change the qualified product or native case bytes.
 
 ## Design and managed evidence
 
@@ -72,16 +74,74 @@ The accepted previous normal GUI DLL was saved before rebuilding. The current no
 Earlier160 runtime evidence retains its historical normal-output hash. Do not run its frozen
 verifier against this new normal output and describe that result as a regression of the old fixture.
 
-## Native and delivery status
+## Actual native qualification
 
-Native qualification is pending at this product checkpoint. The next stage must create a NEW source
-archive, preserve all160 accepted labels/old case bytes/21 cuts, and add actual MainPage/source/
-preview/bridge cases. Positive maximum formatting, callbacks, private setters, equality, sender,
-reentry and partial exceptions need direct assertions. Derive fresh counts/pins/outputs from that
-fixture, obtain independent pre-build/prelaunch READY, then acquire a new explicit exclusive lease.
-Root currently has no ready native request or pending UI call.
+The fresh fixture is `F:/cdpiui-verify/cdpiui-blockcheck-review-1c2d443-20261111`, archived from
+the product checkpoint. It contains1591 tracked Git inputs, exactly21 inherited cuts,34 bootstrap
+files and38 allowed extras, with no reparse entries. All32 prior case partials retain their bytes.
+The main bootstrap adds the last review call and COMPLETE166 count, apart from path/pin names.
+The exact160-label prefix is retained and six distinct review groups are appended.
+
+Before the initial review verdict, the adapter group gained explicit Quick/TestAllStrategies true
+and false assertions with all protocol flags false, plus the unknown-preset Balanced fallback. The
+seven-line assertion delta changed no label, product, operating endpoint or cut. Original draft
+case bytes were retained. The final case SHA is recorded below. The independent pre-build reviewer
+reconstructed the complete fixture and approved those final bytes with0 Critical/Important/Minor.
+
+The native build passed0 warnings/errors in75.27s. Independent prelaunch review rehashed all65
+approved inputs and all522 output paths/digests, reconstructed source/manifest/corpus evidence and
+verified all32 prior partials again. The actual executable is PE32+ AMD64, with an embedded
+asInvoker/uiAccess=false manifest. The token was non-admin and the exact executable was absent.
+PowerShell parsing had0 errors; the runtime verifier and pin tables were consistent. All7 forbidden
+paths,13 fresh run/evidence paths and custom markers were absent. No pending hash value remained.
+
+The65 approved inputs are5 owned binaries,20 resources and40 source/evidence files. All20 resources
+are generated-byte identical, their5206 entries equal source JSON, and38 required English keys are
+nonempty. Selected actual hash anchors:
+
+| Artifact | SHA256 |
+| --- | --- |
+| Native GUI DLL | `AFBD9A8DAEEF9B4F386F8FB0CFD6267C1AB6A064F8DC05A1963F530AB6095F15` |
+| Runner | `90DDD4A03497353A89058C7999717DBDBA19818099BA2B838723398420BB7F9A` |
+| Runtime verifier | `CB412BD26DF46368A4B8F035B9F0519B2E0E73B43F0E105E58C643BBCD07D478` |
+| Complete output baseline | `9585290814A1CD60E09E02B03642FF5A6CEE7E1E70CB3250B842580E98B8D8E8` |
+| Accepted corpus | `7BDB3893F3D0E3F179365AD24EF3941E74DD4E1A4C4C15A2E45F518130E0C81A` |
+| Final review case | `09B6F291DF5D2A93EF0C97AE81FCEBAA40CC549CBFD7583E87E8AE31A75479BB` |
+
+Root independently rehashed the65 pins and522 baseline files immediately before guarded queue
+transfer120→121. Only this native process owned that lease. PID6720 ran from
+2026-11-11T12:44:37.6688885Z to2026-11-11T12:44:40.2506392+00:00. All166 unique groups passed
+with the exact160/154/149/137 prefixes, peer141 projection, one COMPLETE, zero FAIL, exit0 and
+empty stdout/stderr. All65 pins/all522 prior filenames and hashes passed after exit. Exactly six
+new output names made528 total. The three literal inputs retain16/16/15 bytes. Both serializer
+reports retain exact354/260-byte golden contents, hashes and current model fields. All7 forbidden
+paths remain absent, including both non-file list paths. The normal GUI remains at the SHA above.
+
+The six new groups directly assert cold values, all private setters/host sender/equality, individual
+protocol/IP mappings and full order,2 selected lists/5 domains/23 preview targets, distinct request/
+timeout values and positive61-minute duration with17 jobs/199 requests. They assert both explicit
+all-strategies states, unknown preset fallback, callbacks changing later source/preview reads,
+repeated equality/current adapter values/separate owners, nested preview identity and observer
+exception identity/partial effects/retry. They use actual MainPage, source adapter, Session, preview,
+localizer, duration formatter and dispatcher with a two-method view substitute that is never called.
+
+Both list items receive nonempty literal content, so their constructors use the in-memory domain
+count branch. Reflection seeds option fields and avoids persisted setters. All externally attached
+new handlers detach in finally. Operating counters/settings writes remain unchanged; existing
+inert settings constructor reads remain part of composition. No OnLoaded, real scan/preparation/
+backend/history/cleanup operation, settings write, additional operating file IO, desktop input or deletion
+was introduced. External absence checks cover the two non-file paths.
+
+Root separately verified PID6720 and the exact executable absent, wrote idle121/requestfalse with
+no pending call, and guarded release122/readback confirmed owner:null and all six participants paused.
+Raw recipes, logs, pins, baseline, source/resource evidence and postchecks remain in this plan's
+ignored workspace `.superpowers/sdd/2026-11-11-blockcheck-review-presentation/`.
+
+## Delivery status and limits
 
 Final whole-change review, stacked draft final-head checks, actual PR Project readback and immediate
-completed/Done acceptance remain pending. Parent13/14/15 and drafts216/218/220 stay separate and
-unmerged. No full Page rendering, XAML Loading, installed product, GC collection, G1 or release
-result is inferred. Keep all accepted and rejected evidence, branches, workspaces and source archives.
+completed/Done acceptance remain pending at this evidence checkpoint. Parent13/14/15 and drafts
+216/218/220 stay separate and unmerged. The two-method view establishes model composition, without
+full Page rendering/XAML Loading/focus/activation, installed-product, GC collection, G1 or release
+acceptance. Independent qualification of unchanged components remains with their owning stages.
+Keep all accepted and rejected evidence, branches, workspaces and source archives.
