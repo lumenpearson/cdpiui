@@ -50,8 +50,8 @@ C:/Users/lumen/.dotnet/dotnet.exe build CDPIUI/CDPIUI.csproj -c Release -p:Platf
 
 ## Compatibility and source guards
 
-The source inventory compares 617 baseline GUI files with 620 current files. All 451 original
-exported signatures remain. Compiled comparisons preserve 452 GUI and 88 Core exported type
+The source inventory compares 617 baseline GUI files with 620 current files. The source comparison
+covered 451 baseline exported types. It found no removed or changed signatures on those types. Compiled comparisons preserve 452 GUI and 88 Core exported type
 shapes, with zero removals or changes and zero additions on retained types. These bounded checks
 do not certify every attribute, annotation, native ABI or runtime behavior.
 
@@ -152,8 +152,30 @@ no pending call, and read back guarded release 132 with previousVersion 131, own
 all six participants paused. R2 evidence is in this plan's `native-r2/` subdirectory. The initial
 failed fixture and all original review/build/runtime records remain retained separately.
 
-Fresh whole-branch review, exact final-head hosted checks, actual PR Project readback and
-immediate LOCAL acceptance remain pending at this evidence checkpoint.
+## Independent whole-branch review
+
+Fresh reviewer wizard_navigation_final_review inspected the complete range
+`b627a0f62dace8dde20ca2574a9d28646f71b421` through
+`18aafc26e5fb8f532e8011ca38089f66f9e30065`: zero Critical, zero Important and two Minor findings.
+It reconstructed the original complete host under the declared substitutions, compared all three
+policy bodies and seven direct mappings, and verified that product and tests are unchanged after
+the product pin. Read-only checks independently reconstructed both native attempts, all 69 pins,
+522 prior outputs, exact six new names, resources, inputs, golden reports, corpus and queue records.
+Owner logs remain the executed test/build/process evidence; the reviewer did not repeat those runs.
+
+The two Minor findings concern documentation. The plan now uses plain ASCII `RED to GREEN`
+instead of a committed damaged character sequence. The source API count now names 451 exported
+types whose signatures were compared. No product, test, native case, pin or output changed for
+these corrections. Static documentation checks apply; no product rerun is attributed to this commit.
+
+The executor retains original hidden-button/Next and Advanced-without-target behavior, repeated
+command notifications, unknown steps, earlier outer-frame flags and partial exception effects.
+Changing those policies, adding constructor guards or thread synchronization would exceed this
+preserving refactor. The reference graph introduces no new external root; actual GC collection
+remains unmeasured. Full Page/XAML/focus/activation and unchanged operating routes remain separate.
+
+Exact final-head hosted checks, actual PR Project readback and immediate LOCAL acceptance remain
+pending at this evidence checkpoint. The issue's later acceptance record is authoritative for delivery.
 
 Refs #14 and Refs #223. Parent #13/#14/#15 and draft PRs #216/#218/#220/#222 remain separate and
 unmerged. Model composition does not establish full Page rendering, XAML Loading, focus,

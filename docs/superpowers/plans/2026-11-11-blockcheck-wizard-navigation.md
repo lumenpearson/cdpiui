@@ -72,8 +72,8 @@ actual host/source/view/command evidence and local delivery without accepting pa
   source/runner/verifier pins and full output baseline, then independent prelaunch READY.
 - [x] Acquire a new explicit exclusive lease; run one process and prove labels/COMPLETE/exit/streams,
   source/resources/hashes/IO/absence/process cleanup, idle/requestfalse and guarded release.
-- [ ] Update evidence and obtain fresh whole-branch review; resolve Critical/Important through observed
-  REDРІвЂ вЂ™GREEN, ledger all rulings/deferred minors and retain original artifacts.
+- [x] Update evidence and obtain fresh whole-branch review; resolve Critical/Important through observed
+  RED to GREEN, ledger all rulings/deferred minors and retain original artifacts.
 - [ ] Publish a draft stacked on dev/blockcheck-review-presentation with Refs #14 and Refs #223;
   verify exact final-head checks and actual PR metadata/Project fields, without parent/main merge.
 - [ ] Verify all six criteria, post six-section LOCAL acceptance, immediately close completed/set actual
