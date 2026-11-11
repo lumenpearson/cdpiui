@@ -154,11 +154,58 @@ its own fresh prelaunch scope, current peer idle and explicit grant. A separate1
 uses a NEW isolated VM under its own reviewed scope, not this product's verification evidence.
 
 After the managed/build checks, a physical user Esc stopped Computer Use during167. Root halted
-all UI, native GUI launches and queue handoffs; no release168 or grant169 is inferred. The failed/
-paused Lessons environment remains separately owned, with no native test acceptance. This external
-stop does not invalidate the observed source/managed/build checks. It prevents231 native execution,
-actual PR Project closeout and completed/Done acceptance until an explicit new user UI scope exists.
-Preparatory source/console checks can continue; a different launch route cannot bypass the stop.
+all UI, native GUI launches and queue handoffs. This was a real execution stop, retained in the
+original packet. A later explicit human message in peer chat01a1c049 authorized UI resumption and
+the231 native/review/CI/Done scope. Root verified its user-message identity
+01a1cc84-1b9f-7e11-a6ac-7647c56100f8 through the thread API. Separate explicit human messages
+authorized Project14 only and the Lessons731 continuation. Those scopes are not interchangeable.
+Fresh qualified167 idle, actor acknowledgements and a sole Root owner-writer protocol preceded
+release168/Project14-only169/release170/Lessons171. No lease was reused after Esc. The old77492
+process qualification remains unresolved; another session owns that environment. Root has not
+executed the231 fixture or completed its native, actual PR Project or acceptance gates.
+
+## Whole-range source review and operational corrections
+
+Fresh independent reviewer /root/welcome_migration_source_draft_review, explicitly selected
+gpt-6-astra/xhigh, reviewed b0f2c93..2879047: three commits/nine files. It reconstructed both
+hosts, compared retained source/compiled/test/build evidence and actual86pins, and found no
+Critical or Important product finding. The reviewed tracked range is suitable for a clearly
+incomplete stacked draft and hosted CI. The reviewer ran no tests, GUI or native process.
+
+Two Important findings apply to supplementary operational tools. Python optimization removes
+assert-based checks; the old queue helper also separates expected-byte comparison from replacement.
+Both defects were reproduced ONLY under retained isolated F:/cdpiui-verify/controls directories:
+two regression failures, zero errors. The optimized old request bypassed a blocked hold and a
+foreign active owner; a deterministic competing write was overwritten before replacement. These
+controls never addressed the shared queue or launched an executable.
+
+The additive native-operational-r2 packet preserves all23original packet files, including its
+blocked hold, without changes. Every copied Python recipe rejects -O, -OO and PYTHONOPTIMIZE
+before evidence or state access. The queue helper accepts only a read-only preflight; request,
+grant and release fail before access. The runner checks an exact expected lease version and calls
+this preflight twice, with its guarded verifier pinned. Four regression groups pass with no skips,
+including all optimized recipes, disabled mutations, competing-owner retention and hold/foreign
+lease refusal. PowerShell syntax passes. Fresh checks retain all86fixture pins,522prior files,
+the normal GUI hash and the absence of runtime output. There is no reason to rebuild the identical
+fixture for this operational correction.
+
+Actual shared owner changes use a separate, acknowledged single writer: Root alone performs
+grants and releases under one named Windows mutex, with fresh owner/request/idle guards and
+readback. Actors write only their own request/idle receipts. This is a cooperative protocol, not
+a global filesystem compare-and-swap guarantee. Archived actors were not reactivated. A mistaken
+participant flag in169 was rejected by its owner before any UI call; Root corrected the explicit
+actor-to-flag mapping under the mutex and retained both records before that owner proceeded.
+
+Two Minor coverage observations remain deferred. The portable nine-setter theory compares the
+second result with the first instead of explicitly checking every first supplied finite value;
+literal setters, source reconstruction and the separate raw/nonfinite cases supply current proof.
+The cold native host subscribes after construction, so its empty event list covers only the period
+after subscription. Constructor coldness comes from inspected initialization/host source, not
+that later observation. No claim about earlier observed notifications is made.
+
+The new r2 hold records verified human resumption; operational review, a fresh independent
+prelaunch verdict, current peer idle and a new exact native lease are still required. It grants
+no native authority by itself. Original source/case/binary/resource evidence remains at productbe880.
 
 No full loaded WelcomeWindow/XAML, visual EN/RU/accessibility, real migration/session/queue/import/
 license/storage, cancellation/teardown/GC/concurrency, full metadata/native ABI, installed product,

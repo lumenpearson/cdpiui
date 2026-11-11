@@ -102,6 +102,14 @@ composition snapshots are immutable inputs; Task2 consumes the resulting product
 
 ### Task2: Qualify actual Welcome composition and close the local stage
 
+**Current resumption and tool correction:** the later explicit human231 UI/native message was
+verified through its thread user-message record. Historical Esc evidence and the original blocked
+packet remain intact. An additive operationalr2 rejects optimized Python and removes all queue
+mutation entrypoints; isolated RED2failures→GREEN4groups preserves competing writes. A separately
+acknowledged sole Root coordinator serializes owner grants/releases under a named mutex. No source
+or compiled case changed. Fresh operational/prelaunch review, peer idle and an exact new native
+grant remain mandatory; prior167 and technical readiness cannot authorize execution.
+
 **External-stop ordering amendment:** physical user Esc167 holds UI/native execution and queue
 handoffs. After technical compilation/pinning and independent whole-range SOURCE review, a clearly
 incomplete stacked draft and hosted final-head CI may precede runtime execution. Keep native and
