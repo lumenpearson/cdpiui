@@ -1538,8 +1538,8 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-blockcheck-wizard-navigation-verification.md",
-      "firstIntroduction": "Local wizard navigation evidence under issue223.",
-      "first_commit": null,
+      "firstIntroduction": "31ab5c2f16dbbf11c5c1fab4f5a0e90214be7f05\tleather147\tExtract MainPage wizard navigation state",
+      "first_commit": "31ab5c2f16dbbf11c5c1fab4f5a0e90214be7f05",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",

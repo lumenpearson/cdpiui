@@ -48,14 +48,14 @@ existing view/enum/record; design/plan/report and additive inventory.
 command notification. Produces current step/Cancel getters, two observable Next properties and the
 three existing private host entrypoints through direct forwards.
 
-- [ ] Read issue/spec/intake and retain source/compiled/normal baselines. Obtain a fresh builder verdict
+- [x] Read issue/spec/intake and retain source/compiled/normal baselines. Obtain a fresh builder verdict
   before product code. Verify no old native case depends on moved private fields.
-- [ ] Write focused cold/state/ordering tests first and observe expected missing-component RED.
-- [ ] Implement the exact source and owner policy, host forwards/current-step reads and one bridge;
+- [x] Write focused cold/state/ordering tests first and observe expected missing-component RED.
+- [x] Implement the exact source and owner policy, host forwards/current-step reads and one bridge;
   preserve prior constructor statement order. Run focused GREEN and inspect real assertions.
-- [ ] Apply a controlled CanCancel cache before the view callback; observe behavior failures, restore
+- [x] Apply a controlled CanCancel cache before the view callback; observe behavior failures, restore
   exact bytes/hash and pass focused/full GREEN plus normal GUI with zero warnings/errors.
-- [ ] Verify source/compiled public preservation, exact footprint, original policy/read points/seven
+- [x] Verify source/compiled public preservation, exact footprint, original policy/read points/seven
   mappings/host fields/constructor/command wiring, governance and redacted scans; commit checkpoint.
 
 ### Task 2: Qualify actual host/command composition and accept locally
@@ -66,14 +66,14 @@ dedicated report and additive inventory.
 **Interfaces:** consumes Task 1 source pin and accepted 166 corpus/case bytes/cut paths. Produces
 actual host/source/view/command evidence and local delivery without accepting parent integration.
 
-- [ ] Read Task 1 evidence/brief; preserve all 166 labels and old case bytes/cuts, derive fresh input,
+- [x] Read Task 1 evidence/brief; preserve all 166 labels and old case bytes/cuts, derive fresh input,
   corpus/pin/extra counts and discriminating command/current-step callback cases before build.
-- [ ] Obtain independent pre-build review, build zero warnings/errors, derive actual artifacts/resources/
+- [x] Obtain independent pre-build review, build zero warnings/errors, derive actual artifacts/resources/
   source/runner/verifier pins and full output baseline, then independent prelaunch READY.
-- [ ] Acquire a new explicit exclusive lease; run one process and prove labels/COMPLETE/exit/streams,
+- [x] Acquire a new explicit exclusive lease; run one process and prove labels/COMPLETE/exit/streams,
   source/resources/hashes/IO/absence/process cleanup, idle/requestfalse and guarded release.
 - [ ] Update evidence and obtain fresh whole-branch review; resolve Critical/Important through observed
-  RED→GREEN, ledger all rulings/deferred minors and retain original artifacts.
+  REDРІвЂ вЂ™GREEN, ledger all rulings/deferred minors and retain original artifacts.
 - [ ] Publish a draft stacked on dev/blockcheck-review-presentation with Refs #14 and Refs #223;
   verify exact final-head checks and actual PR metadata/Project fields, without parent/main merge.
 - [ ] Verify all six criteria, post six-section LOCAL acceptance, immediately close completed/set actual
