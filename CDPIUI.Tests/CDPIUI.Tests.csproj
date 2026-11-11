@@ -54,6 +54,9 @@
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ReportSummaryPresenter.cs" Link="Presentation\BlockCheck2ReportSummaryPresenter.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2RunCompletionPresenter.cs" Link="Presentation\BlockCheck2RunCompletionPresenter.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ProgressPresentation.cs" Link="Presentation\BlockCheck2ProgressPresentation.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2ReviewSource.cs" Link="Presentation\IBlockCheck2ReviewSource.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ReviewPresentation.cs" Link="Presentation\BlockCheck2ReviewPresentation.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2PreparationPreview.cs" Link="Presentation\BlockCheck2PreparationPreview.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2NoticeSeverity.cs" Link="Presentation\BlockCheck2NoticeSeverity.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ResultSelection.cs" Link="Presentation\BlockCheck2ResultSelection.cs" />
     <Compile Include="..\CDPIUI\Helper\Basic\AppIdleExitController.cs" Link="Presentation\AppIdleExitController.cs" />
