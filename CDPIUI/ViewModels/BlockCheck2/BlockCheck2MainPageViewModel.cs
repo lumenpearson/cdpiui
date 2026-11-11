@@ -21,6 +21,7 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
     private readonly BlockCheck2DurationText _durationText;
     private readonly BlockCheck2RunCompletionPresenter _completionPresenter;
     private readonly BlockCheck2ProgressPresentation _progressPresentation;
+    private readonly BlockCheck2ReviewPresentation _reviewPresentation;
     private readonly IBlockCheck2MainPageView _view;
     private bool _handlersConnected;
     private BlockCheck2PreparationPreview? _preparationPreview;
@@ -59,6 +60,9 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
             () => Session.EstimatedRemainingTime, () => Session.EstimatedOverallRemainingTime,
             Text, _durationText.FormatRemaining);
         _progressPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _reviewPresentation = new BlockCheck2ReviewPresentation(
+            new BlockCheck2ReviewSource(Session), Text, _durationText.FormatDuration);
+        _reviewPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
     }
 
     public BlockCheck2ViewModel Session { get; } = new();
