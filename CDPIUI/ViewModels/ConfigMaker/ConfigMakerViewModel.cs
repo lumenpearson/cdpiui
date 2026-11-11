@@ -40,15 +40,23 @@ public sealed partial class ConfigMakerViewModel : ObservableObject, IConfigMake
     private bool _isEditorReadOnly;
     private bool _updatingComponent;
     private string _editorBackground = BlackBackground;
-    private string _statusTitle = string.Empty;
-    private string _statusMessage = string.Empty;
-    private InfoBarSeverity _statusSeverity = InfoBarSeverity.Informational;
-    private bool _isStatusOpen;
+    private readonly ConfigMakerStatusPresentation<InfoBarSeverity> _statusPresentation;
 
     public ConfigMakerViewModel(IConfigMakerView view, DispatcherQueue dispatcherQueue)
     {
         _view = view ?? throw new ArgumentNullException(nameof(view));
         _dispatcherQueue = dispatcherQueue ?? throw new ArgumentNullException(nameof(dispatcherQueue));
+        _statusPresentation = new(InfoBarSeverity.Informational,
+            severity => severity switch
+            {
+                InfoBarSeverity.Error => _localizer.GetLocalizedString("SomethingWentWrong"),
+                InfoBarSeverity.Warning => _localizer.GetLocalizedString("Attention"),
+                _ => _localizer.GetLocalizedString("Information"),
+            },
+            (severity, title, message) => StatusNotificationRequested?.Invoke(
+                this, new StatusNotificationRequestedEventArgs(severity, title, message)),
+            () => UseInlineStatusMessages);
+        _statusPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
         _textChanges = new TextChangeRelay(
             () => IsEditorReadOnly, () => CommandText, text => CommandText = text,
             _view.ReplaceEditorText,
@@ -193,26 +201,26 @@ public sealed partial class ConfigMakerViewModel : ObservableObject, IConfigMake
 
     public string StatusTitle
     {
-        get => _statusTitle;
-        private set => SetProperty(ref _statusTitle, value);
+        get => _statusPresentation.StatusTitle;
+        private set => _statusPresentation.StatusTitle = value;
     }
 
     public string StatusMessage
     {
-        get => _statusMessage;
-        private set => SetProperty(ref _statusMessage, value);
+        get => _statusPresentation.StatusMessage;
+        private set => _statusPresentation.StatusMessage = value;
     }
 
     public InfoBarSeverity StatusSeverity
     {
-        get => _statusSeverity;
-        private set => SetProperty(ref _statusSeverity, value);
+        get => _statusPresentation.StatusSeverity;
+        private set => _statusPresentation.StatusSeverity = value;
     }
 
     public bool IsStatusOpen
     {
-        get => _isStatusOpen;
-        set => SetProperty(ref _isStatusOpen, value);
+        get => _statusPresentation.IsStatusOpen;
+        set => _statusPresentation.IsStatusOpen = value;
     }
 
     public string EditorBackground => _editorBackground;
@@ -293,28 +301,8 @@ public sealed partial class ConfigMakerViewModel : ObservableObject, IConfigMake
         RaiseEditorBackgroundChanged();
     }
 
-    public void ShowEditorMessage(string message, InfoBarSeverity severity)
-    {
-        string title = severity switch
-        {
-            InfoBarSeverity.Error => _localizer.GetLocalizedString("SomethingWentWrong"),
-            InfoBarSeverity.Warning => _localizer.GetLocalizedString("Attention"),
-            _ => _localizer.GetLocalizedString("Information"),
-        };
-        StatusNotificationRequested?.Invoke(
-            this,
-            new StatusNotificationRequestedEventArgs(severity, title, message));
-        if (!UseInlineStatusMessages)
-        {
-            IsStatusOpen = false;
-            return;
-        }
-
-        StatusTitle = title;
-        StatusMessage = message;
-        StatusSeverity = severity;
-        IsStatusOpen = true;
-    }
+    public void ShowEditorMessage(string message, InfoBarSeverity severity) =>
+        _statusPresentation.Show(message, severity);
 
     // An exception must not leave an async void event handler: it would reach the global handler.
     public void ReportHandlerError(Exception exception)

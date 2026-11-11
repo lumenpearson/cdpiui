@@ -47,24 +47,24 @@ Action<TSeverity,string?,string?> raiseNotice, Func<bool> getInline)`; method
 `Show(string? message, TSeverity severity)`; four owner properties with original names. Host consumes
 InfoBarSeverity, preserves its current auto-property and original optional EventArgs publication.
 
-- [ ] Read brief/spec/intake; save normal/source/compiled baselines and original host/partial hashes.
+- [x] Read brief/spec/intake; save normal/source/compiled baselines and original host/partial hashes.
   Obtain fresh builder verdict before product code. Inspect accepted178 cases for old-field dependence.
-- [ ] Write cold test first, run filtered test before owner/source link exists.
+- [x] Write cold test first, run filtered test before owner/source link exists.
   Run: `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release --no-restore --filter FullyQualifiedName~ConfigMakerStatusPresentationTests`.
   Expected: missing-owner CS0246, not a passing placeholder. Then write all behavior cases before implementation.
-- [ ] Cover explicit nonzero initial severity; null stored callbacks cold; empty/default fields; all setter
+- [x] Cover explicit nonzero initial severity; null stored callbacks cold; empty/default fields; all setter
   equal/null/raw severity rules; title/notice/one-flag/setter trace; disabled-open closure retaining other
   values; notice changes flag in both directions; title observer changes flag without stopping;
   localization swaps notice subscriber; nested notice/property/outer locals/current equality;
   each of three port and four property faults, identity/partial state/retry; repeated/independent models.
-- [ ] Implement the specified owner and run the same focused command. Expected: all cases pass, zero warnings.
+- [x] Implement the specified owner and run the same focused command. Expected: all cases pass, zero warnings.
   Wire four host properties, public method, explicit initial severity/three cold adapters and one bridge;
   preserve all other host statements and partial bytes.
-- [ ] Controlled mutant: read getInline before raiseNotice, use that value later. Run the focused command.
+- [x] Controlled mutant: read getInline before raiseNotice, use that value later. Run the focused command.
   Expected: meaningful notice/ordering/late-flag failures, no compile failure. Restore exact bytes/hash in finally.
   Rerun focused then full `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release --no-restore`.
   Expected: all pass, no failures/skips, actual counts recorded.
-- [ ] Run normal GUI `dotnet build CDPIUI/CDPIUI.csproj -c Release -p:Platform=x64 --no-restore` sequentially.
+- [x] Run normal GUI `dotnet build CDPIUI/CDPIUI.csproj -c Release -p:Platform=x64 --no-restore` sequentially.
   Expected: zero warnings/errors. Verify source451/compiled452GUI88Core retained signatures/shapes,
   whole-host/literal adapters/four defaults/property accessors/bridge/cold constructor/partial/footprint
   guards, owner line bound, `python .github/scripts/check_governance.py`, whitespace and redacted scans.
