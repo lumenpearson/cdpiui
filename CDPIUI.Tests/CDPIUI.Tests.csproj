@@ -58,6 +58,7 @@
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ReviewPresentation.cs" Link="Presentation\BlockCheck2ReviewPresentation.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2NavigationSource.cs" Link="Presentation\IBlockCheck2NavigationSource.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2WizardNavigation.cs" Link="Presentation\BlockCheck2WizardNavigation.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\Store\ItemDownloadPresentation.cs" Link="Linked\ItemDownloadPresentation.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2MainPageView.cs" Link="Presentation\IBlockCheck2MainPageView.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2WizardStep.cs" Link="Presentation\BlockCheck2WizardStep.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2NavigationButtons.cs" Link="Presentation\BlockCheck2NavigationButtons.cs" />
