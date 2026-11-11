@@ -59,14 +59,14 @@ IsReadyBundlesContentVisible, ShowStatus(string? titleKey,string? messageKey,TSe
 ShowError(string? message,string? errorCode). The baseline source and executable normal GUI/Core
 composition snapshots are immutable inputs; Task2 consumes the resulting product commit and logs.
 
-- [ ] Read brief/spec; capture original normalized whole main/Migration and raw other2partial/window
+- [x] Read brief/spec; capture original normalized whole main/Migration and raw other2partial/window
   hashes; baseline451source/452GUI88Core contracts and adjacent normal GUI/Core binaries. Preserve
   any unrelated Core output separately. Expected: exactb0 clean named branch after actual admission.
-- [ ] Add DefaultsAreCold before owner/link. Run focused command:
+- [x] Add DefaultsAreCold before owner/link. Run focused command:
   C:/Users/lumen/.dotnet/dotnet.exe test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release --no-restore
   --filter FullyQualifiedName~WelcomeMigrationPresentationTests.
   Expected: CS0246 missing WelcomeMigrationPresentation, not a platform-stub/dependency failure.
-- [ ] Write all behavior cases before implementation. Required names/assertions include:
+- [x] Write all behavior cases before implementation. Required names/assertions include:
   NineDefaultsAndExplicitSeveritiesAreCold (null port not invoked),
   EachSetterKeepsRawValueAndEquality (all9/progressNaN,Infinity,signedzero/unknown enum/null),
   ComponentListKeepsReferenceAndDefaultCustomEquality (same,distinct,equal-override,null),
@@ -84,20 +84,20 @@ composition snapshots are immutable inputs; Task2 consumes the resulting product
   ErrorFaultAtEachLookupAndPropertyKeepsPartialStateAndRetry,
   IndependentOwnersDoNotShareValuesCallbacksOrLists.
   Expected: explicit traces/current-state snapshots and same sentinel object; no implementation mirror.
-- [ ] Implement exact owner, then run focused command. Expected: all cases pass,0warnings.
+- [x] Implement exact owner, then run focused command. Expected: all cases pass,0warnings.
   Wire nine private-set facades/derived getter/two wrappers and one cold constructor bridge.
   Preserve every original operating statement; no host Next port/value or command side effect.
-- [ ] Controlled mutant: eagerly store message text before assigning title. Run same focused command;
+- [x] Controlled mutant: eagerly store message text before assigning title. Run same focused command;
   expected meaningful ordering/reentry/fault FAIL with successful compilation. Save exit/log and
   restore exact owner bytes/hash in finally. Rerun restored focused then full dotnet test.
   Expected: all pass, actual counts/failures/skips/timing recorded, no hardcoded count borrowed.
-- [ ] Build normal GUI Release -p:Platform=x64 --no-restore after tests, expected0warnings/errors.
+- [x] Build normal GUI Release -p:Platform=x64 --no-restore after tests, expected0warnings/errors.
   Run source451/compiled452GUI88Core bounded inventories, exact normalized host reconstruction,
   literal moved status/error bodies under only stated lookup/errorseverity substitutions, nine
   defaults/SetProperty setters/mode-derived/host-tail/accessors/onebridge/ctororder/otherpartial/
   window/footprint/source-link guards, governance, whitespace and redacted changed-file scans.
   Expected: no drift/unexpected product path/new resource/package/cut; record actual line counts.
-- [ ] Update report/inventory and checkpoint product. Expected: named product SHA with source/test
+- [x] Update report/inventory and checkpoint product. Expected: named product SHA with source/test
   and exact managed/normal evidence; no native acceptance inferred. Preserve all failed harness attempts.
 
 ### Task2: Qualify actual Welcome composition and close the local stage

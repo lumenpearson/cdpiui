@@ -24,78 +24,66 @@ public sealed partial class WelcomeViewModel
     private bool _migrationImportInProgress;
     private bool _migrationReadyToContinue;
 
-    private bool _isMigrationMode;
-    private string _migrationStatusTitle = string.Empty;
-    private string _migrationStatusMessage = string.Empty;
-    private InfoBarSeverity _migrationStatusSeverity = InfoBarSeverity.Informational;
-    private double _migrationProgress;
-    private IReadOnlyList<MigrationComponentDisplayItem>? _migrationComponentItems;
-    private bool _isMigrationComponentsListVisible = true;
-    private string _migrationSummaryText = string.Empty;
-    private bool _isRetryMigrationVisible;
+    private readonly WelcomeMigrationPresentation<InfoBarSeverity> _migrationPresentation;
 
     /// <summary>True when the wizard runs the GoodbyeDPI migration instead of the ready kits.</summary>
     public bool IsMigrationMode
     {
-        get => _isMigrationMode;
-        private set
-        {
-            if (SetProperty(ref _isMigrationMode, value))
-                OnPropertyChanged(nameof(IsReadyBundlesContentVisible));
-        }
+        get => _migrationPresentation.IsMigrationMode;
+        private set => _migrationPresentation.IsMigrationMode = value;
     }
 
-    public bool IsReadyBundlesContentVisible => !_isMigrationMode;
+    public bool IsReadyBundlesContentVisible => _migrationPresentation.IsReadyBundlesContentVisible;
 
     public bool IsMigrationReadyToContinue => _migrationReadyToContinue;
 
     public string MigrationStatusTitle
     {
-        get => _migrationStatusTitle;
-        private set => SetProperty(ref _migrationStatusTitle, value);
+        get => _migrationPresentation.MigrationStatusTitle;
+        private set => _migrationPresentation.MigrationStatusTitle = value;
     }
 
     public string MigrationStatusMessage
     {
-        get => _migrationStatusMessage;
-        private set => SetProperty(ref _migrationStatusMessage, value);
+        get => _migrationPresentation.MigrationStatusMessage;
+        private set => _migrationPresentation.MigrationStatusMessage = value;
     }
 
     public InfoBarSeverity MigrationStatusSeverity
     {
-        get => _migrationStatusSeverity;
-        private set => SetProperty(ref _migrationStatusSeverity, value);
+        get => _migrationPresentation.MigrationStatusSeverity;
+        private set => _migrationPresentation.MigrationStatusSeverity = value;
     }
 
     /// <summary>Overall migration progress from 0 to 100.</summary>
     public double MigrationProgress
     {
-        get => _migrationProgress;
-        private set => SetProperty(ref _migrationProgress, value);
+        get => _migrationPresentation.MigrationProgress;
+        private set => _migrationPresentation.MigrationProgress = value;
     }
 
     public IReadOnlyList<MigrationComponentDisplayItem>? MigrationComponentItems
     {
-        get => _migrationComponentItems;
-        private set => SetProperty(ref _migrationComponentItems, value);
+        get => _migrationPresentation.MigrationComponentItems;
+        private set => _migrationPresentation.MigrationComponentItems = value;
     }
 
     public bool IsMigrationComponentsListVisible
     {
-        get => _isMigrationComponentsListVisible;
-        private set => SetProperty(ref _isMigrationComponentsListVisible, value);
+        get => _migrationPresentation.IsMigrationComponentsListVisible;
+        private set => _migrationPresentation.IsMigrationComponentsListVisible = value;
     }
 
     public string MigrationSummaryText
     {
-        get => _migrationSummaryText;
-        private set => SetProperty(ref _migrationSummaryText, value);
+        get => _migrationPresentation.MigrationSummaryText;
+        private set => _migrationPresentation.MigrationSummaryText = value;
     }
 
     public bool IsRetryMigrationVisible
     {
-        get => _isRetryMigrationVisible;
-        private set => SetProperty(ref _isRetryMigrationVisible, value);
+        get => _migrationPresentation.IsRetryMigrationVisible;
+        private set => _migrationPresentation.IsRetryMigrationVisible = value;
     }
 
     /// <summary>
@@ -386,22 +374,11 @@ public sealed partial class WelcomeViewModel
         string titleKey,
         string messageKey,
         InfoBarSeverity severity)
-    {
-        MigrationStatusTitle = Localized(titleKey);
-        MigrationStatusMessage = Localized(messageKey);
-        MigrationStatusSeverity = severity;
-    }
+        => _migrationPresentation.ShowStatus(titleKey, messageKey, severity);
 
     private void ShowMigrationError(string message, string errorCode)
     {
-        // The migration session reports some failures with an English message; the code selects the localized text.
-        string localizedMessage = _localizer.GetLocalizedString($"/WelcomeWizard/MigrationError_{errorCode}");
-        if (!string.IsNullOrWhiteSpace(localizedMessage))
-            message = localizedMessage;
-        MigrationStatusTitle = Localized("MigrationFailedTitle");
-        MigrationStatusMessage = $"{message}\n\n{errorCode}";
-        MigrationStatusSeverity = InfoBarSeverity.Error;
-        IsRetryMigrationVisible = true;
+        _migrationPresentation.ShowError(message, errorCode);
         IsNextEnabled = false;
     }
 }
