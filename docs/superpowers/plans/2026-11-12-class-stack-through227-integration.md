@@ -10,6 +10,8 @@
 
 **Spec:** Issue 14, including its preserved original five acceptance criteria and the additive execution contract https://github.com/lumenpearson/cdpiui/issues/14#issuecomment-6806632312; docs/task-lifecycle.md and docs/delivery-gates.md.
 
+Current verification: [integration report](../reports/2026-11-12-class-stack-through227-integration.md). This supersedes only the earlier executor-defined local/draft-only delivery boundary; issue13 and all original issue14 criteria remain intact.
+
 ## Global constraints
 
 - Execution owner: chat 01a1c5f4-bad8-7310-bafb-1bcf792172a9; only its existing future-task-issues checkout may change.
@@ -35,9 +37,9 @@ Files: create this plan under docs/superpowers/plans/2026-11-12-class-stack-thro
 Interfaces: frozen main and PR 227 ancestry -> candidate tree and unchanged published-ref inventory.
 
 - [x] Read back actual issue 14 Project fields and ownership before source work. Grant169 fresh reload: In progress/P2/Architecture/Medium/G2/lumenpearson; canonical labels match.
-- [ ] Recheck own clean branch/HEAD and published refs; create dev/class-stack-integration from current main without moving the old branch.
-- [ ] Save this plan and its inventory entry, then merge frozen 227 with a detailed exact-inventory commit message and Refs #14.
-- [ ] Verify all six heads are ancestors, all newer main paths are preserved, no deleted upstream input or duplicate test Compile item exists, and policy remains current.
+- [x] Recheck own clean branch/HEAD and published refs; create dev/class-stack-integration from current main without moving the old branch.
+- [x] Save this plan and its inventory entry, then merge frozen 227 with a detailed exact-inventory commit message and Refs #14.
+- [x] Verify all six heads are ancestors, all newer main paths are preserved, no deleted upstream input or duplicate test Compile item exists, and policy remains current.
 
 ### Task 2: Qualify current source and native boundaries
 
@@ -45,8 +47,8 @@ Files: owner-controlled evidence directory; create docs/superpowers/reports/2026
 
 Interfaces: candidate SHA -> current managed/API/native evidence, with original issue criterion mapping.
 
-- [ ] Run baseline/current source and compiled contract comparison against current main. Preserve prior G1 limitations rather than relabel them as new integration loss.
-- [ ] Restore and run Release focused presentation/localization tests and the complete suite serially. Build the normal Release/x64 GUI with the documented empty Secret stub. Record exact results and named SHA.
+- [x] Run baseline/current source and compiled contract comparison against current main. Preserve prior G1 limitations rather than relabel them as new integration loss.
+- [x] Restore and run Release focused presentation/localization tests and the complete suite serially. Build the normal Release/x64 GUI with the documented empty Secret stub. Record exact results and named SHA.
 - [ ] Run policy/governance and appropriate secret/security checks. Attribute CI-only packaging checks to exact PR HEAD.
 - [ ] Prepare a new archive and output for the bounded 178-case union, inspect every fixture modification and resource, obtain independent prelaunch review and an explicit UI grant, execute once and retain source/binary/IO/process proof.
 - [ ] Map all five original issue criteria to actual evidence. Execute additional changed native dialog cancellation/file identity/shutdown scenarios where needed; never infer them from source inspection or inert adapters. Leave issue 14 open if any required boundary remains unverified.
@@ -57,7 +59,7 @@ Files: report/inventory and GitHub issue/PR/Project metadata.
 
 Interfaces: complete candidate evidence -> independently reviewed final PR HEAD, actual main integration and honest issue state.
 
-- [ ] Publish one aggregate draft PR against current main with Refs #14 and full metadata. Attach it to this chat and read actual Project fields.
+- [x] Publish one aggregate draft PR against current main with Refs #14 and full metadata. Attach it to this chat and read actual Project fields.
 - [ ] Obtain fresh independent whole-change review, resolve findings and rerun affected checks; keep source and documentation pins explicit.
 - [ ] Verify all required checks on final HEAD and current main compatibility. Merge normally only after scoped review and native gates pass; preserve all original refs.
 - [ ] Read back integrated SHA, ancestry, original PR states and post-integration checks. Record pending acceptance boundaries if any.

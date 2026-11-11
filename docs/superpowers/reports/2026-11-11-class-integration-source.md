@@ -1,3 +1,6 @@
+> Historical local-composition record. The maintainer's later integration request supersedes this stage's local/draft-only delivery boundary.
+> The [current integration plan](../plans/2026-11-12-class-stack-through227-integration.md) preserves the original issue14 criteria and separate G1/G3 acceptance. Original pins, results and limits below remain historical.
+
 # Class integration source checkpoint
 
 Owner: [issue14](https://github.com/lumenpearson/cdpiui/issues/14), Root,

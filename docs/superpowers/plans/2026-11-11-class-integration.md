@@ -1,3 +1,6 @@
+> Historical local-composition record. The maintainer's later integration request supersedes this stage's local/draft-only delivery boundary.
+> The [current integration plan](2026-11-12-class-stack-through227-integration.md) preserves the original issue14 criteria and separate G1/G3 acceptance. Original pins, results and limits below remain historical.
+
 # Class decomposition integration implementation plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Keep implementation inline and obtain one fresh final whole-change review.

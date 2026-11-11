@@ -1585,6 +1585,16 @@
       "policy": "ASD-STE100 principles for English",
       "language": "en",
       "changes": "Preserve published ancestry and current-main behavior; verify original issue14 criteria before integration and acceptance."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-12-class-stack-through227-integration.md",
+      "firstIntroduction": "Current stack-through227 verification; issue14 and PR233",
+      "first_commit": null,
+      "first_author": "lumenpearson",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Current source/managed/API/Project evidence, historical-stage framing and remaining native/integration acceptance."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",

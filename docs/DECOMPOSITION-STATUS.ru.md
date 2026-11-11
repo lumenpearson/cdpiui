@@ -1,5 +1,6 @@
 > Historical local-stage record for frozen dev/audit-class-decomposition at eebc7e8.
-> Current integration work is tracked in [the integration plan](superpowers/plans/2026-11-11-class-integration.md).
+> The previous local composition is tracked in [its historical plan](superpowers/plans/2026-11-11-class-integration.md).
+> Current stack-through227 integration and its original acceptance gates are tracked in [the current plan](superpowers/plans/2026-11-12-class-stack-through227-integration.md).
 
 # Декомпозиция крупных классов
 
