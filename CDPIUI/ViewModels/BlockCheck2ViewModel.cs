@@ -14,34 +14,18 @@ using CDPIUI.Helper.AddOns.BlockCheck2;
 
 namespace CDPIUI.ViewModels;
 
-public sealed partial class BlockCheck2ViewModel : ObservableObject
+public sealed partial class BlockCheck2ViewModel : ObservableObject, IBlockCheck2RunHost
 {
     private readonly BlockCheckAddOnService _addOnService;
     private readonly BlockCheckSessionPreparationService _preparationService;
-    private readonly BlockCheckReportBuilder _reportBuilder;
-    private readonly BlockCheckReportSerializer _reportSerializer;
     private readonly BlockCheckReportHistoryService _reportHistoryService;
     private readonly BlockCheckMaximumDurationEstimator _maximumDurationEstimator = new();
-    private readonly BlockCheck2ProgressEstimator _progressEstimator = new();
-    private CancellationTokenSource? _cancellation;
+    private readonly BlockCheck2ProgressViewModel _progress;
+    private readonly BlockCheck2RunResultViewModel _results;
+    private readonly BlockCheck2RunController _runController;
+    private readonly BlockCheck2SiteListController<BlockCheck2SiteListItem> _siteLists;
     private BlockCheckSessionState _state = BlockCheckSessionState.Idle;
-    private BlockCheckScanPhase? _currentPhase;
-    private int _progressCurrent;
-    private int _progressTotal;
-    private TimeSpan? _estimatedRemainingTime;
-    private TimeSpan? _estimatedOverallRemainingTime;
-    private int _successfulChecks;
-    private int _failedChecks;
-    private int _successfulStrategies;
-    private string _currentTargetId = string.Empty;
-    private string _currentStrategyId = string.Empty;
-    private string? _operationError;
-    private string? _historySaveError;
-    private IReadOnlyList<BlockCheckIssue> _issues = [];
     private IReadOnlyList<BlockCheckTarget> _targets = [];
-    private BlockCheckRunResult? _lastResult;
-    private BlockCheckReport? _lastReport;
-    private BlockCheckResultSession? _lastSession;
 
     public BlockCheck2ViewModel(
         BlockCheckAddOnService? addOnService = null,
@@ -52,184 +36,101 @@ public sealed partial class BlockCheck2ViewModel : ObservableObject
     {
         _addOnService = addOnService ?? new BlockCheckAddOnService();
         _preparationService = preparationService ?? new BlockCheckSessionPreparationService();
-        _reportBuilder = reportBuilder ?? new BlockCheckReportBuilder();
-        _reportSerializer = reportSerializer ?? new BlockCheckReportSerializer();
-        _reportHistoryService = reportHistoryService ?? new BlockCheckReportHistoryService(_reportSerializer);
-        LoadSettings();
+        BlockCheckReportBuilder builder = reportBuilder ?? new BlockCheckReportBuilder();
+        BlockCheckReportSerializer serializer = reportSerializer ?? new BlockCheckReportSerializer();
+        _reportHistoryService = reportHistoryService ?? new BlockCheckReportHistoryService(serializer);
+        _siteLists = new BlockCheck2SiteListController<BlockCheck2SiteListItem>(AvailableSiteLists, SelectedSiteLists,
+            new BlockCheck2SiteListBackend(), () => _generatedSiteListRoot, NotifySiteListSelectionChanged);
+        _siteLists.PropertyChanged += (_, args) => Notify(args.PropertyName);
+        _options = new BlockCheck2OptionsViewModel(
+            new BlockCheck2OptionsSettings(), () => IsRunning, () => SelectedSiteLists.Count);
+        _options.PropertyChanged += (_, args) => Notify(args.PropertyName);
+        _results = new BlockCheck2RunResultViewModel(new BlockCheck2ReportOperations(builder, serializer), _options);
+        _results.PropertyChanged += (_, args) => Notify(args.PropertyName);
+        _progress = new BlockCheck2ProgressViewModel(() => _targets,
+            () => (int)_options.RequestsPerDomain, () => _options.StartupGraceSeconds);
+        _progress.PropertyChanged += (_, args) => Notify(args.PropertyName);
+        _runController = new BlockCheck2RunController(this);
     }
 
     public BlockCheckSessionState State => _state;
-    public BlockCheckScanPhase? CurrentPhase => _currentPhase;
-    public int ProgressCurrent => _progressCurrent;
-    public int ProgressTotal => _progressTotal;
-    public TimeSpan? EstimatedRemainingTime => _estimatedRemainingTime;
-    public TimeSpan? EstimatedOverallRemainingTime => _estimatedOverallRemainingTime;
-    public bool IsProgressIndeterminate => _progressTotal <= 0;
-    public int SuccessfulChecks => _successfulChecks;
-    public int FailedChecks => _failedChecks;
-    public int CompletedChecks => _successfulChecks + _failedChecks;
-    public int SuccessfulStrategies => _successfulStrategies;
-    public double ProgressValue => _progressTotal <= 0
-        ? 0d
-        : Math.Clamp((double)_progressCurrent / _progressTotal, 0d, 1d);
-    public string CurrentTargetId => _currentTargetId;
-    public string CurrentTargetUrl
-    {
-        get
-        {
-            BlockCheckTarget? target = CurrentTarget();
-            return target == null
-                ? _currentTargetId
-                : BlockCheckTargetDisplayFormatter.FormatUrl(target);
-        }
-    }
-    public string CurrentTargetConnectionDetails
-    {
-        get
-        {
-            BlockCheckTarget? target = CurrentTarget();
-            return target == null
-                ? string.Empty
-                : BlockCheckTargetDisplayFormatter.FormatConnectionDetails(target);
-        }
-    }
-    public string CurrentTargetDisplay
-    {
-        get
-        {
-            BlockCheckTarget? target = CurrentTarget();
-            return target == null
-                ? _currentTargetId
-                : BlockCheckTargetDisplayFormatter.Format(target);
-        }
-    }
-    public string CurrentStrategyId => _currentStrategyId;
-    public string? OperationError => _operationError;
-    public string? HistorySaveError => _historySaveError;
-    public IReadOnlyList<BlockCheckIssue> Issues => _issues;
+    public BlockCheckScanPhase? CurrentPhase => _progress.CurrentPhase;
+    public int ProgressCurrent => _progress.ProgressCurrent;
+    public int ProgressTotal => _progress.ProgressTotal;
+    public TimeSpan? EstimatedRemainingTime => _progress.EstimatedRemainingTime;
+    public TimeSpan? EstimatedOverallRemainingTime => _progress.EstimatedOverallRemainingTime;
+    public bool IsProgressIndeterminate => _progress.IsProgressIndeterminate;
+    public int SuccessfulChecks => _progress.SuccessfulChecks;
+    public int FailedChecks => _progress.FailedChecks;
+    public int CompletedChecks => _progress.CompletedChecks;
+    public int SuccessfulStrategies => _progress.SuccessfulStrategies;
+    public double ProgressValue => _progress.ProgressValue;
+    public string CurrentTargetId => _progress.CurrentTargetId;
+    public string CurrentTargetUrl => _progress.CurrentTargetUrl;
+    public string CurrentTargetConnectionDetails => _progress.CurrentTargetConnectionDetails;
+    public string CurrentTargetDisplay => _progress.CurrentTargetDisplay;
+    public string CurrentStrategyId => _progress.CurrentStrategyId;
+    public string? OperationError => _results.OperationError;
+    public string? HistorySaveError => _results.HistorySaveError;
+    public IReadOnlyList<BlockCheckIssue> Issues => _results.Issues;
     public IReadOnlyList<BlockCheckTarget> Targets => _targets;
     public int TargetCount => _targets.Count;
-    public BlockCheckRunResult? LastResult => _lastResult;
-    public BlockCheckReport? LastReport => _lastReport;
-    public BlockCheckResultSession? LastSession => _lastSession;
-    public bool NoBypassRequired => _lastReport?.Issues.Any(issue =>
-        string.Equals(issue.Code, "NO_BYPASS_REQUIRED", StringComparison.Ordinal)) == true;
-    public bool LastReportIsHttpOnly => _lastReport?.Targets.Count > 0 &&
-        _lastReport.Targets.All(target => target.Protocol == BlockCheckProtocol.Http);
-    public string ReportJson => _lastReport == null ? string.Empty : _reportSerializer.SerializeJson(_lastReport);
-    public string ReportText => _lastReport == null ? string.Empty : _reportSerializer.SerializeText(_lastReport);
-    public string PresetArguments => _lastReport?.PresetArguments ?? string.Empty;
+    public BlockCheckRunResult? LastResult => _results.LastResult;
+    public BlockCheckReport? LastReport => _results.LastReport;
+    public BlockCheckResultSession? LastSession => _results.LastSession;
+    public bool NoBypassRequired => _results.NoBypassRequired;
+    public bool LastReportIsHttpOnly => _results.LastReportIsHttpOnly;
+    public string ReportJson => _results.ReportJson;
+    public string ReportText => _results.ReportText;
+    public string PresetArguments => _results.PresetArguments;
 
     public bool IsRunning => _state is BlockCheckSessionState.Running or BlockCheckSessionState.Canceling;
-    public bool CanStart => !IsRunning &&
-                            HasTargetSources &&
-                            HasProtocolSelection &&
-                            HasIpVersionSelection &&
-                            AdvancedOptionsValid;
+    public bool CanStart => _options.CanStart;
     public bool CanCancel => _state == BlockCheckSessionState.Running;
-    public bool CanExportReport => _lastReport != null;
-    public bool CanExportPreset => (_lastReport?.Success == true || _lastReport?.IsBestEffort == true) &&
-                                   !string.IsNullOrWhiteSpace(_lastReport.PresetArguments);
+    public bool CanExportReport => _results.CanExportReport;
+    public bool CanExportPreset => _results.CanExportPreset;
 
-    public async Task<BlockCheckRunResult?> StartAsync()
+    public Task<BlockCheckRunResult?> StartAsync() => _runController.StartAsync();
+
+    public void Cancel() => _runController.Cancel();
+
+    bool IBlockCheck2RunHost.CanStart => CanStart;
+    bool IBlockCheck2RunHost.CanCancel => CanCancel;
+    BlockCheckReport? IBlockCheck2RunHost.LastReport => LastReport;
+    void IBlockCheck2RunHost.CleanupGeneratedSiteListsIfUnviewable() => CleanupGeneratedSiteListsIfUnviewable();
+    void IBlockCheck2RunHost.RenewGeneratedSiteListRoot() =>
+        _generatedSiteListRoot = BlockCheck2SiteListStorage.CreateGeneratedSiteListRoot();
+    void IBlockCheck2RunHost.ResetResultState() => ResetResultState();
+    void IBlockCheck2RunHost.StartProgress() => _progress.StartRun();
+    BlockCheckSessionPreparationResult IBlockCheck2RunHost.Prepare() =>
+        _preparationService.Prepare(CreateSessionRequest());
+    void IBlockCheck2RunHost.ApplyPrepared(BlockCheckSessionPreparationResult prepared)
     {
-        if (!CanStart)
-        {
-            return null;
-        }
-
-        if (_lastReport != null)
-        {
-            _generatedSiteListRoot = BlockCheck2SiteListStorage.CreateGeneratedSiteListRoot();
-        }
-        ResetResultState();
-        _progressEstimator.StartRun();
-        CancellationTokenSource? runCancellation = null;
-        try
-        {
-            BlockCheckSessionPreparationResult prepared = _preparationService.Prepare(CreateSessionRequest());
-            _targets = prepared.Targets;
-            _issues = prepared.Issues;
-            Notify(nameof(Targets));
-            Notify(nameof(TargetCount));
-            Notify(nameof(Issues));
-            if (!prepared.Success)
-            {
-                SetState(BlockCheckSessionState.InputInvalid);
-                return null;
-            }
-
-            runCancellation = new CancellationTokenSource();
-            _cancellation = runCancellation;
-            SetState(BlockCheckSessionState.Running);
-            BlockCheckRunResult result = await RunPreparedAsync(prepared, runCancellation.Token);
-
-            ApplyRunResult(prepared, result);
-            CompleteDisplayedProgress();
-            BlockCheckSessionState finalState = GetFinalState(result);
-            // The final state allows a new run, so it is set only after the report is saved;
-            // otherwise a second run started meanwhile had its CTS disposed by this one.
-            await SaveReportToHistoryAsync(_lastReport!);
-            SetState(finalState);
-            return result;
-        }
-        catch (OperationCanceledException)
-        {
-            SetState(BlockCheckSessionState.Canceled);
-            return null;
-        }
-        catch (Exception exception)
-        {
-            _operationError = exception.Message;
-            Notify(nameof(OperationError));
-            SetState(BlockCheckSessionState.Failed);
-            return null;
-        }
-        finally
-        {
-            _progressEstimator.StopRun();
-            _estimatedRemainingTime = null;
-            _estimatedOverallRemainingTime = null;
-            Notify(nameof(EstimatedRemainingTime));
-            Notify(nameof(EstimatedOverallRemainingTime));
-            runCancellation?.Dispose();
-            if (ReferenceEquals(_cancellation, runCancellation))
-            {
-                _cancellation = null;
-            }
-            CleanupGeneratedSiteListsIfUnviewable();
-            NotifyActionState();
-        }
+        _targets = prepared.Targets;
+        _results.SetPreparedIssues(prepared.Issues);
+        Notify(nameof(Targets));
+        Notify(nameof(TargetCount));
+        Notify(nameof(Issues));
     }
-
-    public void Cancel()
-    {
-        if (!CanCancel || _cancellation == null)
-        {
-            return;
-        }
-
-        SetState(BlockCheckSessionState.Canceling);
-        _cancellation.Cancel();
-    }
+    void IBlockCheck2RunHost.SetState(BlockCheckSessionState state) => SetState(state);
+    Task<BlockCheckRunResult> IBlockCheck2RunHost.RunPreparedAsync(
+        BlockCheckSessionPreparationResult prepared, CancellationToken cancellationToken) => RunPreparedAsync(prepared, cancellationToken);
+    void IBlockCheck2RunHost.ApplyRunResult(BlockCheckSessionPreparationResult prepared, BlockCheckRunResult result) =>
+        ApplyRunResult(prepared, result);
+    void IBlockCheck2RunHost.CompleteDisplayedProgress() => CompleteDisplayedProgress();
+    Task IBlockCheck2RunHost.SaveReportToHistoryAsync(BlockCheckReport report) => SaveReportToHistoryAsync(report);
+    void IBlockCheck2RunHost.SetOperationError(string message) => _results.SetOperationError(message);
+    void IBlockCheck2RunHost.FinishProgress() => _progress.FinishRun();
+    void IBlockCheck2RunHost.NotifyActionState() => NotifyActionState();
 
     public Task SaveReportJsonAsync(string filePath, CancellationToken cancellationToken = default) =>
-        _reportSerializer.SaveJsonAsync(
-            filePath,
-            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
-            cancellationToken);
+        _results.SaveReportJsonAsync(filePath, cancellationToken);
 
     public Task SaveReportTextAsync(string filePath, CancellationToken cancellationToken = default) =>
-        _reportSerializer.SaveTextAsync(
-            filePath,
-            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
-            cancellationToken);
+        _results.SaveReportTextAsync(filePath, cancellationToken);
 
     public Task SavePresetArgumentsAsync(string filePath, CancellationToken cancellationToken = default) =>
-        _reportSerializer.SavePresetArgumentsAsync(
-            filePath,
-            _lastReport ?? throw new InvalidOperationException("No BlockCheck2 report is available."),
-            cancellationToken);
+        _results.SavePresetArgumentsAsync(filePath, cancellationToken);
 
     public void Reset()
     {
@@ -238,7 +139,7 @@ public sealed partial class BlockCheck2ViewModel : ObservableObject
             return;
         }
 
-        if (_lastReport == null)
+        if (_results.LastReport == null)
         {
             CleanupGeneratedSiteLists();
         }
@@ -262,12 +163,12 @@ public sealed partial class BlockCheck2ViewModel : ObservableObject
             progress,
             strategyRunnerOptions: new CdpiuiZapret2StrategyRunnerOptions
             {
-                StartupGracePeriod = TimeSpan.FromSeconds(_startupGraceSeconds),
+                StartupGracePeriod = TimeSpan.FromSeconds(_options.StartupGraceSeconds),
             },
             probeRunnerOptions: new CurlBlockCheckProbeRunnerOptions
             {
-                ConnectTimeout = TimeSpan.FromSeconds(_connectTimeoutSeconds),
-                RequestTimeout = TimeSpan.FromSeconds(_requestTimeoutSeconds),
+                ConnectTimeout = TimeSpan.FromSeconds(_options.ConnectTimeoutSeconds),
+                RequestTimeout = TimeSpan.FromSeconds(_options.RequestTimeoutSeconds),
             },
             cancellationToken: cancellationToken);
 
@@ -284,37 +185,8 @@ public sealed partial class BlockCheck2ViewModel : ObservableObject
         };
     }
 
-    private void ApplyRunResult(BlockCheckSessionPreparationResult prepared, BlockCheckRunResult result)
-    {
-        _lastResult = result;
-        _lastReport = _reportBuilder.Build(
-            prepared.Catalog,
-            _selectedRunPreset,
-            prepared.Targets,
-            result);
-        _lastSession = new BlockCheckResultSession
-        {
-            Catalog = prepared.Catalog,
-            Targets = prepared.Targets,
-            RunOptions = prepared.RunOptions,
-            RunResult = result,
-            Report = _lastReport,
-            ConnectTimeout = TimeSpan.FromSeconds(_connectTimeoutSeconds),
-            RequestTimeout = TimeSpan.FromSeconds(_requestTimeoutSeconds),
-            StartupGracePeriod = TimeSpan.FromSeconds(_startupGraceSeconds),
-        };
-        _issues = _lastReport.Issues;
-        NotifyResult();
-    }
-
-    private static BlockCheckSessionState GetFinalState(BlockCheckRunResult result) =>
-        result.WasCanceled
-            ? BlockCheckSessionState.Canceled
-            : result.Success
-                ? BlockCheckSessionState.Completed
-                : result.Synthesis?.IsBestEffort == true
-                    ? BlockCheckSessionState.CompletedWithWarnings
-                    : BlockCheckSessionState.Failed;
+    private void ApplyRunResult(BlockCheckSessionPreparationResult prepared, BlockCheckRunResult result) =>
+        _results.ApplyRunResult(prepared, result);
 
     private async Task SaveReportToHistoryAsync(BlockCheckReport report)
     {
@@ -324,116 +196,18 @@ public sealed partial class BlockCheck2ViewModel : ObservableObject
         }
         catch (Exception exception)
         {
-            _historySaveError = exception.Message;
-            Notify(nameof(HistorySaveError));
+            _results.SetHistorySaveError(exception.Message);
             Logger.Instance.CreateWarningLog(
                 nameof(BlockCheck2ViewModel),
                 $"Cannot save BlockCheck2 report to history: {exception.Message}");
         }
     }
 
-    private void UpdateProgress(BlockCheckScanProgress progress)
-    {
-        _currentPhase = progress.Phase;
-        _progressCurrent = progress.CompletedStrategyTargets;
-        _progressTotal = progress.TotalStrategyTargets;
-        _currentTargetId = progress.TargetId;
-        _currentStrategyId = progress.StrategyId;
-        _successfulChecks = progress.SuccessfulChecks;
-        _failedChecks = progress.FailedChecks;
-        _successfulStrategies = progress.SuccessfulStrategies;
-        (_estimatedRemainingTime, _estimatedOverallRemainingTime) = _progressEstimator.Update(
-            progress,
-            _targets.Count,
-            (int)_requestsPerDomain,
-            _startupGraceSeconds);
-        Notify(nameof(CurrentPhase));
-        Notify(nameof(ProgressCurrent));
-        Notify(nameof(ProgressTotal));
-        Notify(nameof(ProgressValue));
-        Notify(nameof(IsProgressIndeterminate));
-        Notify(nameof(CurrentTargetId));
-        Notify(nameof(CurrentTargetUrl));
-        Notify(nameof(CurrentTargetConnectionDetails));
-        Notify(nameof(CurrentTargetDisplay));
-        Notify(nameof(CurrentStrategyId));
-        Notify(nameof(EstimatedRemainingTime));
-        Notify(nameof(EstimatedOverallRemainingTime));
-        Notify(nameof(SuccessfulChecks));
-        Notify(nameof(FailedChecks));
-        Notify(nameof(CompletedChecks));
-        Notify(nameof(SuccessfulStrategies));
-    }
+    private void UpdateProgress(BlockCheckScanProgress progress) => _progress.Update(progress);
 
-    private void ResetResultState()
-    {
-        _operationError = null;
-        _historySaveError = null;
-        _issues = [];
-        _lastResult = null;
-        _lastReport = null;
-        _lastSession = null;
-        _currentPhase = null;
-        _progressCurrent = 0;
-        _progressTotal = 0;
-        _estimatedRemainingTime = null;
-        _estimatedOverallRemainingTime = null;
-        _progressEstimator.ResetObservations();
-        _successfulChecks = 0;
-        _failedChecks = 0;
-        _successfulStrategies = 0;
-        _currentTargetId = string.Empty;
-        _currentStrategyId = string.Empty;
-        Notify(nameof(OperationError));
-        Notify(nameof(HistorySaveError));
-        NotifyResult();
-        Notify(nameof(CurrentPhase));
-        Notify(nameof(ProgressCurrent));
-        Notify(nameof(ProgressTotal));
-        Notify(nameof(ProgressValue));
-        Notify(nameof(IsProgressIndeterminate));
-        Notify(nameof(EstimatedRemainingTime));
-        Notify(nameof(EstimatedOverallRemainingTime));
-        Notify(nameof(SuccessfulChecks));
-        Notify(nameof(FailedChecks));
-        Notify(nameof(CompletedChecks));
-        Notify(nameof(SuccessfulStrategies));
-        Notify(nameof(CurrentTargetId));
-        Notify(nameof(CurrentTargetUrl));
-        Notify(nameof(CurrentTargetConnectionDetails));
-        Notify(nameof(CurrentTargetDisplay));
-        Notify(nameof(CurrentStrategyId));
-    }
+    private void ResetResultState() => _results.Reset(_progress.Reset);
 
-    private void NotifyResult()
-    {
-        Notify(nameof(Issues));
-        Notify(nameof(LastResult));
-        Notify(nameof(LastReport));
-        Notify(nameof(LastSession));
-        Notify(nameof(NoBypassRequired));
-        Notify(nameof(LastReportIsHttpOnly));
-        Notify(nameof(ReportJson));
-        Notify(nameof(ReportText));
-        Notify(nameof(PresetArguments));
-        Notify(nameof(CanExportReport));
-        Notify(nameof(CanExportPreset));
-    }
-
-    private void CompleteDisplayedProgress()
-    {
-        if (_progressTotal <= 0)
-        {
-            return;
-        }
-
-        _progressCurrent = _progressTotal;
-        Notify(nameof(ProgressCurrent));
-        Notify(nameof(ProgressValue));
-    }
-
-    private BlockCheckTarget? CurrentTarget() => _targets.FirstOrDefault(
-        item => string.Equals(item.Id, _currentTargetId, StringComparison.Ordinal));
+    private void CompleteDisplayedProgress() => _progress.CompleteDisplayedProgress();
 
     private void SetState(BlockCheckSessionState value)
     {

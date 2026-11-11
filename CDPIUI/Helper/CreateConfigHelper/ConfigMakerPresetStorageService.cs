@@ -16,8 +16,13 @@ using CDPIUI.ViewModels;
 
 namespace CDPIUI.Helper.CreateConfigHelper;
 
-public sealed class ConfigMakerPresetStorageService
+public sealed class ConfigMakerPresetStorageService : IConfigMakerDocumentStorage
 {
+    Task<ConfigMakerPresetSaveResult> IConfigMakerDocumentStorage.SaveAsync(
+        string presetName, ConfigMakerPresetDocument document) => SaveAsync(presetName, document);
+    Task<ConfigMakerPresetSaveResult> IConfigMakerDocumentStorage.OverwriteAsync(
+        ConfigMakerPresetDocument document) => OverwriteAsync(document);
+
     public Task<ConfigMakerPresetSaveResult> SaveAsync(
         string presetName,
         ConfigMakerPresetDocument document)

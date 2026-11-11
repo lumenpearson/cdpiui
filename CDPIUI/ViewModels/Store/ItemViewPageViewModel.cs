@@ -30,10 +30,10 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
     private readonly IItemViewPageView _view;
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly ItemDownloadPresentation _downloadPresentation;
 
     private string _storeId;
     private RepoItemModel _item;
-    private bool _errorHappens;
     private bool _loaded;
 
     private string _itemName = string.Empty;
@@ -46,26 +46,17 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
     private bool _isWarningVisible = true;
     private string _warningText = "";
     private bool _isActionEnabled = true;
-    private bool _isActionVisible = true;
     private string _actionText = string.Empty;
     private bool _isMoreVisible;
     private bool _isUnsupportedWarningVisible;
     private bool _isLinksVisible = true;
-    private bool _isDownloadStatusVisible;
-    private bool _isErrorStatusVisible;
-    private bool _isStopEnabled = true;
-    private string _statusText = string.Empty;
-    private bool _isSpeedVisible;
-    private string _speedText = "";
-    private string _statusTip;
-    private bool _isProgressIndeterminate = true;
-    private double _progressValue;
-    private string _errorName = "ERR_FLASHLIGHT_BISY";
 
     public ItemViewPageViewModel(IItemViewPageView view, DispatcherQueue dispatcherQueue)
     {
         _view = view;
         _dispatcherQueue = dispatcherQueue;
+        _downloadPresentation = new ItemDownloadPresentation(key => _localizer.GetLocalizedString(key));
+        _downloadPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
         DeleteCommand = new RelayCommand(Delete);
         ShowFolderCommand = new RelayCommand(ShowFolder);
         LaunchUnsupportedHelpCommand = new RelayCommand(LaunchUnsupportedHelp);
@@ -146,8 +137,8 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
 
     public bool IsActionVisible
     {
-        get => _isActionVisible;
-        private set => SetProperty(ref _isActionVisible, value);
+        get => _downloadPresentation.IsActionVisible;
+        private set => _downloadPresentation.IsActionVisible = value;
     }
 
     public string ActionText
@@ -176,38 +167,38 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
 
     public bool IsDownloadStatusVisible
     {
-        get => _isDownloadStatusVisible;
-        private set => SetProperty(ref _isDownloadStatusVisible, value);
+        get => _downloadPresentation.IsDownloadStatusVisible;
+        private set => _downloadPresentation.IsDownloadStatusVisible = value;
     }
 
     public bool IsErrorStatusVisible
     {
-        get => _isErrorStatusVisible;
-        private set => SetProperty(ref _isErrorStatusVisible, value);
+        get => _downloadPresentation.IsErrorStatusVisible;
+        private set => _downloadPresentation.IsErrorStatusVisible = value;
     }
 
     public bool IsStopEnabled
     {
-        get => _isStopEnabled;
-        private set => SetProperty(ref _isStopEnabled, value);
+        get => _downloadPresentation.IsStopEnabled;
+        private set => _downloadPresentation.IsStopEnabled = value;
     }
 
     public string StatusText
     {
-        get => _statusText;
-        private set => SetProperty(ref _statusText, value);
+        get => _downloadPresentation.StatusText;
+        private set => _downloadPresentation.StatusText = value;
     }
 
     public bool IsSpeedVisible
     {
-        get => _isSpeedVisible;
-        private set => SetProperty(ref _isSpeedVisible, value);
+        get => _downloadPresentation.IsSpeedVisible;
+        private set => _downloadPresentation.IsSpeedVisible = value;
     }
 
     public string SpeedText
     {
-        get => _speedText;
-        private set => SetProperty(ref _speedText, value);
+        get => _downloadPresentation.SpeedText;
+        private set => _downloadPresentation.SpeedText = value;
     }
 
     /// <summary>
@@ -216,30 +207,26 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
     /// </summary>
     public string StatusTip
     {
-        get => _statusTip;
-        private set
-        {
-            _statusTip = value;
-            OnPropertyChanged();
-        }
+        get => _downloadPresentation.StatusTip;
+        private set => _downloadPresentation.StatusTip = value;
     }
 
     public bool IsProgressIndeterminate
     {
-        get => _isProgressIndeterminate;
-        private set => SetProperty(ref _isProgressIndeterminate, value);
+        get => _downloadPresentation.IsProgressIndeterminate;
+        private set => _downloadPresentation.IsProgressIndeterminate = value;
     }
 
     public double ProgressValue
     {
-        get => _progressValue;
-        private set => SetProperty(ref _progressValue, value);
+        get => _downloadPresentation.ProgressValue;
+        private set => _downloadPresentation.ProgressValue = value;
     }
 
     public string ErrorName
     {
-        get => _errorName;
-        private set => SetProperty(ref _errorName, value);
+        get => _downloadPresentation.ErrorName;
+        private set => _downloadPresentation.ErrorName = value;
     }
 
     /// <summary>Shows the item; called when the page is opened with an item id.</summary>
@@ -394,7 +381,7 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
         if (!await AskLicenseAsync())
             return;
         ConnectHandlers();
-        _errorHappens = false;
+        _downloadPresentation.ErrorHappens = false;
 
         ShowDownloadState();
 
@@ -412,14 +399,8 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
         return await _view.AcceptLicensesAsync(_item.license);
     }
 
-    private void ShowDownloadState()
-    {
-        IsStopEnabled = true;
-        IsProgressIndeterminate = true;
-        IsErrorStatusVisible = false;
-        IsActionVisible = false;
-        IsDownloadStatusVisible = true;
-    }
+    private void ShowDownloadState() =>
+        _downloadPresentation.ShowDownloadState();
 
     private void CheckCurrentStatus()
     {
@@ -434,102 +415,23 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
         }
     }
 
-    private void ApplyStage(string state)
-    {
-        state ??= "QueueWaiting";
-        string stageHeaderText = string.Empty;
-        switch (state)
-        {
-            case "GETR":
-                stageHeaderText = _localizer.GetLocalizedString("GettingReady");
-                IsProgressIndeterminate = true;
-                break;
-            case "END":
-                stageHeaderText = _localizer.GetLocalizedString("Finishing");
-                IsProgressIndeterminate = true;
-                break;
-            case "Downloading":
-                stageHeaderText = _localizer.GetLocalizedString("Downloading");
-                IsProgressIndeterminate = false;
-                IsSpeedVisible = true;
-                break;
-            case "Extracting":
-                stageHeaderText = _localizer.GetLocalizedString("Installing");
-                IsProgressIndeterminate = true;
-                break;
-            case "ErrorHappens":
-                stageHeaderText = _localizer.GetLocalizedString("ErrorHappens");
-                break;
-            case "Completed":
-                stageHeaderText = _localizer.GetLocalizedString("Finishing");
-                IsProgressIndeterminate = true;
-                break;
-            case "CANC":
-                stageHeaderText = _localizer.GetLocalizedString("Cancel");
-                IsProgressIndeterminate = true;
-                break;
-            case "ConnectingToService":
-                stageHeaderText = _localizer.GetLocalizedString("ConnectingToService");
-                StatusTip = _localizer.GetLocalizedString("ConnectingToServiceTip");
-                IsProgressIndeterminate = true;
-                break;
-            default:
-                stageHeaderText = _localizer.GetLocalizedString(state);
-                IsProgressIndeterminate = true;
-                break;
-        }
-        StatusText = stageHeaderText;
-    }
+    private void ApplyStage(string state) =>
+        _downloadPresentation.ApplyStage(state);
 
-    private void OnStageChanged(string stage)
-    {
-        if (_errorHappens)
-            return;
+    private void OnStageChanged(string stage) =>
+        _downloadPresentation.OnStageChanged(stage);
 
-        ShowDownloadState();
+    private void OnProgressChanged(double progress) =>
+        _downloadPresentation.OnProgressChanged(progress);
 
-        IsSpeedVisible = false;
+    private void OnTimeRemainingChanged(TimeSpan time) =>
+        _downloadPresentation.OnTimeRemainingChanged(time);
 
-        ApplyStage(stage);
-    }
+    private void OnSpeedChanged(string speedText) =>
+        _downloadPresentation.OnSpeedChanged(speedText);
 
-    private void OnProgressChanged(double progress)
-    {
-        if (_errorHappens)
-            return;
-
-        IsProgressIndeterminate = false;
-        ProgressValue = progress;
-    }
-
-    private void OnTimeRemainingChanged(TimeSpan time)
-    {
-        if (_errorHappens)
-            return;
-
-        if (time.TotalMinutes >= 1)
-            StatusTip = string.Format(_localizer.GetLocalizedString("/UIHelper/LeftMinutes"), (int)time.TotalMinutes);
-        else
-            StatusTip = _localizer.GetLocalizedString("/UIHelper/LeftSmall");
-    }
-
-    private void OnSpeedChanged(string speedText)
-    {
-        if (_errorHappens)
-            return;
-
-        SpeedText = speedText;
-    }
-
-    private void OnInstallingError(string errorCode)
-    {
-        IsErrorStatusVisible = true;
-        IsActionVisible = false;
-        IsDownloadStatusVisible = false;
-
-        ErrorName = errorCode;
-        _errorHappens = true;
-    }
+    private void OnInstallingError(string errorCode) =>
+        _downloadPresentation.OnInstallingError(errorCode);
 
     private void ShowItemAfterInstallActions(string id)
     {
@@ -542,7 +444,7 @@ public sealed partial class ItemViewPageViewModel : ObservableObject
         SpeedText = "";
         StatusTip = _localizer.GetLocalizedString("WorkingOnIt");
 
-        if (id == _storeId && !_errorHappens)
+        if (id == _storeId && !_downloadPresentation.ErrorHappens)
         {
             IsActionEnabled = IsItemSupported();
             ActionText = _localizer.GetLocalizedString("Install");

@@ -270,22 +270,8 @@ public partial class ConfigurationService
         return ToVariableItems(configItem.jparams);
     }
 
-    private static List<VariableItem> ToVariableItems(Dictionary<string, bool> jparams)
-    {
-        List<VariableItem> variables = [];
-
-        foreach (var variable in jparams)
-        {
-            VariableItem variableItem = new()
-            {
-                name = variable.Key,
-                value = variable.Value,
-            };
-            variables.Add(variableItem);
-        }
-
-        return variables;
-    }
+    private static List<VariableItem> ToVariableItems(Dictionary<string, bool> jparams) =>
+        ConfigurationVariableProjection.ToVariableItems(jparams);
 
     public List<CommaVariableItem> GetCommaVariables(string filename, string packId)
     {
@@ -293,25 +279,7 @@ public partial class ConfigurationService
         if (configItem?.commaVars == null)
             return [];
 
-        var result = new List<CommaVariableItem>();
-        foreach (var commaVariable in configItem.commaVars)
-        {
-            AvailableVarValues? availableValues = configItem.availableCommaVarsValues?.FirstOrDefault(
-                item => string.Equals(item.VarName, commaVariable.Key, StringComparison.OrdinalIgnoreCase));
-            List<string> values = (availableValues?.Values ?? [])
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-            result.Add(new CommaVariableItem
-            {
-                name = commaVariable.Key,
-                comment = availableValues?.Comment,
-                value = commaVariable.Value,
-                values = values,
-            });
-        }
-
-        return result;
+        return ConfigurationVariableProjection.ToCommaVariableItems(configItem);
     }
 
     public List<string> GetToggleLists(string filename, string packId)

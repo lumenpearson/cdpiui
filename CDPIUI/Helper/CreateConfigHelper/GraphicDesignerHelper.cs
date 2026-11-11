@@ -5,8 +5,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -260,122 +258,23 @@ public class GraphicDesignerHelper
         ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList,
         string args,
         bool exclusive = true,
-        List<Tuple<string, string, bool, string>> model = null
-        )
-    {
-        ClearSelection(list, exList);
-
-        var notSupportedFlags = new StringBuilder();
-        List<string> tokens = Tokenize(args);
-
-        for (int i = 0; i < tokens.Count; i++)
-        {
-            (string token, string value) = ReadOption(tokens, ref i);
-
-            var item = exclusive ? list.FirstOrDefault(x => x.DisplayName == token) : null;
-            bool supported;
-            if (item == null && exclusive)
-            {
-                supported = TrySelectExclusiveItem(exList, token, value);
-            }
-            else if (item == null && !exclusive && model != null)
-            {
-                supported = TryAddModelItem(list, model, token, value);
-            }
-            else
-            {
-                CheckItem(item, value);
-                supported = true;
-            }
-
-            if (!supported)
-            {
-                notSupportedFlags.Append($"{token} ");
-                if (!string.IsNullOrEmpty(value))
-                    notSupportedFlags.Append($"{value} ");
-            }
-        }
-
-        return notSupportedFlags.ToString();
-    }
-
-    private static void ClearSelection(
-        ObservableCollection<GraphicDesignerSettingItemModel> list,
-        ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList)
-    {
-        foreach (var item in list)
-        {
-            item.IsChecked = false;
-        }
-        foreach (var exItem in exList)
-        {
-            foreach (var item in exItem.Items)
-            {
-                item.IsChecked = false;
-            }
-        }
-    }
-
-    private static List<string> Tokenize(string args)
-    {
-        var tokenPattern = @"(?<=\s|^)(?:(?:(?:--|/)[^\s]*=""[^""]*"")|""[^""]*""|[^ ]+)+";
-        return Regex.Matches(args, tokenPattern)
-                    .Cast<Match>()
-                    .Select(m => m.Value.Trim('"'))
-                    .ToList();
-    }
-
-    // Reads the option at index i and its value: "--name=value", or "--name value" when the
-    // next token is not an option (then i moves past the value).
-    private static (string Token, string Value) ReadOption(List<string> tokens, ref int i)
-    {
-        string token = tokens[i];
-        string value = string.Empty;
-        if (token.Contains('='))
-        {
-            // The value may contain '=' itself (base64, fake payload hex and so on).
-            int separator = token.IndexOf('=');
-            value = token[(separator + 1)..];
-            token = token[..separator];
-        }
-        else if (tokens.Count - 1 >= i + 1 && !tokens[i + 1].StartsWith('-') && !tokens[i + 1].StartsWith('/'))
-        {
-            value = tokens[i + 1];
-            i++;
-        }
-        return (token, value);
-    }
-
-    private static bool TrySelectExclusiveItem(
-        ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList,
-        string token,
-        string value)
-    {
-        foreach (var exModel in exList)
-        {
-            var item = exModel.Items.FirstOrDefault(x => x.DisplayName == token);
-            if (item != null)
-            {
-                CheckItem(item, value);
-                exModel.SelectedItemGuid = item.Guid;
-                return true;
-            }
-        }
-        return false;
-    }
+        List<Tuple<string, string, bool, string>> model = null) =>
+        GraphicDesignerCommandCodec.Parse(list, exList, args, exclusive,
+            model == null ? null : (token, value) => TryAddModelItem(list, model, token, value.Text, value.PreserveGrouping));
 
     private static bool TryAddModelItem(
         ObservableCollection<GraphicDesignerSettingItemModel> list,
         List<Tuple<string, string, bool, string>> model,
         string token,
-        string value)
+        string value,
+        bool preserveValueGrouping)
     {
         ILocalizer localizer = Localizer.Get();
         var tuple = model.FirstOrDefault(x => x.Item1 == token);
         if (tuple == null)
             return false;
 
-        list.Add(new()
+        GraphicDesignerSettingItemModel item = new()
         {
             Guid = Guid.NewGuid().ToString(),
             DisplayName = tuple.Item1,
@@ -384,57 +283,14 @@ public class GraphicDesignerHelper
             Type = tuple.Item3 ? "string" : "flag",
             Value = value,
             IsChecked = true,
-        });
+        };
+        item.SetParsedValue(value, preserveValueGrouping);
+        list.Add(item);
         return true;
     }
 
-    private static void CheckItem(GraphicDesignerSettingItemModel item, string value)
-    {
-        item.IsChecked = true;
-        if (value.StartsWith("\""))
-            value += "\"";
-        item.Value = value;
-    }
-
-    private static readonly List<string> TextSupportedValues = ["string", "integer", "file_path", "enum"];
-
-
-
-    public static string ConvertGraphicDesignerSettingsToString(ObservableCollection<GraphicDesignerSettingItemModel> list, ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList, string additionalArgs)
-    {
-        string startupString = string.Empty;
-        foreach (var item in list)
-        {
-            (bool flowControl, startupString) = ProcessItemActions(startupString, item);
-            if (!flowControl)
-            {
-                continue;
-            }
-        }
-        foreach (var itemGroup in exList)
-        {
-            var item = itemGroup.Items.FirstOrDefault(x => x.Guid == itemGroup.SelectedItemGuid);
-            if (item != null)
-            {
-                (bool flowControl, startupString) = ProcessItemActions(startupString, item);
-                if (!flowControl)
-                {
-                    continue;
-                }
-            }
-        }
-        return $"{startupString}{additionalArgs}";
-    }
-
-    private static (bool flowControl, string value) ProcessItemActions(string startupString, GraphicDesignerSettingItemModel item)
-    {
-        if (!item.IsChecked && item.Type != "enum")
-            return (flowControl: false, value: startupString);
-        startupString += $"{item.DisplayName}";
-        if ((item.EnableTextInput || TextSupportedValues.Contains(item.Type)) && !string.IsNullOrEmpty(item.Value))
-            startupString += $"={item.Value}";
-        startupString += " ";
-        return (flowControl: true, value: startupString);
-    }
-
+    public static string ConvertGraphicDesignerSettingsToString(
+        ObservableCollection<GraphicDesignerSettingItemModel> list,
+        ObservableCollection<GraphicDesignerExclusiveSettingItemModel> exList,
+        string additionalArgs) => GraphicDesignerCommandCodec.Build(list, exList, additionalArgs);
 }

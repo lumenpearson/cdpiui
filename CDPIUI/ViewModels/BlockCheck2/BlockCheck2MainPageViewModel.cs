@@ -19,14 +19,14 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
 {
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly BlockCheck2DurationText _durationText;
+    private readonly BlockCheck2RunCompletionPresenter _completionPresenter;
+    private readonly BlockCheck2ProgressPresentation _progressPresentation;
+    private readonly BlockCheck2ReviewPresentation _reviewPresentation;
     private readonly IBlockCheck2MainPageView _view;
+    private readonly BlockCheck2WizardNavigation _navigation;
     private bool _handlersConnected;
     private BlockCheck2PreparationPreview? _preparationPreview;
-    private BlockCheck2WizardStep _currentStep = BlockCheck2WizardStep.SiteLists;
 
-    private bool _isNextEnabled = true;
-    private string? _nextButtonText;
-    private bool _isCancelEnabled = true;
 
     private bool _isInputNoticeOpen;
     private string _inputNoticeTitle = string.Empty;
@@ -41,7 +41,28 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
     {
         _view = view;
         _durationText = new BlockCheck2DurationText(_localizer);
-        CancelCommand = new RelayCommand(CancelFromButton, () => _isCancelEnabled);
+        _navigation = new BlockCheck2WizardNavigation(
+            new BlockCheck2NavigationSource(Session), _view, Text, () => CancelCommand.NotifyCanExecuteChanged());
+        _navigation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        CancelCommand = new RelayCommand(CancelFromButton, () => _navigation.IsCancelEnabled);
+        _completionPresenter = new BlockCheck2RunCompletionPresenter(
+            () => Session.State, () => Session.NoBypassRequired, () => Session.LastReportIsHttpOnly,
+            () => Session.OperationError, () => Session.HistorySaveError, Text, FormatIssues,
+            (severity, title, message) =>
+            {
+                ResultNoticeSeverity = severity;
+                ResultNoticeTitle = title;
+                ResultNoticeMessage = message;
+            });
+        _progressPresentation = new BlockCheck2ProgressPresentation(
+            () => Session.CurrentPhase, () => Session.IsRunning,
+            () => Session.ProgressCurrent, () => Session.ProgressTotal,
+            () => Session.EstimatedRemainingTime, () => Session.EstimatedOverallRemainingTime,
+            Text, _durationText.FormatRemaining);
+        _progressPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _reviewPresentation = new BlockCheck2ReviewPresentation(
+            new BlockCheck2ReviewSource(Session), Text, _durationText.FormatDuration);
+        _reviewPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
     }
 
     public BlockCheck2ViewModel Session { get; } = new();
@@ -68,14 +89,14 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
 
     public bool IsNextEnabled
     {
-        get => _isNextEnabled;
-        private set => SetProperty(ref _isNextEnabled, value);
+        get => _navigation.IsNextEnabled;
+        private set => _navigation.IsNextEnabled = value;
     }
 
     public string? NextButtonText
     {
-        get => _nextButtonText;
-        private set => SetProperty(ref _nextButtonText, value);
+        get => _navigation.NextButtonText;
+        private set => _navigation.NextButtonText = value;
     }
 
     /// <summary>Two-way: the user can close the notice.</summary>
@@ -196,7 +217,7 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
         UpdateProgressViewMoreText();
         UpdateNavigationButtons();
         UpdateProgressText();
-        if (_currentStep == BlockCheck2WizardStep.Review && _preparationPreview != null)
+        if (_navigation.CurrentStep == BlockCheck2WizardStep.Review && _preparationPreview != null)
         {
             UpdateReviewSummary(_preparationPreview);
         }
@@ -211,34 +232,31 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
         }
     }
 
-    private void GoToStep(BlockCheck2WizardStep step)
-    {
-        _currentStep = step;
-        _view.GoToStep(step);
-    }
+    private void GoToStep(BlockCheck2WizardStep step) =>
+        _navigation.GoToStep(step);
 
     public async Task NextAsync()
     {
-        if (_currentStep == BlockCheck2WizardStep.SiteLists)
+        if (_navigation.CurrentStep == BlockCheck2WizardStep.SiteLists)
         {
             await ContinueFromSiteListsAsync();
             return;
         }
 
-        if (_currentStep == BlockCheck2WizardStep.Mode)
+        if (_navigation.CurrentStep == BlockCheck2WizardStep.Mode)
         {
             GoToStep(BlockCheck2WizardStep.Advanced);
             UpdateNavigationButtons();
             return;
         }
 
-        if (_currentStep == BlockCheck2WizardStep.Advanced)
+        if (_navigation.CurrentStep == BlockCheck2WizardStep.Advanced)
         {
             await ContinueFromAdvancedAsync();
             return;
         }
 
-        if (_currentStep != BlockCheck2WizardStep.Review || !Session.CanStart)
+        if (_navigation.CurrentStep != BlockCheck2WizardStep.Review || !Session.CanStart)
         {
             return;
         }
@@ -303,23 +321,23 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
             return false;
         }
 
-        if (_currentStep == BlockCheck2WizardStep.SiteLists)
+        if (_navigation.CurrentStep == BlockCheck2WizardStep.SiteLists)
         {
             return true;
         }
-        else if (_currentStep == BlockCheck2WizardStep.Mode)
+        else if (_navigation.CurrentStep == BlockCheck2WizardStep.Mode)
         {
             GoToStep(BlockCheck2WizardStep.SiteLists);
         }
-        else if (_currentStep == BlockCheck2WizardStep.Advanced)
+        else if (_navigation.CurrentStep == BlockCheck2WizardStep.Advanced)
         {
             GoToStep(BlockCheck2WizardStep.Mode);
         }
-        else if (_currentStep == BlockCheck2WizardStep.Review)
+        else if (_navigation.CurrentStep == BlockCheck2WizardStep.Review)
         {
             GoToStep(BlockCheck2WizardStep.Advanced);
         }
-        else if (_currentStep is BlockCheck2WizardStep.Progress or BlockCheck2WizardStep.WorkComplete)
+        else if (_navigation.CurrentStep is BlockCheck2WizardStep.Progress or BlockCheck2WizardStep.WorkComplete)
         {
             Session.Reset();
             IsResultNoticeOpen = false;
@@ -342,11 +360,8 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
         SetCancelEnabled(false);
     }
 
-    private void SetCancelEnabled(bool value)
-    {
-        _isCancelEnabled = value;
-        CancelCommand.NotifyCanExecuteChanged();
-    }
+    private void SetCancelEnabled(bool value) =>
+        _navigation.SetCancelEnabled(value);
 
     private void ShowInputIssue(string message) =>
         ShowInputNotice(Text("BlockCheck2InputIssueTitle"), message);
@@ -373,33 +388,8 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
             : string.Join(Environment.NewLine, messages);
     }
 
-    private void UpdateNavigationButtons()
-    {
-        bool running = Session.IsRunning;
-        bool onSiteLists = _currentStep == BlockCheck2WizardStep.SiteLists;
-        bool onMode = _currentStep == BlockCheck2WizardStep.Mode;
-        bool onAdvanced = _currentStep == BlockCheck2WizardStep.Advanced;
-        bool onReview = _currentStep == BlockCheck2WizardStep.Review;
-        bool onProgress = _currentStep == BlockCheck2WizardStep.Progress;
-        bool onComplete = _currentStep == BlockCheck2WizardStep.WorkComplete;
-
-        _view.ShowNavigationButtons(new BlockCheck2NavigationButtons(
-            Exit: onComplete,
-            Back: !running,
-            Cancel: running,
-            ViewResult: !running && onComplete && Session.LastReport != null,
-            Next: !running && !onProgress && !onComplete));
-
-        SetCancelEnabled(Session.CanCancel);
-        IsNextEnabled = onSiteLists
-            ? Session.HasTargetSources
-            : onAdvanced
-                ? Session.AdvancedOptionsValid && Session.CanContinueFromTargets
-                : onMode || (onReview && Session.CanStart);
-        NextButtonText = onReview
-            ? Text("BlockCheck2StartButton")
-            : Text("BlockCheck2NextButton");
-    }
+    private void UpdateNavigationButtons() =>
+        _navigation.UpdateNavigationButtons();
 
     private string Text(string key) => _localizer.GetLocalizedString(key);
 }

@@ -4,8 +4,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
+using CDPIUI.Core.ComponentServices.Configuration;
 using CDPIUI.Core.Store.Data;
 using CDPIUI.Core.System;
+using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.LScript;
 using CDPIUI.Shared;
 using CDPIUI.Views.CreateConfigHelper;
@@ -29,30 +31,52 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly AsyncRelayCommand _saveCommand;
     private readonly AsyncRelayCommand _testCommand;
+    private readonly CreateConfigConditionDraft _conditionDraft;
+    private readonly CreateConfigTestSession _testSession;
+    private readonly CreateConfigGraphicDesigner _graphicDesigner;
+    private readonly CreateConfigComponentSelection _componentSelection;
 
     private ConfigItem _configItem;
     private string _listDirectory = string.Empty;
     private string _binDirectory = string.Empty;
 
-    private ConfigComponentOption _selectedComponent;
-    private string _displayName = string.Empty;
     private string _pageTitle;
     private string _saveButtonText;
     private bool _isComponentChoiceEnabled = true;
-    private bool _isAdditionalSettingsVisible;
-    private bool _isNotReadyErrorVisible = true;
-    private bool _isTabBarVisible = true;
     private bool _isTextEditorVisible;
     private bool _isDesignerVisible;
     private bool _isVariablesVisible;
     private bool _isListsDirectoryButtonVisible;
     private bool _isBinsDirectoryButtonVisible;
-    private string _additionalSettings = string.Empty;
 
     public CreateNewConfigViewModel(ICreateNewConfigView view)
     {
         _view = view;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _componentSelection = new CreateConfigComponentSelection(
+            id => DesignerSupportedComponentIds.Contains(id),
+            () => _view.SelectDesignerTab(), () => _view.SelectTextEditorTab(),
+            HandleSelectionChange, () => _view.SetExitAskAvailable(true),
+            AuditSaveAvailable, () => _view.EditorText);
+        _componentSelection.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _graphicDesigner = new CreateConfigGraphicDesigner(DesignerSettingItemModels, DesignerExclusiveSettingItemModels,
+            new CreateConfigGraphicDesignerBackend(), component => HardcodedItemIds.ComponentIds[component]);
+        _graphicDesigner.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _testSession = new CreateConfigTestSession(new CreateConfigComponentTestTasks(),
+            () => SelectedComponent is ConfigComponentOption component
+                ? (true, component.Id) : (false, string.Empty),
+            ConvertDesignerLikeSettingsToString,
+            () => CreateConfig(0, saveLocalization: false),
+            config => ConfigurationService.GetStartupParametersByConfigItem(config),
+            key => _localizer.GetLocalizedString(key),
+            action => _dispatcherQueue?.TryEnqueue(() => action()));
+        _testSession.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _conditionDraft = new CreateConfigConditionDraft(Conditions,
+            name => CreateConfigPageHelper.IsNameCorrect(name),
+            (name, on, off) => LScriptLangHelper.CreateCondition(name, on, off),
+            key => _localizer.GetLocalizedString(key),
+            () => _view.SetExitAskAvailable(true));
+        _conditionDraft.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
 
         RemoveConditionCommand = new RelayCommand(p => RemoveCondition(p));
         RemoveVariableCommand = new RelayCommand(p => RemoveVariable(p));
@@ -73,7 +97,7 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
 
         _pageTitle = _localizer.GetLocalizedString("CreateNewConfig");
         _saveButtonText = _localizer.GetLocalizedString("Save");
-        _testButtonText = _localizer.GetLocalizedString("TestThis");
+        _testSession.InitializeText(_localizer.GetLocalizedString("TestThis"));
     }
 
     public ObservableCollection<ConditionVariableModel> Conditions { get; } = [];
@@ -101,35 +125,20 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
 
     public ConfigComponentOption SelectedComponent
     {
-        get => _selectedComponent;
-        set
-        {
-            if (!SetProperty(ref _selectedComponent, value))
-                return;
-
-            CheckViewType();
-            _view.SetExitAskAvailable(true);
-            AuditSaveAvailable();
-        }
+        get => _componentSelection.SelectedComponent;
+        set => _componentSelection.SelectedComponent = value;
     }
 
     public string DisplayName
     {
-        get => _displayName;
-        set
-        {
-            if (!SetProperty(ref _displayName, value ?? string.Empty))
-                return;
-
-            _view.SetExitAskAvailable(true);
-            AuditSaveAvailable();
-        }
+        get => _componentSelection.DisplayName;
+        set => _componentSelection.DisplayName = value;
     }
 
     public string AdditionalSettings
     {
-        get => _additionalSettings;
-        set => SetProperty(ref _additionalSettings, value ?? string.Empty);
+        get => _graphicDesigner.AdditionalSettings;
+        set => _graphicDesigner.AdditionalSettings = value;
     }
 
     public string PageTitle
@@ -152,20 +161,20 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
 
     public bool IsAdditionalSettingsVisible
     {
-        get => _isAdditionalSettingsVisible;
-        private set => SetProperty(ref _isAdditionalSettingsVisible, value);
+        get => _componentSelection.IsAdditionalSettingsVisible;
+        private set => _componentSelection.IsAdditionalSettingsVisible = value;
     }
 
     public bool IsNotReadyErrorVisible
     {
-        get => _isNotReadyErrorVisible;
-        private set => SetProperty(ref _isNotReadyErrorVisible, value);
+        get => _componentSelection.IsNotReadyErrorVisible;
+        private set => _componentSelection.IsNotReadyErrorVisible = value;
     }
 
     public bool IsTabBarVisible
     {
-        get => _isTabBarVisible;
-        private set => SetProperty(ref _isTabBarVisible, value);
+        get => _componentSelection.IsTabBarVisible;
+        private set => _componentSelection.IsTabBarVisible = value;
     }
 
     public bool IsTextEditorVisible
@@ -199,7 +208,7 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
     }
 
     /// <summary>The selected component has a graphic designer.</summary>
-    public bool IsDesignerSupported => DesignerSupportedComponentIds.Contains(SelectedComponent?.Id ?? "");
+    public bool IsDesignerSupported => _componentSelection.IsDesignerSupported;
 
     /// <summary>Call when the user or the code changed the text of the editor.</summary>
     public void OnEditorTextChanged()
@@ -208,10 +217,7 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
         AuditSaveAvailable();
     }
 
-    private bool IsSaveAvailable() =>
-        SelectedComponent != null &&
-        !string.IsNullOrEmpty(DisplayName) &&
-        !string.IsNullOrEmpty(_view.EditorText);
+    private bool IsSaveAvailable() => _componentSelection.IsSaveAvailable;
 
     private void AuditSaveAvailable()
     {
@@ -219,31 +225,7 @@ public sealed partial class CreateNewConfigViewModel : ObservableObject
         _testCommand?.NotifyCanExecuteChanged();
     }
 
-    private void CheckViewType()
-    {
-        if (SelectedComponent == null)
-        {
-            IsAdditionalSettingsVisible = false;
-            IsNotReadyErrorVisible = true;
-            return;
-        }
-
-        IsAdditionalSettingsVisible = true;
-        IsNotReadyErrorVisible = false;
-
-        if (IsDesignerSupported)
-        {
-            _view.SelectDesignerTab();
-            IsTabBarVisible = true;
-            HandleSelectionChange(false);
-        }
-        else
-        {
-            HandleSelectionChange(true);
-            _view.SelectTextEditorTab();
-            IsTabBarVisible = false;
-        }
-    }
+    private void CheckViewType() => _componentSelection.CheckViewType();
 
     private void CheckFolderOpenButtonsVisibility()
     {

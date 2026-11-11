@@ -5,53 +5,11 @@ namespace CDPIUI.ViewModels.BlockCheck2;
 
 public sealed partial class BlockCheck2ResultPageViewModel
 {
-    public async Task SaveJsonReportAsync()
-    {
-        if (Result.Report == null)
-        {
-            return;
-        }
-        string? fileName = _view.PickSaveFile(
-            Text("BlockCheck2SaveReportDialogTitle"),
-            "blockcheck2-report.json",
-            Text("BlockCheck2JsonFileFilter"));
-        if (fileName != null)
-        {
-            await SaveAsync(() => _reportSerializer.SaveJsonAsync(fileName, Result.Report));
-        }
-    }
+    public Task SaveJsonReportAsync() => _reportExport.SaveJsonAsync();
 
-    public async Task SaveTextReportAsync()
-    {
-        if (Result.Report == null)
-        {
-            return;
-        }
-        string? fileName = _view.PickSaveFile(
-            Text("BlockCheck2SaveReportDialogTitle"),
-            "blockcheck2-report.txt",
-            Text("BlockCheck2TextFileFilter"));
-        if (fileName != null)
-        {
-            await SaveAsync(() => _reportSerializer.SaveTextAsync(fileName, Result.Report));
-        }
-    }
+    public Task SaveTextReportAsync() => _reportExport.SaveTextAsync();
 
-    private async Task SaveAsync(Func<Task> saveAction)
-    {
-        try
-        {
-            await saveAction();
-            ShowActionMessage(
-                BlockCheck2NoticeSeverity.Success,
-                Text("BlockCheck2ActionCompletedTitle"),
-                Text("BlockCheck2FileSavedMessage"));
-        }
-        catch (Exception exception)
-        {
-            ShowActionError(exception.Message);
-        }
-    }
+    private Task SaveAsync(Func<Task> saveAction) => _reportExport.SaveAsync(saveAction);
 
     public void CopySelectedStrategyArguments()
     {

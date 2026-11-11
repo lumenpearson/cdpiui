@@ -1,12 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using CDPIUI.AddOns.ConfigImport;
 using CDPIUI.Controls.CreateConfigHelper;
-using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Core.System;
 using CDPIUI.Helper.CreateConfigHelper;
 using Microsoft.UI.Xaml.Controls;
 
@@ -19,309 +14,67 @@ public sealed partial class ConfigMakerViewModel
 
     public RelayCommand AddPresetFileCommand { get; }
 
-    public void AddPresetFiles(IEnumerable<string> filePaths)
-    {
-        ArgumentNullException.ThrowIfNull(filePaths);
-        int added = _presetResources.AddFiles(filePaths);
-        if (added > 0)
-        {
-            AttachExistingPresetFiles();
-            RebuildPresetStructure();
-            _view.SetPresetFilesPanelVisible(true);
-            ShowEditorMessage(
-                string.Format(
-                    _localizer.GetLocalizedString("ConfigMakerPresetFilesAddedMessage"),
-                    added),
-                InfoBarSeverity.Success);
-        }
-    }
+    public void AddPresetFiles(IEnumerable<string> filePaths) => _presetFileActions.AddPresetFiles(filePaths);
 
     public Task ReplacePresetFileAsync(ConfigMakerPresetFileInfo file) =>
-        RunReportingErrorsAsync(async () =>
-        {
-            if (file == null)
-            {
-                return;
-            }
+        _presetFileReplacer.ReplacePresetFileAsync(file);
 
-            string missingPath = _presetResources.TryResolvePath(file.Path);
-            if (string.IsNullOrWhiteSpace(missingPath))
-            {
-                ShowEditorMessage(
-                    _localizer.GetLocalizedString("ConfigMakerPresetFileInvalidPathMessage"),
-                    InfoBarSeverity.Error);
-                return;
-            }
-            if (File.Exists(missingPath))
-            {
-                RebuildPresetStructure();
-                return;
-            }
-
-            ConfigMakerFileReplacementChoice choice = await _view.AskPresetFileReplacementAsync(missingPath);
-            if (choice == ConfigMakerFileReplacementChoice.AutoCorrect)
-            {
-                await AutoCorrectPresetFileAsync(file, missingPath);
-            }
-            else if (choice == ConfigMakerFileReplacementChoice.ChooseManually)
-            {
-                ChooseAndApplyPresetFileReplacement(file, missingPath);
-            }
-        });
-
-    public Task OpenPresetFileAsync(ConfigMakerPresetFileInfo file) =>
-        RunReportingErrorsAsync(async () =>
-        {
-            if (file == null)
-            {
-                return;
-            }
-
-            string path = _presetResources.ResolvePath(file.Path);
-            if (!File.Exists(path))
-            {
-                ShowPresetFileMissing(path);
-                return;
-            }
-
-            if (file.Kind == ConfigMakerPresetFileKind.SiteList ||
-                string.Equals(Path.GetExtension(path), ".txt", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TextFileOpenPreferences.ShouldAskForApplication())
-                {
-                    if (await _view.AskTextFileApplicationAsync(path))
-                    {
-                        TextFileOpenPreferences.RememberDialogShown();
-                    }
-                    return;
-                }
-
-                ShellHelper.OpenFile(path);
-                return;
-            }
-
-            ShellHelper.OpenFileInDefaultApp(path);
-        });
-
-    public void ShowPresetFileInFolder(ConfigMakerPresetFileInfo file)
-    {
-        if (file == null)
-        {
-            return;
-        }
-
-        string path = _presetResources.ResolvePath(file.Path);
-        if (!File.Exists(path))
-        {
-            ShowPresetFileMissing(path);
-            return;
-        }
-        ShellHelper.LookupFileInDirectory(path);
-    }
-
-    public Task RemovePresetFileAsync(ConfigMakerPresetFileInfo file) =>
-        RunReportingErrorsAsync(async () =>
-        {
-            ConfigMakerPresetResource resource = file == null ? null : _presetResources.FindAttached(file.Path);
-            if (resource == null)
-            {
-                return;
-            }
-            if (_presetResources.IsReferenced(resource) &&
-                !await _view.ConfirmAsync(
-                    _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
-                    _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
-                    _localizer.GetLocalizedString("Remove")))
-            {
-                return;
-            }
-            _presetDocument.Resources.Remove(resource);
-            RebuildPresetStructure();
-            ScheduleDiagnostics();
-        });
+    public Task OpenPresetFileAsync(ConfigMakerPresetFileInfo file) => _presetFileActions.OpenPresetFileAsync(file);
+    public void ShowPresetFileInFolder(ConfigMakerPresetFileInfo file) => _presetFileActions.ShowPresetFileInFolder(file);
+    public Task RemovePresetFileAsync(ConfigMakerPresetFileInfo file) => _presetFileActions.RemovePresetFileAsync(file);
 
     /// <summary>Inserts the reference of a file of the tree at the editor cursor, attaching the file first.</summary>
-    public void InsertPresetFileReference(ConfigMakerPresetFileInfo file)
+    public void InsertPresetFileReference(ConfigMakerPresetFileInfo file) => _presetFileActions.InsertPresetFileReference(file);
+
+    private void AddPresetFilesFromPicker() => _presetFileActions.AddPresetFilesFromPicker();
+
+    private bool TryCreateEmptyPresetFile(string missingPath, bool showStatus = true) =>
+        _presetFileReplacer.TryCreateEmptyPresetFile(missingPath, showStatus);
+
+    private bool TryApplyPresetFileReplacement(ConfigMakerPresetFileInfo file, string replacementPath, bool showStatus) =>
+        _presetFileReplacer.TryApplyPresetFileReplacement(file, replacementPath, showStatus);
+
+    Task IConfigMakerPresetFileReplacementHost.RunReportingErrorsAsync(Func<Task> action) => RunReportingErrorsAsync(action);
+    Task<ConfigMakerFileReplacementChoice> IConfigMakerPresetFileReplacementHost.AskPresetFileReplacementAsync(string path) => _view.AskPresetFileReplacementAsync(path);
+    string IConfigMakerPresetFileReplacementHost.ChooseReplacementFile(string path) => _view.ChooseReplacementFile(path);
+    string IConfigMakerPresetFileReplacementHost.Text(string key) => _localizer.GetLocalizedString(key);
+    void IConfigMakerPresetFileReplacementHost.RebuildPresetStructure() => RebuildPresetStructure();
+    bool IConfigMakerPresetFileReplacementHost.UsesExplicitPresetStructure => _presetStructure.UsesExplicitPresetStructure;
+    ConfigMakerPresetFileInfo[] IConfigMakerPresetFileReplacementHost.ExplicitPresetFiles
     {
-        if (IsEditorReadOnly || file == null)
-        {
-            return;
-        }
-        string reference = file.Path.Trim().Trim('"');
-        if (!reference.StartsWith("preset://", StringComparison.OrdinalIgnoreCase))
-        {
-            string resolvedPath = _presetResources.TryResolvePath(reference);
-            if (!string.IsNullOrWhiteSpace(resolvedPath) && File.Exists(resolvedPath))
-            {
-                ConfigMakerPresetResource resource = _presetResources.GetOrCreate(
-                    Path.GetFullPath(resolvedPath),
-                    file.Kind,
-                    out bool resourceAdded);
-                if (resourceAdded)
-                {
-                    RebuildPresetStructure();
-                }
-                reference = resource.Reference;
-            }
-        }
-        InsertAtCursor($"\"{reference}\"");
+        get => _presetStructure.ExplicitPresetFiles;
+        set => _presetStructure.ExplicitPresetFiles = value;
     }
-
-    private void AddPresetFilesFromPicker()
-    {
-        IReadOnlyList<string> filePaths = _view.ChoosePresetFilesToAdd();
-        if (filePaths.Count > 0)
+    void IConfigMakerPresetFileReplacementHost.SetCommandText(string text) => CommandText = text;
+    void IConfigMakerPresetFileReplacementHost.NotifyPresetFileReplaced(string originalPath, string replacementPath) =>
+        PresetFileReplaced?.Invoke(this, new ConfigMakerPresetFileReplacedEventArgs(CommandText, originalPath, replacementPath));
+    void IConfigMakerPresetFileReplacementHost.ShowPresetFileMessage(string message, ConfigMakerPresetFileNoticeSeverity severity) =>
+        ShowEditorMessage(message, severity switch
         {
-            AddPresetFiles(filePaths);
-        }
-    }
+            ConfigMakerPresetFileNoticeSeverity.Success => InfoBarSeverity.Success,
+            ConfigMakerPresetFileNoticeSeverity.Warning => InfoBarSeverity.Warning,
+            _ => InfoBarSeverity.Error,
+        });
 
-    private async Task AutoCorrectPresetFileAsync(ConfigMakerPresetFileInfo file, string missingPath)
-    {
-        ConfigImportAutoCorrector autoCorrector = new();
-        bool suggestEmptyFile = autoCorrector.ShouldSuggestEmptyFile(missingPath);
-        if (suggestEmptyFile)
+    bool IConfigMakerPresetFileActionsHost.IsEditorReadOnly => IsEditorReadOnly;
+    Task IConfigMakerPresetFileActionsHost.RunReportingErrorsAsync(Func<Task> action) => RunReportingErrorsAsync(action);
+    IReadOnlyList<string> IConfigMakerPresetFileActionsHost.ChoosePresetFilesToAdd() => _view.ChoosePresetFilesToAdd();
+    void IConfigMakerPresetFileActionsHost.AttachExistingPresetFiles() => AttachExistingPresetFiles();
+    void IConfigMakerPresetFileActionsHost.RebuildPresetStructure() => RebuildPresetStructure();
+    void IConfigMakerPresetFileActionsHost.SetPresetFilesPanelVisible(bool visible) => _view.SetPresetFilesPanelVisible(visible);
+    string IConfigMakerPresetFileActionsHost.Text(string key) => _localizer.GetLocalizedString(key);
+    Task<bool> IConfigMakerPresetFileActionsHost.AskTextFileApplicationAsync(string path) => _view.AskTextFileApplicationAsync(path);
+    Task<bool> IConfigMakerPresetFileActionsHost.ConfirmRemoveReferencedFileAsync() => _view.ConfirmAsync(
+        _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogTitle"),
+        _localizer.GetLocalizedString("ConfigMakerRemoveReferencedFileDialogMessage"),
+        _localizer.GetLocalizedString("Remove"));
+    void IConfigMakerPresetFileActionsHost.ScheduleDiagnostics() => ScheduleDiagnostics();
+    void IConfigMakerPresetFileActionsHost.InsertAtCursor(string reference) => InsertAtCursor(reference);
+    void IConfigMakerPresetFileActionsHost.ShowPresetFileMessage(string message, ConfigMakerPresetFileNoticeSeverity severity) =>
+        ShowEditorMessage(message, severity switch
         {
-            TryCreateEmptyPresetFile(missingPath);
-            return;
-        }
-
-        ConfigImportResult autoCorrectResult = _presetResources.CreateAutoCorrectResult(missingPath);
-        string suggestion = await Task.Run(() => autoCorrector.FindReplacement(
-            autoCorrectResult,
-            missingPath));
-        if (!string.IsNullOrWhiteSpace(suggestion))
-        {
-            TryApplyPresetFileReplacement(file, suggestion, showStatus: true);
-            return;
-        }
-
-        ShowEditorMessage(
-            _localizer.GetLocalizedString("ConfigMakerPresetFileNoSuggestionMessage"),
-            InfoBarSeverity.Warning);
-        ChooseAndApplyPresetFileReplacement(file, missingPath);
-    }
-
-    private void ChooseAndApplyPresetFileReplacement(ConfigMakerPresetFileInfo file, string missingPath)
-    {
-        string selectedPath = _view.ChooseReplacementFile(missingPath);
-        if (!string.IsNullOrWhiteSpace(selectedPath))
-        {
-            TryApplyPresetFileReplacement(file, selectedPath, showStatus: true);
-        }
-    }
-
-    private bool TryCreateEmptyPresetFile(string missingPath, bool showStatus = true)
-    {
-        try
-        {
-            ConfigMakerPresetResources.CreateEmptyFile(missingPath);
-            RebuildPresetStructure();
-            if (showStatus)
-            {
-                ShowEditorMessage(
-                    string.Format(
-                        _localizer.GetLocalizedString("ConfigMakerPresetFileEmptyCreatedMessage"),
-                        missingPath),
-                    InfoBarSeverity.Success);
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            if (showStatus)
-            {
-                ShowPresetFileReplaceFailed(ex);
-            }
-            return false;
-        }
-    }
-
-    private bool TryApplyPresetFileReplacement(
-        ConfigMakerPresetFileInfo file,
-        string replacementPath,
-        bool showStatus)
-    {
-        try
-        {
-            string fullReplacementPath = Path.GetFullPath(replacementPath);
-            if (!File.Exists(fullReplacementPath))
-            {
-                throw new FileNotFoundException(null, fullReplacementPath);
-            }
-
-            if (_presetResources.TryUpdateAttachedResource(file, fullReplacementPath))
-            {
-                RebuildPresetStructure();
-                if (showStatus)
-                {
-                    ShowPresetFileReplaced(fullReplacementPath);
-                }
-                return true;
-            }
-
-            ConfigMakerPresetFileReplacement replacement = _presetResources.ReplaceReferences(
-                file,
-                fullReplacementPath) ?? throw new InvalidOperationException(
-                    _localizer.GetLocalizedString("ConfigMakerPresetFileReferenceNotFoundMessage"));
-
-            if (_usesExplicitPresetStructure)
-            {
-                _explicitPresetFiles = _explicitPresetFiles
-                    .Select(item => ReferenceEquals(item, file) ||
-                        (item.Kind == file.Kind && ConfigFileReferences.PathsEqual(item.Path, file.Path))
-                            ? item with
-                            {
-                                Name = Path.GetFileName(fullReplacementPath),
-                                Path = replacement.Reference,
-                                Folder = ConfigFileReferences.GetDisplayFolder(replacement.Reference),
-                            }
-                            : item)
-                    .ToArray();
-            }
-            if (replacement.CommandChanged)
-            {
-                CommandText = ComponentCommandLineFormatter.FormatByFlags(replacement.UpdatedCommandText);
-            }
-            RebuildPresetStructure();
-            PresetFileReplaced?.Invoke(
-                this,
-                new ConfigMakerPresetFileReplacedEventArgs(
-                    CommandText,
-                    file.Path,
-                    replacement.Reference));
-            if (showStatus)
-            {
-                ShowPresetFileReplaced(fullReplacementPath);
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            if (showStatus)
-            {
-                ShowPresetFileReplaceFailed(ex);
-            }
-            return false;
-        }
-    }
-
-    private void ShowPresetFileReplaced(string fullReplacementPath) =>
-        ShowEditorMessage(
-            string.Format(
-                _localizer.GetLocalizedString("ConfigMakerPresetFileReplacedMessage"),
-                fullReplacementPath),
-            InfoBarSeverity.Success);
-
-    private void ShowPresetFileReplaceFailed(Exception exception) =>
-        ShowEditorMessage(
-            string.Format(
-                _localizer.GetLocalizedString("ConfigMakerPresetFileReplaceFailedMessage"),
-                exception.Message),
-            InfoBarSeverity.Error);
-
-    private void ShowPresetFileMissing(string path) =>
-        ShowEditorMessage(
-            string.Format(_localizer.GetLocalizedString("ConfigMakerPresetFileMissingMessage"), path),
-            InfoBarSeverity.Warning);
+            ConfigMakerPresetFileNoticeSeverity.Success => InfoBarSeverity.Success,
+            ConfigMakerPresetFileNoticeSeverity.Warning => InfoBarSeverity.Warning,
+            _ => InfoBarSeverity.Error,
+        });
 }

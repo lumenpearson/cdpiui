@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Xaml;
 
 namespace CDPIUI;
@@ -11,34 +12,18 @@ public partial class App
     public Task ShowWindowModalAsync(Window modalWindow, Window ownerWindow)
     {
         ArgumentNullException.ThrowIfNull(modalWindow);
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        async void Begin()
-        {
-            try
-            { await _modalWindows.BeginModal(modalWindow, ownerWindow); completion.TrySetResult(true); }
-            catch (Exception exception) { completion.TrySetException(exception); }
-        }
-        if (_uiDispatcher.HasThreadAccess)
-            Begin();
-        else if (!_uiDispatcher.TryEnqueue(Begin))
-            completion.TrySetCanceled();
-        return completion.Task;
+        return DispatcherTaskBridge.Run(
+            () => _modalWindows.BeginModal(modalWindow, ownerWindow),
+            () => _uiDispatcher.HasThreadAccess,
+            action => _uiDispatcher.TryEnqueue(() => action()));
     }
 
     public Task MakeWindowNormal(Window modalWindow)
     {
         ArgumentNullException.ThrowIfNull(modalWindow);
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        void Restore()
-        {
-            try
-            { _modalWindows.ReleaseModal(modalWindow, isClosing: false); completion.TrySetResult(true); }
-            catch (Exception exception) { completion.TrySetException(exception); }
-        }
-        if (_uiDispatcher.HasThreadAccess)
-            Restore();
-        else if (!_uiDispatcher.TryEnqueue(Restore))
-            completion.TrySetCanceled();
-        return completion.Task;
+        return DispatcherTaskBridge.Run(
+            () => _modalWindows.ReleaseModal(modalWindow, isClosing: false),
+            () => _uiDispatcher.HasThreadAccess,
+            action => _uiDispatcher.TryEnqueue(() => action()));
     }
 }

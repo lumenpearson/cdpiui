@@ -49,6 +49,10 @@ public sealed partial class ConfigMakerUserControl : UserControl, IConfigMakerVi
 
     public ConfigMakerUserControl()
     {
+        _panelLayout = new ConfigMakerPanelLayoutController(new ConfigMakerPanelLayoutView(
+            () => RootGrid, () => PresetFilesPanel, () => CommandPanel, () => BottomPanel,
+            () => EditorWorkspace, () => EditorPanel, () => PresetFilesSizerColumn,
+            () => VerticalSizerColumn, () => HorizontalSizerRow));
         ViewModel = new ConfigMakerViewModel(this, DispatcherQueue);
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.CommandTextChanged += text => CommandTextChanged?.Invoke(text);

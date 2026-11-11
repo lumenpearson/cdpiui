@@ -1,3 +1,6 @@
+#nullable enable annotations
+#nullable disable warnings
+
 using System;
 using System.Collections.Generic;
 using System.IO;

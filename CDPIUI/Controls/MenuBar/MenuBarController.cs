@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using CDPIUI.Controls.Default;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
@@ -288,30 +289,13 @@ public sealed class MenuBarController : IDisposable
         }
     }
 
-    private void PruneUnclaimedEntries()
+    private void PruneUnclaimedEntries() =>
+        PostOrderTreePruner.Prune(_rootEntries, static entry => entry.Children,
+            static entry => entry.IsStrong || entry.WeakScopes.Count > 0 || entry.Children.Count > 0,
+            RemoveEntry);
+
+    private void RemoveEntry(MenuEntry entry)
     {
-        for (var index = _rootEntries.Count - 1; index >= 0; index--)
-        {
-            if (!PruneEntry(_rootEntries[index]))
-                continue;
-
-            _rootEntries.RemoveAt(index);
-        }
-    }
-
-    private bool PruneEntry(MenuEntry entry)
-    {
-        for (var index = entry.Children.Count - 1; index >= 0; index--)
-        {
-            if (!PruneEntry(entry.Children[index]))
-                continue;
-
-            entry.Children.RemoveAt(index);
-        }
-
-        if (entry.IsStrong || entry.WeakScopes.Count > 0 || entry.Children.Count > 0)
-            return false;
-
         if (entry.PublicId != null)
             _entriesById.Remove(entry.PublicId);
 
@@ -320,7 +304,6 @@ public sealed class MenuBarController : IDisposable
         else
             GetChildren(entry.Parent.Element).Remove((MenuFlyoutItemBase)entry.Element);
 
-        return true;
     }
 
     private bool TryMaterializeTemplate(

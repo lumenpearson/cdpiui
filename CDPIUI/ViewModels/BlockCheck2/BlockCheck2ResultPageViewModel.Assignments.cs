@@ -1,4 +1,4 @@
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CDPIUI.Helper.CreateConfigHelper;
 
@@ -51,101 +51,40 @@ public sealed partial class BlockCheck2ResultPageViewModel
         private set => SetProperty(ref _isRemoveAssignmentEnabled, value);
     }
 
-    public void AddSelectedStrategyForSite()
+    public void AddSelectedStrategyForSite() => _assignmentActions.AddSelectedStrategyForSite();
+
+    public Task AddSelectedStrategyForListAsync() => _assignmentActions.AddSelectedStrategyForListAsync();
+
+    private void ShowAssignmentResult(bool added) => _assignmentActions.ShowResult(added);
+
+    public void MoveSelectedAssignment(int offset) => _assignmentActions.MoveSelectedAssignment(offset);
+
+    public void RemoveSelectedAssignment() => _assignmentActions.RemoveSelectedAssignment();
+
+    public void ClearAssignments() => _assignmentActions.ClearAssignments();
+
+    public void ApplyManualIssueQuickFix(BlockCheck2ManualIssueItem issue) =>
+        _assignmentActions.ApplyManualIssueQuickFix(() => Result.ApplyManualIssueQuickFix(issue));
+
+    private sealed class AssignmentActionsHost(BlockCheck2ResultPageViewModel page) : IBlockCheck2AssignmentActionsHost
     {
-        BlockCheck2StrategyEvidenceItem? item = _view.SelectedStrategy;
-        if (item == null)
+        public BlockCheck2StrategyEvidenceItem? SelectedStrategy => page._view.SelectedStrategy;
+        public IReadOnlyList<string> GetSiteListPaths(BlockCheck2StrategyEvidenceItem item) => page.Result.GetSiteListPaths(item);
+        public Task<string?> ChooseSiteListAsync(IReadOnlyList<string> paths) => page._view.ChooseSiteListAsync(paths);
+        public bool AddForSite(BlockCheck2StrategyEvidenceItem item) => page.Result.AddForSite(item);
+        public bool AddForSiteList(BlockCheck2StrategyEvidenceItem item, string path) => page.Result.AddForSiteList(item, path);
+        public BlockCheck2ManualAssignmentItem? SelectedAssignment
         {
-            return;
+            get => page._view.SelectedAssignment;
+            set => page._view.SelectedAssignment = value;
         }
-        ShowAssignmentResult(Result.AddForSite(item));
-    }
-
-    public async Task AddSelectedStrategyForListAsync()
-    {
-        BlockCheck2StrategyEvidenceItem? item = _view.SelectedStrategy;
-        if (item == null)
-        {
-            return;
-        }
-        string[] paths = Result.GetSiteListPaths(item).ToArray();
-        if (paths.Length == 0)
-        {
-            return;
-        }
-
-        string selectedPath = paths[0];
-        if (paths.Length > 1)
-        {
-            string? path = await _view.ChooseSiteListAsync(paths);
-            if (path == null)
-            {
-                return;
-            }
-            selectedPath = path;
-        }
-        ShowAssignmentResult(Result.AddForSiteList(item, selectedPath));
-    }
-
-    private void ShowAssignmentResult(bool added)
-    {
-        if (added)
-        {
-            ShowActionMessage(
-                BlockCheck2NoticeSeverity.Success,
-                Text("BlockCheck2AssignmentAddedTitle"),
-                Text("BlockCheck2AssignmentAddedMessage"));
-        }
-        else
-        {
-            ShowActionMessage(
-                BlockCheck2NoticeSeverity.Warning,
-                Text("BlockCheck2AssignmentNotAddedTitle"),
-                Text("BlockCheck2AssignmentDuplicateMessage"));
-        }
-        UpdateAssignmentView();
-        UpdateActionButtons();
-    }
-
-    public void MoveSelectedAssignment(int offset)
-    {
-        BlockCheck2ManualAssignmentItem? selected = _view.SelectedAssignment;
-        if (selected != null && Result.MoveAssignment(selected, offset))
-        {
-            UpdateAssignmentView();
-            _view.SelectedAssignment = selected;
-        }
-    }
-
-    public void RemoveSelectedAssignment()
-    {
-        BlockCheck2ManualAssignmentItem? selected = _view.SelectedAssignment;
-        if (selected == null)
-        {
-            return;
-        }
-        Result.RemoveAssignment(selected);
-        UpdateAssignmentView();
-    }
-
-    public void ClearAssignments()
-    {
-        Result.ClearManualAssignments();
-        UpdateAssignmentView();
-    }
-
-    public void ApplyManualIssueQuickFix(BlockCheck2ManualIssueItem issue)
-    {
-        if (!Result.ApplyManualIssueQuickFix(issue))
-        {
-            return;
-        }
-
-        ShowActionMessage(
-            BlockCheck2NoticeSeverity.Success,
-            Text("BlockCheck2ManualIssueQuickFixCompletedTitle"),
-            Text("BlockCheck2ManualScopeOverlapAcceptedMessage"));
-        UpdateAssignmentView();
+        public bool MoveAssignment(BlockCheck2ManualAssignmentItem item, int offset) => page.Result.MoveAssignment(item, offset);
+        public void RemoveAssignment(BlockCheck2ManualAssignmentItem item) => page.Result.RemoveAssignment(item);
+        public void ClearAssignments() => page.Result.ClearManualAssignments();
+        public void UpdateAssignmentView() => page.UpdateAssignmentView();
+        public void UpdateActionButtons() => page.UpdateActionButtons();
+        public string Text(string key) => page.Text(key);
+        public void ShowMessage(BlockCheck2NoticeSeverity severity, string title, string message) => page.ShowActionMessage(severity, title, message);
     }
 
     private void UpdateAssignmentView()
