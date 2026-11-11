@@ -1,107 +1,55 @@
-using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
 
 namespace CDPIUI.ViewModels.BlockCheck2;
 
 public sealed partial class BlockCheck2MainPageViewModel
 {
-    private string _progressPhaseText = string.Empty;
-    private string _progressCounterText = string.Empty;
-    private string _stageRemainingTimeText = string.Empty;
-    private string _overallRemainingTimeText = string.Empty;
-    private bool _isAdditionalProgressInfoVisible;
-    private string? _progressViewMoreText;
-
     public string ProgressPhaseText
     {
-        get => _progressPhaseText;
-        private set => SetProperty(ref _progressPhaseText, value);
+        get => _progressPresentation.ProgressPhaseText;
+        private set => _progressPresentation.ProgressPhaseText = value;
     }
 
     public string ProgressCounterText
     {
-        get => _progressCounterText;
-        private set => SetProperty(ref _progressCounterText, value);
+        get => _progressPresentation.ProgressCounterText;
+        private set => _progressPresentation.ProgressCounterText = value;
     }
 
     public string StageRemainingTimeText
     {
-        get => _stageRemainingTimeText;
-        private set => SetProperty(ref _stageRemainingTimeText, value);
+        get => _progressPresentation.StageRemainingTimeText;
+        private set => _progressPresentation.StageRemainingTimeText = value;
     }
 
     public string OverallRemainingTimeText
     {
-        get => _overallRemainingTimeText;
-        private set => SetProperty(ref _overallRemainingTimeText, value);
+        get => _progressPresentation.OverallRemainingTimeText;
+        private set => _progressPresentation.OverallRemainingTimeText = value;
     }
 
     public bool IsAdditionalProgressInfoVisible
     {
-        get => _isAdditionalProgressInfoVisible;
-        private set => SetProperty(ref _isAdditionalProgressInfoVisible, value);
+        get => _progressPresentation.IsAdditionalProgressInfoVisible;
+        private set => _progressPresentation.IsAdditionalProgressInfoVisible = value;
     }
 
     public string? ProgressViewMoreText
     {
-        get => _progressViewMoreText;
-        private set => SetProperty(ref _progressViewMoreText, value);
+        get => _progressPresentation.ProgressViewMoreText;
+        private set => _progressPresentation.ProgressViewMoreText = value;
     }
 
-    public void ToggleAdditionalProgressInfo()
-    {
-        IsAdditionalProgressInfoVisible = !IsAdditionalProgressInfoVisible;
-        UpdateProgressViewMoreText();
-    }
+    public void ToggleAdditionalProgressInfo() => _progressPresentation.ToggleAdditionalProgressInfo();
 
     private void UpdateProgressViewMoreText() =>
-        ProgressViewMoreText = Text(IsAdditionalProgressInfoVisible ? "ViewLess" : "ViewMore");
+        _progressPresentation.UpdateProgressViewMoreText();
 
-    private void UpdateProgressText()
-    {
-        ProgressPhaseText = Session.CurrentPhase switch
-        {
-            BlockCheckScanPhase.BaselineProbing => Text("BlockCheck2PhaseBaseline"),
-            BlockCheckScanPhase.StartingStrategy => Text("BlockCheck2PhaseStartingStrategy"),
-            BlockCheckScanPhase.Probing => Text("BlockCheck2PhaseProbing"),
-            BlockCheckScanPhase.StrategyCompleted => Text("BlockCheck2PhaseStrategyCompleted"),
-            BlockCheckScanPhase.ValidatingPreset => Text("BlockCheck2PhaseValidatingConfig"),
-            BlockCheckScanPhase.RepairingPreset => Text("BlockCheck2PhaseRepairingConfig"),
-            _ => Text("BlockCheck2PhasePreparing"),
-        };
-        ProgressCounterText = string.Format(
-            Text("BlockCheck2ProgressCounterFormat"),
-            Session.ProgressCurrent,
-            Session.ProgressTotal);
-        StageRemainingTimeText = FormatRemainingTime();
-        OverallRemainingTimeText = FormatOverallRemainingTime();
-    }
+    private void UpdateProgressText() => _progressPresentation.UpdateProgressText();
 
-    private string FormatRemainingTime()
-    {
-        if (!Session.IsRunning && Session.CurrentPhase.HasValue)
-        {
-            return "—";
-        }
+    private string FormatRemainingTime() => _progressPresentation.FormatRemainingTime();
 
-        return _durationText.FormatRemaining(
-            Session.EstimatedRemainingTime,
-            "BlockCheck2RemainingTimeCalculating");
-    }
-
-    private string FormatOverallRemainingTime()
-    {
-        if (!Session.IsRunning && Session.CurrentPhase.HasValue)
-        {
-            return "—";
-        }
-
-        return _durationText.FormatRemaining(
-            Session.EstimatedOverallRemainingTime,
-            Session.CurrentPhase == BlockCheckScanPhase.BaselineProbing
-                ? "BlockCheck2OverallTimeCalculating"
-                : "BlockCheck2RemainingTimeCalculating");
-    }
+    private string FormatOverallRemainingTime() => _progressPresentation.FormatOverallRemainingTime();
 
     private void HandleRunCompleted()
     {

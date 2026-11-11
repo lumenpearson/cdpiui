@@ -20,6 +20,7 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly BlockCheck2DurationText _durationText;
     private readonly BlockCheck2RunCompletionPresenter _completionPresenter;
+    private readonly BlockCheck2ProgressPresentation _progressPresentation;
     private readonly IBlockCheck2MainPageView _view;
     private bool _handlersConnected;
     private BlockCheck2PreparationPreview? _preparationPreview;
@@ -52,6 +53,12 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
                 ResultNoticeTitle = title;
                 ResultNoticeMessage = message;
             });
+        _progressPresentation = new BlockCheck2ProgressPresentation(
+            () => Session.CurrentPhase, () => Session.IsRunning,
+            () => Session.ProgressCurrent, () => Session.ProgressTotal,
+            () => Session.EstimatedRemainingTime, () => Session.EstimatedOverallRemainingTime,
+            Text, _durationText.FormatRemaining);
+        _progressPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
     }
 
     public BlockCheck2ViewModel Session { get; } = new();
