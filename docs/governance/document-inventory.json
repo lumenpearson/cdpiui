@@ -1568,8 +1568,8 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-store-download-presentation-verification.md",
-      "firstIntroduction": "Local Store download presentation verification under issue225.",
-      "first_commit": null,
+      "firstIntroduction": "ca1b6b0882babd907d1557c785f542dcba1d30bd\tleather147\tExtract Store item download presentation state",
+      "first_commit": "ca1b6b0882babd907d1557c785f542dcba1d30bd",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",

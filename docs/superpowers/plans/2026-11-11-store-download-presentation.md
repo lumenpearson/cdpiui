@@ -47,14 +47,14 @@ one linked-source entry; focused design/plan/report and additive document invent
 **Interfaces:** consumes a stored Text function and original method arguments. Produces eleven
 current observable values, plain ErrorHappens and seven methods through host property/private forwards.
 
-- [ ] Read issue/spec/intake, preserve normal/source/compiled baselines, and obtain a fresh builder
+- [x] Read issue/spec/intake, preserve normal/source/compiled baselines, and obtain a fresh builder
   verdict before product code. Inspect accepted 172 cases for moved-field dependencies.
-- [ ] Write cold/ordering/gate/stage/culture/reentry/failure tests first and observe expected missing-owner RED.
-- [ ] Implement owner, eleven host forwards, seven method forwards, two remaining latch accesses and
+- [x] Write cold/ordering/gate/stage/culture/reentry/failure tests first and observe expected missing-owner RED.
+- [x] Implement owner, eleven host forwards, seven method forwards, two remaining latch accesses and
   one cold constructor bridge; preserve prior statements. Run focused GREEN and inspect assertions.
-- [ ] Apply a controlled early error latch before error publications, observe behavioral failures,
+- [x] Apply a controlled early error latch before error publications, observe behavioral failures,
   restore exact source/hash in finally, then focused/full GREEN and normal GUI with zero warnings/errors.
-- [ ] Verify source/compiled public preservation, exact existing footprint, whole-host/policy/property/
+- [x] Verify source/compiled public preservation, exact existing footprint, whole-host/policy/property/
   constructor/bridge/latch/Queue guards, line bounds, governance and redacted scans; commit checkpoint.
 
 ### Task 2: Qualify actual host composition and accept locally
@@ -65,11 +65,11 @@ dedicated report and additive inventory.
 **Interfaces:** consumes Task 1 product pin and accepted 172 corpus, 34 old case partials and 21 cut
 paths. Produces bounded real Store host/private setter/forward evidence and local draft acceptance.
 
-- [ ] Read Task 1 evidence/brief; preserve all accepted labels/case bytes/cuts and derive fresh counts.
+- [x] Read Task 1 evidence/brief; preserve all accepted labels/case bytes/cuts and derive fresh counts.
   Add discriminating actual host/setter/guard/latch/reentry/failure cases before build.
-- [ ] Obtain independent pre-build review; build zero warnings/errors, pin all actual artifacts/resources/
+- [x] Obtain independent pre-build review; build zero warnings/errors, pin all actual artifacts/resources/
   sources/runner/verifier and baseline filenames/hashes, then independent prelaunch READY.
-- [ ] Obtain a NEW explicit exclusive lease, run one exact owned process, and verify corpus/COMPLETE/
+- [x] Obtain a NEW explicit exclusive lease, run one exact owned process, and verify corpus/COMPLETE/
   exit/streams/source/resources/hash/IO/absence/process cleanup; idle/requestfalse and guarded release.
 - [ ] Update evidence and obtain fresh whole-branch review. Resolve Critical/Important through observed
   RED to GREEN, retain failures, and ledger all rulings/deferred Minor findings and their costs.
