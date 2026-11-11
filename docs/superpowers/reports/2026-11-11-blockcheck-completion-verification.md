@@ -83,7 +83,9 @@ and ordered peer141 projection, then add five actual MainPage ViewModel groups:
 - Completed/history and no-bypass/HTTP notices use actual localized values and host setter order.
 - Navigation and notice-open callbacks replace current state/error before the real policy reads.
 - Reentry from the severity notification keeps the inner severity while the outer title/message
-  continue, including the original equality suppression and host sender identity.
+  continue, with host sender identity and two navigation updates. Equality suppression remains
+  confirmed by the unchanged SetProperty source; the new case does not count the repeated
+  IsResultNoticeOpen=true assignment separately.
 - A title-notification exception retains identity and already-published fields, skips the remaining
   message/navigation work, then permits retry after that observer is detached.
 
@@ -130,6 +132,16 @@ resource post-proof and explicit corrected101/released102 receipts in the dedica
 
 ## Final review and acceptance
 
-Fresh whole-change review and the case-specific acceptance/actual ProjectDone readback remain
-pending at this evidence checkpoint. Issues13/14/15 and draft PR216 retain their separate
-integration, G1 and wider native boundaries; no main merge or release decision is implied.
+Fresh independent reviewer /root/completion_integration_review accepted the whole change
+3623584..11957046a38f9db56b9b37cc6d79082766c062af:0Critical,0Important,1Minor.
+The reviewer independently reconstructed the source/read/order/nullable/exception contract, all
+58 pins and522 prior hashes,154 labels and149/137/141 corpora,30 previous case bytes,21 cuts,
+resource5206 entries, document origins and grant/idle/exit receipts. Build/tests/apps were not rerun.
+The Minor identifies the uncounted repeated notice-open notification in the reentry case. This
+report now attributes equality suppression to unchanged source, and the additional runtime counter
+remains deferred. No product, case, fixture, binary or evidence change was needed.
+
+Stacked draft publication, exact final-head CI, actual PR Project fields and the case-specific
+acceptance/ProjectDone readback remain pending at this evidence checkpoint. Issues13/14/15 and
+draft PR216 retain their separate integration, G1 and wider native boundaries; no main merge or
+release decision is implied. Their tracker receipts hold subsequent publication/acceptance state.

@@ -66,7 +66,7 @@ native corpus, actual build/pins and execution/postcheck receipt for this source
 - [x] Coordinate a new explicit exclusive lease, run the owned bounded process once, validate
   exact pass labels/COMPLETE/exit0/streams/IO/hash/resource/source/absence/process checks, then
   publish idle/requestfalse and guarded release. Preserve and diagnose failed attempts.
-- [ ] Update evidence/docs; obtain fresh whole-change independent review, fix Critical/Important
+- [x] Update evidence/docs; obtain fresh whole-change independent review, fix Critical/Important
   with observed RED→GREEN and ledger any rulings/deferred minors.
 - [ ] Publish only this stage as a stacked draft PR against frozen dev/audit-class-integration;
   verify all required checks on its exact final HEAD and actual PR metadata/Project fields.
