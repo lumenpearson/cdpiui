@@ -19,6 +19,7 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
 {
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly BlockCheck2DurationText _durationText;
+    private readonly BlockCheck2RunCompletionPresenter _completionPresenter;
     private readonly IBlockCheck2MainPageView _view;
     private bool _handlersConnected;
     private BlockCheck2PreparationPreview? _preparationPreview;
@@ -42,6 +43,15 @@ public sealed partial class BlockCheck2MainPageViewModel : ObservableObject
         _view = view;
         _durationText = new BlockCheck2DurationText(_localizer);
         CancelCommand = new RelayCommand(CancelFromButton, () => _isCancelEnabled);
+        _completionPresenter = new BlockCheck2RunCompletionPresenter(
+            () => Session.State, () => Session.NoBypassRequired, () => Session.LastReportIsHttpOnly,
+            () => Session.OperationError, () => Session.HistorySaveError, Text, FormatIssues,
+            (severity, title, message) =>
+            {
+                ResultNoticeSeverity = severity;
+                ResultNoticeTitle = title;
+                ResultNoticeMessage = message;
+            });
     }
 
     public BlockCheck2ViewModel Session { get; } = new();

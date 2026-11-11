@@ -40,13 +40,13 @@ Tests.csproj; this plan/design and additive docs/governance/document-inventory.j
 with one notice publisher call and no mutable invocation state. Host forwards through its original
 private HandleRunCompleted and three setters.
 
-- [ ] Read the design/issue and actual metadata; preserve clean branch/base and API/normal GUI baseline.
+- [x] Read the design/issue and actual metadata; preserve clean branch/base and API/normal GUI baseline.
   Check design with a fresh builder reviewer before implementation.
-- [ ] Write focused tests first for state/read/key/short-circuit/null/reentry/exception contracts.
+- [x] Write focused tests first for state/read/key/short-circuit/null/reentry/exception contracts.
   Observe the expected missing component or behavior RED before implementing it.
-- [ ] Implement the original policy in the presenter. Keep host lifecycle statements in place and
+- [x] Implement the original policy in the presenter. Keep host lifecycle statements in place and
   add constructor wiring without invoking ports. Run focused tests and inspect actual output.
-- [ ] Prove a controlled cache/read mutation fails behavior assertions, preserve output, restore
+- [x] Prove a controlled cache/read mutation fails behavior assertions, preserve output, restore
   exact bytes/hash and run focused/full GREEN plus normal Release/x64 GUI0warnings/errors.
 - [ ] Verify source and compiled public API preservation, exact product footprint and current
   governance/secret scans. Record failures/resolution and commit the owned product checkpoint.
