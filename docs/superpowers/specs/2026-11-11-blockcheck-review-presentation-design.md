@@ -5,16 +5,16 @@
 [Issue #221](https://github.com/lumenpearson/cdpiui/issues/221) owns the next LOCAL audit
 decomposition. The baseline is frozen draft PR #220 at
 `3c7f8961477dbff0b4b021493b629ba1a1a0fa05`. Its local child #219 is completed with all six
-criteria, actual Project Done under grant117, and [final readback](https://github.com/lumenpearson/cdpiui/issues/219#issuecomment-6795215194).
+criteria, actual Project Done under grant 117, and [final readback](https://github.com/lumenpearson/cdpiui/issues/219#issuecomment-6795215194).
 This does not accept the broad integration, G1, installed-product or release boundaries.
 
-Use `dev/blockcheck-review-presentation` in the existing isolated Root worktree. Actual issue221
-Project intake119 was reloaded and read back before this design and implementation: In progress,
+Use `dev/blockcheck-review-presentation` in the existing isolated Root worktree. Actual issue #221
+Project intake under grant 119 was reloaded and read back before this design and implementation: In progress,
 P2, Architecture, Medium, G2, lumenpearson and two canonical labels. The
 [intake receipt](https://github.com/lumenpearson/cdpiui/issues/221#issuecomment-6795366566) records
-that evidence. The queue released120 with all six participants paused.
+that evidence. The queue released 120 with all six participants paused.
 
-The four MainPage partials total740 lines. Their Review partial still holds six strings and the
+The four MainPage partials total 740 lines. Their Review partial still holds six strings and the
 policy that formats the preparation summary. Give this responsibility one internal state owner.
 The interface and adapter below are the executor's design choice under the user's instruction to
 continue independently. A fresh builder must inspect this design before product code changes.
@@ -25,7 +25,7 @@ Create three focused files beside the existing MainPage owners:
 
 | File | Responsibility |
 | --- | --- |
-| IBlockCheck2ReviewSource.cs | Read-only contract for the15 current Session values used by this policy. |
+| IBlockCheck2ReviewSource.cs | Read-only contract for the 15 current Session values used by this policy. |
 | BlockCheck2ReviewSource.cs | Direct adapter over one actual BlockCheck2ViewModel, with no copies or policy. |
 | BlockCheck2ReviewPresentation.cs | Six observable strings and the literal summary update policy. |
 
@@ -103,7 +103,7 @@ the text delegate and the existing FormatDuration call with its delegate. Preser
 ## Verification
 
 Write focused linked-source tests before implementation and observe the missing-component RED.
-Cover cold dependencies, all15 source properties, literal protocol/IP combinations and order,
+Cover cold dependencies, all 15 source properties, literal protocol/IP combinations and order,
 conditional TLS localization, preset fallback and second-read short circuit, sources/preview identity,
 numeric culture, null and positive maximum estimates, per-publication changes, repeated equality,
 nested updates and partial observer/port failures. Explicitly assert a positive maximum estimate
@@ -112,11 +112,11 @@ reaches the duration formatter with distinct job/request values. Test null-previ
 A controlled early preset cache must fail an observable mutation assertion. Restore exact bytes and
 hash, then pass focused/full suites and normal Release/x64 GUI. Compare source/compiled public
 contracts and exact two-host-files/three-internal-files footprint. A source guard must compare policy
-tokens, significant strings, all15 direct adapter mappings, six private setters, one bridge and the
+tokens, significant strings, all 15 direct adapter mappings, six private setters, one bridge and the
 unchanged host remainder. Record every failed tool attempt and correction truthfully.
 
 Build a NEW immutable native fixture from the accepted160 recipe. Preserve all prior case bytes,
-labels and21 cuts. The new owner/adapter/MainPage remain uncut. Use actual Session/options and
+labels and 21 cuts. The new owner/adapter/MainPage remain uncut. Use actual Session/options and
 controlled values, real preview/localizer/duration/dispatcher, and a narrow view with the existing
 inert operating ports. Exercise positive maximum formatting, live callback mutations, private
 setters/sender/equality, nested previews and exceptions. Seed list-item content explicitly when
@@ -131,9 +131,9 @@ separately from executed assertions. No full Page, XAML Loading or GC collection
 
 ## Delivery and exclusions
 
-Complete fresh final whole-branch review and any required Critical/Important RED→GREEN fixes.
-Publish a stacked draft on frozen PR220, verify exact final-head checks and actual PR Project fields,
+Complete fresh final whole-branch review and any required Critical/Important REDв†’GREEN fixes.
+Publish a stacked draft on frozen PR #220, verify exact final-head checks and actual PR Project fields,
 then post six-section LOCAL acceptance and immediately close completed/set actual Done/read back.
-Parent issues13/14/15 and drafts216/218/220 retain their separate integration and release boundaries.
+Parent issues #13/#14/#15 and draft PRs #216/#218/#220 retain their separate integration and release boundaries.
 No shared-main change, installation, dependency update, security takeover or destructive operation
 is authorized by this stage. Retain all workspaces, refs and accepted/rejected evidence.
