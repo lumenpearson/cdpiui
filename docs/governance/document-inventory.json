@@ -1478,8 +1478,8 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-blockcheck-progress-presentation-verification.md",
-      "firstIntroduction": "Local progress presentation verification under issue219; product introduction is recorded after the checkpoint commit.",
-      "first_commit": null,
+      "firstIntroduction": "41585746c9171aac7827760332c8f79f919f6f48\tleather147\tExtract MainPage progress presentation state",
+      "first_commit": "41585746c9171aac7827760332c8f79f919f6f48",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",

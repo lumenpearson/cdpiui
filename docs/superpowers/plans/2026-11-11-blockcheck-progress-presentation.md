@@ -42,14 +42,14 @@ test project link, this design/plan and additive document inventory.
 properties and Toggle/Update/Format methods with the old names. MainPage preserves its public and
 private forwarding entrypoints and one PropertyChanged bridge.
 
-- [ ] Read the issue/design and actual fields; preserve parent and current source/compiled/normal
+- [x] Read the issue/design and actual fields; preserve parent and current source/compiled/normal
   artifact baselines. Have a fresh builder check the design before code.
-- [ ] Write focused tests first and observe the expected missing-component/behavior RED.
-- [ ] Implement cold owner state, exact original policy and host facade/bridge, without touching
+- [x] Write focused tests first and observe the expected missing-component/behavior RED.
+- [x] Implement cold owner state, exact original policy and host facade/bridge, without touching
   lifecycle/estimator/duration/navigation/completion. Run focused tests and inspect real results.
-- [ ] Apply a meaningful controlled early-read/cache mutation, observe behavior assertions fail,
+- [x] Apply a meaningful controlled early-read/cache mutation, observe behavior assertions fail,
   restore exact bytes/hash and run focused/full GREEN plus normal Release/x64 GUI0-0.
-- [ ] Verify source/compiled public preservation, exact product footprint, source/bridge/read-order
+- [x] Verify source/compiled public preservation, exact product footprint, source/bridge/read-order
   guards, governance and redacted secret scans. Record failures and commit the product checkpoint.
 
 ### Task 2: Qualify actual host composition and accept locally
@@ -60,11 +60,11 @@ dedicated verification report and additive inventory.
 **Interfaces:** consumes Task1 source pin and accepted154 source/cases/cuts; produces an independently
 reviewed new actual-host corpus, pins/runtime/postchecks and local delivery record.
 
-- [ ] Read Task1 evidence; preserve154 prior labels/case bytes, derive all source inputs/cuts/extras
+- [x] Read Task1 evidence; preserve154 prior labels/case bytes, derive all source inputs/cuts/extras
   and new actual host cases before compiling a fresh path.
-- [ ] Obtain independent pre-build review, build0-0, derive actual artifacts/resources/source/runner/
+- [x] Obtain independent pre-build review, build0-0, derive actual artifacts/resources/source/runner/
   verifier pins and all prior output hashes, then independent prelaunch READY.
-- [ ] Coordinate a new explicit lease, execute one owned process and prove labels/COMPLETE/exit0,
+- [x] Coordinate a new explicit lease, execute one owned process and prove labels/COMPLETE/exit0,
   streams/IO/source/resources/hashes/absence/process cleanup; idle/requestfalse/guarded release.
 - [ ] Update evidence/docs; obtain fresh whole-change review, resolve Critical/Important with
   observed RED→GREEN and ledger rulings/deferred minors. Preserve original artifacts.
