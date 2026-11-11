@@ -79,15 +79,15 @@ postcheck evidence, dedicated verification report and additive document inventor
 Produces actual ConfigMaker host/private property/public Show/EventArgs/localizer/current-dispatcher
 evidence, six new groups, a stacked draft and qualified LOCAL acceptance. Derive every physical count.
 
-- [ ] Read Task1 brief/evidence; retain old178 labels/cases/cuts. Add six actual-composition groups before
+- [x] Read Task1 brief/evidence; retain old178 labels/cases/cuts. Add six actual-composition groups before
   build: cold defaults/accessors/closed owner; severity titles/unknown/null event versus field; notice
   flips flag/disabled-open carryover/direct setter; nested notice/property/outer arguments/current
   equality; each four observer boundaries and notice exception/identity/partial retry; independent
   instances/raw setters/equality. Use the actual cold model and a view that rejects operating endpoints.
-- [ ] Independently review source/case/corpus/scope before build. Build the NEW fixture.
+- [x] Independently review source/case/corpus/scope before build. Build the NEW fixture.
   Expected: zero warnings/errors. Pin actual binaries/resources/source/runner/verifier/full prior output
   filenames/hashes. Require independent prelaunch READY, no pending pins/process/output and actual PE scope.
-- [ ] Request a NEW exclusive lease after all peers idle; run one exact owned process.
+- [x] Request a NEW exclusive lease after all peers idle; run one exact owned process.
   Expected: exactly184uniquePASS=178+6, all prior prefixes, oneCOMPLETE/0FAIL/exit0/empty streams.
   Verify all pins/prior output hashes/resources/source/corpus, exact new names/golden reports/inputs/
   forbidden absence and normal GUI unchanged; exact owned process absence, idle/requestfalse/release.

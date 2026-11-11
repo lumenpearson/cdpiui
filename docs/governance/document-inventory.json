@@ -1598,8 +1598,8 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-configmaker-status-presentation-verification.md",
-      "firstIntroduction": null,
-      "first_commit": null,
+      "firstIntroduction": "05e00619c256ebde45b79f4688154d4aa33b9876\tleather147\tExtract ConfigMaker status presentation into a typed owner",
+      "first_commit": "05e00619c256ebde45b79f4688154d4aa33b9876",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
