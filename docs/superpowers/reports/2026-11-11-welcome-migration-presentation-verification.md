@@ -141,10 +141,10 @@ owner exception identity. The prepared view rejects every endpoint; case code do
 operating session/queue/import or window lifecycle. Its cleanup detaches test observers and disposes
 only the owned framework CTS. These statements describe inspected code, not an executed190run.
 
-Fresh whole-range SOURCE review, draft publication and hosted exact-head CI may now precede
-runtime under the documented external-stop amendment. Native execution/retained-runtime review,
+At that technical checkpoint, fresh whole-range SOURCE review, draft publication and hosted CI
+could precede runtime under the documented external-stop amendment. Native execution/retained-runtime review,
 actual PR Project fields, six-section LOCAL acceptance and immediate completed/Done/readback
-remain mandatory and incomplete. Parents13/14/15 and earlier drafts retain their acceptance;
+were mandatory and incomplete. Parents13/14/15 and earlier drafts retain their separate acceptance;
 this report does not merge them or declare Task2 complete.
 
 The shared UI has a separately retained failed Lessons AVD process object from161, with no test
@@ -161,8 +161,10 @@ the231 native/review/CI/Done scope. Root verified its user-message identity
 authorized Project14 only and the Lessons731 continuation. Those scopes are not interchangeable.
 Fresh qualified167 idle, actor acknowledgements and a sole Root owner-writer protocol preceded
 release168/Project14-only169/release170/Lessons171. No lease was reused after Esc. The old77492
-process qualification remains unresolved; another session owns that environment. Root has not
-executed the231 fixture or completed its native, actual PR Project or acceptance gates.
+process qualification remains unresolved; another session owns that environment. At that resumption
+checkpoint, Root had not executed the231 fixture or completed its native, actual PR Project or
+acceptance gates. The later native and Project results are recorded below; final LOCAL acceptance
+still requires the delivery-HEAD checks and completed/Done readback.
 
 ## Whole-range source review and operational corrections
 
