@@ -110,7 +110,7 @@ acknowledged sole Root coordinator serializes owner grants/releases under a name
 or compiled case changed. Fresh operational/prelaunch review, peer idle and an exact new native
 grant remain mandatory; prior167 and technical readiness cannot authorize execution.
 
-**External-stop ordering amendment:** physical user Esc167 holds UI/native execution and queue
+**Historical external-stop ordering amendment:** physical user Esc167 held UI/native execution and queue
 handoffs. After technical compilation/pinning and independent whole-range SOURCE review, a clearly
 incomplete stacked draft and hosted final-head CI may precede runtime execution. Keep native and
 actual PR Project checks outstanding. The run, retained-runtime review, case-specific acceptance
@@ -125,19 +125,19 @@ run/resource/corpus/process/queue evidence, dedicated report and additive invent
 six new actual cold Welcome composition groups,190exact corpus, independent review, stacked draft,
 final-head CI/actual metadata and case-specific local acceptance. No new operating boundary.
 
-- [ ] Read Task1 brief/evidence, retain every184label/rawcase/21cut. Add six groups from the design
+- [x] Read Task1 brief/evidence, retain every184label/rawcase/21cut. Add six groups from the design
   before build. Actual cold WelcomeViewModel/currentdispatcher/typedowner/privateprops/helpers,
   rejecting view endpoints, no commands/session/queue/import/lifecycle; detach test observers and
   dispose only each own CTS. Expected: full source/cuts/corpus reconstruction; raw reflection
   exceptions distinguished; no new endpoint cut or forbidden operation.
-- [ ] Independent pre-build source/case/corpus/containment review, then build NEW fixture.
+- [x] Independent pre-build source/case/corpus/containment review, then build NEW fixture.
   Expected0warnings/errors. Derive/pin actual binaries/resources/source/runner/verifier/old outputs;
   verify JSON/generated resource parity, actual PE/nonadmin/absence. Independent prelaunch READY.
-- [ ] Request NEWexclusivegrant after peers idle; recheck actualowner/pins/absence, run one owned
+- [x] Request NEWexclusivegrant after peers idle; recheck actualowner/pins/absence, run one owned
   process. Expected190uniquePASS/all184olderprefixes/COMPLETE1/FAIL0/exit0/streams0, allsource/
   resources/input/prioroutput/newnames/goldens/forbidden/currentnormal identities preserved.
   Check separate PID/exactEXE absence, idle/requestfalse/pendingfalse/guardrelease/readback.
-- [ ] Update report, fresh whole-range independent review on most capable available explicit model.
+- [x] Update report, fresh whole-range independent review on most capable available explicit model.
   Expected0unresolvedCritical/Important. Fix through observed RED→GREEN/fullverification as needed;
   record every ruling/deferredMinor with costs. Documentation-only corrections retain artifact identity.
 - [ ] Publish draft stacked on frozen dev/configmaker-status-presentation/b0 with Refs#231 and#14.

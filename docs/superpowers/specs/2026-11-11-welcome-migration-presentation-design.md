@@ -177,10 +177,21 @@ original design checkpoint, product implementation had not started.
 ## Delivery ordering after the external UI stop
 
 Physical user Esc under shared lease167 stopped Computer Use after the managed product checkpoint.
-All UI, native GUI execution and queue handoffs remain held. Technical source preparation/build/
+At that checkpoint, all UI, native GUI execution and queue handoffs were held. Technical source preparation/build/
 pinning, read-only review and hosted CI can continue. After independent whole-range source review,
 publish a clearly incomplete stacked draft to obtain exact-head CI, with native runtime and actual
 PR Project readback unchecked. This changes delivery order, not acceptance. A later explicit user
 UI/native scope, fresh prelaunch review/current peer idle/new grant, actual190run, retained-runtime
 review and completed/Done readback remain required. Do not mark Task2 or issue231 complete from
 the source draft, compiled fixture or hosted CI. Source changes require appropriate new verification.
+
+Later, the explicit human231 UI/native-resume message was verified by its actual user-message
+record. The original stopped packet remains immutable. Additive operationalr2 rejects optimized
+Python before IO and removes the native helper's queue mutation operations; isolated regressions
+reproduce both old defects and pass after correction. Actual owner transitions use the separately
+acknowledged sole Root coordinator under one named mutex. This is not a global filesystem CAS.
+Fresh qualified peer idle and independent prelaunch READY preceded NEW173; the single190-group
+run passed and Root confirmed owned PID/exact EXE absence, idle/requestfalse/release174. The
+runtime receipt attributes constructor coldness to source, since its observer attaches afterwards.
+Final evidence review, exact delivery-HEAD CI and actual Project/LOCAL acceptance remain separate
+gates; their current results belong to the verification report and issue231 acceptance record.

@@ -21,7 +21,7 @@ Live main advanced separately from6c00 to21555a29ce9fba98c678c445d04ee9f6ce3c85b
 language-selector PR229, six localization/test paths with no Welcome change. This stage keeps
 the named frozen b0 inputs and does not borrow229 installed results or claim whole-main equivalence.
 Another explicitly assigned owner now integrates the earlier stack through227 in a separate
-checkout under14; Root230/231 and all original refs/artifacts remain outside that integration scope.
+checkout under14; Root230/231 remain outside that integration scope and all original refs/artifacts are preserved.
 
 ## Characterization and controlled mutation
 
@@ -104,7 +104,7 @@ ignored design proposals during UI wait but admit actual metadata before impleme
 parent despite live-main movement; retain artifacts instead of destructive cleanup. These are
 executor choices under autonomous authorization, not additional user design approvals.
 
-## Technical native preparation; runtime remains unexecuted
+## Technical native preparation and initially held runtime
 
 NEW fixture F:/cdpiui-verify/cdpiui-welcome-display-be88083-20261111 comes from productbe880.
 Archive SHA256 DD03B4024F006B443E65FFD3E10CCFB352511E412DADEDC2DCFEF1578F2505A8.
@@ -128,7 +128,7 @@ Actual PE is AMD64/PE32+/WindowsGUI with one embedded asInvoker/uiAccessfalse ma
 Native DLL SHA256 7E6FD2BBB9623CDF0C9BDD26AF7CC69854E83FDBD5762E226368CEBBE6FFAD99.
 Runner SHA25645B490C7BC5599B761AD28F28A78F462E14C69FA5C3037B1E1D696AE2D42A588;
 runtime verifier SHA256A9F14C1F08EC2C2EFA9796B7F20A7B211C30A1E93EA56B7EE8D7181F8D910CF1.
-The normal GUI remains8D4663; no new native run/output exists. Post-build technical peer review is
+At the technical checkpoint, the normal GUI remained8D4663 and no new native run/output existed. Post-build technical peer review was
 requested separately and cannot grant execution. No accepted old fixture was modified or rerun.
 
 Six groups are written for actual cold composition/accessors/closed owner/dispatcher/VM sender, raw values/
@@ -203,9 +203,56 @@ The cold native host subscribes after construction, so its empty event list cove
 after subscription. Constructor coldness comes from inspected initialization/host source, not
 that later observation. No claim about earlier observed notifications is made.
 
-The new r2 hold records verified human resumption; operational review, a fresh independent
-prelaunch verdict, current peer idle and a new exact native lease are still required. It grants
-no native authority by itself. Original source/case/binary/resource evidence remains at productbe880.
+The new r2 hold records verified human resumption. It grants no native authority by itself.
+Original source/case/binary/resource evidence remains at productbe880.
+
+## Actual bounded native execution
+
+Independent peer01a1c049 first returned CONDITIONAL OPERATIONAL READY after checking all28r2
+inputs and the isolated controls. It then performed a separate fresh prelaunch read of released172,
+canonical candidate173, current qualified Lessons171 idle, all six UI flags, no pending calls,
+the verified human scope, exact fixture process absence/nonadmin context and all86pins/522files.
+Its READY allowed one future exact173 run. A new PR233 Project request arrived after that read;
+Root paused the grant and its owner temporarily set its own request not-ready. Fresh empty-ready
+guards then passed. Only Root published173 under the mutex and verified the readback before launch.
+
+The r2 runner executed one owned asInvoker process, PID87792, from
+2026-11-11T21:57:06.6019765Z to21:57:09.8547920Z. It returned exit0 under the45-second bound.
+There are190uniquePASS, all184old labels in order and every older prefix/projection, COMPLETE1,
+FAIL0 and empty stdout/stderr. Retained log SHA256:
+67B3FA693A6427C86B301973969A9CCA834FB739273A024140D0684C42194688.
+All six new actual Welcome groups passed, including real localized/missing-key fallback, raw
+values/default equality, nested mode/derived observer faults, status/error partial retry, reflection
+wrappers, late host Next tail and final observer reentry. Runtime observation starts after the
+observer subscribes; constructor no-notification behavior is established by inspected source.
+
+Postchecks preserve all1613tracked inputs/21inherited cuts/raw old cases,86source/resource/binary
+pins, all522prior output names/hashes and the normal8D46GUI. Exactly six new direct-child files
+produce528total: three literal inputs16/16/15bytes, two golden reports354/260bytes and the result
+log. Current report fields, all20resource hashes and forbidden-output absence pass. The runner and
+separate external Get-Process/CIM check confirm PID87792 and the exact fixture EXE are absent.
+Root recorded idle173/requestfalse/no pending and released174 with fresh readback under the mutex.
+No retry, force, UAC or foreign process action occurred. The frozen28operational inputs are still
+unchanged; a38-file retained-runtime packet pins the observed logs, process/queue receipts and
+output checks. Independent peer01a1c049 returned RETAINED RUNTIME PASS, zero blocking findings.
+It rehashed all38runtime inputs and28operational inputs, rebuilt all1613Git/21cut/raw-case
+comparisons read-only, checked actual190corpus/prefixes/streams/process/IO, all86pins/522prior
+files/exact528set/20resources/5206source values/normalGUI and the173grant/idle/release174 chain.
+Its separate process read also confirms owned PID/exact EXE absence. It ran no helper, fixture,
+build or UI action and made no queue write. The immutable fixture will not be rerun.
+
+Draft PR232 targets frozen PR230/b0. At publication a45d557, hosted libraries independently passed
+2672/2672/7seconds with0failures/skips, CI43106726512 has four successful jobs, CodeQL43106726692
+and Governance43106726174 pass, and current Contribution metadata43106790714 passes. Earlier
+cancelled/superseded metadata attempts remain visible; they are not current-head product failures.
+A later documentation-only delivery commit must receive its own exact-head checks. Under fresh
+browser-only177, the existing auto-added PR232 card was classified and read after new navigation:
+one matching draft/open232row, In progress/P2/Architecture/Low/G2/lumenpearson and exactly
+area:architecture+type:refactor. FullAX/JPG/JSON are retained in the shared pr232-project-intake
+directory. Only this card changed. Root closed own tabs8/9, recorded idle177/requestfalse/no
+pending and guarded release178/all six paused. Final delivery-HEAD checks, case-specific LOCAL
+acceptance and immediate completed/Done/readback remain pending at this report checkpoint. Their
+later issue/API/Project receipts do not require another product or immutable fixture execution.
 
 No full loaded WelcomeWindow/XAML, visual EN/RU/accessibility, real migration/session/queue/import/
 license/storage, cancellation/teardown/GC/concurrency, full metadata/native ABI, installed product,
