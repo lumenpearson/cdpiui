@@ -56,6 +56,11 @@
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ProgressPresentation.cs" Link="Presentation\BlockCheck2ProgressPresentation.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2ReviewSource.cs" Link="Presentation\IBlockCheck2ReviewSource.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ReviewPresentation.cs" Link="Presentation\BlockCheck2ReviewPresentation.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2NavigationSource.cs" Link="Presentation\IBlockCheck2NavigationSource.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2WizardNavigation.cs" Link="Presentation\BlockCheck2WizardNavigation.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\IBlockCheck2MainPageView.cs" Link="Presentation\IBlockCheck2MainPageView.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2WizardStep.cs" Link="Presentation\BlockCheck2WizardStep.cs" />
+    <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2NavigationButtons.cs" Link="Presentation\BlockCheck2NavigationButtons.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2PreparationPreview.cs" Link="Presentation\BlockCheck2PreparationPreview.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2NoticeSeverity.cs" Link="Presentation\BlockCheck2NoticeSeverity.cs" />
     <Compile Include="..\CDPIUI\ViewModels\BlockCheck2\BlockCheck2ResultSelection.cs" Link="Presentation\BlockCheck2ResultSelection.cs" />
