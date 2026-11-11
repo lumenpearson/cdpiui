@@ -91,7 +91,7 @@ evidence, six new groups, a stacked draft and qualified LOCAL acceptance. Derive
   Expected: exactly184uniquePASS=178+6, all prior prefixes, oneCOMPLETE/0FAIL/exit0/empty streams.
   Verify all pins/prior output hashes/resources/source/corpus, exact new names/golden reports/inputs/
   forbidden absence and normal GUI unchanged; exact owned process absence, idle/requestfalse/release.
-- [ ] Update report; obtain fresh whole-branch independent review on the most capable available model.
+- [x] Update report; obtain fresh whole-branch independent review on the most capable available model.
   Expected: no unresolved Critical/Important. Resolve through observed RED to GREEN/full suite in one
   fix pass; ledger every ruling and deferred Minor. Retain all failed attempts/artifacts.
 - [ ] Publish draft stacked on frozen dev/store-download-presentation/3afa with Refs #14 and Refs #228.

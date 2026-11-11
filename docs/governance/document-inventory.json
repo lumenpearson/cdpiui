@@ -1604,7 +1604,7 @@
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
       "language": "en",
-      "changes": "Record observed status pipeline TDD, early-flag mutation and exact restoration, full managed/build/contract checks, retained harness/guard failures and pending bounded native delivery."
+      "changes": "Record observed status pipeline TDD, exact mutation restoration, full managed/build/contract checks, accepted native184 composition, retained harness failures, independent reviews and pending draft/CI/local acceptance."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",

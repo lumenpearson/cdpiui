@@ -158,16 +158,36 @@ literal inputs/reports/new names/forbidden absence and read frozen grant151/rele
 A separate current CLI read confirmed PID89224 absent and exact fixture processes zero. It executed
 no product, build, tests, writers or UI and does not replace the fresh whole-range review.
 
+## Fresh whole-change review
+
+Fresh reviewer configmaker_status_final_review used explicit gpt-6-astra/xhigh on the complete
+`3afa82e3f4947ce4bef38b14d86c642c93ddbe90` through
+`a3b7252e49cbda8fb8e1b11738fe315c52875ba3` range: three commits, eight files.
+Findings: zero Critical, zero Important and one Minor concerning two stale documentation phrases.
+The caller-null test is now described as executed; the inventory summary now includes completed
+bounded native qualification and keeps only delivery acceptance pending. These record corrections
+implement the user's current-evidence rule, without changing product/test/native bytes or rerunning
+accepted execution. The Minor is addressed; no code correction was requested.
+
+The reviewer independently reconstructed the host, cold ports, properties, current flag/event and
+nested partial-effect semantics; read the managed RED/mutation/restoration/full/build evidence;
+and verified source/compiled/hash records. It separately reconstructed native source/cuts/cases/
+resources/corpus and rehashed all77/all522, inputs/reports/output names and lease/process evidence.
+It executed no tests, build, application, verification writer or UI. The earlier coordinated reviews
+and this fresh whole-range review have distinct attribution. Every behavior declined by the fresh
+reviewer has an executor ruling and cost in the ledger. The scoped verdict supports a stacked draft,
+contingent on final-head CI, actual PR Project fields and immediate local issue acceptance/readback.
+
 ## Pending delivery gates and limits
 
 Native actual title-null/localization-subscriber mutation/arbitrary inline-port failures remain
 managed/source boundaries where uncut production adapters cannot produce them safely. The native
-caller-null case must prove EventArgs.Message empty versus inline StatusMessage null. Actual VM
+caller-null case proved EventArgs.Message empty versus inline StatusMessage null. Actual VM
 sender evidence does not certify the unchanged UserControl's second sender bridge at runtime.
 Full loaded Page/UserControl, visuals/accessibility/EN-RU, operating workflows, GC/concurrency,
 all metadata/native ABI, installed product/G1/integration/release remain separate.
 
-Whole-branch fresh review, draft publication/final-head CI, actual PR Project fields, six-criterion
+Draft publication/final-head CI, actual PR Project fields, six-criterion
 local acceptance and immediate completed/Done/readback remain pending. Retain all refs/worktrees/
 archives/accepted or rejected evidence. Raw evidence belongs to this plan's ignored
 `.superpowers/sdd/2026-11-11-configmaker-status-presentation/` directory.
