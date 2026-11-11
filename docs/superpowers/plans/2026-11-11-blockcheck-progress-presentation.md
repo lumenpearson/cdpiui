@@ -66,7 +66,7 @@ reviewed new actual-host corpus, pins/runtime/postchecks and local delivery reco
   verifier pins and all prior output hashes, then independent prelaunch READY.
 - [x] Coordinate a new explicit lease, execute one owned process and prove labels/COMPLETE/exit0,
   streams/IO/source/resources/hashes/absence/process cleanup; idle/requestfalse/guarded release.
-- [ ] Update evidence/docs; obtain fresh whole-change review, resolve Critical/Important with
+- [x] Update evidence/docs; obtain fresh whole-change review, resolve Critical/Important with
   observed RED→GREEN and ledger rulings/deferred minors. Preserve original artifacts.
 - [ ] Publish a stacked draft against frozen dev/blockcheck-completion-presentation with Refs14/219;
   verify exact final-head checks and actual PR/Project fields, no parent or main merge.
