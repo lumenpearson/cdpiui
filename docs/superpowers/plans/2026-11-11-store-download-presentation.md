@@ -71,7 +71,7 @@ paths. Produces bounded real Store host/private setter/forward evidence and loca
   sources/runner/verifier and baseline filenames/hashes, then independent prelaunch READY.
 - [x] Obtain a NEW explicit exclusive lease, run one exact owned process, and verify corpus/COMPLETE/
   exit/streams/source/resources/hash/IO/absence/process cleanup; idle/requestfalse and guarded release.
-- [ ] Update evidence and obtain fresh whole-branch review. Resolve Critical/Important through observed
+- [x] Update evidence and obtain fresh whole-branch review. Resolve Critical/Important through observed
   RED to GREEN, retain failures, and ledger all rulings/deferred Minor findings and their costs.
 - [ ] Publish a draft stacked on dev/blockcheck-wizard-navigation with Refs #14 and Refs #225; verify
   exact final-head checks and actual PR metadata/Project fields, without parent/main merge.

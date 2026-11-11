@@ -155,10 +155,26 @@ Bitmap evidence is URI-only. No Load, Execute, queue delivery, StoreHelper, DB, 
 deletion, new operating cut or operating IO was introduced. These checks do not establish
 image decoding, full Page/XAML, real queue delivery or unchanged operating actions.
 
+## Independent final review
+
+Fresh reviewer store_download_final_review_available examined the complete range
+`12ef689e0968bd7ff4b27cee0fe7af02091286da` through
+`604c6a763fe8db8fa25a6436c738e5d2f76ed156`: zero Critical, zero Important and zero Minor findings.
+The earlier Astra review attempt stopped on a usage limit without a verdict; it supplies no
+acceptance evidence. The replacement used the available explicit gpt-6.1-sol model with a fresh
+context. It independently reconstructed the full host, seven policies, eleven setters and native
+inputs/corpus, rehashed all 73 pins and 522 prior outputs, and checked resources, IO and queue records.
+It inspected the owner logs without rerunning tests, builds, product processes or UI.
+
+The reviewer found no actionable defect and supports the stacked draft and qualified local result.
+Every broader qualification it set aside is recorded with an executor ruling and cost in the ledger.
+No product, managed test, fixture case, pin or runtime output changed after that review.
+
 ## Pending delivery gates
 
-Fresh whole-branch review, stacked draft/exact final-head checks, actual PR Project fields
-and immediate six-criterion local acceptance remain pending at this evidence checkpoint.
+Stacked draft/exact final-head checks, actual PR Project fields and immediate six-criterion local
+acceptance remain pending at this evidence checkpoint. The issue's later acceptance record is
+authoritative for delivery.
 Refs #14 and Refs #225. Parent #13/#14/#15 and draft #216/#218/#220/#222/#224 remain open/unmerged.
 Full Page/XAML, image visuals, queue delivery, real operating routes, runtime GC collection,
 installed product, G1, integration and release remain separate. Retain every ref, workspace,
