@@ -91,6 +91,11 @@ internal sealed class LocalizationHelper : INotifyPropertyChanged
     {
         CurrentLanguage = FindLanguage(e.CurrentLanguage);
 
+        // Keep item and selection identities: rebuilding the collection can trigger
+        // SelectionChanged and another settings write while the language changes.
+        foreach (var language in Languages)
+            language.DisplayName = _localizer.GetLocalizedString(language.Id);
+
         ApplicationInfo.Instance.SetLocalization(CurrentLanguage.Id);
     }
 

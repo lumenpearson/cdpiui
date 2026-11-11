@@ -22,6 +22,8 @@ Two inherited translator notes: `AboutButton.Content` is the About menu/header t
 - **Standalone tools:** the updater and hosts editor link the same lookup code and embed their own JSON catalogs in their executables. They do not load a translation file or another application assembly while elevated or while replacing application files. Their `Strings` classes only expose resource IDs.
 - **Language selection:** `LocalePreference` normalizes the saved app language (`SYSTEM/language`), including regional forms such as `ru-RU` and `en-GB`. An invalid/missing preference uses the Windows UI language, then English. App launchers pass `--language <id>` to the tools; a tool started directly without the option uses Windows UI language.
 
+The language picker refreshes its selected and dropdown display names when the app language changes. The existing collection and language items remain in place, so refreshing a caption does not select another language or write another preference. Stored language IDs do not change.
+
 Product names, physical key names, protocol identifiers, file names, command syntax, persisted migration metadata, and diagnostic logs remain invariant. Localized long-form help and license documents remain in their language-specific Markdown folders. User and Store content retain their own data/localization formats.
 
 Exception dialogs read embedded JSON directly through `EmergencyLocalization`, without calling WinUI3Localizer. Missing, empty, malformed, or unreadable selected-language resources fall back to English. If both catalogs fail, a nonempty resource ID remains visible. Preference-read failures fall back to Windows UI language. The critical window uses the system title bar and does not read saved window preferences or create the custom title bar (which has its own regular localization bindings). Process-fatal conditions such as stack exhaustion, out-of-memory, or an unavailable native UI runtime cannot be recovered by a localization service.
@@ -33,6 +35,8 @@ Visible toggle switches localize `OnContent` and `OffContent` through their JSON
 ## Verification
 
 Run `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release`. Localization tests check JSON parsing/duplicate keys, language parity, formatting-argument parity, embedded-resource lookup for every entry, language selection, standalone tool localization, visible XAML literals, and injected failures in JSON/resource/preference reads. The invariant-name allowlist is intentionally short; use a resource for new UI text.
+
+The linked language-item tests check property-change notifications and suppress duplicate notifications for equal captions. Their headless converter-interface contract does not verify WinUI binding. On Windows, also check the selected label and the open dropdown through EN → RU → EN without restart, then verify each language after restarting the installed executable.
 
 Build/publish the GUI normally on Windows; generation is automatic and uses the Windows PowerShell already provided by the OS. The runtime `Strings` paths and RESW names remain compatible with the MSI file list.
 
