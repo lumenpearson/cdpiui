@@ -17,7 +17,7 @@ using CDPIUI.Shared.Models;
 
 namespace CDPIUI.ViewModels;
 
-public sealed class BlockCheck2ResultViewModel : ObservableObject
+public sealed class BlockCheck2ResultViewModel : ObservableObject, IBlockCheck2ManualPresetHost
 {
     private readonly BlockCheckManualPresetService _manualPresetService = new();
     private readonly BlockCheckManualStrategyTestService _manualTestService = new();
@@ -25,9 +25,10 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
     private BlockCheckResultSession? _session;
     private IReadOnlyList<BlockCheck2StrategyEvidenceItem> _allStrategyEvidence = [];
     private readonly List<ProbeResult> _manualTestResults = [];
-    private readonly HashSet<string> _automaticAssignmentKeys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly BlockCheck2ManualAssignmentEditor _assignmentEditor;
     private readonly HashSet<string> _acknowledgedManualIssueKeys = new(StringComparer.Ordinal);
-    private BlockCheckManualPresetResult? _manualPreset;
+    private readonly BlockCheck2ManualPresetState _manualPresetState;
+    private readonly BlockCheck2ManualStrategyTestController _manualStrategyTest;
 
     public ObservableCollection<BlockCheck2ResultProfileItem> Profiles { get; } = [];
     public ObservableCollection<BlockCheck2ResultProbeItem> Probes { get; } = [];
@@ -51,7 +52,7 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
     public bool HasManualAssignments => ManualAssignments.Count > 0;
     public bool CanUseConfig => Draft.CanUseConfig;
     public string PresetArguments => _report?.PresetArguments ?? string.Empty;
-    public string ManualPresetArguments => _manualPreset?.Configuration.CommandLine ?? string.Empty;
+    public string ManualPresetArguments => _manualPresetState.Arguments;
     public string EffectivePresetArguments => Draft.EffectiveArguments;
     public int TargetCount => _report?.Targets.Count ?? 0;
     public int ProfileCount => _report?.Profiles.Count ?? 0;
@@ -67,6 +68,13 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
 
     public BlockCheck2ResultViewModel()
     {
+        _manualPresetState = new BlockCheck2ManualPresetState(Draft, _manualTestResults, this,
+            new BlockCheck2ManualPresetOperations(_manualPresetService));
+        _manualStrategyTest = new BlockCheck2ManualStrategyTestController(Draft, _manualTestResults,
+            () => _session, RebuildManualPreset, new BlockCheck2ManualStrategyTestOperations(_manualTestService));
+        _assignmentEditor = new BlockCheck2ManualAssignmentEditor(Draft,
+            () => _session, () => _allStrategyEvidence,
+            () => _acknowledgedManualIssueKeys.Clear(), RebuildManualPreset);
         Draft.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is nameof(BlockCheck2PresetDraft.EffectiveArguments) or
@@ -86,13 +94,13 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
         _session = null;
         _allStrategyEvidence = [];
         _manualTestResults.Clear();
-        _automaticAssignmentKeys.Clear();
+        _assignmentEditor.ClearAutomaticKeys();
         _acknowledgedManualIssueKeys.Clear();
         StrategyEvidence.Clear();
         StrategyGroups.Clear();
         ManualAssignments.Clear();
         ManualIssues.Clear();
-        _manualPreset = null;
+        _manualPresetState.ClearResult();
         Draft.LoadAutomatic(value.PresetArguments, value.Profiles);
         Profiles.Clear();
         foreach (BlockCheckReportProfile profile in value.Profiles)
@@ -183,69 +191,20 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
         Notify(nameof(VisibleStrategyEvidenceCount));
     }
 
-    public bool AddForSite(BlockCheck2StrategyEvidenceItem item) =>
-        AddAssignment(new BlockCheckManualAssignment(
-            item.StrategyId,
-            item.TargetId,
-            BlockCheckManualScopeKind.Site));
+    public bool AddForSite(BlockCheck2StrategyEvidenceItem item) => _assignmentEditor.AddForSite(item);
 
-    public bool AddForSiteList(BlockCheck2StrategyEvidenceItem item, string siteListPath)
-    {
-        BlockCheckTarget? anchor = FindCompatibleSiteListTargets(item)
-            .FirstOrDefault(target => target.HostListPaths.Contains(
-                siteListPath,
-                StringComparer.OrdinalIgnoreCase));
-        return anchor != null && AddAssignment(new BlockCheckManualAssignment(
-            item.StrategyId,
-            anchor.Id,
-            BlockCheckManualScopeKind.SiteList,
-            siteListPath));
-    }
+    public bool AddForSiteList(BlockCheck2StrategyEvidenceItem item, string siteListPath) =>
+        _assignmentEditor.AddForSiteList(item, siteListPath);
 
-    public void RemoveAssignment(BlockCheck2ManualAssignmentItem item)
-    {
-        int index = ManualAssignments.IndexOf(item);
-        if (index < 0)
-        {
-            return;
-        }
-        _acknowledgedManualIssueKeys.Clear();
-        ManualAssignments.RemoveAt(index);
-        RebuildManualPreset(updateDraft: true);
-    }
+    public void RemoveAssignment(BlockCheck2ManualAssignmentItem item) => _assignmentEditor.RemoveAssignment(item);
 
-    public bool MoveAssignment(BlockCheck2ManualAssignmentItem item, int offset)
-    {
-        int oldIndex = ManualAssignments.IndexOf(item);
-        int newIndex = oldIndex + offset;
-        if (oldIndex < 0 || newIndex < 0 || newIndex >= ManualAssignments.Count)
-        {
-            return false;
-        }
-        _acknowledgedManualIssueKeys.Clear();
-        ManualAssignments.Move(oldIndex, newIndex);
-        RebuildManualPreset(updateDraft: true);
-        return true;
-    }
+    public bool MoveAssignment(BlockCheck2ManualAssignmentItem item, int offset) => _assignmentEditor.MoveAssignment(item, offset);
 
-    public void ClearManualAssignments()
-    {
-        _acknowledgedManualIssueKeys.Clear();
-        ManualAssignments.Clear();
-        RebuildManualPreset(updateDraft: true);
-    }
+    public void ClearManualAssignments() => _assignmentEditor.ClearManualAssignments();
 
-    public IReadOnlyList<string> GetSiteListPaths(BlockCheck2StrategyEvidenceItem item) =>
-        FindCompatibleSiteListTargets(item)
-            .SelectMany(target => target.HostListPaths)
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(path => Path.GetFileName(path), StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(path => path, StringComparer.CurrentCultureIgnoreCase)
-            .ToArray();
+    public IReadOnlyList<string> GetSiteListPaths(BlockCheck2StrategyEvidenceItem item) => _assignmentEditor.GetSiteListPaths(item);
 
-    public bool CanAddForSiteList(BlockCheck2StrategyEvidenceItem item) =>
-        FindCompatibleSiteListTargets(item).Any();
+    public bool CanAddForSiteList(BlockCheck2StrategyEvidenceItem item) => _assignmentEditor.CanAddForSiteList(item);
 
     public bool ApplyManualIssueQuickFix(BlockCheck2ManualIssueItem item)
     {
@@ -261,287 +220,34 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
     }
 
     public OperationResultModel<string> GetFullStrategyArguments(
-        BlockCheck2StrategyEvidenceItem item)
-    {
-        return _manualTestService.GetFullStrategyArguments(
-            item.Evidence.Strategy,
-            item.Evidence.Target,
-            new BlockCheckManualStrategyTestOptions
-            {
-                Attempts = Math.Max(1, _session.RunOptions.Scan.AttemptsPerTarget),
-            });
-    }
+        BlockCheck2StrategyEvidenceItem item) => _manualStrategyTest.GetFullStrategyArguments(item);
 
-    public async Task<BlockCheckManualStrategyTestResult> TestStrategyAsync(
+    public Task<BlockCheckManualStrategyTestResult> TestStrategyAsync(
         BlockCheck2StrategyEvidenceItem item,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => _manualStrategyTest.TestStrategyAsync(item, cancellationToken);
+
+    private void RebuildManualPreset(bool updateDraft) => _manualPresetState.Rebuild(updateDraft);
+
+    BlockCheckResultSession? IBlockCheck2ManualPresetHost.Session => _session;
+    void IBlockCheck2ManualPresetHost.ClearIssues() => ManualIssues.Clear();
+    void IBlockCheck2ManualPresetHost.RefreshAssignmentIndexes() => RefreshAssignmentIndexes();
+    void IBlockCheck2ManualPresetHost.RefreshEvidenceSelections() => RefreshEvidenceSelections();
+    void IBlockCheck2ManualPresetHost.NotifyManualState() => NotifyManualState();
+    void IBlockCheck2ManualPresetHost.AddIssueGroup(BlockCheckIssueSeverity severity, string code,
+        string message, int count, IEnumerable<string> subjects)
     {
-        if (_session == null)
+        BlockCheck2ManualIssueItem item = new(severity, code, message, count, subjects);
+        if (!_acknowledgedManualIssueKeys.Contains(item.Key))
         {
-            return new BlockCheckManualStrategyTestResult
-            {
-                Issues =
-                [
-                    new BlockCheckIssue(
-                        BlockCheckIssueSeverity.Error,
-                        "MANUAL_SESSION_UNAVAILABLE",
-                        "The original BlockCheck session is unavailable; this report cannot launch a live strategy test."),
-                ],
-            };
-        }
-
-        BlockCheckManualStrategyTestResult result = await _manualTestService
-            .TestWithCdpiuiAdaptersAsync(
-                item.Evidence.Strategy,
-                item.Evidence.Target,
-                new BlockCheckManualStrategyTestOptions
-                {
-                    Attempts = Math.Max(1, _session.RunOptions.Scan.AttemptsPerTarget),
-                },
-                new CdpiuiZapret2StrategyRunnerOptions
-                {
-                    StartupGracePeriod = _session.StartupGracePeriod,
-                },
-                new CurlBlockCheckProbeRunnerOptions
-                {
-                    ConnectTimeout = _session.ConnectTimeout,
-                    RequestTimeout = _session.RequestTimeout,
-                },
-                cancellationToken)
-            .ConfigureAwait(true);
-        if (result.ProbeResult != null)
-        {
-            _manualTestResults.RemoveAll(probe =>
-                string.Equals(probe.StrategyId, result.ProbeResult.StrategyId, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(probe.TargetId, result.ProbeResult.TargetId, StringComparison.Ordinal));
-            _manualTestResults.Add(result.ProbeResult);
-            item.ApplyTestResult(result.ProbeResult);
-            RebuildManualPreset(updateDraft: !Draft.IsAutomatic);
-        }
-        return result;
-    }
-
-    private bool AddAssignment(BlockCheckManualAssignment assignment)
-    {
-        if (_session == null)
-        {
-            return false;
-        }
-        bool duplicate = ManualAssignments.Any(item =>
-            string.Equals(item.Assignment.StrategyId, assignment.StrategyId, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(item.Assignment.AnchorTargetId, assignment.AnchorTargetId, StringComparison.Ordinal) &&
-            item.Assignment.ScopeKind == assignment.ScopeKind &&
-            string.Equals(item.Assignment.SiteListPath, assignment.SiteListPath, StringComparison.OrdinalIgnoreCase));
-        if (duplicate)
-        {
-            return false;
-        }
-
-        StrategyDefinition? strategy = _session.Catalog.Strategies.FirstOrDefault(candidate =>
-            string.Equals(candidate.Id, assignment.StrategyId, StringComparison.OrdinalIgnoreCase));
-        BlockCheckTarget? target = _session.Targets.FirstOrDefault(candidate =>
-            string.Equals(candidate.Id, assignment.AnchorTargetId, StringComparison.Ordinal));
-        if (strategy == null || target == null)
-        {
-            return false;
-        }
-        _acknowledgedManualIssueKeys.Clear();
-        AddAssignmentCore(assignment, strategy, target);
-        RebuildManualPreset(updateDraft: true);
-        return true;
-    }
-
-    private void AddAssignmentCore(
-        BlockCheckManualAssignment assignment,
-        StrategyDefinition strategy,
-        BlockCheckTarget target)
-    {
-        ManualAssignments.Add(new BlockCheck2ManualAssignmentItem(
-            assignment,
-            strategy,
-            target,
-            new Zapret2ConfigWriter().FormatStrategyActions(strategy)));
-    }
-
-    private void RebuildManualPreset(bool updateDraft)
-    {
-        ManualIssues.Clear();
-        if (_session == null || ManualAssignments.Count == 0)
-        {
-            _manualPreset = null;
-            RefreshAssignmentIndexes();
-            if (updateDraft)
-            {
-                Draft.ApplyStructuredChange(string.Empty, []);
-            }
-            RefreshEvidenceSelections();
-            NotifyManualState();
-            return;
-        }
-
-        IEnumerable<ProbeResult> evidence = _session.RunResult.Scan.ProbeResults
-            .Where(result => !_manualTestResults.Any(test =>
-                string.Equals(test.StrategyId, result.StrategyId, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(test.TargetId, result.TargetId, StringComparison.Ordinal)))
-            .Concat(_manualTestResults);
-        _manualPreset = _manualPresetService.Build(
-            _session.Catalog,
-            _session.Targets.Where(target => !_session.RunResult.Scan.IgnoredTargetIds.Contains(target.Id)),
-            ManualAssignments.Select(item => item.Assignment),
-            evidence,
-            ManualOptions(_session));
-        foreach (var group in _manualPreset.Issues.GroupBy(issue => new
-        {
-            issue.Severity,
-            issue.Code,
-            issue.Message,
-        }))
-        {
-            BlockCheck2ManualIssueItem item = new(
-                group.Key.Severity,
-                group.Key.Code,
-                group.Key.Message,
-                group.Count(),
-                group.Select(issue => DescribeManualIssueSubject(issue.SubjectId)));
-            if (!_acknowledgedManualIssueKeys.Contains(item.Key))
-            {
-                ManualIssues.Add(item);
-            }
-        }
-        if (updateDraft)
-        {
-            Draft.ApplyStructuredChange(
-                _manualPreset.Configuration.CommandLine,
-                _manualPreset.Profiles);
-        }
-        RefreshAssignmentIndexes();
-        RefreshEvidenceSelections();
-        NotifyManualState();
-    }
-
-    private string DescribeManualIssueSubject(string? subjectId)
-    {
-        if (string.IsNullOrWhiteSpace(subjectId))
-        {
-            return string.Empty;
-        }
-
-        BlockCheck2ManualAssignmentItem? scopeAssignment = ManualAssignments.FirstOrDefault(item =>
-            string.Equals(BlockCheck2ManualAssignmentRules.ManualScopeKey(item), subjectId, StringComparison.OrdinalIgnoreCase));
-        if (scopeAssignment != null)
-        {
-            return $"{scopeAssignment.Scope} · {scopeAssignment.ConnectionDetails}";
-        }
-
-        BlockCheck2ManualAssignmentItem? assignment = ManualAssignments.FirstOrDefault(item =>
-            string.Equals(item.Assignment.StrategyId, subjectId, StringComparison.OrdinalIgnoreCase));
-        if (assignment != null)
-        {
-            return BlockCheck2ManualAssignmentRules.DescribeStrategySubject(assignment, subjectId);
-        }
-
-        string[] strategyIds = subjectId.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (strategyIds.Length > 1)
-        {
-            string[] strategyNames = strategyIds
-                .Select(strategyId =>
-                {
-                    BlockCheck2ManualAssignmentItem? item = ManualAssignments.FirstOrDefault(candidate =>
-                        string.Equals(
-                            candidate.Assignment.StrategyId,
-                            strategyId,
-                            StringComparison.OrdinalIgnoreCase));
-                    return item == null
-                        ? strategyId
-                        : BlockCheck2ManualAssignmentRules.DescribeStrategySubject(item, strategyId);
-                })
-                .ToArray();
-            return string.Join(" / ", strategyNames);
-        }
-
-        return subjectId;
-    }
-
-    private IEnumerable<BlockCheckTarget> FindCompatibleSiteListTargets(
-        BlockCheck2StrategyEvidenceItem item)
-    {
-        if (_session == null)
-        {
-            return [];
-        }
-
-        BlockCheckTarget source = item.Evidence.Target;
-        string host = BlockCheckTarget.NormalizeHost(source.Host);
-        return _session.Targets.Where(target =>
-            !_session.RunResult.Scan.IgnoredTargetIds.Contains(target.Id) &&
-            BlockCheck2ManualAssignmentRules.IsCompatibleSiteListTarget(target, source, host));
-    }
-
-    private void SeedAutomaticAssignments(BlockCheckResultSession value)
-    {
-        _acknowledgedManualIssueKeys.Clear();
-        ManualAssignments.Clear();
-        Dictionary<string, StrategyDefinition> strategies = value.Catalog.Strategies
-            .ToDictionary(strategy => strategy.Id, StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, BlockCheckTarget> targets = value.Targets
-            .ToDictionary(target => target.Id, StringComparer.Ordinal);
-
-        foreach (BlockCheckReportProfile profile in value.Report.Profiles)
-        {
-            BlockCheckTarget[] profileTargets = profile.TargetIds
-                .Select(id => targets.GetValueOrDefault(id))
-                .Where(target => target != null)
-                .Cast<BlockCheckTarget>()
-                .ToArray();
-            IEnumerable<(BlockCheckTarget Target, BlockCheckManualScopeKind Scope, string? Path)> scopes =
-                BlockCheck2ManualAssignmentRules.GetAutomaticScopes(profile, profileTargets);
-
-            foreach ((BlockCheckTarget target, BlockCheckManualScopeKind scope, string? path) in scopes)
-            {
-                foreach (string strategyId in new[] { profile.PrimaryStrategyId }.Concat(profile.FallbackStrategyIds))
-                {
-                    if (!strategies.TryGetValue(strategyId, out StrategyDefinition? strategy))
-                    {
-                        continue;
-                    }
-                    BlockCheckManualAssignment assignment = new(strategyId, target.Id, scope, path);
-                    bool duplicate = ManualAssignments.Any(item => item.Assignment == assignment);
-                    if (!duplicate)
-                    {
-                        AddAssignmentCore(assignment, strategy, target);
-                        _automaticAssignmentKeys.Add(BlockCheck2ManualAssignmentRules.AssignmentKey(assignment));
-                    }
-                }
-            }
-        }
-
-        RebuildManualPreset(updateDraft: false);
-        Draft.LoadAutomatic(value.Report.PresetArguments, value.Report.Profiles);
-        RefreshAssignmentIndexes();
-        RefreshEvidenceSelections();
-    }
-
-    private void RefreshEvidenceSelections()
-    {
-        foreach (BlockCheck2StrategyEvidenceItem evidence in _allStrategyEvidence)
-        {
-            BlockCheck2ManualAssignmentItem[] selectedAssignments = ManualAssignments
-                .Where(item => BlockCheck2ManualAssignmentRules.AssignmentMatchesEvidence(item, evidence))
-                .ToArray();
-            bool selected = selectedAssignments.Length > 0;
-            bool automatic = selectedAssignments.Any(item =>
-                _automaticAssignmentKeys.Contains(BlockCheck2ManualAssignmentRules.AssignmentKey(item.Assignment)));
-            evidence.SetSelection(selected, automatic);
+            ManualIssues.Add(item);
         }
     }
 
-    private void RefreshAssignmentIndexes()
-    {
-        for (int index = 0; index < ManualAssignments.Count; index++)
-        {
-            ManualAssignments[index].SetOrder(index + 1);
-        }
-    }
+    private void SeedAutomaticAssignments(BlockCheckResultSession value) => _assignmentEditor.SeedAutomaticAssignments(value);
+
+    private void RefreshEvidenceSelections() => _assignmentEditor.RefreshEvidenceSelections();
+
+    private void RefreshAssignmentIndexes() => _assignmentEditor.RefreshAssignmentIndexes();
 
     private void NotifyManualState()
     {
@@ -555,11 +261,8 @@ public sealed class BlockCheck2ResultViewModel : ObservableObject
         Notify(nameof(ManualAssignmentCount));
     }
 
-    private static BlockCheckManualPresetOptions ManualOptions(BlockCheckResultSession session) => new()
-    {
-        MinimumAttempts = Math.Max(1, session.RunOptions.Synthesis.MinimumAttempts),
-        MinimumSuccessRate = session.RunOptions.Synthesis.MinimumSuccessRate,
-    };
+    private static BlockCheckManualPresetOptions ManualOptions(BlockCheckResultSession session) =>
+        BlockCheck2ManualPresetState.OptionsFor(session);
 
     private void Notify([CallerMemberName] string? propertyName = null) => OnPropertyChanged(propertyName);
 }

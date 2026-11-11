@@ -9,82 +9,38 @@ namespace CDPIUI.ViewModels.CreateConfig;
 // The conditions flyout and the variables list.
 public sealed partial class CreateNewConfigViewModel
 {
-    private string _conditionName = string.Empty;
-    private string _conditionDescription = string.Empty;
-    private string _conditionOnValue = string.Empty;
-    private string _conditionOffValue = string.Empty;
-
     public string ConditionName
     {
-        get => _conditionName;
-        set
-        {
-            if (SetProperty(ref _conditionName, value ?? string.Empty))
-                OnConditionDraftChanged();
-        }
+        get => _conditionDraft.ConditionName;
+        set => _conditionDraft.ConditionName = value;
     }
 
     public string ConditionDescription
     {
-        get => _conditionDescription;
-        set => SetProperty(ref _conditionDescription, value ?? string.Empty);
+        get => _conditionDraft.ConditionDescription;
+        set => _conditionDraft.ConditionDescription = value;
     }
 
     public string ConditionOnValue
     {
-        get => _conditionOnValue;
-        set
-        {
-            if (SetProperty(ref _conditionOnValue, value ?? string.Empty))
-                OnConditionDraftChanged();
-        }
+        get => _conditionDraft.ConditionOnValue;
+        set => _conditionDraft.ConditionOnValue = value;
     }
 
     public string ConditionOffValue
     {
-        get => _conditionOffValue;
-        set
-        {
-            if (SetProperty(ref _conditionOffValue, value ?? string.Empty))
-                OnConditionDraftChanged();
-        }
+        get => _conditionDraft.ConditionOffValue;
+        set => _conditionDraft.ConditionOffValue = value;
     }
 
-    public string ConditionPreview => IsConditionSaveAvailable
-        ? LScriptLangHelper.CreateCondition(ConditionName.Replace(" ", ""), ConditionOnValue, ConditionOffValue)
-        : _localizer.GetLocalizedString("NothingToPreview");
-
-    public bool IsConditionSaveAvailable =>
-        CreateConfigPageHelper.IsNameCorrect(ConditionName.Replace(" ", "")) &&
-        !string.IsNullOrEmpty(ConditionOnValue) &&
-        !string.IsNullOrEmpty(ConditionOffValue);
+    public string ConditionPreview => _conditionDraft.ConditionPreview;
+    public bool IsConditionSaveAvailable => _conditionDraft.IsConditionSaveAvailable;
 
     /// <summary>Clears the fields of the condition flyout.</summary>
-    public void ResetConditionDraft()
-    {
-        ConditionName = "";
-        ConditionDescription = "";
-        ConditionOnValue = "";
-        ConditionOffValue = "";
-        OnPropertyChanged(nameof(ConditionPreview));
-    }
+    public void ResetConditionDraft() => _conditionDraft.ResetConditionDraft();
 
     /// <summary>Adds the condition from the flyout fields.</summary>
-    public void AddCondition()
-    {
-        _view.SetExitAskAvailable(true);
-        ConditionVariableModel model = new()
-        {
-            Name = ConditionName,
-            Description = ConditionDescription,
-            OnValue = ConditionOnValue,
-            OffValue = ConditionOffValue,
-        };
-        Conditions.Add(model);
-    }
-
-    private void OnConditionDraftChanged() =>
-        OnPropertiesChanged(nameof(ConditionPreview), nameof(IsConditionSaveAvailable));
+    public void AddCondition() => _conditionDraft.AddCondition();
 
     private void RemoveCondition(object parameter)
     {

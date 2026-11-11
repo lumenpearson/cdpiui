@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using CDPIUI.AddOns.BlockCheck2.Models;
 using CDPIUI.AddOns.BlockCheck2.Presentation;
@@ -23,35 +22,45 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
     private readonly IBlockCheck2ResultPageView _view;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly BlockCheckReportSerializer _reportSerializer = new();
+    private readonly BlockCheck2ResultSelection _selection;
+    private readonly BlockCheck2ReportSummaryPresenter _reportSummary;
+    private readonly BlockCheck2SelectedStrategyTest _selectedStrategyTest;
+    private readonly BlockCheck2ReportExport _reportExport;
+    private readonly BlockCheck2ManualTestSession _manualTest;
+    private readonly BlockCheck2AssignmentActions _assignmentActions;
     private bool _languageHandlerConnected;
     private bool _strategyTestRunning;
 
     private string _strategyCountText = string.Empty;
     private bool _areStrategiesVisible = true;
-    private bool _isDetailsHitTestVisible = true;
     private bool _isNoIssuesVisible = true;
     private bool _areIssuesVisible = true;
     private bool _isStrategyTestProgressVisible;
-    private bool _isTestStrategyEnabled = true;
-    private bool _isManualTestEnabled = true;
-    private bool? _isManualTestChecked = false;
-    private string _manualTestLabel = string.Empty;
-    private string _manualTestGlyph = "\uE768";
-    private bool _isAddForSiteEnabled = true;
-    private bool _isAddForListEnabled = true;
     private bool _isReviewPresetEnabled = true;
-    private string _selectedStrategyName = string.Empty;
-    private string _selectedStrategyId = string.Empty;
-    private string _selectedStrategyArguments = string.Empty;
-    private string _selectedSite = string.Empty;
-    private string _selectedConnection = string.Empty;
-    private string _selectedEvidence = string.Empty;
-    private string _selectedBaseline = string.Empty;
 
     public BlockCheck2ResultPageViewModel(IBlockCheck2ResultPageView view, DispatcherQueue dispatcherQueue)
     {
         _view = view;
         _dispatcherQueue = dispatcherQueue;
+        _assignmentActions = new BlockCheck2AssignmentActions(new AssignmentActionsHost(this));
+        _manualTest = new BlockCheck2ManualTestSession(new ManualTestHost(this), GetManualTestTasks,
+            GetManualTestComponentId, ComponentTasksManager_TaskStateUpdated);
+        _selection = new BlockCheck2ResultSelection(() => _view.SelectedStrategy,
+            () => Result.HasSession, () => _strategyTestRunning, () => _manualTest.IsRunning,
+            item => Result.CanAddForSiteList(item), Text, () => _view.NotifyMenuStateChanged());
+        _selection.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _reportSummary = new BlockCheck2ReportSummaryPresenter(() => Result.HasReport,
+            () => Result.NoBypassRequired, () => Result.Success, () => Result.IsBestEffort,
+            () => Result.IsHttpOnly, Text, ShowActionMessage);
+        _selectedStrategyTest = new BlockCheck2SelectedStrategyTest(() => _view.SelectedStrategy,
+            () => _strategyTestRunning, value => _strategyTestRunning = value,
+            value => IsStrategyTestProgressVisible = value, UpdateSelectedStrategy,
+            item => Result.TestStrategyAsync(item), UpdateAssignmentView, Text,
+            BlockCheck2IssueText.GetMessage, ShowActionError, ShowActionMessage);
+        _reportExport = new BlockCheck2ReportExport(() => Result.Report,
+            (title, name, filter) => _view.PickSaveFile(title, name, filter),
+            (path, report) => _reportSerializer.SaveJsonAsync(path, report),
+            (path, report) => _reportSerializer.SaveTextAsync(path, report), Text, ShowActionMessage, ShowActionError);
     }
 
     public BlockCheck2ResultViewModel Result { get; private set; } = new();
@@ -72,8 +81,8 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
 
     public bool IsDetailsHitTestVisible
     {
-        get => _isDetailsHitTestVisible;
-        private set => SetProperty(ref _isDetailsHitTestVisible, value);
+        get => _selection.IsDetailsHitTestVisible;
+        private set => _selection.IsDetailsHitTestVisible = value;
     }
 
     public bool IsNoIssuesVisible
@@ -96,45 +105,45 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
 
     public bool IsTestStrategyEnabled
     {
-        get => _isTestStrategyEnabled;
-        private set => SetProperty(ref _isTestStrategyEnabled, value);
+        get => _selection.IsTestStrategyEnabled;
+        private set => _selection.IsTestStrategyEnabled = value;
     }
 
     public bool IsManualTestEnabled
     {
-        get => _isManualTestEnabled;
-        private set => SetProperty(ref _isManualTestEnabled, value);
+        get => _selection.IsManualTestEnabled;
+        private set => _selection.IsManualTestEnabled = value;
     }
 
     /// <summary>Two-way: clicking the toggle button changes it before the click is handled.</summary>
     public bool? IsManualTestChecked
     {
-        get => _isManualTestChecked;
-        set => SetProperty(ref _isManualTestChecked, value);
+        get => _selection.IsManualTestChecked;
+        set => _selection.IsManualTestChecked = value;
     }
 
     public string ManualTestLabel
     {
-        get => _manualTestLabel;
-        private set => SetProperty(ref _manualTestLabel, value);
+        get => _selection.ManualTestLabel;
+        private set => _selection.ManualTestLabel = value;
     }
 
     public string ManualTestGlyph
     {
-        get => _manualTestGlyph;
-        private set => SetProperty(ref _manualTestGlyph, value);
+        get => _selection.ManualTestGlyph;
+        private set => _selection.ManualTestGlyph = value;
     }
 
     public bool IsAddForSiteEnabled
     {
-        get => _isAddForSiteEnabled;
-        private set => SetProperty(ref _isAddForSiteEnabled, value);
+        get => _selection.IsAddForSiteEnabled;
+        private set => _selection.IsAddForSiteEnabled = value;
     }
 
     public bool IsAddForListEnabled
     {
-        get => _isAddForListEnabled;
-        private set => SetProperty(ref _isAddForListEnabled, value);
+        get => _selection.IsAddForListEnabled;
+        private set => _selection.IsAddForListEnabled = value;
     }
 
     public bool IsReviewPresetEnabled
@@ -145,44 +154,44 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
 
     public string SelectedStrategyName
     {
-        get => _selectedStrategyName;
-        private set => SetProperty(ref _selectedStrategyName, value);
+        get => _selection.SelectedStrategyName;
+        private set => _selection.SelectedStrategyName = value;
     }
 
     public string SelectedStrategyId
     {
-        get => _selectedStrategyId;
-        private set => SetProperty(ref _selectedStrategyId, value);
+        get => _selection.SelectedStrategyId;
+        private set => _selection.SelectedStrategyId = value;
     }
 
     public string SelectedStrategyArguments
     {
-        get => _selectedStrategyArguments;
-        private set => SetProperty(ref _selectedStrategyArguments, value);
+        get => _selection.SelectedStrategyArguments;
+        private set => _selection.SelectedStrategyArguments = value;
     }
 
     public string SelectedSite
     {
-        get => _selectedSite;
-        private set => SetProperty(ref _selectedSite, value);
+        get => _selection.SelectedSite;
+        private set => _selection.SelectedSite = value;
     }
 
     public string SelectedConnection
     {
-        get => _selectedConnection;
-        private set => SetProperty(ref _selectedConnection, value);
+        get => _selection.SelectedConnection;
+        private set => _selection.SelectedConnection = value;
     }
 
     public string SelectedEvidence
     {
-        get => _selectedEvidence;
-        private set => SetProperty(ref _selectedEvidence, value);
+        get => _selection.SelectedEvidence;
+        private set => _selection.SelectedEvidence = value;
     }
 
     public string SelectedBaseline
     {
-        get => _selectedBaseline;
-        private set => SetProperty(ref _selectedBaseline, value);
+        get => _selection.SelectedBaseline;
+        private set => _selection.SelectedBaseline = value;
     }
 
     public void LoadReport(BlockCheckReport report)
@@ -251,38 +260,7 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
         OnPropertiesChanged(nameof(IsNoStrategiesVisible), nameof(AreStrategiesVisible));
     }
 
-    private void ShowReportSummary()
-    {
-        if (!Result.HasReport)
-        {
-            ShowActionMessage(BlockCheck2NoticeSeverity.Error, Text("BlockCheck2ResultEmptyTitle"), Text("BlockCheck2ResultEmptyMessage"));
-            return;
-        }
-
-        var severity = Result.NoBypassRequired
-            ? BlockCheck2NoticeSeverity.Informational
-            : Result.Success
-                ? BlockCheck2NoticeSeverity.Success
-                : BlockCheck2NoticeSeverity.Warning;
-        var title = Result.NoBypassRequired
-            ? Text("BlockCheck2NoBypassRequiredTitle")
-            : Result.Success
-                ? Text("BlockCheck2ResultSuccessTitle")
-                : Result.IsBestEffort
-                    ? Text("BlockCheck2ResultBestEffortTitle")
-                    : Text("BlockCheck2ResultPartialTitle");
-        var message = Result.NoBypassRequired
-            ? Text(Result.IsHttpOnly
-                ? "BlockCheck2HttpOnlyNoBypassRequiredMessage"
-                : "BlockCheck2NoBypassRequiredMessage")
-            : Result.Success
-                ? Text("BlockCheck2ResultSuccessMessage")
-                : Result.IsBestEffort
-                    ? Text("BlockCheck2ResultBestEffortMessage")
-                    : Text("BlockCheck2ResultPartialMessage");
-
-        ShowActionMessage(severity, title, message);
-    }
+    private void ShowReportSummary() => _reportSummary.Show();
 
     public void ApplyStrategyView(string? searchText, int sortMode, int filterMode)
     {
@@ -299,112 +277,12 @@ public sealed partial class BlockCheck2ResultPageViewModel : ObservableObject
         SetStrategiesVisible(Result.StrategyEvidence.Count != 0);
     }
 
-    public void UpdateSelectedStrategy()
-    {
-        BlockCheck2StrategyEvidenceItem? item = _view.SelectedStrategy;
-        bool selected = item != null && Result.HasSession;
-        IsDetailsHitTestVisible = selected && !_strategyTestRunning;
-        IsTestStrategyEnabled = selected && !_strategyTestRunning;
-        IsManualTestEnabled = selected && (!_strategyTestRunning || _isManualTestRunning);
-        IsManualTestChecked = selected && _isManualTestRunning;
+    public void UpdateSelectedStrategy() => _selection.Update();
 
-        ManualTestLabel = IsManualTestChecked == true
-            ? Text("StopTest")
-            : Text("PresetTestConfirmButton");
-        ManualTestGlyph = IsManualTestChecked == true
-            ? "\uE769"
-            : "\uE768";
+    public Task TestSelectedStrategyAsync() => _selectedStrategyTest.TestAsync();
 
-        IsAddForSiteEnabled = selected && !_strategyTestRunning;
-        IsAddForListEnabled = selected &&
-            Result.CanAddForSiteList(item!) &&
-            !_strategyTestRunning;
-        _view.NotifyMenuStateChanged();
-        if (item == null)
-        {
-            SelectedStrategyName = Text("BlockCheck2SelectStrategyText");
-            SelectedStrategyId = string.Empty;
-            SelectedStrategyArguments = string.Empty;
-            SelectedSite = string.Empty;
-            SelectedConnection = string.Empty;
-            SelectedEvidence = string.Empty;
-            SelectedBaseline = string.Empty;
-            return;
-        }
-
-        SelectedStrategyName = item.StrategyName;
-        SelectedStrategyId = item.StrategyId;
-        SelectedStrategyArguments = item.StrategyArguments;
-        SelectedSite = item.SiteUrl;
-        SelectedConnection = item.ConnectionDetails;
-        SelectedEvidence = item.EvidenceDetails;
-        SelectedBaseline = string.Format(
-            Text("BlockCheck2BaselineEvidenceFormat"),
-            item.BaselineText);
-    }
-
-    public async Task TestSelectedStrategyAsync()
-    {
-        BlockCheck2StrategyEvidenceItem? item = _view.SelectedStrategy;
-        if (item == null || _strategyTestRunning)
-        {
-            return;
-        }
-
-        _strategyTestRunning = true;
-        IsStrategyTestProgressVisible = true;
-        UpdateSelectedStrategy();
-        try
-        {
-            BlockCheckManualStrategyTestResult result = await Result.TestStrategyAsync(item);
-            UpdateSelectedStrategy();
-            ShowStrategyTestResult(result);
-        }
-        catch (Exception exception)
-        {
-            ShowActionError(exception.Message);
-        }
-        finally
-        {
-            _strategyTestRunning = false;
-            IsStrategyTestProgressVisible = false;
-            UpdateSelectedStrategy();
-            UpdateAssignmentView();
-        }
-    }
-
-    private void ShowStrategyTestResult(BlockCheckManualStrategyTestResult result)
-    {
-        if (result.ProbeResult == null)
-        {
-            BlockCheckIssue firstIssue = result.Issues.FirstOrDefault();
-            ShowActionError(firstIssue != null
-                ? BlockCheck2IssueText.GetMessage(firstIssue)
-                : Text("BlockCheck2StrategyTestFailedMessage"));
-            return;
-        }
-
-        ProbeSummary summary = ProbeSummary.FromAttempts(result.ProbeResult.Attempts);
-        string message = string.Format(
-            Text("BlockCheck2StrategyTestResultFormat"),
-            summary.SuccessCount,
-            summary.AttemptCount,
-            summary.SuccessRate);
-        if (result.Issues.Any(issue => issue.Severity == BlockCheckIssueSeverity.Error))
-        {
-            ShowActionError(BlockCheck2IssueText.GetMessage(result.Issues.First(issue =>
-                issue.Severity == BlockCheckIssueSeverity.Error)));
-        }
-        else
-        {
-            ShowActionMessage(
-                summary.SuccessCount == summary.AttemptCount
-                    ? BlockCheck2NoticeSeverity.Success
-                    : BlockCheck2NoticeSeverity.Warning,
-                Text("BlockCheck2StrategyTestCompletedTitle"),
-                message);
-        }
-    }
+    private void ShowStrategyTestResult(BlockCheckManualStrategyTestResult result) =>
+        _selectedStrategyTest.ShowResult(result);
 
     private void UpdateStrategyCount()
     {

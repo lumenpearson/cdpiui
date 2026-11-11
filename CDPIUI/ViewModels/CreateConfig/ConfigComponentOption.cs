@@ -1,3 +1,6 @@
+#nullable enable annotations
+#nullable disable warnings
+
 namespace CDPIUI.ViewModels.CreateConfig;
 
 /// <summary>A component the config editor can target.</summary>

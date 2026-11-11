@@ -1,5 +1,6 @@
 using System;
 using CDPIUI.Controls.Navigation;
+using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.ViewModels.ConfigMaker;
 using Microsoft.UI.Xaml;
 
@@ -8,10 +9,8 @@ namespace CDPIUI.Controls.CreateConfigHelper;
 // The resizable panels (preset files, command reference and the bottom panel) and their tabs.
 public sealed partial class ConfigMakerUserControl
 {
-    private bool _layoutInitialized;
-    private bool _updatingLayoutBounds;
+    private readonly ConfigMakerPanelLayoutController _panelLayout;
     private double _savedEditorWidth = 620;
-    private double _savedEditorHeight = 420;
 
     public bool IsCommandPanelVisible => CommandPanel.Visibility == Visibility.Visible;
     public bool IsBottomPanelVisible => BottomPanel.Visibility == Visibility.Visible;
@@ -68,7 +67,7 @@ public sealed partial class ConfigMakerUserControl
         }
         if (!visible)
         {
-            _savedEditorHeight = EditorPanel.ActualHeight;
+            _panelLayout.RememberEditorHeight(EditorPanel.ActualHeight);
         }
         HorizontalSizerRow.Height = ShowPanel(BottomPanel, HorizontalContentSizer, visible);
         CompletePanelChange();
@@ -84,7 +83,7 @@ public sealed partial class ConfigMakerUserControl
 
     private void CompletePanelChange()
     {
-        _layoutInitialized = false;
+        _panelLayout.Invalidate();
         UpdateLayoutBounds();
         PanelStateChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -93,87 +92,13 @@ public sealed partial class ConfigMakerUserControl
 
     private void ResizablePanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (!_updatingLayoutBounds)
+        if (!_panelLayout.IsUpdating)
         {
             UpdateLayoutBounds();
         }
     }
 
-    private void UpdateLayoutBounds()
-    {
-        if (_updatingLayoutBounds || RootGrid.ActualWidth <= 0 || RootGrid.ActualHeight <= 0)
-        {
-            return;
-        }
-
-        _updatingLayoutBounds = true;
-        try
-        {
-            const double editorMinWidth = 360;
-            const double commandMinWidth = 340;
-            const double editorMinHeight = 180;
-            const double bottomMinHeight = 110;
-
-            double filesWidth = 0;
-            if (IsPresetFilesPanelVisible)
-            {
-                double maximumFilesWidth = Math.Max(
-                    150,
-                    RootGrid.ActualWidth - editorMinWidth -
-                    (IsCommandPanelVisible ? commandMinWidth + VerticalSizerColumn.Width.Value : 0) -
-                    PresetFilesSizerColumn.Width.Value);
-                PresetFilesPanel.MaxWidth = Math.Max(
-                    PresetFilesPanel.MinWidth,
-                    Math.Min(RootGrid.ActualWidth * 0.45, maximumFilesWidth));
-                PresetFilesPanel.Width = Math.Clamp(
-                    PresetFilesPanel.Width,
-                    PresetFilesPanel.MinWidth,
-                    PresetFilesPanel.MaxWidth);
-                filesWidth = PresetFilesPanel.Width + PresetFilesSizerColumn.Width.Value;
-            }
-
-            double availableMainWidth = Math.Max(editorMinWidth, RootGrid.ActualWidth - filesWidth);
-
-            if (IsCommandPanelVisible)
-            {
-                double maxEditorWidth = Math.Max(
-                    editorMinWidth,
-                    availableMainWidth - commandMinWidth - VerticalSizerColumn.Width.Value);
-                EditorWorkspace.MaxWidth = maxEditorWidth;
-                EditorWorkspace.Width = maxEditorWidth;
-            }
-            else
-            {
-                EditorWorkspace.MaxWidth = availableMainWidth;
-                EditorWorkspace.Width = availableMainWidth;
-            }
-
-            double availableMainHeight = Math.Max(editorMinHeight, RootGrid.ActualHeight);
-
-            if (IsBottomPanelVisible)
-            {
-                double maxEditorHeight = Math.Max(
-                    editorMinHeight,
-                    availableMainHeight - bottomMinHeight - HorizontalSizerRow.Height.Value);
-                EditorPanel.MaxHeight = maxEditorHeight;
-                double requestedHeight = _layoutInitialized
-                    ? EditorPanel.Height
-                    : Math.Min(_savedEditorHeight, maxEditorHeight);
-                EditorPanel.Height = Math.Clamp(requestedHeight, editorMinHeight, maxEditorHeight);
-            }
-            else
-            {
-                EditorPanel.MaxHeight = availableMainHeight;
-                EditorPanel.Height = availableMainHeight;
-            }
-
-            _layoutInitialized = true;
-        }
-        finally
-        {
-            _updatingLayoutBounds = false;
-        }
-    }
+    private void UpdateLayoutBounds() => _panelLayout.Update();
 
     private void CloseTreeViewButton_Click(object sender, RoutedEventArgs e) => SetPresetFilesPanelVisible(false);
 

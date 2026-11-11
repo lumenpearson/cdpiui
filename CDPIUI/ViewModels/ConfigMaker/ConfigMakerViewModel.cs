@@ -1,8 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Controls.Universal;
 using CDPIUI.Core;
+using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using WinUI3Localizer;
@@ -13,7 +16,7 @@ namespace CDPIUI.ViewModels.ConfigMaker;
 /// The state and the logic of the preset editor: the edited document, the editor text, the
 /// status message and the editor background. The other features live in the partial files.
 /// </summary>
-public sealed partial class ConfigMakerViewModel : ObservableObject
+public sealed partial class ConfigMakerViewModel : ObservableObject, IConfigMakerDocumentHost, IConfigMakerPresetFileReplacementHost, IConfigMakerPresetFileActionsHost, IConfigMakerVariableActionsHost
 {
     // The log source of the control the view model was extracted from.
     private const string LogSource = "ConfigMakerUserControl";
@@ -27,11 +30,15 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
     private readonly ILocalizer _localizer = Localizer.Get();
     private readonly ConfigMakerPresetDocument _presetDocument = new();
     private readonly ConfigMakerPresetResources _presetResources;
+    private readonly ConfigMakerDocumentCoordinator _documentCoordinator;
+    private readonly ConfigMakerPresetFileReplacer _presetFileReplacer;
+    private readonly ConfigMakerPresetFileActions _presetFileActions;
+    private readonly ConfigMakerVariableActions _variableActions;
+    private readonly TextChangeRelay _textChanges;
     private string _componentId = string.Empty;
     private string _commandText = string.Empty;
     private bool _isEditorReadOnly;
     private bool _updatingComponent;
-    private bool _updatingEditor;
     private string _editorBackground = BlackBackground;
     private string _statusTitle = string.Empty;
     private string _statusMessage = string.Empty;
@@ -42,17 +49,72 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
     {
         _view = view ?? throw new ArgumentNullException(nameof(view));
         _dispatcherQueue = dispatcherQueue ?? throw new ArgumentNullException(nameof(dispatcherQueue));
+        _textChanges = new TextChangeRelay(
+            () => IsEditorReadOnly, () => CommandText, text => CommandText = text,
+            _view.ReplaceEditorText,
+            text => { _presetDocument.CommandText = text; _simpleDesigner.MarkDirty(); },
+            RebuildPresetStructure, RebuildDiagnostics, ScheduleDiagnostics,
+            text => CommandTextChanged?.Invoke(text));
         _presetResources = new ConfigMakerPresetResources(
             _presetDocument,
             () => ComponentId,
             () => CommandText);
+        _presetFileActions = new ConfigMakerPresetFileActions(_presetDocument.Resources, this,
+            new ConfigMakerPresetFileActionsBackend(_presetResources));
+        _variableActions = new ConfigMakerVariableActions(_presetDocument, this);
+        _presetFileReplacer = new ConfigMakerPresetFileReplacer(this,
+            new ConfigMakerPresetFileReplacementBackend(_presetResources));
+        _documentCoordinator = new ConfigMakerDocumentCoordinator(
+            _presetDocument, this, () => new ConfigMakerPresetStorageService(),
+            ConfigMakerPresetExporter.ExportAsync);
+        _commandHelpPanel = new ConfigMakerCommandHelpPanel(_localizer.GetLocalizedString, () => IsEditorReadOnly);
+        _commandHelpPanel.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _diagnostics = new ConfigMakerDiagnostics<ConfigMakerDiagnosticViewModel>(Diagnostics,
+            () => _view.EditorText, () => _commandHelpPanel.Document.Options, _presetDocument.Variables,
+            reference => _presetResources.FindAttached(reference) != null, CreateDiagnosticViewModel,
+            _localizer.GetLocalizedString, () => _view.RefreshEditorHighlighting());
+        _diagnostics.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _helpLoader = new ConfigMakerCommandHelpLoader(_commandHelpPanel, () => ComponentId,
+            _localizer.GetLocalizedString, _helpService.LoadAsync,
+            RebuildPresetStructure, RebuildDiagnostics, ShowHelpLoadStatus);
+        _helpLoader.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _testSession = new ConfigMakerTestSession(
+            new ConfigMakerComponentTestTasks(),
+            () => ComponentId,
+            ConfirmReplaceRunningComponentAsync,
+            id => DatabaseHelper.Instance.IsItemInstalled(id),
+            ShowTestNotice,
+            _view.RefreshOutputAsync,
+            action => _dispatcherQueue.TryEnqueue(async () => await action()));
+        _testSession.StateChanged += (_, _) => RaiseTestStateChanged();
         _zapret2OptionDescriber = new Zapret2PresetOptionDescriber(_localizer);
+        _presetTreeBuilder = new ConfigMakerPresetTreeBuilder(
+            _localizer.GetLocalizedString,
+            _presetResources.TryResolvePath,
+            System.IO.File.Exists,
+            option => _zapret2OptionDescriber.Describe(option, _commandHelpPanel.Document.Options));
+        _presetStructure = new ConfigMakerPresetStructure<ConfigMakerTreeNode>(
+            () => CommandText, () => IsZapret2Component,
+            _presetResources.ExtractFiles, _presetResources.GetAttachedFiles,
+            files => ConfigMakerPresetTreeAdapter.ToFileNodes(_presetTreeBuilder.BuildFiles(files)),
+            (options, groups, isZapret2) => ConfigMakerPresetTreeAdapter.ToOptionNodes(
+                _presetTreeBuilder.BuildGroups(options, groups, isZapret2)));
+        _presetStructure.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
+        _presetStructure.AvailabilityChanged += (_, _) => PresetStructureAvailabilityChanged?.Invoke(this, EventArgs.Empty);
         DesignerTextValueChangedCommand = new RelayCommand(parameter =>
-            HandleDesignerTextValueChanged((Tuple<string, string>)parameter));
+            _simpleDesigner.HandleDesignerTextValueChanged((Tuple<string, string>)parameter));
         DesignerBoolValueToggledCommand = new RelayCommand(parameter =>
-            HandleDesignerBoolValueToggled((Tuple<string, bool>)parameter));
+            _simpleDesigner.HandleDesignerBoolValueToggled((Tuple<string, bool>)parameter));
         DesignerSelectedGuidChangedCommand = new RelayCommand(parameter =>
-            HandleDesignerSelectedGuidChanged((Tuple<string, string>)parameter));
+            _simpleDesigner.HandleDesignerSelectedGuidChanged((Tuple<string, string>)parameter));
+        _simpleDesigner = new ConfigMakerSimpleDesigner(
+            new ConfigMakerSimpleDesignerBackend(),
+            () => ComponentId,
+            () => _view.EditorText,
+            text => SetEditorText(text),
+            new(DesignerTextValueChangedCommand, DesignerBoolValueToggledCommand, DesignerSelectedGuidChangedCommand),
+            ShowDesignerNotice);
+        _simpleDesigner.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
         CopyCommandCommand = new RelayCommand(CopySelectedCommand, () => HasSelectedCommand);
         InsertCommandCommand = new RelayCommand(InsertSelectedCommand, () => CanInsertCommand);
         CreateVariableCommand = new AsyncRelayCommand(() => RunReportingErrorsAsync(CreateVariableAsync));
@@ -87,7 +149,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
                 return;
             }
             _presetDocument.ComponentId = value;
-            _designerNeedsRefresh = true;
+            _simpleDesigner.MarkDirty();
             UpdateSimpleDesignerAvailability();
             if (!_updatingComponent && _view.IsViewLoaded)
             {
@@ -102,12 +164,12 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
         get => _commandText;
         set
         {
-            if (!SetProperty(ref _commandText, value) || _updatingEditor)
+            if (!SetProperty(ref _commandText, value) || _textChanges.IsUpdating)
             {
                 return;
             }
             _presetDocument.CommandText = value;
-            _designerNeedsRefresh = true;
+            _simpleDesigner.MarkDirty();
             SetEditorText(value, updateProperty: false);
         }
     }
@@ -176,7 +238,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
 
     public void CancelBackgroundWork()
     {
-        _helpCancellation?.Cancel();
+        _helpLoader.Cancel();
         _diagnosticsTimer.Stop();
     }
 
@@ -188,7 +250,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
             return;
         }
 
-        if (_isTesting && !string.Equals(_testComponentId, componentId, StringComparison.OrdinalIgnoreCase))
+        if (_testSession.IsTesting && !string.Equals(_testSession.TestComponentId, componentId, StringComparison.OrdinalIgnoreCase))
         {
             await StopTestAsync();
         }
@@ -214,27 +276,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
     }
 
     /// <summary>Called by the view when the user changed the editor text.</summary>
-    public void OnEditorTextChanged(string text)
-    {
-        if (_updatingEditor)
-        {
-            return;
-        }
-        if (IsEditorReadOnly)
-        {
-            SetEditorText(CommandText, updateProperty: false);
-            return;
-        }
-
-        _updatingEditor = true;
-        CommandText = text ?? string.Empty;
-        _updatingEditor = false;
-        _presetDocument.CommandText = CommandText;
-        _designerNeedsRefresh = true;
-        RebuildPresetStructure();
-        CommandTextChanged?.Invoke(CommandText);
-        ScheduleDiagnostics();
-    }
+    public void OnEditorTextChanged(string text) => _textChanges.OnTextChanged(text);
 
     public void LoadEditorBackground()
     {
@@ -296,20 +338,7 @@ public sealed partial class ConfigMakerViewModel : ObservableObject
     }
 
     private void SetEditorText(string text, bool updateProperty = true)
-    {
-        _updatingEditor = true;
-        string editorText = _view.ReplaceEditorText(text ?? string.Empty);
-        if (updateProperty)
-        {
-            CommandText = editorText;
-        }
-        _presetDocument.CommandText = editorText;
-        _designerNeedsRefresh = true;
-        _updatingEditor = false;
-        RebuildPresetStructure();
-        RebuildDiagnostics();
-        CommandTextChanged?.Invoke(editorText);
-    }
+        => _textChanges.ReplaceText(text, updateProperty);
 
     private void InsertAtCursor(string command)
     {

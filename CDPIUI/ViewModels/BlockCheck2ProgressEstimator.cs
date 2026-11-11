@@ -10,7 +10,7 @@ namespace CDPIUI.ViewModels;
 /// progress reports. Each stage has its own measurement; the overall estimate of the strategy
 /// stage adds the expected duration of the validation that follows it.
 /// </summary>
-internal sealed class BlockCheck2ProgressEstimator
+internal sealed class BlockCheck2ProgressEstimator : IBlockCheck2ProgressEstimator
 {
     private readonly BlockCheckRemainingTimeEstimator _remainingTimeEstimator = new();
     private readonly Stopwatch _runStopwatch = new();

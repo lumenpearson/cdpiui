@@ -11,6 +11,7 @@ using CDPIUI.Core.ComponentServices.Helpers.Configuration;
 using CDPIUI.Core.JSON;
 using CDPIUI.Helper.CreateConfigHelper;
 using CDPIUI.Helper.LScript;
+using CDPIUI.Helper.UserExperience;
 using CDPIUI.Shared;
 using CDPIUI.Views.CreateConfigHelper;
 
@@ -217,48 +218,18 @@ public sealed partial class CreateNewConfigViewModel
 
     private void LoadVars(ConfigItem configItem)
     {
-        Variables.Clear();
-
-        if (configItem.variables != null)
-        {
-            foreach (var variable in configItem.variables)
+        NamedValueCollectionLoader.Load(Variables,
+            () => configItem.variables,
+            variable => LScriptLangHelper.GetNameOnOffValuesFromConditionString(variable) != null,
+            (name, value) => new VariableModel { Name = name.Replace("%", ""), Value = value },
+            () => configItem.commaVars,
+            commaVar => new VariableModel
             {
-                var t = LScriptLangHelper.GetNameOnOffValuesFromConditionString(variable);
-
-                if (t == null)
-                {
-                    // Only the first '=' separates the name; values may contain '=' themselves.
-                    int separator = variable.IndexOf('=');
-                    if (separator < 0)
-                        continue;
-                    Variables.Add(new()
-                    {
-                        Name = variable[..separator].Replace("%", ""),
-                        Value = variable[(separator + 1)..]
-                    });
-                }
-            }
-        }
-
-        if (configItem.commaVars != null)
-        {
-            foreach (var commaVar in configItem.commaVars)
-            {
-                try
-                {
-                    Variables.Add(new VariableModel
-                    {
-                        Name = commaVar.Key,
-                        Value = commaVar.Value,
-                        AvailableValues = configItem.availableCommaVarsValues?.FirstOrDefault(varItem => varItem.VarName == commaVar.Key, null)
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.CreateWarningLog(LogSource, $"{ex}");
-                }
-            }
-        }
+                Name = commaVar.Key,
+                Value = commaVar.Value,
+                AvailableValues = configItem.availableCommaVarsValues?.FirstOrDefault(varItem => varItem.VarName == commaVar.Key, null)
+            },
+            error => Logger.Instance.CreateWarningLog(LogSource, $"{error}"));
 
         IsVariablesVisible = Variables.Count != 0;
     }

@@ -17,7 +17,6 @@ using CDPIUI.Shared.Migration;
 using CDPIUI.Shared.Pipe.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
-using Windows.ApplicationModel.Activation;
 using WinRT.Interop;
 using WinUI3Localizer;
 
@@ -25,9 +24,6 @@ namespace CDPIUI;
 
 public partial class App
 {
-    private static readonly string[] SupportedFilePaths =
-        [".cdpisignedpack", ".cdpiconfigpack", ".cdpipatch", ".cdpitask", ".cdpiconfig"];
-
     private readonly SemaphoreSlim _migrationWindowActivationLock = new(1, 1);
     private bool _settingsRecoveryWarningShown;
 
@@ -58,114 +54,14 @@ public partial class App
     /// Handles the migration request, files, protocol links and --direct: commands the first
     /// instance was started with. Returns true when one of them opened something.
     /// </summary>
-    private async Task<bool> ProcessStartupActivationAsync(string[] arguments)
-    {
-        bool isFileProcessed = false;
-        bool isActionPreferred = false;
-        bool isMigrationProcessed = false;
+    private Task<bool> ProcessStartupActivationAsync(string[] arguments) =>
+        _activationDispatcher.ProcessStartupAsync(arguments,
+            kind => AppActivationRequestAdapter.From(Program.InitialActivationArguments, kind));
 
-        try
-        {
-            isMigrationProcessed = await TryHandleMigrationActivationAsync(arguments);
-            if (!isMigrationProcessed &&
-                Program.InitialActivationArguments?.Kind is ExtendedActivationKind.Launch &&
-                Program.InitialActivationArguments.Data is ILaunchActivatedEventArgs initialLaunchArgs)
-            {
-                isMigrationProcessed = await TryHandleMigrationActivationAsync(initialLaunchArgs.Arguments);
-            }
+    private static Task<bool> HandleCoreDirectActivationAsync(string value) =>
+        CoreCommandsHandler.HandleCommandAsync(PipeModelConvertor.ConvertBack(value));
 
-            if (Program.InitialActivationArguments?.Kind is ExtendedActivationKind.File &&
-                Program.InitialActivationArguments.Data is IFileActivatedEventArgs initialFileArgs)
-            {
-                isFileProcessed = await ProcessFiles(
-                    initialFileArgs.Files.Select(file => file.Path).ToArray());
-            }
-
-            if (Program.InitialActivationArguments?.Kind is ExtendedActivationKind.Protocol &&
-                Program.InitialActivationArguments.Data is IProtocolActivatedEventArgs initialProtocolArgs)
-            {
-                isActionPreferred = await CommandsHandler.HandleCommandAsync(
-                    initialProtocolArgs.Uri.ToString());
-            }
-
-            if (!isFileProcessed)
-                isFileProcessed = await ProcessFiles(arguments);
-
-            string protocolArg = isActionPreferred
-                ? null
-                : arguments.FirstOrDefault(x => x.StartsWith("----ms-protocol:"));
-
-            if (protocolArg != null)
-            {
-                string value = protocolArg["----ms-protocol:".Length..];
-                isActionPreferred = await CommandsHandler.HandleCommandAsync(value);
-            }
-
-            string directArgs = arguments.FirstOrDefault(x => x.StartsWith("--direct:"));
-
-            if (directArgs != null)
-            {
-                string value = directArgs["--direct:".Length..];
-                isActionPreferred = await CoreCommandsHandler.HandleCommandAsync(
-                    PipeModelConvertor.ConvertBack(value));
-
-                if (!isActionPreferred)
-                {
-                    isActionPreferred = CommandsHandler.HandleCommand(value);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateWarningLog(
-                nameof(App),
-                $"Cannot process startup activation: {ex}");
-        }
-
-        return isFileProcessed || isActionPreferred || isMigrationProcessed;
-    }
-
-    private async Task<bool> ProcessFiles(string[] files)
-    {
-        foreach (string file in files)
-        {
-            var _file = file.Replace("\"", "");
-            Logger.Instance.CreateDebugLog(nameof(App), $"Working on file {_file}");
-
-            if (Path.Exists(_file) && SupportedFilePaths.Contains(
-                Path.GetExtension(_file),
-                StringComparer.OrdinalIgnoreCase))
-            {
-                if (CDPIUI.AddOns.ConfigShare.ConfigShareService.IsSupported(_file))
-                {
-                    var importDialog = await UnsafeCreateNewWindow<ConfigShareImportDialog>(activate: false);
-                    ActivateWindow(importDialog);
-                    await importDialog.SetFileAsync(_file);
-                    return true;
-                }
-
-                if (Path.GetExtension(_file).Equals(".cdpitask", StringComparison.OrdinalIgnoreCase))
-                {
-                    await OpenConditionalTaskImportAsync(_file);
-                    return true;
-                }
-
-                if (Path.GetExtension(_file).Equals(".cdpipatch", StringComparison.OrdinalIgnoreCase))
-                {
-                    var updateDialog = await SafeCreateNewWindow<ApplicationUpdateFileDialogWindow>(activate: false);
-                    updateDialog.SetUpdateFilePath(_file);
-                    ActivateWindow(updateDialog);
-                    return true;
-                }
-
-                var window = await SafeCreateNewWindow<StoreLocalItemInstallingDialog>();
-                // Not awaited: the import runs while the dialog is open. SetPackFilePath logs its own errors.
-                _ = window.SetPackFilePath(_file);
-                return true; // Only first file will be processed.
-            }
-        }
-        return false;
-    }
+    private Task<bool> ProcessFiles(string[] files) => _fileActivationHandler.ProcessFiles(files);
 
     private async Task OpenConditionalTaskImportAsync(string filePath)
     {
@@ -193,38 +89,8 @@ public partial class App
         bool result = false;
         try
         {
-            if (appActivationArguments.Kind is ExtendedActivationKind.Protocol &&
-                appActivationArguments.Data is IProtocolActivatedEventArgs protocolActivatedEventArgs)
-            {
-                string value = protocolActivatedEventArgs.Uri.ToString();
-                result = await CommandsHandler.HandleCommandAsync(value);
-            }
-
-            if (appActivationArguments.Kind is ExtendedActivationKind.File &&
-                appActivationArguments.Data is IFileActivatedEventArgs activatedFileArgs)
-            {
-                result = await ProcessFiles(
-                    activatedFileArgs.Files.Select(file => file.Path).ToArray());
-            }
-            else if (appActivationArguments.Kind is ExtendedActivationKind.Launch &&
-                appActivationArguments.Data is ILaunchActivatedEventArgs fileActivatedEventArgs)
-            {
-                result = await TryHandleMigrationActivationAsync(fileActivatedEventArgs.Arguments);
-                string[] args = CommandLineSplitter.Split(fileActivatedEventArgs.Arguments);
-                if (!result)
-                {
-                    // The same --direct: commands as in a first start.
-                    string directArgs = args.FirstOrDefault(x => x.StartsWith("--direct:"));
-                    if (directArgs != null)
-                    {
-                        string value = directArgs["--direct:".Length..];
-                        result = await CoreCommandsHandler.HandleCommandAsync(PipeModelConvertor.ConvertBack(value))
-                            || CommandsHandler.HandleCommand(value);
-                    }
-                }
-                if (!result)
-                    result = await ProcessFiles(args);
-            }
+            result = await _activationDispatcher.ProcessRedirectedAsync(
+                AppActivationRequestAdapter.From(appActivationArguments));
         }
         catch (Exception ex)
         {

@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Linq;
 
@@ -7,7 +9,7 @@ namespace CDPIUI.Helper.CreateConfigHelper;
 internal static class ConfigMakerCommandText
 {
     // Returns the option with its argument, or null when a required argument is empty.
-    public static string BuildOptionCommand(ComponentCommandHelpOption option, string argument)
+    public static string? BuildOptionCommand(ComponentCommandHelpOption option, string argument)
     {
         string command = option.DisplayName;
         if (string.IsNullOrWhiteSpace(option.ArgumentPlaceholder))
@@ -28,7 +30,7 @@ internal static class ConfigMakerCommandText
     // Inserts the command at the cursor on its own line. The result uses "\n" line breaks;
     // newCursorIndex is the index right after the inserted command.
     public static string InsertOnOwnLine(
-        string text,
+        string? text,
         int cursorLine,
         int cursorColumn,
         string command,

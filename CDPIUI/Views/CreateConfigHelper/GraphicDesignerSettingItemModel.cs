@@ -1,3 +1,6 @@
+#nullable enable annotations
+#nullable disable warnings
+
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -12,13 +15,26 @@ public partial class GraphicDesignerSettingItemModel : INotifyPropertyChanged
     public string DisplayName { get; set; }
     public string Description { get; set; }
     public string Type { get; set; }
+    // Command grouping is separate from the scalar shown by enum and proxy editors.
+    internal bool PreserveValueGrouping { get; private set; }
     public List<EnumModel> AvailableEnumValues { get; set; } = [];
     public bool EnableTextInput { get; set; }
     private string _value = "";
     public string Value
     {
         get => _value;
-        set => SetField(ref _value, value);
+        set
+        {
+            if (!EqualityComparer<string>.Default.Equals(_value, value))
+                PreserveValueGrouping = false;
+            SetField(ref _value, value);
+        }
+    }
+
+    internal void SetParsedValue(string value, bool preserveGrouping)
+    {
+        PreserveValueGrouping = preserveGrouping;
+        SetField(ref _value, value, nameof(Value));
     }
 
     private bool _isChecked = false;

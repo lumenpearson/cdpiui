@@ -1,0 +1,980 @@
+{
+  "main": "6c00c789ee2b37238af30f14cfdaf0f55a278274",
+  "root": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+  "peer": "f706f16934695bcb122de63d0442c4ab20f42869",
+  "rootDocumentation": "eebc7e8621b85fa08ee015ea3b7eab1e72c78c5f",
+  "rootScopedPaths": 184,
+  "peerScopedPaths": 10,
+  "bothChanged": [
+    "CDPIUI.Tests/CDPIUI.Tests.csproj",
+    "CDPIUI.Tests/README.md",
+    "CDPIUI.Tests/README.ru.md",
+    "CDPIUI/App.xaml.cs"
+  ],
+  "additiveItems": 115,
+  "defaultItems": 14,
+  "changedProductInputs": {
+    "CDPIUI.Core/ComponentServices/Helpers/Configuration/ConfigurationService.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "44953430ede3f53f8c3907415403a1ae82cc2459",
+      "sha256": "6888415433219AAFE8C1824997CBB1246CC33AB860ED084CF07C527944930066"
+    },
+    "CDPIUI.Core/ComponentServices/Helpers/Configuration/Helpers/ConfigurationVariableProjection.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "dc02ededba0f8ec14505e05fa01199d59db4b0d0",
+      "sha256": "47312139432BE2478A2E7900B90A01517B180A1ACCA93C00CFFE9630AEC331A9"
+    },
+    "CDPIUI.Tests/CDPIUI.Tests.csproj": {
+      "source": "default plus deduplicated additive Root/peer items",
+      "defaultItems": 14,
+      "addedItems": 115,
+      "deliberatelyRemovedDefaultItems": [
+        [
+          "Compile",
+          "../cdpiui.trayicon/helper/basic/directoryaclguard.cs"
+        ]
+      ],
+      "sha256": "329C4F2D6ADFED45C46CD6258EAFBBA7DF93DBB535283FA16A577B1E4EC3F6C7"
+    },
+    "CDPIUI.Tests/ConfigurationVariableProjectionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8f5decd3c7d35c03991b8e161c624a979c71c830",
+      "sha256": "CC67903FA7A11ABEC2478B0F7C4D4AE26BB7154D6AB538423C9A33C4BF347F09"
+    },
+    "CDPIUI.Tests/Presentation/AppActivationDispatcherTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "076d78efba963cf28dbb133ee7547f2adfb1614f",
+      "sha256": "73F8396B4315006546209DC7D58B28622F7954779ED8FA764E154B27A53DB8F2"
+    },
+    "CDPIUI.Tests/Presentation/AppFileActivationHandlerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "169061992c9b9a24a0ec29459c0f9ae079d1c304",
+      "sha256": "11EA2FBD84A6E095544C364CCF2DF92B1535925960A654916096BECB3886209F"
+    },
+    "CDPIUI.Tests/Presentation/AppIdleExitControllerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0214b82f42749c66f67ae5dc73f74a1beab61eb1",
+      "sha256": "FED1B2FAB4AA9682F60331839B7308CE86A1177B7D4E07FE7128489DEC21CE70"
+    },
+    "CDPIUI.Tests/Presentation/AppWindowCloseCoordinatorTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a54a752028393515c8d6de954e0461451a9afe55",
+      "sha256": "CE22BF8557D002330DEE73D90982BC5D798A15FE7037EF96AF0009993E6293D3"
+    },
+    "CDPIUI.Tests/Presentation/AppWindowCoordinatorTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5cfec9f7adaf800661c0bd2109798e04faf253b3",
+      "sha256": "BDA2163DF9E82BE81CADFCFC93352AACFCA346858C8C4CA1B98DE7CF4A70EBB9"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2AssignmentActionsTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "c0ce8e2d8d21215a37a5c478be180d64f008d024",
+      "sha256": "E7E052865FF2FAB8F71C5EEAA38A10A20EA36E5BDBBC7F6C20DA35E2C3C334FB"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ManualAssignmentEditorTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "facf3aa88aabaaedd9a69635e8fe607763b6ca6b",
+      "sha256": "B43CF7392D392B0B55DF943CBEB554D1779F3B59444DE241EAD009B071B139C7"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ManualPresetStateTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "36ba7220a512f85bc28e64a04d2e1afae1bbdd67",
+      "sha256": "B365C2BE551E6993E04B04FC1246766C75DA940CCEC03A5351C47583AFB413CF"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ManualStrategyTestControllerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9edb81da240a41312adafb9b3eeb292e5067f15b",
+      "sha256": "994195037AB08BBD6F0AD3A0A5B9B53F5502D5A51C06F2294BB2D153E6D155EF"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ManualTestSessionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "d6da9dd4d6a8fa9b2196c56dcb2110ec38dd8201",
+      "sha256": "D62735B094A8877A941B700DE7761A785AC62AF65DD6F142501BC02AA5B5E6F6"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2OptionsTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "10ea214cfa0e80b7d9fe34a8609c2946be4a4194",
+      "sha256": "3FA4620E81EFBB7786010E520F3F47E8A32B6354D78318B8D717FE7B4320164D"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ProgressTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b5ceef2c53f4f713708a0889cdf8c7b1fecbf9ff",
+      "sha256": "1187BC15A8C549C870FDDDF625DFCF75517E8C68C0C2D5C4640A873130FE2BFF"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ReportExportTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "384a7134d4117971ac6bf82c3d52cb31781fc22e",
+      "sha256": "D7D7B07817ADDC22AD26F2B0D810E1251C04324E6FF040BC2C325E0E7D0158DA"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ReportSummaryPresenterTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f158e8e893fad88a1e5a9d6d8fe23d886c3bca64",
+      "sha256": "AA605CFDD163C94E87F25B82245630E6D80EE6DC42292D6D8B78D778CF12FD55"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ResultSelectionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "edc0ab240977ab9487a69b40d829a4dd215be38b",
+      "sha256": "7F19A360B42F7C5EEEC29F4227838FDCB411C0AAD8DE8045AADCA125F761A4C3"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2ResultTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "3a2e47a51f20f13f49b2927c9ca9f9e86645b380",
+      "sha256": "1E89BEF2484EC5D60EDF5AA12A84FCD7F3661368D36AB4BC947D5117DC401E5C"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2RunControllerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "994f4f8185412c929e5b68a518e90565ef20e88f",
+      "sha256": "BA03BAEE7F969CD271C85B7822A21B10A5281E726707D0C61801BFE0EEC1A02F"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2SelectedStrategyTestTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "3ef5f78765569079750d6f83c6a9be0b560769b6",
+      "sha256": "003FB932CD8A549A995A518B02C73A073B1F4B7D4199584F9BFFF513E24D3DC8"
+    },
+    "CDPIUI.Tests/Presentation/BlockCheck2SiteListControllerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f2cb1a0b2f8decf01649735785c971dbf312a0a2",
+      "sha256": "3AC171F4A6EC257673935FCAABAF46BECAC6CFCBBA456BA31C2642744362DB61"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerCommandHelpLoaderTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "18957448340d76e159506cee308f7629714f01d1",
+      "sha256": "DD6E1322AFE8D4B0A83C3B075391BDF0F173A83B496E37601A1659034B278F47"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerCommandHelpPanelTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8f05c0c1108e8ff39d8a468a242cd85bd195cc14",
+      "sha256": "281920ACFC0845572A09D22C21D40793057D0D3D20AECCA12C0454F3731BC4BA"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerDiagnosticsTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f7ad95f4734ffc19d81031d91ee27c271cc3ef8c",
+      "sha256": "367E0684EA4FA7D01074D8FD47A4F2246CD1D57899394413792170C05E8BD780"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerDocumentCoordinatorTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "096ec2b86a36c12f867d6adbbb49100f41741bf8",
+      "sha256": "D70D5AFE62E2CD3457EAA91E7C8A6B22A8E2B9CFAE86370879E959E935506858"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPanelLayoutTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8a6285a1d056641534571a4f24017123f3aedc61",
+      "sha256": "9435928BE44AF94C4F9FBB06E65286BCD11FF118D96F377B95E9E44A552BDBB0"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetFileActionsTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5dd9429a8ddad236fd607d9aeb297488deb2d5ed",
+      "sha256": "E979CAC086ED2E4895D2A55E016C32EF896136F9E016CEA51EA9BF9FB6EB93D9"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetFileReplacerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "bcdc0340b284b92c9a4e8097f46a0efbf3705244",
+      "sha256": "CB3CBF18B1EBB1F5B4C45B32C801669E315250D6682282DECE8075B758D0B626"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetReferenceEditorTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f665b0f0913b5a4e275fb02a9c83184000761138",
+      "sha256": "4313553BB0D17CBE8C412AC968E62254D63681DDC17829ACB3ADC091B019036B"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetResourceTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "d7214c4cebc62e81ab57089a6134e564b74e4aba",
+      "sha256": "1A6086D615DE6364956B35505D2CA5E33E6309D964357A7D12360C4538F8758A"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetStructureTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a8bfa4978eb715b035ffccca5db1f2be84b171bd",
+      "sha256": "EAED3D7ECAA29EDCD135B2E896DDE78C8CB4515D0B05D99BF415D864E4032EDB"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerPresetTreeBuilderTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "d3858da183fedc879f33f60c8d34b7b19f84d602",
+      "sha256": "EE63AC684DDA7510156A66B6429898D5683D7190B96EC81CA2CE2CD3BA9CB7EB"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerSimpleDesignerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0ef22d5a38ea51972a468f7c41f0b070d7663bb9",
+      "sha256": "41B7BEB3E325896FE8C2F6B20DE3ACDFE39E334DF491C62D7397927B3A65572B"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerTestSessionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9ba3f847fd766d471c0ecc91339138573a867cf6",
+      "sha256": "6160D85B249195C8D60B8D549695EB533AFED4812599FFA4CAA57C11978143F4"
+    },
+    "CDPIUI.Tests/Presentation/ConfigMakerVariableActionsTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "c0d8d3eddcf765dc6e4d81d35183eca6fe4082e5",
+      "sha256": "8261798124246AF5C63FFF41EEC7F4F6BD716F05CA9628D5AE7BB6DC965F683F"
+    },
+    "CDPIUI.Tests/Presentation/CreateConfigComponentSelectionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "fa9e96e632d7cb8c757d5dcf5ebef71d383d6b49",
+      "sha256": "CE66AC6D3CDBABF3341F02EE43A3EACDFB02DDE8866BE33209C4E5ED00B65DB6"
+    },
+    "CDPIUI.Tests/Presentation/CreateConfigConditionDraftTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f5febcf1e8e7e930adcb4258e55f6d8df71aadf2",
+      "sha256": "39D7B95FDF6669937573D8C95CEB0AC9EC6F16A59584AFFD2A923AE9B565B35D"
+    },
+    "CDPIUI.Tests/Presentation/CreateConfigGraphicDesignerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0d44bf8f329e1d0ac2ab96d871869de589de56e8",
+      "sha256": "675E34B34CA5D8A67CFC106394EEB1C2462CB686E3DC7C951AAA2A2508897AE7"
+    },
+    "CDPIUI.Tests/Presentation/CreateConfigTestSessionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "4b2daca79ef396dc1ba4245f69f4c68867955e47",
+      "sha256": "CA15D1AFBAEF26368FE9702772D1DB36AF119D2F7F9D766AD6847619641F0559"
+    },
+    "CDPIUI.Tests/Presentation/DiagnosticHighlightingUpdaterTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8674e4b657e0504ad01088ed220e0e1a07e0fe69",
+      "sha256": "61A6675FBE16380064ED5C33BF0E6D68004F76DB0D0580589FDB525012D1ABB9"
+    },
+    "CDPIUI.Tests/Presentation/DispatcherTaskBridgeTests.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "547b75f781aa9bf8cb05a95fb3cbaf5fe2699e50",
+      "sha256": "783207E45C64C83786E94C2DA2C3E4092522924F583413E40517B94A4091819D"
+    },
+    "CDPIUI.Tests/Presentation/GraphicDesignerCommandCodecTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8d2de6cc600ccc4528d12714bc064aabadbb11bf",
+      "sha256": "C797D5608A7759D212B112DB923E41516F03EACB62C86D25772084130C834A46"
+    },
+    "CDPIUI.Tests/Presentation/NamedValueCollectionLoaderTests.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "02bcb9633eb491720ca30d1301550acbe5b222e0",
+      "sha256": "630FC5EFF40160216A88E3A3BC58B73E796BDDE21A1DCB6F30525337A0D76CD1"
+    },
+    "CDPIUI.Tests/Presentation/PostOrderTreePrunerTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f12bcef5388d267cd0df87957f7a2aa3cbb6c212",
+      "sha256": "1DACFF41D99AF6FDEA0FC756BEBB10A58CE4E22458A316C6A553694861A6E8EC"
+    },
+    "CDPIUI.Tests/Presentation/SelectedItemChoiceActionTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8555d9fba87d69d7e6a79a0c0a15edd632b29332",
+      "sha256": "C1E75EDDE8820530F6946C673E6B0B43E189B7613F06A12E2E48C103074945CB"
+    },
+    "CDPIUI.Tests/Presentation/TextChangeRelayTests.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "07e75a02b686feef932097a6587425d5fe9db63c",
+      "sha256": "2ED9AB16D045ECDD743F2C3D84AC6919D7400F82FBD342D9FB893657CF44A5EB"
+    },
+    "CDPIUI.Tests/Presentation/TwoPhaseTransitionSequenceTests.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a8c4e6162d2ce9037c64c64542a1fb8def7a152f",
+      "sha256": "3CF5E659DB92514E6AC5D8F57A51479B45FD8F06FF0A749CFE0DE3694501D166"
+    },
+    "CDPIUI/App.Activation.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a1ee7e4273a8e7caac6f52bae06e8dda0850f5de",
+      "sha256": "B71977E7C391A69B2FA4414DCC831421B056F5221EB56AAF00A2F9FDD72B81B6"
+    },
+    "CDPIUI/App.Modal.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "057c831cc6f6e5aa7df04e94581edffdffa189a1",
+      "sha256": "0899562436E761C806CA70E4C9CCF3549190988BC15856879C4256D5AB8047C1"
+    },
+    "CDPIUI/App.Windows.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e69d3c9b6f9e1167e09678772fa8ab2c23e2f4e8",
+      "sha256": "C8DA2BFD54E9F0127D62267C7C43EC5F62C4B38466B1443099C08E8DAB2FB9D1"
+    },
+    "CDPIUI/App.xaml.cs": {
+      "source": "three-way(default,f39,Root)",
+      "inputs": [
+        "6c00c789ee2b37238af30f14cfdaf0f55a278274",
+        "f39e8a0a7267e4fcd4a02eef186a3ee08df8dcd9",
+        "ed390cd416b58ea404f04286f7eace5a66e4320a"
+      ],
+      "sha256": "F65F5DCD6441A8D562E109CD25E40098D59A92BBEB6BCC8419032306A2006B66"
+    },
+    "CDPIUI/Controls/CreateConfigHelper/ConfigMakerUserControl.Editor.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a95d25517f0b3ae4363215e7b64b965901e90265",
+      "sha256": "07208EB0EFB45ACBDD4D263532A495A79F16AA9C7381D3A51D8EA208D1F50966"
+    },
+    "CDPIUI/Controls/CreateConfigHelper/ConfigMakerUserControl.Layout.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5144255f0e51ce6fc9d5f4acef6952b46611e30b",
+      "sha256": "935B730CEAF510BA80DF0F4F86C6F3C5B28EB13F013EFAFAB77EE2099D9DA90D"
+    },
+    "CDPIUI/Controls/CreateConfigHelper/ConfigMakerUserControl.xaml.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "921893c6879285995858592ff1a13876282aab05",
+      "sha256": "A8EC574704E1EA29F906D52FEBC3E12B8D157BE44A6F111C782F2049FF68501F"
+    },
+    "CDPIUI/Controls/CreateConfigHelper/EnumModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e3f581edbfc21ac0c58ab35b979c323474ef09d0",
+      "sha256": "0B6B1F80151218AE82E24FBE1037EDD3B861D6AE9730B7233B7E183EE3D168F4"
+    },
+    "CDPIUI/Controls/MenuBar/MenuBarController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9d1d2389fef113ab7a98d4d76f266d8c1a53302d",
+      "sha256": "59CEA4B8BEAC39FC007E5A8C5790E5671CE411B5C830C28E887528D533FA367D"
+    },
+    "CDPIUI/Controls/Universal/UtilityButtonControls.xaml.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f678d4b40cfb2c81ec1a39ce7b7d6bbc0946316e",
+      "sha256": "93A9064F5AD0B16F73CE4CE264BCDF6130D8FC8305F30217B54FFFD27DE266D4"
+    },
+    "CDPIUI/Helper/Basic/AppActivationDispatcher.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0b4444dfe8381917815c73e76635d5ed04dd9f3a",
+      "sha256": "88108374255B1B909A79A2FBD16D91FF85FDFC6D8BB80028DCE0FB10861AF6AA"
+    },
+    "CDPIUI/Helper/Basic/AppActivationRequest.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "72f2a88cd3a980a936d263acc78591b6441293dd",
+      "sha256": "8A6F13974DE8B34DDCC7F53A838572967C26F06B90665EF53ECE2792046DB65F"
+    },
+    "CDPIUI/Helper/Basic/AppActivationRequestAdapter.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "487151949a516cf42f2acf63239a5fdf8ba1b1b5",
+      "sha256": "6C1CC16927AB80CE1408FEA456002F3312AB7CB9901F22AD03DA1321B2900A4B"
+    },
+    "CDPIUI/Helper/Basic/AppFileActivationHandler.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "2743d39fadfef4be6d4450fb581e8293d477a921",
+      "sha256": "5B07572F7C332D7477B34D2D0AA50C1ADA8D0299214EAFFC9FF1C5541DAEE719"
+    },
+    "CDPIUI/Helper/Basic/AppFileActivationOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e3a7c27050c40041ba24f4d2b07c86010930e627",
+      "sha256": "5F9C7F048B844BB71A7C5031A109094DAFBC1F0EB14D1133624DA2DEDF8369BE"
+    },
+    "CDPIUI/Helper/Basic/AppIdleExitController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "72eac4aa17713ddfd0634a4ba93fe27fdde1cb9d",
+      "sha256": "01CC79ADB10194062CE1BBCFDDB899EE4BEC9415F3BAB4FD2217728AA7471400"
+    },
+    "CDPIUI/Helper/Basic/AppWindowCloseCoordinator.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "945aa25a3ad3c7601ec3322f5bb329f2511d1469",
+      "sha256": "B0F2AB05857549742CCD34FC65D459C97698A57779C97363D006DBB3B76115C1"
+    },
+    "CDPIUI/Helper/Basic/AppWindowCloseOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "4390ce2a43b7bf0f077dcf68b5ab2bba7620536b",
+      "sha256": "C684E83C67B8BB794AA44D33E947E62800CAE4B0236754F9F1182EF50FD07414"
+    },
+    "CDPIUI/Helper/Basic/IAppFileActivationOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e4d29ac31832dd35a31a27f54c32c25835849572",
+      "sha256": "C18B222895525B4BBE879570A3FC567C7E9E818B912465D668DD6688BB04B2D8"
+    },
+    "CDPIUI/Helper/Basic/IAppWindowCloseOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "d744181e38f25c0f74688edf88ca2f7438b02019",
+      "sha256": "0867DB36C1E44AF1ED06DCE56562194893762858D7ED7EF43C0957C0446F40DF"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ComponentCommandValidationService.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "fb11c5bcba03320a3790eeb3c974b58f8933ac46",
+      "sha256": "A8EE0A344DF9051E0E835F4275E5BA2916F01C58446EE8AF5DC3F15D28C0AAC5"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerCommandHelpLoader.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f4915a3d0ba1649326935a735a933205b31166ac",
+      "sha256": "F744FF9E7D2DE559AB5DECEA8AF3621E11C9DBEF413A4B32523D68309683E717"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerCommandHelpPanel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0dc6c6fe77781390a8e31b947e2267485346f8db",
+      "sha256": "E0E17F1820E333D1628200DFA7F47E07181EE65A4D5FAB5166F0B9590C8A4E10"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerCommandText.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "2b6ee991101ee1ed4800d4ffdc5e57075524dda1",
+      "sha256": "B54C60AFC21643747287A4397E5D775C7045BD7F6C3C2AB00DE3E94896A69A5B"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerComponentTestTasks.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a9e66c9d3d6b117dc420fb603277318c8f8c5e41",
+      "sha256": "C115C66803D25B257511CF09D516196D2E898988A6AEB8BF5B68E13EB1F37BBC"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerDiagnostics.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b10c9a473143de8bb5e43f6f174047b1eba918b3",
+      "sha256": "676D952B94ADEF8AE4E1AB6B6A5D90852FF827BE40B4865AA3A83AA78437D5D8"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerDocumentCoordinator.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5043a909ad458649524dd15fbe0fff7d46279b27",
+      "sha256": "D6BBA48CFF435B01FC70413C4B06748F4B47872AB306C98EE1DDE1CF58DCB598"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPanelLayoutController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e69298c26610b3bc4f9ccfedd5f8572f0241d721",
+      "sha256": "9B4C719FB8DD4CFFC67471DF53637FED4C6D0E542B8A5A8FA0E45003CA9E7851"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPanelLayoutView.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "eb276460f8cc0481d510dbd4bd6bcd049213a1e8",
+      "sha256": "91D9106CD6C944597485D6A3C9B18BEBEEE33A77142539D648A2CBE7DF8B8638"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetFileActions.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "1bb1144651cc2e20775c9fb1f3112a48ddbd6643",
+      "sha256": "26BEDEC67E3F4A5CC3136CE2082BCA628F7166F63F5480632947C9FEE17B4915"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetFileActionsBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7e32b3dbbbe6fb50de5d4dc5e248f6d206b6e9f9",
+      "sha256": "4BA47479DD187B08B79110E3288625E3C87A8E5817126951EEF1129D7C1CF530"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetFileKinds.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e8da73358ed9e143d9d766f561a0fd3bf528ef1b",
+      "sha256": "38CE68FC3DCBC8FBF68EDC2BD5989B50DC6DA4069FBB905D293724A9D03F042B"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetFileReplacementBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "878d0946903132f98096e6e7c487f959d43d9d8f",
+      "sha256": "0E48CDD2A7AC3A3408D30C3C8C50245CC2C5FF5D486A6616B2030D72DF8E0684"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetFileReplacer.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "baebb02c0b43cd883738b4a267d0610357d6ee12",
+      "sha256": "C7C848C08CF2C69DB6BAF751812BB48A05AA6627826B4BD9FD6F2F44B627D740"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetOptionGroups.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "4ba6637cd8434723fca4c3aac1a839b08d8e5e5f",
+      "sha256": "7C82088E6FA57793EFD298A3CDDBA80BFE7DDC79CB3AD18FBF55A141E8DBBB98"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetReferenceEditor.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f568d63070b37f4a5d020b49551ae64a76460f95",
+      "sha256": "829B0680E8F5E0408DFE1B1D55B0B6DF143095CD8478BCEF9565EE3308474E76"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetResourceRegistry.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "d52c10e02fa8c1c13bdda5b871bd95c76156e70d",
+      "sha256": "CCB9F567632D6A5C28F1B822739F046C2F38A0F4995FEDBAD6DCBE6C825BA015"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetResources.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5f2989b1ad89df633c08b03f1bef2011976222bf",
+      "sha256": "CA4138E0F40FC372FE0139D230FE97C5113B4B64FF59B675F76478A05DF1444C"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetStorageService.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7ffb7be070045a6f8314ae517c5a38ff4230179a",
+      "sha256": "9F1F2EDEA3E29EBDA32B61D005BF764C1CE031A87060204B10CF38A42BDCEB8C"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetStructure.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e33185898764a4a8ddc82c8e5ae34324188bb993",
+      "sha256": "D9184CA4E5F2AA43BCD5BC2DD9CF0E0A6F9AB2B2ED54F1E2E28E38708671599B"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetTreeAdapter.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "54573dde08d0d99a504d2c04a201106e1fce325d",
+      "sha256": "C4D1CEC74AECF8F0F4F233DE3815801C02F92851BE9CCD1963857619EF38E675"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetTreeBuilder.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "6bdf8fcfd63964882389c126d6045a86f11b3509",
+      "sha256": "E26D4ACA527E8D719DD4E8096C4052CC48564D3A17129C1D1F0F27F7BC9510A7"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetTreeData.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "aad8866a41b7636afa3bb022f26ec732dfc5afc3",
+      "sha256": "FC4EA0EAA2B9A4A1877DBF4B2936CA39272D24AB89D0ADDADDC1709CCAEA50B0"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerPresetTreeProjection.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9e94ab8465039aa793057d301f4055ac7c8648f3",
+      "sha256": "DE7185CC643C11C88CC859EAB772C2A0C79A0379A8DDE2995C3254B28FAA68B0"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerSimpleDesigner.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "cd776923d780b5b0148f01819d77c2f13e33464b",
+      "sha256": "E2DC7FDA89919C50432076C5677B957890A391A6E21D55E4E2EFC78BD4160078"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerSimpleDesignerBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "445454c2bbfef433131fa4600a77177c86f5f7a9",
+      "sha256": "BBCE136A8AE3415E9462BEE229C1D39982BDBDC3DEACE9FFD4FF3A892ACC43AB"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerTestSession.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8815b647a1c3ace6b2be4fba1ddaee1b2d918c06",
+      "sha256": "41C70686D945E4A6D6CB2978CA8E2A27989BC23F175E8FA32B9D655D0D2B53B1"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ConfigMakerVariableActions.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "1fe879f1dbaa8401e508d3e96a4c4ac6cf5f1867",
+      "sha256": "1CE459772F714B66C747BB8AD5B980F4E4C7E1424ED0F9F8896F4B4BC6BB62FC"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/CreateConfigComponentTestTasks.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "401860900983036818fe66ce74ffd16125a2464b",
+      "sha256": "5D00CD282E9854E4BEFFDBBABF1752B98A806266E12AC5011A92ED8EB9B13739"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/CreateConfigGraphicDesignerBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5be1282a8def919222b815621ea1af8a96d818a5",
+      "sha256": "A1EC6666B5148E6CB9738A031203512218213DD3FBFB0D95E3A557F843F775A8"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/GraphicDesignerCommandCodec.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a11fac5b3c28729b58caaf3f76b4ec2825ac5cc9",
+      "sha256": "3296EA9D6F82ADC979DA34B5A1BDDD1D2143AFCD72A3F3BDBA408C19E924C59C"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/GraphicDesignerHelper.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7afc5c55d6e02f5815d8a92d05942a2faebda8db",
+      "sha256": "2D083D00355EB0958CCD79FD7B81AC865305F7FBA51956CDAC1BC2F30A87E622"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerDocumentHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "741aaf92df4a6c6e4369dcaf29b29cbadaeeee91",
+      "sha256": "762E3569AB5D3B0BDB56458D719D7B41741D0404EDFFF1FAC4EF2B94880059C4"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerDocumentStorage.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b54922e47323e5803df36662f4cd427cc8cd8e73",
+      "sha256": "ABB73C49CDB15F49AF0C684D3799F1075FDEE2C2C7A7EB5D4D6A42C56F8822D3"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerPanelLayoutView.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "98a4220cdf26b22ba533bd2c52f816dc4fe9f4d1",
+      "sha256": "A1609FE693625487ECACA953D85EB087D54E69848E18BB9032C5C548A16A9F98"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerPresetFileActionsBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f9b6d2760ed785e9d52694973bb48ad7489cf4ed",
+      "sha256": "41E9B6E0214DF5AF3F4F0C259F2D033CF8FBC1E92D678C2FEF43F78122989DC5"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerPresetFileActionsHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "fbea2ecfc770e24a38d12d0b6b5a7e7da07d9523",
+      "sha256": "342239D0F5602DCCCB860E0FE2D388CD8DD81BC397C500415F56ECB0E4CB3BD4"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerPresetFileReplacementBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a91f2a29fb35d09d35ba6a8be6265aa06fd7ea99",
+      "sha256": "5782490B91FAC1E2DA4F273BDBFF377BE249FD216C7254ACE7AAE9BD52F50D9A"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerPresetFileReplacementHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "05bea81782ed35c328a8290bce2a8af778023e58",
+      "sha256": "D609E7A6E130F5C9F87CD4B8ADE8ED3F97D1B7D7AD54E4FF7675BBA04471743D"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerSimpleDesignerBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "ba6494f0402fd8f41e86ebfca57cabb3ad9d3365",
+      "sha256": "FE689FF4D9817E05B59FA872373AEA6A86003439C13A6B071300352F13668E1F"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerTestTasks.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "051120a22fee4e7ff9d6f9efabd517736a3a0445",
+      "sha256": "15105B922E291CC5F98EC7D2ADECC0CC8F6DC1D4E0F7727E1B4346D895206C3E"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/IConfigMakerVariableActionsHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0c2759f710cf49ca3afd030d54be1abe3428d4ed",
+      "sha256": "78A37C4EBC761E12F2BC56B670249FF36D5577423337D789AF80448025CCBA5A"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ICreateConfigGraphicDesignerBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e1703f105d24ec065e036ad7c5231f689f142767",
+      "sha256": "67B5D1C3A67B54500FE6AA958EE84FBD718911031A8A49207CA93F3D341E11CA"
+    },
+    "CDPIUI/Helper/CreateConfigHelper/ICreateConfigTestTasks.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "4b138e59efca955fbd827be3e77c2236aecdf38b",
+      "sha256": "D13FE04B3E08606C00F84597A2609BE0C06260D22AE93578867C626244B149F9"
+    },
+    "CDPIUI/Helper/UserExperience/DiagnosticHighlightingUpdater.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9c7ec6dc50b6557519b7b2cf52ecb840cde77eb7",
+      "sha256": "88721943DD1D7520EAE6846A236AEC2CC60575ACEF74B2AE2DFBD040A9C6CA5F"
+    },
+    "CDPIUI/Helper/UserExperience/DispatcherTaskBridge.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "e84b1afd686429ad7c12c26ed58aba41f800c9a4",
+      "sha256": "4173D8AAB9EF6DCFFD8A1D249D9B7D18D6653A43F19A9615B2A7EF49CABB7CF7"
+    },
+    "CDPIUI/Helper/UserExperience/NamedValueCollectionLoader.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "3d7449498e3f9638de9daaa05b0b7c2b3387e907",
+      "sha256": "7DBE0571C5399327CCF955F580FABCAB5E76F64CE23684E9A01CADC99A6D1269"
+    },
+    "CDPIUI/Helper/UserExperience/PostOrderTreePruner.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "592ff557a98c4bee548be7d8f879148b2386da9c",
+      "sha256": "34B54E725993173BD65C1D56A4C95D469DA7810744DEA403BFBBFEDA75ADE183"
+    },
+    "CDPIUI/Helper/UserExperience/SelectedItemChoiceAction.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "85d613fcfb937588b3bca614dce19ec325a14443",
+      "sha256": "44872BE09BB97551B906B1D7B285A77F51FFA14ECAA03AB9404714D9121352F2"
+    },
+    "CDPIUI/Helper/UserExperience/TextChangeRelay.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "3c6e1c5e0fda8460eb2bcb4d5a89a4536f31e47e",
+      "sha256": "00322BF11EAC6E95F9323B70A3D3275E550A928703BD45CF46211F77BC875BB3"
+    },
+    "CDPIUI/Helper/UserExperience/TwoPhaseTransitionSequence.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "640882ec6ee1018eb6c3e3bb11cee0358460ce75",
+      "sha256": "66FB24692285E24BFD758E6D7499C83CB784875818D51FE83BA27F922FA03D81"
+    },
+    "CDPIUI/Helper/WindowHelper/AppWindowCoordinator.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a73f83b87527f46e61d6391b77e9f4633e6abac2",
+      "sha256": "0081A83A0D4B38DDB44A6289456F2A4D562681C699A1FE47015AF769B23DA50F"
+    },
+    "CDPIUI/Helper/WindowHelper/AppWindowOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "1e68aaa4f92bfd8e8342e1b53d52eb743f211752",
+      "sha256": "7BC433AEA266034FE349201839F5603DD3E12483A772876A3B8A7FF13093BD75"
+    },
+    "CDPIUI/Helper/WindowHelper/IAppWindowOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "3b6e00b7ec40a92ebdcf72b6f288668628f5bdf4",
+      "sha256": "7FC3422432BD2DAEBA82EFF0DDA6B34DA3E4D89363638F7BE3093D2E9744BB28"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2AssignmentActions.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "2e8d3a6be9318ae5a122bd123b3a41f4b57edef8",
+      "sha256": "C6D277BDA47066205E09B7B424BC22A2EB4BC97BBE91CB3E9395622A79EA6C47"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ManualComponentTestTasks.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "063eb62cb6b0632b85b5e5e14b79f13d5e22e9f4",
+      "sha256": "27BE0E03225F6B1060B76F895C90B33D550BB0FF5D3F074867CDD8F45B4F7F3C"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ManualTestSession.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "01e1be7ac908c119cdae6a94e3f4cf01fe406606",
+      "sha256": "AFA23639306305F04B7FB40976C0F4EE246EDC8089F06F932E5853365358A700"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ReportExport.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5f9c153ca8538fd2f104ee34e28f7e56d149e647",
+      "sha256": "40CB2A3C5AE184B79016C42BA7528952D0AF92C8D79FB141781C8CB74081AB89"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ReportSummaryPresenter.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "dae76bc2a593d99526049954a9cf5d5b69883e03",
+      "sha256": "AEB2AFDC37EFE0718D4AD151AC3C25FE451E9BB3DB7330E36EA2C098155A0269"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ResultPageViewModel.Assignments.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "ce64c3533ef5bd95d5b999823cb989419875b064",
+      "sha256": "A39762190E07A986CDBB84727A81AECC63E192149D56C07ABE5DFD3EB6F9B2C4"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ResultPageViewModel.Export.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "dc2487dc0d5bdc0bdd2c6325a24a1b9737365aa8",
+      "sha256": "77ED78EBF44C81CC895FED3FA444C09C08A6DF1A12B76A8D7406248F12635E96"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ResultPageViewModel.ManualTesting.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "47174a32357e3a68c7751ea2fb08014a3d2e97c9",
+      "sha256": "7B4D95F64AD9D05E2DCF243DACD0A0328FEF18F93870B33584C71A4071059E9A"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ResultPageViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "2b30f6b285bc9383e56d762857c52792c267c6e9",
+      "sha256": "E3C9BF2FCF574A30C31CCEE99F6C53FD16DA4902DBD7D16B911F436F0FABA3E0"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2ResultSelection.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f17f6f8d2f49ac99e37ffc62cf044ba259d5931f",
+      "sha256": "888EFED70EEBE2EE41CDF2CCB44D53A3F115E9BEAEEBD087EC9C8FCD9921A407"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/BlockCheck2SelectedStrategyTest.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b513617e626a4631bda33eece009a83dd6372a6b",
+      "sha256": "411D180C02B7963442232AAAE02BA206B4B04F4F8C729D096C877B1CA904E74F"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/IBlockCheck2AssignmentActionsHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5a50cb51e3e0a83d9bacde43859968c38d192f0e",
+      "sha256": "A904EE5BFB22A4EE466BF869FAD236AD497F6A76DCE6090980BA4C88F6240927"
+    },
+    "CDPIUI/ViewModels/BlockCheck2/IBlockCheck2ManualTestHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "89d0116289e37e90a182e494db5c70f49755be5c",
+      "sha256": "F291A0E2AC9754322010E8D0C61E714DD09210976690CA1520E8DAAC2A4FFA3C"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualAssignmentEditor.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b7ad20fde6eb3c16f44de709b529a7c3b01513c0",
+      "sha256": "5DF6F603DD4BD760D96FE9F96F2FA7CFB425A69FF4142A787E650A8C76A83116"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualAssignmentRules.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "87ba799925220708f6f01932a16f89c9b2bb2d76",
+      "sha256": "C24737DBAF55DE4A7947A3B4B924C76D95BC3E98926BA84DCF1D29CDB3463E98"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualIssueItem.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "df29aa266cdba0ea5ff6a35dce7d193f91cbce47",
+      "sha256": "C14B4BC8F127B6F6B456D1192E36E014AAAC778D1CFDA4CAA1F78D9D42CF1817"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualPresetOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7cd51794048d10bc3474a7b43bd91931b7808bff",
+      "sha256": "B15336AB695CFF660FC36BA5040FB687B0710104ACD297AD723657F1E3D07DCB"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualPresetState.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "83cc336184e3d2f5753c03c9423e0d0999e2b9b8",
+      "sha256": "9C787277A5F592D6ED2E2ECFED82AF3677BB9B996A029C23BF32DEE7F8D365F8"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualResultViewModels.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9d4690571a8471bd1d5478dd951aa2fa5e708991",
+      "sha256": "ABECBC5EE7CF02CEDF9FF670402DE221FDCB30E3DC8B5704937F3D675D6008C4"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualStrategyTestController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7ed7eca71b999e7642d2cf29ca2911fed96fe8b4",
+      "sha256": "2934AA14109E8C7B5868ACECCA5708A8BB797E1A001CD5B39A1207D71BAA8737"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ManualStrategyTestOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "fd9d557792281511b18e28d6fff527198a19dedd",
+      "sha256": "420FB4163826B489978E0A933564D7552ADF8D0A4DB5F3A95596AF885A659532"
+    },
+    "CDPIUI/ViewModels/BlockCheck2OptionsSettings.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a7ca9b762641e09ada31f8eeb2606fa4a7f578ab",
+      "sha256": "B624C5B74086BD6466D6CB7118ACDD248DFE3F0BC3B0D4A88DAAAD80EFBED61D"
+    },
+    "CDPIUI/ViewModels/BlockCheck2OptionsViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "74245f2f00be039ced4aeceb1a88aae2d1e99d7c",
+      "sha256": "AE78D253F8DEB6B3FA8A3517C5C419EDD9355F6191D84DB6A351A0347A717C68"
+    },
+    "CDPIUI/ViewModels/BlockCheck2PresetDraft.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "903d5748cc1940cbd95ce4e958b724fde0c2c7c6",
+      "sha256": "763BD46A8BDB2378699404F9F838B57C537D9D4235E33E7AB382D0D9600278C3"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ProgressEstimator.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "40bca971e6a6080d58e5cbb3a9293fc42eda1b79",
+      "sha256": "4D885619A0B4EA82CF047811132353956001B8BE23F07AB871D150B2149D940C"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ProgressViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "ff4ecdbc3dca51821d61d79c9307d3ebc77b0a62",
+      "sha256": "921E5FC6F5A2D3EA41DA185EF9CF8D063C006436E08AB86E768193805C6C4B6E"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ReportOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f0df8e73107aa3c309c28cb970656d924f37977f",
+      "sha256": "4BAEDDCB9968F2746A73331955013B01C09B3B272F4362D5309E2F4C46B2B32E"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ResultViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "78cdb7c5c6f8b29702361df8aa2daee0d5956667",
+      "sha256": "EBF5BD6D60ABBEF0F34CB7AEAE0159602F9D99EA9310A9EDBCE80A363358A0CE"
+    },
+    "CDPIUI/ViewModels/BlockCheck2RunController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9c995c600a9fabc6addbf4fd19139a13e0e5f14e",
+      "sha256": "829A3119FF142C0464EE7F2CAF0B8B4AA26F7C051B209D49DBF92C1CEBE7ADA6"
+    },
+    "CDPIUI/ViewModels/BlockCheck2RunResultViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "83fcda62b81d6dc40e63f8e9f90914f69a9cf3ae",
+      "sha256": "A688AA2FEF721AB37DA1937FC7563DD694F6EF28A5C77988A85735399282D5A2"
+    },
+    "CDPIUI/ViewModels/BlockCheck2SiteListBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f1a575f11c22f916c56949b3618c7e1ecbd019b1",
+      "sha256": "3D2CB6011F3F654C201CB91245F749EC19E061F8B4C52D27D4B09D5EE86FF9F9"
+    },
+    "CDPIUI/ViewModels/BlockCheck2SiteListController.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "19d7037dfc08683fac8422f49987094982ff1dad",
+      "sha256": "2FA508B156DC00E92D07BAED45970309C712E56A64246BA268DDC404D42CA4D2"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ViewModel.Options.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "a216f8ec0f8938385b659bdcd8632c9deee6991e",
+      "sha256": "3C49DC23E5E7133010FBB8DF3BFC7D4D5CE31094ABB1F2AEFC6155D2B38BEEEA"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ViewModel.SiteLists.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5fefcf3246c7a9acbe76ccc5345d73a605d0a7f8",
+      "sha256": "87805A038673CE6AF2D7946985018BFB532CEA800CCAB528D116C3A263AFDF62"
+    },
+    "CDPIUI/ViewModels/BlockCheck2ViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "2584e5462e8aa7c9667acbb5f47d309852a01091",
+      "sha256": "A1D34773974DB30145B321EACB0FD1D3C458FCC70071BBC53B90B58AB3314D9B"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.CommandHelp.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8716f8d27bc29ee741f40f8f56b12ad18d53b9a5",
+      "sha256": "97E0525B01FA524E76BE5A24A9AD4D6C13E20988F0694665B02CED022BFE09F3"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.Diagnostics.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "1986c7ffe428203d6ef7dd543bf26729c4e60c1f",
+      "sha256": "852033202AC2CFF959BC92CA2510B018FB3860B556D9F922A7DFB24465576931"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.Document.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "62825d9ee56ebe097144d26a79c5abbac060f72d",
+      "sha256": "44951408501F31462E1BB4DE35B8BC62765E62CC7EF03BF1A69B888B39376648"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.PresetFiles.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "c00d9c7f8ad14895c27438a99e85a2f9c2f2ccb2",
+      "sha256": "933A7203A6A6DCC8FD2E4C64B6F3D9F0CA61909CFF10BB4F85F71CB2EF8D7844"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.PresetStructure.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "8c362fe3ebe60e5c51df913f022b86f23ede697a",
+      "sha256": "0946E038FE88055ADBBCC467BF5772166BD0B8FB2458A0AD758598522DBDF96C"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.SimpleDesigner.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "ca63191d07b8000306c9d82fb3e97cb70167cd3d",
+      "sha256": "B9B7057225DFD9277D352F2E5069FB3FE516533ABD6BA0F043155CCC02F8A1C7"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.Testing.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b91e2f21c3d3e35143f8dd86b5c8d2a13db40143",
+      "sha256": "52D675DB25E8B9CE64CCAD25C71C9D534C57911F1600958FC746A91335C1CF21"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.Variables.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "e78297703595c6caf795200d0d64cf7e87ae04c1",
+      "sha256": "87B4126FAAD488FA7D671135AAEEC51992045843AD7010948E22CD97134EBE63"
+    },
+    "CDPIUI/ViewModels/ConfigMaker/ConfigMakerViewModel.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "0108eec56d94ab050b979195ab0989f0926054de",
+      "sha256": "73E537621F77FA9FA5BA90E004CC9D38CF309BC630D22530402644CF3168EBA1"
+    },
+    "CDPIUI/ViewModels/ConfigMakerPresetDocumentConverter.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "f2d585d3e8fdfcc8161493773af09a2f56fb23e2",
+      "sha256": "532059CFA1F6298ECD319651FAB55E42989E24E557B5CE8F9886BC4C067DAAB9"
+    },
+    "CDPIUI/ViewModels/CreateConfig/ConfigComponentOption.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b1e6998430e9d489e08555c80e5b3a8cb9931ec7",
+      "sha256": "FD6734229E0FC0A918449F9DB5993E733DADC279DDA556AB7CB608FD75D2BD0A"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateConfigComponentSelection.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "0b8af6faf663ad14a30b7492a3dea48209991de7",
+      "sha256": "9CB4C6E284A11A99069544A789CF3261ACD962A9116F548CF40F5A81C0EB0F1D"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateConfigConditionDraft.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "b16f3948647fa1a4c4626164e1bef54161959980",
+      "sha256": "829743F3D7F9EA95BE3EC3EFC3F2B7CFA826624DA5BDE702E164D35F993B4DB5"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateConfigGraphicDesigner.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "7decf8ff730fb271c3f211de54ac885665360ae0",
+      "sha256": "09998F4691C5B3134FCA2D5F1FD919C3EB8309A24231019C044CDF41C8E28944"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateConfigTestSession.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5d2697cc686e0933164942a3073c52ca2254ec44",
+      "sha256": "7497CA3B9793ABD2626FD25088EEC980D6D587534BF2CDF47D5E842670371EF2"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateNewConfigViewModel.GraphicDesigner.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "149ac35f28ddd8599f65f1514c5c4e8d28d37bdb",
+      "sha256": "AA93CA87B32ED34894499E361015282B71183893BF2BD5618484A7098049F468"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateNewConfigViewModel.Navigation.cs": {
+      "source": "f706f16934695bcb122de63d0442c4ab20f42869",
+      "blob": "ab6e7004fef852acb7d34755705b69c2ac688b3e",
+      "sha256": "6E8E6D9EAD8A5D3D8A65BBCCFA7FF30C88B258E88B9F3BCE2C3818529A9BE229"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateNewConfigViewModel.Testing.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "ded71700451eb8ab7c67a6bdc07d10d36be0aaca",
+      "sha256": "C809F8CB42D12E420789358FE23AA8F2A826E9F7000E457E3688DDA60D4B53C7"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateNewConfigViewModel.Variables.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "6bf0dc53c8f57b78799ae1a7648086842b300321",
+      "sha256": "962B0B2EA52D04AE37CC9DD7C90FC38056D79E2300BD817191F5A11AF3096284"
+    },
+    "CDPIUI/ViewModels/CreateConfig/CreateNewConfigViewModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "59fc766bbd17bd71c3add95bc287457ddf63c699",
+      "sha256": "9D68A2E2F0A7F60F43175F431530C3F588008A34244128A18AE5BACB340B0AB4"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2ManualPresetHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "19cd8c6a76df5d47e27d160aa4dc6803d46a03db",
+      "sha256": "E5D9EA6EE61AD9598BEBFD864B674E7AE95D83CAD95609C2FCA07020F88F8C76"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2ManualPresetOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5cc2ee1811c681ef9a38a42e597badbb67020ae3",
+      "sha256": "694926BB23409E90D02F5CCF311A4A445D61BB651C450DA67C56E6B306C989EA"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2ManualStrategyTestOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "63fd366c328539f723f547f8aecf2df45b791132",
+      "sha256": "1809F18F7EA9A8623769E89324D8D3ADF70117C557D4517FA35E641501E1A403"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2OptionsSettings.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "3893682963d1a684974c1d3de13917bec7a85e95",
+      "sha256": "3E5CFFE461E2FD187DC4214BA305E9C4C42214BA28B354681710BE0C0581FDC2"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2ProgressEstimator.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "942f1716f92e9a2b769324160ece81a91b9c75be",
+      "sha256": "DCE4A34A4B5344655B53E79F5322A59192168F14FCB7B9579FA911956DC25CDC"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2ReportOperations.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "5a9e831b063c6e2d6bd761d7739e2c7234458aad",
+      "sha256": "D37CA5367701F1A1BB63335DC06FE521156D4B9BB9CF3756CB4DE9E854AF2619"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2RunHost.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "c481e91ddefe4656e77585f053ac0a8741a8017f",
+      "sha256": "6FA0D3BD65E385784FC3F9B5E96F500396B4F4F0DF69D6E78F649A85F47D9C6C"
+    },
+    "CDPIUI/ViewModels/IBlockCheck2SiteListBackend.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "1ee004e8c0da900a1111677b256a9dcd9d9443f1",
+      "sha256": "5122A3C7C87DA1B8D0E9FD761DA4130F9B6F43619069522416E46AACAFE72C70"
+    },
+    "CDPIUI/ViewModels/ObservableObject.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "4ce8e24382ab03f68ffed931d26ae7538ea72787",
+      "sha256": "7F118CC37A77FC6DF1C0844EE08E0D7ABAED008C2D54D2063E85A11BAC6385D4"
+    },
+    "CDPIUI/Views/CreateConfigHelper/ConditionVariableModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "9c9b940a305d329263aeeb41170813b759e3f648",
+      "sha256": "4D1C225A18E6EF41AC94ED4639681FFCD2C0599BB2339995F815914AA8D9B47D"
+    },
+    "CDPIUI/Views/CreateConfigHelper/GraphicDesignerExclusiveSettingItemModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "41e0d255d5fdf6d5c0b5189258157a3abf66798b",
+      "sha256": "83A10F94DCB5DE8C7EFCB8615D0A68CCF39A2E47C4B007D2D9904696F49FFFAA"
+    },
+    "CDPIUI/Views/CreateConfigHelper/GraphicDesignerSettingItemModel.cs": {
+      "source": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "blob": "44be23f74c991232ebbb56a62746b283873b5c4c",
+      "sha256": "53F2854E28490EC1AFF53BE06098EB4CAF9E7B21192EF5F834C27F1818C74C77"
+    }
+  },
+  "scope": "Current-default G2 composition only; historical G1 API drift and issue13 remain unaccepted. No native149 or publication claim."
+}

@@ -24,6 +24,11 @@ public partial class App : Application
     public List<Window> OpenWindows { get; private set; } = new List<Window>();
 
     private readonly ModalWindowCoordinator _modalWindows;
+    private readonly AppWindowCoordinator<Window> _windowCoordinator;
+    private readonly AppWindowCloseCoordinator<Window> _windowCloseCoordinator;
+    private readonly AppActivationDispatcher _activationDispatcher;
+    private readonly AppFileActivationHandler _fileActivationHandler;
+    private readonly AppIdleExitController _idleExitController;
     private readonly Microsoft.UI.Dispatching.DispatcherQueue _uiDispatcher =
         Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
 
@@ -32,6 +37,33 @@ public partial class App : Application
     public App()
     {
         _modalWindows = new ModalWindowCoordinator(OpenWindows);
+        _windowCoordinator = new AppWindowCoordinator<Window>(OpenWindows, () => _localizerReady,
+            new AppWindowOperations(RegisterWindow));
+        _fileActivationHandler = new AppFileActivationHandler(
+            new AppFileActivationOperations(this, OpenConditionalTaskImportAsync));
+        _activationDispatcher = new AppActivationDispatcher(
+            TryHandleMigrationActivationAsync,
+            TryHandleMigrationActivationAsync,
+            ProcessFiles,
+            CommandsHandler.HandleCommandAsync,
+            HandleCoreDirectActivationAsync,
+            CommandsHandler.HandleCommand,
+            CommandLineSplitter.Split,
+            exception => Logger.Instance.CreateWarningLog(nameof(App), $"Cannot process startup activation: {exception}"));
+        _idleExitController = new AppIdleExitController(
+            () => OpenWindows.Count,
+            () => Program.IsMigrationActivationPending,
+            () => ApplicationTaskMonitor.IsStoreWorking(),
+            () => ApplicationTaskMonitor.IsGoodCheckRunning(),
+            () => SafeCreateNewWindow<PrepareWindow>(activate: false),
+            () => GetCurrentWindowFromType<PrepareWindow>()?.Close(),
+            Exit,
+            exception => Logger.Instance.CreateWarningLog(
+                nameof(App), $"Cannot update background operation state: {exception.Message}"));
+        _windowCloseCoordinator = new AppWindowCloseCoordinator<Window>(OpenWindows,
+            new AppWindowCloseOperations(_modalWindows,
+                window => { window.Closed -= Window_ClosedHandler; window.SizeChanged -= Window_SizeChanged; },
+                () => SafeCreateNewWindow<PrepareWindow>(activate: false), ExitIfIdle));
         this.InitializeComponent();
         RegisterUnhandledExceptionHandlers();
         PipeClientService.Instance.MessageReceived += (m) => CommandsHandler.HandleCommand(m);
@@ -67,29 +99,7 @@ public partial class App : Application
         _ = PipeClientService.Instance.Start();
     }
 
-    private void StoreStateChanged(bool isWorking)
-    {
-        try
-        {
-            if (isWorking && OpenWindows.Count == 0 &&
-                !Program.IsMigrationActivationPending)
-            {
-                _ = SafeCreateNewWindow<PrepareWindow>(activate: false);
-            }
-            if (!isWorking)
-            {
-                GetCurrentWindowFromType<PrepareWindow>()?.Close();
-                ExitIfIdle();
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Instance.CreateWarningLog(
-                nameof(App),
-                $"Cannot update background operation state: {ex.Message}");
-            ExitIfIdle();
-        }
-    }
+    private void StoreStateChanged(bool isWorking) => _idleExitController.HandleStoreStateChanged(isWorking);
 
     private void PipeConnected()
     {
@@ -134,21 +144,7 @@ public partial class App : Application
         }
     }
 
-    private void ExitIfIdle()
-    {
-        if (Program.IsMigrationActivationPending && OpenWindows.Count == 0)
-        {
-            return;
-        }
-        if (OpenWindows.Count != 0 ||
-            ApplicationTaskMonitor.IsStoreWorking() ||
-            ApplicationTaskMonitor.IsGoodCheckRunning())
-        {
-            return;
-        }
-
-        Exit();
-    }
+    private void ExitIfIdle() => _idleExitController.ExitIfIdle();
 
     public static TEnum GetEnum<TEnum>(string text) where TEnum : struct
     {

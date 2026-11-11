@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CDPIUI.Core.ComponentServices;
-using CDPIUI.Core.Store.Database;
 using CDPIUI.Helper.CreateConfigHelper;
 using Microsoft.UI.Xaml.Controls;
 
@@ -10,14 +8,11 @@ namespace CDPIUI.ViewModels.ConfigMaker;
 // The test run of the edited command in the selected component.
 public sealed partial class ConfigMakerViewModel
 {
-    private bool _isTesting;
-    private bool _isStartingTest;
-    private bool _restoreComponentAfterTest;
-    private string _testComponentId = string.Empty;
+    private readonly ConfigMakerTestSession _testSession;
 
     public event EventHandler TestStateChanged;
 
-    public bool IsTesting => _isTesting;
+    public bool IsTesting => _testSession.IsTesting;
 
     public async Task StartTestAsync()
     {
@@ -34,85 +29,10 @@ public sealed partial class ConfigMakerViewModel
             return;
         }
 
-        await StopTestAsync();
-        bool componentWasRunning = await ComponentTasksManager.Instance.IsTaskRunning(ComponentId);
-        if (componentWasRunning && !await ConfirmReplaceRunningComponentAsync())
-        {
-            return;
-        }
-
-        _restoreComponentAfterTest = componentWasRunning;
-        await ComponentTasksManager.Instance.StopTask(ComponentId);
-
-        _testComponentId = ComponentId;
-        _isTesting = true;
-        _isStartingTest = true;
-        ComponentTasksManager.Instance.TaskStateUpdated += ComponentTasksManager_TaskStateUpdated;
-        RaiseTestStateChanged();
-
-        if (!DatabaseHelper.Instance.IsItemInstalled(_testComponentId))
-        {
-            ShowEditorMessage(
-                _localizer.GetLocalizedString("TargetComponentNotInstalled"),
-                InfoBarSeverity.Error);
-            await StopTestAsync();
-            return;
-        }
-
-        ShowEditorMessage(
-            _localizer.GetLocalizedString("ConfigMakerTestStartedMessage"),
-            InfoBarSeverity.Informational);
-
-        try
-        {
-            await ComponentTasksManager.Instance.CreateAndRunNewTask(_testComponentId, arguments);
-            _isStartingTest = false;
-            await _view.RefreshOutputAsync();
-        }
-        catch (Exception exception)
-        {
-            _isStartingTest = false;
-            ShowEditorMessage(
-                string.Format(
-                    _localizer.GetLocalizedString("ConfigMakerTestStartFailedMessage"),
-                    exception.Message),
-                InfoBarSeverity.Error);
-            await StopTestAsync();
-        }
+        await _testSession.StartAsync(arguments);
     }
 
-    public async Task StopTestAsync(bool showCompletionMessage = false)
-    {
-        if (!_isTesting)
-        {
-            return;
-        }
-
-        string componentId = _testComponentId;
-        bool restore = _restoreComponentAfterTest;
-        _isTesting = false;
-        _isStartingTest = false;
-        ComponentTasksManager.Instance.TaskStateUpdated -= ComponentTasksManager_TaskStateUpdated;
-        RaiseTestStateChanged();
-
-        if (!string.IsNullOrWhiteSpace(componentId))
-        {
-            await ComponentTasksManager.Instance.StopTask(componentId);
-            if (restore)
-            {
-                await ComponentTasksManager.Instance.CreateAndRunNewTask(componentId);
-            }
-        }
-
-        _testComponentId = string.Empty;
-        _restoreComponentAfterTest = false;
-        if (showCompletionMessage)
-        {
-            ShowEditorMessage(
-                _localizer.GetLocalizedString("ConfigMakerTestStoppedMessage"),
-                InfoBarSeverity.Informational);
-        }
-    }
+    public Task StopTestAsync(bool showCompletionMessage = false) => _testSession.StopAsync(showCompletionMessage);
 
     private bool TryResolveTestArguments(out string arguments)
     {
@@ -147,22 +67,18 @@ public sealed partial class ConfigMakerViewModel
         _localizer.GetLocalizedString("ConfigMakerReplaceRunningComponentMessage"),
         _localizer.GetLocalizedString("Continue"));
 
-    private void ComponentTasksManager_TaskStateUpdated(Tuple<string, bool> state)
+    private void ShowTestNotice(ConfigMakerTestNotice notice, string? details)
     {
-        if (!_isTesting || _isStartingTest ||
-            !string.Equals(state.Item1, _testComponentId, StringComparison.OrdinalIgnoreCase) ||
-            state.Item2)
+        (string message, InfoBarSeverity severity) = notice switch
         {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(async () =>
-        {
-            ShowEditorMessage(
-                _localizer.GetLocalizedString("ConfigMakerTestExitedMessage"),
-                InfoBarSeverity.Warning);
-            await StopTestAsync();
-        });
+            ConfigMakerTestNotice.Started => (_localizer.GetLocalizedString("ConfigMakerTestStartedMessage"), InfoBarSeverity.Informational),
+            ConfigMakerTestNotice.Stopped => (_localizer.GetLocalizedString("ConfigMakerTestStoppedMessage"), InfoBarSeverity.Informational),
+            ConfigMakerTestNotice.Exited => (_localizer.GetLocalizedString("ConfigMakerTestExitedMessage"), InfoBarSeverity.Warning),
+            ConfigMakerTestNotice.NotInstalled => (_localizer.GetLocalizedString("TargetComponentNotInstalled"), InfoBarSeverity.Error),
+            ConfigMakerTestNotice.StartFailed => (string.Format(_localizer.GetLocalizedString("ConfigMakerTestStartFailedMessage"), details), InfoBarSeverity.Error),
+            _ => throw new ArgumentOutOfRangeException(nameof(notice)),
+        };
+        ShowEditorMessage(message, severity);
     }
 
     private void RaiseTestStateChanged()

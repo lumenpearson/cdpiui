@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
-using CDPIUI.Helper.LScript;
+using CDPIUI.Core.LScript;
 
 namespace CDPIUI.ViewModels;
 
@@ -212,7 +212,7 @@ internal static class ConfigMakerPresetDocumentConverter
         foreach (string expression in item.variables ?? [])
         {
             Tuple<string, string, string, string>? condition =
-                LScriptLangHelper.GetNameOnOffValuesFromConditionString(expression);
+                LScriptCore.GetNameOnOffValuesFromConditionString(expression);
             if (condition != null && !string.IsNullOrWhiteSpace(condition.Item2))
             {
                 document.Variables.Add(new ConfigMakerVariableDefinition

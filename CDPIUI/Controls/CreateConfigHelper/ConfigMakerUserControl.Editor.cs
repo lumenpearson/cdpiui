@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
 using CDPIUI.Helper.CreateConfigHelper;
+using CDPIUI.Helper.UserExperience;
 using CDPIUI.ViewModels.ConfigMaker;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,7 +14,7 @@ namespace CDPIUI.Controls.CreateConfigHelper;
 // The command text editor: text, cursor, zoom, background and highlighting.
 public sealed partial class ConfigMakerUserControl
 {
-    private string _highlightSignature = string.Empty;
+    private readonly DiagnosticHighlightingUpdater _highlightingUpdater = new();
 
     string IConfigMakerView.EditorText => CommandEditor.Text;
 
@@ -116,7 +116,7 @@ public sealed partial class ConfigMakerUserControl
             "MicaSmoke" => GetApplicationBrush("SmokeFillColorDefaultBrush"),
             _ => new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)),
         };
-        _highlightSignature = string.Empty;
+        _highlightingUpdater.Reset();
         ApplyEditorTheme();
     }
 
@@ -132,26 +132,18 @@ public sealed partial class ConfigMakerUserControl
         bool isLight = !usesForcedDarkBackground &&
             (ActualTheme == ElementTheme.Light ||
              (ActualTheme == ElementTheme.Default && ((App)Application.Current).CurrentTheme == ElementTheme.Light));
-        string[] errorTokens = ViewModel.Diagnostics
-            .Where(item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Error)
-            .Select(item => item.Source.Token)
-            .ToArray();
-        string[] warningTokens = ViewModel.Diagnostics
-            .Where(item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Warning)
-            .Select(item => item.Source.Token)
-            .ToArray();
-        string newSignature = $"{editorBackground}|{isLight}|{string.Join(',', errorTokens)}|{string.Join(',', warningTokens)}";
-        if (string.Equals(_highlightSignature, newSignature, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        _highlightSignature = newSignature;
-        CommandEditor.SyntaxHighlighting = isLight
-            ? new LightDefaultHighlighter(errorTokens, warningTokens)
-            : new DarkDefaultHighlighter(errorTokens, warningTokens);
-        CommandEditor.Design = isLight
-            ? TextControlBoxDesigns.DefaultLightDesign
-            : TextControlBoxDesigns.DefaultDarkDesign;
+        _highlightingUpdater.Update(editorBackground, isLight, () => ViewModel.Diagnostics,
+            static item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Error,
+            static item => item.Source.Severity == ComponentCommandDiagnosticSeverity.Warning,
+            static item => item.Source.Token,
+            (light, errorTokens, warningTokens) =>
+            {
+                CommandEditor.SyntaxHighlighting = light
+                    ? new LightDefaultHighlighter(errorTokens, warningTokens)
+                    : new DarkDefaultHighlighter(errorTokens, warningTokens);
+                CommandEditor.Design = light
+                    ? TextControlBoxDesigns.DefaultLightDesign
+                    : TextControlBoxDesigns.DefaultDarkDesign;
+            });
     }
 }

@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +41,7 @@ internal static class ConfigMakerPresetOptionGroups
         return profiles;
     }
 
-    public static string FindProfileName(IEnumerable<ConfigCommandOption> options) => options
+    public static string? FindProfileName(IEnumerable<ConfigCommandOption> options) => options
         .FirstOrDefault(option => string.Equals(option.Name, "--name", StringComparison.OrdinalIgnoreCase))
         ?.Value;
 
