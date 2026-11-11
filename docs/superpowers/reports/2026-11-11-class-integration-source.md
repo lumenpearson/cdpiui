@@ -75,8 +75,10 @@ its exact file inventory was retained. No hook was bypassed and no history was r
 Immutable fixture: `F:/cdpiui-verify/cdpiui-class-integration-b41b724-20261111`.
 Independent pre-build source review reconstructed1574 inputs,21 literal cut files,1553 unchanged,
 31 bootstraps with27 Root and3 corrected peer case partials byte-identical,35 allowed extras,
-no reparse points and the exact empty Secret template. No helper or App.Modal was cut. The existing
-App cut completes the actual StartupInitialization owner with a no-op, replacing fixture startup
+no reparse points and the exact empty Secret template. App.Modal, StartupInitialization and the
+behavior helpers exercised by the final12 peer groups remain uncut. The documented21 cuts include
+ConsoleFontHelper and external-operation adapters. The existing App cut completes the actual
+StartupInitialization owner with a no-op, replacing fixture startup
 only; real application startup and settings initialization remain unexecuted.
 
 Build:0 warnings/errors,78.82s. Independent post-build review verified54 pins (5 own binaries,
