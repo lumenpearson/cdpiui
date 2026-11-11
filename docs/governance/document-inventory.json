@@ -1215,6 +1215,216 @@
       "policy": "ASD-STE100 principles for English",
       "language": "en",
       "changes": "Record JSON localization implementation, exception recovery requirements, and open delivery acceptance boundaries."
+    },
+    {
+      "path": "docs/DECOMPOSITION-ACCEPTANCE.ru.md",
+      "firstIntroduction": "f75c5a4a638898ea4240e7efbdcab59cb6871ffc\tleather147\tdocs: record final decomposition evidence and open gates",
+      "first_commit": "f75c5a4a638898ea4240e7efbdcab59cb6871ffc",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/DECOMPOSITION-DECISIONS.ru.md",
+      "firstIntroduction": "1d76cbdb099140e0f3ca5eaad546021a3239ef6f\tleather147\tdocs: map decomposition requirements and recorded decisions",
+      "first_commit": "1d76cbdb099140e0f3ca5eaad546021a3239ef6f",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/DECOMPOSITION-REVIEW-MAP.ru.md",
+      "firstIntroduction": "1d76cbdb099140e0f3ca5eaad546021a3239ef6f\tleather147\tdocs: map decomposition requirements and recorded decisions",
+      "first_commit": "1d76cbdb099140e0f3ca5eaad546021a3239ef6f",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/DECOMPOSITION-STATUS.ru.md",
+      "firstIntroduction": "bdc9170c5d3370ad0554a140a3841596bfc59cb6\tleather147\trefactor(gui): extract preset, activation and BlockCheck options responsibilities",
+      "first_commit": "bdc9170c5d3370ad0554a140a3841596bfc59cb6",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-08-class-decomposition.md",
+      "firstIntroduction": "bdc9170c5d3370ad0554a140a3841596bfc59cb6\tleather147\trefactor(gui): extract preset, activation and BlockCheck options responsibilities",
+      "first_commit": "bdc9170c5d3370ad0554a140a3841596bfc59cb6",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-11-class-integration.md",
+      "firstIntroduction": "b41b724c7d930a1fa9209c75c88ffce5c4775213\tleather147\tApply accepted class owners to current main",
+      "first_commit": "b41b724c7d930a1fa9209c75c88ffce5c4775213",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-11-class-integration-source.md",
+      "firstIntroduction": "b41b724c7d930a1fa9209c75c88ffce5c4775213\tleather147\tApply accepted class owners to current main",
+      "first_commit": "b41b724c7d930a1fa9209c75c88ffce5c4775213",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-11-diagnostic-highlighting-verification.md",
+      "firstIntroduction": "5805c8334c76d95d9bd301ed423b7cb7844b02ae\tleather147\tRecord highlighting verification and pending native fixture work",
+      "first_commit": "5805c8334c76d95d9bd301ed423b7cb7844b02ae",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-08-class-decomposition-design.md",
+      "firstIntroduction": "bdc9170c5d3370ad0554a140a3841596bfc59cb6\tleather147\trefactor(gui): extract preset, activation and BlockCheck options responsibilities",
+      "first_commit": "bdc9170c5d3370ad0554a140a3841596bfc59cb6",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-app-idle-exit-design.md",
+      "firstIntroduction": "839cc952b5439548e036a83c6eea78a61d642b61\tleather147\trefactor: extract App idle exit and store state policy",
+      "first_commit": "839cc952b5439548e036a83c6eea78a61d642b61",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-assignment-actions-design.md",
+      "firstIntroduction": "a0d031ec49e00bd2b70169af9a1dc53372e33b28\tleather147\tDocument assignment action decomposition and behavior boundaries",
+      "first_commit": "a0d031ec49e00bd2b70169af9a1dc53372e33b28",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-manual-test-session-design.md",
+      "firstIntroduction": "3cdadef542e4c5686cad974018bdd8927b7470e0\tleather147\tdocs: plan manual test lifecycle decomposition",
+      "first_commit": "3cdadef542e4c5686cad974018bdd8927b7470e0",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-menu-pruning-design.md",
+      "firstIntroduction": "174d1cbf5699455d7768ae2398df4f8f241bddab\tleather147\tExtract live postorder menu pruning into a generic helper",
+      "first_commit": "174d1cbf5699455d7768ae2398df4f8f241bddab",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-report-export-design.md",
+      "firstIntroduction": "81c419c1330fb85e47e76692266e0132f27bc1e7\tleather147\tdocs: plan report export responsibility extraction",
+      "first_commit": "81c419c1330fb85e47e76692266e0132f27bc1e7",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-report-summary-design.md",
+      "firstIntroduction": "93091a13b533897015d8efe789a6aa3aad7ff066\tleather147\trefactor: extract BlockCheck2 report summary presentation",
+      "first_commit": "93091a13b533897015d8efe789a6aa3aad7ff066",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-result-selection-design.md",
+      "firstIntroduction": "de3d3821e6b2d0f13f49e179af88175f53213476\tleather147\trefactor: extract BlockCheck2 selected strategy presentation",
+      "first_commit": "de3d3821e6b2d0f13f49e179af88175f53213476",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-selected-strategy-test-design.md",
+      "firstIntroduction": "1be51e495c1805b089722a4a074f7edf7ad17c84\tleather147\tdocs: plan selected strategy test decomposition",
+      "first_commit": "1be51e495c1805b089722a4a074f7edf7ad17c84",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-10-transition-sequence-design.md",
+      "firstIntroduction": "93cba4cdf94c14405da28678371aa1bca033ada1\tleather147\tRecord neutral two-phase transition sequence design",
+      "first_commit": "93cba4cdf94c14405da28678371aa1bca033ada1",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "ru",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-11-class-integration-design.md",
+      "firstIntroduction": "b41b724c7d930a1fa9209c75c88ffce5c4775213\tleather147\tApply accepted class owners to current main",
+      "first_commit": "b41b724c7d930a1fa9209c75c88ffce5c4775213",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-11-configuration-variable-projection-design.md",
+      "firstIntroduction": "00f39b1a9be70cb97cebd7290b5f24dac6a5ab47\tleather147\tExtract configuration variable read-model projection",
+      "first_commit": "00f39b1a9be70cb97cebd7290b5f24dac6a5ab47",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-11-diagnostic-highlighting-design.md",
+      "firstIntroduction": "ed390cd416b58ea404f04286f7eace5a66e4320a\tleather147\tExtract diagnostic highlighting state into a reusable updater",
+      "first_commit": "ed390cd416b58ea404f04286f7eace5a66e4320a",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English; preserve historical evidence and original authorship",
+      "language": "en",
+      "changes": "Record class decomposition design, verification and bounded integration evidence under issue14; retain historical revision limits."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",

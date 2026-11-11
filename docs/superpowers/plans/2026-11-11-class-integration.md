@@ -69,5 +69,9 @@ Interfaces: all source/contract/runtime proofs → independently reviewed exact 
   resolve actionable findings with the appropriate verification and final source checkpoint.
 - [ ] Refresh current default, preserve any newer change, prepare exact PR body/metadata and publish
   isolated branch/PR with Refs#14; verify required checks on final HEAD and read actual metadata.
+- Draft PR216 is published from72dc with API labels/assignee/G2/head/base read back. Its first
+  GUI/MSI/libraries/tools/CodeQL/metadata checks passed. Governance inventory and one exact prose
+  false positive required additive CI corrections; their local checks pass. The current PR record
+  owns final-head CI and actual Project 7 receipts. No merge or broader acceptance follows from publication.
 - [ ] Record actual achieved acceptance and any remaining14/15 criteria. Close only if all issue14
   criteria pass; otherwise leave it in the accurate working state with explicit next evidence.

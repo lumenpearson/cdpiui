@@ -122,3 +122,44 @@ The Project 7/UI grant wording and overly broad helper-cut statement were correc
 Real startup/Loading/interactive picker/installed-product/GC-detachment and full historical G1
 compatibility remain outside this bounded verdict. Publication and exact-head draft-PR CI are the
 next gates. Issues13/14/15 remain open and no main merge or broad issue14 acceptance is claimed.
+
+## Draft publication and first CI correction
+
+[Draft PR216](https://github.com/lumenpearson/cdpiui/pull/216) was published with HEAD
+`72dc16799c4fc12ae7196577e754c76d08489f6c`, based on current main6c00. API readback confirmed
+the draft, exact head/base, type:refactor and area:architecture labels, lumenpearson assignee,
+G2 milestone and a mergeable source tree. Project 7 intake uses its own exclusive UI grant;
+its actual receipt and the final-head CI result belong to the PR record.
+
+The [first CI run](https://github.com/lumenpearson/cdpiui/actions/runs/42993863256) passed GUI,
+portable layout, installer file-list/MSI, libraries, managed tests, package audit and tools.
+[CodeQL](https://github.com/lumenpearson/cdpiui/actions/runs/42993863296) and Contribution metadata
+also passed. Two checks failed and were reproduced locally before correction:
+
+- [Governance](https://github.com/lumenpearson/cdpiui/actions/runs/42993863221) found21 missing
+  document-inventory entries. The additive correction retains all129 existing records and all
+  top-level metadata. Each new entry uses the actual first-introduction commit/author from the
+  frozen historical Root or current integration history, rather than attributing the import as authorship.
+- Gitleaks8.30.1 interpreted the historical design's API/test-count prose as a credential.
+  An exact generic-api-key match exception is limited to that phrase and that document path suffix.
+  No detector or general path scan is disabled. Both the original72dc file archive and its four
+  added commits scan clean with the corrected configuration. Three negative controls still detect
+  a changed count, the same phrase in another file and a synthetic key in the same document.
+
+The first control sentinel contained `notARealCredential` and was already excluded by the original
+default rules; it could not prove key detection. That rejected control and its reports remain intact.
+A fresh control uses an inert high-entropy value and passes all three detection assertions.
+The tool archive matches the published Windows x64 SHA256
+`D29144DEFF3A68AA93CED33DDDF84B7FDC26070ADD4AA0F4513094C8332AFC4E`.
+Local governance now checks150 Markdown files with0 errors; all32 validator unit tests pass.
+The first scan extraction also stopped on a PowerShell `tar` alias; explicit `tar.exe` extracted the
+still-empty destination without replacing an existing fixture. No product, test, native fixture,
+dependency version or accepted binary changed. New-head CI remains a separate required readback.
+The first correction report quoted the triggering phrase at another path and correctly failed a
+fresh file scan. The report now describes it without repeating that literal; the narrow exception
+was not extended. The rejected report scan remains available with the earlier evidence.
+Independent review also corrected eight historical design entries from English to Russian after
+reading their actual prose; filenames alone did not identify their content language.
+The path expression permits a normal scan-root prefix and would also match a nested copy with
+the same suffix. That deferred narrowness improvement does not exempt another value or rule;
+the exact non-credential literal remains mandatory. No existing repository file has that nested path.
