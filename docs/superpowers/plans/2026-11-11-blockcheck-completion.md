@@ -48,7 +48,7 @@ private HandleRunCompleted and three setters.
   add constructor wiring without invoking ports. Run focused tests and inspect actual output.
 - [x] Prove a controlled cache/read mutation fails behavior assertions, preserve output, restore
   exact bytes/hash and run focused/full GREEN plus normal Release/x64 GUI0warnings/errors.
-- [ ] Verify source and compiled public API preservation, exact product footprint and current
+- [x] Verify source and compiled public API preservation, exact product footprint and current
   governance/secret scans. Record failures/resolution and commit the owned product checkpoint.
 
 ### Task 2: Qualify actual MainPage composition and accept the local stage
@@ -59,14 +59,17 @@ dedicated verification report and additive document inventory. Product stays at 
 **Interfaces:** consumes Task1 SHA and accepted union149 source/cases; produces a reviewed fresh
 native corpus, actual build/pins and execution/postcheck receipt for this source only.
 
-- [ ] Read Task1 evidence; derive full Git source inventory, literal cuts, unchanged case partials,
+- [x] Read Task1 evidence; derive full Git source inventory, literal cuts, unchanged case partials,
   new actual-host cases and exact sequence/count. Preserve fresh paths and all prior fixtures.
-- [ ] Independently review isolation/new cases before build, compile0-0, then pin real binaries,
+- [x] Independently review isolation/new cases before build, compile0-0, then pin real binaries,
   resources, source, runner/verifier and all preexisting output names/hashes. Obtain READY.
-- [ ] Coordinate a new explicit exclusive lease, run the owned bounded process once, validate
+- [x] Coordinate a new explicit exclusive lease, run the owned bounded process once, validate
   exact pass labels/COMPLETE/exit0/streams/IO/hash/resource/source/absence/process checks, then
   publish idle/requestfalse and guarded release. Preserve and diagnose failed attempts.
 - [ ] Update evidence/docs; obtain fresh whole-change independent review, fix Critical/Important
   with observed RED→GREEN and ledger any rulings/deferred minors.
+- [ ] Publish only this stage as a stacked draft PR against frozen dev/audit-class-integration;
+  verify all required checks on its exact final HEAD and actual PR metadata/Project fields.
+  Refs14 and217 keep integration ownership explicit; no automatic closure, parent draft or main merge.
 - [ ] Check all six local issue criteria against named current evidence, post six-section acceptance,
   close completed+actual ProjectDone immediately and read back full metadata. Leave13/14/15 open.

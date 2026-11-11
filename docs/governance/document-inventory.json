@@ -1448,13 +1448,13 @@
     },
     {
       "path": "docs/superpowers/reports/2026-11-11-blockcheck-completion-verification.md",
-      "firstIntroduction": "Local issue217 completion policy verification; source checkpoint pending commit",
-      "first_commit": null,
+      "firstIntroduction": "08678c28f73dfe5c1c154ea112173ef55baa77a1\tleather147\tExtract BlockCheck2 completion notice presentation",
+      "first_commit": "08678c28f73dfe5c1c154ea112173ef55baa77a1",
       "first_author": "leather147",
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
       "language": "en",
-      "changes": "Record managed tests, mutation rejection, GUI and contract evidence; actual native/final acceptance remains pending."
+      "changes": "Record managed and actual native154 completion presentation evidence, source pins, rejected attempts, limits and local acceptance gates."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",
