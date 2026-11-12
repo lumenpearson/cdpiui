@@ -19,6 +19,8 @@ Edit the UTF-8 RESW files here. They are the source of truth for application cop
 
 Keep the same keys in both languages. Preserve formatting arguments such as `{0}` and `{1}`, including their format specifiers. Use literal line breaks or `&#10;`; use `&#13;&#10;` when an exact CR/LF pair is required. Do not replace a line break with the two literal characters `\n`. Do not build sentences by joining translated fragments: put the complete sentence and its arguments in the catalog. RESW values use XML escaping: `&amp;` for `&` and `&lt;` for `<`. Keep `xml:space="preserve"` and put translator context in a `<comment>` element.
 
+Encode an intentional space at the end of a source line as `&#32;`. This preserves the translated value while keeping branch-wide whitespace checks clean.
+
 Two inherited translator notes: `AboutButton.Content` is the About menu/header text; `ORSeparatorTextBlock.Text` should keep its surrounding `--` and translate the word in between.
 
 ## How the application reads translations
@@ -40,7 +42,9 @@ Visible toggle switches localize `OnContent` and `OffContent` through their reso
 
 ## Verification
 
-Run `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release`. Localization tests check RESW/XML parsing, authoring format, translator context, duplicate keys, language parity, formatting-argument parity, embedded-resource lookup for every entry, language selection, standalone tool localization, visible XAML literals, and injected failures in XML/resource/preference reads. The invariant-name allowlist is intentionally short; use a resource for new UI text.
+Run `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -c Release`. Localization tests check RESW/XML parsing, authoring format, project resource declarations, translator context, duplicate keys, language parity, formatting-argument parity, embedded-resource lookup for every entry, language selection, standalone tool localization, visible XAML literals, and injected failures in XML/resource/preference reads. The invariant-name allowlist is intentionally short; use a resource for new UI text.
+
+The project declaration tests guard all GUI Content destinations and output/publish copy settings, both main PRI inputs, all Shared manifest names and each standalone tool's two manifest names. They complement actual build/publish artifact inspection; they do not replace MSBuild or native verification.
 
 The linked language-item tests check property-change notifications and suppress duplicate notifications for equal captions. Their headless converter-interface contract does not verify WinUI binding. On Windows, also check the selected label and the open dropdown through EN → RU → EN without restart, then verify each language after restarting the installed executable.
 

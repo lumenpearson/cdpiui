@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
   <data name="AdAnimatedHorizontalContentItem.Description" xml:space="preserve">
-    <value>Here you can set preferred advertising shown settings. 
+    <value>Here you can set preferred advertising shown settings.&#32;
 Ad showing only in application window – notifications or other popups not allowed. Application won't collect or share your data.</value>
   </data>
   <data name="AdAnimatedHorizontalContentItem.Header" xml:space="preserve">
@@ -40,13 +40,13 @@ Disagreement with license will closed application.</value>
     <value>Recommended bundles </value>
   </data>
   <data name="UnableLoadLicense" xml:space="preserve">
-    <value>We're unable load license file. Continuation is impossible. 
+    <value>We're unable load license file. Continuation is impossible.&#32;
 Try reinstall application
 
 ~Cannot GET:/{0}`</value>
   </data>
   <data name="WelcomeAnimatedHorizontalContentItem.Description" xml:space="preserve">
-    <value>Let's begin setup this application from setting your preferred language. 
+    <value>Let's begin setup this application from setting your preferred language.&#32;
 
 It this right?</value>
   </data>

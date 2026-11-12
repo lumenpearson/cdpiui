@@ -792,9 +792,9 @@ Please, install lates version of "{0}" in Store</value>
     <value>Setup proxy</value>
   </data>
   <data name="ExceptionSystemProxySet" xml:space="preserve">
-    <value>Program cannot save your proxy settings, because exception happens. 
+    <value>Program cannot save your proxy settings, because exception happens.&#32;
 Make sure program has read/write permissions for key group "{0}" and check your system files via `sfc` utility
-Additional info: 
+Additional info:&#32;
 {1}</value>
   </data>
   <data name="ProxySetupCompleteTextBlock.Text" xml:space="preserve">
@@ -806,8 +806,8 @@ Additional info:
 Click "Exit" to close this wizard.</value>
   </data>
   <data name="ExceptionProxySet" xml:space="preserve">
-    <value>Program cannot save your proxy settings, because exception happens. 
-Additional info: 
+    <value>Program cannot save your proxy settings, because exception happens.&#32;
+Additional info:&#32;
 {0}</value>
   </data>
   <data name="ChooseExeFile" xml:space="preserve">
@@ -1585,7 +1585,7 @@ Some features may work not as planned — don't worry. Just say about it to deve
     <value>Install</value>
   </data>
   <data name="ItemAlreadyInstalledWarn" xml:space="preserve">
-    <value>The latest version of this item is currently installed. To roll back the version, first uninstall that item in Store. 
+    <value>The latest version of this item is currently installed. To roll back the version, first uninstall that item in Store.&#32;
 ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   </data>
   <data name="ManualItemInstallationSettingsCard.Header" xml:space="preserve">
@@ -2081,7 +2081,7 @@ Here is error code in case you need it.
     <value>Apply</value>
   </data>
   <data name="ChangeListTipTextBlock.Text" xml:space="preserve">
-    <value>Replace this list with another list you want. 
+    <value>Replace this list with another list you want.&#32;
 This change appears only for yourself. If you want share this kit with others, make changes in config manually.</value>
   </data>
   <data name="FromTheStoreTextBlock.Text" xml:space="preserve">
@@ -2319,7 +2319,7 @@ This change appears only for yourself. If you want share this kit with others, m
     <value>Blocked:</value>
   </data>
   <data name="ReplaceSiteListException" xml:space="preserve">
-    <value>Unable to replace site list "{0}" with "{1}". 
+    <value>Unable to replace site list "{0}" with "{1}".&#32;
 Error code: {2}</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
@@ -2506,7 +2506,7 @@ Original developer: Niko</value>
     <value>Hide Flashlight</value>
   </data>
   <data name="FlashlightBad" xml:space="preserve">
-    <value>Flashlight won't response now. 
+    <value>Flashlight won't response now.&#32;
 Here is error code in case you need it: ERR_FLASHLIGHT_BUSY</value>
   </data>
   <data name="FlashlightBadTitle" xml:space="preserve">
@@ -6003,7 +6003,7 @@ Setup any application task you want (component startup, config changing, etc.) a
     <value>Zapret2 support right there!</value>
   </data>
   <data name="AppFeatureZapret2SupportDescription" xml:space="preserve">
-    <value>New "Zapret2" component is now supported by CPDIUI. 
+    <value>New "Zapret2" component is now supported by CPDIUI.&#32;
 
 Also, every config you use from Zapret1 (Zapret Legacy) supported by Zapret2 without any action from you. That configs marked as "Legacy" in Zapret2 config selector.
 
@@ -6019,7 +6019,7 @@ New configs for Zapret2 will be come soon!</value>
     <value>Overwrite current item</value>
   </data>
   <data name="ConfigMakerSaveOverwriteConfigDescription.Text" xml:space="preserve">
-    <value>Overwrite original config. 
+    <value>Overwrite original config.&#32;
 
 It action not recommended to items from Store. Any pack update from Store will remove changes you do. Save as new config to protect your changes.</value>
   </data>
@@ -6045,7 +6045,7 @@ It action not recommended to items from Store. Any pack update from Store will r
     <value>Not available</value>
   </data>
   <data name="SomeItemsCurrentlyInstallingTextBlock.Text" xml:space="preserve">
-    <value>Some items you requested is currently installing. 
+    <value>Some items you requested is currently installing.&#32;
 You see your component's as soon as installing finished. If it take longer, than must view downloading status on Store.</value>
   </data>
   <data name="AboutProxyButton.Content" xml:space="preserve">

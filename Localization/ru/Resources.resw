@@ -660,8 +660,8 @@
     <value>Параметры компонента Zapret</value>
   </data>
   <data name="GoodCheckComponentDirsSetException" xml:space="preserve">
-    <value>Мы не можем сохранить некоторые параметры, которые необходимы для продолжения работы. 
-Попробуйте переустановить задействованные компоненты и дополнения в Магазине, после чего повторите попытку. 
+    <value>Мы не можем сохранить некоторые параметры, которые необходимы для продолжения работы.&#32;
+Попробуйте переустановить задействованные компоненты и дополнения в Магазине, после чего повторите попытку.&#32;
 Если ошибка будет повторяться, сообщите о ней в службу поддержки этого приложения</value>
   </data>
   <data name="LibraryTextBlock.Text" xml:space="preserve">
@@ -1588,7 +1588,7 @@
     <value>Установить</value>
   </data>
   <data name="ItemAlreadyInstalledWarn" xml:space="preserve">
-    <value>Последняя версия этого элемента уже установлена. Чтобы произвести откат удалите этот элемент через Магазин вручную, после чего повторите попытку. 
+    <value>Последняя версия этого элемента уже установлена. Чтобы произвести откат удалите этот элемент через Магазин вручную, после чего повторите попытку.&#32;
 ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
   </data>
   <data name="ManualItemInstallationSettingsCard.Header" xml:space="preserve">
@@ -1838,7 +1838,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Что-то пошло не так</value>
   </data>
   <data name="SaveConfigException" xml:space="preserve">
-    <value>Мы не смогли сохранить этот набор. 
+    <value>Мы не смогли сохранить этот набор.&#32;
 Ниже расположен код исключения, если он вам нужен.
 {0}</value>
   </data>
@@ -2321,7 +2321,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Блок:</value>
   </data>
   <data name="ReplaceSiteListException" xml:space="preserve">
-    <value>Невозможно заменить список сайтов "{0}" списком "{1}". 
+    <value>Невозможно заменить список сайтов "{0}" списком "{1}".&#32;
 Код исключения: {2}</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
@@ -2508,7 +2508,7 @@ ERR_STORE_LATEST_VERSION_ALREADY_INSTALLED</value>
     <value>Спрятать Фонарик</value>
   </data>
   <data name="FlashlightBad" xml:space="preserve">
-    <value>Фонарик не отвечает в текущий момент. 
+    <value>Фонарик не отвечает в текущий момент.&#32;
 Вот код ошибки, если он вам нужен: ERR_FLASHLIGHT_BUSY</value>
   </data>
   <data name="FlashlightBadTitle" xml:space="preserve">
@@ -5948,7 +5948,7 @@ https://discord.com/app</value>
     <value>Удалить</value>
   </data>
   <data name="DeletePreviousVersionsConfirmation.Text" xml:space="preserve">
-    <value>Удалить файлы предыдущих версий? 
+    <value>Удалить файлы предыдущих версий?&#32;
 Вы больше не сможете выполнить откат до предыдущей версии.</value>
   </data>
   <data name="DownloadErrorActionsDialog.Title" xml:space="preserve">
