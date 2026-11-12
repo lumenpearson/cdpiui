@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="--autoblacklist" xml:space="preserve">
+    <value>Автоматическое определение заблокированных доменов</value>
+  </data>
+  <data name="--blacklist" xml:space="preserve">
+    <value>Путь до используемого списка сайтов</value>
+  </data>
+  <data name="--domain-matching" xml:space="preserve">
+    <value>Метод сопоставления доменов</value>
+  </data>
+  <data name="--fragment-method" xml:space="preserve">
+    <value>Метод фрагментации</value>
+  </data>
+  <data name="--help" xml:space="preserve">
+    <value>Показать справку и выйти</value>
+  </data>
+  <data name="--host" xml:space="preserve">
+    <value>Адрес для разворачивания прокси</value>
+  </data>
+  <data name="--log-access" xml:space="preserve">
+    <value>Путь к файлу журнала</value>
+  </data>
+  <data name="--log-error" xml:space="preserve">
+    <value>Путь к файлу журнала с ошибками</value>
+  </data>
+  <data name="--no-blacklist" xml:space="preserve">
+    <value>Применять обход ко всем подключениям без исключения</value>
+  </data>
+  <data name="--out-host" xml:space="preserve">
+    <value>Адрес исходящего прокси</value>
+  </data>
+  <data name="--port" xml:space="preserve">
+    <value>Порт для разворачивания прокси</value>
+  </data>
+  <data name="--quiet" xml:space="preserve">
+    <value>Отключить вывод дополнительной информации в консоль</value>
+  </data>
+  <data name="A" xml:space="preserve">
+    <value>Дополнительный пробел между методом и URL</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Показать отладочную информацию</value>
+  </data>
+  <data name="DNSIpv4Only" xml:space="preserve">
+    <value>Фильтровать только IPv4</value>
+  </data>
+  <data name="DnsVerb" xml:space="preserve">
+    <value>Подробные DNS-сообщения</value>
+  </data>
+  <data name="E" xml:space="preserve">
+    <value>HTTPS-фрагментация</value>
+  </data>
+  <data name="EnableDoH" xml:space="preserve">
+    <value>Использовать DNS поверх HTTPS</value>
+  </data>
+  <data name="F" xml:space="preserve">
+    <value>HTTP-фрагментация</value>
+  </data>
+  <data name="K" xml:space="preserve">
+    <value>HTTP keep-alive фрагментация</value>
+  </data>
+  <data name="M" xml:space="preserve">
+    <value>Смешать регистр в Host</value>
+  </data>
+  <data name="N" xml:space="preserve">
+    <value>Не ждать ACK первого сегмента</value>
+  </data>
+  <data name="NativeFrag" xml:space="preserve">
+    <value>Нативная фрагментация</value>
+  </data>
+  <data name="NoSni" xml:space="preserve">
+    <value>Разрешить отсутствие SNI</value>
+  </data>
+  <data name="P" xml:space="preserve">
+    <value>Блокировать пассивный DPI</value>
+  </data>
+  <data name="Pattern" xml:space="preserve">
+    <value>Обходить DPI по этому шаблону пакетов</value>
+  </data>
+  <data name="Q" xml:space="preserve">
+    <value>Блокировать QUIC/HTTP3</value>
+  </data>
+  <data name="R" xml:space="preserve">
+    <value>Заменить Host на hoSt</value>
+  </data>
+  <data name="ReverseFrag" xml:space="preserve">
+    <value>Обратная фрагментация</value>
+  </data>
+  <data name="S" xml:space="preserve">
+    <value>Убрать пробел между Host и его значением</value>
+  </data>
+  <data name="Silent" xml:space="preserve">
+    <value>Не показывать баннер и системную информацию</value>
+  </data>
+  <data name="SystemProxy" xml:space="preserve">
+    <value>Использовать системный прокси</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Задержка перед запуском (мс)</value>
+  </data>
+  <data name="W" xml:space="preserve">
+    <value>Обрабатывать все порты</value>
+  </data>
+  <data name="WindowSize" xml:space="preserve">
+    <value>Размер чанка (байты)</value>
+  </data>
+  <data name="WrongChksum" xml:space="preserve">
+    <value>Неверная контрольная сумма</value>
+  </data>
+  <data name="WrongSeq" xml:space="preserve">
+    <value>Неверная SEQ/ACK</value>
+  </data>
+</root>

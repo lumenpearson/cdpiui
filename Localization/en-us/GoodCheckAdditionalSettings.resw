@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AddressTextBlock.Text" xml:space="preserve">
+    <value>Mapping addresses</value>
+  </data>
+  <data name="AutomaticConnectivityTestTextBlock.Header" xml:space="preserve">
+    <value>Automatic connection check</value>
+  </data>
+  <data name="ConnectivityTestURLs.Header" xml:space="preserve">
+    <value>URL for connection test</value>
+  </data>
+  <data name="Curl" xml:space="preserve">
+    <value>Curl</value>
+  </data>
+  <data name="GGC.Header" xml:space="preserve">
+    <value>Automatically match to nearby Google Global Cache (GGC) servers</value>
+  </data>
+  <data name="GGCAddr.Header" xml:space="preserve">
+    <value>Google Global Cache (GGC) Server Mapping URLs</value>
+  </data>
+  <data name="InternalTimeout.Header" xml:space="preserve">
+    <value>Internal timeout</value>
+  </data>
+  <data name="NativeResolver" xml:space="preserve">
+    <value>Native (Recommended)</value>
+  </data>
+  <data name="Resolver.Description" xml:space="preserve">
+    <value>Curl is generally more stable. The native version is faster.</value>
+  </data>
+  <data name="Resolver.Header" xml:space="preserve">
+    <value>Resolver</value>
+  </data>
+  <data name="ResolverRetryCount.Description" xml:space="preserve">
+    <value>Maximum number of attempts to connect to the site</value>
+  </data>
+  <data name="ResolverRetryCount.Header" xml:space="preserve">
+    <value>Native resolver retries</value>
+  </data>
+  <data name="ResolverTimeout.Header" xml:space="preserve">
+    <value>Native resolver timeout</value>
+  </data>
+  <data name="SkipCertVerifys.Header" xml:space="preserve">
+    <value>Skip certificate compliance check</value>
+  </data>
+  <data name="TestCount.Description" xml:space="preserve">
+    <value>The value must be greater than zero. The higher the value, the longer the selection process will take and the more accurate the final result will be.</value>
+  </data>
+  <data name="TestCount.Header" xml:space="preserve">
+    <value>Number of attempts to test one strategy</value>
+  </data>
+  <data name="TimeOut.Header" xml:space="preserve">
+    <value>Connection timeout</value>
+  </data>
+  <data name="GGCAddr.Description" xml:space="preserve">
+    <value>Mapping addresses allow you to find the closest GGC server to your location. Addresses should be separated by a semicolon (";")</value>
+  </data>
+  <data name="UseDOH.Header" xml:space="preserve">
+    <value>Use DoH</value>
+  </data>
+  <data name="DOHResolvers.Header" xml:space="preserve">
+    <value>DoH resolvers</value>
+  </data>
+  <data name="DOHResolvers.Description" xml:space="preserve">
+    <value>Addresses should be separated by semicolons (";")</value>
+  </data>
+  <data name="Bin.Description" xml:space="preserve">
+    <value>Path to the .BIN file. Expected characters are Latin characters, without spaces or characters prohibited by the file system.</value>
+  </data>
+  <data name="RequestsTextBlock.Text" xml:space="preserve">
+    <value>Requests</value>
+  </data>
+  <data name="DohResolversHeader.Text" xml:space="preserve">
+    <value>DoH resolvers</value>
+  </data>
+  <data name="FakesHeader.Text" xml:space="preserve">
+    <value>Fakes</value>
+  </data>
+  <data name="FakeSni.Header" xml:space="preserve">
+    <value>FAKE SNI</value>
+  </data>
+  <data name="FakeHexStreamTcp.Header" xml:space="preserve">
+    <value>FAKE Hex Stream TCP</value>
+  </data>
+  <data name="FakeHexStreamUdp.Header" xml:space="preserve">
+    <value>FAKE Hex Stream UDP</value>
+  </data>
+  <data name="FakeHexBytesTcp.Header" xml:space="preserve">
+    <value>FAKE Hex Bytes TCP</value>
+  </data>
+  <data name="FakeHexBytesUdp.Header" xml:space="preserve">
+    <value>FAKE Hex Bytes UDP</value>
+  </data>
+  <data name="PayloadTcp.Header" xml:space="preserve">
+    <value>Payload TCP</value>
+  </data>
+  <data name="PayloadTcp.Description" xml:space="preserve">
+    <value>Path to the .BIN file. Expected characters are Latin characters, without spaces or characters prohibited by the file system.</value>
+  </data>
+  <data name="PayloadUdp.Header" xml:space="preserve">
+    <value>Payload UDP</value>
+  </data>
+  <data name="PayloadUdp.Description" xml:space="preserve">
+    <value>Path to the .BIN file. Expected characters are Latin characters, without spaces or characters prohibited by the file system.</value>
+  </data>
+</root>

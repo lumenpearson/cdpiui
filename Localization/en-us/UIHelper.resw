@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Bytes" xml:space="preserve">
+    <value>Bytes</value>
+  </data>
+  <data name="BytesPs" xml:space="preserve">
+    <value>bytes/s</value>
+  </data>
+  <data name="GB" xml:space="preserve">
+    <value>GB</value>
+  </data>
+  <data name="GBPs" xml:space="preserve">
+    <value>GB/s</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>About hour</value>
+  </data>
+  <data name="KiloBytes" xml:space="preserve">
+    <value>KB</value>
+  </data>
+  <data name="KiloBytesPs" xml:space="preserve">
+    <value>KB/s</value>
+  </data>
+  <data name="LeftMinutes" xml:space="preserve">
+    <value>Left {0} min.</value>
+  </data>
+  <data name="LeftSmall" xml:space="preserve">
+    <value>Left several seconds</value>
+  </data>
+  <data name="MegaBytes" xml:space="preserve">
+    <value>MB</value>
+  </data>
+  <data name="MegaBytesPs" xml:space="preserve">
+    <value>MB/s</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>min.</value>
+  </data>
+  <data name="MoreThanThreeHours" xml:space="preserve">
+    <value>More than three hours (0_0)</value>
+  </data>
+  <data name="OneMinute" xml:space="preserve">
+    <value>One minute</value>
+  </data>
+  <data name="Sec" xml:space="preserve">
+    <value>Several seconds...</value>
+  </data>
+  <data name="TB" xml:space="preserve">
+    <value>TB</value>
+  </data>
+  <data name="TBPs" xml:space="preserve">
+    <value>TB/s</value>
+  </data>
+  <data name="TwoHours" xml:space="preserve">
+    <value>About two hours</value>
+  </data>
+</root>

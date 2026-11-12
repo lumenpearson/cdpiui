@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>CDPI UI: редактор файла hosts</value>
+  </data>
+  <data name="GettingReady" xml:space="preserve">
+    <value>Подготовка...</value>
+  </data>
+  <data name="UnknownCommand" xml:space="preserve">
+    <value>Неизвестная команда</value>
+  </data>
+  <data name="WorkFailed" xml:space="preserve">
+    <value>Не удалось выполнить операцию: {0}</value>
+  </data>
+  <data name="WorkFinished" xml:space="preserve">
+    <value>Готово. До свидания!</value>
+  </data>
+  <data name="CreatingBackup" xml:space="preserve">
+    <value>Создание резервной копии «{0}» в «{1}»</value>
+  </data>
+  <data name="RestoringFile" xml:space="preserve">
+    <value>Восстановление «{0}» без добавленных строк</value>
+  </data>
+  <data name="RemovingLines" xml:space="preserve">
+    <value>Удаление добавленных строк из «{0}»</value>
+  </data>
+  <data name="AddingLines" xml:space="preserve">
+    <value>Добавление новых строк в «{0}»</value>
+  </data>
+  <data name="AddingLinesComplete" xml:space="preserve">
+    <value>Добавление новых строк в «{0}». Состояние: ГОТОВО</value>
+  </data>
+</root>

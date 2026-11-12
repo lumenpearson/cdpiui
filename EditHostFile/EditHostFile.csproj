@@ -49,8 +49,8 @@
 
   <ItemGroup>
     <Compile Include="..\CDPIUI.Shared\Localization\*.cs" Link="Localization\%(Filename).cs" />
-    <EmbeddedResource Include="..\Localization\en-us\EditHostFile.json" LogicalName="Localization.en-us.EditHostFile.json" />
-    <EmbeddedResource Include="..\Localization\ru\EditHostFile.json" LogicalName="Localization.ru.EditHostFile.json" />
+    <EmbeddedResource Include="..\Localization\en-us\EditHostFile.resw" LogicalName="Localization.en-us.EditHostFile.resw" />
+    <EmbeddedResource Include="..\Localization\ru\EditHostFile.resw" LogicalName="Localization.ru.EditHostFile.resw" />
   </ItemGroup>
   <PropertyGroup><DefineConstants>$(DefineConstants);HOSTS_TOOL</DefineConstants></PropertyGroup>
 

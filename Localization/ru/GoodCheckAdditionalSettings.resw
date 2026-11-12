@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AddressTextBlock.Text" xml:space="preserve">
+    <value>Адреса сопоставления</value>
+  </data>
+  <data name="AutomaticConnectivityTestTextBlock.Header" xml:space="preserve">
+    <value>Автоматическая проверка подключения</value>
+  </data>
+  <data name="ConnectivityTestURLs.Header" xml:space="preserve">
+    <value>URL-адрес для теста подключения</value>
+  </data>
+  <data name="Curl" xml:space="preserve">
+    <value>Curl</value>
+  </data>
+  <data name="GGC.Header" xml:space="preserve">
+    <value>Автоматически подбирать для ближайших серверов Google Global Caсhe (GGC)</value>
+  </data>
+  <data name="GGCAddr.Header" xml:space="preserve">
+    <value>URL-адреса сопоставления серверов Google Global Cache (GGC)</value>
+  </data>
+  <data name="InternalTimeout.Header" xml:space="preserve">
+    <value>Внутренний тайм-аут</value>
+  </data>
+  <data name="NativeResolver" xml:space="preserve">
+    <value>Нативный (рекомендуется)</value>
+  </data>
+  <data name="Resolver.Description" xml:space="preserve">
+    <value>Curl, как правило, работает стабильнее. Нативный вариант работает быстрее</value>
+  </data>
+  <data name="Resolver.Header" xml:space="preserve">
+    <value>Режим запросов</value>
+  </data>
+  <data name="ResolverRetryCount.Description" xml:space="preserve">
+    <value>Максимальное количество попыток подключения к сайту</value>
+  </data>
+  <data name="ResolverRetryCount.Header" xml:space="preserve">
+    <value>Повторные попытки нативного резолвера</value>
+  </data>
+  <data name="ResolverTimeout.Header" xml:space="preserve">
+    <value>Тайм-аут нативного резолвера</value>
+  </data>
+  <data name="SkipCertVerifys.Header" xml:space="preserve">
+    <value>Пропускать проверку соответствия сертификата</value>
+  </data>
+  <data name="TestCount.Description" xml:space="preserve">
+    <value>Значение должно быть больше нуля. Чем больше значение - тем дольше будет проходить подбор и тем точнее будет итоговый результат</value>
+  </data>
+  <data name="TestCount.Header" xml:space="preserve">
+    <value>Количество попыток тестирования одной стратегии</value>
+  </data>
+  <data name="TimeOut.Header" xml:space="preserve">
+    <value>Тайм-аут подключения</value>
+  </data>
+  <data name="GGCAddr.Description" xml:space="preserve">
+    <value>Адреса сопоставления позволяют найти ближайший к вашему местоположению сервер GGC. Адреса следует указывать через точку с запятой (";")</value>
+  </data>
+  <data name="UseDOH.Header" xml:space="preserve">
+    <value>Использовать DoH</value>
+  </data>
+  <data name="DOHResolvers.Header" xml:space="preserve">
+    <value>DoH-резолверы</value>
+  </data>
+  <data name="DOHResolvers.Description" xml:space="preserve">
+    <value>Адреса следует указывать через точку с запятой (";")</value>
+  </data>
+  <data name="Bin.Description" xml:space="preserve">
+    <value>Путь к .BIN файлу. Ожидается латиница без пробелов и запрещённых файловой системой символов.</value>
+  </data>
+  <data name="RequestsTextBlock.Text" xml:space="preserve">
+    <value>Запросы</value>
+  </data>
+  <data name="DohResolversHeader.Text" xml:space="preserve">
+    <value>DoH резолверы</value>
+  </data>
+  <data name="FakesHeader.Text" xml:space="preserve">
+    <value>Фейки</value>
+  </data>
+  <data name="FakeSni.Header" xml:space="preserve">
+    <value>Поддельный SNI</value>
+  </data>
+  <data name="FakeHexStreamTcp.Header" xml:space="preserve">
+    <value>Поддельный поток TCP в HEX</value>
+  </data>
+  <data name="FakeHexStreamUdp.Header" xml:space="preserve">
+    <value>Поддельный поток UDP в HEX</value>
+  </data>
+  <data name="FakeHexBytesTcp.Header" xml:space="preserve">
+    <value>Поддельные байты TCP в HEX</value>
+  </data>
+  <data name="FakeHexBytesUdp.Header" xml:space="preserve">
+    <value>Поддельные байты UDP в HEX</value>
+  </data>
+  <data name="PayloadTcp.Header" xml:space="preserve">
+    <value>Полезная нагрузка TCP</value>
+  </data>
+  <data name="PayloadTcp.Description" xml:space="preserve">
+    <value>Путь к .BIN файлу. Ожидается латиница без пробелов и запрещённых файловой системой символов.</value>
+  </data>
+  <data name="PayloadUdp.Header" xml:space="preserve">
+    <value>Полезная нагрузка UDP</value>
+  </data>
+  <data name="PayloadUdp.Description" xml:space="preserve">
+    <value>Путь к .BIN файлу. Ожидается латиница без пробелов и запрещённых файловой системой символов.</value>
+  </data>
+</root>

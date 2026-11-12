@@ -3,7 +3,7 @@ using CDPIUI.Shared.Localization;
 
 namespace CDPIUI.Tests.Shared;
 
-public class JsonLocalizerTests
+public class ReswLocalizerTests
 {
     [Theory]
     [InlineData("ru", "en-US", "ru")]
@@ -22,17 +22,17 @@ public class JsonLocalizerTests
     [Fact]
     public void EmbeddedCatalogsContainBothLanguagesAndMultilineFormats()
     {
-        Assert.Equal("Exit", JsonLocalizer.Get("Tray", "Exit", "en-US"));
-        Assert.Equal("Выход", JsonLocalizer.Get("Tray", "Exit", "ru-RU"));
-        string template = JsonLocalizer.Get("Tray", "ExecutableTrustQuestion", "ru");
+        Assert.Equal("Exit", ReswLocalizer.Get("Tray", "Exit", "en-US"));
+        Assert.Equal("Выход", ReswLocalizer.Get("Tray", "Exit", "ru-RU"));
+        string template = ReswLocalizer.Get("Tray", "ExecutableTrustQuestion", "ru");
         string text = string.Format(template, "component.exe", "hash", "publisher");
         Assert.Contains("component.exe", text);
         Assert.Contains("\n\n", text);
         Assert.Contains("hash", text);
         Assert.Contains("publisher", text);
-        Assert.Equal("Critical error", JsonLocalizer.Get("Resources", "CriticalErrorWindowTitle", "en"));
-        Assert.Equal("Критическая ошибка", JsonLocalizer.Get("Resources", "CriticalErrorWindowTitle", "ru"));
-        Assert.Equal("MissingKey", JsonLocalizer.Get("Tray", "MissingKey", "ru"));
+        Assert.Equal("Critical error", ReswLocalizer.Get("Resources", "CriticalErrorWindowTitle", "en"));
+        Assert.Equal("Критическая ошибка", ReswLocalizer.Get("Resources", "CriticalErrorWindowTitle", "ru"));
+        Assert.Equal("MissingKey", ReswLocalizer.Get("Tray", "MissingKey", "ru"));
     }
 
     [Fact]

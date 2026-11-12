@@ -23,8 +23,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="CDPIUI.Tests" />
     <Compile Remove="Secrets/SecretExample.cs" />
-    <EmbeddedResource Include="..\Localization\en-us\*.json" LogicalName="Localization.en-us.%(Filename).json" />
-    <EmbeddedResource Include="..\Localization\ru\*.json" LogicalName="Localization.ru.%(Filename).json" />
+    <EmbeddedResource Include="..\Localization\en-us\*.resw" LogicalName="Localization.en-us.%(Filename).resw" />
+    <EmbeddedResource Include="..\Localization\ru\*.resw" LogicalName="Localization.ru.%(Filename).resw" />
   </ItemGroup>
 
 </Project>

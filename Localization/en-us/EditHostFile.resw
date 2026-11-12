@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>CDPI UI: hosts file editor</value>
+  </data>
+  <data name="GettingReady" xml:space="preserve">
+    <value>Getting ready...</value>
+  </data>
+  <data name="UnknownCommand" xml:space="preserve">
+    <value>Unknown command</value>
+  </data>
+  <data name="WorkFailed" xml:space="preserve">
+    <value>Work failed: {0}</value>
+  </data>
+  <data name="WorkFinished" xml:space="preserve">
+    <value>Work finished. Goodbye~</value>
+  </data>
+  <data name="CreatingBackup" xml:space="preserve">
+    <value>Creating backup for "{0}" in "{1}"</value>
+  </data>
+  <data name="RestoringFile" xml:space="preserve">
+    <value>Restoring "{0}" to its state without added lines</value>
+  </data>
+  <data name="RemovingLines" xml:space="preserve">
+    <value>Removing added lines in "{0}"</value>
+  </data>
+  <data name="AddingLines" xml:space="preserve">
+    <value>Adding new lines in "{0}"</value>
+  </data>
+  <data name="AddingLinesComplete" xml:space="preserve">
+    <value>Adding new lines in "{0}". Status: COMPLETE</value>
+  </data>
+</root>

@@ -619,5 +619,23 @@
     <ProjectReference Include="..\CDPIUI.Core\CDPIUI.Core.csproj" />
     <ProjectReference Include="..\CDPIUI.Shared\CDPIUI.Shared.csproj" />
   </ItemGroup>
-  <Import Project="..\build\Localization.targets" />
+  <ItemGroup>
+    <Content Include="..\Localization\en-us\*.resw"
+             Exclude="..\Localization\en-us\Tray.resw;..\Localization\en-us\Update.resw;..\Localization\en-us\EditHostFile.resw">
+      <Link>Strings\en-us\%(Filename).resw</Link>
+      <TargetPath>Strings\en-us\%(Filename).resw</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\Localization\ru\*.resw"
+             Exclude="..\Localization\ru\Tray.resw;..\Localization\ru\Update.resw;..\Localization\ru\EditHostFile.resw">
+      <Link>Strings\ru\%(Filename).resw</Link>
+      <TargetPath>Strings\ru\%(Filename).resw</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <!-- Keep the current compiled main string maps as well as loose WinUI3Localizer catalogs. -->
+    <PRIResource Include="..\Localization\en-us\Resources.resw" Link="Strings\en-us\Resources.resw" />
+    <PRIResource Include="..\Localization\ru\Resources.resw" Link="Strings\ru\Resources.resw" />
+  </ItemGroup>
 </Project>

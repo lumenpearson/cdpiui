@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="SettingsRecoveryWarning" xml:space="preserve">
+    <value>Settings.xml could not be read or recovered. Settings were reset to defaults. Open the app to review them.</value>
+  </data>
+  <data name="UpdateFailure" xml:space="preserve">
+    <value>Application update failed.
+Click or tap here to open log</value>
+  </data>
+  <data name="TrayHide" xml:space="preserve">
+    <value>Application is running and minimized to tray now.
+Click or tap here to open main window</value>
+  </data>
+  <data name="Autorun" xml:space="preserve">
+    <value>Autorun</value>
+  </data>
+  <data name="AutorunERR" xml:space="preserve">
+    <value>Cannot add this application to autorun.</value>
+  </data>
+  <data name="ProcRun" xml:space="preserve">
+    <value>Process is running now.
+Click or tap here to open pseudoconsole and view process output</value>
+  </data>
+  <data name="ProcStop" xml:space="preserve">
+    <value>Process is stopped now.
+Click or tap here to open pseudoconsole and view process output</value>
+  </data>
+  <data name="ProcERR" xml:space="preserve">
+    <value>Cannot start process.</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="ShowMainWindow" xml:space="preserve">
+    <value>Maximize app</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>New application version is available.
+Click or tap here to open download page</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Utils" xml:space="preserve">
+    <value>Utils</value>
+  </data>
+  <data name="Pseudoconsole" xml:space="preserve">
+    <value>View process output</value>
+  </data>
+  <data name="MsiInstallerHelper" xml:space="preserve">
+    <value>MSI installer helper</value>
+  </data>
+  <data name="MsiInstallerHelperErr" xml:space="preserve">
+    <value>Cannot install application package {0}. Error code is: {1}</value>
+  </data>
+  <data name="ProxySetupAsk" xml:space="preserve">
+    <value>Component {0} requires additional configuration before it can be used.
+Click or tap here to configure it.</value>
+  </data>
+  <data name="CompatibilityCheckAssistant" xml:space="preserve">
+    <value>Compatibility check assistant</value>
+  </data>
+  <data name="ConfigRequiredNewestVersionOfComponent" xml:space="preserve">
+    <value>One or more installed items require a newer version of {0}.
+Click or tap here to check updates for {0}</value>
+  </data>
+  <data name="Store" xml:space="preserve">
+    <value>Store</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Edit component's settings</value>
+  </data>
+  <data name="ToggleState" xml:space="preserve">
+    <value>Toggle component state (Running/Stopped)</value>
+  </data>
+  <data name="AllStopped" xml:space="preserve">
+    <value>All components are stopped.</value>
+  </data>
+  <data name="StartedAll" xml:space="preserve">
+    <value>All components are running now.</value>
+  </data>
+  <data name="StartedNow" xml:space="preserve">
+    <value>Now started: {0}.</value>
+  </data>
+  <data name="StartedNowS" xml:space="preserve">
+    <value>Now started: {0}.</value>
+  </data>
+  <data name="ConditionalTaskNotificationTitle" xml:space="preserve">
+    <value>Conditional task "{0}"</value>
+  </data>
+  <data name="ConditionalLaunchNotificationTitle" xml:space="preserve">
+    <value>Conditional Launch</value>
+  </data>
+  <data name="ConditionalLaunchActionCompletedMessage" xml:space="preserve">
+    <value>Task "{0}" was executed.</value>
+  </data>
+  <data name="TrayErrorTitle" xml:space="preserve">
+    <value>Notify icon</value>
+  </data>
+  <data name="TrayErrorMessage" xml:space="preserve">
+    <value>We're unable to create icon in system notify area. Click or tap here to view details.
+{0}</value>
+  </data>
+  <data name="ExecutableTrustTitle" xml:space="preserve">
+    <value>CDPI UI: start with administrator rights?</value>
+  </data>
+  <data name="ExecutableTrustQuestion" xml:space="preserve">
+    <value>CDPI UI is about to start this program with administrator rights:
+
+{0}
+
+The program or a library next to it is new or changed since the last start.
+
+SHA-256: {1}
+Signed by: {2}
+
+Allow the start only if you installed or updated this component yourself. Another program could have changed these files.
+
+Start the program?</value>
+  </data>
+  <data name="ExecutableTrustNoSignature" xml:space="preserve">
+    <value>no valid signature</value>
+  </data>
+  <data name="ExecutableTrustCodeQuestion" xml:space="preserve">
+    <value>CDPI UI is about to start this program with administrator rights:
+
+{0}
+
+Its arguments give it Lua code that is new or changed since the last start. The code runs with administrator rights too:
+
+{1}
+
+SHA-256: {2}
+
+Allow the start only if you created or imported this preset yourself. Another program could have changed it.
+
+Start the program?</value>
+  </data>
+  <data name="ExecutableTrustInlineCode" xml:space="preserve">
+    <value>(code in the arguments)</value>
+  </data>
+  <data name="AutorunTaskDescription" xml:space="preserve">
+    <value>Starting CDPI UI with highest rights when user logs in.</value>
+  </data>
+</root>

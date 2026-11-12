@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AutoSiteList" xml:space="preserve">
+    <value>Автоматический список сайтов</value>
+  </data>
+  <data name="AvailableSettings" xml:space="preserve">
+    <value>Доступные параметры</value>
+  </data>
+  <data name="ConfigVariables" xml:space="preserve">
+    <value>Переменные пресета</value>
+  </data>
+  <data name="ConfigVariablesTip" xml:space="preserve">
+    <value>Выберите переменную, чтобы изменить её значение. В редакторе можно выбрать готовый вариант или ввести значение вручную.</value>
+  </data>
+  <data name="IpList" xml:space="preserve">
+    <value>Список IP-адресов</value>
+  </data>
+  <data name="SetupConfig" xml:space="preserve">
+    <value>Переключение этих параметров позволяет обычным пользователям получить доступ к упрощенной настройке пресета под себя.
+
+Автор этого пресета добавил возможность переключать режимы работы "На лету" без необходимости вручную редактировать строку запуска. Переключение автоматически перезапускает компонент.
+
+Для продвинутых пользователей: Чтобы добавить подобный переключатель в этот виджет необходимо настроить условную переменную на странице создания пресета (см. раздел справки "Продвинутая работа с пресетами")</value>
+  </data>
+  <data name="UsedSiteLists" xml:space="preserve">
+    <value>Списки для обхода</value>
+  </data>
+  <data name="UsedSiteListsTip" xml:space="preserve">
+    <value>Изменение этих списков позволит настроить сайты, для которых необходимо выполнять обход блокировки.
+
+Например, если вы добавите сайт "ya.ru", то для него будет производиться обход блокировки.</value>
+  </data>
+  <data name="SiteList" xml:space="preserve">
+    <value>Список сайтов</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>Продвинутые параметры</value>
+  </data>
+  <data name="AdvancedSettingsTip" xml:space="preserve">
+    <value>Ссылки на эти разделы могут помочь продвинутым пользователям тонко настроить пресет под себя. 
+
+Настройка пресета включает в себя автоматический подбор настроек запуска компонента для доступа к требуемым(-ому) сайтам(-у), изменение существующего пресета и создание нового пресета с чистого листа. Изменение и создание пресета происходит через утилиту [Помощник создания и редактирования пресетов].</value>
+  </data>
+  <data name="CreateNewConfig" xml:space="preserve">
+    <value>Создать новый пресет</value>
+  </data>
+  <data name="EditConfig" xml:space="preserve">
+    <value>Изменить этот пресет</value>
+  </data>
+  <data name="SelectAutomatically" xml:space="preserve">
+    <value>Создать новый пресет в автоматическом режиме</value>
+  </data>
+  <data name="Features" xml:space="preserve">
+    <value>Возможности</value>
+  </data>
+  <data name="NowUsedComponent" xml:space="preserve">
+    <value>Используемый компонент</value>
+  </data>
+  <data name="QuickSettingsTile" xml:space="preserve">
+    <value>Параметры</value>
+  </data>
+  <data name="NowUsedComponentDescription" xml:space="preserve">
+    <value>Используемый пресет: "{0}"</value>
+  </data>
+  <data name="NowUsedComponentDescriptionError" xml:space="preserve">
+    <value>Пресет не назначен для этого компонента: запуск невозможен</value>
+  </data>
+  <data name="NowUsedComponentError" xml:space="preserve">
+    <value>Компонент не назначен</value>
+  </data>
+  <data name="UsedExcludedSiteLists" xml:space="preserve">
+    <value>Списки исключений</value>
+  </data>
+  <data name="UsedExcludedSiteListsTip" xml:space="preserve">
+    <value>Изменение этих списков позволит настроить исключения.
+
+Например, если вы добавите сайт "ya.ru" в исключения, то обход блокировки не будет к нему применяться.</value>
+  </data>
+  <data name="OpenProxyInTelegram" xml:space="preserve">
+    <value>Применить прокси к Telegram</value>
+  </data>
+</root>

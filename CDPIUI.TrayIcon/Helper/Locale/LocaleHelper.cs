@@ -27,7 +27,7 @@ public class LocaleHelper
     }
 
     public static string GetLocaleString(string key) =>
-        CDPIUI.Shared.Localization.JsonLocalizer.Get("Tray", key, GetLanguage());
+        CDPIUI.Shared.Localization.ReswLocalizer.Get("Tray", key, GetLanguage());
 
     /// <summary>
     /// Returns the language that the user selected in the app ("SYSTEM/language" in Settings.xml).
