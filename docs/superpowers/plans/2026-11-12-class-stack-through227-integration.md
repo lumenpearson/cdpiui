@@ -64,3 +64,9 @@ Interfaces: complete candidate evidence -> independently reviewed final PR HEAD,
 - [ ] Verify all required checks on final HEAD and current main compatibility. Merge normally only after scoped review and native gates pass; preserve all original refs.
 - [ ] Read back integrated SHA, ancestry, original PR states and post-integration checks. Record pending acceptance boundaries if any.
 - [ ] If all original issue criteria pass, post the six-section case-specific acceptance record, mark verified items, close completed and set actual Project Done in the same turn, then read back both. Otherwise retain the accurate working state and concrete remaining checks.
+
+## Stopped native batch: grant189
+
+The human approved the two prepared runs with stop-on-first-failure and no retries. The one host launch at product e417 failed: PID85016, exit1, 12 partial PASS groups, then IOException because the runner precreated the three inputs that the host opens with FileMode.CreateNew. The shutdown tail was not launched. No correction, cleanup of evidence or retry occurred. Source/binary/process postchecks and idle189 are retained in the current report.
+
+Issue14 and draftPR233 remain unaccepted. Native and main integration items stay unchecked. The native hold is blocked again. Any later correction and execution require a fresh explicit human instruction, independent review and a new queue grant; preserve the failed package and foreign work.
