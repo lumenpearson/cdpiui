@@ -49,9 +49,9 @@ Interfaces: candidate SHA -> current managed/API/native evidence, with original 
 
 - [x] Run baseline/current source and compiled contract comparison against current main. Preserve prior G1 limitations rather than relabel them as new integration loss.
 - [x] Restore and run Release focused presentation/localization tests and the complete suite serially. Build the normal Release/x64 GUI with the documented empty Secret stub. Record exact results and named SHA.
-- [ ] Run policy/governance and appropriate secret/security checks. Attribute CI-only packaging checks to exact PR HEAD.
-- [ ] Prepare a new archive and output for the bounded 178-case union, inspect every fixture modification and resource, obtain independent prelaunch review and an explicit UI grant, execute once and retain source/binary/IO/process proof.
-- [ ] Map all five original issue criteria to actual evidence. Execute additional changed native dialog cancellation/file identity/shutdown scenarios where needed; never infer them from source inspection or inert adapters. Leave issue 14 open if any required boundary remains unverified.
+- [x] Run policy/governance and appropriate secret/security checks. Attribute CI-only packaging checks to exact PR HEAD.
+- [x] Prepare a new archive and output for the bounded 178-case union, inspect every fixture modification and resource, obtain independent prelaunch review and an explicit UI grant, execute once and retain source/binary/IO/process proof.
+- [x] Map all five original issue criteria to actual evidence. Execute additional changed native dialog cancellation/file identity/shutdown scenarios where needed; never infer them from source inspection or inert adapters. Leave issue 14 open if any required boundary remains unverified.
 
 ### Task 3: Publish, review, integrate and accept
 
@@ -70,3 +70,9 @@ Interfaces: complete candidate evidence -> independently reviewed final PR HEAD,
 The human approved the two prepared runs with stop-on-first-failure and no retries. The one host launch at product e417 failed: PID85016, exit1, 12 partial PASS groups, then IOException because the runner precreated the three inputs that the host opens with FileMode.CreateNew. The shutdown tail was not launched. No correction, cleanup of evidence or retry occurred. Source/binary/process postchecks and idle189 are retained in the current report.
 
 Issue14 and draftPR233 remain unaccepted. Native and main integration items stay unchecked. The native hold is blocked again. Any later correction and execution require a fresh explicit human instruction, independent review and a new queue grant; preserve the failed package and foreign work.
+
+## Separately authorized Root R2 checkpoint
+
+The failed189 series remains frozen. The coordinator prepared a new R2 with fixture-owned input creation, actual-method RED2/7 then GREEN7/7 controls, new source/build/pin roots and independent review. Direct human message01a1ce58-a45a-7f80-8ad3-e9464a7bb6e1 approved the concrete new R2 batch. Grant193 executed one host178 PID96600 and, only after its accepted result, one actual-close tail PID92580; both exited0 and retained all source/binary/IO/process checks, with no retries. Slot released194. The current report records exact hashes, independent attribution and limits.
+
+This plan is the frozen pre-merge checklist. Final report review, final-HEAD checks, integration and issue/Project acceptance are recorded in issue14 during the same delivery turn. They must not be inferred from this prepared checkpoint.
