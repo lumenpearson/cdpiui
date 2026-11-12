@@ -1,3 +1,6 @@
+#nullable enable annotations
+#nullable disable warnings
+
 namespace CDPIUI.Views.CreateConfigHelper;
 
 public class ConditionVariableModel

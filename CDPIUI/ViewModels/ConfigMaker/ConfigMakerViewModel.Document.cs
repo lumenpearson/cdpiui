@@ -21,168 +21,45 @@ public sealed partial class ConfigMakerViewModel
     public bool HasVariables => _presetDocument.HasVariables;
     public bool CanExportText => !HasVariables;
 
-    public void LoadPresetDocument(ConfigMakerPresetDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        _presetResources.BaseDirectory = string.Empty;
-        _presetDocument.Name = document.Name;
-        _presetDocument.ComponentId = document.ComponentId;
-        _presetDocument.PackId = document.PackId;
-        _presetDocument.FileName = document.FileName;
-        _presetDocument.Meta = document.Meta;
-        _presetDocument.TargetVersion = document.TargetVersion;
-        _presetDocument.Variables.Clear();
-        foreach (ConfigMakerVariableDefinition variable in document.Variables)
-        {
-            _presetDocument.Variables.Add(variable.Clone());
-        }
-        _presetDocument.Resources.Clear();
-        foreach (ConfigMakerPresetResource resource in document.Resources)
-        {
-            _presetDocument.Resources.Add(resource.Clone());
-        }
-        ComponentId = document.ComponentId;
-        SetEditorText(document.CommandText);
-        RebuildPresetStructure();
-        UpdateSimpleDesignerAvailability();
-        DocumentStateChanged?.Invoke(this, EventArgs.Empty);
-    }
+    public void LoadPresetDocument(ConfigMakerPresetDocument document) =>
+        _documentCoordinator.LoadPresetDocument(document);
 
-    public async Task LoadConfigItem(
-        ConfigItem item,
-        bool applyAutoCorrectorSilently = false)
-    {
-        ArgumentNullException.ThrowIfNull(item);
-        LoadPresetDocument(ConfigMakerPresetDocument.FromConfigItem(item));
-        _presetResources.BaseDirectory = ConfigMakerPresetResources.GetConfigItemBaseDirectory(item);
-        RebuildPresetStructure();
-        if (applyAutoCorrectorSilently)
-        {
-            await ApplyAutoCorrectorSilentlyAsync(item);
-        }
-        AttachExistingPresetFiles();
-        RebuildPresetStructure();
-    }
+    public Task LoadConfigItem(ConfigItem item, bool applyAutoCorrectorSilently = false) =>
+        _documentCoordinator.LoadConfigItem(item, applyAutoCorrectorSilently);
 
-    public ConfigItem CreateConfigItem(string packId, string presetName)
-    {
-        SyncDocumentFromEditor();
-        return _presetDocument.ToConfigItem(packId, presetName);
-    }
+    public ConfigItem CreateConfigItem(string packId, string presetName) =>
+        _documentCoordinator.CreateConfigItem(packId, presetName);
 
-    public async Task<ConfigMakerPresetSaveResult> SaveToApplicationAsync()
-    {
-        SyncDocumentFromEditor();
-        AttachExistingPresetFiles();
-        SyncDocumentFromEditor();
-        ConfigMakerSavePresetRequest request = await _view.AskSavePresetAsync(
-            _presetDocument.Name,
-            !string.IsNullOrWhiteSpace(_presetDocument.PackId) &&
-            !string.IsNullOrWhiteSpace(_presetDocument.FileName));
-        if (request == null)
-        {
-            return ConfigMakerPresetSaveResult.Failed("CANCELED");
-        }
+    public Task<ConfigMakerPresetSaveResult> SaveToApplicationAsync() =>
+        _documentCoordinator.SaveToApplicationAsync();
 
-        ConfigMakerPresetStorageService storageService = new();
-        ConfigMakerPresetSaveResult result = request.Overwrite
-            ? await storageService.OverwriteAsync(_presetDocument)
-            : await storageService.SaveAsync(request.PresetName, _presetDocument);
-        if (result.Success)
-        {
-            if (!request.Overwrite)
-            {
-                _presetDocument.Name = request.PresetName;
-            }
-            _presetDocument.PackId = result.PackId;
-            _presetDocument.FileName = result.ConfigFileName;
-            ApplyStoredResources(result);
-            ShowEditorMessage(
-                string.Format(
-                    _localizer.GetLocalizedString("ConfigMakerPresetSavedMessage"),
-                    _presetDocument.Name),
-                InfoBarSeverity.Success);
-        }
-        else if (!string.Equals(result.ErrorCode, "CANCELED", StringComparison.Ordinal))
-        {
-            ShowEditorMessage(
-                string.Format(
-                    _localizer.GetLocalizedString("ConfigMakerPresetSaveFailedMessage"),
-                    string.IsNullOrWhiteSpace(result.ErrorDetails)
-                        ? result.ErrorCode
-                        : result.ErrorDetails),
-                InfoBarSeverity.Error);
-        }
-        return result;
-    }
+    public Task NewDocumentAsync() => _documentCoordinator.NewDocumentAsync();
 
-    public async Task NewDocumentAsync()
-    {
-        if (IsEditorReadOnly)
-        {
-            return;
-        }
-        if ((!string.IsNullOrWhiteSpace(_view.EditorText) ||
-             _presetDocument.HasVariables ||
-             _presetDocument.HasResources) &&
-            !await _view.ConfirmAsync(
-                _localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
-                _localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
-                _localizer.GetLocalizedString("Continue")))
-        {
-            return;
-        }
+    public Task SaveTextAsync() => _documentCoordinator.SaveTextAsync();
 
-        SetEditorText(string.Empty);
-        _presetResources.BaseDirectory = string.Empty;
-        _presetDocument.Name = string.Empty;
-        _presetDocument.Variables.Clear();
-        _presetDocument.Resources.Clear();
-        ClearPresetStructure();
-        _view.ClearEditorUndoHistory();
-    }
-
-    public async Task SaveTextAsync()
-    {
-        try
-        {
-            string path = _view.ChooseExportPath(allowTextFormat: !HasVariables);
-            if (path == null)
-            {
-                return;
-            }
-
-            SyncDocumentFromEditor();
-            await ConfigMakerPresetExporter.ExportAsync(_presetDocument, path);
-
-            ShowEditorMessage(
-                _localizer.GetLocalizedString("ConfigMakerTextSavedMessage"),
-                InfoBarSeverity.Success);
-        }
-        catch (Exception exception)
-        {
-            ShowEditorMessage(
-                string.Format(
-                    _localizer.GetLocalizedString("ConfigMakerTextSaveFailedMessage"),
-                    exception.Message),
-                InfoBarSeverity.Error);
-        }
-    }
-
-    private void ApplyStoredResources(ConfigMakerPresetSaveResult result)
-    {
-        foreach (ConfigMakerPresetResource resource in _presetDocument.Resources)
-        {
-            ConfigMakerResourceMetadata? storedResource = result.StoredResources.FirstOrDefault(candidate =>
-                string.Equals(candidate.alias, resource.Alias, StringComparison.OrdinalIgnoreCase));
-            if (storedResource == null || string.IsNullOrWhiteSpace(storedResource.path))
-            {
-                continue;
-            }
-            resource.Path = storedResource.path;
-            resource.IsBuiltIn = storedResource.isBuiltIn;
-        }
-    }
+    string IConfigMakerDocumentHost.ComponentId { get => ComponentId; set => ComponentId = value; }
+    bool IConfigMakerDocumentHost.IsEditorReadOnly => IsEditorReadOnly;
+    string IConfigMakerDocumentHost.EditorText => _view.EditorText;
+    void IConfigMakerDocumentHost.SetEditorText(string text) => SetEditorText(text);
+    void IConfigMakerDocumentHost.SetBaseDirectory(string value) => _presetResources.BaseDirectory = value;
+    void IConfigMakerDocumentHost.RebuildPresetStructure() => RebuildPresetStructure();
+    void IConfigMakerDocumentHost.UpdateSimpleDesignerAvailability() => UpdateSimpleDesignerAvailability();
+    void IConfigMakerDocumentHost.NotifyDocumentStateChanged() => DocumentStateChanged?.Invoke(this, EventArgs.Empty);
+    void IConfigMakerDocumentHost.AttachExistingPresetFiles() => AttachExistingPresetFiles();
+    Task IConfigMakerDocumentHost.ApplyAutoCorrectorSilentlyAsync(ConfigItem item) => ApplyAutoCorrectorSilentlyAsync(item);
+    string IConfigMakerDocumentHost.GetConfigItemBaseDirectory(ConfigItem item) => ConfigMakerPresetResources.GetConfigItemBaseDirectory(item);
+    Task<ConfigMakerSavePresetRequest> IConfigMakerDocumentHost.AskSavePresetAsync(string suggestedName, bool overwriteEnabled) =>
+        _view.AskSavePresetAsync(suggestedName, overwriteEnabled);
+    Task<bool> IConfigMakerDocumentHost.ConfirmNewDocumentAsync() => _view.ConfirmAsync(
+        _localizer.GetLocalizedString("ConfigMakerNewConfirmationTitle"),
+        _localizer.GetLocalizedString("ConfigMakerNewConfirmationMessage"),
+        _localizer.GetLocalizedString("Continue"));
+    string IConfigMakerDocumentHost.ChooseExportPath(bool allowTextFormat) => _view.ChooseExportPath(allowTextFormat);
+    void IConfigMakerDocumentHost.ClearPresetStructure() => ClearPresetStructure();
+    void IConfigMakerDocumentHost.ClearEditorUndoHistory() => _view.ClearEditorUndoHistory();
+    string IConfigMakerDocumentHost.Text(string key) => _localizer.GetLocalizedString(key);
+    void IConfigMakerDocumentHost.ShowDocumentMessage(string message, bool isError) =>
+        ShowEditorMessage(message, isError ? InfoBarSeverity.Error : InfoBarSeverity.Success);
 
     private async Task ApplyAutoCorrectorSilentlyAsync(ConfigItem sourceConfig)
     {
@@ -229,11 +106,7 @@ public sealed partial class ConfigMakerViewModel
         }
     }
 
-    private void SyncDocumentFromEditor()
-    {
-        _presetDocument.ComponentId = ComponentId;
-        _presetDocument.CommandText = _view.EditorText ?? string.Empty;
-    }
+    private void SyncDocumentFromEditor() => _documentCoordinator.SyncDocumentFromEditor();
 
     private void PresetDocument_ContentChanged(object sender, EventArgs e)
     {

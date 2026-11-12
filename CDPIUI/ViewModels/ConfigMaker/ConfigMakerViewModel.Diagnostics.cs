@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Helper.CreateConfigHelper;
 using Microsoft.UI.Dispatching;
@@ -11,21 +9,20 @@ namespace CDPIUI.ViewModels.ConfigMaker;
 public sealed partial class ConfigMakerViewModel
 {
     private readonly DispatcherQueueTimer _diagnosticsTimer;
-    private string _errorCountText = string.Empty;
-    private string _warningCountText = string.Empty;
+    private readonly ConfigMakerDiagnostics<ConfigMakerDiagnosticViewModel> _diagnostics;
 
     public ObservableCollection<ConfigMakerDiagnosticViewModel> Diagnostics { get; } = [];
 
     public string ErrorCountText
     {
-        get => _errorCountText;
-        private set => SetProperty(ref _errorCountText, value);
+        get => _diagnostics.ErrorCountText;
+        private set => _diagnostics.ErrorCountText = value;
     }
 
     public string WarningCountText
     {
-        get => _warningCountText;
-        private set => SetProperty(ref _warningCountText, value);
+        get => _diagnostics.WarningCountText;
+        private set => _diagnostics.WarningCountText = value;
     }
 
     private void ScheduleDiagnostics()
@@ -40,57 +37,12 @@ public sealed partial class ConfigMakerViewModel
         RebuildDiagnostics();
     }
 
-    private void RebuildDiagnostics()
-    {
-        string editorText = _view.EditorText;
-        List<ComponentCommandDiagnostic> results = ComponentCommandValidationService
-            .Validate(editorText, _helpDocument.Options)
-            .ToList();
-        ConfigMakerPresetReferenceValidator.AddDiagnostics(
-            editorText,
-            _presetDocument.Variables,
-            reference => _presetResources.FindAttached(reference) != null,
-            results);
-
-        Diagnostics.Clear();
-        foreach (ComponentCommandDiagnostic diagnostic in results)
-        {
-            Diagnostics.Add(CreateDiagnosticViewModel(diagnostic));
-        }
-
-        int errorCount = results.Count(item => item.Severity == ComponentCommandDiagnosticSeverity.Error);
-        int warningCount = results.Count - errorCount;
-        ErrorCountText = string.Format(
-            _localizer.GetLocalizedString("ConfigMakerDiagnosticErrorCount"),
-            errorCount);
-        WarningCountText = string.Format(
-            _localizer.GetLocalizedString("ConfigMakerDiagnosticWarningCount"),
-            warningCount);
-        _view.RefreshEditorHighlighting();
-    }
+    private void RebuildDiagnostics() => _diagnostics.Rebuild();
 
     private ConfigMakerDiagnosticViewModel CreateDiagnosticViewModel(ComponentCommandDiagnostic diagnostic) => new()
     {
         Source = diagnostic,
-        SeverityText = _localizer.GetLocalizedString(
-            diagnostic.Severity == ComponentCommandDiagnosticSeverity.Error
-                ? "ConfigMakerDiagnosticErrorSeverity"
-                : "ConfigMakerDiagnosticWarningSeverity"),
-        Description = diagnostic.Kind switch
-        {
-            ComponentCommandDiagnosticKind.UnknownFlag => string.Format(
-                _localizer.GetLocalizedString("ConfigMakerUnknownFlagDiagnostic"),
-                diagnostic.Token),
-            ComponentCommandDiagnosticKind.MissingRequiredArgument => string.Format(
-                _localizer.GetLocalizedString("ConfigMakerMissingArgumentDiagnostic"),
-                diagnostic.Token),
-            ComponentCommandDiagnosticKind.UnresolvedVariable => string.Format(
-                _localizer.GetLocalizedString("ConfigMakerUnresolvedVariableDiagnostic"),
-                diagnostic.Token),
-            ComponentCommandDiagnosticKind.UnresolvedResource => string.Format(
-                _localizer.GetLocalizedString("ConfigMakerUnresolvedResourceDiagnostic"),
-                diagnostic.Token),
-            _ => _localizer.GetLocalizedString("ConfigMakerUnterminatedQuoteDiagnostic"),
-        },
+        SeverityText = _diagnostics.GetSeverityText(diagnostic),
+        Description = _diagnostics.GetDescription(diagnostic),
     };
 }

@@ -21,3 +21,11 @@ condition = "AND"
 paths = ['''(^|/)docs/audit/findings\.json$''']
 regexTarget = "line"
 regexes = ['''^\s*"key": "4-pipe-framing-failure",\s*$''']
+
+[[allowlists]]
+description = "Historical class-decomposition test count is not an API credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)docs/superpowers/specs/2026-11-08-class-decomposition-design\.md$''']
+regexTarget = "match"
+regexes = ['''^API, actualcomposition91 $''']

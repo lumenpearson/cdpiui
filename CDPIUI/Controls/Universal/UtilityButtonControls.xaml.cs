@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using CDPIUI.Commands;
+using CDPIUI.Helper.UserExperience;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -332,58 +333,21 @@ public sealed partial class UtilityButtonControls : UserControl
         return true;
     }
 
-    private async Task RunVisibilitySequenceAsync(
+    private Task RunVisibilitySequenceAsync(
         IReadOnlyList<(Button Button, Visibility Visibility)> hiddenButtons,
         IReadOnlyList<(Button Button, Visibility Visibility)> shownButtons,
         CancellationTokenSource cancellation)
-    {
-        try
-        {
-            int transitionCount = hiddenButtons.Count + shownButtons.Count;
-            int transitionIndex = 0;
-
-            foreach ((Button button, Visibility visibility) in hiddenButtons)
-            {
-                bool repositionsButtonsToTheLeft = HasVisibleButtonToTheLeft(button);
-                button.Visibility = visibility;
-                transitionIndex++;
-
-                if (transitionIndex < transitionCount)
-                {
-                    TimeSpan duration = repositionsButtonsToTheLeft
-                        ? RepositionAnimationDuration
-                        : HideAnimationDuration;
-                    await Task.Delay(duration + ButtonSequenceGap, cancellation.Token);
-                }
-            }
-
-            foreach ((Button button, Visibility visibility) in shownButtons)
-            {
-                bool repositionsButtonsToTheLeft = HasVisibleButtonToTheLeft(button);
-                button.Visibility = visibility;
-                transitionIndex++;
-
-                if (transitionIndex < transitionCount)
-                {
-                    TimeSpan duration = repositionsButtonsToTheLeft
-                        ? Max(ShowAnimationDuration, RepositionAnimationDuration / 2)
-                        : ShowAnimationDuration;
-                    await Task.Delay(duration + ButtonSequenceGap, cancellation.Token);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // The sequence was cancelled by a newer change or by suspended animations: nothing is left to do.
-        }
-        finally
+        => TwoPhaseTransitionSequence.RunAsync(hiddenButtons, shownButtons, HasVisibleButtonToTheLeft,
+        (button, visibility) => button.Visibility = visibility,
+        repositions => (repositions ? RepositionAnimationDuration : HideAnimationDuration) + ButtonSequenceGap,
+        repositions => (repositions ? Max(ShowAnimationDuration, RepositionAnimationDuration / 2) : ShowAnimationDuration) + ButtonSequenceGap,
+        static (duration, token) => Task.Delay(duration, token), cancellation, () =>
         {
             if (ReferenceEquals(_visibilitySequenceCancellation, cancellation))
                 _visibilitySequenceCancellation = null;
 
             cancellation.Dispose();
-        }
-    }
+        });
 
     private bool HasVisibleButtonToTheLeft(Button targetButton)
     {

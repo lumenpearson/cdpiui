@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.IO;
 using CDPIUI.Controls.CreateConfigHelper;
 using CDPIUI.Core.ComponentServices.Helpers.Configuration;
@@ -39,7 +41,7 @@ internal static class ConfigMakerPresetFileKinds
         _ => ConfigFileKind.SiteList,
     };
 
-    public static ConfigMakerPresetFileInfo ToEditorFile(ConfigUsedFile file) => file == null ? null : new(
+    public static ConfigMakerPresetFileInfo? ToEditorFile(ConfigUsedFile? file) => file == null ? null : new(
         file.Name,
         file.Path,
         file.Folder,
