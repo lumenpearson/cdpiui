@@ -17,7 +17,7 @@ Issue 13 and PR 10 retain historical G1 reconciliation. The one older GUI option
 - Normal merge/product candidate: `e417d4efef05c47393bde549c301cb519577d9bc`.
 - Stack tip: `3afa82e3f4947ce4bef38b14d86c642c93ddbe90`.
 
-All six published heads are retained as ancestors: PR 216 `36235846fb116acad49b328b29120afa92714712`, PR 218 `3da11cb098d3e1241b2a86cd86ee0c14d80b1942`, PR 220 `3c7f8961477dbff0b4b021493b629ba1a1a0fa05`, PR 222 `b627a0f62dace8dde20ca2574a9d28646f71b421`, PR 224 `12ef689e0968bd7ff4b27cee0fe7af02091286da` and PR 227 at the tip above. Their published refs were preserved. Later PR 230/231 work and foreign checkouts were not merged, retargeted or modified.
+All six published heads are retained as ancestors: PR 216 `36235846fb116acad49b328b29120afa92714712`, PR 218 `3da11cb098d3e1241b2a86cd86ee0c14d80b1942`, PR 220 `3c7f8961477dbff0b4b021493b629ba1a1a0fa05`, PR 222 `b627a0f62dace8dde20ca2574a9d28646f71b421`, PR 224 `12ef689e0968bd7ff4b27cee0fe7af02091286da` and PR 227 at the tip above. Their published refs were preserved. Later PR 230/232 work and foreign checkouts were not merged, retargeted or modified.
 
 The product/test tree matches the clean read-only merge probe `525418989453cf9ce76edd030102a76972a5fd79`. Its only initial differences were the new plan and inventory entry. The inventory append was the only conflict; all 129 main and 165 stack records remain, with the one new plan record. No product correction was needed. All 16 main test-project items remain; all 130 explicit Compile includes exist without duplicates. All five nonproject PR 229 blobs remain exact. Tray, elevated launcher, Shared, installer, Update, EditHostFile, dependency versions, package sources and workflows remain current-main content.
 

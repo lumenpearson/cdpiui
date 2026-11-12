@@ -16,7 +16,7 @@ Current verification: [integration report](../reports/2026-11-12-class-stack-thr
 
 - Execution owner: chat 01a1c5f4-bad8-7310-bafb-1bcf792172a9; only its existing future-task-issues checkout may change.
 - Freeze initial main 21555a29ce9fba98c678c445d04ee9f6ce3c85ba and stack tip 3afa82e3f4947ce4bef38b14d86c642c93ddbe90. Re-read remote state before publication and merge.
-- Preserve all six published stack heads, later PR 230/231 bases, foreign worktrees, source, index, output, and evidence. No rebase, force push, deletion or automatic retarget.
+- Preserve all six published stack heads, later PR 230/232 bases, foreign worktrees, source, index, output, and evidence. No rebase, force push, deletion or automatic retarget.
 - Preserve all main changes including PR 229 language captions. No new product feature or dependency version is part of this integration.
 - Respect exclusive UI ownership for browser reads, native launches and snapshots. Coordinate heavy builds separately.
 - Issue 13 keeps historical G1 reconciliation. Issue 15 keeps the broader integrated native matrix. A bounded hidden fixture does not prove real picker, full startup, installed-product or release acceptance.
