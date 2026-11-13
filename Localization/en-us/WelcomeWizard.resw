@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AdAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>Here you can set preferred advertising shown settings.&#32;
+Ad showing only in application window – notifications or other popups not allowed. Application won't collect or share your data.</value>
+  </data>
+  <data name="AdAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Advertising</value>
+  </data>
+  <data name="CompleteAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>If you have some questions about app you can visit offline help (cdpiui://help) or contact community support (you can find links on [About] page)
+
+If you found some bug tell about it developer – we can make application better together!
+
+Click [Close] to close this wizard. Enjoy!</value>
+  </data>
+  <data name="CompleteAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Application setup finished</value>
+  </data>
+  <data name="LicenceAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>For using this application you must accept license agreements.
+Disagreement with license will closed application.</value>
+  </data>
+  <data name="LicenceAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Review license </value>
+  </data>
+  <data name="LicenseAgreeCheckBox.Content" xml:space="preserve">
+    <value>I Agree </value>
+  </data>
+  <data name="PersonalizationAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>Make this application looks like you want.</value>
+  </data>
+  <data name="PersonalizationAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Make it your's</value>
+  </data>
+  <data name="StoreAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>This ready-to-use bundles contains component and required items for it. After installing bundle you can straightaway use component (after setup config). Select bundle to install, we're complete installation in background.</value>
+  </data>
+  <data name="StoreAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Recommended bundles </value>
+  </data>
+  <data name="UnableLoadLicense" xml:space="preserve">
+    <value>We're unable load license file. Continuation is impossible.&#32;
+Try reinstall application
+
+~Cannot GET:/{0}`</value>
+  </data>
+  <data name="WelcomeAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>Let's begin setup this application from setting your preferred language.&#32;
+
+It this right?</value>
+  </data>
+  <data name="WelcomeAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Welcome to CDPIUI!</value>
+  </data>
+  <data name="MigrationAnimatedHorizontalContentItemHeader" xml:space="preserve">
+    <value>Transfer from GoodbyeDPI-UI</value>
+  </data>
+  <data name="MigrationAnimatedHorizontalContentItemDescription" xml:space="preserve">
+    <value>CDPIUI will install the components required by your selected presets and then import the verified data package.</value>
+  </data>
+  <data name="RetryMigrationButton.Content" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="MigrationPreparingTitle" xml:space="preserve">
+    <value>Preparing before first launch</value>
+  </data>
+  <data name="MigrationPreparingMessage" xml:space="preserve">
+    <value>Checking the transfer package and protecting a local copy. No settings are being changed yet.</value>
+  </data>
+  <data name="MigrationComponentsTitle" xml:space="preserve">
+    <value>Preparing components</value>
+  </data>
+  <data name="MigrationComponentsReadyMessage" xml:space="preserve">
+    <value>The package is verified. Continue through the license step to prepare the required components.</value>
+  </data>
+  <data name="MigrationLoadingStoreMessage" xml:space="preserve">
+    <value>Loading the component catalog and checking compatibility.</value>
+  </data>
+  <data name="MigrationComponentLicenseTitle" xml:space="preserve">
+    <value>Component licenses</value>
+  </data>
+  <data name="MigrationComponentLicenseMessage" xml:space="preserve">
+    <value>Review the licenses of the components needed by the transferred presets.</value>
+  </data>
+  <data name="MigrationComponentLicenseDeclined" xml:space="preserve">
+    <value>The transfer is paused until the required component licenses are accepted.</value>
+  </data>
+  <data name="MigrationDownloadingMessage" xml:space="preserve">
+    <value>Downloading and installing the components required by the transferred presets.</value>
+  </data>
+  <data name="MigrationImportTitle" xml:space="preserve">
+    <value>Importing your data</value>
+  </data>
+  <data name="MigrationImportMessage" xml:space="preserve">
+    <value>Creating the separate migrated preset collection and applying compatible settings.</value>
+  </data>
+  <data name="MigrationCompletedTitle" xml:space="preserve">
+    <value>Transfer completed</value>
+  </data>
+  <data name="MigrationCompletedMessage" xml:space="preserve">
+    <value>Your selected GoodbyeDPI-UI data is ready in CDPIUI.</value>
+  </data>
+  <data name="MigrationCompletedWithWarningsTitle" xml:space="preserve">
+    <value>Transfer completed with warnings</value>
+  </data>
+  <data name="MigrationImportIncompleteMessage" xml:space="preserve">
+    <value>This information could not be transferred from GoodbyeDPI-UI.</value>
+  </data>
+  <data name="MigrationImportWarningsSummary" xml:space="preserve">
+    <value>Items that could not be transferred: {0}. The remaining information is available in CDPIUI.</value>
+  </data>
+  <data name="MigrationFailedTitle" xml:space="preserve">
+    <value>Transfer could not continue</value>
+  </data>
+  <data name="MigrationGenericError" xml:space="preserve">
+    <value>An unexpected migration error occurred.</value>
+  </data>
+  <data name="MigrationAlreadyCompleted" xml:space="preserve">
+    <value>This exact transfer package was already imported. No duplicate presets were created.</value>
+  </data>
+  <data name="MigrationStoreLoadFailed" xml:space="preserve">
+    <value>The component catalog could not be loaded. Check the connection and try again.</value>
+  </data>
+  <data name="MigrationComponentMissingFromStore" xml:space="preserve">
+    <value>A component required by the transferred presets is absent from the selected Store source.</value>
+  </data>
+  <data name="MigrationComponentUnsupported" xml:space="preserve">
+    <value>A required component is not compatible with this version of CDPIUI.</value>
+  </data>
+  <data name="MigrationComponentInstallFailed" xml:space="preserve">
+    <value>A required component could not be installed.</value>
+  </data>
+  <data name="MigrationComponentInstallStopped" xml:space="preserve">
+    <value>Component installation stopped before all required components were ready.</value>
+  </data>
+  <data name="MigrationCanceled" xml:space="preserve">
+    <value>The transfer was canceled.</value>
+  </data>
+  <data name="MigrationImportSummary" xml:space="preserve">
+    <value>Imported presets: {0}; TXT/BIN resources: {1}; compatible settings: {2}. Presets marked for review: {3}.</value>
+  </data>
+  <data name="MigrationComponentInstalled" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="MigrationComponentDownloading" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="MigrationComponentInstalling" xml:space="preserve">
+    <value>Installing</value>
+  </data>
+  <data name="MigrationComponentFinishing" xml:space="preserve">
+    <value>Finishing</value>
+  </data>
+  <data name="MigrationComponentError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="MigrationComponentWaiting" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="MigrationNoComponentsRequired" xml:space="preserve">
+    <value>No additional components are required for the selected data.</value>
+  </data>
+  <data name="MigrationComponentsCount" xml:space="preserve">
+    <value>Required components: {0}</value>
+  </data>
+  <data name="ProxyAnimatedHorizontalContentItem.Header" xml:space="preserve">
+    <value>Store settings</value>
+  </data>
+  <data name="ProxyAnimatedHorizontalContentItem.Description" xml:space="preserve">
+    <value>Store helps you install items from GitHub (Zapret, TG WS Proxy, for example). If GitHub isn't available for you internal proxy may help.
+If you don't have any problems with GitHub – skip this step.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_CANCELED" xml:space="preserve">
+    <value>The transfer was canceled.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_NOT_FOUND" xml:space="preserve">
+    <value>The transfer archive was not found.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_INVALID" xml:space="preserve">
+    <value>The transfer archive is damaged or has an unsupported format.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_ARCHIVE_ACCESS_DENIED" xml:space="preserve">
+    <value>Access to the transfer archive was denied.</value>
+  </data>
+  <data name="MigrationError_MIGRATION_PREPARATION_FAILED" xml:space="preserve">
+    <value>Could not prepare the data for the transfer.</value>
+  </data>
+</root>

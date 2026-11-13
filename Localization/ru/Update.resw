@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Помощник обновления</value>
+  </data>
+  <data name="Heading" xml:space="preserve">
+    <value>Обновление приложения (CDPI UI)</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="CloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Подготовка...</value>
+  </data>
+  <data name="Unpacking" xml:space="preserve">
+    <value>Распаковка...</value>
+  </data>
+  <data name="CopyingFiles" xml:space="preserve">
+    <value>Копирование файлов...</value>
+  </data>
+  <data name="Finalizing" xml:space="preserve">
+    <value>Завершение...</value>
+  </data>
+  <data name="Complete" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="ExceptionHappens" xml:space="preserve">
+    <value>Произошла ошибка</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Произошла ошибка</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>При обновлении приложения произошла непредвиденная ошибка. Вернуть предыдущую версию также не удалось.
+Возможно, приложение придётся переустановить вручную.
+Выполните следующие шаги:
+1. Удалите текущую версию приложения.
+2. Скачайте последнюю версию с GitHub.
+3. Установите скачанную версию.
+Если проблема не исчезнет, обратитесь в поддержку.
+КОД ОШИБКИ: {0}</value>
+  </data>
+  <data name="StartedWithoutArgumentsTitle" xml:space="preserve">
+    <value>Обновление CDPI UI</value>
+  </data>
+  <data name="StartedWithoutArgumentsMessage" xml:space="preserve">
+    <value>Update.exe запускается приложением CDPI UI для установки обновления.</value>
+  </data>
+</root>

@@ -54,8 +54,8 @@
 
   <ItemGroup>
     <Compile Include="..\CDPIUI.Shared\Localization\*.cs" Link="Localization\%(Filename).cs" />
-    <EmbeddedResource Include="..\Localization\en-us\Update.json" LogicalName="Localization.en-us.Update.json" />
-    <EmbeddedResource Include="..\Localization\ru\Update.json" LogicalName="Localization.ru.Update.json" />
+    <EmbeddedResource Include="..\Localization\en-us\Update.resw" LogicalName="Localization.en-us.Update.resw" />
+    <EmbeddedResource Include="..\Localization\ru\Update.resw" LogicalName="Localization.ru.Update.resw" />
   </ItemGroup>
 
 </Project>

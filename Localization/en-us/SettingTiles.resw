@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AutoSiteList" xml:space="preserve">
+    <value>Automatically filled site list</value>
+  </data>
+  <data name="AvailableSettings" xml:space="preserve">
+    <value>Available settings</value>
+  </data>
+  <data name="ConfigVariables" xml:space="preserve">
+    <value>Config variables</value>
+  </data>
+  <data name="ConfigVariablesTip" xml:space="preserve">
+    <value>Select a variable to change its value. Available templates are shown in the editor, and a custom value can be entered manually.</value>
+  </data>
+  <data name="IpList" xml:space="preserve">
+    <value>Ip set</value>
+  </data>
+  <data name="SetupConfig" xml:space="preserve">
+    <value>Toggles on these parameters allow standard users to easily customize the config.
+
+The author of this config added the ability to switch operating modes "on the fly" without manually editing the launch string. Switching automatically restarts the component.
+
+For advanced users: To add a similar switch to this widget, you need to configure a conditional variable on the config creation page (see the "Advanced Configs" help section).</value>
+  </data>
+  <data name="UsedSiteLists" xml:space="preserve">
+    <value>Site lists </value>
+  </data>
+  <data name="UsedSiteListsTip" xml:space="preserve">
+    <value>Editing these lists will allow you to configure the websites for which blocking should be bypassed.
+
+For example, if you add the website "ya.ru," the blocking will be bypassed for it.</value>
+  </data>
+  <data name="SiteList" xml:space="preserve">
+    <value>Site list</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>Advanced settings</value>
+  </data>
+  <data name="AdvancedSettingsTip" xml:space="preserve">
+    <value>Links to these sections can help advanced users fine-tune their configs.
+
+Config customization includes automatically selecting component launch settings to access the required website(s), modifying an existing config, and creating a new config from scratch. Config creation and modification are performed using the [Easy&amp;Quick config create utility] utility.</value>
+  </data>
+  <data name="CreateNewConfig" xml:space="preserve">
+    <value>Create new config</value>
+  </data>
+  <data name="EditConfig" xml:space="preserve">
+    <value>Edit that config</value>
+  </data>
+  <data name="SelectAutomatically" xml:space="preserve">
+    <value>Select config automatic mode</value>
+  </data>
+  <data name="Features" xml:space="preserve">
+    <value>Features</value>
+  </data>
+  <data name="NowUsedComponent" xml:space="preserve">
+    <value>Select component</value>
+  </data>
+  <data name="QuickSettingsTile" xml:space="preserve">
+    <value>Quick settings</value>
+  </data>
+  <data name="NowUsedComponentDescription" xml:space="preserve">
+    <value>Used config: "{0}"</value>
+  </data>
+  <data name="NowUsedComponentDescriptionError" xml:space="preserve">
+    <value>Config not set for this component: run is unavailable</value>
+  </data>
+  <data name="NowUsedComponentError" xml:space="preserve">
+    <value>Component not selected</value>
+  </data>
+  <data name="UsedExcludedSiteLists" xml:space="preserve">
+    <value>Excluded site lists</value>
+  </data>
+  <data name="UsedExcludedSiteListsTip" xml:space="preserve">
+    <value>Editing these lists will allow you to configure exceptions.
+
+For example, if you add the website "ya.ru" to the exceptions, block bypass will not apply to it.</value>
+  </data>
+  <data name="OpenProxyInTelegram" xml:space="preserve">
+    <value>Apply proxy to Telegram</value>
+  </data>
+</root>

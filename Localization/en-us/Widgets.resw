@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AskCommunity" xml:space="preserve">
+    <value>Community</value>
+  </data>
+  <data name="AskCommunityDescription" xml:space="preserve">
+    <value>Ask something in official CDPI UI community. Explore new communities, recommended by developer </value>
+  </data>
+  <data name="Autoselection" xml:space="preserve">
+    <value>Config autoselection</value>
+  </data>
+  <data name="AutoselectionDescription" xml:space="preserve">
+    <value>Select best config for component automatically. Create new config with best parameters</value>
+  </data>
+  <data name="ConditionalLaunch" xml:space="preserve">
+    <value>Setup launch conditions </value>
+  </data>
+  <data name="ConditionalLaunchDescription" xml:space="preserve">
+    <value>Make you own conditions for launch component.
+Hotkeys and process state changing conditions are supported</value>
+  </data>
+  <data name="Donate" xml:space="preserve">
+    <value>Leave a tip</value>
+  </data>
+  <data name="DonateDescription" xml:space="preserve">
+    <value>Support development ❤️</value>
+  </data>
+  <data name="OpenLocalHelp" xml:space="preserve">
+    <value>Local help</value>
+  </data>
+  <data name="OpenLocalHelpDescription" xml:space="preserve">
+    <value>Learn more about this app without Internet connection</value>
+  </data>
+  <data name="OpenStore" xml:space="preserve">
+    <value>Components Store</value>
+  </data>
+  <data name="OpenStoreDescription" xml:space="preserve">
+    <value>Manage installed Components, Config Kits and AddOns</value>
+  </data>
+  <data name="RecoverApp" xml:space="preserve">
+    <value>Troubleshooting </value>
+  </data>
+  <data name="RecoverAppDescription" xml:space="preserve">
+    <value>Troubleshooting application problems automatically </value>
+  </data>
+  <data name="ReplaceHostsFile" xml:space="preserve">
+    <value>Replace hosts file</value>
+  </data>
+  <data name="ReplaceHostsFileDescription" xml:space="preserve">
+    <value>Add new domains to hosts file for bypass discord connection problems and GitHub server availability</value>
+  </data>
+  <data name="ReportAProblem" xml:space="preserve">
+    <value>Report a problem</value>
+  </data>
+  <data name="ReportAProblemDescription" xml:space="preserve">
+    <value>Something work not as planned? Tell about it developers!</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Stop service</value>
+  </data>
+  <data name="StopServiceDescription" xml:space="preserve">
+    <value>Stopping service may help if Internet connection are broken. Also if you changed component config service stopping is recommended for best effect</value>
+  </data>
+</root>

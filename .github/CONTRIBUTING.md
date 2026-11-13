@@ -63,6 +63,7 @@ CAUTION: Do not start the GUI as administrator. Some GUI functions do not operat
 | Task | Command |
 |---|---|
 | Run the unit tests | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Run real Windows Forms caption-font tests on Windows | `dotnet test CDPIUI.TrayIcon.Tests/CDPIUI.TrayIcon.Tests.csproj -c Release -p:Platform=x64` |
 | Run the unit tests on Linux or macOS | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true` |
 | Build the release layout | `pwsh .github/scripts/build_portable.ps1` |
 | Compare the installer file list with the release layout | `pwsh .github/scripts/check_setup_files.ps1` |
@@ -106,7 +107,7 @@ cdpiui/
 │   ├── Extensions/             # Extension methods of the GUI
 │   ├── Help/                   # The help articles. One folder for each language (EN, RU).
 │   ├── Helper/                 # GUI helpers that use translations or XAML types
-│   ├── Strings/                # Generated in the build output from Localization/*.json.
+│   ├── Strings/                # Copied to the build output from Localization/*.resw.
 │   ├── Template/               # Files that the build copies to the output folder
 │   ├── ViewModels/             # View models
 │   ├── Views/                  # Pages. The pages of one window are in a folder with the window name.
@@ -216,9 +217,9 @@ A new preset pack or a new subscription does not need code.
 
 The developer documents use the term "preset" for a ready settings file of a component. The English UI uses the word "Config" for a preset. The Russian UI uses the word "Пресет".
 
-Edit translations in `Localization/<code>/*.json` (`en-us` and `ru`). This is the shared source for UI, tray, updater, and hosts editor copy. Keep keys and formatting arguments such as `{0}` and `{1}` consistent across languages.
+Edit translations in `Localization/<code>/*.resw` (`en-us` and `ru`). This is the shared source for UI, tray, updater, and hosts editor copy. Keep keys and formatting arguments such as `{0}` and `{1}` consistent across languages.
 
-The build automatically generates `.resw` under `obj` and copies them to `Strings` for WinUI3Localizer. Do not edit generated files. C# translation dictionaries and `Pick(english, russian)` are no longer used.
+The build copies the editable `.resw` sources directly to `Strings` for WinUI3Localizer. No resource generator is required. C# translation dictionaries and `Pick(english, russian)` are no longer used.
 
 See [Localization/README.md](../Localization/README.md) for the format, examples, language selection, checks, and adding a language. License agreements, help articles, and [Store content](https://github.com/Storik4pro/cdpiui-store) are translated in their own directories.
 

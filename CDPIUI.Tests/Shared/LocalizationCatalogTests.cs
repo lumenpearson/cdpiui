@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.Xml;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using CDPIUI.Shared.Localization;
@@ -22,8 +22,8 @@ public class LocalizationCatalogTests
     public void CatalogsHaveMatchingKeysAndFormattingArguments()
     {
         string root = Path.Combine(RepositoryRoot, "Localization");
-        Assert.True(Directory.Exists(Path.Combine(root, "en-us")), "JSON localization catalogs must exist.");
-        foreach (string englishPath in Directory.GetFiles(Path.Combine(root, "en-us"), "*.json"))
+        Assert.True(Directory.Exists(Path.Combine(root, "en-us")), "RESW localization catalogs must exist.");
+        foreach (string englishPath in Directory.GetFiles(Path.Combine(root, "en-us"), "*.resw"))
         {
             var english = Read(englishPath);
             var russian = Read(Path.Combine(root, "ru", Path.GetFileName(englishPath)));
@@ -33,8 +33,8 @@ public class LocalizationCatalogTests
                 Assert.False(string.IsNullOrWhiteSpace(value), $"Empty English resource: {englishPath}/{key}");
                 Assert.False(string.IsNullOrWhiteSpace(russian[key]), $"Empty Russian resource: {englishPath}/{key}");
                 Assert.Equal(Arguments(value), Arguments(russian[key]));
-                Assert.Equal(value, JsonLocalizer.Get(Path.GetFileNameWithoutExtension(englishPath), key, "en-us"));
-                Assert.Equal(russian[key], JsonLocalizer.Get(Path.GetFileNameWithoutExtension(englishPath), key, "ru"));
+                Assert.Equal(value, ReswLocalizer.Get(Path.GetFileNameWithoutExtension(englishPath), key, "en-us"));
+                Assert.Equal(russian[key], ReswLocalizer.Get(Path.GetFileNameWithoutExtension(englishPath), key, "ru"));
             }
         }
     }
@@ -77,8 +77,8 @@ public class LocalizationCatalogTests
     [Fact]
     public void VisibleToggleStateLabelsUseTheApplicationLocale()
     {
-        var english = Read(Path.Combine(RepositoryRoot, "Localization", "en-us", "Resources.json"));
-        var russian = Read(Path.Combine(RepositoryRoot, "Localization", "ru", "Resources.json"));
+        var english = Read(Path.Combine(RepositoryRoot, "Localization", "en-us", "Resources.resw"));
+        var russian = Read(Path.Combine(RepositoryRoot, "Localization", "ru", "Resources.resw"));
         XNamespace localizer = "using:WinUI3Localizer";
         foreach (string folder in new[] { "Controls", "Views", "Windows" })
         foreach (string path in Directory.EnumerateFiles(Path.Combine(RepositoryRoot, "CDPIUI", folder), "*.xaml", SearchOption.AllDirectories))
@@ -97,9 +97,13 @@ public class LocalizationCatalogTests
 
     private static Dictionary<string, string> Read(string path)
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(path));
-        // ToDictionary also rejects duplicate keys instead of silently overwriting a translation.
-        return document.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.GetString()!);
+        using var reader = XmlReader.Create(path, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
+        var document = XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+        Assert.Equal("root", document.Root!.Name.LocalName);
+        // ToDictionary rejects duplicate names instead of silently overwriting a translation.
+        return document.Root.Elements("data").ToDictionary(
+            element => (string?)element.Attribute("name") ?? throw new InvalidDataException("Missing resource name."),
+            element => element.Element("value")?.Value ?? throw new InvalidDataException("Missing resource value."));
     }
 
     private static string[] Arguments(string text) => Regex.Matches(text, @"(?<!\{)\{(\d+)(?:[^{}]*)\}(?!\})")

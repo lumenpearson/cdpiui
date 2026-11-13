@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Available" xml:space="preserve">
+    <value>ДОСТУПЕН</value>
+  </data>
+  <data name="CheckAdGuard" xml:space="preserve">
+    <value>Службы AdGuard</value>
+  </data>
+  <data name="CheckAnotherComponents" xml:space="preserve">
+    <value>Запущенные компоненты</value>
+  </data>
+  <data name="CheckAnotherComponentsServices" xml:space="preserve">
+    <value>Службы компонентов</value>
+  </data>
+  <data name="CheckBFE" xml:space="preserve">
+    <value>Службы Base Filtering Engine</value>
+  </data>
+  <data name="CheckCheckPointServices" xml:space="preserve">
+    <value>Службы Check Point</value>
+  </data>
+  <data name="CheckDNS" xml:space="preserve">
+    <value>Системный DNS-сервер</value>
+  </data>
+  <data name="CheckGitHubRepo" xml:space="preserve">
+    <value>Репозиторий Магазина на GitHub</value>
+  </data>
+  <data name="CheckGitLabRepo" xml:space="preserve">
+    <value>Репозиторий Магазина на GitLab</value>
+  </data>
+  <data name="CheckIntelConnectivityNetwork" xml:space="preserve">
+    <value>Службы Intel Connectivity Network</value>
+  </data>
+  <data name="CheckKiller" xml:space="preserve">
+    <value>Службы Killer</value>
+  </data>
+  <data name="CheckNetsh" xml:space="preserve">
+    <value>Системная переменная PATH</value>
+  </data>
+  <data name="CheckProxy" xml:space="preserve">
+    <value>Прокси-сервер</value>
+  </data>
+  <data name="CheckSmartByte" xml:space="preserve">
+    <value>Службы SmartByte</value>
+  </data>
+  <data name="CheckTimestamps" xml:space="preserve">
+    <value>Параметр TCP timestamps</value>
+  </data>
+  <data name="CheckVPNs" xml:space="preserve">
+    <value>Службы VPN-провайдеров</value>
+  </data>
+  <data name="CheckWinDivert" xml:space="preserve">
+    <value>Службы WinDivert</value>
+  </data>
+  <data name="CheckWriteAccess" xml:space="preserve">
+    <value>Доступ к внутренней директории Магазина</value>
+  </data>
+  <data name="CheckWriteAccessIntoDatabaseFolder" xml:space="preserve">
+    <value>Доступ к директории базы данных Магазина</value>
+  </data>
+  <data name="CheckWriteAccessIntoItemsFolder" xml:space="preserve">
+    <value>Доступ к директории элементов Магазина</value>
+  </data>
+  <data name="CheckWriteAccessIntoRepoFolder" xml:space="preserve">
+    <value>Доступ к локальной директории репозитория Магазина</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Завершение...</value>
+  </data>
+  <data name="DiagnosticHelpButton.Content" xml:space="preserve">
+    <value>Объяснить это</value>
+  </data>
+  <data name="DiagnosticResultErrorTip" xml:space="preserve">
+    <value>Мы нашли несколько проблем с вашей системой. Чтобы их исправить перейдите на следующую страницу</value>
+  </data>
+  <data name="DiagnosticResultErrorTitle" xml:space="preserve">
+    <value>Были обнаружены проблемы</value>
+  </data>
+  <data name="DiagnosticResultTip" xml:space="preserve">
+    <value>Нажмите на кнопку "Далее", чтобы продолжить</value>
+  </data>
+  <data name="DiagnosticResultTitle" xml:space="preserve">
+    <value>Не удалось обнаружить проблемы</value>
+  </data>
+  <data name="DiagnosticTableHeader.ActionAeraText" xml:space="preserve">
+    <value>Доступные действия</value>
+  </data>
+  <data name="DiagnosticTableHeader.CurrentStateText" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="DiagnosticTableHeader.DisplayText" xml:space="preserve">
+    <value>Критерий</value>
+  </data>
+  <data name="DiagnosticTableHeader.TargetStateText" xml:space="preserve">
+    <value>Требуется</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>НЕАКТИВЕН</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>АКТИВЕН</value>
+  </data>
+  <data name="Exist" xml:space="preserve">
+    <value>СУЩЕСТВУЕТ</value>
+  </data>
+  <data name="FixButton.Content" xml:space="preserve">
+    <value>Исправить</value>
+  </data>
+  <data name="FixResultErrorTip" xml:space="preserve">
+    <value>Мы не смогли исправить некоторые проблемы в вашей системе. Вам необходимо решить их самостоятельно, используя материалы справки</value>
+  </data>
+  <data name="FixResultErrorTitle" xml:space="preserve">
+    <value>Некоторые проблемы не были исправлены</value>
+  </data>
+  <data name="FixResultTip" xml:space="preserve">
+    <value>Нажмите или коснитесь кнопки "Выход", чтобы закрыть этот мастер.</value>
+  </data>
+  <data name="FixResultTitle" xml:space="preserve">
+    <value>Исправление завершено</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>НЕДОСТУПЕН</value>
+  </data>
+  <data name="NotExist" xml:space="preserve">
+    <value>ОТСУТСТВУЕТ</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Выполняется подготовка...</value>
+  </data>
+  <data name="ServiceRunning" xml:space="preserve">
+    <value>ЗАПУЩЕНО</value>
+  </data>
+  <data name="ServiceStopped" xml:space="preserve">
+    <value>ОСТАНОВЛЕНО</value>
+  </data>
+  <data name="WorkingOn" xml:space="preserve">
+    <value>Ведется работа над проверкой "{0}"</value>
+  </data>
+</root>

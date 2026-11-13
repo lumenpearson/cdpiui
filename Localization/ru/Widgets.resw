@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="AskCommunity" xml:space="preserve">
+    <value>Сообщество</value>
+  </data>
+  <data name="AskCommunityDescription" xml:space="preserve">
+    <value>Задайте вопрос в официальном сообществе CDPI UI. Изучите новые сообщества, рекомендованные разработчиком</value>
+  </data>
+  <data name="Autoselection" xml:space="preserve">
+    <value>Автоподбор пресета</value>
+  </data>
+  <data name="AutoselectionDescription" xml:space="preserve">
+    <value>Выбрать лучший пресет автоматически. Создать новый пресет с лучшими параметрами</value>
+  </data>
+  <data name="ConditionalLaunch" xml:space="preserve">
+    <value>Настроить условия запуска</value>
+  </data>
+  <data name="ConditionalLaunchDescription" xml:space="preserve">
+    <value>Создавайте свои собственные правила запуска компонентов.
+Горячие клавиши и изменение состояния процесса можно установить в качестве условия</value>
+  </data>
+  <data name="Donate" xml:space="preserve">
+    <value>Поддержать разработку</value>
+  </data>
+  <data name="DonateDescription" xml:space="preserve">
+    <value>Разработчик будет очень рад ❤️</value>
+  </data>
+  <data name="OpenLocalHelp" xml:space="preserve">
+    <value>Локальная справка</value>
+  </data>
+  <data name="OpenLocalHelpDescription" xml:space="preserve">
+    <value>Узнайте больше об этом приложении без подключения к Интернету</value>
+  </data>
+  <data name="OpenStore" xml:space="preserve">
+    <value>Магазин компонентов</value>
+  </data>
+  <data name="OpenStoreDescription" xml:space="preserve">
+    <value>Управляйте установленными компонентами, наборами пресетов и надстройками</value>
+  </data>
+  <data name="RecoverApp" xml:space="preserve">
+    <value>Устранение неполадок</value>
+  </data>
+  <data name="RecoverAppDescription" xml:space="preserve">
+    <value>Поиск и устранение неполадок приложения в автоматическом режиме</value>
+  </data>
+  <data name="ReplaceHostsFile" xml:space="preserve">
+    <value>Заменить файл hosts</value>
+  </data>
+  <data name="ReplaceHostsFileDescription" xml:space="preserve">
+    <value>Добавление новых адресов в файл hosts с целью исправления доступа к финляндским серверам Discord и доступности серверов GitHub</value>
+  </data>
+  <data name="ReportAProblem" xml:space="preserve">
+    <value>Сообщить о проблеме</value>
+  </data>
+  <data name="ReportAProblemDescription" xml:space="preserve">
+    <value>Что-то работает не так, как надо? Расскажите об этом!</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Остановить службу</value>
+  </data>
+  <data name="StopServiceDescription" xml:space="preserve">
+    <value>Остановка службы может помочь при проблемах с подключением к Интернету. Так же останавливать службу рекомендуется при изменении активного пресета для получения наилучшего результата</value>
+  </data>
+</root>

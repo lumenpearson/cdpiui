@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Update Assistant</value>
+  </data>
+  <data name="Heading" xml:space="preserve">
+    <value>Patching application (CDPI UI)</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Preparing...</value>
+  </data>
+  <data name="Unpacking" xml:space="preserve">
+    <value>Unpacking...</value>
+  </data>
+  <data name="CopyingFiles" xml:space="preserve">
+    <value>Copying files...</value>
+  </data>
+  <data name="Finalizing" xml:space="preserve">
+    <value>Finalizing...</value>
+  </data>
+  <data name="Complete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="ExceptionHappens" xml:space="preserve">
+    <value>Exception happens</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>An error occurred</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>An unexpected error occurred while updating the application. Additionally, an attempt to downgrade to the previous version failed.
+You may need to manually reinstall the application to resolve this issue.
+Please follow these steps:
+1. Uninstall the current version of the application.
+2. Download the latest version from GitHub.
+3. Install the downloaded version.
+If the problem persists, contact support.
+ERROR CODE: {0}</value>
+  </data>
+  <data name="StartedWithoutArgumentsTitle" xml:space="preserve">
+    <value>CDPI UI Update</value>
+  </data>
+  <data name="StartedWithoutArgumentsMessage" xml:space="preserve">
+    <value>Update.exe is started by CDPI UI to install an application update.</value>
+  </data>
+</root>
