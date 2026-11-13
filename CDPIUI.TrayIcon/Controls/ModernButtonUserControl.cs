@@ -39,7 +39,11 @@ public partial class ModernButtonUserControl : UserControl
             _bold = value;
             // The replaced font was created for this label alone, by the designer or here.
             var oldFont = MainTextBox.Font;
-            MainTextBox.Font = new Font(oldFont, _bold ? FontStyle.Bold : FontStyle.Regular);
+            FontStyle style = _bold ? FontStyle.Bold : FontStyle.Regular;
+            // Control.Font keeps the existing instance for an equal value. It must stay usable.
+            if (oldFont.Style == style)
+                return;
+            MainTextBox.Font = new Font(oldFont, style);
             oldFont.Dispose();
         }
     }

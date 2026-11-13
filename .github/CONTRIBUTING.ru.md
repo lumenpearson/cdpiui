@@ -63,6 +63,7 @@ GUI не запускает компоненты. GUI отправляет за�
 | Задача | Команда |
 |---|---|
 | Запустить модульные тесты | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Проверить шрифты подписей на настоящих Windows Forms-контролах в Windows | `dotnet test CDPIUI.TrayIcon.Tests/CDPIUI.TrayIcon.Tests.csproj -c Release -p:Platform=x64` |
 | Запустить модульные тесты в Linux или macOS | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true` |
 | Собрать раскладку релиза | `pwsh .github/scripts/build_portable.ps1` |
 | Сравнить список файлов установщика с раскладкой релиза | `pwsh .github/scripts/check_setup_files.ps1` |
