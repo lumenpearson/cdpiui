@@ -45,13 +45,13 @@ Files: `CDPIUI.TrayIcon/Controls/ModernButtonUserControl.cs`, the new tests, the
 - [x] Check the new path against a shared reference to the unchanged selected font. An equal assignment must not dispose it or allocate a discarded live replacement.
 - [x] Under a new serial grant, pass all new font cases, the full existing managed suite and a normal Release/x64 tray build. Reuse no historical count as a fresh result.
 - [x] Add the Windows-only project to the Windows CI test and package-audit commands; preserve the current Linux-compatible suite.
-- [ ] Record independent complete-change review, final HEAD checks and exact CI MSI/payload provenance. Freeze the owned worktree during the next native cohort.
+- [x] Record independent complete-change review, final HEAD checks and exact CI MSI/payload provenance. Freeze the owned worktree during the next native cohort.
 
 ## Task 3: Native and integrated acceptance
 
-- [ ] Source RESW prepares a new immutable package from the reviewed font HEAD and its exact MSI; do not resume native265.
-- [ ] Independently review the new package. Execute the declared EN/RU, readable tray captions, normal Quit and zero-process checks under a fresh exclusive grant. Capture GUI/tray PID and creation-time continuity around live language changes.
-- [ ] Preserve failed observations, final payload/input hashes, normal Sandbox disposal, host preservation and monitor cleanup. Obtain independent retained evidence review.
+- [x] Source RESW prepares a new immutable package from the reviewed font HEAD and its exact MSI; do not resume native265.
+- [x] Independently review the new package. Execute the declared EN/RU, readable tray captions, normal Quit and zero-process checks under a fresh exclusive grant. Capture GUI/tray PID and creation-time continuity around live language changes.
+- [x] Preserve failed observations, final payload/input hashes, normal Sandbox disposal, host preservation and monitor cleanup. Obtain independent retained evidence review.
 - [ ] Integrate normally, identify actual final PR/main SHA and tree, and verify the tested product/test tree bridge plus required final HEAD and post-integration checks.
 - [ ] Complete issue238 acceptance/closure and actual Project Done only after its contract passes. Keep #236 broader adoption and #234 integration gates separate.
 
@@ -78,3 +78,15 @@ The exact uncommitted six-file candidate was frozen on base541d with binary patc
 Font GREEN TRX SHA256: `b0c698c4f7000dded1a468eb70b170eb8cd2ea03f33b5809ba7b5a48ef96e1e6`. Candidate managed TRX: `bd84fdb856fc6bb2ac4db51b973338d7b69a499457360992785f6b4cd0300d55`. The immutable local manifest pins54 retained files, including nine used compiled files; SHA256 `5c153edb1afcc30493dbf29214cb50cb3f695b35f5992c7738484afc707582e3`. Root verified all source/runtime inputs and the unchanged named patch, fresh absence of15 recorded exact process identities and the SDK/test-name set, then released272. Release SHA256: `cdcfc010637fc6fa84301d78bdc71af6a6eb48c05b7f1b074151e173b0718b8d`.
 
 These are local working-candidate results. They are not a final committed-HEAD CI result, visible native tray proof, RESW16 or main acceptance. Independent complete-change review, final HEAD checks, exact MSI provenance and the separate native/integration gates remain required. The existing cross-platform test project remains unchanged; Windows Forms tests run explicitly in the Windows CI library job and through the documented command.
+
+## Final source, CI, package and native evidence
+
+Final font sourcecd5 received independent complete-change review without findings (receiptF2FE362E). All nine latest required checks and Contribution metadata passed on exactcd5. Successful push workflow43476971367 produced the selected MSI with SHA256 `e5b9e8bd463b4dce97b59d7040676ce846a9fb4c43e8deb09a5d98c145578bb6`; its322-file payload and loose/embedded/bundled/PRI resources were inspected independently. PR workflow43477146319 is separate and its artifact is not substituted for the selected push artifact.
+
+Actual font tests loaded WindowsDesktop8.0.33 and Windows Forms/Drawing file8.0.3326.52211. The prepared NuGet8.0.31 pin is not the loaded runtime identity. This distinction remains part of RED/GREEN provenance.
+
+One new native cohort275 oncd5 completed all16 original ordered cases; the sole whole retained review accepted16/16 with no blockers (receipt `eac00d398998a3bea99e1081b87fabbf85a95408d4b9ce08fe45d802d8d0de04`). Readable regular/bold EN/RU Tray captions, actual normal Quit and sampled live-change GUI/Tray identities were checked. Initial/final322 payload hashes and14 actual finish input hashes matched; normal Sandbox disposal, host833files/16registry/index preservation and protected foreign identity were verified. Coordinator actual release276 has SHA256 `1427e60ae6daeaa8f97d621f52f75298a8f5aee0b9cead0044609ac4d231726e`.
+
+Initially EN combined preference/localizer failures use actual Windows RU fallback under unchanged policy, not verified English emergency UI. Broken-error evidence uses actual frames/events because that fixture branch returns before the visual-tree timer. The monitor wrote normally-finished and its exact process was absent; a raw OS exit code was not measured. Original failed cohorts and operator-analysis corrections remain immutable. No historical black-screen causal claim is made.
+
+PR239 merged normally into RESW at5c280 with exactcd5 tree and originalffae/cd5 parents. Main integration, final PR237 HEAD review/checks/post-merge evidence and issue238 closure/ProjectDone remain unchecked until actual acceptance. Root owns that closeout. Broader236 active adoption and234 integrated native gates remain separate.

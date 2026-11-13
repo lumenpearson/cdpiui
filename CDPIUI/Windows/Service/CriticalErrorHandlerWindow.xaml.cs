@@ -38,7 +38,7 @@ public sealed partial class CriticalErrorHandlerWindow : TemplateWindow
 {
     private const string FlashlightError = "ERR_FLASHLIGHT_BUSY";
 
-    // Embedded JSON remains available when the GUI localizer itself could not start.
+    // Embedded RESW remains available when the GUI localizer itself could not start.
     public string EmergencyText(string key) => Helper.UserExperience.EmergencyLocalization.Get(key);
 
     public CriticalErrorHandlerWindow(
