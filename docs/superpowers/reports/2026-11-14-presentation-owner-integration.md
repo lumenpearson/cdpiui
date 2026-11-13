@@ -1,6 +1,6 @@
 # Presentation owner integration verification
 
-Owning task: [234](https://github.com/lumenpearson/cdpiui/issues/234). Owner: chat `01a1c049-c090-70c1-bcfe-d38e1e2704fe`. Branch: `dev/presentation-owner-integration`. This report separates the executed baseline from the source composition and pending candidate acceptance.
+Owning task: [234](https://github.com/lumenpearson/cdpiui/issues/234). Owner: chat `01a1c049-c090-70c1-bcfe-d38e1e2704fe`. Branch: `dev/presentation-owner-integration`. This report records the fresh baseline, composed candidate checks and independently accepted native stage. Final delivery gates remain explicit.
 
 ## Accepted intake and preserved inputs
 
@@ -33,10 +33,45 @@ Normal merge `8dc3b8aaffb92e043d3f27d39538e5acd8e86094` has the exact accepted-m
 
 The frozen product change has five paths: the two new presentation owners and their three view-model adapters. The two historical test files are included unchanged. A read-only composition verifier passed before and after the merge: all five product paths and both tests have the frozen Git blobs, the eight local and cached remote refs are fixed, no other non-document path changed, all historical inventory rows remain equal, main/frozen230/frozen232 ancestry is present, and the immutable baseline closure pin is unchanged. The governance checker read180 Markdown files and returned0 errors; `git diff --check` also passed. These are source checks, not execution of the merged product. No new product behavior is implemented at this checkpoint. The integration spec, plan and this report describe the current scope; their inventory records now identify their actual first introduction in merge `8dc3b8aaffb92e043d3f27d39538e5acd8e86094`.
 
-## Pending acceptance and limits
+## Fresh composed candidate: managed and normal GUI
 
-Fresh candidate suites, normal build/publish, actual compiled/source comparison, a new190-group native host and separate real-close tail remain pending. So do whole-product independent review, exact final-HEAD CI, explicit original PR disposition, main integration and issue/Project closeout. No baseline or upstream result is relabelled as candidate execution. A successful merge or higher test count alone does not satisfy acceptance.
+The tested source is `2a2ddcc748add4ea63ccbed498847352c549e86e`, tree `e0a3fe21f9deb700a4b4b16202e6a2e85e34b00f`. The candidate cohort used SDK8.0.428 and VS MSBuild17.14.14. All15 ordered commands returned0. The focused suite passed86 tests, the unfiltered suite passed2684 and the real Windows font suite passed10. The actual TRX files contain zero failed, skipped, error or aborted rows. Every baseline test ID and display-name pair is present in the full candidate run. Truncated xUnit display names can repeat; actual test and execution IDs remain unique.
 
-The bounded G2 host does not prove the broad G3/G4/G5 matrix, full installed workflows, real picker interaction, accessibility or release acceptance. Source-only composition has no SDK/native/UI grant. Preserve the baseline, frozen refs, foreign work and historical evidence; do not create another monitor.
+The source comparison covers451 types across621 baseline and623 candidate C# files. Compiled metadata retains the measured public shapes of452 GUI,88 Core and107 Shared types. No existing measured signature was removed or changed. This is the declared shape comparison, not a proof of every possible ABI behavior. The candidate keeps all130 original test links and exactly3 additional links. The full suite includes37 new ConfigMaker and47 new Welcome cases; the focused86 also include2 language cases.
+
+Normal Release/x64 GUI build and publish passed. Each emits220 WMC1506 warning lines, identical to the fresh baseline after source-root normalization. The result is not warning-free. Current resource proof covers26 source RESW catalogs/5330 values,20 loose GUI catalogs/5206 values in build and publish, both Shared embedded catalogs, both standalone tool catalogs and2241 PRI entries per language. Actual font tests report .NET8.0.34 and Forms/Drawing file8.0.3426.52208. The three actually used runtime/library DLLs were retained with their reported paths and hashes.
+
+Candidate artifact root: `F:/CodexArtifacts/cdpiui-234-candidate-20261114-2a2ddcc-01a1c049`. Its complete3531-file closure is `B58D90C45C325B09F2461227F5B23EE9E02D6BFBAE701E26368BD35728885989`; sdk-results is `C66E47E39D9FEB65D3CB65ABBDCC2BE7E45D4560843996DC9B478BC1D39345BD`. Actual resource release is `2E0BBF1962D629507DCBECEA8319869A807CCD73117ADA3D9351583004C2D1F2`. The same fresh independent reviewer accepted source composition and candidate SDK evidence with zero Critical, Important or new Minor findings. The separate review receipts are retained in the coordinator's issue238 evidence directory.
+
+## New native fixtures and actual execution
+
+The new nonce is `9fbb70e7e88e496ea0202bbd83bf3c04`. Both fixtures originate from one fresh Git archive of2a2. Each retains the1626 tracked inputs, applies exactly21 minimal current-source cut patches and preserves37 raw case partials. The canonical corpus has190 unique ordered labels and the original true prefixes. Peer141 remains an ordered projection. Independent source review covered both complete source sets before either fixture was built. No older accepted fixture or helper was rerun.
+
+One separate eight-command SDK cohort built the two packages, each with522 pinned binary files, AMD64/PE32+ GUI manifests, `asInvoker` and `uiAccess=false`. Each build has the same220 baseline warning lines. Source, loose, embedded and PRI resource values match current RESW. The native PRI dump has a different whole-file hash from the normal GUI dump because map/path data differs; application-value parity is the accepted comparison. Build artifact root is `F:/CodexArtifacts/cdpiui-234-native-build-20261114-2a2-9fbb70e7`. Its complete6883-file closure is `3E2EFD685AEE796A937C34460AA961E7741338DFB8FEC3A76FBD7956BCC680C9`; actual SDK release is `BC30A679BFF0A97A8003E017740BE4DCB921C3DC391CD828814E067E406E89CE`.
+
+Operational review closed two Important findings before any native execution: authority was not rechecked after the last child-loop iteration, and shutdown admission did not bind the current accepted host outputs strongly enough. The reviewed V3 runner checks final authority and STOP state, the accepted host runtime and current outputs, exact process identity, the complete preserved closure and the permitted file additions. Eight regression controls first produced14 failing assertions, then passed in normal and optimized Python; all56 operational controls passed. Original packets and failed controls remain retained. A separate Root receipt-format correction normalized consumed SHA strings before the tail; it changed no product, fixture, runner or binary bytes.
+
+| Actual execution | New190 host | Separate real-close tail |
+|---|---|---|
+| Exclusive native-only grant | 281 | 283 |
+| Owned process | PID107408, FILETIME134390829511106704 | PID71448, FILETIME134390834717684909 |
+| Normal process exit | 0, duration2.6918584 seconds | 0, duration0.6662612 seconds |
+| Actual result | 190 canonical unique PASS plus COMPLETE, zero FAIL | Six ordered events, one actual Exit |
+| Child stdout/stderr | Both empty | Both empty |
+| Permitted new files | Three host-created literal inputs, two exact export goldens, one log | One shutdown log |
+| Actual slot release | 282 | 284 |
+
+The tail events are `START`, `CLOSED_FIRST`, `FIRST_LOW_BARRIER`, `CLOSED_LAST`, `ACTUAL_EXIT`, `COMPLETE`, with registry counts2,1,1,0,0,0 and one unchanged UI thread/registry. The first Low barrier precedes closure of the last window. Both normal wrappers returned0. The host alone created the three inputs through CreateNew. Every baseline source/bin/obj/build-artifact byte in the6883-file closure remained equal, with exactly six host additions and one tail addition. The separate tail admission rechecked the accepted current host results before launch. There was no retry, kill, desktop input, installation or ordinary-product launch.
+
+Runtime root is `F:/CodexArtifacts/cdpiui-234-native-execution-20261114-2a2-9fbb70e7`. Host runtime SHA256 is `505D93132A9DEB9BA4FB79FB84A4E7F5438B870BBA746A26F3C13E89838C91AA`, with14-file index `404245D52F2AC0822A3957F8A165155C510BE115A441FC8196F8FDAA8ECA4DAD`. Tail runtime is `2FB050851F7D3D38B33EEA4810B7D830D6DA042CF7D0D9ED45B22384596BEF05`, with9-file index `6812758D03D3C2228A23A1329E8A479076884CF546671BCA161A041082CAA68E`. The actual logs are `1DAC94119D6972EE4B69FAA574742AA975F0B0AC39B0538E983361A0279E73CB` and `2D8170EE07AEF4C7EA8794769A513DFD15F38FD85CE6ED44D1301516DA1836C4`.
+
+The same fresh independent reviewer accepted both retained outcomes with zero Critical, Important or new Minor findings. Root separately qualified actual process absence and issued releases282/284. Combined native acceptance `root-issue234-native190-tail6-acceptance.json`, SHA256 `87C28F894C04EAD219FCB310EA38AED8C0E08505427C6568E846F49B88248AAE`, binds all reviews, data and process receipts. Actual host release is `B07CFF3CE5E77024C903CBF774E20F3400141F40716555E3C143493347CE5122`; tail release is `FEF76F452C3127C9DDDA620CFB523D36E368897429EF6C5D67719F5AF81F6761`. Native-stage acceptance is complete; final issue acceptance is separate.
+
+## Remaining delivery gates and scope limits
+
+These native results accept the declared instrumented G2 cold-host and close boundaries. They do not accept the broader G3/G4/G5 scenario matrix, accessibility, real pickers, operating migration/storage/cancellation, full startup, installed workflows or release. Native loaded-runtime module identity was not measured; the SDK/font runtime observations do not substitute for it. Constructor coldness retains its source-based observation limit. Historical Welcome first-value test coverage remains a disclosed Minor: most setters compare the second value to the first without independently asserting the first expected value. Separate raw/value tests and the current native gates remain present; no product defect was demonstrated.
+
+Final independent whole-branch review, exact final-HEAD CI, actual PR/private Project metadata, explicit original PR dispositions, normal main integration, post-integration checks and completed/Done readback remain pending at this report checkpoint. All frozen branch heads, old worktrees, foreign WIP and historical evidence stay preserved. The new final commit changes documentation only; actual tested product, test, project, resource and build inputs remain2a2 bytes. Exact Git comparison must confirm that bridge before publication.
+
 
 See the [spec](../specs/2026-11-14-presentation-owner-integration-design.md) and [plan](../plans/2026-11-14-presentation-owner-integration.md).

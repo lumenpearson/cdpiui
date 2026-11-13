@@ -29,4 +29,6 @@ The coordinator authored historical Welcome code and cannot supply its independe
 
 ## Current checkpoint
 
-This is the source-composition checkpoint. Candidate execution, native190, final review/CI, original PR disposition, integration and issue closure remain pending. Update the report as each stage actually completes; historical checkboxes in the frozen input documents remain historical.
+Stages1–6 are complete. Fresh candidate managed/font suites, normal GUI build/publish, source/compiled comparisons and current RESW resource checks passed on `2a2ddcc748add4ea63ccbed498847352c549e86e`. The new190-group host and separate six-event real-close tail both passed, received independent retained review and were actually released under queue282/284. The [report](../reports/2026-11-14-presentation-owner-integration.md) records source, process, artifact and acceptance pins.
+
+Stage7 remains active: update documentation without changing the tested product/test/project/resource inputs, obtain final independent whole-branch review and exact published-HEAD CI, and read actual PR/private Project metadata. Explicit original PR disposition, normal main integration, post-checks and issue completed/Project Done remain pending. Historical checkboxes in frozen input documents remain historical.
