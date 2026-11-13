@@ -63,6 +63,7 @@ CAUTION: Do not start the GUI as administrator. Some GUI functions do not operat
 | Task | Command |
 |---|---|
 | Run the unit tests | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj` |
+| Run real Windows Forms caption-font tests on Windows | `dotnet test CDPIUI.TrayIcon.Tests/CDPIUI.TrayIcon.Tests.csproj -c Release -p:Platform=x64` |
 | Run the unit tests on Linux or macOS | `dotnet test CDPIUI.Tests/CDPIUI.Tests.csproj -p:EnableWindowsTargeting=true` |
 | Build the release layout | `pwsh .github/scripts/build_portable.ps1` |
 | Compare the installer file list with the release layout | `pwsh .github/scripts/check_setup_files.ps1` |
