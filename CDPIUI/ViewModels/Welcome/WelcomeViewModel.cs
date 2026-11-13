@@ -16,6 +16,7 @@ using CDPIUI.Core.System;
 using CDPIUI.Helper;
 using CDPIUI.Helper.Items;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Controls;
 using WinUI3Localizer;
 
 namespace CDPIUI.ViewModels.Welcome;
@@ -48,6 +49,9 @@ public sealed partial class WelcomeViewModel : ObservableObject
     {
         _view = view;
         _dispatcherQueue = dispatcherQueue;
+        _migrationPresentation = new(InfoBarSeverity.Informational, InfoBarSeverity.Error,
+            key => _localizer.GetLocalizedString(key));
+        _migrationPresentation.PropertyChanged += (_, args) => OnPropertyChanged(args.PropertyName);
         CheckStoreStatusCommand = new RelayCommand(
             () => _ = CheckStoreStatusAsync(), // CheckStoreStatusAsync catches and logs its own errors.
             () => _isStoreStatusCheckIdle);
