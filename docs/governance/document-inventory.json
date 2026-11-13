@@ -1635,6 +1635,96 @@
       "policy": "ASD-STE100 principles for English",
       "language": "en",
       "changes": "Record real font RED and GREEN, final source and package checks, accepted native16 and remaining main-stage acceptance."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-11-configmaker-status-presentation-design.md",
+      "firstIntroduction": "e57f825854c078112b159490b530fa2d080ef64e\tleather147\tRecord ConfigMaker status presentation design and implementation plan",
+      "first_commit": "e57f825854c078112b159490b530fa2d080ef64e",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Define four-value status ownership, cold typed ports, dynamic notice lookup, one late inline flag, distinct raw/normalized null channels and bounded qualification."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-11-configmaker-status-presentation.md",
+      "firstIntroduction": "e57f825854c078112b159490b530fa2d080ef64e\tleather147\tRecord ConfigMaker status presentation design and implementation plan",
+      "first_commit": "e57f825854c078112b159490b530fa2d080ef64e",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Define four-value status ownership, cold typed ports, dynamic notice lookup, one late inline flag, distinct raw/normalized null channels and bounded qualification."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-11-configmaker-status-presentation-verification.md",
+      "firstIntroduction": "05e00619c256ebde45b79f4688154d4aa33b9876\tleather147\tExtract ConfigMaker status presentation into a typed owner",
+      "first_commit": "05e00619c256ebde45b79f4688154d4aa33b9876",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Record observed status pipeline TDD, exact mutation restoration, full managed/build/contract checks, accepted native184 composition, retained harness failures, independent reviews and pending draft/CI/local acceptance."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-11-welcome-migration-presentation-design.md",
+      "firstIntroduction": "2c1c71a80ad4fa953f09e14130e541e64adba49f\tleather147\tRecord Welcome migration presentation ownership design",
+      "first_commit": "2c1c71a80ad4fa953f09e14130e541e64adba49f",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Define nine-value Welcome display ownership, interleaved localization, mode-derived reentry, retained host eligibility tail and bounded local/native qualification."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-11-welcome-migration-presentation.md",
+      "firstIntroduction": "2c1c71a80ad4fa953f09e14130e541e64adba49f\tleather147\tRecord Welcome migration presentation ownership design",
+      "first_commit": "2c1c71a80ad4fa953f09e14130e541e64adba49f",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Define nine-value Welcome display ownership, interleaved localization, mode-derived reentry, retained host eligibility tail and bounded local/native qualification."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-11-welcome-migration-presentation-verification.md",
+      "firstIntroduction": "be8808356fd7846ffc9b8bf297b042aa72705fe3\tleather147\tExtract Welcome migration display state into a typed owner",
+      "first_commit": "be8808356fd7846ffc9b8bf297b042aa72705fe3",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Record observed47case TDD/mutation/full2672, normal/API preservation, technical190fixture compilation and pins, external USERSTOP interlocks, unexecuted runtime boundaries and source-draft/CI ordering."
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-14-presentation-owner-integration-design.md",
+      "firstIntroduction": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094\tleather147\tMerge frozen presentation owners into accepted RESW main",
+      "first_commit": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Define accepted RESW main composition, preserved presentation contracts and complete issue234 acceptance boundaries."
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-14-presentation-owner-integration.md",
+      "firstIntroduction": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094\tleather147\tMerge frozen presentation owners into accepted RESW main",
+      "first_commit": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Record ordered fresh baseline, normal composition, accepted candidate and native stages, and remaining final review, CI and integration gates."
+    },
+    {
+      "path": "docs/superpowers/reports/2026-11-14-presentation-owner-integration.md",
+      "firstIntroduction": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094\tleather147\tMerge frozen presentation owners into accepted RESW main",
+      "first_commit": "8dc3b8aaffb92e043d3f27d39538e5acd8e86094",
+      "first_author": "leather147",
+      "upstream_path_present": false,
+      "policy": "ASD-STE100 principles for English",
+      "language": "en",
+      "changes": "Record actual retained d211 baseline, candidate managed and compiled checks, new190 and separate real-close native acceptance, immutable evidence pins and remaining delivery boundaries."
     }
   ],
   "current_history_base": "7ead95f7756057f67cd113671a7f84cf422e8d32",
