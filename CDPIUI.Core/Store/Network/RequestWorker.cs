@@ -62,7 +62,7 @@ internal sealed class RequestWorker : IDisposable
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
-    public async Task DownloadFileAsync(
+    public Task DownloadFileAsync(
         string url,
         string destinationPath,
         Action<long, long, TimeSpan>? progress = null,
@@ -70,7 +70,31 @@ internal sealed class RequestWorker : IDisposable
         string authenticationScheme = "Bearer",
         bool useStoreUserAgent = false,
         HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        DownloadAsync(url, destinationPath, openDestination: null, progress, token, authenticationScheme,
+            useStoreUserAgent, completionOption, cancellationToken);
+
+    // The caller owns the stream returned by the factory.
+    internal Task DownloadToStreamAsync(
+        string url,
+        string destinationPath,
+        Func<Stream> openDestination,
+        string? token,
+        bool useStoreUserAgent,
+        HttpCompletionOption completionOption) =>
+        DownloadAsync(url, destinationPath, openDestination, progress: null, token, "Bearer",
+            useStoreUserAgent, completionOption, CancellationToken.None);
+
+    private async Task DownloadAsync(
+        string url,
+        string destinationPath,
+        Func<Stream>? openDestination,
+        Action<long, long, TimeSpan>? progress,
+        string? token,
+        string authenticationScheme,
+        bool useStoreUserAgent,
+        HttpCompletionOption completionOption,
+        CancellationToken cancellationToken)
     {
         using var response = await GetAsync(url, token, authenticationScheme, useStoreUserAgent,
             completionOption: completionOption, cancellationToken: cancellationToken);
@@ -80,7 +104,10 @@ internal sealed class RequestWorker : IDisposable
         EnsureFreeSpace(destinationPath, totalBytes);
         using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+        using var ownedStream = openDestination is null
+            ? new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)
+            : null;
+        Stream fileStream = ownedStream ?? openDestination!();
         var buffer = new byte[81920];
         long totalRead = 0;
         var stopwatch = Stopwatch.StartNew();
