@@ -38,15 +38,7 @@ internal static class StoreRepositoryDownloader
         {
             string zipUrl = GetStoreUrl(versionControl);
 
-            string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
-            using var requestWorker = new RequestWorker();
-            await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
-                token: GetDownloadToken(versionControl),
-                useStoreUserAgent: true,
-                completionOption: HttpCompletionOption.ResponseContentRead);
-
-            File.Delete(tempZipPath);
-
+            await DownloadTemporaryArchiveAsync(zipUrl, versionControl);
             return true;
         }
         catch (Exception ex)
@@ -65,36 +57,67 @@ internal static class StoreRepositoryDownloader
         string zipUrl = GetStoreUrl(versionControl);
         Debug.WriteLine(zipUrl);
 
-        // A fixed name in the shared temp folder could be prepared by another process.
-        string tempZipPath = Path.Combine(Path.GetTempPath(), $"cdpiui_store_{Guid.NewGuid():N}.tmp");
         string newFolder = $"{targetFolder.TrimEnd(Path.DirectorySeparatorChar)}.new-{Guid.NewGuid():N}";
         try
         {
-            using (var requestWorker = new RequestWorker())
+            await DownloadTemporaryArchiveAsync(zipUrl, versionControl, archiveStream =>
             {
-                await requestWorker.DownloadFileAsync(zipUrl, tempZipPath,
-                    token: GetDownloadToken(versionControl),
-                    useStoreUserAgent: true,
-                    completionOption: HttpCompletionOption.ResponseContentRead);
-            }
+                Directory.CreateDirectory(newFolder);
+                ExtractWithoutRootFolder(archiveStream, newFolder);
 
-            Directory.CreateDirectory(newFolder);
-            ExtractWithoutRootFolder(tempZipPath, newFolder);
-
-            if (Directory.Exists(targetFolder))
-                Directory.Delete(targetFolder, recursive: true);
-            Directory.Move(newFolder, targetFolder);
+                if (Directory.Exists(targetFolder))
+                    Directory.Delete(targetFolder, recursive: true);
+                Directory.Move(newFolder, targetFolder);
+            });
         }
         finally
         {
-            DeleteTemporaryFiles(tempZipPath, newFolder);
+            DeleteTemporaryFolder(newFolder);
+        }
+    }
+
+    private static Task DownloadTemporaryArchiveAsync(
+        string zipUrl, SupportedVersionControls versionControl, Action<Stream>? consume = null) =>
+        WithTemporaryArchiveAsync(Path.GetTempPath(), async (path, openDestination) =>
+        {
+            using var requestWorker = new RequestWorker();
+            await requestWorker.DownloadToStreamAsync(zipUrl, path, openDestination,
+                token: GetDownloadToken(versionControl),
+                useStoreUserAgent: true,
+                completionOption: HttpCompletionOption.ResponseContentRead);
+        }, consume);
+
+    internal static async Task WithTemporaryArchiveAsync(
+        string temporaryDirectory, Func<string, Func<Stream>, Task> download, Action<Stream>? consume = null)
+    {
+        string path = Path.Combine(temporaryDirectory, $"cdpiui_store_{Guid.NewGuid():N}.tmp");
+        FileStream? archiveStream = null;
+        try
+        {
+            // Keep the same exclusively created file through transfer and extraction.
+            await download(path, () => archiveStream ??= new FileStream(
+                path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920,
+                FileOptions.Asynchronous | FileOptions.DeleteOnClose));
+
+            if (consume is null)
+                return;
+
+            if (archiveStream is null)
+                throw new InvalidOperationException("The repository download did not open its temporary archive.");
+
+            archiveStream.Position = 0;
+            consume(archiveStream);
+        }
+        finally
+        {
+            archiveStream?.Dispose();
         }
     }
 
     // The archive holds one folder named after the branch; its content is extracted.
-    private static void ExtractWithoutRootFolder(string zipPath, string destinationFolder)
+    private static void ExtractWithoutRootFolder(Stream archiveStream, string destinationFolder)
     {
-        using var archive = ZipFile.OpenRead(zipPath);
+        using var archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true);
         ArchivePaths.EnsureWithinLimits(archive.Entries);
         foreach (var entry in archive.Entries)
         {
@@ -119,14 +142,8 @@ internal static class StoreRepositoryDownloader
         }
     }
 
-    private static void DeleteTemporaryFiles(string tempZipPath, string newFolder)
+    private static void DeleteTemporaryFolder(string newFolder)
     {
-        try
-        { File.Delete(tempZipPath); }
-        catch (IOException ex)
-        {
-            Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary archive {tempZipPath}: {ex.Message}");
-        }
         try
         {
             if (Directory.Exists(newFolder))

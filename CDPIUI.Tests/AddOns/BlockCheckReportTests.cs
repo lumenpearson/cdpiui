@@ -396,6 +396,16 @@ public sealed class BlockCheckReportTests : IDisposable
     }
 
     [Fact]
+    public void ReportTargetHostMustBeOneLine()
+    {
+        var report = Report(targets: [Target("t1", "marker.invalid\r\n", "/", BlockCheckProtocol.Tls12)]);
+
+        var exception = Assert.Throws<InvalidDataException>(() => BlockCheckReportValidator.Validate(report));
+
+        Assert.Contains("invalid or duplicate targets", exception.Message);
+    }
+
+    [Fact]
     public void ValidAttemptIsAccepted()
     {
         var result = Importer.Import(Report(attempts: [new BlockCheckReportValidationAttempt(0, false, true, ["t1"], ["x"])]));
