@@ -10,7 +10,7 @@
       "upstream_path_present": true,
       "policy": "targeted improvements only",
       "language": "en",
-      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+      "changes": "Common index/process navigation; preserve technical content and upstream voice. Add owner-confirmed current-main checkout and WIP/JSON-beta preservation guidance."
     },
     {
       "path": ".github/CONTRIBUTING.ru.md",
@@ -20,7 +20,7 @@
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English; equivalent Russian facts",
       "language": "ru",
-      "changes": "Common index/process navigation; preserve technical content and upstream voice."
+      "changes": "Common index/process navigation; preserve technical content and upstream voice. Add owner-confirmed current-main checkout and WIP/JSON-beta preservation guidance."
     },
     {
       "path": ".github/RELEASES.md",
@@ -1204,7 +1204,7 @@
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
       "language": "en",
-      "changes": "Document JSON catalog editing, generated WinUI compatibility, selected-language lookup, recovery boundaries and verification."
+      "changes": "Document direct UTF-8 RESW editing, copied WinUI/compiled PRI/embedded tool delivery, language and recovery contracts, and preserved historical checkout boundaries. Retain original JSON-era introduction attribution."
     },
     {
       "path": "docs/superpowers/plans/2026-11-10-json-localization.md",
@@ -1614,7 +1614,7 @@
       "upstream_path_present": false,
       "policy": "ASD-STE100 principles for English",
       "language": "en",
-      "changes": "Record exact package resources, accepted installed RESW16 evidence, normal font merge and preserved owner-controlled rollout boundaries."
+      "changes": "Record exact package resources, accepted installed RESW16 evidence, normal font merge and preserved owner-controlled rollout boundaries. Add 26 November owner dispositions, verified primary preservation/new custody, active-candidate RESW inheritance and actual Project access limits."
     },
     {
       "path": "docs/superpowers/specs/2026-11-12-resw-localization-separation-design.md",

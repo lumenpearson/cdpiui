@@ -60,3 +60,11 @@ Verify actual build/publish files and values, compiled PRI maps, shared embedded
 ## JSON beta
 
 `dev/beta-json-localization` preserves the separate frozen JSON authoring/generation feature under [#235](https://github.com/lumenpearson/cdpiui/issues/235). Stable RESW and active-branch adoption belong to [#236](https://github.com/lumenpearson/cdpiui/issues/236). Do not automatically merge the beta into stable development or maintain duplicate editable formats there. Historical evidence retains its original format and revision. Store and user JSON serialization remain unchanged.
+
+## Historical working copies and operator evidence
+
+Stable source catalogs remain `Localization/en-us/*.resw` and `Localization/ru/*.resw`. An older checkout can contain a preserved JSON migration and deleted historical `CDPIUI/Strings` inputs. Preserve that work under its recorded owner disposition and build from the named accepted execution checkout. Do not remove old WIP or regenerate current RESW from it to make a stale checkout look current.
+
+The retained primary comparison found 26 older JSON catalogs with 5320 entries. All 5320 values are retained in both the frozen beta and main's 5330-entry RESW set; the accepted set adds five toggle/accessibility keys per language. This is catalog-data comparison, not a new build, PRI or installed-product result. Native cohort 275 acceptance and its package/revision limits remain in the [branch-disposition record](../docs/superpowers/reports/2026-11-12-resw-branch-dispositions.md).
+
+The old physical primary is now an explicitly owned, preserved inactive execution target. Its source, local branch, HEAD, index and WIP remain unchanged. Its name does not identify a current-main product checkout. The separately owned `dev/resw-rollout-closeout` worktree starts from main `99e3701f00ac1b7045238b6b2c99f2073d15eb9b` for local documentation preparation only. This does not establish publication, Project acceptance or release readiness.
