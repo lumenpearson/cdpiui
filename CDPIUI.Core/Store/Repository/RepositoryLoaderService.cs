@@ -76,7 +76,8 @@ internal class RepositoryLoaderService : IRepositoryLoaderService
                 {
                     await StoreRepositoryDownloader.DownloadAndExtractStore(usedVersionControl, targetFolder);
                 }
-                catch (Exception ex) when (usedVersionControl == SupportedVersionControls.GitHub)
+                catch (Exception ex) when (usedVersionControl == SupportedVersionControls.GitHub &&
+                                           ex is not RepositoryCacheRecoveryException)
                 {
                     // GitHub is blocked for some users: the GitLab mirror has the same content (issue #26).
                     Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"GitHub is not available, using GitLab: {ex.Message}");

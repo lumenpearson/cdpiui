@@ -58,6 +58,7 @@ internal static class StoreRepositoryDownloader
         Debug.WriteLine(zipUrl);
 
         string newFolder = $"{targetFolder.TrimEnd(Path.DirectorySeparatorChar)}.new-{Guid.NewGuid():N}";
+        bool retainStagedCache = false;
         try
         {
             await DownloadTemporaryArchiveAsync(zipUrl, versionControl, archiveStream =>
@@ -65,14 +66,25 @@ internal static class StoreRepositoryDownloader
                 Directory.CreateDirectory(newFolder);
                 ExtractWithoutRootFolder(archiveStream, newFolder);
 
-                if (Directory.Exists(targetFolder))
-                    Directory.Delete(targetFolder, recursive: true);
-                Directory.Move(newFolder, targetFolder);
+                string? previousFolder;
+                try
+                {
+                    previousFolder = StoreRepositoryCachePromotion.Promote(newFolder, targetFolder);
+                }
+                catch (RepositoryCacheRecoveryException)
+                {
+                    retainStagedCache = true;
+                    throw;
+                }
+
+                if (previousFolder is not null)
+                    DeleteTemporaryFolder(previousFolder);
             });
         }
         finally
         {
-            DeleteTemporaryFolder(newFolder);
+            if (!retainStagedCache)
+                DeleteTemporaryFolder(newFolder);
         }
     }
 
@@ -149,7 +161,7 @@ internal static class StoreRepositoryDownloader
             if (Directory.Exists(newFolder))
                 Directory.Delete(newFolder, recursive: true);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Basic.Logger.Instance.CreateWarningLog(nameof(RepositoryLoaderService), $"Cannot delete the temporary folder {newFolder}: {ex.Message}");
         }

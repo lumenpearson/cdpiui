@@ -52,6 +52,10 @@ The repository has no signature. The client does not check a catalog for it.
 The client removes the first path segment of each entry. This segment is the root folder of the zipball. An entry with only one segment is skipped.
 The client extracts the archive into `Repo.new-<GUID>`. It replaces `Store\Cache\Repo` only after a full extraction.
 
+Before it publishes the extracted cache, the client moves the previous cache to `Repo.previous-<GUID>`. If publication fails, it moves the previous cache back. It removes the previous cache only after publication succeeds. A cleanup error leaves the backup in place and writes a warning.
+
+If restoration also fails, the client keeps the backup and the staged cache. The error gives their paths and the target path. The client stops the automatic mirror retry for this recovery error. Preserve these directories for recovery; the client does not remove an unexpected target to force restoration. Other download errors still permit the GitLab fallback.
+
 ## Repository layout
 
 ```text
