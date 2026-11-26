@@ -240,3 +240,9 @@ See [Localization/README.md](../Localization/README.md) for the format, examples
 | Elevated launcher | [CDPIUI.ElevatedLauncher/README.md](../CDPIUI.ElevatedLauncher/README.md) |
 | Installer | [NewSetup/README.md](../NewSetup/README.md) |
 | CI and releases | [.github/RELEASES.md](RELEASES.md) |
+
+## Choose an owned checkout for localization work
+
+Use an owner-confirmed current-main checkout for stable RESW development. A directory or local branch named `main` does not prove that its source matches the accepted remote main. Read its HEAD and working state before building. The [RESW branch-disposition record](../docs/superpowers/reports/2026-11-12-resw-branch-dispositions.md) separates active execution targets, frozen accepted snapshots and the JSON beta.
+
+Preserve pre-existing staged, unstaged, untracked and ignored work before an owner-controlled adoption. Keep private preservation manifests and raw evidence outside commits. Do not copy an old JSON overlay over current RESW sources. The frozen `dev/beta-json-localization` branch remains an experiment, not a merge source for normal localization changes.
