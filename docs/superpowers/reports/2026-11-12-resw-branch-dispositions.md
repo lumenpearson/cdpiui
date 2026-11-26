@@ -1,5 +1,7 @@
 # RESW separation branch dispositions
 
+This is a chronological evidence record. Earlier readiness statements retain their original stage. See [the 26 November reconciliation](#rollout-reconciliation-on-26-november-2026) for later ownership and execution boundaries.
+
 Owning tasks: #235 (frozen JSON beta) and #236 (stable RESW and active rollout).
 
 ## Verified base and current owned work
@@ -174,3 +176,131 @@ The final documentation pass updates this report, the RESW and Tray plans, their
 The JSON beta remains frozen at19b221 with original fe29 product bytes. The later common Tray font correction238 is a separately named difference; it is not silently attributed to JSON localization and was not added to the frozen experiment. Eight presentation refs remain frozen historical inputs. Root owns the new font branch atcd5. The foreign primary main remains local7ead95f with its original WIP and index SHA256 `42c36f427f08ff07ca2e8872ac2995b44f174bcd71a4815b23072d11dee197a3`. It needs owner-controlled adoption; a remote main merge alone cannot complete all-active rollout236. Accepted reviewed main can separately unblock234, without waiting for broad236 closure.
 
 The local `origin/main` tracking ref was stale at21555a29. Fresh GitHub API and `git ls-remote` agreed on actual remote fe29. A bounded explicit-main fetch with an empty refmap fetched fe29 without changing local main. A compare-and-swap updated only the tracking ref from the recorded stale value to actual fe29. The primary branch, checkout, index and WIP were not changed.
+
+## Rollout reconciliation on 26 November 2026
+
+Fresh connected GitHub API identifies main as `99e3701f00ac1b7045238b6b2c99f2073d15eb9b`. The coordinator read back #14 and #234 as completed. Initial descriptions of unmerged stable main, a future presentation checkout or #234 In progress are historical. Accepted stable RESW integration at `d2116756`, final source `9a266970` and native cohort 275 (16/16) retain their original exact scopes; none was executed again for this reconciliation.
+
+### Owner-controlled execution dispositions
+
+Owners explicitly supplied the following dispositions. Preserve each frozen HEAD, index, WIP, ignored fixtures and evidence. No frozen branch is merged, deleted or advanced to increase a rollout count.
+
+| Branch | Exact HEAD | Owner and current execution disposition |
+|---|---|---|
+| `dev/class-stack-integration` | `08f6de285617cfb5eaac58f91eda31d336280063` | Owner `01a1c5f4`: frozen accepted #14/PR233 evidence; no active execution. |
+| `dev/welcome-migration-presentation` | `5c7a9459589b6d8c18a794d675c29ac0ed285e54` | Root: completed accepted PR232/#234 snapshot; inactive execution target. |
+| `dev/tray-font-lifetime` | `cd5bcfd9a059f287b9cc851fb5a33845280c3cbe` | Root: completed accepted #238 font snapshot; inactive execution target. |
+| `dev/neutral-config-utilities` | `249bba0143f5929ce5cb75fc09a4ef778aede731` | SourceSecurity: preserved historical #234 snapshot; no active task. |
+| `dev/presentation-owner-integration` | `793f7319f225cd4abddc69e8cda8b8dca6323a03` | SourceSecurity: accepted historical snapshot, PR240 merged; no active task. |
+| `dev/security-remediation-wave1` | `62d7219b4efa3177fe0438af75fd03ae2853f822` | SourceSecurity: active PR250 candidate; Draft and unmerged. |
+| `dev/resw-localization` | `9a266970ebb52de5b1b50bed0316d556c5ae1255` | SourceRESW: accepted PR237 source snapshot; unchanged. |
+| `dev/beta-json-localization` | `19b221428d7ed76c68e9e0cd0a6a50150ae9701d` | Frozen JSON exception; governance companion `9071ef3` is also preserved. |
+
+### Root's eight original presentation stages
+
+Root explicitly confirmed all eight original stage heads on 26 November as `FROZEN_ACCEPTED_EVIDENCE_NOT_ACTIVE_PRODUCT_DEV`, with no active execution task. The basis is Root's own retained stage-creation ledgers, issue #14 freeze records and fresh matching local/published Git ref readbacks. Source rehashed the two named owner receipts; the older source map alone was not treated as proof of ownership.
+
+| Historical stage branch | Exact preserved HEAD |
+|---|---|
+| `dev/audit-class-integration` | `36235846fb116acad49b328b29120afa92714712` |
+| `dev/blockcheck-completion-presentation` | `3da11cb098d3e1241b2a86cd86ee0c14d80b1942` |
+| `dev/blockcheck-progress-presentation` | `3c7f8961477dbff0b4b021493b629ba1a1a0fa05` |
+| `dev/blockcheck-review-presentation` | `b627a0f62dace8dde20ca2574a9d28646f71b421` |
+| `dev/blockcheck-wizard-navigation` | `12ef689e0968bd7ff4b27cee0fe7af02091286da` |
+| `dev/store-download-presentation` | `3afa82e3f4947ce4bef38b14d86c642c93ddbe90` |
+| `dev/configmaker-status-presentation` | `b0f2c93d66000eb02cd963cf4421173980686e95` |
+| `dev/welcome-migration-presentation` | `5c7a9459589b6d8c18a794d675c29ac0ed285e54` |
+
+The current owner-disposition receipt is SHA256 `abb58e061e142b42f30d1a98d40280a548d25b0f0750d255c44aec0f0e2d9e79`; its supporting input/ref readback is `81ab42311f8cad764296c03a954f291272be99dd371202731bd70652431fc7a3`. These eight are excluded from in-place RESW execution by the owner's explicit decision. Preserve all original heads, indices, WIP and ignored evidence. This decision does not close or merge historical PRs or infer their status from reachability.
+
+An open Draft PR does not prove active execution. Other legacy refs keep their recorded or unresolved dispositions; do not infer activity or inactivity from names, reachability or archived chats. This is not a claim that every historical WIP feature was integrated.
+
+### Active security candidate retains RESW
+
+PR #250 at `62d7219` has direct parent main `99e3701f` and tree `fdb559f0b562fdbe323c9442a5d1a7758f2b939f`. Root independently checked all 26 RESW blobs and 12 build-input blobs against that parent. All are byte-identical. Decoded checkout catalogs retain 5330 values, 2665 per language, and translator comments after normal CRLF conversion. Receipt SHA256: `ada3e3d7324b8799249e474acee27ffa00cd1af507924c7c562a12805b59465b`.
+
+Existing exact-head hosted CI passed 2699 main and 10 font tests with zero failures or skips; receipt SHA256 `ddd9450c3e635f186ee8d1db29dd829d606f1a6d4ed28c9b33c9523f3d690f08`. The prior five scoped native security groups have receipt SHA256 `f722439188ab37530bcc0b2d7e6a6eb360cce77cb39799452ce3ed1fd21f6bd9`. These receipts were read and rehashed, not rerun. Static inheritance does not establish a new compiled PRI, resource UI, installation or global release result. PR #250 remains unmerged and its current private Project fields are unknown.
+
+### New custody of the preserved primary
+
+The maintainer explicitly requested a preserved transfer of the primary working copy. Root appointed SourceRESW (`01a1d09c-7a6a-7f23-ad87-194d87d35762`) as the new custodian; SourceRESW accepted this new transaction on 26 November. The historical prior owner and handback remain unknown. They were not inferred from archived chats or supplied retroactively.
+
+The physical primary stays on local `main@7ead95f7756057f67cd113671a7f84cf422e8d32`, index SHA256 `42c36f427f08ff07ca2e8872ac2995b44f174bcd71a4815b23072d11dee197a3`. It is now a **preserved inactive execution target**, not an updated current-main product checkout. No source, branch, HEAD, index, original ACL or path was changed. Its staged, unstaged, untracked and ignored work remains in place. All uncertain or unrelated WIP stays preserved and unapplied; no older JSON overlay was replayed.
+
+One new private preservation copy contains 32851 approved regular files and 3614696751 bytes. Forty-five credential-like files were excluded without reading or copying their payloads; their originals stay in place. Twenty expected deleted old RESW paths have an explicit deletion manifest. The common Git directory was not copied; the exact original index was retained separately. Original files remain the second retained copy. No all-files-copied claim includes the exclusions.
+
+Source completed full source/destination hash verification with actual Python exit0. Root then independently rehashed all 32851 source/destination pairs, checked exact membership, unchanged source pathlists/index and the protected new-directory ACL, and completed its reader with exit0. Preservation manifest SHA256: `4c04fa2724a36942654f718f4785e04e060613a18444bee5bdf5aa87640b7300`; Root review: `4bf008577668bed995cb77d034ba6af8f63616f8d3c8a84809498020610e9b22`; actual serial release: `d75543b1dc6d9b205bf430fb034470bb37a98bfda84b1a0465531f95ca32121e`.
+
+Three wrapper metadata writes failed because `Set-Content -NoClobber` is not a valid parameter combination. The failures remain retained. Separate additive records capture actual argv, PID/birth and measured Python/outer exit0; failed original records were not fabricated and copying was not repeated. Checks are non-atomic per-file observations, not a global concurrent-writer lock.
+
+The semantic disposition review covers nine tracked differences from beta and seventeen from main; all originals remain unapplied. All 5320 older JSON values are retained in the beta/main 5330 catalogs. New custody receipt: `f84579e973f29afbd485a99dd1cc28b0dabc22d254d7caebd3ecbcc9917fdbb5`; independent custody review: `cacd26e6a28c635b75ad8ba1d5169b5a5d21f23b52d252710c22fbfdc7541f5f`. These establish preservation and custody, not full unrelated runtime equivalence or issue closure.
+
+The documentation execution owner is SourceRESW (`01a1d09c-7a6a-7f23-ad87-194d87d35762`). Its manual Git worktree is `F:/CodexWorktrees/cdpiui-resw-rollout-closeout-20261126-01a1d09c/cdpiui`, on branch `dev/resw-rollout-closeout`, based on exact main `99e3701f00ac1b7045238b6b2c99f2073d15eb9b`. Creation preserved all old refs and indices; this worktree is not a Codex-managed attachment. Local documentation HEADs, checks and review receipts are recorded externally in the owning task and private handoff, rather than a circular self-HEAD claim in this document. The accepted `9a266970` source and the legacy physical primary remain unchanged. No public PR or main integration is inferred from this local documentation stage.
+
+### Project access and remaining acceptance
+
+Current private Project 7 fields remain **unknown**. Earlier intake and Blocked/P2/UX/Medium readbacks retain their original dates and the approved local-preparation timing exception. Issue API access and successful CI do not verify private fields. The original before-implementation timing is not invented.
+
+Actual browser attempt 291 was denied by the saved-user/managed origin gate before a Project page loaded. A selected supported configuration diagnosis found only one exact github allow rule, no competing local rule or profile browser override, and no documented Windows legacy managed-config file. The effective source of denial remains unknown; no permission was changed and the origin was not retried.
+
+Read-only session 295 made one supported app-inventory call. The returned package identity contained Codex, but its display name and window title were ChatGPT. That target was outside the Codex-only grant and prohibited by Windows automation guidance. Source stopped before state capture, screenshot, accessibility, input, settings, browser or Project access. The original selected metadata and explicit stop receipt remain private; no PNG or AX result was invented. Root qualified actual release 296. No repaired-access claim follows from this attempt.
+
+This documentation stage changes no product code or resource. Its local checks, independent review, eventual publication/integration and actual Project intake/acceptance must be recorded separately. Issue236 stays open until the current contract and actual issue/Project closing readbacks are satisfied. Broader G3–G5 and installed-product/release tasks retain their own scopes.
+
+
+## Final rollout disposition and current acceptance boundary — 26 November 2026
+
+This dated addendum supersedes the earlier current-state statements above. It preserves their original chronology. In particular, PR #250 is now merged, scoped Project access works, and the legacy execution boundary has a new explicit administrative decision. No historical owner, handback or before-implementation Project verification is supplied retroactively.
+
+### Accepted main and current development
+
+PR #250 merged normally at main `4f740060e1e51a3dc3defcdcbeb162c9c319e0a4`, tree `fdb559f0b562fdbe323c9442a5d1a7758f2b939f`, on 26 November at 17:54:03 UTC. Its parents retain accepted main `99e3701f` and reviewed candidate `62d7219`. Exact-main CI run 45871579101, governance run 45871579085 and CodeQL run 45871579031 passed. The coordinator's independent merge and post-merge receipts are SHA256 `4fdcb0ae4cd4233079a7b4858d372a2691612752e87ca9b8c5b6cff5edc7929b` and `c577d2379d97d5b7293498f74cb75a3082f25855270e7d972d19a27a6ca236b7`.
+
+The 26 RESW catalogs and 12 localization build inputs of that candidate are identical to accepted parent main, as recorded above. The normal merge has the same candidate tree. This binds the accepted direct UTF-8 RESW contract and 5330 values to main without another native run.
+
+New active product work is explicitly assigned to SourceSecurity #90, `dev/settings-recovery-lock`, and Root #92, `dev/store-cache-promotion`. Both new owned worktrees start from exact main `4f740060`. Their accepted starting resource baseline is RESW. This disposition does not accept their later source changes, tests or integration. A later localization-input change needs a bounded check on that named revision. No owner advances an occupied historical checkout to satisfy this rollout.
+
+The documentation branch `dev/resw-rollout-closeout` preserves its reviewed `874027e213c00b85c7646c5ac2bcc752e2a3fe92` commit and composes accepted main `4f740060` by a normal merge. Its proposed difference from that main is limited to the five named documentation files. Local checks, independent review, hosted checks and eventual integration are separate evidence recorded on the PR and issue. This report does not claim its own future integration.
+
+### Complete inventory and prospective preservation custody
+
+The retained inventory snapshot contains 44 published refs, 32 local branches and 16 worktrees. These are counts at that snapshot, before the two new #90/#92 worktrees were created. Actual ref readbacks, not branch names or archived chats, bind the snapshot. Inventory receipt SHA256: `ab4f1b0462102899876160d4914b3910a78d701438600b1799a21bed7c728280`.
+
+The coordinator appointed observer `01a1c5f4-bad8-7310-bafb-1bcf792172a9` as a new prospective preservation custodian for the following 14 ref names and three detached worktrees. Its receipt SHA256 is `8f730db1d59c17aca345f86a36d0bc7bc0b885e7b8ad55fd6017c5ab13cd244b`. This is a new preservation responsibility. Historical ownership stays UNKNOWN where it was unknown. Published pipeline ownership does not adopt different local overlays.
+
+| Preserved ref | Recorded local HEAD | Recorded published HEAD | Current execution decision |
+|---|---|---|---|
+| `audit-defects` | `ee4771675956fe213634675f37579362efb7e0eb` | `ee4771675956fe213634675f37579362efb7e0eb` | Preserve in place; no current execution assigned. |
+| `backup/main-before-ste100-2026-11-10` | `d72ad478bc05c6ab9e53f46da1a2b6c58690b202` | `d72ad478bc05c6ab9e53f46da1a2b6c58690b202` | Preserve in place; no current execution assigned. |
+| `backup/pre-mvvm` | Absent | `130931c33dd17c988428ac88359b2f4572996d1b` | Preserve in place; no current execution assigned. |
+| `dev/dependency-intake-classification` | `37b0824ef4d43f67ef23b7955daf9d844e9d2cef` | `ed38d4e86daf0d9a46cb5ca4d0ac12dcd9fb6a60` | Preserve in place; no current execution assigned. |
+| `dev/fork-development-pipeline` | `37b0824ef4d43f67ef23b7955daf9d844e9d2cef` | `5025220cce83a704961985765d00e3ac2f87a661` | Preserve in place; no current execution assigned. |
+| `dev/future-task-issues` | `dbb0760b3f46dfc1993755342a4338ee764d746c` | `dbb0760b3f46dfc1993755342a4338ee764d746c` | Preserve in place; no current execution assigned. |
+| `dev/ste100-audit-class-decomposition` | `2280e752a79f7e836d367dc534034d3c33f86a44` | Absent | Preserve in place; no current execution assigned. |
+| `dev/ste100-audit-defects` | `1f042eab1be8f3004f4532604af414e2711bb3a9` | `1f042eab1be8f3004f4532604af414e2711bb3a9` | Preserve in place; no current execution assigned. |
+| `dev/ste100-main` | `7ead95f7756057f67cd113671a7f84cf422e8d32` | `7ead95f7756057f67cd113671a7f84cf422e8d32` | Preserve in place; no current execution assigned. |
+| `maintenance-pass` | Absent | `6e30da896f2e040c986b3262c2795a88ef059e65` | Preserve in place; no current execution assigned. |
+| `mvvm` | `247db02fcbdaabf23806791bd27a4109e216157e` | `247db02fcbdaabf23806791bd27a4109e216157e` | Preserve in place; no current execution assigned. |
+| `refactoring` | Absent | `05b84d2747aa84879e568456c609623dddd8a2ca` | Preserve in place; no current execution assigned. |
+| `security-final` | `7c198ac25c2c1bf2823ff5a391e26cf322836c97` | `7c198ac25c2c1bf2823ff5a391e26cf322836c97` | Preserve in place; no current execution assigned. |
+| `security-hardening` | Absent | `18f8bc2bb4c69c1de4bab64263457d414e57f6c0` | Preserve in place; no current execution assigned. |
+
+The detached copies `cdpiui-pr3@8063679c78bb3391dd7048bc0eefc4aae603f803`, `cdpiui-pr4@651075d0a86a6e856ba780e65ec684b3d47b9479` and `cdpiui-pr5@130931c33dd17c988428ac88359b2f4572996d1b` have the same preserve-in-place, no-current-execution disposition. Preserve every source file, index, WIP, untracked and ignored artifact, failed result and original evidence. No adoption, ref advance, rebuild, merge or deletion is authorized by this custody record.
+
+The preservation receipt originally left the execution decision for `audit-defects` pending because #13 and Draft PR #10 remain open. The coordinator subsequently supplied a new forward execution decision, SHA256 `473bbd38769f0b9b24c5eb4830c432aba70c081c2ccab47f6e456413e4adcc29`. It preserves exact `ee477167` and its occupied `cdpiui-s2` checkout, assigns no current execution there, and assigns current security work to the separately owned RESW-main branches #90/#92. This resolves that current execution gap. It is not an original-owner handoff or acceptance of the old security code. #13, Draft PR #10 and all unaccepted backlog remain open. An earlier old-owner contact failed before a reply; it provides no ownership or execution evidence and was not retried through another route.
+
+Other exact owner dispositions complete this inventory join: Root's original local-only `dev/audit-class-decomposition@eebc7e8621b85fa08ee015ea3b7eab1e72c78c5f` is frozen with no current execution; observer's `dev/apply-task-policy@172c879778ec3d95b67901c6479a3967cc440cfb` is accepted historical #205/PR210 evidence with no active execution. The original JSON owner confirms `dev/json-localization@31da9d26df0f757752b4b7d7bd9703b380bad802` and accepted `dev/language-selector-refresh@2a05b166bbf2aa5bbab8a203c8cfe83a3d7b2e73` are frozen with no pending execution. The original pipeline owner confirms published `5025220` and `ed38d4e` are frozen accepted snapshots; local `37b0824` overlays stay preserved and unapplied. Supporting owner receipt hashes are `129b0689783e420a2664e5420541d4690d0aae110c2651f84db9d9ca9dc846e7`, `2ec93d36e1c4df9e2ef68fe45edb5ea60505023d6d6151400a3d2f745d4b6c17` and `eb48bf3c9a75bd8b2c28c853501b858e2dad9abef14313ce74fc3aacdeada207`.
+
+The eight presentation-stage owner decisions, accepted class-stack snapshot, source/font/security/presentation snapshots, JSON beta exception and new primary custody retain their exact scopes above. Together with the new explicit preservation decisions, they reconcile criterion 6: current execution uses accepted RESW, while the JSON experiment and historical inputs remain preserved. This does not mean all old branches were rewritten, all old WIP was integrated or all historical owners became known.
+
+### Automated proposals and resource inheritance
+
+The 12 automation-owned proposal heads (#112, #114, #116 and #241–#249) were bound to actual `dependabot[bot]` API identity and exact compare responses. At that snapshot each was one commit ahead and zero behind accepted main `99e3701f`, with that merge base. Eleven changed only `Directory.Packages.props`; #112 changed five workflows. None changed localization catalogs, runtime readers, PRI/content/embedding configuration or authoring tests. Receipt SHA256: `730773bfd409821f972ca2b0fbba9b61f00eb5b759277ebb12f0b8b2bc642319`. This is static RESW inheritance on those named heads. It does not accept dependency updates, later rebases, CI, runtime or release behavior.
+
+### Restored Project access and final issue gate
+
+The retained 297 settings diagnosis made no permission change. Attempt 299 timed out and did not establish access. The current scoped read in session 301 then succeeded on the existing Project 7 tab: #236 item `302888676` was actually Blocked/P2/UX/Medium, assigned to `lumenpearson` with G4. Cached earlier panel content was resolved by the actual current read. Historical access failures and the approved local-preparation timing exception remain visible. API access or CI alone did not establish private fields.
+
+Session 305 set PR #250 to Verification/P1/Security/High and preserved the three G1 issue cards' matching fields. The original action-count scalar was corrected additively to 34 actual inputs; no action was repeated. Session 307 verified #44, #74 and #84 already Done after their actual completed issue closures, so it made zero Project writes. Session 309 then set #90 and #92 to In progress and PR #250 to Done, preserving all other fields. The three results have SHA256 `03e366bea421abf3cf985be87880234250768df6759a3d0947c54ecd1e579cd9`, `c8d3847b4c6fd43f857210e50510b9129366c7826a514d8ea623348bc35654e0` and `7667b8ad12657be1a58ad084a859c935e06763cab6a3312c501f7191fe9fbe39`. Count-correction receipt: `75755e854aa2a963f5038d18b638fc3f78c4038674b01594ca1334847d65b4eb`. Each bounded session has a separate actual coordinator release; no historical lease authorizes later UI work.
+
+At this document stage, #236 remains open until the final documentation PR is reviewed, required checks pass on its final HEAD, and integration is recorded. The final case-specific acceptance record must map all criteria to the retained evidence, then pair actual issue closure as completed with Project Status Done and read back the actual metadata. No new product, SDK, Sandbox or installed-product test is needed for this documentation-only change. The accepted 16-scenario RESW native gate retains its exact candidate and MSI scope. Broader release tasks and the new #90/#92 fixes retain separate acceptance.
