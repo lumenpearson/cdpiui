@@ -36,9 +36,8 @@ internal static class SettingsFileStore
 
     // A lock file works for both processes, while a named mutex of the elevated tray would not be
     // accessible to the UI.
-    public static IDisposable? AcquireLock(string settingsFilePath, out bool timedOut)
+    public static IDisposable? AcquireLock(string settingsFilePath)
     {
-        timedOut = false;
         string lockPath = settingsFilePath + ".lock";
         for (int attempt = 1; attempt <= LockAttempts; attempt++)
         {
@@ -57,7 +56,6 @@ internal static class SettingsFileStore
                 return null;
             }
         }
-        timedOut = true;
         return null;
     }
 

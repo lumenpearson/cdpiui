@@ -101,6 +101,10 @@ public sealed class BlockCheckTarget
 
     public static bool IsValidHost(string host)
     {
+        // Validate a single host before normalization can remove a line break.
+        if (host.AsSpan().IndexOfAny("\r\n\v\f\u0085\u2028\u2029") >= 0)
+            return false;
+
         string normalized = NormalizeHost(host);
         return normalized.Length > 0 && Uri.CheckHostName(normalized) == UriHostNameType.Dns;
     }

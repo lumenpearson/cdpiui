@@ -264,6 +264,33 @@ public class StrategyCatalogValidatorTests
         Assert.Throws<ArgumentNullException>(() => Validator.ValidateTargets(null!));
     }
 
+    [Theory]
+    [InlineData("marker.invalid\n")]
+    [InlineData("marker.invalid\r")]
+    [InlineData("marker.invalid\r\n")]
+    [InlineData("marker.invalid\v")]
+    [InlineData("marker.invalid\f")]
+    [InlineData("marker.invalid\u0085")]
+    [InlineData("marker.invalid\u2028")]
+    [InlineData("marker.invalid\u2029")]
+    public void TargetHostWithLineBreakIsRejected(string host)
+    {
+        var issue = Assert.Single(Validator.ValidateTargets([Target(host: host)]));
+
+        Assert.Equal("TARGET_HOST_INVALID", issue.Code);
+    }
+
+    [Theory]
+    [InlineData(" Marker.Invalid. ", "marker.invalid")]
+    [InlineData("пример.рф", "xn--e1afmkfd.xn--p1ai")]
+    public void ValidTargetHostKeepsDnsNormalization(string host, string normalizedHost)
+    {
+        var target = Target(host: host);
+
+        Assert.Empty(Validator.ValidateTargets([target]));
+        Assert.Equal(normalizedHost, target.GetRuntimeRouteKey().Host);
+    }
+
     [Fact]
     public void TargetFieldsAreChecked()
     {
